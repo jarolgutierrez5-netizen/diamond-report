@@ -80,97 +80,109 @@
 
   /* ── MOBILE RESPONSIVE ─────────────────────────────────────────── */
   @media (max-width: 768px) {
+    /* ── MOBILE ≤768px ──────────────────────────── */
+
     /* Header */
     .header { padding: 0 12px; height: 52px; }
     .logo { font-size: 20px; letter-spacing: 2px; }
     .date-badge { font-size: 10px; padding: 3px 7px; }
 
-    /* Nav — scrollable tabs */
-    .nav { padding: 8px 12px 0; gap: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    /* Nav — horizontal scroll */
+    .nav { padding: 8px 12px 0; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
     .nav::-webkit-scrollbar { display: none; }
     .tab { padding: 6px 12px; font-size: 10px; letter-spacing: .5px; white-space: nowrap; flex-shrink: 0; }
 
     /* Main padding */
-    main { padding: 12px; }
+    main { padding: 10px 12px; }
 
-    /* Game cards — single column */
-    .games-grid { grid-template-columns: 1fr; gap: 10px; }
-    .score-block { font-size: 22px; }
-    .team-abbr { font-size: 20px; }
-    .team-logo { width: 28px; height: 28px; }
-
-    /* Section title */
+    /* Section titles */
     .section-title { font-size: 18px; }
 
-    /* Pitcher Report table — horizontal scroll */
-    #pr-content { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .pr-table { min-width: 600px; }
-    .pr-table thead th:nth-child(2) { min-width: 160px; }
-    .pr-headshot { width: 30px; height: 30px; }
-    .pr-pitcher-name { font-size: 12px; }
-    .pr-expand-panel { padding: 12px; }
+    /* ── LIVE SCORES ── */
+    .games-grid { grid-template-columns: 1fr; gap: 8px; }
+    .score-block { font-size: 20px; gap: 6px; }
+    .team-abbr { font-size: 18px; }
+    .team-logo { width: 26px; height: 26px; }
+    .standings-badge { font-size: 8px; }
+    .game-card { padding: 10px 12px; }
 
-    /* Lineup expand */
-    .pr-pitcher-sub { gap: 4px; }
-    .btn-lineup { font-size: 9px; padding: 2px 5px; }
-
-    /* Batter rows in lineup */
-    .btn-matchup { font-size: 9px; padding: 4px 7px; white-space: nowrap; }
-
-    /* Props tab — stack HR potential and K's Today vertically */
-    .hrs-today-grid { grid-template-columns: 1fr !important; }
+    /* ── PROPS TAB ── */
+    /* Stack HR Potential + K's Today vertically */
     .props-grid { grid-template-columns: 1fr !important; }
-    .props-grid > div:last-child { max-height: 300px; }
-
-    /* HR Potential table scroll */
-    #hr-potential-content { overscroll-behavior: contain; }
-    .hrp-table { min-width: 480px; }
+    /* Stack HRs Today + Projection Hits vertically */
+    .hrs-today-grid { grid-template-columns: 1fr !important; }
+    /* HR Potential table */
+    #hr-potential-content { overflow-x: auto; overscroll-behavior: contain; }
+    .hrp-table { min-width: 0; width: 100%; }
+    .hrp-table thead th, .hrp-table tbody td { padding: 8px 6px; }
     .hrp-headshot { width: 28px; height: 28px; }
     .hrp-batter-name { font-size: 12px; }
-
-    /* K props */
-    .kprop-row { gap: 8px; }
-    .kprop-line, .kprop-pred { min-width: 60px; padding: 6px 10px; }
+    .hrp-matchup-btn { font-size: 8px; padding: 2px 5px; max-width: 160px; white-space: normal; line-height: 1.3; }
+    /* K's Today sidebar goes full width */
+    #ks-today-props { overflow-x: hidden; }
+    /* K Props */
+    .kprop-row { gap: 6px; flex-wrap: wrap; }
+    .kprop-pitcher { min-width: 100%; order: -1; }
+    .kprop-line, .kprop-pred { min-width: 65px; padding: 6px 8px; }
     .kprop-line-val, .kprop-pred-val { font-size: 18px; }
-    .kprop-reasoning { font-size: 9px; min-width: 120px; }
-    .kprop-name { font-size: 12px; }
-    .kprop-meta { font-size: 9px; }
+    .kprop-reasoning { font-size: 9px; min-width: 100%; }
+    .kprop-meta { font-size: 8px; }
+    /* Stat rows (HRs Today) */
+    .stat-row { padding: 8px 10px; gap: 8px; }
+    .stat-row-num { font-size: 22px; }
+    /* Ks Today rows */
+    .ks-today-row { padding: 7px 10px; gap: 8px; }
 
-    /* Matchup modal */
-    .mu-modal { max-width: 100%; margin: 8px; border-radius: 8px; }
+    /* ── PITCHER REPORT ── */
+    #pr-content { overflow-x: auto; overscroll-behavior-x: contain; touch-action: pan-y; }
+    .pr-table { min-width: 460px; }
+    .pr-table thead th { padding: 6px 8px; font-size: 9px; }
+    .pr-table tbody td { padding: 8px 8px; }
+    .pr-headshot { width: 28px; height: 28px; }
+    .pr-pitcher-name { font-size: 11px; }
+    .pr-pitcher-sub { gap: 3px; flex-wrap: wrap; }
+    .btn-lineup { font-size: 8px; padding: 2px 5px; }
+    .k-ou-tag, .k-proj-tag { font-size: 8px; padding: 1px 4px; }
+    /* Expand panel batter rows */
+    .btn-matchup { font-size: 9px; padding: 4px 7px; white-space: nowrap; }
+    .pr-expand-panel { padding: 10px 12px; }
+
+    /* ── PROPS LIVE BANNER ── */
+    #props-live-banner { border-radius: 6px; }
+
+    /* ── MATCHUP MODAL ── */
+    .mu-modal-overlay { padding: 8px; align-items: flex-end; }
+    .mu-modal { max-width: 100%; border-radius: 12px 12px 0 0; max-height: 92vh; }
     .mu-modal-head { padding: 12px 14px; }
-    .mu-modal-title { font-size: 15px; }
+    .mu-modal-title { font-size: 14px; }
     .mu-modal-body { padding: 12px; }
     .h2h-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
     .h2h-val { font-size: 20px; }
-    .strike-zone { width: 120px; }
-    .sz-cell { width: 36px; height: 34px; font-size: 10px; }
-    .zone-wrap { gap: 14px; }
+    .strike-zone { width: 114px; }
+    .sz-cell { width: 34px; height: 32px; font-size: 10px; }
+    .zone-wrap { gap: 12px; flex-wrap: wrap; }
+    .matchup-cols { grid-template-columns: 1fr !important; }
+    .mu-layout { grid-template-columns: 1fr !important; }
 
-    /* Ks Today rows */
-    .ks-today-row { padding: 8px 10px; gap: 8px; }
-    .ks-count { font-size: 22px; }
+    /* ── PAYWALL MODAL ── */
+    #paywall-overlay { padding: 12px; align-items: flex-end; }
+    #paywall-overlay > div { border-radius: 12px 12px 0 0; max-width: 100%; }
 
-    /* Stat rows */
-    .stat-row { padding: 8px 10px; gap: 8px; }
-    .stat-row-num { font-size: 22px; }
-
-    /* Game card standings badge */
-    .standings-badge { font-size: 8px; }
-
-    /* Schedule cards */
-    .game-card { padding: 10px 12px; }
+    /* ── SCHEDULE ── */
+    #scheduled-games { grid-template-columns: 1fr; }
   }
 
   @media (max-width: 480px) {
-    .logo { font-size: 17px; }
-    .score-block { font-size: 18px; gap: 5px; }
-    .team-abbr { font-size: 17px; }
-    .team-logo { width: 24px; height: 24px; }
-    .pr-headshot { width: 26px; height: 26px; }
-    .btn-matchup { display: none; } /* hide on very small screens, accessible via expand */
+    .logo { font-size: 16px; }
+    .score-block { font-size: 17px; gap: 4px; }
+    .team-abbr { font-size: 16px; }
+    .team-logo { width: 22px; height: 22px; }
+    .pr-headshot { width: 24px; height: 24px; }
     .h2h-grid { grid-template-columns: repeat(2, 1fr); }
-    .kprop-reasoning { display: none; } /* hide on very small screens */
+    .kprop-reasoning { display: none; }
+    .zone-legend { display: none; }
+    .btn-matchup { font-size: 8px; padding: 3px 5px; }
+    .hrp-matchup-btn { font-size: 7px; }
   }
 
 
@@ -1773,19 +1785,22 @@ async function loadKsToday() {
       return `<div class="ks-today-row" style="${p.isLive?'border-left:2px solid var(--live);padding-left:10px':''}">
         <img src="${hs(p.id)}" style="width:34px;height:34px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'" alt="">
         <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            <span style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</span>
+          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+            <span style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px">${p.name}</span>
             ${statusBadge}
           </div>
-          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:2px">
-            <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">${p.gameLabel} · ${p.timeStr}${p.isSP?' · SP':''} · ${p.ip} IP</span>
-            ${ouLine !== null ? `<span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">PROJ: <strong style="color:var(--text)">${ouLine}</strong></span>` : ''}
+          <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:2px">
+            <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">${p.gameLabel}</span>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:1px">
+            <span style="font-size:8px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">${p.isSP?'SP · ':''}${p.ip} IP</span>
+            ${ouLine !== null ? `<span style="font-size:8px;color:var(--muted);font-family:'JetBrains Mono',monospace">PROJ:<strong style="color:var(--text)">${ouLine}</strong></span>` : ''}
             ${ouBadge}
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-          <div class="ks-count" style="color:${ksColor}">${p.ks}</div>
-          <div style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">K</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0;flex-shrink:0;min-width:36px">
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;line-height:1;color:${ksColor}">${p.ks}</span>
+          <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:1px">K</span>
         </div>
       </div>`;
     }).join('');
@@ -2056,10 +2071,8 @@ function renderHRPTable() {
   }
 
   const cols = [
-    {key:'timeLabel',  label:'TIME',     r:false, sortable:false},
-    {key:'name',       label:'BATTER',   r:false, sortable:false},
-    {key:'hrSeason',   label:'HR',       r:true,  sortable:true, tip:'Season home runs'},
-    {key:'last10HR',   label:'L10 HR',   r:true,  sortable:true, tip:'Home runs in last 10 games'},
+    {key:'timeLabel', label:'TIME',   r:false, sortable:false},
+    {key:'name',      label:'BATTER', r:false, sortable:false},
   ];
 
   const sorted = [...hrpRows].sort((a,b) => {
@@ -2099,6 +2112,8 @@ function renderHRPTable() {
             </div>
             <div class="hrp-batter-sub" style="gap:4px;flex-wrap:wrap;margin-top:2px">
               ${tl(r.teamAbbr)}<span style="font-size:10px;color:var(--muted)">${r.teamAbbr} · ${r.pos}</span>
+              <span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted)">HR: <strong style="color:${r.hrSeason>=15?'var(--accent2)':r.hrSeason>=8?'var(--text)':'var(--muted)'}">${r.hrSeason||'–'}</strong></span>
+              <span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted)">L10: <strong style="color:${r.last10HR>=2?'var(--accent2)':r.last10HR>=1?'#90ee60':'var(--muted)'}">${r.last10HR??'–'}</strong></span>
               <button class="hrp-matchup-btn" 
                 data-batter-id="${r.id}"
                 data-batter-name="${r.name.replace(/"/g,'&quot;')}"
@@ -2110,9 +2125,6 @@ function renderHRPTable() {
           </div>
         </div>
       </td>
-
-      <td class="r" style="color:${r.hrSeason>=15?'var(--accent2)':r.hrSeason>=8?'var(--text)':'var(--muted)'}">${r.hrSeason||'–'}</td>
-      <td class="r" style="color:${r.last10HR>=2?'var(--accent2)':r.last10HR>=1?'#90ee60':'var(--muted)'}">${r.last10HR??'–'}</td>
     </tr>`;
   }).join('');
 
