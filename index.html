@@ -378,6 +378,12 @@
   }
   .alert-sep { color:#334155; padding:0 6px; font-size:18px; font-weight:300; }
   /* Props live games banner */
+  /* Sleek custom scrollbars */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #1e2d45; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #2a3f5e; }
+  * { scrollbar-width: thin; scrollbar-color: #1e2d45 transparent; }
 </style>
 <meta name="google-adsense-account" content="ca-pub-6433797533342090">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6433797533342090"
@@ -444,13 +450,6 @@
   <section class="section" id="matchups">
     <p class="section-title">PITCHER <span>REPORT</span></p>
     <div id="pr-content"><div class="mu-empty"><span class="spin"></span>Loading today's pitchers…</div></div>
-
-    <div style="margin-top:28px">
-      <p class="section-title" style="font-size:20px">K'S <span>TODAY</span></p>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
-        <div id="ks-today-content"><div class="mu-empty"><span class="spin"></span>Loading strikeout data…</div></div>
-      </div>
-    </div>
   </section>
 
   <section class="section" id="props">
@@ -498,7 +497,7 @@
           <span id="proj-hits-count" style="background:var(--green);color:#0a0e1a;font-family:'Bebas Neue',sans-serif;font-size:18px;padding:2px 10px;border-radius:20px;display:none"></span>
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:400px;overflow-y:auto;overscroll-behavior:contain">
-          <div id="proj-hits-content"><div class="mu-empty" style="color:var(--muted)">Waiting for HRs from projected batters…</div></div>
+          <div id="proj-hits-content"><div class="mu-empty" style="color:var(--muted)">Loading Projection Hits…</div></div>
         </div>
       </div>
     </div>
@@ -517,7 +516,7 @@
         <p class="section-title" style="font-size:20px;margin-bottom:0">K <span>PROPS</span></p>
         <div id="kprops-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)"></div>
       </div>
-      <div id="kprops-content"><div class="mu-empty"><span class="spin"></span>Loading K props…</div></div>
+      <div id="kprops-content" style="max-height:500px;overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--border);border-radius:8px;background:var(--surface)"><div class="mu-empty"><span class="spin"></span>Loading K props…</div></div>
     </div>
 
   </section>
@@ -1561,7 +1560,7 @@ scheduleMidnightRefresh();
 
 // ── K'S TODAY ────────────────────────────────────────────────────────
 async function loadKsToday() {
-  const el = document.getElementById('ks-today-content');
+  const el = document.getElementById('ks-today-props');
   if (!el) return;
   try {
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
@@ -1689,9 +1688,6 @@ async function loadKsToday() {
     }).join('');
 
     el.innerHTML = rows || `<div class="mu-empty">No strikeout data yet.</div>`;
-    // Mirror to Props sidebar
-    const elProps = document.getElementById('ks-today-props');
-    if (elProps) elProps.innerHTML = el.innerHTML;
 
     // ── Patch Pitcher Report rows with live O/U status ──
     allPitchers.forEach(p => {
@@ -1748,15 +1744,12 @@ async function loadKsToday() {
       });
     });
   } catch(e) {
-    const el2 = document.getElementById('ks-today-content');
-    if (el2) el2.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error loading Ks: ${e.message}</div>`;
-    const el3 = document.getElementById('ks-today-props');
-    if (el3) el3.innerHTML = el2?.innerHTML || '';
+    el.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error loading Ks: ${e.message}</div>`;
   }
 }
 
-// Refresh Ks Today every 60s alongside scores
-setInterval(() => { if (document.getElementById('ks-today-content')) loadKsToday(); }, 60000);
+// Refresh Ks Today every 60s
+setInterval(() => { if (document.getElementById('ks-today-props')) loadKsToday(); }, 60000);
 
 
 // ── PROPS LIVE BANNER ────────────────────────────────────────────────
@@ -1962,7 +1955,6 @@ function renderHRPTable() {
   const cols = [
     {key:'timeLabel',  label:'TIME',     r:false, sortable:false},
     {key:'name',       label:'BATTER',   r:false, sortable:false},
-    {key:'pitcherName',label:'VS PITCHER',r:false,sortable:false},
     {key:'hrProb',     label:'HR PROB',  r:true,  sortable:true, tip:'Estimated HR probability per AB'},
     {key:'hrSeason',   label:'HR',       r:true,  sortable:true, tip:'Season home runs'},
     {key:'last10HR',   label:'L10 HR',   r:true,  sortable:true, tip:'Home runs in last 10 games'},
@@ -2005,12 +1997,6 @@ function renderHRPTable() {
               <span class="top-hr-badge" style="${r.hrProb>=8?'':'display:none'}">⚡ TOP HR THREAT</span>
             </div>
           </div>
-        </div>
-      </td>
-      <td>
-        <div style="display:flex;align-items:center;gap:6px;font-size:11px">
-          ${tl(r.oppAbbr)}
-          <span style="color:var(--muted)">${r.pitcherName}</span>
         </div>
       </td>
       <td class="r">
@@ -2122,7 +2108,7 @@ async function loadHRsToday() {
       const countEl = document.getElementById('hrs-today-count');
       if (countEl) countEl.style.display = 'none';
       const projEl = document.getElementById('proj-hits-content');
-      if (projEl) projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">Waiting for HRs from projected batters…</div>`;
+      if (projEl) projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">Loading Projection Hits…</div>`;
       return;
     }
 
@@ -2150,7 +2136,7 @@ async function loadHRsToday() {
     if (projEl) {
       const projHits = allHRs.filter(h => hrpRows.some(r => r.id === h.id));
       if (!projHits.length) {
-        projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">None of our projected batters have hit a HR yet.</div>`;
+        projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">Loading Projection Hits…</div>`;
         const phCount = document.getElementById('proj-hits-count');
         if (phCount) phCount.style.display = 'none';
       } else {
