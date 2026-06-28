@@ -1018,9 +1018,9 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
     if (kpct < 0.18) score += 2; else if (kpct > 0.28) score -= 2;
     if (ops > 0.820) score += 2; else if (ops < 0.680) score -= 1;
     if (pk9 > 10.0) score -= 2; else if (pk9 < 7.0) score += 1;
-    if (score >= 2) return `<span class="matchup-label ml-good">✓ GOOD MATCHUP</span>`;
-    if (score <= -2) return `<span class="matchup-label ml-bad">✗ TOUGH MATCHUP</span>`;
-    return `<span class="matchup-label ml-neutral">~ NEUTRAL</span>`;
+    if (score >= 2) return `<span class="matchup-label ml-good">✓ TOUGH FOR PITCHER</span>`;
+    if (score <= -2) return `<span class="matchup-label ml-bad">✗ TOUGH FOR BATTER</span>`;
+    return `<span class="matchup-label ml-neutral">~ NEUTRAL MATCHUP</span>`;
   }
 
   const cards = withProbs.map((b, i) => {
