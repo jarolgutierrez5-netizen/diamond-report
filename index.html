@@ -279,8 +279,8 @@
   .standings-badge .div-pos { color: var(--green); }
   /* K tags on pitcher rows */
   .k-ou-tag { display:inline-flex; align-items:center; gap:3px; background:#1a0a2e; border:1px solid #6c3aff; color:#b794f4; font-size:9px; font-weight:700; padding:2px 7px; border-radius:4px; letter-spacing:.5px; white-space:nowrap; }
-  .k-ou-over { background:#2a1000; border-color:#f4a261; color:#f4a261; }
-  .k-ou-under { background:#0a1a0a; border-color:#2ecc71; color:#2ecc71; }
+  .k-ou-over { background:#0d2a1a; border-color:#2ecc71; color:#2ecc71; }
+  .k-ou-under { background:#2a0d0d; border-color:#e63946; color:#e63946; }
   .k-proj-tag { display:inline-flex; align-items:center; gap:3px; font-size:9px; font-weight:700; padding:2px 7px; border-radius:4px; letter-spacing:.5px; white-space:nowrap; }
   .k-proj-high { background:#2a1500; border:1px solid #f4a261; color:#f4a261; }
   .k-proj-low  { background:#0d1a0d; border:1px solid #2ecc71; color:#2ecc71; }
@@ -339,9 +339,11 @@
   .kprop-line-val { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:1px; }
   .kprop-line-lbl { font-size:9px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:1px; }
   .kprop-pred { display:flex; flex-direction:column; align-items:center; border-radius:7px; padding:8px 14px; min-width:80px; border:1px solid; }
-  .kprop-over  { background:#2a1500; border-color:#f4a261; color:#f4a261; }
-  .kprop-under { background:#0d1a0d; border-color:#2ecc71; color:#2ecc71; }
+  .kprop-over  { background:#0d2a1a; border-color:#2ecc71; color:#2ecc71; }
+  .kprop-under { background:#2a0d0d; border-color:#e63946; color:#e63946; }
   .kprop-push  { background:var(--surface2); border-color:var(--border); color:var(--muted); }
+  .kprop-push-over  { border-color:#2ecc7188 !important; color:#2ecc71cc !important; }
+  .kprop-push-under { border-color:#e6394688 !important; color:#e63946cc !important; }
   .kprop-pred-val { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:1px; }
   .kprop-pred-lbl { font-size:9px; letter-spacing:1px; text-transform:uppercase; margin-top:1px; opacity:.8; }
   .kprop-reasoning { font-size:10px; color:var(--muted); line-height:1.5; flex:1; min-width:180px; }
@@ -433,10 +435,10 @@
       </div>
     </div>
 
-    <!-- DR K Props -->
+    <!-- K Props -->
     <div style="margin-top:32px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-        <p class="section-title" style="font-size:20px;margin-bottom:0">DR <span>K PROPS</span></p>
+        <p class="section-title" style="font-size:20px;margin-bottom:0">K <span>PROPS</span></p>
         <div id="kprops-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)"></div>
       </div>
       <div id="kprops-content"><div class="mu-empty"><span class="spin"></span>Loading K props…</div></div>
@@ -887,7 +889,7 @@ function renderPRTable() {
     const projK = +(k9 * projIP / 9).toFixed(1);
     // O/U line = projK rounded to nearest .5
     const ouLine = Math.round(projK * 2) / 2;
-    const ouTag = ouLine > 0 ? `<span class="k-ou-tag">${ouLine} K O/U</span>` : '';
+    const ouTag = ouLine > 0 ? `<span class="k-ou-tag" id="ou-tag-${p.id}" data-ou-line="${ouLine}">${ouLine} K O/U</span>` : '';
     if (ouLine > 0) pitcherOULines[p.id] = ouLine;
 
     // K projection: HIGH if K/9 > 9.5, LOW if < 6.5
@@ -1510,6 +1512,7 @@ async function loadKsToday() {
         const team = box?.[side];
         if (!team) return;
         const abbr = side === 'away' ? awayAbbr : homeAbbr;
+        const gameFinal = g.status.abstractGameState === 'Final' || g.status.detailedState === 'Final';
         (team.pitchers || []).forEach(id => {
           const p = team.players?.[`ID${id}`];
           if (!p) return;
@@ -1522,7 +1525,8 @@ async function loadKsToday() {
             ks, ip,
             gameLabel, timeStr,
             gameTimestamp: dt.getTime(),
-            isSP: (team.pitchers || [])[0] === id, // first pitcher = starter
+            isSP: (team.pitchers || [])[0] === id,
+            isFinal: gameFinal,
           });
         });
       });
@@ -1577,6 +1581,61 @@ async function loadKsToday() {
     // Mirror to Props sidebar
     const elProps = document.getElementById('ks-today-props');
     if (elProps) elProps.innerHTML = el.innerHTML;
+
+    // ── Patch Pitcher Report rows with live O/U status ──
+    allPitchers.forEach(p => {
+      const ouLine = pitcherOULines[p.id];
+      if (!ouLine) return;
+
+      // Determine status — only show OVER/UNDER/PUSH if game is live or final
+      let status = null;
+      if (p.isFinal) {
+        status = p.ks > ouLine ? 'over' : p.ks < ouLine ? 'under' : 'push';
+      } else if (p.ks > 0) {
+        // Live game — show current pace
+        status = p.ks > ouLine ? 'over' : p.ks === ouLine ? 'push' : null; // only flag if already exceeded
+      }
+
+      if (!status) return;
+
+      // Patch the ou-tag span in the Pitcher Report table
+      const tagEl = document.getElementById(`ou-tag-${p.id}`);
+      if (tagEl) {
+        if (status === 'over') {
+          tagEl.className = 'k-ou-tag k-ou-over';
+          tagEl.textContent = `▲ OVER ${ouLine} (${p.ks}K)`;
+        } else if (status === 'under') {
+          tagEl.className = 'k-ou-tag k-ou-under';
+          tagEl.textContent = `▼ UNDER ${ouLine} (${p.ks}K)`;
+        } else {
+          tagEl.className = 'k-ou-tag';
+          tagEl.style.borderColor = 'var(--muted)';
+          tagEl.style.color = 'var(--muted)';
+          tagEl.textContent = `PUSH ${ouLine} (${p.ks}K)`;
+        }
+      }
+
+      // Patch K Props rows in Props tab
+      const kpropRows = document.querySelectorAll('.kprop-row');
+      kpropRows.forEach(row => {
+        const nameEl = row.querySelector('.kprop-name');
+        if (!nameEl || !nameEl.textContent.includes(p.name)) return;
+        let predEl = row.querySelector('.kprop-pred');
+        if (!predEl) return;
+        if (status === 'over') {
+          predEl.className = 'kprop-pred kprop-over';
+          predEl.querySelector('.kprop-pred-val').textContent = '▲ OVER';
+          predEl.querySelector('.kprop-pred-lbl').textContent = `${p.ks}K LIVE`;
+        } else if (status === 'under') {
+          predEl.className = 'kprop-pred kprop-under';
+          predEl.querySelector('.kprop-pred-val').textContent = '▼ UNDER';
+          predEl.querySelector('.kprop-pred-lbl').textContent = `${p.ks}K FINAL`;
+        } else {
+          predEl.querySelector('.kprop-pred-val').textContent = 'PUSH';
+          predEl.querySelector('.kprop-pred-lbl').textContent = `${p.ks}K`;
+        }
+      });
+    });
   } catch(e) {
     const el2 = document.getElementById('ks-today-content');
     if (el2) el2.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error loading Ks: ${e.message}</div>`;
@@ -1877,7 +1936,7 @@ async function loadHRsToday() {
   }
 }
 
-// ── DR K PROPS ────────────────────────────────────────────────────────
+// ── K Props ────────────────────────────────────────────────────────
 // Sportsbook odds: pulled at 7am, refreshed by 9am if needed
 // Since direct sportsbook APIs require paid keys, we model projected K lines
 // from pitcher K/9 and opposing lineup K% — displayed as our own projection
@@ -1889,12 +1948,11 @@ async function loadKProps() {
   if (!el) return;
 
   const now = new Date();
-  const hour = now.getHours();
 
   // Only run between 7am–11pm CDT; skip if already loaded today within 2 hours
   if (kPropsLoadedAt) {
     const msSince = now - kPropsLoadedAt;
-    if (msSince < 2 * 60 * 60 * 1000) { renderKProps(); return; } // use cache if < 2h old
+    if (msSince < 2 * 60 * 60 * 1000) { renderKProps(); return; }
   }
 
   try {
@@ -1902,6 +1960,42 @@ async function loadKProps() {
     const schedData = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher&language=en`);
     const entry = schedData.dates?.find(d=>d.date===today)||schedData.dates?.[0];
     const games = entry?.games||[];
+
+    // ── Fetch DraftKings pitcher strikeout props from The Odds API ──
+    const ODDS_KEY = '5977e11fd23bea467834cc76502612b2';
+    const dkLines = {}; // pitcherName (lowercase) -> { line, overOdds, underOdds }
+    try {
+      const oddsData = await fetchJSON(
+        `https://api.the-odds-api.com/v4/sports/baseball_mlb/player-props?apiKey=${ODDS_KEY}&regions=us&markets=pitcher_strikeouts&bookmakers=draftkings&oddsFormat=american`
+      );
+      if (Array.isArray(oddsData)) {
+        oddsData.forEach(event => {
+          event.bookmakers?.forEach(bm => {
+            if (bm.key !== 'draftkings') return;
+            bm.markets?.forEach(mkt => {
+              if (mkt.key !== 'pitcher_strikeouts') return;
+              // Group outcomes by player description
+              const byPlayer = {};
+              mkt.outcomes?.forEach(o => {
+                const key = o.description?.toLowerCase().trim();
+                if (!key) return;
+                if (!byPlayer[key]) byPlayer[key] = {};
+                if (o.name === 'Over') {
+                  byPlayer[key].line = o.point;
+                  byPlayer[key].overOdds = o.price;
+                } else if (o.name === 'Under') {
+                  byPlayer[key].underOdds = o.price;
+                  byPlayer[key].line = byPlayer[key].line ?? o.point;
+                }
+              });
+              Object.assign(dkLines, byPlayer);
+            });
+          });
+        });
+      }
+    } catch(e) {
+      console.warn('DraftKings odds fetch failed:', e.message);
+    }
 
     const props = [];
 
@@ -1926,7 +2020,6 @@ async function loadKProps() {
           whip=parseFloat(ps.whip)||1.25;
         } catch {}
 
-        // Fetch opposing lineup avg K% from boxscore or roster
         let oppKpct = 0.22;
         try {
           const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
@@ -1939,16 +2032,15 @@ async function loadKProps() {
           if(kpcts.length) oppKpct=kpcts.reduce((a,b)=>a+b,0)/kpcts.length;
         } catch {}
 
-        // Project K line: K/9 * projected IP (avg ~5.5 IP) / 9, adjusted by opp K%
         const projIP = Math.min(Math.max(ip / Math.max(wins+losses, 1), 4), 7);
         const baseProj = k9 * projIP / 9;
-        // Adjust: high opp K% boosts pitcher Ks, low opp K% reduces
-        const kpctAdj = (oppKpct - 0.22) * 10; // each 1% above avg ~ 0.1 Ks
+        const kpctAdj = (oppKpct - 0.22) * 10;
         const projK = Math.max(baseProj + kpctAdj, 1);
-        const ouLine = Math.round(projK * 2) / 2; // round to nearest .5
+        const ouLine = Math.round(projK * 2) / 2;
 
-        // Prediction: if projK > ouLine + 0.3 → OVER; if < ouLine - 0.3 → UNDER
-        const pred = projK >= ouLine + 0.3 ? 'OVER' : projK <= ouLine - 0.3 ? 'UNDER' : 'PUSH';
+        const diff = projK - ouLine;
+        const pred = diff >= 0.3 ? 'OVER' : diff <= -0.3 ? 'UNDER' : 'PUSH';
+        const pushLean = diff > 0 ? 'OVER' : diff < 0 ? 'UNDER' : null;
 
         const reasoning = pred==='OVER'
           ? `${pitcher.fullName} averages ${k9.toFixed(1)} K/9. Opp lineup strikes out at ${(oppKpct*100).toFixed(0)}% — projects ${projK.toFixed(1)} Ks.`
@@ -1956,13 +2048,29 @@ async function loadKProps() {
           ? `Opposing lineup makes contact (${(oppKpct*100).toFixed(0)}% K%). Projects ${projK.toFixed(1)} Ks vs line of ${ouLine}.`
           : `Projected ${projK.toFixed(1)} Ks closely matches the ${ouLine} line — lean based on live lineup.`;
 
+        // Match DraftKings line — try full name, then last name
+        const nameKey = pitcher.fullName.toLowerCase().trim();
+        const lastNameKey = pitcher.fullName.split(' ').slice(1).join(' ').toLowerCase().trim();
+        const dkData = dkLines[nameKey] || dkLines[lastNameKey] || null;
+
+        // DR vs DK comparison
+        let dkVsDR = null;
+        if (dkData?.line != null) {
+          const drDiff = projK - dkData.line;
+          dkVsDR = drDiff >= 0.3 ? 'OVER' : drDiff <= -0.3 ? 'UNDER' : 'PUSH';
+        }
+
         props.push({
           pitcherName: pitcher.fullName, pitcherId: pitcher.id,
           teamAbbr: g.teams[side].team.abbreviation,
           oppAbbr: g.teams[opp].team.abbreviation,
           wl:`${wins}-${losses}`, era: era.toFixed(2), k9: k9.toFixed(1),
-          ouLine, projK: projK.toFixed(1), pred, reasoning,
-          timeStr, gameTimestamp: dt.getTime()
+          ouLine, projK: projK.toFixed(1), pred, pushLean, reasoning,
+          timeStr, gameTimestamp: dt.getTime(),
+          dkLine: dkData?.line ?? null,
+          dkOverOdds: dkData?.overOdds ?? null,
+          dkUnderOdds: dkData?.underOdds ?? null,
+          dkVsDR,
         });
       }
     }
@@ -1972,7 +2080,7 @@ async function loadKProps() {
     kPropsLoadedAt = new Date();
     renderKProps();
 
-    if (refreshEl) refreshEl.textContent = `DR projection · Pulled ${kPropsLoadedAt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})} · Note: sportsbook odds require a paid API key — these are DR model projections`;
+    if (refreshEl) refreshEl.textContent = `Updated ${kPropsLoadedAt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
   } catch(e) {
     if(el) el.innerHTML=`<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
@@ -1989,11 +2097,37 @@ function renderKProps() {
   const tl = abbr => { const id=teamIds[abbr]; return id?`<img src="https://www.mlbstatic.com/team-logos/${id}.svg" style="width:20px;height:20px;object-fit:contain;vertical-align:middle" onerror="this.style.display='none'" alt="">`:'' };
 
   el.innerHTML = `
-    <div style="padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;color:var(--muted)">
-      ⚠️ <strong style="color:var(--accent2)">DR PROJECTIONS ONLY</strong> — Sportsbook O/U lines require a paid odds API. These are Diamond Report model projections based on pitcher K/9 and opposing lineup K%. Use as a reference alongside real sportsbook lines.
-    </div>
     ${kPropsData.map(p => {
-      const predCls = p.pred==='OVER'?'kprop-over':p.pred==='UNDER'?'kprop-under':'kprop-push';
+      const predCls = p.pred==='OVER' ? 'kprop-over' : p.pred==='UNDER' ? 'kprop-under' : p.pushLean==='OVER' ? 'kprop-push kprop-push-over' : p.pushLean==='UNDER' ? 'kprop-push kprop-push-under' : 'kprop-push';
+      const predLabel = p.pred==='PUSH' && p.pushLean ? `PUSH (${p.pushLean} LEAN)` : p.pred;
+
+      // DraftKings block
+      let dkBlock = '';
+      if (p.dkLine != null) {
+        const dkOverCls  = p.dkVsDR==='OVER'  ? 'color:#2ecc71;font-weight:700' : 'color:var(--muted)';
+        const dkUnderCls = p.dkVsDR==='UNDER' ? 'color:#e63946;font-weight:700' : 'color:var(--muted)';
+        const fmtOdds = o => o == null ? '' : (o > 0 ? `+${o}` : `${o}`);
+        // DR pick vs DK line
+        const dkPickCls = p.dkVsDR==='OVER' ? 'kprop-over' : p.dkVsDR==='UNDER' ? 'kprop-under' : 'kprop-push';
+        const dkPickLabel = p.dkVsDR || 'PUSH';
+        dkBlock = `
+          <div class="kprop-line" style="border-color:#1a3a5e;background:#060e1a">
+            <div class="kprop-line-val" style="color:#4a9eff">${p.dkLine}</div>
+            <div class="kprop-line-lbl" style="color:#4a9eff">DK LINE</div>
+            <div style="display:flex;gap:4px;margin-top:4px;font-size:9px;font-family:'JetBrains Mono',monospace">
+              <span style="${dkOverCls}">O ${fmtOdds(p.dkOverOdds)}</span>
+              <span style="color:var(--border)">|</span>
+              <span style="${dkUnderCls}">U ${fmtOdds(p.dkUnderOdds)}</span>
+            </div>
+          </div>
+          <div class="kprop-pred ${dkPickCls}" style="min-width:70px">
+            <div class="kprop-pred-val" style="font-size:14px">DR: ${dkPickLabel}</div>
+            <div class="kprop-pred-lbl">vs DK LINE</div>
+          </div>`;
+      } else {
+        dkBlock = `<div class="kprop-line" style="border-color:var(--border);opacity:.4"><div class="kprop-line-val" style="font-size:14px;color:var(--muted)">–</div><div class="kprop-line-lbl">DK LINE</div></div>`;
+      }
+
       return `<div class="kprop-row">
         <img src="${hs(p.pitcherId)}" style="width:38px;height:38px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" onerror="this.style.visibility='hidden'" alt="">
         <div class="kprop-pitcher">
@@ -2005,9 +2139,10 @@ function renderKProps() {
           <div class="kprop-line-lbl">DR LINE</div>
         </div>
         <div class="kprop-pred ${predCls}">
-          <div class="kprop-pred-val">${p.pred}</div>
+          <div class="kprop-pred-val" style="font-size:${p.pred==='PUSH'?'16px':'24px'}">${predLabel}</div>
           <div class="kprop-pred-lbl">${p.projK} PROJ</div>
         </div>
+        ${dkBlock}
         <div class="kprop-reasoning">${p.reasoning}</div>
       </div>`;
     }).join('')}`;
