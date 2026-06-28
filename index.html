@@ -376,6 +376,14 @@
     text-shadow:0 1px 3px rgba(0,0,0,.5);
   }
   .alert-sep { color:#334155; padding:0 6px; font-size:18px; font-weight:300; }
+  /* Props live games banner */
+  .props-game-chip { display:inline-flex; flex-direction:column; align-items:center; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 14px; min-width:140px; position:relative; overflow:hidden; }
+  .props-game-chip::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--live); }
+  .props-game-chip-teams { display:flex; align-items:center; gap:8px; font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1px; }
+  .props-game-chip-score { font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; padding:0 6px; }
+  .props-game-chip-inning { font-size:9px; color:var(--live); font-family:'JetBrains Mono',monospace; font-weight:700; margin-top:3px; letter-spacing:.5px; }
+  .props-score-win { color:var(--green); }
+  .props-score-loss { color:var(--muted); }
 </style>
 <meta name="google-adsense-account" content="ca-pub-6433797533342090">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6433797533342090"
@@ -452,6 +460,15 @@
   </section>
 
   <section class="section" id="props">
+
+    <!-- Live Games Banner -->
+    <div id="props-live-banner" style="display:none;margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div class="live-dot"></div>
+        <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--live)">LIVE GAMES</span>
+      </div>
+      <div id="props-live-games" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+    </div>
 
     <!-- HR Potential -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
@@ -772,6 +789,7 @@ async function loadScores() {
 
     const now = new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
     document.getElementById('scores-refresh').textContent = `Updated ${now}`;
+    updatePropsLiveBanner(live);
   } catch(e) {
     document.getElementById('scores-refresh').textContent = `Error: ${e.message}`;
   }
@@ -1725,7 +1743,41 @@ async function loadKsToday() {
 setInterval(() => { if (document.getElementById('ks-today-content')) loadKsToday(); }, 60000);
 
 
-// ── LIVE ALERT BANNER ────────────────────────────────────────────────
+// ── PROPS LIVE BANNER ────────────────────────────────────────────────
+function updatePropsLiveBanner(liveGames) {
+  const banner = document.getElementById('props-live-banner');
+  const container = document.getElementById('props-live-games');
+  if (!banner || !container) return;
+
+  if (!liveGames.length) {
+    banner.style.display = 'none';
+    return;
+  }
+
+  container.innerHTML = liveGames.map(g => {
+    const awayW = g.awayScore > g.homeScore;
+    const homeW = g.homeScore > g.awayScore;
+    const tl = abbr => { const id = teamIds[abbr]; return id ? `<img src="https://www.mlbstatic.com/team-logos/${id}.svg" style="width:20px;height:20px;object-fit:contain" onerror="this.style.display='none'" alt="${abbr}">` : `<span style="font-size:12px">${abbr}</span>`; };
+    return `<div class="props-game-chip">
+      <div class="props-game-chip-teams">
+        ${tl(g.awayAbbr)}
+        <span style="font-size:13px;color:var(--muted);font-family:'Bebas Neue',sans-serif">${g.awayAbbr}</span>
+        <div class="props-game-chip-score">
+          <span class="${awayW?'props-score-win':'props-score-loss'}">${g.awayScore??0}</span>
+          <span style="color:var(--border);font-size:14px;padding:0 2px">-</span>
+          <span class="${homeW?'props-score-win':'props-score-loss'}">${g.homeScore??0}</span>
+        </div>
+        <span style="font-size:13px;color:var(--muted);font-family:'Bebas Neue',sans-serif">${g.homeAbbr}</span>
+        ${tl(g.homeAbbr)}
+      </div>
+      <div class="props-game-chip-inning">${g.inning || '● LIVE'}</div>
+    </div>`;
+  }).join('');
+
+  banner.style.display = 'block';
+}
+
+
 const bannerHRs  = {}; // batterId -> { name, teamAbbr, count }
 const bannerKs   = {}; // pitcherId -> { name, teamAbbr, ks, ouLine }
 
