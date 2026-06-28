@@ -486,24 +486,27 @@
           <p class="section-title" style="font-size:20px;margin-bottom:0">HR'S <span>TODAY</span></p>
           <span id="hrs-today-count" style="background:var(--accent);color:white;font-family:'Bebas Neue',sans-serif;font-size:18px;padding:2px 10px;border-radius:20px;display:none"></span>
         </div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:400px;overflow-y:auto;overscroll-behavior:contain">
           <div id="hrs-today-content"><div class="mu-empty"><span class="spin"></span>Loading home runs…</div></div>
         </div>
       </div>
 
       <!-- DR Projections That Hit -->
       <div>
-        <p class="section-title" style="font-size:20px;margin-bottom:10px">PROJECTION <span>HITS</span></p>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+          <p class="section-title" style="font-size:20px;margin-bottom:0">PROJECTION <span>HITS</span></p>
+          <span id="proj-hits-count" style="background:var(--green);color:#0a0e1a;font-family:'Bebas Neue',sans-serif;font-size:18px;padding:2px 10px;border-radius:20px;display:none"></span>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:400px;overflow-y:auto;overscroll-behavior:contain">
           <div id="proj-hits-content"><div class="mu-empty" style="color:var(--muted)">Waiting for HRs from projected batters…</div></div>
         </div>
       </div>
     </div>
 
-    <!-- K's Today + K Props stacked below -->
+    <!-- K's Today -->
     <div style="margin-top:32px">
       <p class="section-title" style="font-size:18px;margin-bottom:10px">K'S <span>TODAY</span></p>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:400px;overflow-y:auto;overscroll-behavior:contain">
         <div id="ks-today-props"><div class="mu-empty"><span class="spin"></span>Loading…</div></div>
       </div>
     </div>
@@ -2148,7 +2151,11 @@ async function loadHRsToday() {
       const projHits = allHRs.filter(h => hrpRows.some(r => r.id === h.id));
       if (!projHits.length) {
         projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">None of our projected batters have hit a HR yet.</div>`;
+        const phCount = document.getElementById('proj-hits-count');
+        if (phCount) phCount.style.display = 'none';
       } else {
+        const phCount = document.getElementById('proj-hits-count');
+        if (phCount) { phCount.textContent = `${projHits.length} Hit${projHits.length!==1?'s':''}`; phCount.style.display = 'inline-block'; }
         projEl.innerHTML = projHits.map(h => {
           const proj = hrpRows.find(r => r.id === h.id);
           return `<div class="stat-row" style="background:linear-gradient(90deg,#0d2a1a,#0a1a10);border-left:3px solid var(--green)">
