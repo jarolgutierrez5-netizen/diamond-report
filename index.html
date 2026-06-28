@@ -398,6 +398,28 @@
   ::-webkit-scrollbar-thumb { background: #1e2d45; border-radius: 4px; }
   ::-webkit-scrollbar-thumb:hover { background: #2a3f5e; }
   * { scrollbar-width: thin; scrollbar-color: #1e2d45 transparent; }
+  /* Game Props */
+  .gp-card { padding:14px 16px; border-bottom:1px solid var(--border); }
+  .gp-card:last-child { border-bottom:none; }
+  .gp-matchup { display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+  .gp-team { display:flex; flex-direction:column; align-items:center; gap:3px; min-width:60px; }
+  .gp-team-logo { width:32px; height:32px; object-fit:contain; }
+  .gp-team-abbr { font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:1px; }
+  .gp-vs { font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+  .gp-pick { display:flex; flex-direction:column; align-items:center; border-radius:8px; padding:8px 14px; min-width:90px; border:2px solid; }
+  .gp-pick-win  { background:#0d2a1a; border-color:#2ecc71; color:#2ecc71; }
+  .gp-pick-lose { background:#1a0d0d; border-color:#e63946; color:var(--muted); }
+  .gp-pick-push { background:var(--surface2); border-color:var(--border); color:var(--muted); }
+  .gp-pick-label { font-size:9px; letter-spacing:1px; text-transform:uppercase; margin-bottom:2px; opacity:.8; }
+  .gp-pick-val { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:1px; line-height:1; }
+  .gp-pick-conf { font-size:9px; opacity:.7; margin-top:2px; }
+  .gp-factors { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .gp-factor { display:inline-flex; align-items:center; gap:4px; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:3px 8px; font-size:10px; color:var(--muted); white-space:nowrap; }
+  .gp-factor.pos { border-color:#2ecc7166; color:#2ecc71; }
+  .gp-factor.neg { border-color:#e6394666; color:#e63946; }
+  .gp-factor.neu { border-color:var(--border); color:var(--muted); }
+  .gp-confidence { height:4px; border-radius:2px; background:var(--border); overflow:hidden; margin-top:8px; }
+  .gp-confidence-fill { height:100%; border-radius:2px; }
 </style>
 <meta name="google-adsense-account" content="ca-pub-6433797533342090">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6433797533342090"
@@ -554,6 +576,15 @@
           <div id="proj-hits-content"><div class="mu-empty" style="color:var(--muted)">Loading HR's Completed from Projection…</div></div>
         </div>
       </div>
+    </div>
+
+    <!-- Game Props -->
+    <div style="margin-top:28px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <p class="section-title" style="font-size:20px;margin-bottom:0">GAME <span>PROPS</span></p>
+        <div id="gameprops-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)"></div>
+      </div>
+      <div id="gameprops-content" style="max-height:600px;overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--border);border-radius:8px;background:var(--surface)"><div class="mu-empty"><span class="spin"></span>Loading game props…</div></div>
     </div>
 
     <!-- K Props -->
@@ -1374,7 +1405,261 @@ function sortPR(col) {
 }
 
 
-// ── PAYWALL ───────────────────────────────────────────────────────────
+// ── GAME PROPS ────────────────────────────────────────────────────────
+// Stadium coordinates for weather lookup
+const stadiumCoords = {
+  ARI:{lat:33.445,lon:-112.067,name:'Chase Field',dome:true},
+  ATL:{lat:33.891,lon:-84.468,name:'Truist Park',dome:false},
+  BAL:{lat:39.284,lon:-76.622,name:'Oriole Park',dome:false},
+  BOS:{lat:42.347,lon:-71.097,name:'Fenway Park',dome:false},
+  CHC:{lat:41.948,lon:-87.655,name:'Wrigley Field',dome:false},
+  CWS:{lat:41.830,lon:-87.634,name:'Guaranteed Rate Field',dome:false},
+  CIN:{lat:39.097,lon:-84.506,name:'Great American Ball Park',dome:false},
+  CLE:{lat:41.496,lon:-81.685,name:'Progressive Field',dome:false},
+  COL:{lat:39.756,lon:-104.994,name:'Coors Field',dome:false},
+  DET:{lat:42.339,lon:-83.049,name:'Comerica Park',dome:false},
+  HOU:{lat:29.757,lon:-95.355,name:'Minute Maid Park',dome:true},
+  KC: {lat:39.051,lon:-94.480,name:'Kauffman Stadium',dome:false},
+  LAA:{lat:33.800,lon:-117.883,name:'Angel Stadium',dome:false},
+  LAD:{lat:34.074,lon:-118.240,name:'Dodger Stadium',dome:false},
+  MIA:{lat:25.778,lon:-80.220,name:'loanDepot Park',dome:true},
+  MIL:{lat:43.029,lon:-87.971,name:'American Family Field',dome:true},
+  MIN:{lat:44.981,lon:-93.278,name:'Target Field',dome:false},
+  NYM:{lat:40.757,lon:-73.846,name:'Citi Field',dome:false},
+  NYY:{lat:40.829,lon:-73.926,name:'Yankee Stadium',dome:false},
+  ATH:{lat:37.751,lon:-122.200,name:'Oakland Coliseum',dome:false},
+  OAK:{lat:37.751,lon:-122.200,name:'Oakland Coliseum',dome:false},
+  PHI:{lat:39.906,lon:-75.166,name:'Citizens Bank Park',dome:false},
+  PIT:{lat:40.447,lon:-80.006,name:'PNC Park',dome:false},
+  SD: {lat:32.707,lon:-117.157,name:'Petco Park',dome:false},
+  SF: {lat:37.778,lon:-122.389,name:'Oracle Park',dome:false},
+  SEA:{lat:47.591,lon:-122.332,name:'T-Mobile Park',dome:true},
+  STL:{lat:38.623,lon:-90.193,name:'Busch Stadium',dome:false},
+  TB: {lat:27.768,lon:-82.653,name:'Tropicana Field',dome:true},
+  TEX:{lat:32.751,lon:-97.083,name:'Globe Life Field',dome:true},
+  TOR:{lat:43.641,lon:-79.389,name:'Rogers Centre',dome:true},
+  WSH:{lat:38.873,lon:-77.007,name:'Nationals Park',dome:false},
+};
+
+// Park factors (HR index: 100 = average, >100 = hitter friendly)
+const parkFactors = {
+  COL:145,CIN:112,TEX:108,PHI:107,BOS:106,NYY:105,MIL:104,CWS:103,
+  ATL:102,LAD:101,MIN:101,CHC:100,KC:100,DET:99,SEA:99,STL:98,
+  SD:98,NYM:97,BAL:97,CLE:96,PIT:96,MIA:95,HOU:95,LAA:94,
+  SF:93,WSH:93,OAK:92,TOR:91,TB:91,ARI:90,ATH:92,
+};
+
+let gamePropsLoaded = false;
+
+async function loadGameProps() {
+  const el = document.getElementById('gameprops-content');
+  const refreshEl = document.getElementById('gameprops-refresh');
+  if (!el) return;
+
+  try {
+    const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+    const schedData = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher,linescore&language=en`);
+    const entry = schedData.dates?.find(d=>d.date===today)||schedData.dates?.[0];
+    const games = entry?.games||[];
+
+    if (!games.length) {
+      el.innerHTML = `<div class="mu-empty">No games found for today.</div>`;
+      return;
+    }
+
+    // Fetch pitcher stats + weather for all games in parallel
+    const gameCards = await Promise.all(games.map(async g => {
+      const dt = new Date(g.gameDate);
+      const timeStr = dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'});
+      const awayAbbr = g.teams.away.team.abbreviation;
+      const homeAbbr = g.teams.home.team.abbreviation;
+      const awayP = g.teams.away.probablePitcher;
+      const homeP = g.teams.home.probablePitcher;
+      const state = g.status.abstractGameState;
+      const isLive = state==='Live'||g.status.detailedState==='In Progress';
+      const isFinal = state==='Final';
+
+      // Fetch both pitcher stats
+      const [awayStats, homeStats] = await Promise.all([
+        awayP ? fetchJSON(`https://diamondreport.app/api/v1/people/${awayP.id}?hydrate=stats(group=pitching,type=season,season=2026)`).then(d=>d.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||{}).catch(()=>({})) : Promise.resolve({}),
+        homeP ? fetchJSON(`https://diamondreport.app/api/v1/people/${homeP.id}?hydrate=stats(group=pitching,type=season,season=2026)`).then(d=>d.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||{}).catch(()=>({})) : Promise.resolve({}),
+      ]);
+
+      // Weather (Open-Meteo, free, no key)
+      const stadium = stadiumCoords[homeAbbr] || stadiumCoords[awayAbbr];
+      let weather = null;
+      if (stadium && !stadium.dome) {
+        try {
+          const wd = await fetchJSON(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,windspeed_10m,winddirection_10m,precipitation,weathercode&temperature_unit=fahrenheit&windspeed_unit=mph`);
+          const c = wd.current;
+          weather = {
+            temp: Math.round(c.temperature_2m),
+            wind: Math.round(c.windspeed_10m),
+            windDir: c.winddirection_10m,
+            precip: c.precipitation,
+            code: c.weathercode,
+          };
+        } catch {}
+      }
+
+      // Scoring model — each factor adds/subtracts from home team edge
+      let awayScore = 50, homeScore = 50;
+      const factors = [];
+
+      // Pitcher ERA comparison
+      const awayERA = parseFloat(awayStats.era)||4.5;
+      const homeERA = parseFloat(homeStats.era)||4.5;
+      const eraDiff = awayERA - homeERA;
+      if (Math.abs(eraDiff) > 0.3) {
+        if (eraDiff > 0) { homeScore += Math.min(eraDiff*3, 8); factors.push({team:'home', label:`${homeP?.fullName?.split(' ').pop()||'Home P'} ERA adv (${homeERA.toFixed(2)})`, type:'pos'}); }
+        else { awayScore += Math.min(Math.abs(eraDiff)*3, 8); factors.push({team:'away', label:`${awayP?.fullName?.split(' ').pop()||'Away P'} ERA adv (${awayERA.toFixed(2)})`, type:'pos'}); }
+      }
+
+      // WHIP comparison
+      const awayWHIP = parseFloat(awayStats.whip)||1.3;
+      const homeWHIP = parseFloat(homeStats.whip)||1.3;
+      if (Math.abs(awayWHIP-homeWHIP) > 0.1) {
+        if (awayWHIP > homeWHIP) { homeScore += 4; factors.push({team:'home', label:`WHIP edge (${homeWHIP.toFixed(2)})`, type:'pos'}); }
+        else { awayScore += 4; factors.push({team:'away', label:`WHIP edge (${awayWHIP.toFixed(2)})`, type:'pos'}); }
+      }
+
+      // K/9 — high K pitcher favored
+      const awayK9 = parseFloat(awayStats.strikeoutsPer9Inn)||8;
+      const homeK9 = parseFloat(homeStats.strikeoutsPer9Inn)||8;
+      if (homeK9 > awayK9 + 1) { homeScore += 3; factors.push({team:'home', label:`K/9 edge (${homeK9.toFixed(1)})`, type:'pos'}); }
+      else if (awayK9 > homeK9 + 1) { awayScore += 3; factors.push({team:'away', label:`K/9 edge (${awayK9.toFixed(1)})`, type:'pos'}); }
+
+      // Home field advantage
+      homeScore += 3;
+      factors.push({team:'home', label:'Home field', type:'pos'});
+
+      // Park factor
+      const pf = parkFactors[homeAbbr] || 100;
+      if (pf > 107) factors.push({team:'neutral', label:`${stadiumCoords[homeAbbr]?.name||homeAbbr}: HR-friendly park (${pf})`, type:'neu'});
+      else if (pf < 93) factors.push({team:'neutral', label:`${stadiumCoords[homeAbbr]?.name||homeAbbr}: Pitcher-friendly park (${pf})`, type:'neu'});
+
+      // Weather impact
+      if (weather) {
+        const windImpact = windEffect(weather.windDir, homeAbbr);
+        if (weather.wind > 15) {
+          if (windImpact === 'out') { awayScore += 3; homeScore += 3; factors.push({team:'neutral', label:`Wind blowing out ${weather.wind}mph — HR boost`, type:'pos'}); }
+          else if (windImpact === 'in') { factors.push({team:'neutral', label:`Wind blowing in ${weather.wind}mph — pitcher boost`, type:'neg'}); awayScore -= 2; homeScore -= 2; }
+          else { factors.push({team:'neutral', label:`Wind ${weather.wind}mph crosswind`, type:'neu'}); }
+        }
+        if (weather.temp < 50) factors.push({team:'neutral', label:`Cold ${weather.temp}°F — suppresses offense`, type:'neg'});
+        else if (weather.temp > 85) factors.push({team:'neutral', label:`Hot ${weather.temp}°F — ball carries well`, type:'pos'});
+        if (weather.precip > 0.1) factors.push({team:'neutral', label:`Precipitation: ${weather.precip}mm — delay risk`, type:'neg'});
+      } else if (stadium?.dome) {
+        factors.push({team:'neutral', label:`${stadium.name} — retractable/dome, weather neutral`, type:'neu'});
+      }
+
+      // Determine winner
+      const total = awayScore + homeScore;
+      const awayPct = Math.round((awayScore/total)*100);
+      const homePct = 100 - awayPct;
+      const diff = Math.abs(awayPct - homePct);
+      const confidence = diff < 6 ? 'TOSS-UP' : diff < 12 ? 'LEAN' : diff < 20 ? 'LIKELY' : 'STRONG';
+      const confColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : diff < 20 ? '#2ecc71' : '#00ff88';
+      const winner = awayPct > homePct ? 'away' : 'home';
+      const winnerAbbr = winner==='away' ? awayAbbr : homeAbbr;
+      const winnerPct = winner==='away' ? awayPct : homePct;
+      const loserAbbr  = winner==='away' ? homeAbbr : awayAbbr;
+      const loserPct   = winner==='away' ? homePct : awayPct;
+
+      const awayLogo = teamIds[awayAbbr] ? `<img class="gp-team-logo" src="https://www.mlbstatic.com/team-logos/${teamIds[awayAbbr]}.svg" onerror="this.style.display='none'" alt="">` : '';
+      const homeLogo = teamIds[homeAbbr] ? `<img class="gp-team-logo" src="https://www.mlbstatic.com/team-logos/${teamIds[homeAbbr]}.svg" onerror="this.style.display='none'" alt="">` : '';
+      const winLogo  = teamIds[winnerAbbr] ? `<img src="https://www.mlbstatic.com/team-logos/${teamIds[winnerAbbr]}.svg" style="width:22px;height:22px;object-fit:contain" onerror="this.style.display='none'" alt="">` : '';
+
+      const statusBadge = isLive
+        ? `<span style="background:#2a0000;color:var(--live);font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;border:1px solid var(--live)">● LIVE</span>`
+        : isFinal ? `<span style="font-size:9px;color:var(--muted)">FINAL</span>` : `<span style="font-size:9px;color:var(--accent2);font-family:'JetBrains Mono',monospace">${timeStr}</span>`;
+
+      const factorChips = factors.slice(0,6).map(f =>
+        `<span class="gp-factor ${f.type}">${f.label}</span>`
+      ).join('');
+
+      const confBarW = Math.min(winnerPct, 100);
+      const confBarColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : '#2ecc71';
+
+      return `<div class="gp-card">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <!-- Teams -->
+          <div class="gp-matchup" style="flex:1;min-width:180px">
+            <div class="gp-team">
+              ${awayLogo}
+              <span class="gp-team-abbr">${awayAbbr}</span>
+              <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">${awayP?.fullName?.split(' ').pop()||'TBD'}</span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+              <span class="gp-vs">@</span>
+              ${statusBadge}
+            </div>
+            <div class="gp-team">
+              ${homeLogo}
+              <span class="gp-team-abbr">${homeAbbr}</span>
+              <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">${homeP?.fullName?.split(' ').pop()||'TBD'}</span>
+            </div>
+          </div>
+
+          <!-- DR Pick -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">DR Pick</span>
+            <div class="gp-pick gp-pick-win" style="display:flex;flex-direction:row;align-items:center;gap:8px;padding:8px 16px">
+              ${winLogo}
+              <div style="display:flex;flex-direction:column;align-items:center">
+                <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;line-height:1;color:#2ecc71">${winnerAbbr}</span>
+                <span style="font-size:9px;color:#2ecc71;opacity:.8">${winnerPct}% WIN</span>
+              </div>
+            </div>
+            <span style="font-size:10px;font-weight:700;color:${confColor};letter-spacing:.5px">${confidence}</span>
+          </div>
+
+          <!-- Win % bars -->
+          <div style="display:flex;flex-direction:column;gap:4px;min-width:120px">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-width:28px">${awayAbbr}</span>
+              <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+                <div style="width:${awayPct}%;height:100%;background:${winner==='away'?'#2ecc71':'var(--muted)'};border-radius:4px"></div>
+              </div>
+              <span style="font-size:10px;font-family:'JetBrains Mono',monospace;min-width:30px;text-align:right;color:${winner==='away'?'#2ecc71':'var(--muted)'}">${awayPct}%</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-width:28px">${homeAbbr}</span>
+              <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+                <div style="width:${homePct}%;height:100%;background:${winner==='home'?'#2ecc71':'var(--muted)'};border-radius:4px"></div>
+              </div>
+              <span style="font-size:10px;font-family:'JetBrains Mono',monospace;min-width:30px;text-align:right;color:${winner==='home'?'#2ecc71':'var(--muted)'}">${homePct}%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Key factors -->
+        <div class="gp-factors">${factorChips}</div>
+      </div>`;
+    }));
+
+    el.innerHTML = gameCards.join('') || `<div class="mu-empty">No game data available.</div>`;
+    const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    if (refreshEl) refreshEl.textContent = `Last updated ${now}`;
+    gamePropsLoaded = true;
+
+  } catch(e) {
+    if (el) el.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
+  }
+}
+
+function windEffect(deg, homeAbbr) {
+  // Simplified: wind blowing toward RF (80-130°) = blowing out for RHB
+  // This is a rough approximation without stadium-specific orientation
+  if (deg >= 60 && deg <= 150) return 'out';
+  if (deg >= 240 && deg <= 330) return 'in';
+  return 'cross';
+}
+
+// Refresh game props every 5 minutes when loaded
+setInterval(() => { if (gamePropsLoaded) loadGameProps(); }, 5 * 60 * 1000);
+
+
 const PROMO_CODE = 'BIGMONEY';
 let matchupUnlocked = sessionStorage.getItem('matchupUnlocked') === 'true';
 let pendingMatchup = null; // stores args while paywall is open
@@ -2598,6 +2883,7 @@ function initPropsTab() {
   loadHRPotential();
   loadHRsToday();
   scheduleKPropsLoad();
+  loadGameProps();
 }
 
 // Auto-refresh Props tab every 60s
