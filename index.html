@@ -1739,13 +1739,14 @@ async function loadKsToday() {
         (team.pitchers || []).forEach(id => {
           const p = team.players?.[`ID${id}`];
           if (!p) return;
-          const ks = parseInt(p.stats?.pitching?.strikeOuts) || 0;
-          const ip = p.stats?.pitching?.inningsPitched || '0.0';
+          const ks  = parseInt(p.stats?.pitching?.strikeOuts) || 0;
+          const ip  = p.stats?.pitching?.inningsPitched || '0.0';
+          const hrs = parseInt(p.stats?.pitching?.homeRuns) || 0;
           allPitchers.push({
             name: p.person?.fullName || '–',
             id: p.person?.id,
             teamAbbr: abbr,
-            ks, ip,
+            ks, ip, hrs,
             gameLabel, timeStr,
             gameTimestamp: dt.getTime(),
             isSP: (team.pitchers || [])[0] === id,
@@ -1823,6 +1824,7 @@ async function loadKsToday() {
           </div>
           <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:1px">
             <span style="font-size:8px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">${p.isSP?'SP · ':''}${p.ip} IP</span>
+            ${p.hrs > 0 ? `<span style="background:#2a0d0d;color:var(--accent);font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid #e6394644;white-space:nowrap">💥 ${p.hrs} HR${p.hrs>1?'s':''} allowed</span>` : ''}
             ${ouLine !== null ? `<span style="font-size:8px;color:var(--muted);font-family:'JetBrains Mono',monospace">PROJ:<strong style="color:var(--text)">${ouLine}</strong></span>` : ''}
             ${ouBadge}
           </div>
