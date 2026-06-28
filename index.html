@@ -1989,12 +1989,14 @@ function renderHRPTable() {
       <td>
         <div class="hrp-batter-cell">
           <img class="hrp-headshot" src="${hs(r.id)}" onerror="this.style.visibility='hidden'" alt="">
-          <div class="hrp-batter-info" style="gap:1px">
-            <span class="hrp-batter-name" style="color:${homerToday?'var(--accent2)':'var(--text)'}">${r.name}</span>
-            <div class="hrp-batter-sub" style="gap:5px;flex-wrap:wrap">
-              ${tl(r.teamAbbr)}<span style="font-size:10px;color:var(--muted)">${r.teamAbbr} · ${r.pos}</span>
+          <div class="hrp-batter-info" style="gap:0">
+            <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+              <span class="hrp-batter-name" style="color:${homerToday?'var(--accent2)':'var(--text)'}">${r.name}</span>
               ${homerToday?`<span style="background:#2a1500;color:#f4a261;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166;white-space:nowrap">💥 HR TODAY${r.todayHR>1?' ×'+r.todayHR:''}</span>`:''}
-              <span class="top-hr-badge" style="${r.hrProb>=8?'':'display:none'}">⚡ TOP HR THREAT</span>
+              ${r.hrProb>=8?`<span class="top-hr-badge">⚡ TOP HR THREAT</span>`:''}
+            </div>
+            <div class="hrp-batter-sub" style="gap:4px;flex-wrap:wrap;margin-top:1px">
+              ${tl(r.teamAbbr)}<span style="font-size:10px;color:var(--muted)">${r.teamAbbr} · ${r.pos}</span>
             </div>
           </div>
         </div>
