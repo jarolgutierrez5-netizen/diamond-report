@@ -122,7 +122,7 @@
     .props-grid > div:last-child { max-height: 300px; }
 
     /* HR Potential table scroll */
-    #hr-potential-content { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    #hr-potential-content { overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
     .hrp-table { min-width: 480px; }
     .hrp-headshot { width: 28px; height: 28px; }
     .hrp-batter-name { font-size: 12px; }
@@ -310,6 +310,7 @@
   .hrp-table tbody tr { border-bottom:1px solid var(--border); transition:background .1s; }
   .hrp-table tbody tr:hover { background:var(--surface2); }
   .hrp-table tbody tr.hr-today-row { background:linear-gradient(90deg,#2a1a00,#1a1200); border-left:3px solid var(--accent2); }
+  .hrp-table tbody tr.hrp-live-row { background:linear-gradient(90deg,#1a0000,#0d0000); border-left:3px solid var(--live); }
   .hrp-table tbody td { padding:10px 10px; vertical-align:middle; font-size:12px; }
   .hrp-table tbody td.r { text-align:right; font-family:'JetBrains Mono',monospace; font-size:11px; }
   .hrp-batter-cell { display:flex; align-items:center; gap:10px; }
@@ -947,7 +948,7 @@ function renderPRTable() {
   }).join('');
 
   el.innerHTML = `
-    <div style="overflow-x:auto">
+    <div style="overflow-x:auto;overscroll-behavior-x:contain;touch-action:pan-y">
       <table class="pr-table">
         <thead><tr>${ths}</tr></thead>
         <tbody>${rows}</tbody>
@@ -1798,15 +1799,20 @@ function renderHRPTable() {
 
   const rows = sorted.map(r => {
     const homerToday = r.todayHR > 0;
-    const rowCls = homerToday ? ' class="hr-today-row"' : '';
+    const isLive = r.timeLabel.includes('LIVE');
+    const rowCls = homerToday ? ' class="hr-today-row"' : isLive ? ' class="hrp-live-row"' : '';
     const maxProbInList = Math.max(...hrpRows.map(x=>x.hrProb), 1);
     const barPct = (r.hrProb / maxProbInList) * 100;
     const barColor = r.hrProb >= 8 ? '#f4a261' : r.hrProb >= 5 ? '#e63946' : '#2ecc71';
     const fmtAvg = v => v>0 ? v.toFixed(3).replace(/^0/,'') : '–';
     const fmtIso = v => v>0 ? v.toFixed(3).replace(/^0/,'') : '–';
 
+    const timeCellHtml = isLive
+      ? `<span style="background:#2a0000;color:var(--live);font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;border:1px solid var(--live);letter-spacing:.5px;animation:pulse 1s infinite;display:inline-block">● LIVE</span>`
+      : `<span style="font-size:11px;font-family:'JetBrains Mono',monospace;color:${r.timeColor}">${r.timeLabel}</span>`;
+
     return `<tr${rowCls} id="hrp-row-${r.id}">
-      <td><span style="font-size:11px;font-family:'JetBrains Mono',monospace;color:${r.timeColor};font-weight:${r.timeLabel.includes('LIVE')?700:400}">${r.timeLabel}</span></td>
+      <td>${timeCellHtml}</td>
       <td>
         <div class="hrp-batter-cell">
           <img class="hrp-headshot" src="${hs(r.id)}" onerror="this.style.visibility='hidden'" alt="">
@@ -1844,7 +1850,7 @@ function renderHRPTable() {
     return `<th class="${cls}"${tip} onclick="sortHRP('${c.key}')">${c.label}</th>`;
   }).join('');
 
-  el.innerHTML = `<div style="overflow-x:auto"><table class="hrp-table"><thead><tr>${ths}</tr></thead><tbody>${rows}</tbody></table></div>
+  el.innerHTML = `<div style="overflow-x:auto;overscroll-behavior-x:contain;touch-action:pan-y"><table class="hrp-table"><thead><tr>${ths}</tr></thead><tbody>${rows}</tbody></table></div>
     <div style="margin-top:8px;font-size:10px;color:var(--muted)">HR Prob = blend of batter HR/AB (60%) + pitcher HR/9 rate (40%) · Sorted by HR probability</div>`;
 }
 
@@ -2102,7 +2108,7 @@ function renderKProps() {
   const hs = id => `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_38,q_auto:best/v1/people/${id}/headshot/67/current`;
   const tl = abbr => { const id=teamIds[abbr]; return id?`<img src="https://www.mlbstatic.com/team-logos/${id}.svg" style="width:20px;height:20px;object-fit:contain;vertical-align:middle" onerror="this.style.display='none'" alt="">`:'' };
 
-  el.innerHTML = `
+  el.innerHTML = `<div style="overflow-x:auto;overscroll-behavior-x:contain;touch-action:pan-y;min-width:0">
     ${kPropsData.map(p => {
       const predCls = p.pred==='OVER' ? 'kprop-over' : p.pred==='UNDER' ? 'kprop-under' : p.pushLean==='OVER' ? 'kprop-push kprop-push-over' : p.pushLean==='UNDER' ? 'kprop-push kprop-push-under' : 'kprop-push';
       const predLabel = p.pred==='PUSH' && p.pushLean ? `PUSH (${p.pushLean} LEAN)` : p.pred;
@@ -2151,7 +2157,7 @@ function renderKProps() {
         ${dkBlock}
         <div class="kprop-reasoning">${p.reasoning}</div>
       </div>`;
-    }).join('')}`;
+    }).join('')}</div>`;
 }
 
 // Schedule 7am load + 9am refresh for K Props
@@ -2203,12 +2209,28 @@ function showTab(id, el) {
   document.getElementById(id).classList.add('active');
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
+  sessionStorage.setItem('activeTab', id);
   if (id === 'matchups' && !matchupLoaded) {
     matchupLoaded = true;
     loadPitcherReport();
   }
   if (id === 'props') initPropsTab();
 }
+
+// Restore last active tab on page load
+(function restoreTab() {
+  const saved = sessionStorage.getItem('activeTab');
+  if (!saved || saved === 'scores') return; // scores is default, no action needed
+  const tabEl = document.querySelector(`.tab[onclick*="'${saved}'"]`);
+  const sectionEl = document.getElementById(saved);
+  if (!tabEl || !sectionEl) return;
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  sectionEl.classList.add('active');
+  tabEl.classList.add('active');
+  if (saved === 'matchups' && !matchupLoaded) { matchupLoaded = true; loadPitcherReport(); }
+  if (saved === 'props') initPropsTab();
+})();
 
 </script>
 </body>
