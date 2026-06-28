@@ -194,11 +194,6 @@
   .standings-badge { font-size: 9px; color: var(--muted); margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
   .standings-badge .gb-num { color: var(--accent2); }
   .standings-badge .div-pos { color: var(--green); }
-
-  /* History tab */
-  .hist-nav-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif; transition: border-color .15s; }
-  .hist-nav-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .hist-nav-btn:disabled { opacity: .3; cursor: not-allowed; }
   /* K tags on pitcher rows */
   .k-ou-tag { display:inline-flex; align-items:center; gap:3px; background:#1a0a2e; border:1px solid #6c3aff; color:#b794f4; font-size:9px; font-weight:700; padding:2px 7px; border-radius:4px; letter-spacing:.5px; white-space:nowrap; }
   .k-ou-over { background:#2a1000; border-color:#f4a261; color:#f4a261; }
@@ -279,7 +274,6 @@
 <nav class="nav">
   <div class="tab active" onclick="showTab('scores', this)">Live Scores</div>
   <div class="tab" onclick="showTab('standings', this)">Standings</div>
-  <div class="tab" onclick="showTab('history', this)">Previous Scores</div>
   <div class="tab" onclick="showTab('props', this)">Props</div>
   <div class="tab" onclick="showTab('matchups', this)">Pitcher Report</div>
   <div class="tab" onclick="showTab('schedule', this)">Schedule</div>
@@ -347,23 +341,6 @@
       <div id="kprops-content"><div class="mu-empty"><span class="spin"></span>Loading K props…</div></div>
     </div>
 
-  </section>
-
-
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
-      <p class="section-title" style="margin-bottom:0">PREVIOUS <span>SCORES</span></p>
-      <div style="display:flex;align-items:center;gap:10px">
-        <button class="hist-nav-btn" onclick="historyNav(-1)">← Prev</button>
-        <div style="display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;position:relative">
-          <span id="history-date-display" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);min-width:90px"></span>
-          <input type="date" id="history-date" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" onchange="loadHistory(this.value)">
-        </div>
-        <button class="hist-nav-btn" onclick="historyNav(1)">Next →</button>
-      </div>
-    </div>
-    <div id="history-label" style="font-size:11px;color:var(--muted);margin-bottom:12px;font-family:'JetBrains Mono',monospace"></div>
-    <div id="history-live" style="margin-bottom:20px"></div>
-    <div id="history-final"></div>
   </section>
 
   <section class="section" id="schedule">
@@ -536,7 +513,7 @@ function scoresDiffer(a, b) {
 
 async function loadScores() {
   const today = new Date().toLocaleDateString('en-CA', {timeZone: 'America/Chicago'});
-  const url = `https://api.diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=linescore,team&language=en`;
+  const url = `https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=linescore,team&language=en`;
   try {
     const data = await fetchJSON(url);
     const dateEntry = data.dates?.find(d => d.date === today) || data.dates?.[0];
@@ -712,7 +689,7 @@ async function loadPitcherReport() {
   const el = document.getElementById('pr-content');
   try {
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
-    const schedData = await fetchJSON(`https://api.diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher&language=en`);
+    const schedData = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher&language=en`);
     const entry = schedData.dates?.find(d => d.date === today) || schedData.dates?.[0];
     const games = entry?.games || [];
     if (!games.length) { el.innerHTML = '<div class="mu-empty">No games scheduled today.</div>'; return; }
@@ -746,7 +723,7 @@ async function loadPitcherReport() {
 
     const statsArr = await Promise.all(pitchers.map(async p => {
       try {
-        const d = await fetchJSON(`https://api.diamondreport.app/api/v1/people/${p.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
+        const d = await fetchJSON(`https://diamondreport.app/api/v1/people/${p.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
         return d.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || {};
       } catch { return {}; }
     }));
@@ -959,12 +936,12 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
 
   try {
     const oppSide = side === 'away' ? 'home' : 'away';
-    const box = await fetchJSON(`https://api.diamondreport.app/api/v1/game/${gamePk}/boxscore`);
+    const box = await fetchJSON(`https://diamondreport.app/api/v1/game/${gamePk}/boxscore`);
     const teamBox = box.teams?.[oppSide];
     let batters = (teamBox?.batters || []).map(id => teamBox.players[`ID${id}`]).filter(Boolean);
 
     if (!batters.length) {
-      const rosterData = await fetchJSON(`https://api.diamondreport.app/api/v1/teams/${oppTeamId}/roster?rosterType=active&hydrate=stats(group=hitting,type=season,season=2026)`);
+      const rosterData = await fetchJSON(`https://diamondreport.app/api/v1/teams/${oppTeamId}/roster?rosterType=active&hydrate=stats(group=hitting,type=season,season=2026)`);
       batters = (rosterData.roster || [])
         .filter(p => !['P','TWP'].includes(p.position?.abbreviation))
         .sort((a,b) => (b.stats?.[0]?.splits?.[0]?.stat?.atBats||0) - (a.stats?.[0]?.splits?.[0]?.stat?.atBats||0))
@@ -979,8 +956,8 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
       if (!id) return { seasonStats: b.seasonStats?.batting || {}, last10HR: null, todayHR: 0 };
       try {
         const [seasonData, logData] = await Promise.all([
-          fetchJSON(`https://api.diamondreport.app/api/v1/people/${id}?hydrate=stats(group=hitting,type=season,season=2026)`),
-          fetchJSON(`https://api.diamondreport.app/api/v1/people/${id}/stats?stats=gameLog&group=hitting&season=2026&gameType=R`)
+          fetchJSON(`https://diamondreport.app/api/v1/people/${id}?hydrate=stats(group=hitting,type=season,season=2026)`),
+          fetchJSON(`https://diamondreport.app/api/v1/people/${id}/stats?stats=gameLog&group=hitting&season=2026&gameType=R`)
         ]);
         const seasonStats = seasonData.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || b.seasonStats?.batting || {};
         const gameLogs    = logData.stats?.[0]?.splits || [];
@@ -1187,9 +1164,9 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
   try {
     // Parallel fetch: H2H career stats, batter season stats, pitcher season stats
     const [h2hData, batterData, pitcherData] = await Promise.all([
-      fetchJSON(`https://api.diamondreport.app/api/v1/people/${batterId}/stats?stats=vsPlayer&opposingPlayerId=${pitcherId}&group=hitting&season=2026`),
-      fetchJSON(`https://api.diamondreport.app/api/v1/people/${batterId}?hydrate=stats(group=hitting,type=season,season=2026)`),
-      fetchJSON(`https://api.diamondreport.app/api/v1/people/${pitcherId}?hydrate=stats(group=pitching,type=season,season=2026)`)
+      fetchJSON(`https://diamondreport.app/api/v1/people/${batterId}/stats?stats=vsPlayer&opposingPlayerId=${pitcherId}&group=hitting&season=2026`),
+      fetchJSON(`https://diamondreport.app/api/v1/people/${batterId}?hydrate=stats(group=hitting,type=season,season=2026)`),
+      fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}?hydrate=stats(group=pitching,type=season,season=2026)`)
     ]);
 
     const h2h = h2hData.stats?.[0]?.splits?.[0]?.stat || {};
@@ -1422,135 +1399,12 @@ function scheduleMidnightRefresh() {
     updateHeaderDate();
     Object.keys(prevGames).forEach(k => delete prevGames[k]); // clear game cache
     loadScores(); // reload with new day's games
-    resetHistoryToYesterday(); // update previous scores to new yesterday
     scheduleMidnightRefresh(); // reschedule for next midnight
   }, msUntilMidnight);
 }
 scheduleMidnightRefresh();
 
-// ── PREVIOUS SCORES TAB ───────────────────────────────────────────────
-let historyCurrentDate = null;
 
-function historyCardHTML(g, abbr2id) {
-  function logoHTML(abbr) {
-    const id = teamIds[abbr];
-    return id ? `<img class="team-logo" src="https://www.mlbstatic.com/team-logos/${id}.svg" alt="${abbr}" onerror="this.style.display='none'">` : '';
-  }
-  const away = g.teams.away, home = g.teams.home;
-  const awayAbbr = away.team.abbreviation, homeAbbr = home.team.abbreviation;
-  const awayScore = away.score ?? null, homeScore = home.score ?? null;
-  const state = g.status.abstractGameState;
-  const isFinal = state === 'Final' || g.status.detailedState === 'Final';
-  const isLive = state === 'Live' || g.status.detailedState === 'In Progress';
-  const cls = isLive ? 'live' : isFinal ? 'closed' : 'scheduled';
-  const label = isLive ? 'LIVE' : isFinal ? 'FINAL' : g.status.detailedState || 'SCHEDULED';
-  const dt = new Date(g.gameDate);
-  const timeStr = dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'}) + ' CDT';
-  const sl = buildStandingsLookup();
-
-  let scoreHTML = '';
-  if (awayScore !== null && homeScore !== null) {
-    const awayW = awayScore > homeScore, homeW = homeScore > awayScore;
-    scoreHTML = `<div class="score-block">
-      <span class="${awayW?'score-win':'score-loss'}">${awayScore}</span>
-      <span class="score-sep">–</span>
-      <span class="${homeW?'score-win':'score-loss'}">${homeScore}</span>
-    </div>`;
-  } else {
-    scoreHTML = `<div style="font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--accent2);padding:0 8px">VS</div>`;
-  }
-  return `<div class="game-card ${cls}">
-    <div class="game-status ${cls}">${label}</div>
-    <div class="matchup">
-      ${teamBlock(awayAbbr, away.team.shortName||away.team.teamName, sl)}
-      ${scoreHTML}
-      ${teamBlock(homeAbbr, home.team.shortName||home.team.teamName, sl)}
-    </div>
-    <div class="game-time">${timeStr}</div>
-  </div>`;
-}
-
-async function loadHistory(dateStr) {
-  if (!dateStr) return;
-  historyCurrentDate = dateStr;
-  document.getElementById('history-date').value = dateStr;
-  // Always show numeric date (MM/DD/YYYY) — avoids browser showing "Yesterday"/"Today"
-  const [y,m,d] = dateStr.split('-');
-  const displayEl = document.getElementById('history-date-display');
-  if (displayEl) displayEl.textContent = `${m}/${d}/${y} 📅`;
-
-  const dt = new Date(dateStr + 'T12:00:00');
-  const label = dt.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).toUpperCase();
-  document.getElementById('history-label').textContent = label;
-  document.getElementById('history-final').innerHTML = `<div class="mu-empty"><span class="spin"></span> Loading scores for ${label}…</div>`;
-  document.getElementById('history-live').innerHTML = '';
-
-  // Disable next button if date is today or future
-  const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
-  const nextBtn = document.querySelector('.hist-nav-btn:last-child');
-  if (nextBtn) nextBtn.disabled = dateStr >= today;
-
-  try {
-    const data = await fetchJSON(`https://api.diamondreport.app/api/v1/schedule?sportId=1&date=${dateStr}&hydrate=linescore,team&language=en`);
-    const entry = data.dates?.find(d => d.date === dateStr) || data.dates?.[0];
-    const games = entry?.games || [];
-
-    if (!games.length) {
-      document.getElementById('history-final').innerHTML = `<div class="mu-empty">No games found for this date.</div>`;
-      return;
-    }
-
-    const live = [], final = [], other = [];
-    games.forEach(g => {
-      const state = g.status.abstractGameState;
-      if (state === 'Live' || g.status.detailedState === 'In Progress') live.push(g);
-      else if (state === 'Final') final.push(g);
-      else other.push(g);
-    });
-
-    if (live.length) {
-      document.getElementById('history-live').innerHTML = `
-        <div class="live-badge" style="margin-bottom:10px"><div class="live-dot"></div>IN PROGRESS</div>
-        <div class="games-grid">${live.map(g => historyCardHTML(g)).join('')}</div>`;
-    }
-
-    document.getElementById('history-final').innerHTML = final.length
-      ? `<p class="section-title" style="font-size:18px;margin-bottom:12px">FINAL <span>SCORES</span></p>
-         <div class="games-grid">${final.map(g => historyCardHTML(g)).join('')}</div>
-         ${other.length ? `<p class="section-title" style="font-size:16px;margin:16px 0 10px">SCHEDULED</p><div class="games-grid">${other.map(g=>historyCardHTML(g)).join('')}</div>` : ''}`
-      : `<div class="mu-empty">No final scores yet for this date.</div>`;
-  } catch(e) {
-    document.getElementById('history-final').innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
-  }
-}
-
-function historyNav(dir) {
-  const base = historyCurrentDate
-    ? new Date(historyCurrentDate + 'T12:00:00')
-    : new Date();
-  base.setDate(base.getDate() + dir);
-  const newDate = base.toLocaleDateString('en-CA');
-  const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
-  if (newDate > today) return;
-  loadHistory(newDate);
-}
-
-// Init history tab with yesterday's date
-function getYesterday() {
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  return yesterday.toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
-}
-
-function resetHistoryToYesterday() {
-  historyCurrentDate = null; // force reload
-  loadHistory(getYesterday());
-}
-
-function initHistoryTab() {
-  if (historyCurrentDate) return; // already loaded for today
-  loadHistory(getYesterday());
-}
 
 
 // ── K'S TODAY ────────────────────────────────────────────────────────
@@ -1559,7 +1413,7 @@ async function loadKsToday() {
   if (!el) return;
   try {
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
-    const data = await fetchJSON(`https://api.diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team&language=en`);
+    const data = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team&language=en`);
     const entry = data.dates?.find(d => d.date === today) || data.dates?.[0];
     const games = entry?.games || [];
 
@@ -1577,7 +1431,7 @@ async function loadKsToday() {
       let box = g.teams;
       if (!box?.away?.pitchers) {
         try {
-          const bd = await fetchJSON(`https://api.diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
+          const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
           box = bd.teams;
         } catch { continue; }
       }
@@ -1673,7 +1527,7 @@ async function loadHRPotential() {
   const refresh = document.getElementById('props-refresh');
   try {
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
-    const schedData = await fetchJSON(`https://api.diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher&language=en`);
+    const schedData = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher&language=en`);
     const entry = schedData.dates?.find(d => d.date === today) || schedData.dates?.[0];
     const games = entry?.games || [];
 
@@ -1697,7 +1551,7 @@ async function loadHRPotential() {
         // Fetch pitcher stats
         let pitcherHr9 = 0, pitcherAvg = .240, pitcherSlg = .380;
         try {
-          const pd = await fetchJSON(`https://api.diamondreport.app/api/v1/people/${pitcher.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
+          const pd = await fetchJSON(`https://diamondreport.app/api/v1/people/${pitcher.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
           const ps = pd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || {};
           pitcherHr9 = parseFloat(ps.homeRunsPer9) || 0;
           pitcherAvg = parseFloat(ps.avg) || .240;
@@ -1709,7 +1563,7 @@ async function loadHRPotential() {
         const batterSide = side;
         let batters = [];
         try {
-          const bd = await fetchJSON(`https://api.diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
+          const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
           const teamBox = bd.teams?.[batterSide];
           batters = (teamBox?.batters || []).map(id => {
             const p = teamBox.players[`ID${id}`];
@@ -1728,8 +1582,8 @@ async function loadHRPotential() {
             let last10HR = null, todayHR = 0;
             try {
               const [sd, ld] = await Promise.all([
-                fetchJSON(`https://api.diamondreport.app/api/v1/people/${pid}?hydrate=stats(group=hitting,type=season,season=2026)`),
-                fetchJSON(`https://api.diamondreport.app/api/v1/people/${pid}/stats?stats=gameLog&group=hitting&season=2026&gameType=R`)
+                fetchJSON(`https://diamondreport.app/api/v1/people/${pid}?hydrate=stats(group=hitting,type=season,season=2026)`),
+                fetchJSON(`https://diamondreport.app/api/v1/people/${pid}/stats?stats=gameLog&group=hitting&season=2026&gameType=R`)
               ]);
               s = sd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || s;
               const logs = ld.stats?.[0]?.splits || [];
@@ -1899,7 +1753,7 @@ async function loadHRsToday() {
   if (!el) return;
   try {
     const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
-    const data = await fetchJSON(`https://api.diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team&language=en`);
+    const data = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team&language=en`);
     const entry = data.dates?.find(d=>d.date===today)||data.dates?.[0];
     const games = entry?.games||[];
 
@@ -1912,7 +1766,7 @@ async function loadHRsToday() {
 
       let box = g.teams;
       if (!box?.away?.batters) {
-        try { const bd = await fetchJSON(`https://api.diamondreport.app/api/v1/game/${g.gamePk}/boxscore`); box=bd.teams; } catch { continue; }
+        try { const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`); box=bd.teams; } catch { continue; }
       }
 
       ['away','home'].forEach(side => {
@@ -1976,7 +1830,7 @@ async function loadKProps() {
 
   try {
     const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
-    const schedData = await fetchJSON(`https://api.diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher&language=en`);
+    const schedData = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher&language=en`);
     const entry = schedData.dates?.find(d=>d.date===today)||schedData.dates?.[0];
     const games = entry?.games||[];
 
@@ -1994,7 +1848,7 @@ async function loadKProps() {
 
         let k9=8, ip=0, wins=0, losses=0, era=4.00, whip=1.25;
         try {
-          const pd = await fetchJSON(`https://api.diamondreport.app/api/v1/people/${pitcher.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
+          const pd = await fetchJSON(`https://diamondreport.app/api/v1/people/${pitcher.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
           const ps=pd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||{};
           k9=parseFloat(ps.strikeoutsPer9Inn)||8;
           ip=parseFloat(ps.inningsPitched)||0;
@@ -2006,7 +1860,7 @@ async function loadKProps() {
         // Fetch opposing lineup avg K% from boxscore or roster
         let oppKpct = 0.22;
         try {
-          const bd = await fetchJSON(`https://api.diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
+          const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
           const teamBox=bd.teams?.[opp];
           const batters=(teamBox?.batters||[]).map(id=>teamBox.players[`ID${id}`]).filter(Boolean).slice(0,9);
           const kpcts=batters.map(b=>{
@@ -2143,7 +1997,6 @@ function showTab(id, el) {
     matchupLoaded = true;
     loadPitcherReport();
   }
-  if (id === 'history') initHistoryTab();
   if (id === 'props') initPropsTab();
 }
 
