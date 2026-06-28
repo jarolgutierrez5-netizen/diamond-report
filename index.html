@@ -2053,7 +2053,6 @@ function renderHRPTable() {
   const cols = [
     {key:'timeLabel',  label:'TIME',     r:false, sortable:false},
     {key:'name',       label:'BATTER',   r:false, sortable:false},
-    {key:'hrProb',     label:'HR PROB',  r:true,  sortable:true, tip:'Estimated HR probability per AB'},
     {key:'hrSeason',   label:'HR',       r:true,  sortable:true, tip:'Season home runs'},
     {key:'last10HR',   label:'L10 HR',   r:true,  sortable:true, tip:'Home runs in last 10 games'},
   ];
@@ -2095,17 +2094,18 @@ function renderHRPTable() {
             </div>
             <div class="hrp-batter-sub" style="gap:4px;flex-wrap:wrap;margin-top:2px">
               ${tl(r.teamAbbr)}<span style="font-size:10px;color:var(--muted)">${r.teamAbbr} · ${r.pos}</span>
-              <button class="hrp-matchup-btn" onclick="checkMatchupAccess(${r.id},'${r.name.replace(/'/g,"\\'")}',${r.pitcherId},'${r.pitcherName.replace(/'/g,"\\'")}'">${matchupUnlocked ? '⚔' : '🔒'} PITCHER MATCHUP · vs ${r.pitcherName}</button>
+              <button class="hrp-matchup-btn" 
+                data-batter-id="${r.id}"
+                data-batter-name="${r.name.replace(/"/g,'&quot;')}"
+                data-pitcher-id="${r.pitcherId}"
+                data-pitcher-name="${r.pitcherName.replace(/"/g,'&quot;')}"
+                onclick="const d=this.dataset;checkMatchupAccess(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName)"
+              >${matchupUnlocked ? '⚔' : '🔒'} PITCHER MATCHUP · vs ${r.pitcherName}</button>
             </div>
           </div>
         </div>
       </td>
-      <td class="r">
-        <div class="hrp-prob-cell" style="justify-content:flex-end">
-          <div class="hrp-bar-wrap"><div class="hrp-bar-fill" style="width:${barPct.toFixed(0)}%;background:${barColor}"></div></div>
-          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${barColor};min-width:38px;text-align:right">${r.hrProb.toFixed(1)}%</span>
-        </div>
-      </td>
+
       <td class="r" style="color:${r.hrSeason>=15?'var(--accent2)':r.hrSeason>=8?'var(--text)':'var(--muted)'}">${r.hrSeason||'–'}</td>
       <td class="r" style="color:${r.last10HR>=2?'var(--accent2)':r.last10HR>=1?'#90ee60':'var(--muted)'}">${r.last10HR??'–'}</td>
     </tr>`;
