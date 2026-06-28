@@ -497,7 +497,7 @@
           <span id="proj-hits-count" style="background:var(--green);color:#0a0e1a;font-family:'Bebas Neue',sans-serif;font-size:18px;padding:2px 10px;border-radius:20px;display:none"></span>
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:400px;overflow-y:auto;overscroll-behavior:contain">
-          <div id="proj-hits-content"><div class="mu-empty" style="color:var(--muted)">Loading Projection Hits…</div></div>
+          <div id="proj-hits-content"><div class="mu-empty" style="color:var(--muted)">Loading HR's Completed from Projection…</div></div>
         </div>
       </div>
     </div>
@@ -2108,7 +2108,7 @@ async function loadHRsToday() {
       const countEl = document.getElementById('hrs-today-count');
       if (countEl) countEl.style.display = 'none';
       const projEl = document.getElementById('proj-hits-content');
-      if (projEl) projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">Loading Projection Hits…</div>`;
+      if (projEl) projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">Loading HR's Completed from Projection…</div>`;
       return;
     }
 
@@ -2131,12 +2131,12 @@ async function loadHRsToday() {
       </div>
     </div>`).join('');
 
-    // Projection Hits — cross-reference HRs with hrpRows (our HR Potential projections)
+    // HR's Completed from Projection — cross-reference HRs with hrpRows
     const projEl = document.getElementById('proj-hits-content');
     if (projEl) {
       const projHits = allHRs.filter(h => hrpRows.some(r => r.id === h.id));
       if (!projHits.length) {
-        projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">Loading Projection Hits…</div>`;
+        projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">Loading HR's Completed from Projection…</div>`;
         const phCount = document.getElementById('proj-hits-count');
         if (phCount) phCount.style.display = 'none';
       } else {
