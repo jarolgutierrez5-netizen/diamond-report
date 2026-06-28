@@ -323,9 +323,9 @@
   .hrp-bar-fill { height:100%; border-radius:3px; }
 
   /* HRs Today & K Props rows */
-  .stat-row { display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid var(--border); }
+  .stat-row { display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid var(--border); overflow:hidden; }
   .stat-row:last-child { border-bottom:none; }
-  .stat-row-num { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:1px; min-width:36px; text-align:right; }
+  .stat-row-num { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:1px; min-width:30px; text-align:right; flex-shrink:0; }
 
   /* K Props */
   .kprop-row { display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
@@ -377,13 +377,6 @@
   }
   .alert-sep { color:#334155; padding:0 6px; font-size:18px; font-weight:300; }
   /* Props live games banner */
-  .props-game-chip { display:inline-flex; flex-direction:column; align-items:center; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 14px; min-width:140px; position:relative; overflow:hidden; }
-  .props-game-chip::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--live); }
-  .props-game-chip-teams { display:flex; align-items:center; gap:8px; font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1px; }
-  .props-game-chip-score { font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; padding:0 6px; }
-  .props-game-chip-inning { font-size:9px; color:var(--live); font-family:'JetBrains Mono',monospace; font-weight:700; margin-top:3px; letter-spacing:.5px; }
-  .props-score-win { color:var(--green); }
-  .props-score-loss { color:var(--muted); }
 </style>
 <meta name="google-adsense-account" content="ca-pub-6433797533342090">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6433797533342090"
@@ -462,12 +455,18 @@
   <section class="section" id="props">
 
     <!-- Live Games Banner -->
-    <div id="props-live-banner" style="display:none;margin-bottom:20px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <div class="live-dot"></div>
-        <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--live)">LIVE GAMES</span>
+    <div id="props-live-banner" style="display:none;background:linear-gradient(90deg,#0a0e1a 0%,#0f172a 40%,#0a0e1a 100%);border:1px solid #1e3a5f;border-radius:8px;overflow:hidden;position:relative;margin-bottom:20px">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:50px;background:linear-gradient(90deg,#0a0e1a,transparent);z-index:2;pointer-events:none"></div>
+      <div style="position:absolute;right:0;top:0;bottom:0;width:50px;background:linear-gradient(270deg,#0a0e1a,transparent);z-index:2;pointer-events:none"></div>
+      <div style="display:flex;align-items:center">
+        <div style="background:linear-gradient(135deg,#dc2626,#991b1b);color:white;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;padding:10px 16px;flex-shrink:0;display:flex;align-items:center;gap:6px;border-right:1px solid #7f1d1d;z-index:3;animation:shimmer 1.5s infinite">
+          <span style="display:inline-block;width:8px;height:8px;background:#fff;border-radius:50%;animation:pulse 1s infinite;flex-shrink:0"></span>
+          LIVE
+        </div>
+        <div style="overflow:hidden;flex:1">
+          <div id="props-live-games" style="display:inline-flex;align-items:center;gap:0;padding:6px 20px;animation:marquee 30s linear infinite"></div>
+        </div>
       </div>
-      <div id="props-live-games" style="display:flex;flex-wrap:wrap;gap:8px"></div>
     </div>
 
     <!-- HR Potential -->
@@ -1745,7 +1744,7 @@ setInterval(() => { if (document.getElementById('ks-today-content')) loadKsToday
 
 // ── PROPS LIVE BANNER ────────────────────────────────────────────────
 function updatePropsLiveBanner(liveGames) {
-  const banner = document.getElementById('props-live-banner');
+  const banner    = document.getElementById('props-live-banner');
   const container = document.getElementById('props-live-games');
   if (!banner || !container) return;
 
@@ -1754,26 +1753,28 @@ function updatePropsLiveBanner(liveGames) {
     return;
   }
 
-  container.innerHTML = liveGames.map(g => {
+  function chip(g) {
     const awayW = g.awayScore > g.homeScore;
     const homeW = g.homeScore > g.awayScore;
-    const tl = abbr => { const id = teamIds[abbr]; return id ? `<img src="https://www.mlbstatic.com/team-logos/${id}.svg" style="width:20px;height:20px;object-fit:contain" onerror="this.style.display='none'" alt="${abbr}">` : `<span style="font-size:12px">${abbr}</span>`; };
-    return `<div class="props-game-chip">
-      <div class="props-game-chip-teams">
-        ${tl(g.awayAbbr)}
-        <span style="font-size:13px;color:var(--muted);font-family:'Bebas Neue',sans-serif">${g.awayAbbr}</span>
-        <div class="props-game-chip-score">
-          <span class="${awayW?'props-score-win':'props-score-loss'}">${g.awayScore??0}</span>
-          <span style="color:var(--border);font-size:14px;padding:0 2px">-</span>
-          <span class="${homeW?'props-score-win':'props-score-loss'}">${g.homeScore??0}</span>
-        </div>
-        <span style="font-size:13px;color:var(--muted);font-family:'Bebas Neue',sans-serif">${g.homeAbbr}</span>
-        ${tl(g.homeAbbr)}
-      </div>
-      <div class="props-game-chip-inning">${g.inning || '● LIVE'}</div>
-    </div>`;
-  }).join('');
+    const tl = abbr => { const id = teamIds[abbr]; return id ? `<img src="https://www.mlbstatic.com/team-logos/${id}.svg" style="width:18px;height:18px;object-fit:contain;vertical-align:middle" onerror="this.style.display='none'" alt="">` : ''; };
+    return `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid #1e3a5f;border-radius:6px;padding:5px 12px;white-space:nowrap;font-size:12px">
+      ${tl(g.awayAbbr)}
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.5px;color:${awayW?'var(--green)':'var(--muted)'}">${g.awayAbbr}</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:${awayW?'var(--green)':'var(--muted)'}">${g.awayScore??0}</span>
+      <span style="color:var(--border);font-size:12px">–</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:${homeW?'var(--green)':'var(--muted)'}">${g.homeScore??0}</span>
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.5px;color:${homeW?'var(--green)':'var(--muted)'}">${g.homeAbbr}</span>
+      ${tl(g.homeAbbr)}
+      <span style="font-size:9px;color:var(--live);font-family:'JetBrains Mono',monospace;font-weight:700;margin-left:2px">${g.inning||'LIVE'}</span>
+    </span>`;
+  }
 
+  const content = liveGames.map(chip).join('<span style="color:#334155;padding:0 8px;font-size:16px">·</span>');
+  const looped  = content + '<span style="padding:0 24px;color:#334155">·</span>' + content;
+  const duration = Math.max(15, liveGames.length * 6);
+
+  container.innerHTML = looped;
+  container.style.animation = `marquee ${duration}s linear infinite`;
   banner.style.display = 'block';
 }
 
@@ -2103,17 +2104,15 @@ async function loadHRsToday() {
 
     const hs = id => id?`https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_32,q_auto:best/v1/people/${id}/headshot/67/current`:'';
     el.innerHTML = allHRs.map(h=>`<div class="stat-row">
-      <div style="display:flex;flex-direction:column;gap:1px;min-width:90px">
-        <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">${h.gameLabel}</span>
-        <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">${h.timeStr}</span>
+      <img src="${hs(h.id)}" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'" alt="">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:${h.hrs>1?'var(--accent2)':'var(--text)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.name}</div>
+        <div style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px">${h.gameLabel} · ${h.timeStr} · ${h.teamAbbr}</div>
       </div>
-      <img src="${hs(h.id)}" style="width:32px;height:32px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'" alt="">
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:600;color:${h.hrs>1?'var(--accent2)':'var(--text)'}">${h.name}</div>
-        <div style="font-size:10px;color:var(--muted)">${h.teamAbbr}</div>
+      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+        <div class="stat-row-num" style="color:${h.hrs>1?'var(--accent2)':'var(--accent)'}">${h.hrs}</div>
+        <div style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace">HR</div>
       </div>
-      <div class="stat-row-num" style="color:${h.hrs>1?'var(--accent2)':'var(--accent)'}">${h.hrs}</div>
-      <div style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace">HR</div>
     </div>`).join('');
     updateLiveBanner();
   } catch(e) {
