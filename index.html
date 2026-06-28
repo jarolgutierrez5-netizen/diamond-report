@@ -322,7 +322,18 @@
         <div id="props-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Loading…</div>
       </div>
     </div>
-    <div id="hr-potential-content"><div class="mu-empty"><span class="spin"></span>Loading HR potential…</div></div>
+    <!-- HR Potential + K's Today side by side -->
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start">
+      <div>
+        <div id="hr-potential-content"><div class="mu-empty"><span class="spin"></span>Loading HR potential…</div></div>
+      </div>
+      <div>
+        <p class="section-title" style="font-size:18px;margin-bottom:10px">K'S <span>TODAY</span></p>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:600px;overflow-y:auto">
+          <div id="ks-today-props"><div class="mu-empty"><span class="spin"></span>Loading…</div></div>
+        </div>
+      </div>
+    </div>
 
     <!-- HRs Today -->
     <div style="margin-top:32px">
@@ -622,7 +633,7 @@ async function loadScores() {
     [...live, ...final, ...upcoming].forEach(g => { prevGames[gameKey(g)] = { ...g }; });
 
     const now = new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
-    document.getElementById('scores-refresh').textContent = `Updated ${now} · auto-refreshes every 30s`;
+    document.getElementById('scores-refresh').textContent = `Updated ${now}`;
   } catch(e) {
     document.getElementById('scores-refresh').textContent = `Error: ${e.message}`;
   }
@@ -1504,9 +1515,14 @@ async function loadKsToday() {
     }).join('');
 
     el.innerHTML = rows || `<div class="mu-empty">No strikeout data yet.</div>`;
+    // Mirror to Props sidebar
+    const elProps = document.getElementById('ks-today-props');
+    if (elProps) elProps.innerHTML = el.innerHTML;
   } catch(e) {
     const el2 = document.getElementById('ks-today-content');
     if (el2) el2.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error loading Ks: ${e.message}</div>`;
+    const el3 = document.getElementById('ks-today-props');
+    if (el3) el3.innerHTML = el2?.innerHTML || '';
   }
 }
 
@@ -1623,7 +1639,7 @@ async function loadHRPotential() {
     renderHRPTable();
 
     const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-    if (refresh) refresh.textContent = `Updated ${now} · auto-refreshes every 60s`;
+    if (refresh) refresh.textContent = `Updated ${now}`;
   } catch(e) {
     const el2 = document.getElementById('hr-potential-content');
     if (el2) el2.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
@@ -1643,9 +1659,6 @@ function renderHRPTable() {
     {key:'pitcherName',label:'VS PITCHER',r:false,sortable:false},
     {key:'hrProb',     label:'HR PROB',  r:true,  sortable:true, tip:'Estimated HR probability per AB'},
     {key:'hrSeason',   label:'HR',       r:true,  sortable:true, tip:'Season home runs'},
-    {key:'avg',        label:'AVG',      r:true,  sortable:true, tip:'Batting average'},
-    {key:'ops',        label:'OPS',      r:true,  sortable:true, tip:'On-base plus slugging'},
-    {key:'iso',        label:'ISO',      r:true,  sortable:true, tip:'Isolated power (SLG−AVG)'},
     {key:'last10HR',   label:'L10 HR',   r:true,  sortable:true, tip:'Home runs in last 10 games'},
   ];
 
@@ -1696,9 +1709,6 @@ function renderHRPTable() {
         </div>
       </td>
       <td class="r" style="color:${r.hrSeason>=15?'var(--accent2)':r.hrSeason>=8?'var(--text)':'var(--muted)'}">${r.hrSeason||'–'}</td>
-      <td class="r">${fmtAvg(r.avg)}</td>
-      <td class="r">${fmtAvg(r.ops)}</td>
-      <td class="r">${fmtIso(r.iso)}</td>
       <td class="r" style="color:${r.last10HR>=2?'var(--accent2)':r.last10HR>=1?'#90ee60':'var(--muted)'}">${r.last10HR??'–'}</td>
     </tr>`;
   }).join('');
@@ -1711,7 +1721,7 @@ function renderHRPTable() {
   }).join('');
 
   el.innerHTML = `<div style="overflow-x:auto"><table class="hrp-table"><thead><tr>${ths}</tr></thead><tbody>${rows}</tbody></table></div>
-    <div style="margin-top:8px;font-size:10px;color:var(--muted)">HR Prob = blend of batter HR/AB (60%) + pitcher HR/9 rate (40%) · Sorted by HR probability · auto-refreshes every 60s</div>`;
+    <div style="margin-top:8px;font-size:10px;color:var(--muted)">HR Prob = blend of batter HR/AB (60%) + pitcher HR/9 rate (40%) · Sorted by HR probability</div>`;
 }
 
 function sortHRP(col) {
