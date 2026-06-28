@@ -1510,6 +1510,7 @@ async function loadKsToday() {
         if (!team) return;
         const abbr = side === 'away' ? awayAbbr : homeAbbr;
         const gameFinal = g.status.abstractGameState === 'Final' || g.status.detailedState === 'Final';
+        const gameLive  = g.status.abstractGameState === 'Live'  || g.status.detailedState === 'In Progress';
         (team.pitchers || []).forEach(id => {
           const p = team.players?.[`ID${id}`];
           if (!p) return;
@@ -1524,6 +1525,7 @@ async function loadKsToday() {
             gameTimestamp: dt.getTime(),
             isSP: (team.pitchers || [])[0] === id,
             isFinal: gameFinal,
+            isLive: gameLive,
           });
         });
       });
@@ -1534,11 +1536,12 @@ async function loadKsToday() {
       return;
     }
 
-    // Sort by game time, then starters first, then by Ks desc within each game
-    allPitchers.sort((a,b) => {
-      if (a.gameTimestamp !== b.gameTimestamp) return a.gameTimestamp - b.gameTimestamp;
-      if (a.isSP !== b.isSP) return a.isSP ? -1 : 1;
-      return b.ks - a.ks;
+    // Sort: live games first (by K desc), then final (by K desc), then upcoming (by time)
+    allPitchers.sort((a, b) => {
+      const statusRank = p => p.isLive ? 0 : p.isFinal ? 1 : 2;
+      if (statusRank(a) !== statusRank(b)) return statusRank(a) - statusRank(b);
+      if (a.isLive || a.isFinal) return b.ks - a.ks; // sort by K count desc within live/final
+      return a.gameTimestamp - b.gameTimestamp; // upcoming: chronological
     });
 
     const hs = id => id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_32,q_auto:best/v1/people/${id}/headshot/67/current` : '';
@@ -1556,10 +1559,18 @@ async function loadKsToday() {
           ouBadge = `<span class="k-ou-tag" style="border-color:var(--muted);color:var(--muted)">PUSH ${ouLine}</span>`;
         }
       }
-      return `<div class="ks-today-row">
+      const statusBadge = p.isLive
+        ? `<span style="background:#2a0000;color:var(--live);font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid var(--live);letter-spacing:.5px;animation:pulse 1s infinite">● LIVE</span>`
+        : p.isFinal
+        ? `<span style="color:var(--muted);font-size:9px;letter-spacing:.5px">FINAL</span>`
+        : `<span style="color:var(--accent2);font-size:9px;letter-spacing:.5px">UPCOMING</span>`;
+      return `<div class="ks-today-row" style="${p.isLive?'border-left:2px solid var(--live);padding-left:10px':''}">
         <img src="${hs(p.id)}" style="width:34px;height:34px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'" alt="">
         <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</span>
+            ${statusBadge}
+          </div>
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:2px">
             <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">${p.gameLabel} · ${p.timeStr}${p.isSP?' · SP':''} · ${p.ip} IP</span>
             ${ouBadge}
