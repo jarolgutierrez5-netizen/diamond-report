@@ -60,13 +60,7 @@
   .score-loss { color: var(--muted); }
   .game-time { font-size: 10px; color: var(--muted); text-align: center; margin-top: 10px; font-family: 'JetBrains Mono', monospace; }
 
-  .standings-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
-  .s-tab { padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 20px; cursor: pointer; background: var(--surface); border: 1px solid var(--border); color: var(--muted); transition: all .2s; }
-  .s-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
-  .s-tab:hover:not(.active) { color: var(--text); }
 
-  .division-block { margin-bottom: 24px; }
-  .division-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
   table { width: 100%; border-collapse: collapse; }
   thead th { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); padding: 6px 8px; text-align: left; }
   thead th:not(:first-child) { text-align: right; }
@@ -75,12 +69,6 @@
   tbody tr:last-child { border-bottom: none; }
   td { padding: 9px 8px; font-size: 13px; }
   td:not(:first-child) { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
-  .rank-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); margin-right: 8px; width: 14px; display: inline-block; text-align: right; }
-  .team-pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 6px; background: var(--bg); border-radius: 3px; margin-right: 6px; color: var(--accent2); letter-spacing: .5px; border: 1px solid var(--border); }
-  .win-bar { display: inline-block; height: 3px; background: var(--accent); border-radius: 2px; margin-left: 6px; vertical-align: middle; opacity: .5; }
-  .pct-good { color: var(--green); }
-  .pct-ok { color: var(--text); }
-  .pct-bad { color: var(--muted); }
 
   .era-good { color: var(--green); }
   .era-ok { color: var(--text); }
@@ -273,7 +261,6 @@
 
 <nav class="nav">
   <div class="tab active" onclick="showTab('scores', this)">Live Scores</div>
-  <div class="tab" onclick="showTab('standings', this)">Standings</div>
   <div class="tab" onclick="showTab('props', this)">Props</div>
   <div class="tab" onclick="showTab('matchups', this)">Pitcher Report</div>
   <div class="tab" onclick="showTab('schedule', this)">Schedule</div>
@@ -291,14 +278,6 @@
     <div class="games-grid" id="final-games"></div>
   </section>
 
-  <section class="section" id="standings">
-    <p class="section-title">MLB <span>STANDINGS</span> · 2026</p>
-    <div class="standings-tabs">
-      <div class="s-tab active" onclick="showLeague('AL', this)">American League</div>
-      <div class="s-tab" onclick="showLeague('NL', this)">National League</div>
-    </div>
-    <div id="standings-content"></div>
-  </section>
 
 
   <section class="section" id="matchups">
@@ -652,38 +631,7 @@ setInterval(() => {
 
 
 
-function buildStandings(conf) {
-  const divOrder = ['East','Central','West'];
-  let html = '';
-  divOrder.forEach(div => {
-    const teams = standings.filter(t => t.conf === conf && t.div === div)
-      .sort((a,b) => (b.W/(b.W+b.L)) - (a.W/(a.W+a.L)));
-    if (!teams.length) return;
-    const ldr = teams[0];
-    html += `<div class="division-block">
-      <div class="division-label">${conf === 'AL' ? 'American' : 'National'} League · ${div}</div>
-      <table><thead><tr>
-        <th style="width:220px">Team</th><th>W</th><th>L</th><th>PCT</th><th>GB</th>
-      </tr></thead><tbody>`;
-    teams.forEach((t, i) => {
-      const pct = t.W/(t.W+t.L);
-      const pctStr = pct.toFixed(3).replace('0.','.').replace('1.000','1.000');
-      const pctCls = pct >= .560 ? 'pct-good' : pct >= .470 ? 'pct-ok' : 'pct-bad';
-      const gb = i === 0 ? '—' : (((ldr.W - t.W) + (t.L - ldr.L)) / 2).toFixed(1);
-      const barW = Math.round(pct * 80);
-      html += `<tr>
-        <td><span class="rank-num">${i+1}</span><span class="team-pill">${t.abbr}</span>${t.name}<span class="win-bar" style="width:${barW}px"></span></td>
-        <td>${t.W}</td><td>${t.L}</td>
-        <td class="${pctCls}">${pctStr}</td>
-        <td style="color:var(--muted)">${gb}</td>
-      </tr>`;
-    });
-    html += `</tbody></table></div>`;
-  });
-  return html;
-}
 
-document.getElementById('standings-content').innerHTML = buildStandings('AL');
 
 // Pitcher data for today — sourced from ESPN, MLB.com, Baseball Reference
 
@@ -2010,11 +1958,6 @@ function showTab(id, el) {
   if (id === 'props') initPropsTab();
 }
 
-function showLeague(conf, el) {
-  document.querySelectorAll('.s-tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('standings-content').innerHTML = buildStandings(conf);
-}
 </script>
 </body>
 </html>
