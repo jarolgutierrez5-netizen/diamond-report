@@ -288,7 +288,7 @@ const standings = [
 ];
 
 function gameCard(g) {
-  const { awayAbbr, homeAbbr, awayName, homeName, awayScore, homeScore, inning, status, time } = g;
+  const { awayAbbr, homeAbbr, awayName, homeName, awayScore, homeScore, inning, status, time, gamePk, sig } = g;
   const isLive = status === 'live';
   const isFinal = status === 'final';
   const cls = isLive ? 'live' : isFinal ? 'closed' : 'scheduled';
@@ -306,7 +306,7 @@ function gameCard(g) {
   } else {
     scoreHTML = `<div style="font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--accent2);padding:0 8px">VS</div>`;
   }
-  return `<div class="game-card ${cls}">
+  return `<div class="game-card ${cls}" data-game-key="${gamePk}" data-sig="${sig}">
     <div class="game-status ${cls}">${label}</div>
     <div class="matchup">
       <div class="team-block"><div class="team-abbr">${awayAbbr}</div><div class="team-name">${awayName}</div></div>
@@ -318,7 +318,7 @@ function gameCard(g) {
 }
 
 function upcomingCard(g) {
-  return `<div class="game-card scheduled">
+  return `<div class="game-card scheduled" data-game-key="${g.gamePk}" data-sig="${g.sig}">
     <div class="game-status scheduled">UPCOMING</div>
     <div class="matchup">
       <div class="team-block"><div class="team-abbr">${g.awayAbbr}</div><div class="team-name">${g.awayName}</div></div>
@@ -327,6 +327,43 @@ function upcomingCard(g) {
     </div>
     <div class="game-time">${g.time}</div>
   </div>`;
+}
+
+// Diffs `items` (by gamePk) against the cards already in `container`, only
+// touching DOM nodes whose signature actually changed (so unrelated cards
+// don't flicker/reset on every 30s poll).
+function renderGameList(container, items, cardFn, emptyHTML) {
+  if (!items.length) {
+    if (container.innerHTML !== emptyHTML) container.innerHTML = emptyHTML;
+    return;
+  }
+  const existing = new Map();
+  Array.from(container.children).forEach(ch => existing.set(ch.dataset.gameKey, ch));
+  const seen = new Set();
+
+  items.forEach(item => {
+    const key = String(item.gamePk);
+    seen.add(key);
+    const node = existing.get(key);
+    if (node) {
+      if (node.dataset.sig !== item.sig) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = cardFn(item);
+        node.replaceWith(tmp.firstElementChild);
+        existing.set(key, tmp.firstElementChild);
+      }
+    } else {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = cardFn(item);
+      container.appendChild(tmp.firstElementChild);
+      existing.set(key, tmp.firstElementChild);
+    }
+  });
+
+  // Reorder to match latest API order without recreating untouched nodes.
+  items.forEach(item => container.appendChild(existing.get(String(item.gamePk))));
+
+  existing.forEach((node, key) => { if (!seen.has(key)) node.remove(); });
 }
 
 async function loadScores() {
@@ -359,6 +396,7 @@ async function loadScores() {
       const isFinal = state === 'Final' || detailedState === 'Final' || detailedState === 'Game Over';
 
       const card = {
+        gamePk: g.gamePk,
         awayAbbr: away.team.abbreviation,
         homeAbbr: home.team.abbreviation,
         awayName: away.team.shortName || away.team.teamName,
@@ -369,21 +407,20 @@ async function loadScores() {
         time: timeStr,
         status: isLive ? 'live' : isFinal ? 'final' : 'upcoming'
       };
+      card.sig = `${card.status}|${card.awayScore}|${card.homeScore}|${card.inning}|${card.time}`;
 
       if (isLive) live.push(card);
       else if (isFinal) final.push(card);
       else upcoming.push(card);
     });
 
-    document.getElementById('live-games').innerHTML = live.length
-      ? live.map(gameCard).join('')
-      : '<div style="color:var(--muted);font-size:13px;padding:4px 0">No live games right now.</div>';
+    renderGameList(document.getElementById('live-games'), live, gameCard,
+      '<div style="color:var(--muted);font-size:13px;padding:4px 0">No live games right now.</div>');
 
-    document.getElementById('final-games').innerHTML = final.length
-      ? final.map(gameCard).join('')
-      : '<div style="color:var(--muted);font-size:13px;padding:4px 0">No final games yet today.</div>';
+    renderGameList(document.getElementById('final-games'), final, gameCard,
+      '<div style="color:var(--muted);font-size:13px;padding:4px 0">No final games yet today.</div>');
 
-    document.getElementById('scheduled-games').innerHTML = upcoming.map(upcomingCard).join('');
+    renderGameList(document.getElementById('scheduled-games'), upcoming, upcomingCard, '');
 
     const now = new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
     document.getElementById('scores-refresh').textContent = `Updated ${now} · auto-refreshes every 30s`;
