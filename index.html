@@ -78,6 +78,101 @@
   .section-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; margin-bottom: 16px; color: var(--text); }
   .section-title span { color: var(--accent); }
 
+  /* ── MOBILE RESPONSIVE ─────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    /* Header */
+    .header { padding: 0 12px; height: 52px; }
+    .logo { font-size: 20px; letter-spacing: 2px; }
+    .date-badge { font-size: 10px; padding: 3px 7px; }
+
+    /* Nav — scrollable tabs */
+    .nav { padding: 8px 12px 0; gap: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .nav::-webkit-scrollbar { display: none; }
+    .tab { padding: 6px 12px; font-size: 10px; letter-spacing: .5px; white-space: nowrap; flex-shrink: 0; }
+
+    /* Main padding */
+    main { padding: 12px; }
+
+    /* Game cards — single column */
+    .games-grid { grid-template-columns: 1fr; gap: 10px; }
+    .score-block { font-size: 22px; }
+    .team-abbr { font-size: 20px; }
+    .team-logo { width: 28px; height: 28px; }
+
+    /* Section title */
+    .section-title { font-size: 18px; }
+
+    /* Pitcher Report table — horizontal scroll */
+    #pr-content { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .pr-table { min-width: 600px; }
+    .pr-table thead th:nth-child(2) { min-width: 160px; }
+    .pr-headshot { width: 30px; height: 30px; }
+    .pr-pitcher-name { font-size: 12px; }
+    .pr-expand-panel { padding: 12px; }
+
+    /* Lineup expand */
+    .pr-pitcher-sub { gap: 4px; }
+    .btn-lineup { font-size: 9px; padding: 2px 5px; }
+
+    /* Batter rows in lineup */
+    .btn-matchup { font-size: 9px; padding: 4px 7px; white-space: nowrap; }
+
+    /* Props tab — stack HR potential and K's Today vertically */
+    .props-grid { grid-template-columns: 1fr !important; }
+    .props-grid > div:last-child { max-height: 300px; }
+
+    /* HR Potential table scroll */
+    #hr-potential-content { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .hrp-table { min-width: 480px; }
+    .hrp-headshot { width: 28px; height: 28px; }
+    .hrp-batter-name { font-size: 12px; }
+
+    /* K props */
+    .kprop-row { gap: 8px; }
+    .kprop-line, .kprop-pred { min-width: 60px; padding: 6px 10px; }
+    .kprop-line-val, .kprop-pred-val { font-size: 18px; }
+    .kprop-reasoning { font-size: 9px; min-width: 120px; }
+    .kprop-name { font-size: 12px; }
+    .kprop-meta { font-size: 9px; }
+
+    /* Matchup modal */
+    .mu-modal { max-width: 100%; margin: 8px; border-radius: 8px; }
+    .mu-modal-head { padding: 12px 14px; }
+    .mu-modal-title { font-size: 15px; }
+    .mu-modal-body { padding: 12px; }
+    .h2h-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .h2h-val { font-size: 20px; }
+    .strike-zone { width: 120px; }
+    .sz-cell { width: 36px; height: 34px; font-size: 10px; }
+    .zone-wrap { gap: 14px; }
+
+    /* Ks Today rows */
+    .ks-today-row { padding: 8px 10px; gap: 8px; }
+    .ks-count { font-size: 22px; }
+
+    /* Stat rows */
+    .stat-row { padding: 8px 10px; gap: 8px; }
+    .stat-row-num { font-size: 22px; }
+
+    /* Game card standings badge */
+    .standings-badge { font-size: 8px; }
+
+    /* Schedule cards */
+    .game-card { padding: 10px 12px; }
+  }
+
+  @media (max-width: 480px) {
+    .logo { font-size: 17px; }
+    .score-block { font-size: 18px; gap: 5px; }
+    .team-abbr { font-size: 17px; }
+    .team-logo { width: 24px; height: 24px; }
+    .pr-headshot { width: 26px; height: 26px; }
+    .btn-matchup { display: none; } /* hide on very small screens, accessible via expand */
+    .h2h-grid { grid-template-columns: repeat(2, 1fr); }
+    .kprop-reasoning { display: none; } /* hide on very small screens */
+  }
+
+
   /* Pitcher Report Table */
   .pr-table { width: 100%; border-collapse: collapse; }
   .pr-table thead th { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); padding: 8px 10px; text-align: center; white-space: nowrap; cursor: pointer; user-select: none; border-bottom: 1px solid var(--border); }
@@ -318,7 +413,7 @@
       </div>
     </div>
     <!-- HR Potential + K's Today side by side -->
-    <div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start">
+    <div class="props-grid" style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start">
       <div>
         <div id="hr-potential-content"><div class="mu-empty"><span class="spin"></span>Loading HR potential…</div></div>
       </div>
