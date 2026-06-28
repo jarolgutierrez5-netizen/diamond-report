@@ -1991,9 +1991,9 @@ function renderHRPTable() {
           <img class="hrp-headshot" src="${hs(r.id)}" onerror="this.style.visibility='hidden'" alt="">
           <div class="hrp-batter-info">
             <span class="hrp-batter-name" style="color:${homerToday?'var(--accent2)':'var(--text)'}">${r.name}</span>
-            <div class="hrp-batter-sub">
+            <div class="hrp-batter-sub" style="gap:5px;margin-top:3px;flex-wrap:wrap">
               ${tl(r.teamAbbr)}<span style="font-size:10px;color:var(--muted)">${r.teamAbbr} · ${r.pos}</span>
-              ${homerToday?`<span style="background:#2a1500;color:#f4a261;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid #f4a26166">💥 HR TODAY${r.todayHR>1?' x'+r.todayHR:''}</span>`:''}
+              ${homerToday?`<span style="background:#2a1500;color:#f4a261;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166;white-space:nowrap">💥 HR TODAY${r.todayHR>1?' ×'+r.todayHR:''}</span>`:''}
               <span class="top-hr-badge" style="${r.hrProb>=8?'':'display:none'}">⚡ TOP HR THREAT</span>
             </div>
           </div>
@@ -2112,6 +2112,26 @@ async function loadHRsToday() {
       return;
     }
 
+    // Check back-to-back / streak for each batter
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+    const yd = yesterday.toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+    const dayBefore = new Date(); dayBefore.setDate(dayBefore.getDate()-2);
+    const db = dayBefore.toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+
+    const streakMap = {}; // batterId -> streak days count
+    await Promise.all(allHRs.map(async h => {
+      if (!h.id) return;
+      try {
+        const logData = await fetchJSON(`https://diamondreport.app/api/v1/people/${h.id}/stats?stats=gameLog&group=hitting&season=2026&gameType=R`);
+        const logs = logData.stats?.[0]?.splits || [];
+        const hitYesterday  = logs.some(g => g.date === yd && parseInt(g.stat?.homeRuns) > 0);
+        const hitDayBefore  = logs.some(g => g.date === db && parseInt(g.stat?.homeRuns) > 0);
+        if (hitYesterday && hitDayBefore) streakMap[h.id] = 3; // 3+ day streak
+        else if (hitYesterday) streakMap[h.id] = 2; // back to back
+        else streakMap[h.id] = 1;
+      } catch { streakMap[h.id] = 1; }
+    }));
+
     const hs = id => id?`https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_32,q_auto:best/v1/people/${id}/headshot/67/current`:'';
 
     // Total HR count
@@ -2119,17 +2139,32 @@ async function loadHRsToday() {
     const countEl = document.getElementById('hrs-today-count');
     if (countEl) { countEl.textContent = `${totalHRs} HR${totalHRs!==1?'s':''}`; countEl.style.display = 'inline-block'; }
 
-    el.innerHTML = allHRs.map(h=>`<div class="stat-row">
-      <img src="${hs(h.id)}" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'" alt="">
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:600;color:${h.hrs>1?'var(--accent2)':'var(--text)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.name}</div>
-        <div style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px">${h.gameLabel} · ${h.timeStr} · ${h.teamAbbr}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-        <div class="stat-row-num" style="color:${h.hrs>1?'var(--accent2)':'var(--accent)'}">${h.hrs}</div>
-        <div style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace">HR</div>
-      </div>
-    </div>`).join('');
+    el.innerHTML = allHRs.map(h => {
+      const streak = streakMap[h.id] || 1;
+      const streakBadge = streak >= 3
+        ? `<span style="background:#1a1200;color:#ffd700;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;border:1px solid #ffd70066;white-space:nowrap">👑 ON A HEATER</span>`
+        : streak === 2
+        ? `<span style="background:#1a0d00;color:#ff8c00;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;border:1px solid #ff8c0066;white-space:nowrap">🔥 BACK TO BACK</span>`
+        : '';
+      return `<div class="stat-row">
+        <img src="${hs(h.id)}" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'" alt="">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span style="font-size:13px;font-weight:600;color:${h.hrs>1?'var(--accent2)':'var(--text)'}">${h.name}</span>
+            ${streakBadge}
+          </div>
+          <div style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px">${h.gameLabel} · ${h.timeStr} · ${h.teamAbbr}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+          <div class="stat-row-num" style="color:${h.hrs>1?'var(--accent2)':'var(--accent)'}">${h.hrs}</div>
+          <div style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace">HR</div>
+        </div>
+      </div>`;
+    }).join('') +
+    `<div style="padding:8px 12px;font-size:10px;color:var(--muted);border-top:1px solid var(--border);line-height:1.7">
+      🔥 <strong>BACK TO BACK</strong> — Hit a home run yesterday and today<br>
+      👑 <strong>ON A HEATER</strong> — Hit home runs 3+ consecutive days
+    </div>`;
 
     // HR's Completed from Projection — cross-reference HRs with hrpRows
     const projEl = document.getElementById('proj-hits-content');
