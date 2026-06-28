@@ -475,10 +475,22 @@
       <p class="section-title" style="margin-bottom:0">HR <span>POTENTIAL</span></p>
       <div id="props-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Loading…</div>
     </div>
-    <div id="hr-potential-content" style="max-height:600px;overflow-y:auto;overflow-x:auto;overscroll-behavior:contain;border:1px solid var(--border);border-radius:8px;background:var(--surface)"><div class="mu-empty"><span class="spin"></span>Loading HR potential…</div></div>
+
+    <!-- HR Potential + K's Today side by side -->
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start" class="props-grid">
+      <div id="hr-potential-content" style="max-height:560px;overflow-y:auto;overflow-x:auto;overscroll-behavior:contain;border:1px solid var(--border);border-radius:8px;background:var(--surface)"><div class="mu-empty"><span class="spin"></span>Loading HR potential…</div></div>
+
+      <!-- K's Today sidebar -->
+      <div>
+        <p class="section-title" style="font-size:18px;margin-bottom:10px">K'S <span>TODAY</span></p>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:560px;overflow-y:auto;overscroll-behavior:contain">
+          <div id="ks-today-props"><div class="mu-empty"><span class="spin"></span>Loading…</div></div>
+        </div>
+      </div>
+    </div>
 
     <!-- HRs Today + Projections Hit — side by side on desktop, stacked on mobile -->
-    <div style="margin-top:32px;display:grid;grid-template-columns:1fr 1fr;gap:16px" class="hrs-today-grid">
+    <div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:16px" class="hrs-today-grid">
 
       <!-- HRs Today -->
       <div>
@@ -491,7 +503,7 @@
         </div>
       </div>
 
-      <!-- DR Projections That Hit -->
+      <!-- HRs Completed from Projection -->
       <div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
           <p class="section-title" style="font-size:20px;margin-bottom:0">✅ HRs <span>COMPLETED FROM PROJECTION</span></p>
@@ -503,16 +515,8 @@
       </div>
     </div>
 
-    <!-- K's Today -->
-    <div style="margin-top:32px">
-      <p class="section-title" style="font-size:18px;margin-bottom:10px">K'S <span>TODAY</span></p>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:400px;overflow-y:auto;overscroll-behavior:contain">
-        <div id="ks-today-props"><div class="mu-empty"><span class="spin"></span>Loading…</div></div>
-      </div>
-    </div>
-
     <!-- K Props -->
-    <div style="margin-top:32px">
+    <div style="margin-top:28px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <p class="section-title" style="font-size:20px;margin-bottom:0">K <span>PROPS</span></p>
         <div id="kprops-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)"></div>
@@ -1775,6 +1779,7 @@ async function loadKsToday() {
           </div>
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:2px">
             <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">${p.gameLabel} · ${p.timeStr}${p.isSP?' · SP':''} · ${p.ip} IP</span>
+            ${ouLine !== null ? `<span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">PROJ: <strong style="color:var(--text)">${ouLine}</strong></span>` : ''}
             ${ouBadge}
           </div>
         </div>
