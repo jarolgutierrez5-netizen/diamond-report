@@ -188,18 +188,57 @@
   .vuln-title { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent2); margin-bottom: 10px; }
   .vuln-item { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; font-size: 12px; line-height: 1.5; }
   .vuln-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+  /* Team logos in game cards */
+  .team-logo { width: 36px; height: 36px; object-fit: contain; margin-bottom: 4px; }
+  .team-block { text-align: center; flex: 1; display: flex; flex-direction: column; align-items: center; }
+  .standings-badge { font-size: 9px; color: var(--muted); margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+  .standings-badge .gb-num { color: var(--accent2); }
+  .standings-badge .div-pos { color: var(--green); }
+
+  /* History tab */
+  .hist-nav-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif; transition: border-color .15s; }
+  .hist-nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .hist-nav-btn:disabled { opacity: .3; cursor: not-allowed; }
+  /* K tags on pitcher rows */
+  .k-ou-tag { display:inline-flex; align-items:center; gap:3px; background:#1a0a2e; border:1px solid #6c3aff; color:#b794f4; font-size:9px; font-weight:700; padding:2px 7px; border-radius:4px; letter-spacing:.5px; white-space:nowrap; }
+  .k-ou-over { background:#2a1000; border-color:#f4a261; color:#f4a261; }
+  .k-ou-under { background:#0a1a0a; border-color:#2ecc71; color:#2ecc71; }
+  .k-proj-tag { display:inline-flex; align-items:center; gap:3px; font-size:9px; font-weight:700; padding:2px 7px; border-radius:4px; letter-spacing:.5px; white-space:nowrap; }
+  .k-proj-high { background:#2a1500; border:1px solid #f4a261; color:#f4a261; }
+  .k-proj-low  { background:#0d1a0d; border:1px solid #2ecc71; color:#2ecc71; }
+  .k-proj-avg  { background:var(--surface2); border:1px solid var(--border); color:var(--muted); }
+
+  /* Batter matchup label */
+  .matchup-label { display:inline-block; font-size:9px; font-weight:700; padding:1px 6px; border-radius:3px; letter-spacing:.5px; margin-top:2px; }
+  .ml-good   { background:#0d2a1a; border:1px solid #2ecc71; color:#2ecc71; }
+  .ml-neutral{ background:var(--surface2); border:1px solid var(--border); color:var(--muted); }
+  .ml-bad    { background:#2a0d0d; border:1px solid var(--accent); color:var(--accent); }
+
+  /* Stat tooltip */
+  [data-tip] { position:relative; cursor:help; }
+  [data-tip]::after { content:attr(data-tip); position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%); background:#1a2235; border:1px solid var(--border); color:var(--text); font-size:10px; font-weight:500; padding:4px 8px; border-radius:5px; white-space:nowrap; pointer-events:none; opacity:0; transition:opacity .15s; z-index:99; font-family:'Inter',sans-serif; }
+  [data-tip]:hover::after { opacity:1; }
+
+  /* Ks Today section */
+  .ks-today-row { display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid var(--border); }
+  .ks-today-row:last-child { border-bottom:none; }
+  .ks-game-label { font-size:10px; color:var(--muted); font-family:'JetBrains Mono',monospace; min-width:90px; }
+  .ks-pitcher-name { flex:1; font-size:13px; font-weight:600; }
+  .ks-count { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:1px; min-width:36px; text-align:right; }
+  .ks-ip { font-size:10px; color:var(--muted); font-family:'JetBrains Mono',monospace; min-width:40px; text-align:right; }
 </style>
 </head>
 <body>
 
 <header class="header">
   <div class="logo"><div class="logo-dot"></div>DIAMOND REPORT</div>
-  <div class="date-badge">SAT · JUN 27, 2026</div>
+  <div class="date-badge" id="header-date"></div>
 </header>
 
 <nav class="nav">
   <div class="tab active" onclick="showTab('scores', this)">Live Scores</div>
   <div class="tab" onclick="showTab('standings', this)">Standings</div>
+  <div class="tab" onclick="showTab('history', this)">Previous Scores</div>
   <div class="tab" onclick="showTab('matchups', this)">Pitcher Report</div>
   <div class="tab" onclick="showTab('schedule', this)">Schedule</div>
 </nav>
@@ -229,6 +268,27 @@
   <section class="section" id="matchups">
     <p class="section-title">PITCHER <span>REPORT</span></p>
     <div id="pr-content"><div class="mu-empty"><span class="spin"></span>Loading today's pitchers…</div></div>
+
+    <div style="margin-top:28px">
+      <p class="section-title" style="font-size:20px">K'S <span>TODAY</span></p>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <div id="ks-today-content"><div class="mu-empty"><span class="spin"></span>Loading strikeout data…</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="history">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+      <p class="section-title" style="margin-bottom:0">PREVIOUS <span>SCORES</span></p>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="hist-nav-btn" onclick="historyNav(-1)">← Prev</button>
+        <input type="date" id="history-date" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;cursor:pointer" onchange="loadHistory(this.value)">
+        <button class="hist-nav-btn" onclick="historyNav(1)">Next →</button>
+      </div>
+    </div>
+    <div id="history-label" style="font-size:11px;color:var(--muted);margin-bottom:12px;font-family:'JetBrains Mono',monospace"></div>
+    <div id="history-live" style="margin-bottom:20px"></div>
+    <div id="history-final"></div>
   </section>
 
   <section class="section" id="schedule">
@@ -287,12 +347,56 @@ const standings = [
   {abbr:"COL",name:"Colorado Rockies",W:32,L:50,conf:"NL",div:"West"}
 ];
 
+// Team ID map for logos (MLB team IDs)
+const teamIds = {
+  ARI:109,ATL:144,BAL:110,BOS:111,CHC:112,CWS:145,CIN:113,CLE:114,
+  COL:115,DET:116,HOU:117,KC:118,LAA:108,LAD:119,MIA:146,MIL:158,
+  MIN:142,NYM:121,NYY:147,OAK:133,PHI:143,PIT:134,SD:135,SF:137,
+  SEA:136,STL:138,TB:139,TEX:140,TOR:141,WSH:120,ATH:133
+};
+function teamLogo(abbr) {
+  const id = teamIds[abbr];
+  if (!id) return '';
+  return `<img class="team-logo" src="https://www.mlbstatic.com/team-logos/${id}.svg" alt="${abbr}" onerror="this.style.display='none'">`;
+}
+
+// Build standings lookup: abbr -> {rank, gb, wl}
+function buildStandingsLookup() {
+  const lookup = {};
+  ['AL','NL'].forEach(conf => {
+    ['East','Central','West'].forEach(div => {
+      const teams = standings.filter(t => t.conf===conf && t.div===div)
+        .sort((a,b) => (b.W/(b.W+b.L)) - (a.W/(a.W+a.L)));
+      const ldr = teams[0];
+      teams.forEach((t,i) => {
+        const gb = i===0 ? null : (((ldr.W-t.W)+(t.L-ldr.L))/2);
+        lookup[t.abbr] = { rank:i+1, gb, wl:`${t.W}-${t.L}`, div:`${conf} ${div}` };
+      });
+    });
+  });
+  return lookup;
+}
+
+function teamBlock(abbr, name, standingsLookup) {
+  const st = standingsLookup?.[abbr];
+  const badgeHtml = st
+    ? `<div class="standings-badge"><span class="div-pos">#${st.rank}</span> ${st.div.split(' ')[1]} · <span>${st.wl}</span>${st.gb?' · <span class="gb-num">'+st.gb.toFixed(1)+'GB</span>':' · <span style="color:var(--green)">1st</span>'}</div>`
+    : '';
+  return `<div class="team-block">
+    ${teamLogo(abbr)}
+    <div class="team-abbr">${abbr}</div>
+    <div class="team-name">${name}</div>
+    ${badgeHtml}
+  </div>`;
+}
+
 function gameCard(g) {
   const { awayAbbr, homeAbbr, awayName, homeName, awayScore, homeScore, inning, status, time } = g;
   const isLive = status === 'live';
   const isFinal = status === 'final';
   const cls = isLive ? 'live' : isFinal ? 'closed' : 'scheduled';
   const label = isLive ? (inning || 'LIVE') : isFinal ? 'FINAL' : 'UPCOMING';
+  const sl = buildStandingsLookup();
 
   let scoreHTML = '';
   if (awayScore !== null && homeScore !== null) {
@@ -309,56 +413,67 @@ function gameCard(g) {
   return `<div class="game-card ${cls}">
     <div class="game-status ${cls}">${label}</div>
     <div class="matchup">
-      <div class="team-block"><div class="team-abbr">${awayAbbr}</div><div class="team-name">${awayName}</div></div>
+      ${teamBlock(awayAbbr, awayName, sl)}
       ${scoreHTML}
-      <div class="team-block"><div class="team-abbr">${homeAbbr}</div><div class="team-name">${homeName}</div></div>
+      ${teamBlock(homeAbbr, homeName, sl)}
     </div>
     <div class="game-time">${time}</div>
   </div>`;
 }
 
 function upcomingCard(g) {
+  const sl = buildStandingsLookup();
   return `<div class="game-card scheduled">
     <div class="game-status scheduled">UPCOMING</div>
     <div class="matchup">
-      <div class="team-block"><div class="team-abbr">${g.awayAbbr}</div><div class="team-name">${g.awayName}</div></div>
+      ${teamBlock(g.awayAbbr, g.awayName, sl)}
       <div style="font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--accent2);padding:0 8px">VS</div>
-      <div class="team-block"><div class="team-abbr">${g.homeAbbr}</div><div class="team-name">${g.homeName}</div></div>
+      ${teamBlock(g.homeAbbr, g.homeName, sl)}
     </div>
     <div class="game-time">${g.time}</div>
   </div>`;
 }
 
+// Keyed game state cache — gamePk -> last known card data
+const prevGames = {};
+
+function gameKey(g) { return g.gamePk || `${g.awayAbbr}-${g.homeAbbr}`; }
+
+function scoresDiffer(a, b) {
+  return a.awayScore !== b.awayScore ||
+         a.homeScore !== b.homeScore ||
+         a.inning    !== b.inning    ||
+         a.status    !== b.status;
+}
+
 async function loadScores() {
-  // Use local date in America/Chicago timezone to avoid UTC date mismatch
-  const today = new Date().toLocaleDateString('en-CA', {timeZone: 'America/Chicago'}); // YYYY-MM-DD
+  const today = new Date().toLocaleDateString('en-CA', {timeZone: 'America/Chicago'});
   const url = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${today}&hydrate=linescore,team&language=en`;
   try {
     const res = await fetch(url);
     const data = await res.json();
-
-    // API returns dates array — find today's entry
     const dateEntry = data.dates?.find(d => d.date === today) || data.dates?.[0];
     const games = dateEntry?.games || [];
 
     const live = [], final = [], upcoming = [];
+    const freshKeys = new Set();
 
     games.forEach(g => {
       const away = g.teams.away;
       const home = g.teams.home;
-      const state = g.status.abstractGameState; // 'Preview', 'Live', 'Final'
-      const detailedState = g.status.detailedState; // 'In Progress', 'Final', 'Scheduled', etc.
+      const state = g.status.abstractGameState;
+      const detailedState = g.status.detailedState;
       const dt = new Date(g.gameDate);
       const timeStr = dt.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', timeZone:'America/Chicago'}) + ' CDT';
       const linescore = g.linescore || {};
       const inningStr = linescore.currentInning
         ? `${linescore.inningHalf === 'Bottom' ? '▼' : '▲'} ${linescore.currentInning}`
         : detailedState === 'In Progress' ? 'LIVE' : null;
-
-      const isLive = state === 'Live' || detailedState === 'In Progress' || detailedState === 'Warmup';
-      const isFinal = state === 'Final' || detailedState === 'Final' || detailedState === 'Game Over';
+      const isLive   = state === 'Live' || detailedState === 'In Progress' || detailedState === 'Warmup';
+      const isFinal  = state === 'Final' || detailedState === 'Final' || detailedState === 'Game Over';
 
       const card = {
+        gamePk: g.gamePk,
         awayAbbr: away.team.abbreviation,
         homeAbbr: home.team.abbreviation,
         awayName: away.team.shortName || away.team.teamName,
@@ -370,26 +485,82 @@ async function loadScores() {
         status: isLive ? 'live' : isFinal ? 'final' : 'upcoming'
       };
 
+      const key = gameKey(card);
+      freshKeys.add(key);
+
       if (isLive) live.push(card);
       else if (isFinal) final.push(card);
       else upcoming.push(card);
     });
 
-    document.getElementById('live-games').innerHTML = live.length
-      ? live.map(gameCard).join('')
-      : '<div style="color:var(--muted);font-size:13px;padding:4px 0">No live games right now.</div>';
+    const isFirstLoad = Object.keys(prevGames).length === 0;
 
-    document.getElementById('final-games').innerHTML = final.length
-      ? final.map(gameCard).join('')
-      : '<div style="color:var(--muted);font-size:13px;padding:4px 0">No final games yet today.</div>';
+    if (isFirstLoad) {
+      // First load — render everything
+      document.getElementById('live-games').innerHTML = live.length
+        ? live.map(g => `<div id="game-${gameKey(g)}">${gameCard(g)}</div>`).join('')
+        : '<div style="color:var(--muted);font-size:13px;padding:4px 0">No live games right now.</div>';
 
-    document.getElementById('scheduled-games').innerHTML = upcoming.map(upcomingCard).join('');
+      document.getElementById('final-games').innerHTML = final.length
+        ? final.map(g => `<div id="game-${gameKey(g)}">${gameCard(g)}</div>`).join('')
+        : '<div style="color:var(--muted);font-size:13px;padding:4px 0">No final games yet today.</div>';
+
+      document.getElementById('scheduled-games').innerHTML =
+        upcoming.map(g => `<div id="game-${gameKey(g)}">${upcomingCard(g)}</div>`).join('');
+
+    } else {
+      // Subsequent loads — only patch changed games
+      let liveChanged = false, finalChanged = false, upcomingChanged = false;
+
+      [...live, ...final, ...upcoming].forEach(g => {
+        const key = gameKey(g);
+        const prev = prevGames[key];
+        const el = document.getElementById(`game-${key}`);
+
+        if (!el) {
+          // New game appeared (e.g. went from upcoming to live) — flag for full re-render
+          if (g.status === 'live') liveChanged = true;
+          else if (g.status === 'final') finalChanged = true;
+          else upcomingChanged = true;
+          return;
+        }
+
+        if (!prev || scoresDiffer(prev, g)) {
+          // Only update this card's inner HTML
+          el.innerHTML = g.status === 'upcoming' ? upcomingCard(g) : gameCard(g);
+        }
+
+        // Check if status bucket changed (e.g. game went from live → final)
+        if (prev && prev.status !== g.status) {
+          if (prev.status === 'live') liveChanged = true;
+          if (g.status === 'final') finalChanged = true;
+        }
+      });
+
+      // Re-render full sections only if a game changed buckets
+      if (liveChanged) {
+        document.getElementById('live-games').innerHTML = live.length
+          ? live.map(g => `<div id="game-${gameKey(g)}">${gameCard(g)}</div>`).join('')
+          : '<div style="color:var(--muted);font-size:13px;padding:4px 0">No live games right now.</div>';
+      }
+      if (finalChanged) {
+        document.getElementById('final-games').innerHTML = final.length
+          ? final.map(g => `<div id="game-${gameKey(g)}">${gameCard(g)}</div>`).join('')
+          : '<div style="color:var(--muted);font-size:13px;padding:4px 0">No final games yet today.</div>';
+      }
+      if (upcomingChanged) {
+        document.getElementById('scheduled-games').innerHTML =
+          upcoming.map(g => `<div id="game-${gameKey(g)}">${upcomingCard(g)}</div>`).join('');
+      }
+    }
+
+    // Update cache
+    [...live, ...final, ...upcoming].forEach(g => { prevGames[gameKey(g)] = { ...g }; });
 
     const now = new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
     document.getElementById('scores-refresh').textContent = `Updated ${now} · auto-refreshes every 30s`;
   } catch(e) {
     document.getElementById('scores-refresh').textContent = `Error: ${e.message}`;
-    document.getElementById('live-games').innerHTML = `<div style="color:var(--accent);font-size:12px">Failed to load scores: ${e.message}</div>`;
   }
 }
 
@@ -506,7 +677,7 @@ async function loadPitcherReport() {
       const iso = (s.slg!=null&&s.avg!=null) ? f(parseFloat(s.slg)-parseFloat(s.avg),3) : null;
       return {
         pitcher: p,
-        gameTime: p.gameTimestamp, // numeric for sorting
+        gameTime: p.gameTimestamp,
         ip: f(s.inningsPitched,1), bf: fI(s.battersFaced),
         fip: f(s.fip), avg: f(s.avg,3), woba: f(s.obp,3),
         whip: f(s.whip), iso, slg: f(s.slg,3),
@@ -515,6 +686,8 @@ async function loadPitcherReport() {
         era: f(s.era),
         rawHr9: parseFloat(s.homeRunsPer9) || 0,
         rawIp: parseFloat(s.inningsPitched) || 0,
+        rawK9: parseFloat(s.strikeoutsPer9Inn) || 0,
+        gamesStarted: parseInt(s.gamesStarted) || 20,
       };
     });
 
@@ -523,6 +696,7 @@ async function loadPitcherReport() {
     prSortDir = 1;
 
     renderPRTable();
+    loadKsToday();
   } catch(e) {
     document.getElementById('pr-content').innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
@@ -539,20 +713,20 @@ function renderPRTable() {
   const colCount = 14;
 
   const cols = [
-    {key:'gameTime', label:'TIME',    sortable:true},
-    {key:'name',     label:'PITCHER', sortable:false},
-    {key:'vs',       label:'VS',      sortable:false},
-    {key:'ip',       label:'IP',      sortable:true},
-    {key:'bf',       label:'BF',      sortable:true},
-    {key:'fip',      label:'FIP',     sortable:true},
-    {key:'avg',      label:'AVG ↓',   sortable:true},
-    {key:'woba',     label:'wOBA',    sortable:true},
-    {key:'whip',     label:'WHIP',    sortable:true},
-    {key:'iso',      label:'ISO',     sortable:true},
-    {key:'slg',      label:'SLG',     sortable:true},
-    {key:'hr',       label:'HR',      sortable:true},
-    {key:'hr9',      label:'HR/9',    sortable:true},
-    {key:'tb',       label:'TB',      sortable:true},
+    {key:'gameTime', label:'TIME',    sortable:true,  tip:'Game start time'},
+    {key:'name',     label:'PITCHER', sortable:false, tip:'Starting pitcher'},
+    {key:'vs',       label:'VS',      sortable:false, tip:'Opposing team'},
+    {key:'ip',       label:'IP',      sortable:true,  tip:'Innings Pitched'},
+    {key:'bf',       label:'BF',      sortable:true,  tip:'Batters Faced'},
+    {key:'fip',      label:'FIP',     sortable:true,  tip:'Fielding Independent Pitching — ERA based only on K, BB, HR'},
+    {key:'avg',      label:'AVG ↓',   sortable:true,  tip:'Batting Average Against'},
+    {key:'woba',     label:'wOBA',    sortable:true,  tip:'Weighted On-Base Average (shown as OBP when wOBA unavailable)'},
+    {key:'whip',     label:'WHIP',    sortable:true,  tip:'Walks + Hits per Inning Pitched'},
+    {key:'iso',      label:'ISO',     sortable:true,  tip:'Isolated Power (SLG − AVG) — extra-base power allowed'},
+    {key:'slg',      label:'SLG',     sortable:true,  tip:'Slugging Percentage Against'},
+    {key:'hr',       label:'HR',      sortable:true,  tip:'Home Runs Allowed'},
+    {key:'hr9',      label:'HR/9',    sortable:true,  tip:'Home Runs per 9 Innings'},
+    {key:'tb',       label:'TB',      sortable:true,  tip:'Total Bases Allowed'},
   ];
 
   const sorted = [...prRows].sort((a,b) => {
@@ -571,6 +745,22 @@ function renderPRTable() {
     const expandId = `pr-expand-${p.id}`;
     const isExpanded = expandedRows.has(p.id);
 
+    // K O/U tag — modeled from K/9 and innings projection
+    // Typical start ~5-6 IP, so projected Ks = K/9 * projectedIP / 9
+    const k9 = r.rawK9 || 0;
+    const projIP = Math.min(r.rawIp > 0 ? Math.min(r.rawIp / Math.max(r.pitcher.gamesStarted||20, 1) * 1, 6.5) : 5.5, 7);
+    const projK = +(k9 * projIP / 9).toFixed(1);
+    // O/U line = projK rounded to nearest .5
+    const ouLine = Math.round(projK * 2) / 2;
+    const ouTag = ouLine > 0 ? `<span class="k-ou-tag">${ouLine} K O/U</span>` : '';
+
+    // K projection: HIGH if K/9 > 9.5, LOW if < 6.5
+    const kProjTag = k9 >= 9.5
+      ? `<span class="k-proj-tag k-proj-high">⬆ HIGH K GAME</span>`
+      : k9 <= 6.0
+      ? `<span class="k-proj-tag k-proj-low">⬇ LOW K GAME</span>`
+      : `<span class="k-proj-tag k-proj-avg">AVG K GAME</span>`;
+
     const mainRow = `<tr class="pr-main-row" id="${rowId}">
       <td><span class="pr-time" style="color:${p.timeColor};font-weight:${p.timeLabel.includes('LIVE')?700:400}">${p.timeLabel}</span></td>
       <td>
@@ -580,6 +770,8 @@ function renderPRTable() {
             <span class="pr-pitcher-name">${p.name}</span>
             <div class="pr-pitcher-sub">
               <span class="pr-wl">${p.teamAbbr} · ${r.wl}</span>
+              ${ouTag}
+              ${kProjTag}
               <button class="btn-lineup${isExpanded?' active':''}" onclick="toggleLineup('${p.id}', '${p.name.replace(/'/g,"\\'")}', ${p.gamePk}, '${p.side}', ${p.oppTeamId}, ${r.rawHr9}, ${r.rawIp})">
                 ${isExpanded ? '▲ HIDE' : '▼ BATTING LINEUP & MATCHUPS'}
               </button>
@@ -613,9 +805,10 @@ function renderPRTable() {
   }).join('');
 
   const ths = cols.map(c => {
-    if (!c.sortable) return `<th>${c.label}</th>`;
+    const tip = c.tip ? ` data-tip="${c.tip}"` : '';
+    if (!c.sortable) return `<th${tip}>${c.label}</th>`;
     const cls = prSortCol===c.key ? (prSortDir===1?'sort-asc':'sort-desc') : '';
-    return `<th class="${cls}" onclick="sortPR('${c.key}')">${c.label}</th>`;
+    return `<th class="${cls}"${tip} onclick="sortPR('${c.key}')">${c.label}</th>`;
   }).join('');
 
   el.innerHTML = `
@@ -672,9 +865,8 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
   const panel = document.getElementById(`panel-${pitcherId}`);
   if (!panel) return;
 
-  // Show a subtle refresh indicator if already has content, else full loader
-  const hasContent = panel.querySelector('.batter-row-item');
-  if (!hasContent) panel.innerHTML = `<div style="padding:12px 0;color:var(--muted);font-size:12px"><span class="spin"></span> Loading lineup…</div>`;
+  const isFirstLoad = !panel.querySelector('[data-batter-id]');
+  if (isFirstLoad) panel.innerHTML = `<div style="padding:12px 0;color:var(--muted);font-size:12px"><span class="spin"></span> Loading lineup…</div>`;
 
   try {
     const oppSide = side === 'away' ? 'home' : 'away';
@@ -727,11 +919,67 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
     }));
 
     const cacheKey = `${gamePk}-${side}`;
+    const prevLineup = lineupCache[cacheKey]?.lineup || [];
     lineupCache[cacheKey] = { lineup, oppSide, teamAbbr: box.teams?.[oppSide]?.team?.abbreviation || '' };
-    renderLineup(`panel-${pitcherId}`, lineupCache[cacheKey], pitcherHr9, pitcherIp, null, pitcherId, pitcherName);
+
+    if (isFirstLoad) {
+      // Full render on first load
+      renderLineup(`panel-${pitcherId}`, lineupCache[cacheKey], pitcherHr9, pitcherIp, null, pitcherId, pitcherName);
+    } else {
+      // Diff — only update batter rows that changed
+      let anyChanged = false;
+      lineup.forEach((b, i) => {
+        const prev = prevLineup[i];
+        const rowEl = document.querySelector(`[data-batter-id="${b.id}"]`);
+        if (!rowEl) { anyChanged = true; return; }
+        const todayChanged  = prev?.todayHR  !== b.todayHR;
+        const last10Changed = prev?.last10HR !== b.last10HR;
+        if (todayChanged || last10Changed) {
+          anyChanged = true;
+          // Patch just the stats sub-line and highlight
+          const statsEl = rowEl.querySelector('.batter-stats-line');
+          const nameEl  = rowEl.querySelector('.batter-name-span');
+          const badgeEl = rowEl.querySelector('.hr-today-badge');
+          if (statsEl) statsEl.innerHTML = buildBatterStatsLine(b);
+          if (nameEl)  nameEl.style.color = b.todayHR > 0 ? 'var(--accent2)' : 'var(--text)';
+          if (b.todayHR > 0 && !badgeEl) {
+            const badge = document.createElement('span');
+            badge.className = 'hr-today-badge';
+            badge.style.cssText = 'background:#2a1500;color:#f4a261;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166';
+            badge.textContent = `💥 HR TODAY${b.todayHR > 1 ? ' x'+b.todayHR : ''}`;
+            nameEl?.parentElement?.appendChild(badge);
+          } else if (b.todayHR === 0 && badgeEl) {
+            badgeEl.remove();
+          }
+          // Update row background
+          rowEl.style.background = b.todayHR > 0 ? 'linear-gradient(90deg,#2a1a00 0%,#1a1200 100%)' : '';
+          rowEl.style.borderLeft  = b.todayHR > 0 ? '3px solid var(--accent2)' : '';
+        }
+      });
+
+      // Update timestamp
+      const tsEl = panel.querySelector('.lineup-timestamp');
+      if (tsEl) tsEl.textContent = `updated ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
+    }
   } catch(e) {
-    if (panel) panel.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error loading lineup: ${e.message}</div>`;
+    if (isFirstLoad && panel) panel.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error loading lineup: ${e.message}</div>`;
   }
+}
+
+function buildBatterStatsLine(b) {
+  const s = b.stats;
+  function fmtS(v) {
+    if (!v||v==='---') return '–';
+    const n=parseFloat(v); return isNaN(n)?'–':n.toFixed(3).replace(/^0/,'');
+  }
+  const last10HR = b.last10HR;
+  const last10Display = last10HR === null
+    ? '<span style="color:var(--muted);font-size:10px">–</span>'
+    : `<span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:${last10HR>=3?'var(--accent2)':last10HR>=1?'#90ee60':'var(--muted)'}">${last10HR}</span><span style="font-size:9px;color:var(--muted)"> HR</span>`;
+  return `<span>AVG <strong style="color:var(--text)">${fmtS(s.avg)}</strong></span>
+    <span>HR <strong style="color:${parseInt(s.homeRuns)>=10?'var(--accent2)':'var(--text)'}">${s.homeRuns??'–'}</strong></span>
+    <span>OPS <strong style="color:var(--text)">${fmtS(s.ops)}</strong></span>
+    <span style="display:flex;align-items:center;gap:4px">L10 ${last10Display}</span>`;
 }
 
 function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, pitcherName) {
@@ -757,41 +1005,42 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
     return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0/,'');
   }
 
+  // Matchup label — based on batter K% vs pitcher K/9 and batter OPS
+  function matchupLabel(s) {
+    const kpct = (s.strikeOuts && s.plateAppearances) ? s.strikeOuts/s.plateAppearances : 0.22;
+    const ops  = parseFloat(s.ops) || 0.700;
+    const pk9  = pitcherHr9 * 9 || 8.0; // proxy from hr9
+    let score = 0;
+    if (kpct < 0.18) score += 2; else if (kpct > 0.28) score -= 2;
+    if (ops > 0.820) score += 2; else if (ops < 0.680) score -= 1;
+    if (pk9 > 10.0) score -= 2; else if (pk9 < 7.0) score += 1;
+    if (score >= 2) return `<span class="matchup-label ml-good">✓ GOOD MATCHUP</span>`;
+    if (score <= -2) return `<span class="matchup-label ml-bad">✗ TOUGH MATCHUP</span>`;
+    return `<span class="matchup-label ml-neutral">~ NEUTRAL</span>`;
+  }
+
   const cards = withProbs.map((b, i) => {
     const s = b.stats;
-    const isTop = i === topIdx && !b.todayHR; // today HR badge takes priority
+    const isTop = i === topIdx; // persists regardless of todayHR
     const homerToday = b.todayHR > 0;
     const barPct = maxProb > 0 ? (b.hrProb / maxProb) * 100 : 0;
     const barColor = homerToday ? '#f4a261' : isTop ? '#f4a261' : b.hrProb > maxProb * 0.7 ? '#e63946' : '#2ecc71';
     const pName = (pitcherName||'').replace(/'/g,"\\'");
     const bName = b.name.replace(/'/g,"\\'");
+    const rowBg = homerToday ? 'background:linear-gradient(90deg,#2a1a00 0%,#1a1200 100%);border-left:3px solid var(--accent2);' : '';
 
-    // Last 10 HR dots — filled circle per HR, empty per game without
-    const last10HR = b.last10HR;
-    const last10Display = last10HR === null
-      ? '<span style="color:var(--muted);font-size:10px">–</span>'
-      : `<span style="font-family:\'JetBrains Mono\',monospace;font-size:13px;font-weight:700;color:${last10HR>=3?'var(--accent2)':last10HR>=1?'#90ee60':'var(--muted)'}">${last10HR}</span>
-         <span style="font-size:9px;color:var(--muted)">HR</span>`;
-
-    // Row highlight if homered today
-    const rowBg = homerToday
-      ? 'background:linear-gradient(90deg,#2a1a00 0%,#1a1200 100%);border-left:3px solid var(--accent2);'
-      : '';
-
-    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0 10px ${homerToday?'8px':'11px'};border-bottom:1px solid var(--border);${rowBg}border-radius:${homerToday?'4px':'0'}">
+    return `<div data-batter-id="${b.id}" style="display:flex;align-items:center;gap:12px;padding:10px 0 10px ${homerToday?'8px':'11px'};border-bottom:1px solid var(--border);${rowBg}border-radius:${homerToday?'4px':'0'}">
       <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-width:14px">${i+1}</span>
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <span style="font-size:13px;font-weight:700;color:${homerToday?'var(--accent2)':'var(--text)'}">${b.name}</span>
+          <span class="batter-name-span" style="font-size:13px;font-weight:700;color:${homerToday?'var(--accent2)':'var(--text)'}">${b.name}</span>
           <span class="batter-pos">${b.pos}</span>
-          ${homerToday ? `<span style="background:#2a1500;color:#f4a261;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166">💥 HR TODAY${b.todayHR>1?' x'+b.todayHR:''}</span>` : ''}
+          ${homerToday ? `<span class="hr-today-badge" style="background:#2a1500;color:#f4a261;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166">💥 HR TODAY${b.todayHR>1?' x'+b.todayHR:''}</span>` : ''}
           ${isTop ? `<span class="top-hr-badge">⚡ TOP HR THREAT</span>` : ''}
         </div>
-        <div style="display:flex;gap:12px;margin-top:4px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);flex-wrap:wrap">
-          <span>AVG <strong style="color:var(--text)">${fmtS(s.avg)}</strong></span>
-          <span>HR <strong style="color:${parseInt(s.homeRuns)>=10?'var(--accent2)':'var(--text)'}">${s.homeRuns??'–'}</strong></span>
-          <span>OPS <strong style="color:var(--text)">${fmtS(s.ops)}</strong></span>
-          <span style="display:flex;align-items:center;gap:4px">L10 ${last10Display}</span>
+        <div style="margin-top:3px">${matchupLabel(s)}</div>
+        <div class="batter-stats-line" style="display:flex;gap:12px;margin-top:4px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);flex-wrap:wrap">
+          ${buildBatterStatsLine(b)}
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
@@ -809,7 +1058,7 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
     </div>`;
   }).join('');
 
-  const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+
   panel.innerHTML = `
     <div style="padding:4px 0 10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
       <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent)">
@@ -819,7 +1068,7 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
         <span><span style="color:var(--accent2)">💥 HR TODAY</span> = homered this game</span>
         <span><span style="color:#90ee60">L10</span> = HRs in last 10 games</span>
         <span>⚔ for matchup</span>
-        <span style="font-family:'JetBrains Mono',monospace;color:var(--border)">updated ${now}</span>
+        <span class="lineup-timestamp" style="font-family:'JetBrains Mono',monospace;color:var(--border)">updated ${now}</span>
       </div>
     </div>
     ${cards}`;
@@ -1072,6 +1321,239 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
 }
 
 
+// ── HEADER DATE (dynamic) ─────────────────────────────────────────────
+function updateHeaderDate() {
+  const now = new Date();
+  const label = now.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', year:'numeric', timeZone:'America/Chicago'}).toUpperCase();
+  const el = document.getElementById('header-date');
+  if (el) el.textContent = label;
+}
+updateHeaderDate();
+
+// ── MIDNIGHT AUTO-REFRESH ─────────────────────────────────────────────
+function scheduleMidnightRefresh() {
+  const now = new Date();
+  const midnight = new Date();
+  midnight.setHours(24, 0, 5, 0); // 12:00:05am to ensure day has flipped
+  const msUntilMidnight = midnight - now;
+  setTimeout(() => {
+    updateHeaderDate();
+    Object.keys(prevGames).forEach(k => delete prevGames[k]); // clear game cache
+    loadScores(); // reload with new day's games
+    scheduleMidnightRefresh(); // reschedule for next midnight
+  }, msUntilMidnight);
+}
+scheduleMidnightRefresh();
+
+// ── PREVIOUS SCORES TAB ───────────────────────────────────────────────
+let historyCurrentDate = null;
+
+function historyCardHTML(g, abbr2id) {
+  function logoHTML(abbr) {
+    const id = teamIds[abbr];
+    return id ? `<img class="team-logo" src="https://www.mlbstatic.com/team-logos/${id}.svg" alt="${abbr}" onerror="this.style.display='none'">` : '';
+  }
+  const away = g.teams.away, home = g.teams.home;
+  const awayAbbr = away.team.abbreviation, homeAbbr = home.team.abbreviation;
+  const awayScore = away.score ?? null, homeScore = home.score ?? null;
+  const state = g.status.abstractGameState;
+  const isFinal = state === 'Final' || g.status.detailedState === 'Final';
+  const isLive = state === 'Live' || g.status.detailedState === 'In Progress';
+  const cls = isLive ? 'live' : isFinal ? 'closed' : 'scheduled';
+  const label = isLive ? 'LIVE' : isFinal ? 'FINAL' : g.status.detailedState || 'SCHEDULED';
+  const dt = new Date(g.gameDate);
+  const timeStr = dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'}) + ' CDT';
+  const sl = buildStandingsLookup();
+
+  let scoreHTML = '';
+  if (awayScore !== null && homeScore !== null) {
+    const awayW = awayScore > homeScore, homeW = homeScore > awayScore;
+    scoreHTML = `<div class="score-block">
+      <span class="${awayW?'score-win':'score-loss'}">${awayScore}</span>
+      <span class="score-sep">–</span>
+      <span class="${homeW?'score-win':'score-loss'}">${homeScore}</span>
+    </div>`;
+  } else {
+    scoreHTML = `<div style="font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--accent2);padding:0 8px">VS</div>`;
+  }
+  return `<div class="game-card ${cls}">
+    <div class="game-status ${cls}">${label}</div>
+    <div class="matchup">
+      ${teamBlock(awayAbbr, away.team.shortName||away.team.teamName, sl)}
+      ${scoreHTML}
+      ${teamBlock(homeAbbr, home.team.shortName||home.team.teamName, sl)}
+    </div>
+    <div class="game-time">${timeStr}</div>
+  </div>`;
+}
+
+async function loadHistory(dateStr) {
+  if (!dateStr) return;
+  historyCurrentDate = dateStr;
+  document.getElementById('history-date').value = dateStr;
+
+  const dt = new Date(dateStr + 'T12:00:00');
+  const label = dt.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).toUpperCase();
+  document.getElementById('history-label').textContent = label;
+  document.getElementById('history-final').innerHTML = `<div class="mu-empty"><span class="spin"></span> Loading scores for ${label}…</div>`;
+  document.getElementById('history-live').innerHTML = '';
+
+  // Disable next button if date is today or future
+  const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+  const nextBtn = document.querySelector('.hist-nav-btn:last-child');
+  if (nextBtn) nextBtn.disabled = dateStr >= today;
+
+  try {
+    const res = await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${dateStr}&hydrate=linescore,team&language=en`);
+    const data = await res.json();
+    const entry = data.dates?.find(d => d.date === dateStr) || data.dates?.[0];
+    const games = entry?.games || [];
+
+    if (!games.length) {
+      document.getElementById('history-final').innerHTML = `<div class="mu-empty">No games found for this date.</div>`;
+      return;
+    }
+
+    const live = [], final = [], other = [];
+    games.forEach(g => {
+      const state = g.status.abstractGameState;
+      if (state === 'Live' || g.status.detailedState === 'In Progress') live.push(g);
+      else if (state === 'Final') final.push(g);
+      else other.push(g);
+    });
+
+    if (live.length) {
+      document.getElementById('history-live').innerHTML = `
+        <div class="live-badge" style="margin-bottom:10px"><div class="live-dot"></div>IN PROGRESS</div>
+        <div class="games-grid">${live.map(g => historyCardHTML(g)).join('')}</div>`;
+    }
+
+    document.getElementById('history-final').innerHTML = final.length
+      ? `<p class="section-title" style="font-size:18px;margin-bottom:12px">FINAL <span>SCORES</span></p>
+         <div class="games-grid">${final.map(g => historyCardHTML(g)).join('')}</div>
+         ${other.length ? `<p class="section-title" style="font-size:16px;margin:16px 0 10px">SCHEDULED</p><div class="games-grid">${other.map(g=>historyCardHTML(g)).join('')}</div>` : ''}`
+      : `<div class="mu-empty">No final scores yet for this date.</div>`;
+  } catch(e) {
+    document.getElementById('history-final').innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
+  }
+}
+
+function historyNav(dir) {
+  const base = historyCurrentDate
+    ? new Date(historyCurrentDate + 'T12:00:00')
+    : new Date();
+  base.setDate(base.getDate() + dir);
+  const newDate = base.toLocaleDateString('en-CA');
+  const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+  if (newDate > today) return;
+  loadHistory(newDate);
+}
+
+// Init history tab with yesterday's date
+function initHistoryTab() {
+  if (historyCurrentDate) return; // already loaded
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yd = yesterday.toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
+  loadHistory(yd);
+}
+
+
+// ── K'S TODAY ────────────────────────────────────────────────────────
+async function loadKsToday() {
+  const el = document.getElementById('ks-today-content');
+  if (!el) return;
+  try {
+    const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
+    const res = await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team&language=en`);
+    const data = await res.json();
+    const entry = data.dates?.find(d => d.date === today) || data.dates?.[0];
+    const games = entry?.games || [];
+
+    const allPitchers = [];
+
+    for (const g of games) {
+      const dt = new Date(g.gameDate);
+      const timeStr = dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'});
+      const awayAbbr = g.teams.away.team.abbreviation;
+      const homeAbbr = g.teams.home.team.abbreviation;
+      const gameLabel = `${awayAbbr} @ ${homeAbbr}`;
+      const state = g.status.abstractGameState;
+
+      // Try to get boxscore from hydrated data or fetch it
+      let box = g.teams;
+      if (!box?.away?.pitchers) {
+        try {
+          const br = await fetch(`https://statsapi.mlb.com/api/v1/game/${g.gamePk}/boxscore`);
+          const bd = await br.json();
+          box = bd.teams;
+        } catch { continue; }
+      }
+
+      ['away','home'].forEach(side => {
+        const team = box?.[side];
+        if (!team) return;
+        const abbr = side === 'away' ? awayAbbr : homeAbbr;
+        (team.pitchers || []).forEach(id => {
+          const p = team.players?.[`ID${id}`];
+          if (!p) return;
+          const ks = parseInt(p.stats?.pitching?.strikeOuts) || 0;
+          const ip = p.stats?.pitching?.inningsPitched || '0.0';
+          allPitchers.push({
+            name: p.person?.fullName || '–',
+            id: p.person?.id,
+            teamAbbr: abbr,
+            ks, ip,
+            gameLabel, timeStr,
+            gameTimestamp: dt.getTime(),
+            isSP: (team.pitchers || [])[0] === id, // first pitcher = starter
+          });
+        });
+      });
+    }
+
+    if (!allPitchers.length) {
+      el.innerHTML = `<div class="mu-empty">No strikeout data yet — check back once games are underway.</div>`;
+      return;
+    }
+
+    // Sort by game time, then starters first, then by Ks desc within each game
+    allPitchers.sort((a,b) => {
+      if (a.gameTimestamp !== b.gameTimestamp) return a.gameTimestamp - b.gameTimestamp;
+      if (a.isSP !== b.isSP) return a.isSP ? -1 : 1;
+      return b.ks - a.ks;
+    });
+
+    const hs = id => id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_32,q_auto:best/v1/people/${id}/headshot/67/current` : '';
+
+    const rows = allPitchers.map(p => {
+      const ksColor = p.ks >= 8 ? 'var(--green)' : p.ks >= 5 ? 'var(--accent2)' : 'var(--text)';
+      return `<div class="ks-today-row">
+        <div style="display:flex;flex-direction:column;gap:1px;min-width:90px">
+          <span class="ks-game-label">${p.gameLabel}</span>
+          <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">${p.timeStr} ${p.isSP?'· SP':''}</span>
+        </div>
+        <img src="${hs(p.id)}" style="width:32px;height:32px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'" alt="">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600">${p.name}</div>
+          <div style="font-size:10px;color:var(--muted)">${p.teamAbbr} · ${p.ip} IP</div>
+        </div>
+        <div class="ks-count" style="color:${ksColor}">${p.ks}</div>
+        <div style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-width:12px">K</div>
+      </div>`;
+    }).join('');
+
+    el.innerHTML = rows || `<div class="mu-empty">No strikeout data yet.</div>`;
+  } catch(e) {
+    const el2 = document.getElementById('ks-today-content');
+    if (el2) el2.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error loading Ks: ${e.message}</div>`;
+  }
+}
+
+// Refresh Ks Today every 60s alongside scores
+setInterval(() => { if (document.getElementById('ks-today-content')) loadKsToday(); }, 60000);
+
+
 function showTab(id, el) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -1081,6 +1563,7 @@ function showTab(id, el) {
     matchupLoaded = true;
     loadPitcherReport();
   }
+  if (id === 'history') initHistoryTab();
 }
 
 function showLeague(conf, el) {
