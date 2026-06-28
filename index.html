@@ -319,7 +319,8 @@
   .hrp-batter-info { display:flex; flex-direction:column; gap:2px; }
   .hrp-batter-name { font-size:13px; font-weight:700; }
   .hrp-batter-sub { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
-  .hrp-prob-cell { display:flex; align-items:center; gap:6px; }
+  .hrp-matchup-btn { background:#1a1a2e; border:1px solid #6c63ff; color:#a78bfa; font-size:9px; font-weight:700; padding:2px 8px; border-radius:4px; cursor:pointer; font-family:'Inter',sans-serif; letter-spacing:.3px; white-space:nowrap; transition:all .15s; }
+  .hrp-matchup-btn:hover { background:#252565; border-color:#a78bfa; color:#fff; }
   .hrp-bar-wrap { width:60px; height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
   .hrp-bar-fill { height:100%; border-radius:3px; }
 
@@ -527,7 +528,41 @@
   </section>
 </main>
 
-<!-- Batter vs Pitcher Matchup Modal -->
+<!-- Paywall Modal -->
+<div id="paywall-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:998;display:none;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closePaywall()">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;max-width:400px;width:100%;overflow:hidden;position:relative">
+    <!-- Header gradient -->
+    <div style="background:linear-gradient(135deg,#1a0a2e,#0d1a3a);padding:28px 24px 20px;text-align:center;border-bottom:1px solid var(--border)">
+      <div style="font-size:32px;margin-bottom:8px">🔒</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--text)">PREMIUM FEATURE</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:6px">Pitcher Matchup Analysis is a premium feature</div>
+    </div>
+    <!-- Body -->
+    <div style="padding:24px">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:18px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--accent2);margin-bottom:8px;text-transform:uppercase">What you get:</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.8">
+          ⚔ Head-to-head stats vs the pitcher<br>
+          🎯 Strike zone vulnerability map<br>
+          📊 Pitch mix & batter opportunity<br>
+          🔍 Full scouting report
+        </div>
+      </div>
+      <!-- Promo code -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted);margin-bottom:8px;text-transform:uppercase">Have a promo code?</div>
+        <div style="display:flex;gap:8px">
+          <input id="promo-input" type="text" placeholder="Enter promo code" style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;outline:none;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')applyPromo()">
+          <button onclick="applyPromo()" style="background:var(--accent);color:white;border:none;padding:9px 16px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">APPLY</button>
+        </div>
+        <div id="promo-msg" style="font-size:11px;margin-top:6px;min-height:16px"></div>
+      </div>
+      <button onclick="closePaywall()" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:10px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Maybe Later</button>
+    </div>
+  </div>
+</div>
+
+
 <div id="mu-modal-overlay" class="mu-modal-overlay" style="display:none" onclick="if(event.target===this)closeMatchup()">
   <div class="mu-modal">
     <div class="mu-modal-head">
@@ -1294,7 +1329,70 @@ function sortPR(col) {
 }
 
 
-// ── BATTER VS PITCHER MATCHUP MODAL ──────────────────────────────────
+// ── PAYWALL ───────────────────────────────────────────────────────────
+const PROMO_CODE = 'BIGMONEY';
+let matchupUnlocked = sessionStorage.getItem('matchupUnlocked') === 'true';
+let pendingMatchup = null; // stores args while paywall is open
+
+function checkMatchupAccess(batterId, batterName, pitcherId, pitcherName) {
+  if (matchupUnlocked) {
+    openMatchup(batterId, batterName, pitcherId, pitcherName);
+    return;
+  }
+  pendingMatchup = { batterId, batterName, pitcherId, pitcherName };
+  const overlay = document.getElementById('paywall-overlay');
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  document.getElementById('promo-input').value = '';
+  document.getElementById('promo-msg').textContent = '';
+}
+
+function applyPromo() {
+  const input = document.getElementById('promo-input').value.trim().toUpperCase();
+  const msg = document.getElementById('promo-msg');
+  if (input === PROMO_CODE) {
+    matchupUnlocked = true;
+    sessionStorage.setItem('matchupUnlocked', 'true');
+    msg.style.color = 'var(--green)';
+    msg.textContent = '✓ Code applied! Pitcher Matchup unlocked.';
+    // Update all locked buttons to show unlocked state
+    document.querySelectorAll('.hrp-matchup-btn').forEach(btn => {
+      btn.textContent = btn.textContent.replace('🔒 ', '⚔ ');
+    });
+    setTimeout(() => {
+      closePaywall();
+      if (pendingMatchup) {
+        const { batterId, batterName, pitcherId, pitcherName } = pendingMatchup;
+        openMatchup(batterId, batterName, pitcherId, pitcherName);
+        pendingMatchup = null;
+      }
+    }, 800);
+  } else {
+    msg.style.color = 'var(--accent)';
+    msg.textContent = '✗ Invalid promo code. Try again.';
+    document.getElementById('promo-input').style.borderColor = 'var(--accent)';
+    setTimeout(() => {
+      document.getElementById('promo-input').style.borderColor = 'var(--border)';
+    }, 1500);
+  }
+}
+
+function closePaywall() {
+  document.getElementById('paywall-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+  pendingMatchup = null;
+}
+
+// On load, if already unlocked this session, update button labels
+if (matchupUnlocked) {
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.hrp-matchup-btn').forEach(btn => {
+      btn.textContent = btn.textContent.replace('🔒 ', '⚔ ');
+    });
+  });
+}
+
+
 function closeMatchup() {
   document.getElementById('mu-modal-overlay').style.display = 'none';
   document.body.style.overflow = '';
@@ -1995,8 +2093,9 @@ function renderHRPTable() {
               ${homerToday?`<span style="background:#2a1500;color:#f4a261;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166;white-space:nowrap">💥 HR TODAY${r.todayHR>1?' ×'+r.todayHR:''}</span>`:''}
               ${r.hrProb>=8?`<span class="top-hr-badge">⚡ TOP HR THREAT</span>`:''}
             </div>
-            <div class="hrp-batter-sub" style="gap:4px;flex-wrap:wrap;margin-top:1px">
+            <div class="hrp-batter-sub" style="gap:4px;flex-wrap:wrap;margin-top:2px">
               ${tl(r.teamAbbr)}<span style="font-size:10px;color:var(--muted)">${r.teamAbbr} · ${r.pos}</span>
+              <button class="hrp-matchup-btn" onclick="checkMatchupAccess(${r.id},'${r.name.replace(/'/g,"\\'")}',${r.pitcherId},'${r.pitcherName.replace(/'/g,"\\'")}'">${matchupUnlocked ? '⚔' : '🔒'} PITCHER MATCHUP · vs ${r.pitcherName}</button>
             </div>
           </div>
         </div>
