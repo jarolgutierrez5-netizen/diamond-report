@@ -800,7 +800,7 @@ async function loadScores() {
     [...live, ...final, ...upcoming].forEach(g => { prevGames[gameKey(g)] = { ...g }; });
 
     const now = new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
-    document.getElementById('scores-refresh').textContent = `Updated ${now}`;
+    document.getElementById('scores-refresh').textContent = `Last Last updated ${now}`;
     updatePropsLiveBanner(live);
     // Load HR/K data for the Today's Games banner on first load
     loadHRsToday();
@@ -1172,7 +1172,7 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
 
       // Update timestamp
       const tsEl = panel.querySelector('.lineup-timestamp');
-      if (tsEl) tsEl.textContent = `updated ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
+      if (tsEl) tsEl.textContent = `Last updated ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
     }
   } catch(e) {
     if (isFirstLoad && panel) panel.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error loading lineup: ${e.message}</div>`;
@@ -1281,7 +1281,7 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
         <span><span style="color:var(--accent2)">💥 HR TODAY</span> = homered this game</span>
         <span><span style="color:#90ee60">L10</span> = HRs in last 10 games</span>
         <span>⚔ for matchup</span>
-        <span class="lineup-timestamp" style="font-family:'JetBrains Mono',monospace;color:var(--border)">updated ${now}</span>
+        <span class="lineup-timestamp" style="font-family:'JetBrains Mono',monospace;color:var(--border)">Last updated ${now}</span>
       </div>
     </div>
     ${cards}`;
@@ -1938,7 +1938,7 @@ async function loadHRPotential() {
     renderHRPTable();
 
     const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-    if (refresh) refresh.textContent = `Updated ${now}`;
+    if (refresh) refresh.textContent = `Last updated ${now}`;
   } catch(e) {
     const el2 = document.getElementById('hr-potential-content');
     if (el2) el2.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
@@ -1989,9 +1989,9 @@ function renderHRPTable() {
       <td>
         <div class="hrp-batter-cell">
           <img class="hrp-headshot" src="${hs(r.id)}" onerror="this.style.visibility='hidden'" alt="">
-          <div class="hrp-batter-info">
+          <div class="hrp-batter-info" style="gap:1px">
             <span class="hrp-batter-name" style="color:${homerToday?'var(--accent2)':'var(--text)'}">${r.name}</span>
-            <div class="hrp-batter-sub" style="gap:5px;margin-top:3px;flex-wrap:wrap">
+            <div class="hrp-batter-sub" style="gap:5px;flex-wrap:wrap">
               ${tl(r.teamAbbr)}<span style="font-size:10px;color:var(--muted)">${r.teamAbbr} · ${r.pos}</span>
               ${homerToday?`<span style="background:#2a1500;color:#f4a261;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166;white-space:nowrap">💥 HR TODAY${r.todayHR>1?' ×'+r.todayHR:''}</span>`:''}
               <span class="top-hr-badge" style="${r.hrProb>=8?'':'display:none'}">⚡ TOP HR THREAT</span>
@@ -2347,7 +2347,8 @@ async function loadKProps() {
     kPropsLoadedAt = new Date();
     renderKProps();
 
-    if (refreshEl) refreshEl.textContent = `Updated ${kPropsLoadedAt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
+    const kpTime = kPropsLoadedAt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    if (refreshEl) refreshEl.textContent = `Last updated ${kpTime}`;
   } catch(e) {
     if(el) el.innerHTML=`<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
