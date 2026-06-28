@@ -345,6 +345,37 @@
   .kprop-pred-val { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:1px; }
   .kprop-pred-lbl { font-size:9px; letter-spacing:1px; text-transform:uppercase; margin-top:1px; opacity:.8; }
   .kprop-reasoning { font-size:10px; color:var(--muted); line-height:1.5; flex:1; min-width:180px; }
+  /* Live Alert Banner */
+  @keyframes marquee {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  @keyframes shimmer {
+    0%,100% { opacity:1; } 50% { opacity:.7; }
+  }
+  .alert-chip {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:5px 14px; margin:0 8px;
+    font-size:12px; font-weight:800; border-radius:20px;
+    white-space:nowrap; letter-spacing:.3px;
+    box-shadow:0 0 10px rgba(0,0,0,.4);
+    transition:transform .2s;
+  }
+  .alert-hr {
+    background:linear-gradient(135deg,#7c2d12,#c2410c);
+    color:#fff;
+    border:1px solid #fb923c;
+    box-shadow:0 0 12px #f97316aa, 0 0 4px #f97316;
+    text-shadow:0 1px 3px rgba(0,0,0,.5);
+  }
+  .alert-k {
+    background:linear-gradient(135deg,#14532d,#15803d);
+    color:#fff;
+    border:1px solid #4ade80;
+    box-shadow:0 0 12px #22c55eaa, 0 0 4px #22c55e;
+    text-shadow:0 1px 3px rgba(0,0,0,.5);
+  }
+  .alert-sep { color:#334155; padding:0 6px; font-size:18px; font-weight:300; }
 </style>
 <meta name="google-adsense-account" content="ca-pub-6433797533342090">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6433797533342090"
@@ -376,6 +407,22 @@
   <div class="tab" onclick="showTab('matchups', this)">Pitcher Report</div>
   <div class="tab" onclick="showTab('schedule', this)">Schedule</div>
 </nav>
+
+<div id="live-alert-banner" style="display:none;background:linear-gradient(90deg,#0a0e1a 0%,#0f172a 40%,#0a0e1a 100%);border-top:1px solid #1e3a5f;border-bottom:2px solid #1e3a5f;overflow:hidden;position:relative">
+  <!-- glow edge effect -->
+  <div style="position:absolute;left:0;top:0;bottom:0;width:60px;background:linear-gradient(90deg,#0a0e1a,transparent);z-index:2;pointer-events:none"></div>
+  <div style="position:absolute;right:0;top:0;bottom:0;width:60px;background:linear-gradient(270deg,#0a0e1a,transparent);z-index:2;pointer-events:none"></div>
+  <div style="display:flex;align-items:center;gap:0">
+    <div style="background:linear-gradient(135deg,#dc2626,#991b1b);color:white;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;padding:10px 16px;flex-shrink:0;display:flex;align-items:center;gap:6px;border-right:1px solid #7f1d1d;z-index:3;animation:shimmer 1.5s infinite">
+      <span style="display:inline-block;width:8px;height:8px;background:#fff;border-radius:50%;animation:pulse 1s infinite;flex-shrink:0"></span>
+      LIVE
+    </div>
+    <div style="overflow:hidden;flex:1">
+      <div id="live-alert-track" style="display:inline-flex;align-items:center;gap:0;padding:8px 20px;animation:marquee 30s linear infinite">
+      </div>
+    </div>
+  </div>
+</div>
 
 <main>
   <section class="section active" id="scores">
@@ -1541,9 +1588,18 @@ async function loadKsToday() {
     allPitchers.sort((a, b) => {
       const statusRank = p => p.isLive ? 0 : p.isFinal ? 1 : 2;
       if (statusRank(a) !== statusRank(b)) return statusRank(a) - statusRank(b);
-      if (a.isLive || a.isFinal) return b.ks - a.ks; // sort by K count desc within live/final
-      return a.gameTimestamp - b.gameTimestamp; // upcoming: chronological
+      if (a.isLive || a.isFinal) return b.ks - a.ks;
+      return a.gameTimestamp - b.gameTimestamp;
     });
+
+    // Feed live pitchers to banner
+    allPitchers.forEach(p => {
+      if (p.isLive && p.id) {
+        const ouLine = pitcherOULines[p.id] || null;
+        bannerKs[p.id] = { name: p.name, teamAbbr: p.teamAbbr, ks: p.ks, ouLine };
+      }
+    });
+    updateLiveBanner();
 
     const hs = id => id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_32,q_auto:best/v1/people/${id}/headshot/67/current` : '';
 
@@ -1664,7 +1720,47 @@ async function loadKsToday() {
 setInterval(() => { if (document.getElementById('ks-today-content')) loadKsToday(); }, 60000);
 
 
-// ── PROPS TAB ─────────────────────────────────────────────────────────
+// ── LIVE ALERT BANNER ────────────────────────────────────────────────
+const bannerHRs  = {}; // batterId -> { name, teamAbbr, count }
+const bannerKs   = {}; // pitcherId -> { name, teamAbbr, ks, ouLine }
+
+function updateLiveBanner() {
+  const banner = document.getElementById('live-alert-banner');
+  const track  = document.getElementById('live-alert-track');
+  if (!banner || !track) return;
+
+  const chips = [];
+
+  // HR chips
+  Object.values(bannerHRs).forEach(h => {
+    if (h.count > 0) chips.push(`<span class="alert-chip alert-hr">💥 ${h.name}${h.count > 1 ? ' ×'+h.count : ''} HOME RUN</span>`);
+  });
+
+  // K over-line chips
+  Object.values(bannerKs).forEach(k => {
+    if (k.ks > 0 && k.ouLine && k.ks > k.ouLine) {
+      chips.push(`<span class="alert-chip alert-k">⚡ ${k.name} ${k.ks}K — OVER ${k.ouLine}</span>`);
+    }
+  });
+
+  if (!chips.length) {
+    banner.style.display = 'none';
+    return;
+  }
+
+  // Duplicate chips so marquee loops seamlessly
+  const content = chips.join('<span class="alert-sep">·</span>');
+  track.innerHTML = content + '<span class="alert-sep" style="padding:0 20px">·</span>' + content;
+
+  // Adjust animation speed by content width
+  const chipCount = chips.length;
+  const duration = Math.max(15, chipCount * 5);
+  track.style.animation = `marquee ${duration}s linear infinite`;
+
+  banner.style.display = 'block';
+}
+
+
 let propsLoaded = false;
 let hrpRows = [], hrpSortCol = 'hrProb', hrpSortDir = -1;
 const prevHrpHRs = {}; // batterId -> todayHR count for diff detection
@@ -1921,6 +2017,7 @@ async function loadHRsToday() {
       ['away','home'].forEach(side => {
         const team = box?.[side]; if (!team) return;
         const abbr = side==='away'?awayAbbr:homeAbbr;
+        const isGameLive = g.status.abstractGameState === 'Live' || g.status.detailedState === 'In Progress';
         (team.batters||[]).forEach(id => {
           const p = team.players?.[`ID${id}`];
           const hrs = parseInt(p?.stats?.batting?.homeRuns)||0;
@@ -1929,6 +2026,10 @@ async function loadHRsToday() {
             teamAbbr: abbr, hrs, gameLabel:`${awayAbbr} @ ${homeAbbr}`,
             timeStr, gameTimestamp: dt.getTime()
           });
+          // Feed live HRs to banner
+          if (isGameLive && hrs > 0 && p?.person?.id) {
+            bannerHRs[p.person.id] = { name: p.person.fullName||'–', teamAbbr: abbr, count: hrs };
+          }
         });
       });
     }
@@ -1951,6 +2052,7 @@ async function loadHRsToday() {
       <div class="stat-row-num" style="color:${h.hrs>1?'var(--accent2)':'var(--accent)'}">${h.hrs}</div>
       <div style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace">HR</div>
     </div>`).join('');
+    updateLiveBanner();
   } catch(e) {
     const el2=document.getElementById('hrs-today-content');
     if(el2) el2.innerHTML=`<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
