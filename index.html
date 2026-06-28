@@ -430,6 +430,22 @@
       <p class="section-title" style="margin-bottom:0">TODAY'S <span>GAMES</span></p>
       <div id="scores-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Loading…</div>
     </div>
+
+    <!-- In-game alerts banner inside scores tab -->
+    <div id="scores-alert-banner" style="display:none;background:linear-gradient(90deg,#0a0e1a 0%,#0f172a 40%,#0a0e1a 100%);border:1px solid #1e3a5f;border-radius:8px;overflow:hidden;position:relative;margin-bottom:16px">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:50px;background:linear-gradient(90deg,#0a0e1a,transparent);z-index:2;pointer-events:none"></div>
+      <div style="position:absolute;right:0;top:0;bottom:0;width:50px;background:linear-gradient(270deg,#0a0e1a,transparent);z-index:2;pointer-events:none"></div>
+      <div style="display:flex;align-items:center">
+        <div style="background:linear-gradient(135deg,#dc2626,#991b1b);color:white;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;padding:10px 16px;flex-shrink:0;display:flex;align-items:center;gap:6px;border-right:1px solid #7f1d1d;z-index:3;animation:shimmer 1.5s infinite">
+          <span style="display:inline-block;width:8px;height:8px;background:#fff;border-radius:50%;animation:pulse 1s infinite;flex-shrink:0"></span>
+          LIVE
+        </div>
+        <div style="overflow:hidden;flex:1">
+          <div id="scores-alert-track" style="display:inline-flex;align-items:center;gap:0;padding:8px 20px;animation:marquee 30s linear infinite"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="live-badge"><div class="live-dot"></div>LIVE NOW</div>
     <div class="games-grid" id="live-games"><div style="color:var(--muted);font-size:13px">Loading scores…</div></div>
     <p class="section-title" style="font-size:18px; margin-top:4px;">FINAL <span>SCORES</span></p>
@@ -1596,7 +1612,11 @@ async function loadKsToday() {
     allPitchers.forEach(p => {
       if (p.isLive && p.id) {
         const ouLine = pitcherOULines[p.id] || null;
-        bannerKs[p.id] = { name: p.name, teamAbbr: p.teamAbbr, ks: p.ks, ouLine };
+        bannerKs[p.id] = {
+          name: p.name, teamAbbr: p.teamAbbr,
+          oppAbbr: p.gameLabel.includes('@') ? p.gameLabel.split(' @ ')[p.gameLabel.startsWith(p.teamAbbr) ? 1 : 0] : '–',
+          ks: p.ks, ouLine
+        };
       }
     });
     updateLiveBanner();
@@ -1733,31 +1753,43 @@ function updateLiveBanner() {
 
   // HR chips
   Object.values(bannerHRs).forEach(h => {
-    if (h.count > 0) chips.push(`<span class="alert-chip alert-hr">💥 ${h.name}${h.count > 1 ? ' ×'+h.count : ''} HOME RUN</span>`);
+    if (h.count > 0) chips.push(`<span class="alert-chip alert-hr">💥 ${h.name}${h.count > 1 ? ' ×'+h.count : ''} HR vs ${h.oppAbbr||''}</span>`);
   });
 
   // K over-line chips
   Object.values(bannerKs).forEach(k => {
     if (k.ks > 0 && k.ouLine && k.ks > k.ouLine) {
-      chips.push(`<span class="alert-chip alert-k">⚡ ${k.name} ${k.ks}K — OVER ${k.ouLine}</span>`);
+      chips.push(`<span class="alert-chip alert-k">⚡ ${k.name} ${k.ks}K vs ${k.oppAbbr||''} — OVER ${k.ouLine}</span>`);
     }
   });
 
   if (!chips.length) {
     banner.style.display = 'none';
+    const scoresBanner = document.getElementById('scores-alert-banner');
+    if (scoresBanner) scoresBanner.style.display = 'none';
     return;
   }
 
   // Duplicate chips so marquee loops seamlessly
   const content = chips.join('<span class="alert-sep">·</span>');
-  track.innerHTML = content + '<span class="alert-sep" style="padding:0 20px">·</span>' + content;
+  const looped  = content + '<span class="alert-sep" style="padding:0 30px">·</span>' + content;
 
-  // Adjust animation speed by content width
   const chipCount = chips.length;
   const duration = Math.max(15, chipCount * 5);
-  track.style.animation = `marquee ${duration}s linear infinite`;
 
+  // Update global banner
+  track.innerHTML = looped;
+  track.style.animation = `marquee ${duration}s linear infinite`;
   banner.style.display = 'block';
+
+  // Sync scores tab banner
+  const scoresBanner = document.getElementById('scores-alert-banner');
+  const scoresTrack  = document.getElementById('scores-alert-track');
+  if (scoresBanner && scoresTrack) {
+    scoresTrack.innerHTML = looped;
+    scoresTrack.style.animation = `marquee ${duration}s linear infinite`;
+    scoresBanner.style.display = 'block';
+  }
 }
 
 
@@ -2028,7 +2060,12 @@ async function loadHRsToday() {
           });
           // Feed live HRs to banner
           if (isGameLive && hrs > 0 && p?.person?.id) {
-            bannerHRs[p.person.id] = { name: p.person.fullName||'–', teamAbbr: abbr, count: hrs };
+            bannerHRs[p.person.id] = {
+              name: p.person.fullName||'–',
+              teamAbbr: abbr,
+              oppAbbr: side==='away' ? homeAbbr : awayAbbr,
+              count: hrs
+            };
           }
         });
       });
