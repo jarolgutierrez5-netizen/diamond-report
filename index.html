@@ -298,12 +298,9 @@
   [data-tip]:hover::after { opacity:1; }
 
   /* Ks Today section */
-  .ks-today-row { display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid var(--border); }
+  .ks-today-row { display:flex; align-items:center; gap:10px; padding:9px 12px; border-bottom:1px solid var(--border); }
   .ks-today-row:last-child { border-bottom:none; }
-  .ks-game-label { font-size:10px; color:var(--muted); font-family:'JetBrains Mono',monospace; min-width:90px; }
-  .ks-pitcher-name { flex:1; font-size:13px; font-weight:600; }
-  .ks-count { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:1px; min-width:36px; text-align:right; }
-  .ks-ip { font-size:10px; color:var(--muted); font-family:'JetBrains Mono',monospace; min-width:40px; text-align:right; }
+  .ks-count { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:1px; min-width:30px; text-align:right; }
   /* Props tab — HR Potential table */
   .hrp-table { width:100%; border-collapse:collapse; }
   .hrp-table thead th { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--muted); padding:8px 10px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; cursor:pointer; user-select:none; }
@@ -1560,20 +1557,18 @@ async function loadKsToday() {
         }
       }
       return `<div class="ks-today-row">
-        <div style="display:flex;flex-direction:column;gap:1px;min-width:90px">
-          <span class="ks-game-label">${p.gameLabel}</span>
-          <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">${p.timeStr} ${p.isSP?'· SP':''}</span>
-        </div>
-        <img src="${hs(p.id)}" style="width:32px;height:32px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'" alt="">
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:600">${p.name}</div>
-          <div style="display:flex;gap:6px;align-items:center;margin-top:2px">
-            <span style="font-size:10px;color:var(--muted)">${p.teamAbbr} · ${p.ip} IP</span>
+        <img src="${hs(p.id)}" style="width:34px;height:34px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'" alt="">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:2px">
+            <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">${p.gameLabel} · ${p.timeStr}${p.isSP?' · SP':''} · ${p.ip} IP</span>
             ${ouBadge}
           </div>
         </div>
-        <div class="ks-count" style="color:${ksColor}">${p.ks}</div>
-        <div style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-width:12px">K</div>
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+          <div class="ks-count" style="color:${ksColor}">${p.ks}</div>
+          <div style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">K</div>
+        </div>
       </div>`;
     }).join('');
 
