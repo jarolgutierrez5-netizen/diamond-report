@@ -448,7 +448,7 @@ function scoresDiffer(a, b) {
 
 async function loadScores() {
   const today = new Date().toLocaleDateString('en-CA', {timeZone: 'America/Chicago'});
-  const url = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${today}&hydrate=linescore,team&language=en`;
+  const url = `https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=linescore,team&language=en`;
   try {
     const res = await fetch(url);
     const data = await res.json();
@@ -625,7 +625,7 @@ async function loadPitcherReport() {
   const el = document.getElementById('pr-content');
   try {
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
-    const schedRes = await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher&language=en`);
+    const schedRes = await fetch(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher&language=en`);
     const schedData = await schedRes.json();
     const entry = schedData.dates?.find(d => d.date === today) || schedData.dates?.[0];
     const games = entry?.games || [];
@@ -660,7 +660,7 @@ async function loadPitcherReport() {
 
     const statsArr = await Promise.all(pitchers.map(async p => {
       try {
-        const r = await fetch(`https://statsapi.mlb.com/api/v1/people/${p.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
+        const r = await fetch(`https://diamondreport.app/api/v1/people/${p.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
         const d = await r.json();
         return d.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || {};
       } catch { return {}; }
@@ -701,6 +701,9 @@ async function loadPitcherReport() {
     document.getElementById('pr-content').innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
 }
+
+// K O/U lookup: pitcherId -> ouLine (populated by renderPRTable)
+const pitcherOULines = {};
 
 function pill(val, dispFn, goodBelow, badAbove) {
   if (val==null) return `<span class="stat-pill pill-neu">–</span>`;
@@ -753,6 +756,7 @@ function renderPRTable() {
     // O/U line = projK rounded to nearest .5
     const ouLine = Math.round(projK * 2) / 2;
     const ouTag = ouLine > 0 ? `<span class="k-ou-tag">${ouLine} K O/U</span>` : '';
+    if (ouLine > 0) pitcherOULines[p.id] = ouLine;
 
     // K projection: HIGH if K/9 > 9.5, LOW if < 6.5
     const kProjTag = k9 >= 9.5
@@ -870,13 +874,13 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
 
   try {
     const oppSide = side === 'away' ? 'home' : 'away';
-    const boxRes = await fetch(`https://statsapi.mlb.com/api/v1/game/${gamePk}/boxscore`);
+    const boxRes = await fetch(`https://diamondreport.app/api/v1/game/${gamePk}/boxscore`);
     const box = await boxRes.json();
     const teamBox = box.teams?.[oppSide];
     let batters = (teamBox?.batters || []).map(id => teamBox.players[`ID${id}`]).filter(Boolean);
 
     if (!batters.length) {
-      const rosterRes = await fetch(`https://statsapi.mlb.com/api/v1/teams/${oppTeamId}/roster?rosterType=active&hydrate=stats(group=hitting,type=season,season=2026)`);
+      const rosterRes = await fetch(`https://diamondreport.app/api/v1/teams/${oppTeamId}/roster?rosterType=active&hydrate=stats(group=hitting,type=season,season=2026)`);
       const rosterData = await rosterRes.json();
       batters = (rosterData.roster || [])
         .filter(p => !['P','TWP'].includes(p.position?.abbreviation))
@@ -892,8 +896,8 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
       if (!id) return { seasonStats: b.seasonStats?.batting || {}, last10HR: null, todayHR: 0 };
       try {
         const [seasonRes, logRes] = await Promise.all([
-          fetch(`https://statsapi.mlb.com/api/v1/people/${id}?hydrate=stats(group=hitting,type=season,season=2026)`),
-          fetch(`https://statsapi.mlb.com/api/v1/people/${id}/stats?stats=gameLog&group=hitting&season=2026&gameType=R`)
+          fetch(`https://diamondreport.app/api/v1/people/${id}?hydrate=stats(group=hitting,type=season,season=2026)`),
+          fetch(`https://diamondreport.app/api/v1/people/${id}/stats?stats=gameLog&group=hitting&season=2026&gameType=R`)
         ]);
         const seasonData = await seasonRes.json();
         const logData    = await logRes.json();
@@ -1102,9 +1106,9 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
   try {
     // Parallel fetch: H2H career stats, batter season stats, pitcher season stats
     const [h2hRes, batterRes, pitcherRes] = await Promise.all([
-      fetch(`https://statsapi.mlb.com/api/v1/people/${batterId}/stats?stats=vsPlayer&opposingPlayerId=${pitcherId}&group=hitting&season=2026`),
-      fetch(`https://statsapi.mlb.com/api/v1/people/${batterId}?hydrate=stats(group=hitting,type=season,season=2026)`),
-      fetch(`https://statsapi.mlb.com/api/v1/people/${pitcherId}?hydrate=stats(group=pitching,type=season,season=2026)`)
+      fetch(`https://diamondreport.app/api/v1/people/${batterId}/stats?stats=vsPlayer&opposingPlayerId=${pitcherId}&group=hitting&season=2026`),
+      fetch(`https://diamondreport.app/api/v1/people/${batterId}?hydrate=stats(group=hitting,type=season,season=2026)`),
+      fetch(`https://diamondreport.app/api/v1/people/${pitcherId}?hydrate=stats(group=pitching,type=season,season=2026)`)
     ]);
     const h2hData     = await h2hRes.json();
     const batterData  = await batterRes.json();
@@ -1404,7 +1408,7 @@ async function loadHistory(dateStr) {
   if (nextBtn) nextBtn.disabled = dateStr >= today;
 
   try {
-    const res = await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${dateStr}&hydrate=linescore,team&language=en`);
+    const res = await fetch(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${dateStr}&hydrate=linescore,team&language=en`);
     const data = await res.json();
     const entry = data.dates?.find(d => d.date === dateStr) || data.dates?.[0];
     const games = entry?.games || [];
@@ -1465,7 +1469,7 @@ async function loadKsToday() {
   if (!el) return;
   try {
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
-    const res = await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team&language=en`);
+    const res = await fetch(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team&language=en`);
     const data = await res.json();
     const entry = data.dates?.find(d => d.date === today) || data.dates?.[0];
     const games = entry?.games || [];
@@ -1484,7 +1488,7 @@ async function loadKsToday() {
       let box = g.teams;
       if (!box?.away?.pitchers) {
         try {
-          const br = await fetch(`https://statsapi.mlb.com/api/v1/game/${g.gamePk}/boxscore`);
+          const br = await fetch(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
           const bd = await br.json();
           box = bd.teams;
         } catch { continue; }
@@ -1528,6 +1532,17 @@ async function loadKsToday() {
 
     const rows = allPitchers.map(p => {
       const ksColor = p.ks >= 8 ? 'var(--green)' : p.ks >= 5 ? 'var(--accent2)' : 'var(--text)';
+      const ouLine = pitcherOULines[p.id] || null;
+      let ouBadge = '';
+      if (ouLine !== null) {
+        if (p.ks > ouLine) {
+          ouBadge = `<span class="k-ou-tag k-ou-over">▲ OVER ${ouLine}</span>`;
+        } else if (p.ks < ouLine) {
+          ouBadge = `<span class="k-ou-tag k-ou-under">▼ UNDER ${ouLine}</span>`;
+        } else {
+          ouBadge = `<span class="k-ou-tag" style="border-color:var(--muted);color:var(--muted)">PUSH ${ouLine}</span>`;
+        }
+      }
       return `<div class="ks-today-row">
         <div style="display:flex;flex-direction:column;gap:1px;min-width:90px">
           <span class="ks-game-label">${p.gameLabel}</span>
@@ -1536,7 +1551,10 @@ async function loadKsToday() {
         <img src="${hs(p.id)}" style="width:32px;height:32px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'" alt="">
         <div style="flex:1">
           <div style="font-size:13px;font-weight:600">${p.name}</div>
-          <div style="font-size:10px;color:var(--muted)">${p.teamAbbr} · ${p.ip} IP</div>
+          <div style="display:flex;gap:6px;align-items:center;margin-top:2px">
+            <span style="font-size:10px;color:var(--muted)">${p.teamAbbr} · ${p.ip} IP</span>
+            ${ouBadge}
+          </div>
         </div>
         <div class="ks-count" style="color:${ksColor}">${p.ks}</div>
         <div style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-width:12px">K</div>
