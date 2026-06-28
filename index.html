@@ -226,6 +226,47 @@
   .ks-pitcher-name { flex:1; font-size:13px; font-weight:600; }
   .ks-count { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:1px; min-width:36px; text-align:right; }
   .ks-ip { font-size:10px; color:var(--muted); font-family:'JetBrains Mono',monospace; min-width:40px; text-align:right; }
+  /* Props tab — HR Potential table */
+  .hrp-table { width:100%; border-collapse:collapse; }
+  .hrp-table thead th { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--muted); padding:8px 10px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; cursor:pointer; user-select:none; }
+  .hrp-table thead th.r { text-align:right; }
+  .hrp-table thead th.sort-asc::after { content:' ▲'; color:var(--accent); }
+  .hrp-table thead th.sort-desc::after { content:' ▼'; color:var(--accent); }
+  .hrp-table tbody tr { border-bottom:1px solid var(--border); transition:background .1s; }
+  .hrp-table tbody tr:hover { background:var(--surface2); }
+  .hrp-table tbody tr.hr-today-row { background:linear-gradient(90deg,#2a1a00,#1a1200); border-left:3px solid var(--accent2); }
+  .hrp-table tbody td { padding:10px 10px; vertical-align:middle; font-size:12px; }
+  .hrp-table tbody td.r { text-align:right; font-family:'JetBrains Mono',monospace; font-size:11px; }
+  .hrp-batter-cell { display:flex; align-items:center; gap:10px; }
+  .hrp-headshot { width:34px; height:34px; border-radius:50%; background:var(--surface2); border:1px solid var(--border); object-fit:cover; flex-shrink:0; }
+  .hrp-batter-info { display:flex; flex-direction:column; gap:2px; }
+  .hrp-batter-name { font-size:13px; font-weight:700; }
+  .hrp-batter-sub { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .hrp-prob-cell { display:flex; align-items:center; gap:6px; }
+  .hrp-bar-wrap { width:60px; height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+  .hrp-bar-fill { height:100%; border-radius:3px; }
+
+  /* HRs Today & K Props rows */
+  .stat-row { display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid var(--border); }
+  .stat-row:last-child { border-bottom:none; }
+  .stat-row-num { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:1px; min-width:36px; text-align:right; }
+
+  /* K Props */
+  .kprop-row { display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .kprop-row:last-child { border-bottom:none; }
+  .kprop-pitcher { flex:1; min-width:160px; }
+  .kprop-name { font-size:13px; font-weight:700; }
+  .kprop-meta { font-size:10px; color:var(--muted); margin-top:2px; }
+  .kprop-line { display:flex; flex-direction:column; align-items:center; background:var(--bg); border:1px solid var(--border); border-radius:7px; padding:8px 14px; min-width:80px; }
+  .kprop-line-val { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:1px; }
+  .kprop-line-lbl { font-size:9px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:1px; }
+  .kprop-pred { display:flex; flex-direction:column; align-items:center; border-radius:7px; padding:8px 14px; min-width:80px; border:1px solid; }
+  .kprop-over  { background:#2a1500; border-color:#f4a261; color:#f4a261; }
+  .kprop-under { background:#0d1a0d; border-color:#2ecc71; color:#2ecc71; }
+  .kprop-push  { background:var(--surface2); border-color:var(--border); color:var(--muted); }
+  .kprop-pred-val { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:1px; }
+  .kprop-pred-lbl { font-size:9px; letter-spacing:1px; text-transform:uppercase; margin-top:1px; opacity:.8; }
+  .kprop-reasoning { font-size:10px; color:var(--muted); line-height:1.5; flex:1; min-width:180px; }
 </style>
 </head>
 <body>
@@ -239,6 +280,7 @@
   <div class="tab active" onclick="showTab('scores', this)">Live Scores</div>
   <div class="tab" onclick="showTab('standings', this)">Standings</div>
   <div class="tab" onclick="showTab('history', this)">Previous Scores</div>
+  <div class="tab" onclick="showTab('props', this)">Props</div>
   <div class="tab" onclick="showTab('matchups', this)">Pitcher Report</div>
   <div class="tab" onclick="showTab('schedule', this)">Schedule</div>
 </nav>
@@ -277,7 +319,37 @@
     </div>
   </section>
 
-  <section class="section" id="history">
+  <section class="section" id="props">
+
+    <!-- HR Potential -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <p class="section-title" style="margin-bottom:0">HR <span>POTENTIAL</span></p>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div id="props-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Loading…</div>
+      </div>
+    </div>
+    <div id="hr-potential-content"><div class="mu-empty"><span class="spin"></span>Loading HR potential…</div></div>
+
+    <!-- HRs Today -->
+    <div style="margin-top:32px">
+      <p class="section-title" style="font-size:20px">HR'S <span>TODAY</span></p>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <div id="hrs-today-content"><div class="mu-empty"><span class="spin"></span>Loading home runs…</div></div>
+      </div>
+    </div>
+
+    <!-- DR K Props -->
+    <div style="margin-top:32px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <p class="section-title" style="font-size:20px;margin-bottom:0">DR <span>K PROPS</span></p>
+        <div id="kprops-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)"></div>
+      </div>
+      <div id="kprops-content"><div class="mu-empty"><span class="spin"></span>Loading K props…</div></div>
+    </div>
+
+  </section>
+
+
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
       <p class="section-title" style="margin-bottom:0">PREVIOUS <span>SCORES</span></p>
       <div style="display:flex;align-items:center;gap:10px">
@@ -314,6 +386,19 @@
 </div>
 
 <script>
+// Safe fetch wrapper — handles empty/truncated responses from the proxy
+async function fetchJSON(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = await res.text();
+  if (!text || text.trim() === '') throw new Error('Empty response from API');
+  try {
+    return JSON.parse(text);
+  } catch(e) {
+    throw new Error(`Invalid JSON (${text.slice(0,80).trim()}…)`);
+  }
+}
+
 const standings = [
   {abbr:"TB",name:"Tampa Bay Rays",W:47,L:33,conf:"AL",div:"East"},
   {abbr:"NYY",name:"New York Yankees",W:48,L:34,conf:"AL",div:"East"},
@@ -450,8 +535,7 @@ async function loadScores() {
   const today = new Date().toLocaleDateString('en-CA', {timeZone: 'America/Chicago'});
   const url = `https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=linescore,team&language=en`;
   try {
-    const res = await fetch(url);
-    const data = await res.json();
+    const data = await fetchJSON(url);
     const dateEntry = data.dates?.find(d => d.date === today) || data.dates?.[0];
     const games = dateEntry?.games || [];
 
@@ -625,8 +709,7 @@ async function loadPitcherReport() {
   const el = document.getElementById('pr-content');
   try {
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
-    const schedRes = await fetch(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher&language=en`);
-    const schedData = await schedRes.json();
+    const schedData = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher&language=en`);
     const entry = schedData.dates?.find(d => d.date === today) || schedData.dates?.[0];
     const games = entry?.games || [];
     if (!games.length) { el.innerHTML = '<div class="mu-empty">No games scheduled today.</div>'; return; }
@@ -660,8 +743,7 @@ async function loadPitcherReport() {
 
     const statsArr = await Promise.all(pitchers.map(async p => {
       try {
-        const r = await fetch(`https://diamondreport.app/api/v1/people/${p.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
-        const d = await r.json();
+        const d = await fetchJSON(`https://diamondreport.app/api/v1/people/${p.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
         return d.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || {};
       } catch { return {}; }
     }));
@@ -874,14 +956,12 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
 
   try {
     const oppSide = side === 'away' ? 'home' : 'away';
-    const boxRes = await fetch(`https://diamondreport.app/api/v1/game/${gamePk}/boxscore`);
-    const box = await boxRes.json();
+    const box = await fetchJSON(`https://diamondreport.app/api/v1/game/${gamePk}/boxscore`);
     const teamBox = box.teams?.[oppSide];
     let batters = (teamBox?.batters || []).map(id => teamBox.players[`ID${id}`]).filter(Boolean);
 
     if (!batters.length) {
-      const rosterRes = await fetch(`https://diamondreport.app/api/v1/teams/${oppTeamId}/roster?rosterType=active&hydrate=stats(group=hitting,type=season,season=2026)`);
-      const rosterData = await rosterRes.json();
+      const rosterData = await fetchJSON(`https://diamondreport.app/api/v1/teams/${oppTeamId}/roster?rosterType=active&hydrate=stats(group=hitting,type=season,season=2026)`);
       batters = (rosterData.roster || [])
         .filter(p => !['P','TWP'].includes(p.position?.abbreviation))
         .sort((a,b) => (b.stats?.[0]?.splits?.[0]?.stat?.atBats||0) - (a.stats?.[0]?.splits?.[0]?.stat?.atBats||0))
@@ -895,12 +975,10 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
       const id = b.person?.id;
       if (!id) return { seasonStats: b.seasonStats?.batting || {}, last10HR: null, todayHR: 0 };
       try {
-        const [seasonRes, logRes] = await Promise.all([
-          fetch(`https://diamondreport.app/api/v1/people/${id}?hydrate=stats(group=hitting,type=season,season=2026)`),
-          fetch(`https://diamondreport.app/api/v1/people/${id}/stats?stats=gameLog&group=hitting&season=2026&gameType=R`)
+        const [seasonData, logData] = await Promise.all([
+          fetchJSON(`https://diamondreport.app/api/v1/people/${id}?hydrate=stats(group=hitting,type=season,season=2026)`),
+          fetchJSON(`https://diamondreport.app/api/v1/people/${id}/stats?stats=gameLog&group=hitting&season=2026&gameType=R`)
         ]);
-        const seasonData = await seasonRes.json();
-        const logData    = await logRes.json();
         const seasonStats = seasonData.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || b.seasonStats?.batting || {};
         const gameLogs    = logData.stats?.[0]?.splits || [];
         const last10HR    = gameLogs.slice(0,10).reduce((sum, g) => sum + (parseInt(g.stat?.homeRuns)||0), 0);
@@ -1105,14 +1183,11 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
 
   try {
     // Parallel fetch: H2H career stats, batter season stats, pitcher season stats
-    const [h2hRes, batterRes, pitcherRes] = await Promise.all([
-      fetch(`https://diamondreport.app/api/v1/people/${batterId}/stats?stats=vsPlayer&opposingPlayerId=${pitcherId}&group=hitting&season=2026`),
-      fetch(`https://diamondreport.app/api/v1/people/${batterId}?hydrate=stats(group=hitting,type=season,season=2026)`),
-      fetch(`https://diamondreport.app/api/v1/people/${pitcherId}?hydrate=stats(group=pitching,type=season,season=2026)`)
+    const [h2hData, batterData, pitcherData] = await Promise.all([
+      fetchJSON(`https://diamondreport.app/api/v1/people/${batterId}/stats?stats=vsPlayer&opposingPlayerId=${pitcherId}&group=hitting&season=2026`),
+      fetchJSON(`https://diamondreport.app/api/v1/people/${batterId}?hydrate=stats(group=hitting,type=season,season=2026)`),
+      fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}?hydrate=stats(group=pitching,type=season,season=2026)`)
     ]);
-    const h2hData     = await h2hRes.json();
-    const batterData  = await batterRes.json();
-    const pitcherData = await pitcherRes.json();
 
     const h2h = h2hData.stats?.[0]?.splits?.[0]?.stat || {};
     const bs  = batterData.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || {};
@@ -1408,8 +1483,7 @@ async function loadHistory(dateStr) {
   if (nextBtn) nextBtn.disabled = dateStr >= today;
 
   try {
-    const res = await fetch(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${dateStr}&hydrate=linescore,team&language=en`);
-    const data = await res.json();
+    const data = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${dateStr}&hydrate=linescore,team&language=en`);
     const entry = data.dates?.find(d => d.date === dateStr) || data.dates?.[0];
     const games = entry?.games || [];
 
@@ -1469,8 +1543,7 @@ async function loadKsToday() {
   if (!el) return;
   try {
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
-    const res = await fetch(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team&language=en`);
-    const data = await res.json();
+    const data = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team&language=en`);
     const entry = data.dates?.find(d => d.date === today) || data.dates?.[0];
     const games = entry?.games || [];
 
@@ -1488,8 +1561,7 @@ async function loadKsToday() {
       let box = g.teams;
       if (!box?.away?.pitchers) {
         try {
-          const br = await fetch(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
-          const bd = await br.json();
+          const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
           box = bd.teams;
         } catch { continue; }
       }
@@ -1572,6 +1644,480 @@ async function loadKsToday() {
 setInterval(() => { if (document.getElementById('ks-today-content')) loadKsToday(); }, 60000);
 
 
+// ── PROPS TAB ─────────────────────────────────────────────────────────
+let propsLoaded = false;
+let hrpRows = [], hrpSortCol = 'hrProb', hrpSortDir = -1;
+const prevHrpHRs = {}; // batterId -> todayHR count for diff detection
+let kPropsData = []; // cached K props (loaded at 7am, refreshed by 9am)
+let kPropsLoadedAt = null;
+
+// ── HR POTENTIAL ─────────────────────────────────────────────────────
+async function loadHRPotential() {
+  const el = document.getElementById('hr-potential-content');
+  const refresh = document.getElementById('props-refresh');
+  try {
+    const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
+    const schedData = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher&language=en`);
+    const entry = schedData.dates?.find(d => d.date === today) || schedData.dates?.[0];
+    const games = entry?.games || [];
+
+    const allBatters = [];
+
+    for (const g of games) {
+      const dt = new Date(g.gameDate);
+      const timeStr = dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'});
+      const state = g.status.abstractGameState;
+      const isLive = state==='Live' || g.status.detailedState==='In Progress';
+      const isFinal = state==='Final';
+      const timeColor = isLive ? 'var(--live)' : isFinal ? 'var(--muted)' : 'var(--text)';
+      const timeLabel = isLive ? '● LIVE' : isFinal ? 'FINAL' : timeStr;
+
+      for (const [side, opp] of [['away','home'],['home','away']]) {
+        const pitcher = g.teams[opp].probablePitcher;
+        if (!pitcher) continue;
+        const teamAbbr = g.teams[side].team.abbreviation;
+        const oppAbbr  = g.teams[opp].team.abbreviation;
+
+        // Fetch pitcher stats
+        let pitcherHr9 = 0, pitcherAvg = .240, pitcherSlg = .380;
+        try {
+          const pd = await fetchJSON(`https://diamondreport.app/api/v1/people/${pitcher.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
+          const ps = pd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || {};
+          pitcherHr9 = parseFloat(ps.homeRunsPer9) || 0;
+          pitcherAvg = parseFloat(ps.avg) || .240;
+          pitcherSlg = parseFloat(ps.slg) || .380;
+        } catch {}
+
+        // Fetch opposing lineup from boxscore
+        const oppSide = opp === 'away' ? 'home' : 'away'; // batters face pitcher from opp side
+        const batterSide = side;
+        let batters = [];
+        try {
+          const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
+          const teamBox = bd.teams?.[batterSide];
+          batters = (teamBox?.batters || []).map(id => {
+            const p = teamBox.players[`ID${id}`];
+            return p ? { id, player: p } : null;
+          }).filter(Boolean);
+
+          // If no batters yet, skip
+          if (!batters.length) continue;
+
+          // Fetch each batter's season stats + today HR + last10
+          const batterToday = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+          for (const b of batters.slice(0,9)) {
+            const pid = b.player.person?.id;
+            if (!pid) continue;
+            let s = b.player.seasonStats?.batting || {};
+            let last10HR = null, todayHR = 0;
+            try {
+              const [sd, ld] = await Promise.all([
+                fetchJSON(`https://diamondreport.app/api/v1/people/${pid}?hydrate=stats(group=hitting,type=season,season=2026)`),
+                fetchJSON(`https://diamondreport.app/api/v1/people/${pid}/stats?stats=gameLog&group=hitting&season=2026&gameType=R`)
+              ]);
+              s = sd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || s;
+              const logs = ld.stats?.[0]?.splits || [];
+              last10HR = logs.slice(0,10).reduce((n,g)=>n+(parseInt(g.stat?.homeRuns)||0),0);
+              const todayLog = logs.find(g=>g.date===batterToday);
+              todayHR = Math.max(parseInt(todayLog?.stat?.homeRuns)||0, parseInt(b.player.stats?.batting?.homeRuns)||0);
+            } catch {}
+
+            const ab = parseInt(s.atBats)||0;
+            const hr = parseInt(s.homeRuns)||0;
+            const batterRate = ab>0 ? hr/ab : 0;
+            const pitcherRate = pitcherHr9>0 ? pitcherHr9/27 : 0.03;
+            const hrProb = Math.min(((batterRate*0.6)+(pitcherRate*0.4))*100, 25);
+
+            allBatters.push({
+              id: pid,
+              name: b.player.person?.fullName || '–',
+              pos: b.player.position?.abbreviation || '–',
+              teamAbbr, oppAbbr,
+              pitcherName: pitcher.fullName,
+              pitcherId: pitcher.id,
+              timeLabel, timeColor,
+              gameTimestamp: dt.getTime(),
+              gamePk: g.gamePk,
+              stats: s, last10HR, todayHR, hrProb,
+              avg: parseFloat(s.avg)||0,
+              hrSeason: hr,
+              ops: parseFloat(s.ops)||0,
+              iso: (parseFloat(s.slg)||0)-(parseFloat(s.avg)||0),
+            });
+          }
+        } catch {}
+      }
+    }
+
+    hrpRows = allBatters;
+    renderHRPTable();
+
+    const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    if (refresh) refresh.textContent = `Updated ${now} · auto-refreshes every 60s`;
+  } catch(e) {
+    const el2 = document.getElementById('hr-potential-content');
+    if (el2) el2.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
+  }
+}
+
+function renderHRPTable() {
+  const el = document.getElementById('hr-potential-content');
+  if (!el || !hrpRows.length) {
+    if (el) el.innerHTML = `<div class="mu-empty">No HR potential data yet — check back once lineups are posted.</div>`;
+    return;
+  }
+
+  const cols = [
+    {key:'timeLabel',  label:'TIME',     r:false, sortable:false},
+    {key:'name',       label:'BATTER',   r:false, sortable:false},
+    {key:'pitcherName',label:'VS PITCHER',r:false,sortable:false},
+    {key:'hrProb',     label:'HR PROB',  r:true,  sortable:true, tip:'Estimated HR probability per AB'},
+    {key:'hrSeason',   label:'HR',       r:true,  sortable:true, tip:'Season home runs'},
+    {key:'avg',        label:'AVG',      r:true,  sortable:true, tip:'Batting average'},
+    {key:'ops',        label:'OPS',      r:true,  sortable:true, tip:'On-base plus slugging'},
+    {key:'iso',        label:'ISO',      r:true,  sortable:true, tip:'Isolated power (SLG−AVG)'},
+    {key:'last10HR',   label:'L10 HR',   r:true,  sortable:true, tip:'Home runs in last 10 games'},
+  ];
+
+  const sorted = [...hrpRows].sort((a,b) => {
+    const av = a[hrpSortCol], bv = b[hrpSortCol];
+    if (av==null&&bv==null) return 0;
+    if (av==null) return 1; if (bv==null) return -1;
+    return (av-bv)*hrpSortDir;
+  });
+
+  const hs = id => `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_34,q_auto:best/v1/people/${id}/headshot/67/current`;
+  const tl = id => { const tid = teamIds[id]; return tid ? `<img src="https://www.mlbstatic.com/team-logos/${tid}.svg" style="width:18px;height:18px;object-fit:contain;vertical-align:middle" onerror="this.style.display='none'" alt="">` : ''; }
+
+  const rows = sorted.map(r => {
+    const homerToday = r.todayHR > 0;
+    const rowCls = homerToday ? ' class="hr-today-row"' : '';
+    const maxProbInList = Math.max(...hrpRows.map(x=>x.hrProb), 1);
+    const barPct = (r.hrProb / maxProbInList) * 100;
+    const barColor = r.hrProb >= 8 ? '#f4a261' : r.hrProb >= 5 ? '#e63946' : '#2ecc71';
+    const fmtAvg = v => v>0 ? v.toFixed(3).replace(/^0/,'') : '–';
+    const fmtIso = v => v>0 ? v.toFixed(3).replace(/^0/,'') : '–';
+
+    return `<tr${rowCls} id="hrp-row-${r.id}">
+      <td><span style="font-size:11px;font-family:'JetBrains Mono',monospace;color:${r.timeColor};font-weight:${r.timeLabel.includes('LIVE')?700:400}">${r.timeLabel}</span></td>
+      <td>
+        <div class="hrp-batter-cell">
+          <img class="hrp-headshot" src="${hs(r.id)}" onerror="this.style.visibility='hidden'" alt="">
+          <div class="hrp-batter-info">
+            <span class="hrp-batter-name" style="color:${homerToday?'var(--accent2)':'var(--text)'}">${r.name}</span>
+            <div class="hrp-batter-sub">
+              ${tl(r.teamAbbr)}<span style="font-size:10px;color:var(--muted)">${r.teamAbbr} · ${r.pos}</span>
+              ${homerToday?`<span style="background:#2a1500;color:#f4a261;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid #f4a26166">💥 HR TODAY${r.todayHR>1?' x'+r.todayHR:''}</span>`:''}
+              <span class="top-hr-badge" style="${r.hrProb>=8?'':'display:none'}">⚡ TOP HR THREAT</span>
+            </div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px">
+          ${tl(r.oppAbbr)}
+          <span style="color:var(--muted)">${r.pitcherName}</span>
+        </div>
+      </td>
+      <td class="r">
+        <div class="hrp-prob-cell" style="justify-content:flex-end">
+          <div class="hrp-bar-wrap"><div class="hrp-bar-fill" style="width:${barPct.toFixed(0)}%;background:${barColor}"></div></div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${barColor};min-width:38px;text-align:right">${r.hrProb.toFixed(1)}%</span>
+        </div>
+      </td>
+      <td class="r" style="color:${r.hrSeason>=15?'var(--accent2)':r.hrSeason>=8?'var(--text)':'var(--muted)'}">${r.hrSeason||'–'}</td>
+      <td class="r">${fmtAvg(r.avg)}</td>
+      <td class="r">${fmtAvg(r.ops)}</td>
+      <td class="r">${fmtIso(r.iso)}</td>
+      <td class="r" style="color:${r.last10HR>=2?'var(--accent2)':r.last10HR>=1?'#90ee60':'var(--muted)'}">${r.last10HR??'–'}</td>
+    </tr>`;
+  }).join('');
+
+  const ths = cols.map(c => {
+    const tip = c.tip ? ` data-tip="${c.tip}"` : '';
+    const cls = [c.r?'r':'', c.sortable&&hrpSortCol===c.key?(hrpSortDir===-1?'sort-desc':'sort-asc'):''].filter(Boolean).join(' ');
+    if (!c.sortable) return `<th class="${cls}"${tip}>${c.label}</th>`;
+    return `<th class="${cls}"${tip} onclick="sortHRP('${c.key}')">${c.label}</th>`;
+  }).join('');
+
+  el.innerHTML = `<div style="overflow-x:auto"><table class="hrp-table"><thead><tr>${ths}</tr></thead><tbody>${rows}</tbody></table></div>
+    <div style="margin-top:8px;font-size:10px;color:var(--muted)">HR Prob = blend of batter HR/AB (60%) + pitcher HR/9 rate (40%) · Sorted by HR probability · auto-refreshes every 60s</div>`;
+}
+
+function sortHRP(col) {
+  if (hrpSortCol===col) hrpSortDir*=-1;
+  else { hrpSortCol=col; hrpSortDir=-1; }
+  renderHRPTable();
+}
+
+// Diff-based HR update for Props tab
+function refreshHRPDiff() {
+  if (!hrpRows.length) return;
+  let changed = false;
+  hrpRows.forEach(r => {
+    const prev = prevHrpHRs[r.id];
+    if (prev !== r.todayHR) {
+      changed = true;
+      prevHrpHRs[r.id] = r.todayHR;
+      const rowEl = document.getElementById(`hrp-row-${r.id}`);
+      if (rowEl) {
+        if (r.todayHR > 0) {
+          rowEl.classList.add('hr-today-row');
+          const nameEl = rowEl.querySelector('.hrp-batter-name');
+          if (nameEl) nameEl.style.color = 'var(--accent2)';
+          const subEl = rowEl.querySelector('.hrp-batter-sub');
+          if (subEl) {
+            let badge = subEl.querySelector('.hr-today-badge-prop');
+            if (!badge) { badge = document.createElement('span'); badge.className='hr-today-badge-prop'; badge.style.cssText='background:#2a1500;color:#f4a261;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid #f4a26166'; subEl.appendChild(badge); }
+            badge.textContent = `💥 HR TODAY${r.todayHR>1?' x'+r.todayHR:''}`;
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── HRS TODAY ─────────────────────────────────────────────────────────
+async function loadHRsToday() {
+  const el = document.getElementById('hrs-today-content');
+  if (!el) return;
+  try {
+    const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+    const data = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team&language=en`);
+    const entry = data.dates?.find(d=>d.date===today)||data.dates?.[0];
+    const games = entry?.games||[];
+
+    const allHRs = [];
+    for (const g of games) {
+      const dt = new Date(g.gameDate);
+      const timeStr = dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'});
+      const awayAbbr = g.teams.away.team.abbreviation;
+      const homeAbbr = g.teams.home.team.abbreviation;
+
+      let box = g.teams;
+      if (!box?.away?.batters) {
+        try { const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`); box=bd.teams; } catch { continue; }
+      }
+
+      ['away','home'].forEach(side => {
+        const team = box?.[side]; if (!team) return;
+        const abbr = side==='away'?awayAbbr:homeAbbr;
+        (team.batters||[]).forEach(id => {
+          const p = team.players?.[`ID${id}`];
+          const hrs = parseInt(p?.stats?.batting?.homeRuns)||0;
+          if (hrs > 0) allHRs.push({
+            name: p.person?.fullName||'–', id: p.person?.id,
+            teamAbbr: abbr, hrs, gameLabel:`${awayAbbr} @ ${homeAbbr}`,
+            timeStr, gameTimestamp: dt.getTime()
+          });
+        });
+      });
+    }
+
+    allHRs.sort((a,b) => a.gameTimestamp-b.gameTimestamp || b.hrs-a.hrs);
+
+    if (!allHRs.length) { el.innerHTML=`<div class="mu-empty">No home runs yet today.</div>`; return; }
+
+    const hs = id => id?`https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_32,q_auto:best/v1/people/${id}/headshot/67/current`:'';
+    el.innerHTML = allHRs.map(h=>`<div class="stat-row">
+      <div style="display:flex;flex-direction:column;gap:1px;min-width:90px">
+        <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">${h.gameLabel}</span>
+        <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">${h.timeStr}</span>
+      </div>
+      <img src="${hs(h.id)}" style="width:32px;height:32px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'" alt="">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:${h.hrs>1?'var(--accent2)':'var(--text)'}">${h.name}</div>
+        <div style="font-size:10px;color:var(--muted)">${h.teamAbbr}</div>
+      </div>
+      <div class="stat-row-num" style="color:${h.hrs>1?'var(--accent2)':'var(--accent)'}">${h.hrs}</div>
+      <div style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace">HR</div>
+    </div>`).join('');
+  } catch(e) {
+    const el2=document.getElementById('hrs-today-content');
+    if(el2) el2.innerHTML=`<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
+  }
+}
+
+// ── DR K PROPS ────────────────────────────────────────────────────────
+// Sportsbook odds: pulled at 7am, refreshed by 9am if needed
+// Since direct sportsbook APIs require paid keys, we model projected K lines
+// from pitcher K/9 and opposing lineup K% — displayed as our own projection
+// alongside the model-based O/U line. Label clearly as DR projection.
+
+async function loadKProps() {
+  const el = document.getElementById('kprops-content');
+  const refreshEl = document.getElementById('kprops-refresh');
+  if (!el) return;
+
+  const now = new Date();
+  const hour = now.getHours();
+
+  // Only run between 7am–11pm CDT; skip if already loaded today within 2 hours
+  if (kPropsLoadedAt) {
+    const msSince = now - kPropsLoadedAt;
+    if (msSince < 2 * 60 * 60 * 1000) { renderKProps(); return; } // use cache if < 2h old
+  }
+
+  try {
+    const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+    const schedData = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher&language=en`);
+    const entry = schedData.dates?.find(d=>d.date===today)||schedData.dates?.[0];
+    const games = entry?.games||[];
+
+    const props = [];
+
+    for (const g of games) {
+      const dt = new Date(g.gameDate);
+      const timeStr = dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'});
+      const awayAbbr = g.teams.away.team.abbreviation;
+      const homeAbbr = g.teams.home.team.abbreviation;
+
+      for (const [side,opp] of [['away','home'],['home','away']]) {
+        const pitcher = g.teams[side].probablePitcher;
+        if (!pitcher) continue;
+
+        let k9=8, ip=0, wins=0, losses=0, era=4.00, whip=1.25;
+        try {
+          const pd = await fetchJSON(`https://diamondreport.app/api/v1/people/${pitcher.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
+          const ps=pd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||{};
+          k9=parseFloat(ps.strikeoutsPer9Inn)||8;
+          ip=parseFloat(ps.inningsPitched)||0;
+          wins=ps.wins??0; losses=ps.losses??0;
+          era=parseFloat(ps.era)||4.00;
+          whip=parseFloat(ps.whip)||1.25;
+        } catch {}
+
+        // Fetch opposing lineup avg K% from boxscore or roster
+        let oppKpct = 0.22;
+        try {
+          const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
+          const teamBox=bd.teams?.[opp];
+          const batters=(teamBox?.batters||[]).map(id=>teamBox.players[`ID${id}`]).filter(Boolean).slice(0,9);
+          const kpcts=batters.map(b=>{
+            const s=b.seasonStats?.batting||{};
+            return (s.strikeOuts&&s.plateAppearances)?s.strikeOuts/s.plateAppearances:0.22;
+          });
+          if(kpcts.length) oppKpct=kpcts.reduce((a,b)=>a+b,0)/kpcts.length;
+        } catch {}
+
+        // Project K line: K/9 * projected IP (avg ~5.5 IP) / 9, adjusted by opp K%
+        const projIP = Math.min(Math.max(ip / Math.max(wins+losses, 1), 4), 7);
+        const baseProj = k9 * projIP / 9;
+        // Adjust: high opp K% boosts pitcher Ks, low opp K% reduces
+        const kpctAdj = (oppKpct - 0.22) * 10; // each 1% above avg ~ 0.1 Ks
+        const projK = Math.max(baseProj + kpctAdj, 1);
+        const ouLine = Math.round(projK * 2) / 2; // round to nearest .5
+
+        // Prediction: if projK > ouLine + 0.3 → OVER; if < ouLine - 0.3 → UNDER
+        const pred = projK >= ouLine + 0.3 ? 'OVER' : projK <= ouLine - 0.3 ? 'UNDER' : 'PUSH';
+
+        const reasoning = pred==='OVER'
+          ? `${pitcher.fullName} averages ${k9.toFixed(1)} K/9. Opp lineup strikes out at ${(oppKpct*100).toFixed(0)}% — projects ${projK.toFixed(1)} Ks.`
+          : pred==='UNDER'
+          ? `Opposing lineup makes contact (${(oppKpct*100).toFixed(0)}% K%). Projects ${projK.toFixed(1)} Ks vs line of ${ouLine}.`
+          : `Projected ${projK.toFixed(1)} Ks closely matches the ${ouLine} line — lean based on live lineup.`;
+
+        props.push({
+          pitcherName: pitcher.fullName, pitcherId: pitcher.id,
+          teamAbbr: g.teams[side].team.abbreviation,
+          oppAbbr: g.teams[opp].team.abbreviation,
+          wl:`${wins}-${losses}`, era: era.toFixed(2), k9: k9.toFixed(1),
+          ouLine, projK: projK.toFixed(1), pred, reasoning,
+          timeStr, gameTimestamp: dt.getTime()
+        });
+      }
+    }
+
+    props.sort((a,b)=>a.gameTimestamp-b.gameTimestamp);
+    kPropsData = props;
+    kPropsLoadedAt = new Date();
+    renderKProps();
+
+    if (refreshEl) refreshEl.textContent = `DR projection · Pulled ${kPropsLoadedAt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})} · Note: sportsbook odds require a paid API key — these are DR model projections`;
+  } catch(e) {
+    if(el) el.innerHTML=`<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
+  }
+}
+
+function renderKProps() {
+  const el = document.getElementById('kprops-content');
+  if (!el || !kPropsData.length) {
+    if(el) el.innerHTML=`<div class="mu-empty">No K prop data yet — check back after lineups are posted.</div>`;
+    return;
+  }
+
+  const hs = id => `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_38,q_auto:best/v1/people/${id}/headshot/67/current`;
+  const tl = abbr => { const id=teamIds[abbr]; return id?`<img src="https://www.mlbstatic.com/team-logos/${id}.svg" style="width:20px;height:20px;object-fit:contain;vertical-align:middle" onerror="this.style.display='none'" alt="">`:'' };
+
+  el.innerHTML = `
+    <div style="padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;color:var(--muted)">
+      ⚠️ <strong style="color:var(--accent2)">DR PROJECTIONS ONLY</strong> — Sportsbook O/U lines require a paid odds API. These are Diamond Report model projections based on pitcher K/9 and opposing lineup K%. Use as a reference alongside real sportsbook lines.
+    </div>
+    ${kPropsData.map(p => {
+      const predCls = p.pred==='OVER'?'kprop-over':p.pred==='UNDER'?'kprop-under':'kprop-push';
+      return `<div class="kprop-row">
+        <img src="${hs(p.pitcherId)}" style="width:38px;height:38px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" onerror="this.style.visibility='hidden'" alt="">
+        <div class="kprop-pitcher">
+          <div class="kprop-name">${p.pitcherName}</div>
+          <div class="kprop-meta">${tl(p.teamAbbr)} ${p.teamAbbr} vs ${tl(p.oppAbbr)} ${p.oppAbbr} · ${p.wl} · ${p.era} ERA · ${p.k9} K/9 · ${p.timeStr}</div>
+        </div>
+        <div class="kprop-line">
+          <div class="kprop-line-val">${p.ouLine}</div>
+          <div class="kprop-line-lbl">DR LINE</div>
+        </div>
+        <div class="kprop-pred ${predCls}">
+          <div class="kprop-pred-val">${p.pred}</div>
+          <div class="kprop-pred-lbl">${p.projK} PROJ</div>
+        </div>
+        <div class="kprop-reasoning">${p.reasoning}</div>
+      </div>`;
+    }).join('')}`;
+}
+
+// Schedule 7am load + 9am refresh for K Props
+function scheduleKPropsLoad() {
+  const now = new Date();
+  const cdtNow = new Date(now.toLocaleString('en-US',{timeZone:'America/Chicago'}));
+  const h = cdtNow.getHours(), m = cdtNow.getMinutes();
+
+  // If already past 7am and not loaded, load now
+  if ((h > 7 || (h === 7 && m >= 0)) && !kPropsLoadedAt) loadKProps();
+
+  // Schedule next 7am
+  const next7am = new Date(cdtNow);
+  next7am.setHours(7,0,5,0);
+  if (cdtNow >= next7am) next7am.setDate(next7am.getDate()+1);
+  setTimeout(() => { loadKProps(); scheduleKPropsLoad(); }, next7am - cdtNow);
+
+  // Schedule 9am refresh if not yet loaded fresh
+  const next9am = new Date(cdtNow);
+  next9am.setHours(9,0,5,0);
+  if (cdtNow < next9am) {
+    setTimeout(() => {
+      if (!kPropsLoadedAt || (new Date()-kPropsLoadedAt) > 60*60*1000) loadKProps();
+    }, next9am - cdtNow);
+  }
+}
+
+// Init Props tab
+let propsInitDone = false;
+function initPropsTab() {
+  if (propsInitDone) return;
+  propsInitDone = true;
+  loadHRPotential();
+  loadHRsToday();
+  scheduleKPropsLoad();
+}
+
+// Auto-refresh Props tab every 60s
+setInterval(() => {
+  if (propsInitDone) {
+    loadHRPotential();
+    loadHRsToday();
+  }
+}, 60000);
+
+
 function showTab(id, el) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -1582,6 +2128,7 @@ function showTab(id, el) {
     loadPitcherReport();
   }
   if (id === 'history') initHistoryTab();
+  if (id === 'props') initPropsTab();
 }
 
 function showLeague(conf, el) {
