@@ -1548,7 +1548,6 @@ async function loadKsToday() {
     const hs = id => id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_32,q_auto:best/v1/people/${id}/headshot/67/current` : '';
 
     const rows = allPitchers.map(p => {
-      const ksColor = p.ks >= 8 ? 'var(--green)' : p.ks >= 5 ? 'var(--accent2)' : 'var(--text)';
       const ouLine = pitcherOULines[p.id] || null;
       let ouBadge = '';
       if (ouLine !== null) {
@@ -1559,6 +1558,16 @@ async function loadKsToday() {
         } else {
           ouBadge = `<span class="k-ou-tag" style="border-color:var(--muted);color:var(--muted)">PUSH ${ouLine}</span>`;
         }
+      }
+      // K count color: green if over projected line, red if under (final only), orange if tied, default otherwise
+      let ksColor;
+      if (ouLine !== null) {
+        if (p.ks > ouLine) ksColor = 'var(--green)';
+        else if (p.ks < ouLine && p.isFinal) ksColor = 'var(--accent)';
+        else if (p.ks === ouLine) ksColor = 'var(--accent2)';
+        else ksColor = 'var(--text)';
+      } else {
+        ksColor = p.ks >= 8 ? 'var(--green)' : p.ks >= 5 ? 'var(--accent2)' : 'var(--text)';
       }
       const statusBadge = p.isLive
         ? `<span style="background:#2a0000;color:var(--live);font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid var(--live);letter-spacing:.5px;animation:pulse 1s infinite">● LIVE</span>`
