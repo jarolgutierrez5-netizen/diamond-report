@@ -122,7 +122,7 @@
     .props-grid > div:last-child { max-height: 300px; }
 
     /* HR Potential table scroll */
-    #hr-potential-content { overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+    #hr-potential-content { overscroll-behavior: contain; }
     .hrp-table { min-width: 480px; }
     .hrp-headshot { width: 28px; height: 28px; }
     .hrp-batter-name { font-size: 12px; }
@@ -415,7 +415,7 @@
     <!-- HR Potential + K's Today side by side -->
     <div class="props-grid" style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start">
       <div>
-        <div id="hr-potential-content"><div class="mu-empty"><span class="spin"></span>Loading HR potential…</div></div>
+        <div id="hr-potential-content" style="max-height:600px;overflow-y:auto;overflow-x:auto;overscroll-behavior:contain;border:1px solid var(--border);border-radius:8px;background:var(--surface)"><div class="mu-empty"><span class="spin"></span>Loading HR potential…</div></div>
       </div>
       <div>
         <p class="section-title" style="font-size:18px;margin-bottom:10px">K'S <span>TODAY</span></p>
