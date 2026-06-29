@@ -461,7 +461,7 @@
 </header>
 
 <!-- Horizontal Ad -->
-<div id="dev-ad-disabled" style="display:none;background:var(--surface);padding:6px 24px;border-bottom:1px solid var(--border);text-align:center">
+<div id="ad-container" style="background:var(--surface);border-bottom:1px solid var(--border);text-align:center;overflow:hidden;max-height:0;transition:max-height 0.3s ease">
   <ins class="adsbygoogle"
        style="display:block"
        data-ad-client="ca-pub-6433797533342090"
@@ -469,8 +469,16 @@
        data-ad-format="auto"
        data-full-width-responsive="true"></ins>
   <script>
-       // DEV MODE: ads disabled so blank ad space does not cover the page
-       // (adsbygoogle = window.adsbygoogle || []).push({});
+       (adsbygoogle = window.adsbygoogle || []).push({});
+       // Expand container once ad loads
+       window.addEventListener('load', function() {
+         setTimeout(function() {
+           var ad = document.querySelector('#ad-container .adsbygoogle[data-ad-status]');
+           if (ad && ad.getAttribute('data-ad-status') !== 'unfilled') {
+             document.getElementById('ad-container').style.maxHeight = '120px';
+           }
+         }, 2000);
+       });
   </script>
 </div>
 
@@ -481,12 +489,6 @@
   <div class="tab" onclick="showTab('schedule', this)">Upcoming Games</div>
 </nav>
 
-<div id="dev-toolbar" style="position:sticky;top:64px;z-index:99;background:#07111f;border-bottom:1px solid #1e3a5f;padding:8px 24px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#93c5fd;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-  <strong style="color:#2ecc71">DEV MODE</strong>
-  <span id="dev-summary">Initializing…</span>
-  <button onclick="devClearLog()" style="background:#111827;border:1px solid #1e3a5f;color:#93c5fd;border-radius:5px;padding:4px 8px;font-size:11px">Clear Log</button>
-  <button onclick="devRetryAll()" style="background:#111827;border:1px solid #2ecc71;color:#2ecc71;border-radius:5px;padding:4px 8px;font-size:11px">Retry All</button>
-</div>
 
 <main>
   <section class="section active" id="scores">
@@ -512,8 +514,10 @@
 
     <div class="live-badge"><div class="live-dot"></div>LIVE NOW</div>
     <div class="games-grid" id="live-games"><div style="color:var(--muted);font-size:13px">Loading scores…</div></div>
-    <p class="section-title" style="font-size:18px; margin-top:4px;">FINAL <span>SCORES</span></p>
+    <p class="section-title" style="font-size:18px;margin-top:20px;">FINAL <span>SCORES</span></p>
     <div class="games-grid" id="final-games"></div>
+    <p class="section-title" style="font-size:18px;margin-top:20px;">UPCOMING <span>GAMES</span></p>
+    <div class="games-grid" id="scheduled-games"></div>
   </section>
 
 
@@ -586,7 +590,7 @@
           <span id="proj-hits-count" style="background:var(--green);color:#0a0e1a;font-family:'Bebas Neue',sans-serif;font-size:18px;padding:2px 10px;border-radius:20px;display:none"></span>
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:400px;overflow-y:auto;overscroll-behavior:contain">
-          <div id="proj-hits-content"><div class="mu-empty" style="color:var(--muted)">No HR’s Completed from Projections Yet</div></div>
+          <div id="proj-hits-content"><div class="mu-empty" style="color:var(--muted)">Loading HR's Completed from Projection…</div></div>
         </div>
       </div>
     </div>
@@ -669,69 +673,16 @@
 </div>
 
 <script>
-// ── DEV MODE DIAGNOSTICS ─────────────────────────────────────────────
-const DEV_MODE = true;
-const devState = { ok:0, fail:0, pending:0, rows:[] };
-function devShortUrl(url) {
-  try { const u = new URL(url); return `${u.hostname}${u.pathname}${u.search ? ' ?' + u.search.slice(1,70) : ''}`; }
-  catch { return String(url).slice(0,120); }
-}
-function devPanel() {
-  let el = document.getElementById('dev-console');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'dev-console';
-    el.style.cssText = "position:fixed;left:10px;right:10px;bottom:10px;max-height:190px;overflow:auto;background:#050a13eF;border:1px solid #1e3a5f;border-radius:10px;padding:10px;z-index:9999;font-family:'JetBrains Mono',monospace;font-size:10px;color:#dbeafe;box-shadow:0 10px 35px rgba(0,0,0,.45)";
-    document.body.appendChild(el);
-  }
-  return el;
-}
-function devUpdateSummary() {
-  const s = document.getElementById('dev-summary');
-  if (s) s.innerHTML = `API: <span style="color:#2ecc71">${devState.ok} ok</span> · <span style="color:#e63946">${devState.fail} failed</span> · <span style="color:#f4a261">${devState.pending} pending</span>`;
-}
-function devLog(type, label, msg='') {
-  if (!DEV_MODE) return;
-  const time = new Date().toLocaleTimeString();
-  const color = type === 'ok' ? '#2ecc71' : type === 'fail' ? '#e63946' : type === 'warn' ? '#f4a261' : '#93c5fd';
-  const row = `<div style="border-bottom:1px solid #10203a;padding:3px 0"><span style="color:#64748b">${time}</span> <b style="color:${color}">${type.toUpperCase()}</b> ${label}${msg ? ` — <span style="color:#cbd5e1">${msg}</span>` : ''}</div>`;
-  devState.rows.unshift(row);
-  devState.rows = devState.rows.slice(0,80);
-  const panel = devPanel();
-  panel.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><b style="color:#93c5fd">Diamond Report Dev Console</b><button onclick="document.getElementById('dev-console').style.display='none'" style="background:#111827;border:1px solid #334155;color:#cbd5e1;border-radius:4px;font-size:10px;padding:2px 6px">hide</button></div>` + devState.rows.join('');
-  devUpdateSummary();
-}
-function devClearLog(){ devState.rows=[]; const p=document.getElementById('dev-console'); if(p)p.innerHTML=''; devLog('info','Console cleared'); }
-function devRetryAll(){ devLog('info','Manual retry started'); loadScores(); if(document.getElementById('props')?.classList.contains('active')) { propsInitDone=false; initPropsTab(); } if(document.getElementById('matchups')?.classList.contains('active')) loadPitcherReport(); if(document.getElementById('schedule')?.classList.contains('active')) loadSchedule(); }
-window.addEventListener('error', e => devLog('fail','JavaScript error', e.message));
-window.addEventListener('unhandledrejection', e => devLog('fail','Unhandled promise', e.reason?.message || e.reason || 'unknown'));
-
-// Safe fetch wrapper — with timeout and dev diagnostics
-async function fetchJSON(url, timeoutMs = 12000) {
-  const start = performance.now();
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-  devState.pending++; devUpdateSummary();
+// Safe fetch wrapper — handles empty/truncated responses from the proxy
+async function fetchJSON(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = await res.text();
+  if (!text || text.trim() === '') throw new Error('Empty response from API');
   try {
-    const res = await fetch(url, { signal: ctrl.signal });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-    if (!text || text.trim() === '') throw new Error('Empty response from API');
-    try {
-      const json = JSON.parse(text);
-      devState.ok++;
-      devLog('ok', devShortUrl(url), `${Math.round(performance.now()-start)}ms`);
-      return json;
-    } catch(e) {
-      throw new Error(`Invalid JSON (${text.slice(0,80).trim()}…)`);
-    }
+    return JSON.parse(text);
   } catch(e) {
-    devState.fail++;
-    devLog('fail', devShortUrl(url), e.name === 'AbortError' ? `timeout after ${timeoutMs}ms` : e.message);
-    throw e.name === 'AbortError' ? new Error(`Timeout after ${timeoutMs}ms`) : e;
-  } finally {
-    clearTimeout(timer);
-    devState.pending = Math.max(0, devState.pending-1); devUpdateSummary();
+    throw new Error(`Invalid JSON (${text.slice(0,80).trim()}…)`);
   }
 }
 
@@ -925,10 +876,8 @@ async function loadScores() {
         ? final.map(g => `<div id="game-${gameKey(g)}">${gameCard(g)}</div>`).join('')
         : '<div style="color:var(--muted);font-size:13px;padding:4px 0">No final games yet today.</div>';
 
-      const scheduledEl = document.getElementById('scheduled-games') || document.getElementById('schedule-content');
-      if (scheduledEl) scheduledEl.innerHTML = upcoming.length
-        ? upcoming.map(g => `<div id="game-${gameKey(g)}">${upcomingCard(g)}</div>`).join('')
-        : '<div style="color:var(--muted);font-size:13px;padding:4px 0">No upcoming games listed.</div>';
+      document.getElementById('scheduled-games').innerHTML =
+        upcoming.map(g => `<div id="game-${gameKey(g)}">${upcomingCard(g)}</div>`).join('');
 
     } else {
       // Subsequent loads — only patch changed games
@@ -982,15 +931,11 @@ async function loadScores() {
     const now = new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
     const srEl = document.getElementById('scores-refresh'); if(srEl) srEl.textContent = `Last updated ${now}`;
     updatePropsLiveBanner(live);
-    // Load HR/K data for the Today's Games banner on first load
-    loadHRsToday();
-    loadKsToday();
+    // Load HR/K data for the Today's Games banner — defer slightly to ensure DOM is ready
+    setTimeout(() => { loadHRsToday(); loadKsToday(); }, 0);
   } catch(e) {
-    const sr = document.getElementById('scores-refresh');
-    if (sr) sr.textContent = `Error: ${e.message}`;
-    const lg = document.getElementById('live-games');
-    if (lg && lg.textContent.includes('Loading')) lg.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Live scores failed: ${e.message}</div>`;
-    devLog('fail','loadScores()', e.message);
+    const srErr = document.getElementById('scores-refresh');
+    if (srErr) srErr.textContent = `Error: ${e.message}`;
   }
 }
 
@@ -1422,6 +1367,57 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
   const maxProb = Math.max(...withProbs.map(b => b.hrProb), 0.01);
   const topIdx = withProbs.reduce((best, b, i) => b.hrProb > withProbs[best].hrProb ? i : best, 0);
 
+  // ── Feed into HR Potential if it's empty (lineups not posted via API yet) ──
+  if (pitcherId && pitcherName) {
+    const prRow = prRows.find(r => r.pitcher.id == pitcherId);
+    const timeLabel = prRow?.pitcher.timeLabel || '–';
+    const timeColor = prRow?.pitcher.timeColor || 'var(--text)';
+    const gameTimestamp = prRow?.pitcher.gameTimestamp || 0;
+    const tAbbr = teamAbbr || oppAbbr || '–';
+    const pOppAbbr = prRow?.pitcher.oppAbbr || oppAbbr || '–';
+
+    withProbs.forEach(b => {
+      if (!b.id) return;
+      // Only add if not already in hrpRows
+      const exists = hrpRows.some(r => r.id === b.id && r.pitcherId == pitcherId);
+      if (!exists) {
+        const s = b.stats || {};
+        hrpRows.push({
+          id: b.id,
+          name: b.name,
+          pos: b.pos,
+          teamAbbr: tAbbr,
+          oppAbbr: pOppAbbr,
+          pitcherName,
+          pitcherId,
+          timeLabel,
+          timeColor,
+          gameTimestamp,
+          gamePk: prRow?.pitcher.gamePk || 0,
+          stats: s,
+          last10HR: b.last10HR ?? null,
+          todayHR: b.todayHR || 0,
+          hrProb: b.hrProb,
+          streakDays: 1,
+          hrVsPitcher: null,
+          avg: parseFloat(s.avg) || 0,
+          hrSeason: parseInt(s.homeRuns) || 0,
+          ops: parseFloat(s.ops) || 0,
+          iso: (parseFloat(s.slg)||0) - (parseFloat(s.avg)||0),
+          isDrought: false,
+          isFavorable: (parseFloat(s.ops)||0) >= 0.800,
+        });
+      }
+    });
+
+    // If HR Potential was empty, re-render it now with this lineup data
+    const hrpEl = document.getElementById('hr-potential-content');
+    if (hrpEl && hrpRows.length > 0) {
+      const isEmpty = hrpEl.textContent.includes('Lineups not posted') || hrpEl.textContent.includes('No HR potential');
+      if (isEmpty) renderHRPTable();
+    }
+  }
+
   function fmtS(v, dec=3) {
     if (!v || v==='---') return '–';
     const n = parseFloat(v);
@@ -1562,7 +1558,7 @@ async function loadGameProps() {
     const games = entry?.games||[];
 
     if (!games.length) {
-      el.innerHTML = `<div class="mu-empty">No DR picks available — no games found for today.</div>`;
+      el.innerHTML = `<div class="mu-empty">No games found for today.</div>`;
       return;
     }
 
@@ -2216,13 +2212,83 @@ function scheduleMidnightRefresh() {
 }
 scheduleMidnightRefresh();
 
+// ── 5AM HR POTENTIAL REFRESH ─────────────────────────────────────────
+// Checks on load and reschedules daily — handles cases where tab wasn't open at 5am
+const HR_POTENTIAL_STORAGE_KEY = 'hrp_last_loaded_date';
+
+function getHRPLastLoadedDate() {
+  try { return localStorage.getItem(HR_POTENTIAL_STORAGE_KEY) || ''; } catch { return ''; }
+}
+function setHRPLastLoadedDate(dateStr) {
+  try { localStorage.setItem(HR_POTENTIAL_STORAGE_KEY, dateStr); } catch {}
+}
+
+function shouldRefreshHRPotential() {
+  const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
+  const lastLoaded = getHRPLastLoadedDate();
+  const cdtNow = new Date(new Date().toLocaleString('en-US', {timeZone:'America/Chicago'}));
+  const hour = cdtNow.getHours();
+  // Refresh if: never loaded today, OR loaded before 5am today and it's now past 5am
+  if (lastLoaded !== today) return true;
+  return false; // already loaded fresh today
+}
+
+function triggerHRPotentialRefresh() {
+  if (shouldRefreshHRPotential()) {
+    const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
+    setHRPLastLoadedDate(today);
+    loadHRPotentialWithRetry();
+  } else if (!hrpRows.length) {
+    // Data was never successfully populated — retry regardless
+    loadHRPotentialWithRetry();
+  }
+}
+
+let hrpRetryTimer = null;
+
+function loadHRPotentialWithRetry() {
+  loadHRPotential().then(() => {
+    if (!hrpRows.length) {
+      // Lineups not posted yet — retry in 15 minutes
+      if (hrpRetryTimer) clearTimeout(hrpRetryTimer);
+      hrpRetryTimer = setTimeout(loadHRPotentialWithRetry, 15 * 60 * 1000);
+      const el = document.getElementById('hr-potential-content');
+      if (el) el.innerHTML = `<div class="mu-empty">Lineups not posted yet — checking again in 15 min.<br><span style="font-size:10px;color:var(--muted)">Last checked: ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span></div>`;
+    } else {
+      if (hrpRetryTimer) { clearTimeout(hrpRetryTimer); hrpRetryTimer = null; }
+    }
+  }).catch(() => {
+    // On error also retry
+    if (hrpRetryTimer) clearTimeout(hrpRetryTimer);
+    hrpRetryTimer = setTimeout(loadHRPotentialWithRetry, 15 * 60 * 1000);
+  });
+}
+
+function schedule5amHRRefresh() {
+  const cdtNow = new Date(new Date().toLocaleString('en-US', {timeZone:'America/Chicago'}));
+  const next5am = new Date(cdtNow);
+  next5am.setHours(5, 0, 5, 0);
+  if (cdtNow >= next5am) next5am.setDate(next5am.getDate() + 1);
+  const msUntil5am = next5am - cdtNow;
+  setTimeout(() => {
+    const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
+    setHRPLastLoadedDate(today);
+    loadHRPotential();
+    schedule5amHRRefresh();
+  }, msUntil5am);
+}
+
+// On page load: refresh if stale, then schedule daily
+triggerHRPotentialRefresh();
+schedule5amHRRefresh();
+
 
 
 
 // ── K'S TODAY ────────────────────────────────────────────────────────
 async function loadKsToday() {
   const el = document.getElementById('ks-today-props');
-  if (!el) return;
+  // Don't return early if el is null — still need to update pitcher O/U tags
   try {
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
     const data = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team&language=en`);
@@ -2279,7 +2345,7 @@ async function loadKsToday() {
     }
 
     if (!allPitchers.length) {
-      el.innerHTML = `<div class="mu-empty">No strikeout data yet — check back once games are underway.</div>`;
+      if (el) el.innerHTML = `<div class="mu-empty">No strikeout data yet — check back once games are underway.</div>`;
       return;
     }
 
@@ -2356,7 +2422,7 @@ async function loadKsToday() {
       </div>`;
     }).join('');
 
-    el.innerHTML = rows || `<div class="mu-empty">No strikeout data yet.</div>`;
+    if (el) el.innerHTML = rows || `<div class="mu-empty">No strikeout data yet.</div>`;
 
     // ── Patch Pitcher Report rows with live O/U status ──
     allPitchers.forEach(p => {
@@ -2503,8 +2569,8 @@ function renderBanner() {
     scoresBanner.style.borderColor = '#f97316';
     const liveBadge = scoresBanner.querySelector('div > div:first-child');
     if (liveBadge) liveBadge.style.background = 'linear-gradient(135deg,#f97316,#dc2626)';
-    const scoresSection = document.getElementById('scores');
-    if (scoresSection && scoresSection.classList.contains('active')) scoresBanner.style.display = 'block';
+    // Banner is inside #scores so always set display block — section visibility handles the rest
+    scoresBanner.style.display = 'block';
     return;
   }
 
@@ -2537,8 +2603,9 @@ function renderBanner() {
   scoresTrack.style.flexWrap = shouldScroll ? 'nowrap' : 'wrap';
   scoresTrack.style.width = shouldScroll ? 'max-content' : '100%';
 
-  const scoresSection = document.getElementById('scores');
-  if (scoresSection && scoresSection.classList.contains('active')) scoresBanner.style.display = 'block';
+  // Always show the banner — visibility is controlled by the section being active
+  // The banner sits INSIDE #scores so it's naturally hidden when scores is hidden
+  scoresBanner.style.display = 'block';
 }
 
 function updateLiveBanner() {
@@ -2844,7 +2911,7 @@ function refreshHRPDiff() {
 // ── HRS TODAY ─────────────────────────────────────────────────────────
 async function loadHRsToday() {
   const el = document.getElementById('hrs-today-content');
-  if (!el) return;
+  // Even if the Props section isn't open yet, still collect banner data
   try {
     const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
     const data = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team&language=en`);
@@ -2892,11 +2959,12 @@ async function loadHRsToday() {
     allHRs.sort((a,b) => a.gameTimestamp-b.gameTimestamp || b.hrs-a.hrs);
 
     if (!allHRs.length) {
-      el.innerHTML=`<div class="mu-empty">No HRs at this time</div>`;
+      if (el) el.innerHTML=`<div class="mu-empty">No home runs yet today.</div>`;
       const countEl = document.getElementById('hrs-today-count');
       if (countEl) countEl.style.display = 'none';
       const projEl = document.getElementById('proj-hits-content');
-      if (projEl) projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">No HR’s Completed from Projections Yet</div>`;
+      if (projEl) projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">Loading HR's Completed from Projection…</div>`;
+      updateLiveBanner();
       return;
     }
 
@@ -2927,7 +2995,7 @@ async function loadHRsToday() {
     const countEl = document.getElementById('hrs-today-count');
     if (countEl) { countEl.textContent = `${totalHRs} HR${totalHRs!==1?'s':''}`; countEl.style.display = 'inline-block'; }
 
-    el.innerHTML = allHRs.map(h => {
+    if (el) el.innerHTML = allHRs.map(h => {
       const streak = streakMap[h.id] || 1;
       const streakBadge = streak >= 3
         ? `<span style="background:#1a1200;color:#ffd700;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;border:1px solid #ffd70066;white-space:nowrap">👑 ON A HEATER</span>`
@@ -2949,17 +3017,17 @@ async function loadHRsToday() {
         </div>
       </div>`;
     }).join('') +
-    `<div style="padding:8px 12px;font-size:10px;color:var(--muted);border-top:1px solid var(--border);line-height:1.7">
+    (el ? `<div style="padding:8px 12px;font-size:10px;color:var(--muted);border-top:1px solid var(--border);line-height:1.7">
       🔥 <strong>BACK TO BACK</strong> — Hit a home run yesterday and today<br>
       👑 <strong>ON A HEATER</strong> — Hit home runs 3+ consecutive days
-    </div>`;
+    </div>` : '');
 
     // HR's Completed from Projection — cross-reference HRs with hrpRows
     const projEl = document.getElementById('proj-hits-content');
     if (projEl) {
       const projHits = allHRs.filter(h => hrpRows.some(r => r.id === h.id));
       if (!projHits.length) {
-        projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">No HR’s Completed from Projections Yet</div>`;
+        projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">Loading HR's Completed from Projection…</div>`;
         const phCount = document.getElementById('proj-hits-count');
         if (phCount) phCount.style.display = 'none';
       } else {
@@ -3015,12 +3083,6 @@ async function loadKProps() {
     const schedData = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher&language=en`);
     const entry = schedData.dates?.find(d=>d.date===today)||schedData.dates?.[0];
     const games = entry?.games||[];
-    if (!games.length) {
-      kPropsData = [];
-      el.innerHTML = `<div class="mu-empty">No K props available — no games found for today.</div>`;
-      if (refreshEl) refreshEl.textContent = '';
-      return;
-    }
 
     // ── Fetch DraftKings pitcher strikeout props from The Odds API ──
     const ODDS_KEY = '5977e11fd23bea467834cc76502612b2';
@@ -3240,18 +3302,16 @@ let propsInitDone = false;
 function initPropsTab() {
   if (propsInitDone) return;
   propsInitDone = true;
-  loadHRPotential().catch(e => devLog('fail','loadHRPotential()', e.message));
-  loadKsToday().catch(e => devLog('fail','loadKsToday()', e.message));
-  loadHRsToday().catch(e => devLog('fail','loadHRsToday()', e.message));
-  loadKProps().catch(e => devLog('fail','loadKProps()', e.message));
+  loadHRPotentialWithRetry();
+  loadHRsToday();
   scheduleKPropsLoad();
-  loadGameProps().catch(e => devLog('fail','loadGameProps()', e.message));
+  loadGameProps();
 }
 
-// Auto-refresh Props tab every 60s
+// Auto-refresh Props tab every 60s (HR Potential only if stale, HRs Today always)
 setInterval(() => {
   if (propsInitDone) {
-    loadHRPotential();
+    triggerHRPotentialRefresh();
     loadHRsToday();
   }
 }, 60000);
@@ -3263,9 +3323,6 @@ function showTab(id, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   sessionStorage.setItem('activeTab', id);
-  // Show banner only on scores tab
-  const scoresBanner = document.getElementById('scores-alert-banner');
-  if (scoresBanner) scoresBanner.style.display = 'none'; // DEV: scores banner disabled
   if (id === 'matchups' && !matchupLoaded) {
     matchupLoaded = true;
     loadPitcherReport();
