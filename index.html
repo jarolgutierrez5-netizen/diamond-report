@@ -475,9 +475,9 @@
 
 <nav class="nav">
   <div class="tab active" onclick="showTab('scores', this)">Live Scores</div>
-  <div class="tab" onclick="showTab('props', this)">Props</div>
   <div class="tab" onclick="showTab('matchups', this)">Pitcher Report</div>
-  <div class="tab" onclick="showTab('schedule', this)">Schedule</div>
+  <div class="tab" onclick="showTab('props', this)">Props</div>
+  <div class="tab" onclick="showTab('schedule', this)">Upcoming Games</div>
 </nav>
 
 
@@ -536,7 +536,10 @@
     <!-- HR Potential -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
       <p class="section-title" style="margin-bottom:0">HR <span>POTENTIAL</span></p>
-      <div id="props-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Loading…</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <button onclick="sortHRP('hrProb')" style="background:${'' /* set dynamically */};background:var(--surface2);border:1px solid #f4a261;color:#f4a261;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px" id="sort-top-hr-btn">⚡ TOP HR THREAT</button>
+        <div id="props-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Loading…</div>
+      </div>
     </div>
 
     <!-- HR Potential + K's Today side by side -->
@@ -600,7 +603,8 @@
 
   <section class="section" id="schedule">
     <p class="section-title">UPCOMING <span>GAMES</span></p>
-    <div class="games-grid" id="scheduled-games"></div>
+    <div id="schedule-loading" style="color:var(--muted);font-size:13px;padding:20px 0"><span class="spin"></span> Loading schedule…</div>
+    <div id="schedule-content"></div>
   </section>
 </main>
 
@@ -749,7 +753,7 @@ function gameCard(g) {
   const isLive = status === 'live';
   const isFinal = status === 'final';
   const cls = isLive ? 'live' : isFinal ? 'closed' : 'scheduled';
-  const label = isLive ? (inning || 'LIVE') : isFinal ? 'FINAL' : 'UPCOMING';
+  const label = isLive ? (inning ? `<span style="font-size:15px;font-weight:900;letter-spacing:1px">${inning}</span>` : 'LIVE') : isFinal ? 'FINAL' : 'UPCOMING';
   const sl = buildStandingsLookup();
 
   let scoreHTML = '';
@@ -999,19 +1003,27 @@ async function loadPitcherReport() {
     prRows = pitchers.map((p, i) => {
       const s = statsArr[i];
       const iso = (s.slg!=null&&s.avg!=null) ? f(parseFloat(s.slg)-parseFloat(s.avg),3) : null;
+      const totalK = parseInt(s.strikeOuts) || 0;
+      const gs = parseInt(s.gamesStarted) || parseInt(s.gamesPitched) || 1;
+      const kpg = gs > 0 ? (totalK / gs).toFixed(1) : null;
+      const k9 = parseFloat(s.strikeoutsPer9Inn) || 8;
+      // Baseline K prop: K/9 × projected IP (avg 5.5) / 9, rounded to nearest .5
+      const projIP = 5.5;
+      const projK = Math.round((k9 * projIP / 9) * 2) / 2;
       return {
         pitcher: p,
         gameTime: p.gameTimestamp,
         ip: f(s.inningsPitched,1), bf: fI(s.battersFaced),
         fip: f(s.fip), avg: f(s.avg,3), woba: f(s.obp,3),
         whip: f(s.whip), iso, slg: f(s.slg,3),
-        hr: fI(s.homeRuns), hr9: f(s.homeRunsPer9), tb: fI(s.totalBases),
+        hr9: f(s.homeRunsPer9), tb: fI(s.totalBases),
+        kpg, kprop: projK,
         wl: (s.wins!=null)?`${s.wins}-${s.losses}`:'–',
         era: f(s.era),
         rawHr9: parseFloat(s.homeRunsPer9) || 0,
         rawIp: parseFloat(s.inningsPitched) || 0,
-        rawK9: parseFloat(s.strikeoutsPer9Inn) || 0,
-        gamesStarted: parseInt(s.gamesStarted) || 20,
+        rawK9: k9,
+        gamesStarted: gs,
       };
     });
 
@@ -1051,9 +1063,10 @@ function renderPRTable() {
     {key:'whip',     label:'WHIP',    sortable:true,  tip:'Walks + Hits per Inning Pitched'},
     {key:'iso',      label:'ISO',     sortable:true,  tip:'Isolated Power (SLG − AVG) — extra-base power allowed'},
     {key:'slg',      label:'SLG',     sortable:true,  tip:'Slugging Percentage Against'},
-    {key:'hr',       label:'HR',      sortable:true,  tip:'Home Runs Allowed'},
     {key:'hr9',      label:'HR/9',    sortable:true,  tip:'Home Runs per 9 Innings'},
     {key:'tb',       label:'TB',      sortable:true,  tip:'Total Bases Allowed'},
+    {key:'kpg',      label:'K/GM',    sortable:true,  tip:'Average Strikeouts per Game Started'},
+    {key:'kprop',    label:'K PROP',  sortable:true,  tip:'Projected Ks today based on opposing lineup K% vs pitcher K/9'},
   ];
 
   const sorted = [...prRows].sort((a,b) => {
@@ -1079,8 +1092,8 @@ function renderPRTable() {
     const projK = +(k9 * projIP / 9).toFixed(1);
     // O/U line = projK rounded to nearest .5
     const ouLine = Math.round(projK * 2) / 2;
-    const ouTag = ouLine > 0 ? `<span class="k-ou-tag" id="ou-tag-${p.id}" data-ou-line="${ouLine}">${ouLine} K O/U</span>` : '';
-    if (ouLine > 0) pitcherOULines[p.id] = ouLine;
+    const ouTag = '';
+    if (ouLine > 0) pitcherOULines[p.id] = ouLine; // keep tracking even without display
 
     // K projection: HIGH if K/9 > 9.5, LOW if < 6.5
     const kProjTag = k9 >= 9.5
@@ -1098,7 +1111,6 @@ function renderPRTable() {
             <span class="pr-pitcher-name">${p.name}</span>
             <div class="pr-pitcher-sub">
               <span class="pr-wl">${p.teamAbbr} · ${r.wl}</span>
-              ${ouTag}
               ${kProjTag}
               <button class="btn-lineup${isExpanded?' active':''}" onclick="toggleLineup('${p.id}', '${p.name.replace(/'/g,"\\'")}', ${p.gamePk}, '${p.side}', ${p.oppTeamId}, ${r.rawHr9}, ${r.rawIp})">
                 ${isExpanded ? '▲ HIDE' : '▼ BATTING LINEUP & MATCHUPS'}
@@ -1116,9 +1128,10 @@ function renderPRTable() {
       <td>${pill(r.whip, v=>v.toFixed(2), 1.10, 1.40)}</td>
       <td>${pill(r.iso,  v=>v.toFixed(3).replace(/^0/,''), .150, .200)}</td>
       <td>${pill(r.slg,  v=>v.toFixed(3).replace(/^0/,''), .350, .430)}</td>
-      <td><span class="pr-plain">${r.hr!=null?r.hr:'–'}</span></td>
       <td>${pill(r.hr9,  v=>v.toFixed(2), 0.80, 1.50)}</td>
       <td><span class="pr-plain">${r.tb!=null?r.tb:'–'}</span></td>
+      <td><span class="pr-plain" style="color:${r.kpg>=7?'var(--green)':r.kpg>=5?'var(--text)':'var(--muted)'}">${r.kpg??'–'}</span></td>
+      <td id="kprop-cell-${r.pitcher.id}"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:${r.rawK9>=9?'var(--green)':r.rawK9>=7?'var(--accent2)':'var(--muted)'}">${r.kprop??'–'}</span></td>
     </tr>`;
 
     const expandRow = `<tr class="pr-expand-row" id="${expandId}" style="${isExpanded?'':'display:none'}">
@@ -1249,6 +1262,23 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
     if (isFirstLoad) {
       // Full render on first load
       renderLineup(`panel-${pitcherId}`, lineupCache[cacheKey], pitcherHr9, pitcherIp, null, pitcherId, pitcherName);
+
+      // Patch K Prop cell with lineup-adjusted projection
+      const kpropCell = document.getElementById(`kprop-cell-${pitcherId}`);
+      if (kpropCell && lineup.length) {
+        const avgKpct = lineup.reduce((sum, b) => {
+          const s = b.stats;
+          return sum + ((s.strikeOuts && s.plateAppearances) ? s.strikeOuts/s.plateAppearances : 0.22);
+        }, 0) / lineup.length;
+        const row = prRows.find(r => r.pitcher.id == pitcherId);
+        if (row) {
+          const k9 = row.rawK9 || 8;
+          const kpctAdj = (avgKpct - 0.22) * 10;
+          const projK = Math.round((k9 * 5.5 / 9 + kpctAdj) * 2) / 2;
+          const color = k9 >= 9 ? 'var(--green)' : k9 >= 7 ? 'var(--accent2)' : 'var(--muted)';
+          kpropCell.innerHTML = `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:${color}" title="Adj. for opp K% ${(avgKpct*100).toFixed(0)}%">${projK}</span>`;
+        }
+      }
     } else {
       // Diff — only update batter rows that changed
       let anyChanged = false;
@@ -1529,6 +1559,14 @@ async function loadGameProps() {
       if (homeK9 > awayK9 + 1) { homeScore += 3; factors.push({team:'home', label:`K/9 edge (${homeK9.toFixed(1)})`, type:'pos'}); }
       else if (awayK9 > homeK9 + 1) { awayScore += 3; factors.push({team:'away', label:`K/9 edge (${awayK9.toFixed(1)})`, type:'pos'}); }
 
+      // Time of day factor — day games (before 5pm CDT) slightly favor home team; night games more even
+      const gameHourCDT = new Date(g.gameDate).toLocaleString('en-US',{hour:'numeric',hour12:false,timeZone:'America/Chicago'});
+      const isDayGame = parseInt(gameHourCDT) < 17;
+      if (isDayGame) {
+        homeScore += 2;
+        factors.push({team:'home', label:'Day game — home crowd advantage', type:'neu'});
+      }
+
       // Home field advantage
       homeScore += 3;
       factors.push({team:'home', label:'Home field', type:'pos'});
@@ -1566,6 +1604,30 @@ async function loadGameProps() {
       const loserAbbr  = winner==='away' ? homeAbbr : awayAbbr;
       const loserPct   = winner==='away' ? homePct : awayPct;
 
+      // Actual result — get live/final scores from linescore
+      const awayActual = g.teams.away.score ?? null;
+      const homeActual = g.teams.home.score ?? null;
+      let resultBadge = '';
+      let resultCorrect = null; // true/false/null
+      if (isFinal && awayActual !== null && homeActual !== null) {
+        const actualWinner = awayActual > homeActual ? 'away' : homeActual > awayActual ? 'home' : 'tie';
+        const actualWinnerAbbr = actualWinner === 'away' ? awayAbbr : homeAbbr;
+        resultCorrect = actualWinner !== 'tie' && actualWinner === winner;
+        if (actualWinner === 'tie') {
+          resultBadge = `<span style="background:#1a1a2e;color:var(--muted);font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid var(--border)">TIE GAME</span>`;
+        } else if (resultCorrect) {
+          resultBadge = `<span style="background:#0d2a1a;color:#2ecc71;font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid #2ecc7166">✓ CORRECT — ${actualWinnerAbbr} won ${awayActual}-${homeActual}</span>`;
+        } else {
+          resultBadge = `<span style="background:#2a0d0d;color:#e63946;font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid #e6394666">✗ INCORRECT — ${actualWinnerAbbr} won ${awayActual}-${homeActual}</span>`;
+        }
+      } else if (isLive && awayActual !== null && homeActual !== null) {
+        const leadingAbbr = awayActual > homeActual ? awayAbbr : homeActual > awayActual ? homeAbbr : null;
+        const isPickLeading = leadingAbbr === winnerAbbr;
+        if (leadingAbbr) {
+          resultBadge = `<span style="background:${isPickLeading?'#0d2a1a':'#2a0d0d'};color:${isPickLeading?'#2ecc71':'#e63946'};font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid ${isPickLeading?'#2ecc7166':'#e6394666'}">${isPickLeading?'▲':'▼'} ${leadingAbbr} leads ${awayActual}-${homeActual}</span>`;
+        }
+      }
+
       const awayLogo = teamIds[awayAbbr] ? `<img class="gp-team-logo" src="https://www.mlbstatic.com/team-logos/${teamIds[awayAbbr]}.svg" onerror="this.style.display='none'" alt="">` : '';
       const homeLogo = teamIds[homeAbbr] ? `<img class="gp-team-logo" src="https://www.mlbstatic.com/team-logos/${teamIds[homeAbbr]}.svg" onerror="this.style.display='none'" alt="">` : '';
       const winLogo  = teamIds[winnerAbbr] ? `<img src="https://www.mlbstatic.com/team-logos/${teamIds[winnerAbbr]}.svg" style="width:22px;height:22px;object-fit:contain" onerror="this.style.display='none'" alt="">` : '';
@@ -1581,7 +1643,7 @@ async function loadGameProps() {
       const confBarW = Math.min(winnerPct, 100);
       const confBarColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : '#2ecc71';
 
-      return `<div class="gp-card">
+      return { html: `<div class="gp-card">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <!-- Teams -->
           <div class="gp-matchup" style="flex:1;min-width:180px">
@@ -1635,10 +1697,25 @@ async function loadGameProps() {
 
         <!-- Key factors -->
         <div class="gp-factors">${factorChips}</div>
-      </div>`;
+        ${resultBadge ? `<div style="margin-top:8px">${resultBadge}</div>` : ''}
+      </div>`, resultCorrect };
     }));
 
-    el.innerHTML = gameCards.join('') || `<div class="mu-empty">No game data available.</div>`;
+    // Tally correct picks from final games
+    const finalResults = gameCards.filter(c => c.resultCorrect !== null);
+    const correctCount = finalResults.filter(c => c.resultCorrect === true).length;
+    const totalFinal   = finalResults.length;
+    const totalGames   = gameCards.length;
+
+    const tallyHTML = totalFinal > 0 ? `
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px">
+        <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase">TODAY'S RECORD</span>
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;color:${correctCount===totalFinal?'#2ecc71':correctCount>totalFinal/2?'var(--accent2)':'var(--accent)'}">${correctCount}-${totalFinal-correctCount}</span>
+        <span style="font-size:11px;color:var(--muted)">${totalFinal} of ${totalGames} games final</span>
+        <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">${totalFinal>0?Math.round(correctCount/totalFinal*100)+'% accuracy':''}</span>
+      </div>` : '';
+
+    el.innerHTML = tallyHTML + (gameCards.map(c=>c.html).join('') || `<div class="mu-empty">No game data available.</div>`);
     const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
     if (refreshEl) refreshEl.textContent = `Last updated ${now}`;
     gamePropsLoaded = true;
@@ -1658,6 +1735,93 @@ function windEffect(deg, homeAbbr) {
 
 // Refresh game props every 5 minutes when loaded
 setInterval(() => { if (gamePropsLoaded) loadGameProps(); }, 5 * 60 * 1000);
+
+
+// ── SCHEDULE (multi-day) ─────────────────────────────────────────────
+let scheduleLoaded = false;
+
+async function loadSchedule() {
+  const content = document.getElementById('schedule-content');
+  const loading = document.getElementById('schedule-loading');
+  if (!content) return;
+
+  try {
+    const today = new Date();
+    const dates = [];
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() + i);
+      dates.push(d.toLocaleDateString('en-CA', {timeZone:'America/Chicago'}));
+    }
+
+    const allDays = await Promise.all(dates.map(async date => {
+      const data = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${date}&hydrate=team,probablePitcher&language=en`);
+      const entry = data.dates?.find(d => d.date === date) || data.dates?.[0];
+      return { date, games: entry?.games || [] };
+    }));
+
+    if (loading) loading.style.display = 'none';
+    const sl = buildStandingsLookup();
+
+    content.innerHTML = allDays.map(({ date, games }) => {
+      if (!games.length) return '';
+      const dt = new Date(date + 'T12:00:00');
+      const dayLabel = dt.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}).toUpperCase();
+      const isToday = date === new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+
+      const cards = games.map(g => {
+        const away = g.teams.away, home = g.teams.home;
+        const awayAbbr = away.team.abbreviation, homeAbbr = home.team.abbreviation;
+        const dt2 = new Date(g.gameDate);
+        const timeStr = dt2.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'}) + ' CDT';
+        const awayP = g.teams.away.probablePitcher?.fullName || 'TBD';
+        const homeP = g.teams.home.probablePitcher?.fullName || 'TBD';
+        const state = g.status.abstractGameState;
+        const isLive = state==='Live'||g.status.detailedState==='In Progress';
+        const isFinal = state==='Final';
+        const statusLabel = isLive
+          ? `<span style="color:var(--live);font-weight:700;font-size:10px">● LIVE</span>`
+          : isFinal ? `<span style="color:var(--muted);font-size:10px">FINAL</span>`
+          : `<span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text)">${timeStr}</span>`;
+
+        function tblock(abbr, pName) {
+          const id = teamIds[abbr];
+          const logo = id ? `<img src="https://www.mlbstatic.com/team-logos/${id}.svg" style="width:34px;height:34px;object-fit:contain" onerror="this.style.display='none'" alt="">` : '';
+          const st = sl[abbr];
+          return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:0">
+            ${logo}
+            <span style="font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:1px">${abbr}</span>
+            <span style="font-size:9px;color:var(--muted);text-align:center;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pName}</span>
+            ${st?`<span style="font-size:8px;color:var(--muted);font-family:'JetBrains Mono',monospace">${st.wl} · #${st.rank}</span>`:''}
+          </div>`;
+        }
+
+        return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 10px">
+          <div style="text-align:center;margin-bottom:8px">${statusLabel}</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            ${tblock(awayAbbr, awayP)}
+            <span style="font-size:14px;color:var(--muted);font-weight:700;flex-shrink:0">@</span>
+            ${tblock(homeAbbr, homeP)}
+          </div>
+        </div>`;
+      }).join('');
+
+      return `<div style="margin-bottom:24px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:${isToday?'var(--accent)':'var(--accent2)'};white-space:nowrap">${isToday?'TODAY · ':''}${dayLabel}</span>
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+          <span style="font-size:10px;color:var(--muted);white-space:nowrap">${games.length} game${games.length!==1?'s':''}</span>
+        </div>
+        <div class="games-grid">${cards}</div>
+      </div>`;
+    }).join('') || '<div class="mu-empty">No upcoming games found.</div>';
+
+    scheduleLoaded = true;
+  } catch(e) {
+    if (content) content.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
+    if (loading) loading.style.display = 'none';
+  }
+}
 
 
 const PROMO_CODE = 'BIGMONEY';
@@ -2024,14 +2188,17 @@ async function loadKsToday() {
         (team.pitchers || []).forEach(id => {
           const p = team.players?.[`ID${id}`];
           if (!p) return;
-          const ks  = parseInt(p.stats?.pitching?.strikeOuts) || 0;
-          const ip  = p.stats?.pitching?.inningsPitched || '0.0';
-          const hrs = parseInt(p.stats?.pitching?.homeRuns) || 0;
+          const ks     = parseInt(p.stats?.pitching?.strikeOuts) || 0;
+          const ip     = p.stats?.pitching?.inningsPitched || '0.0';
+          const hrs    = parseInt(p.stats?.pitching?.homeRuns) || 0;
+          const pitches = parseInt(p.stats?.pitching?.numberOfPitches) || 0;
+          const isRelieved = !gameLive && !gameFinal && parseFloat(ip) > 0 && p.stats?.pitching?.inningsPitched;
+          const relievedInning = parseFloat(ip) > 0 ? Math.ceil(parseFloat(ip)) : null;
           allPitchers.push({
             name: p.person?.fullName || '–',
             id: p.person?.id,
             teamAbbr: abbr,
-            ks, ip, hrs,
+            ks, ip, hrs, pitches, relievedInning,
             gameLabel, timeStr,
             gameTimestamp: dt.getTime(),
             isSP: (team.pitchers || [])[0] === id,
@@ -2108,10 +2275,9 @@ async function loadKsToday() {
             <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">${p.gameLabel}</span>
           </div>
           <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:1px">
-            <span style="font-size:8px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">${p.isSP?'SP · ':''}${p.ip} IP</span>
-            ${p.hrs > 0 ? `<span style="background:#2a0d0d;color:var(--accent);font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid #e6394644;white-space:nowrap">💥 ${p.hrs} HR${p.hrs>1?'s':''} allowed</span>` : ''}
-            ${ouLine !== null ? `<span style="font-size:8px;color:var(--muted);font-family:'JetBrains Mono',monospace">PROJ:<strong style="color:var(--text)">${ouLine}</strong></span>` : ''}
-            ${ouBadge}
+            <span style="font-size:8px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">${p.isSP?'SP · ':''}${p.ip} IP${p.pitches>0?' · '+p.pitches+' pitches':''}</span>
+            ${p.hrs>0?`<span style="background:#2a0d0d;color:var(--accent);font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid #e6394644;white-space:nowrap">💥 ${p.hrs} HR${p.hrs>1?'s':''} allowed</span>`:''}
+            ${!p.isSP&&p.relievedInning?`<span style="background:var(--bg);color:var(--muted);font-size:8px;padding:1px 5px;border-radius:3px;border:1px solid var(--border);white-space:nowrap">Relieved in ${p.relievedInning}</span>`:''}
           </div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0;flex-shrink:0;min-width:36px">
@@ -2214,52 +2380,116 @@ function updatePropsLiveBanner(liveGames) {
   }
 
   const content = liveGames.map(chip).join('<span style="color:#334155;padding:0 8px;font-size:16px">·</span>');
-  const looped  = content + '<span style="padding:0 24px;color:#334155">·</span>' + content;
+  const shouldScroll = liveGames.length >= 4;
+  const looped = shouldScroll
+    ? content + '<span style="padding:0 24px;color:#334155">·</span>' + content
+    : content;
   const duration = Math.max(15, liveGames.length * 6);
 
   container.innerHTML = looped;
-  container.style.animation = `marquee ${duration}s linear infinite`;
+  container.style.animation = shouldScroll ? `marquee ${duration}s linear infinite` : 'none';
+  container.style.justifyContent = shouldScroll ? 'flex-start' : 'center';
+  container.style.flexWrap = shouldScroll ? 'nowrap' : 'wrap';
+  container.style.width = shouldScroll ? 'max-content' : '100%';
   banner.style.display = 'block';
 }
 
 
-const bannerHRs  = {}; // batterId -> { name, teamAbbr, count }
+const bannerHRs  = {}; // batterId -> { name, teamAbbr, count, oppAbbr }
 const bannerKs   = {}; // pitcherId -> { name, teamAbbr, ks, ouLine }
+const prevBannerHRCounts = {}; // track previous HR counts to detect new HRs
+let breakingHRActive = false;
+let breakingHRTimeout = null;
+let breakingHRNames = []; // names of players who just hit HRs
 
-function updateLiveBanner() {
+function triggerBreakingHR(newHitters) {
+  // Show BREAKING banner for 2 minutes then revert
+  breakingHRNames = newHitters;
+  breakingHRActive = true;
+  renderBanner();
+  if (breakingHRTimeout) clearTimeout(breakingHRTimeout);
+  breakingHRTimeout = setTimeout(() => {
+    breakingHRActive = false;
+    breakingHRNames = [];
+    renderBanner();
+  }, 2 * 60 * 1000);
+}
+
+function renderBanner() {
   const scoresBanner = document.getElementById('scores-alert-banner');
   const scoresTrack  = document.getElementById('scores-alert-track');
+  const liveBadge    = document.querySelector('#scores-alert-banner > div > div:first-child');
   if (!scoresBanner || !scoresTrack) return;
 
-  const chips = [];
+  if (breakingHRActive && breakingHRNames.length) {
+    // BREAKING MODE — flash red, big text, stop scrolling
+    const breakingHTML = breakingHRNames.map(n =>
+      `<span style="display:inline-flex;align-items:center;gap:10px;padding:0 20px">
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#ffffff;animation:pulse 0.6s infinite">🚨 BREAKING</span>
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#f97316;text-shadow:0 0 12px #f97316">${n} HIT A HOME RUN!</span>
+        <span style="font-size:20px">💥</span>
+      </span>`
+    ).join('<span style="color:#334155;padding:0 10px;font-size:20px">·</span>');
 
-  // HR chips
-  Object.values(bannerHRs).forEach(h => {
-    if (h.count > 0) chips.push(`<span class="alert-chip alert-hr">💥 ${h.name}${h.count > 1 ? ' ×'+h.count : ''} HR vs ${h.oppAbbr||''}</span>`);
-  });
-
-  // K over-line chips
-  Object.values(bannerKs).forEach(k => {
-    if (k.ks > 0 && k.ouLine && k.ks > k.ouLine) {
-      chips.push(`<span class="alert-chip alert-k">⚡ ${k.name} ${k.ks}K vs ${k.oppAbbr||''} — OVER ${k.ouLine}</span>`);
+    scoresTrack.innerHTML = breakingHTML;
+    scoresTrack.style.animation = 'none';
+    scoresTrack.style.justifyContent = 'center';
+    scoresTrack.style.flexWrap = 'wrap';
+    scoresTrack.style.width = '100%';
+    scoresBanner.style.background = 'linear-gradient(90deg,#1a0000,#2a0500,#1a0000)';
+    scoresBanner.style.borderColor = '#f97316';
+    if (liveBadge) { liveBadge.style.background = 'linear-gradient(135deg,#f97316,#dc2626)'; }
+    const scoresSection = document.getElementById('scores');
+    if (scoresSection && scoresSection.classList.contains('active')) {
+      scoresBanner.style.display = 'block';
     }
-  });
-
-  if (!chips.length) {
-    scoresBanner.style.display = 'none';
     return;
   }
 
-  const content = chips.join('<span class="alert-sep">·</span>');
-  const looped  = content + '<span class="alert-sep" style="padding:0 30px">·</span>' + content;
-  const duration = Math.max(15, chips.length * 5);
+  // Reset banner style
+  scoresBanner.style.background = 'linear-gradient(90deg,#0a0e1a 0%,#0f172a 40%,#0a0e1a 100%)';
+  scoresBanner.style.borderColor = '#1e3a5f';
+  if (liveBadge) { liveBadge.style.background = 'linear-gradient(135deg,#dc2626,#991b1b)'; }
 
+  const chips = [];
+  Object.values(bannerHRs).forEach(h => {
+    if (h.count > 0) chips.push(`<span class="alert-chip alert-hr">💥 ${h.name}${h.count > 1 ? ' ×'+h.count : ''} HR vs ${h.oppAbbr||''}</span>`);
+  });
+  Object.values(bannerKs).forEach(k => {
+    if (k.ks > 0 && k.ouLine && k.ks > k.ouLine) {
+      chips.push(`<span class="alert-chip alert-k">⚡ ${k.name} ${k.ks}K vs ${k.oppAbbr||''}</span>`);
+    }
+  });
+
+  if (!chips.length) { scoresBanner.style.display = 'none'; return; }
+
+  const content = chips.join('<span class="alert-sep">·</span>');
+  const shouldScroll = chips.length >= 3;
+  const looped = shouldScroll ? content + '<span class="alert-sep" style="padding:0 30px">·</span>' + content : content;
+  const duration = Math.max(15, chips.length * 5);
   scoresTrack.innerHTML = looped;
-  scoresTrack.style.animation = `marquee ${duration}s linear infinite`;
-  // Only show if scores tab is currently active
+  scoresTrack.style.animation = shouldScroll ? `marquee ${duration}s linear infinite` : 'none';
+  scoresTrack.style.justifyContent = shouldScroll ? 'flex-start' : 'center';
+  scoresTrack.style.flexWrap = shouldScroll ? 'nowrap' : 'wrap';
+  scoresTrack.style.width = shouldScroll ? 'max-content' : '100%';
   const scoresSection = document.getElementById('scores');
   if (scoresSection && scoresSection.classList.contains('active')) {
     scoresBanner.style.display = 'block';
+  }
+}
+
+function updateLiveBanner() {
+  // Detect new HRs since last check
+  const newHitters = [];
+  Object.values(bannerHRs).forEach(h => {
+    const prev = prevBannerHRCounts[h.id] || 0;
+    if (h.count > prev) newHitters.push(h.name);
+    prevBannerHRCounts[h.id] = h.count;
+  });
+  if (newHitters.length && !breakingHRActive) {
+    triggerBreakingHR(newHitters);
+  } else {
+    renderBanner();
   }
 }
 
@@ -2328,17 +2558,29 @@ async function loadHRPotential() {
             const pid = b.player.person?.id;
             if (!pid) continue;
             let s = b.player.seasonStats?.batting || {};
-            let last10HR = null, todayHR = 0;
+            let last10HR = null, todayHR = 0, streakDays = 1, hrVsPitcher = null;
             try {
-              const [sd, ld] = await Promise.all([
+              const [sd, ld, h2hd] = await Promise.all([
                 fetchJSON(`https://diamondreport.app/api/v1/people/${pid}?hydrate=stats(group=hitting,type=season,season=2026)`),
-                fetchJSON(`https://diamondreport.app/api/v1/people/${pid}/stats?stats=gameLog&group=hitting&season=2026&gameType=R`)
+                fetchJSON(`https://diamondreport.app/api/v1/people/${pid}/stats?stats=gameLog&group=hitting&season=2026&gameType=R`),
+                fetchJSON(`https://diamondreport.app/api/v1/people/${pid}/stats?stats=vsPlayer&opposingPlayerId=${pitcher.id}&group=hitting&season=2026`)
               ]);
               s = sd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || s;
               const logs = ld.stats?.[0]?.splits || [];
               last10HR = logs.slice(0,10).reduce((n,g)=>n+(parseInt(g.stat?.homeRuns)||0),0);
               const todayLog = logs.find(g=>g.date===batterToday);
               todayHR = Math.max(parseInt(todayLog?.stat?.homeRuns)||0, parseInt(b.player.stats?.batting?.homeRuns)||0);
+              // Streak detection
+              const yd = new Date(); yd.setDate(yd.getDate()-1);
+              const db = new Date(); db.setDate(db.getDate()-2);
+              const ydStr = yd.toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+              const dbStr = db.toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+              const hitYd = logs.some(g=>g.date===ydStr&&parseInt(g.stat?.homeRuns)>0);
+              const hitDb = logs.some(g=>g.date===dbStr&&parseInt(g.stat?.homeRuns)>0);
+              streakDays = hitYd && hitDb ? 3 : hitYd ? 2 : 1;
+              // H2H HRs vs this pitcher (2026)
+              const h2hStat = h2hd.stats?.[0]?.splits?.[0]?.stat;
+              if (h2hStat) hrVsPitcher = parseInt(h2hStat.homeRuns) || 0;
             } catch {}
 
             const ab = parseInt(s.atBats)||0;
@@ -2357,7 +2599,7 @@ async function loadHRPotential() {
               timeLabel, timeColor,
               gameTimestamp: dt.getTime(),
               gamePk: g.gamePk,
-              stats: s, last10HR, todayHR, hrProb,
+              stats: s, last10HR, todayHR, hrProb, streakDays, hrVsPitcher,
               avg: parseFloat(s.avg)||0,
               hrSeason: hr,
               ops: parseFloat(s.ops)||0,
@@ -2426,11 +2668,18 @@ function renderHRPTable() {
               ${homerToday?`<span style="background:#2a1500;color:#f4a261;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166;white-space:nowrap">💥 HR TODAY${r.todayHR>1?' ×'+r.todayHR:''}</span>`:''}
               ${r.hrProb>=8?`<span class="top-hr-badge">⚡ TOP HR THREAT</span>`:''}
             </div>
-            <div class="hrp-batter-sub" style="gap:4px;flex-wrap:wrap;margin-top:2px">
-              ${tl(r.teamAbbr)}<span style="font-size:10px;color:var(--muted)">${r.teamAbbr} · ${r.pos}</span>
-              <span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted)">HR: <strong style="color:${r.hrSeason>=15?'var(--accent2)':r.hrSeason>=8?'var(--text)':'var(--muted)'}">${r.hrSeason||'–'}</strong></span>
-              <span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted)">L10: <strong style="color:${r.last10HR>=2?'var(--accent2)':r.last10HR>=1?'#90ee60':'var(--muted)'}">${r.last10HR??'–'}</strong></span>
-              <button class="hrp-matchup-btn" 
+            <div class="hrp-batter-sub" style="gap:5px;flex-wrap:wrap;margin-top:3px">
+              <div style="display:flex;align-items:center;gap:4px">
+                ${tl(r.teamAbbr)}
+                <span style="font-size:10px;color:var(--muted)">${r.teamAbbr} · ${r.pos}</span>
+              </div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+                <span style="background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:1px 6px;font-size:9px;font-family:'JetBrains Mono',monospace"><span style="color:var(--muted)">HR </span><strong style="color:${r.hrSeason>=15?'var(--accent2)':r.hrSeason>=8?'var(--text)':'var(--muted)'}">${r.hrSeason||'–'}</strong></span>
+                <span style="background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:1px 6px;font-size:9px;font-family:'JetBrains Mono',monospace"><span style="color:var(--muted)">L10 </span><strong style="color:${r.last10HR>=2?'var(--accent2)':r.last10HR>=1?'#90ee60':'var(--muted)'}">${r.last10HR??'–'}</strong></span>
+                ${r.hrVsPitcher !== null && r.hrVsPitcher !== undefined ? `<span style="background:${r.hrVsPitcher>0?'#2a1500':'var(--bg)'};border:1px solid ${r.hrVsPitcher>0?'#f4a261':'var(--border)'};border-radius:3px;padding:1px 6px;font-size:9px;font-family:'JetBrains Mono',monospace;white-space:nowrap"><span style="color:var(--muted)">vs P </span><strong style="color:${r.hrVsPitcher>0?'var(--accent2)':'var(--muted)'}">${r.hrVsPitcher} HR</strong></span>` : ''}
+                ${r.streakDays>=3?`<span style="background:#1a1200;color:#ffd700;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;border:1px solid #ffd70066;white-space:nowrap">👑 ON A HEATER</span>`:r.streakDays===2?`<span style="background:#1a0d00;color:#ff8c00;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;border:1px solid #ff8c0066;white-space:nowrap">🔥 BACK TO BACK</span>`:''}
+              </div>
+              <button class="hrp-matchup-btn"
                 data-batter-id="${r.id}"
                 data-batter-name="${r.name.replace(/"/g,'&quot;')}"
                 data-pitcher-id="${r.pitcherId}"
@@ -2525,6 +2774,7 @@ async function loadHRsToday() {
           // Feed live HRs to banner
           if (isGameLive && hrs > 0 && p?.person?.id) {
             bannerHRs[p.person.id] = {
+              id: p.person.id,
               name: p.person.fullName||'–',
               teamAbbr: abbr,
               oppAbbr: side==='away' ? homeAbbr : awayAbbr,
@@ -2908,6 +3158,7 @@ function showTab(id, el) {
     matchupLoaded = true;
     loadPitcherReport();
   }
+  if (id === 'schedule' && !scheduleLoaded) loadSchedule();
   if (id === 'props') initPropsTab();
 }
 
