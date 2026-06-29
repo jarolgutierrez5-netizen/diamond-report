@@ -961,10 +961,19 @@ setInterval(() => {
 // ── PITCHER REPORT ───────────────────────────────────────────────────
 let matchupLoaded = false;
 
-// ── BANNER STATE — declared early so loadKsToday/loadHRsToday can use them ──
+// ── ALL GLOBAL STATE — declared early to prevent temporal dead zone errors ──
 const bannerHRs = {};           // batterId -> { id, name, teamAbbr, oppAbbr, count }
 const bannerKs  = {};           // pitcherId -> { name, teamAbbr, oppAbbr, ks, ouLine }
-const prevBannerHRCounts = {};  // batterId -> previous HR count (to detect new HRs)
+const prevBannerHRCounts = {};  // batterId -> previous HR count
+let breakingHRActive = false;
+let breakingHRTimeout = null;
+let breakingHRNames = [];
+let hrpRows = [], hrpSortCol = 'hrProb', hrpSortDir = -1, hrpFilter = 'top';
+const prevHrpHRs = {};          // batterId -> todayHR count for diff detection
+let kPropsData = [];
+let kPropsLoadedAt = null;
+let hrpRetryTimer = null;
+let hrpFilterActive = 'top';
 let prSortCol = null, prSortDir = 1, prRows = [];
 const lineupCache = {};
 const lineupMeta  = {}; // pitcherId -> {pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp}
@@ -2249,7 +2258,6 @@ function triggerHRPotentialRefresh() {
   }
 }
 
-let hrpRetryTimer = null;
 
 function loadHRPotentialWithRetry() {
   loadHRPotential().then(() => {
@@ -2564,9 +2572,6 @@ function updatePropsLiveBanner(liveGames) {
 }
 
 
-let breakingHRActive = false;
-let breakingHRTimeout = null;
-let breakingHRNames = []; // names of players who just hit HRs
 
 function triggerBreakingHR(newHitters) {
   // Show BREAKING banner for 2 minutes then revert
@@ -2656,10 +2661,6 @@ function updateLiveBanner() {
 
 
 let propsLoaded = false;
-let hrpRows = [], hrpSortCol = 'hrProb', hrpSortDir = -1, hrpFilter = 'top';
-const prevHrpHRs = {}; // batterId -> todayHR count for diff detection
-let kPropsData = []; // cached K props (loaded at 7am, refreshed by 9am)
-let kPropsLoadedAt = null;
 
 // ── HR POTENTIAL ─────────────────────────────────────────────────────
 async function loadHRPotential() {
@@ -2889,7 +2890,6 @@ function renderHRPTable() {
     </div>`;
 }
 
-let hrpFilterActive = 'top'; // track active filter (managed by hrpFilter)
 
 function filterHRP(filter) {
   hrpFilter = filter;
