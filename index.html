@@ -2313,7 +2313,7 @@ async function loadKsToday() {
   // Don't return early if el is null — still need to update pitcher O/U tags
   try {
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
-    const data = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team&language=en`);
+    const data = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team,probablePitcher&language=en`);
     const entry = data.dates?.find(d => d.date === today) || data.dates?.[0];
     const games = entry?.games || [];
 
@@ -2681,6 +2681,17 @@ async function loadHRPotential() {
     const entry = schedData.dates?.find(d => d.date === today) || schedData.dates?.[0];
     const games = entry?.games || [];
 
+    // Pre-populate lineupCache from Pitcher Report if available and not yet cached
+    if (prRows.length > 0 && Object.keys(lineupCache).length === 0) {
+      if (el) el.innerHTML = `<div class="mu-empty"><span class="spin"></span>Loading lineups from Pitcher Report…</div>`;
+      await Promise.all(prRows.map(r => {
+        const p = r.pitcher;
+        if (p.id && p.gamePk && p.side != null) {
+          return fetchAndRenderLineup(p.id, p.name, p.gamePk, p.side, p.oppTeamId, r.rawHr9, r.rawIp).catch(()=>{});
+        }
+      }));
+    }
+
     const allBatters = [];
     const batterStatCache = {}; // cache batter stats to avoid duplicate fetches
     const boxscoreCache = {};   // cache boxscores by gamePk
@@ -2724,7 +2735,39 @@ async function loadHRPotential() {
         } catch {}
 
         const teamBox = bd?.teams?.[side];
-        const batters = (teamBox?.batters||[]).map(id=>{const p=teamBox.players[`ID${id}`];return p?{id,player:p}:null;}).filter(Boolean);
+        let batters = (teamBox?.batters||[]).map(id=>{const p=teamBox?.players[`ID${id}`];return p?{id,player:p}:null;}).filter(Boolean);
+
+        // If no batters in boxscore (game not started), try lineupCache from Pitcher Report
+        if (!batters.length) {
+          // Pre-game: batters array is empty but players dict has the roster
+          // Use non-pitcher players from the roster as the batting lineup
+          const teamBox2 = bd?.teams?.[side];
+          if (teamBox2?.players) {
+            batters = Object.values(teamBox2.players)
+              .filter(p => p.position?.type !== 'Pitcher' && p.person?.fullName && p.status?.code === 'A')
+              .sort((a,b) => (a.battingOrder||999) - (b.battingOrder||999))
+              .slice(0, 9)
+              .map(p => ({ id: p.person.id, player: p }));
+          }
+        }
+
+        // Final fallback: lineupCache from Pitcher Report
+        if (!batters.length) {
+          const cacheKey = `${g.gamePk}-${side}`;
+          const cached = lineupCache[cacheKey];
+          if (cached?.lineup?.length) {
+            batters = cached.lineup.map(b => ({
+              id: b.id,
+              player: {
+                person: { id: b.id, fullName: b.name },
+                position: { abbreviation: b.pos },
+                seasonStats: { batting: b.stats },
+                stats: { batting: b.stats },
+              }
+            }));
+          }
+        }
+
         if (!batters.length) return;
 
         const batterToday = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
@@ -2948,7 +2991,7 @@ async function loadHRsToday() {
   // Even if the Props section isn't open yet, still collect banner data
   try {
     const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
-    const data = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team&language=en`);
+    const data = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team,probablePitcher&language=en`);
     const entry = data.dates?.find(d=>d.date===today)||data.dates?.[0];
     const games = entry?.games||[];
 
