@@ -920,11 +920,11 @@ async function loadScores() {
     const now = new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
     const srEl = document.getElementById('scores-refresh'); if(srEl) srEl.textContent = `Last updated ${now}`;
     updatePropsLiveBanner(live);
-    // Load HR/K data for the Today's Games banner on first load
-    loadHRsToday();
-    loadKsToday();
+    // Load HR/K data for the Today's Games banner — defer slightly to ensure DOM is ready
+    setTimeout(() => { loadHRsToday(); loadKsToday(); }, 0);
   } catch(e) {
-    document.getElementById('scores-refresh').textContent = `Error: ${e.message}`;
+    const srErr = document.getElementById('scores-refresh');
+    if (srErr) srErr.textContent = `Error: ${e.message}`;
   }
 }
 
@@ -2437,8 +2437,8 @@ function renderBanner() {
     scoresBanner.style.borderColor = '#f97316';
     const liveBadge = scoresBanner.querySelector('div > div:first-child');
     if (liveBadge) liveBadge.style.background = 'linear-gradient(135deg,#f97316,#dc2626)';
-    const scoresSection = document.getElementById('scores');
-    if (scoresSection && scoresSection.classList.contains('active')) scoresBanner.style.display = 'block';
+    // Banner is inside #scores so always set display block — section visibility handles the rest
+    scoresBanner.style.display = 'block';
     return;
   }
 
@@ -2471,8 +2471,9 @@ function renderBanner() {
   scoresTrack.style.flexWrap = shouldScroll ? 'nowrap' : 'wrap';
   scoresTrack.style.width = shouldScroll ? 'max-content' : '100%';
 
-  const scoresSection = document.getElementById('scores');
-  if (scoresSection && scoresSection.classList.contains('active')) scoresBanner.style.display = 'block';
+  // Always show the banner — visibility is controlled by the section being active
+  // The banner sits INSIDE #scores so it's naturally hidden when scores is hidden
+  scoresBanner.style.display = 'block';
 }
 
 function updateLiveBanner() {
@@ -2778,7 +2779,7 @@ function refreshHRPDiff() {
 // ── HRS TODAY ─────────────────────────────────────────────────────────
 async function loadHRsToday() {
   const el = document.getElementById('hrs-today-content');
-  if (!el) return;
+  // Even if the Props section isn't open yet, still collect banner data
   try {
     const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
     const data = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team&language=en`);
@@ -2826,11 +2827,12 @@ async function loadHRsToday() {
     allHRs.sort((a,b) => a.gameTimestamp-b.gameTimestamp || b.hrs-a.hrs);
 
     if (!allHRs.length) {
-      el.innerHTML=`<div class="mu-empty">No home runs yet today.</div>`;
+      if (el) el.innerHTML=`<div class="mu-empty">No home runs yet today.</div>`;
       const countEl = document.getElementById('hrs-today-count');
       if (countEl) countEl.style.display = 'none';
       const projEl = document.getElementById('proj-hits-content');
       if (projEl) projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">Loading HR's Completed from Projection…</div>`;
+      updateLiveBanner();
       return;
     }
 
@@ -2861,7 +2863,7 @@ async function loadHRsToday() {
     const countEl = document.getElementById('hrs-today-count');
     if (countEl) { countEl.textContent = `${totalHRs} HR${totalHRs!==1?'s':''}`; countEl.style.display = 'inline-block'; }
 
-    el.innerHTML = allHRs.map(h => {
+    if (el) el.innerHTML = allHRs.map(h => {
       const streak = streakMap[h.id] || 1;
       const streakBadge = streak >= 3
         ? `<span style="background:#1a1200;color:#ffd700;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;border:1px solid #ffd70066;white-space:nowrap">👑 ON A HEATER</span>`
@@ -2883,10 +2885,10 @@ async function loadHRsToday() {
         </div>
       </div>`;
     }).join('') +
-    `<div style="padding:8px 12px;font-size:10px;color:var(--muted);border-top:1px solid var(--border);line-height:1.7">
+    (el ? `<div style="padding:8px 12px;font-size:10px;color:var(--muted);border-top:1px solid var(--border);line-height:1.7">
       🔥 <strong>BACK TO BACK</strong> — Hit a home run yesterday and today<br>
       👑 <strong>ON A HEATER</strong> — Hit home runs 3+ consecutive days
-    </div>`;
+    </div>` : '');
 
     // HR's Completed from Projection — cross-reference HRs with hrpRows
     const projEl = document.getElementById('proj-hits-content');
@@ -3189,9 +3191,6 @@ function showTab(id, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   sessionStorage.setItem('activeTab', id);
-  // Show banner only on scores tab
-  const scoresBanner = document.getElementById('scores-alert-banner');
-  if (scoresBanner) scoresBanner.style.display = id === 'scores' && scoresBanner.innerHTML.includes('alert-chip') ? 'block' : 'none';
   if (id === 'matchups' && !matchupLoaded) {
     matchupLoaded = true;
     loadPitcherReport();
