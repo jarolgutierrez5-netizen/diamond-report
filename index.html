@@ -1367,6 +1367,57 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
   const maxProb = Math.max(...withProbs.map(b => b.hrProb), 0.01);
   const topIdx = withProbs.reduce((best, b, i) => b.hrProb > withProbs[best].hrProb ? i : best, 0);
 
+  // ── Feed into HR Potential if it's empty (lineups not posted via API yet) ──
+  if (pitcherId && pitcherName) {
+    const prRow = prRows.find(r => r.pitcher.id == pitcherId);
+    const timeLabel = prRow?.pitcher.timeLabel || '–';
+    const timeColor = prRow?.pitcher.timeColor || 'var(--text)';
+    const gameTimestamp = prRow?.pitcher.gameTimestamp || 0;
+    const tAbbr = teamAbbr || oppAbbr || '–';
+    const pOppAbbr = prRow?.pitcher.oppAbbr || oppAbbr || '–';
+
+    withProbs.forEach(b => {
+      if (!b.id) return;
+      // Only add if not already in hrpRows
+      const exists = hrpRows.some(r => r.id === b.id && r.pitcherId == pitcherId);
+      if (!exists) {
+        const s = b.stats || {};
+        hrpRows.push({
+          id: b.id,
+          name: b.name,
+          pos: b.pos,
+          teamAbbr: tAbbr,
+          oppAbbr: pOppAbbr,
+          pitcherName,
+          pitcherId,
+          timeLabel,
+          timeColor,
+          gameTimestamp,
+          gamePk: prRow?.pitcher.gamePk || 0,
+          stats: s,
+          last10HR: b.last10HR ?? null,
+          todayHR: b.todayHR || 0,
+          hrProb: b.hrProb,
+          streakDays: 1,
+          hrVsPitcher: null,
+          avg: parseFloat(s.avg) || 0,
+          hrSeason: parseInt(s.homeRuns) || 0,
+          ops: parseFloat(s.ops) || 0,
+          iso: (parseFloat(s.slg)||0) - (parseFloat(s.avg)||0),
+          isDrought: false,
+          isFavorable: (parseFloat(s.ops)||0) >= 0.800,
+        });
+      }
+    });
+
+    // If HR Potential was empty, re-render it now with this lineup data
+    const hrpEl = document.getElementById('hr-potential-content');
+    if (hrpEl && hrpRows.length > 0) {
+      const isEmpty = hrpEl.textContent.includes('Lineups not posted') || hrpEl.textContent.includes('No HR potential');
+      if (isEmpty) renderHRPTable();
+    }
+  }
+
   function fmtS(v, dec=3) {
     if (!v || v==='---') return '–';
     const n = parseFloat(v);
