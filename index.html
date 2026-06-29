@@ -461,7 +461,7 @@
 </header>
 
 <!-- Horizontal Ad -->
-<div style="background:var(--surface);padding:0 24px;border-bottom:1px solid var(--border);text-align:center;min-height:0;overflow:hidden" id="ad-container">
+<div id="ad-container" style="background:var(--surface);border-bottom:1px solid var(--border);text-align:center;overflow:hidden;max-height:0;transition:max-height 0.3s ease">
   <ins class="adsbygoogle"
        style="display:block"
        data-ad-client="ca-pub-6433797533342090"
@@ -470,6 +470,15 @@
        data-full-width-responsive="true"></ins>
   <script>
        (adsbygoogle = window.adsbygoogle || []).push({});
+       // Expand container once ad loads
+       window.addEventListener('load', function() {
+         setTimeout(function() {
+           var ad = document.querySelector('#ad-container .adsbygoogle[data-ad-status]');
+           if (ad && ad.getAttribute('data-ad-status') !== 'unfilled') {
+             document.getElementById('ad-container').style.maxHeight = '120px';
+           }
+         }, 2000);
+       });
   </script>
 </div>
 
@@ -505,8 +514,10 @@
 
     <div class="live-badge"><div class="live-dot"></div>LIVE NOW</div>
     <div class="games-grid" id="live-games"><div style="color:var(--muted);font-size:13px">Loading scores…</div></div>
-    <p class="section-title" style="font-size:18px; margin-top:4px;">FINAL <span>SCORES</span></p>
+    <p class="section-title" style="font-size:18px;margin-top:20px;">FINAL <span>SCORES</span></p>
     <div class="games-grid" id="final-games"></div>
+    <p class="section-title" style="font-size:18px;margin-top:20px;">UPCOMING <span>GAMES</span></p>
+    <div class="games-grid" id="scheduled-games"></div>
   </section>
 
 
