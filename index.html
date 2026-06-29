@@ -127,6 +127,7 @@
     .kprop-line, .kprop-pred { min-width: 65px; padding: 6px 8px; }
     .kprop-line-val, .kprop-pred-val { font-size: 18px; }
     .kprop-reasoning { font-size: 9px; min-width: 100%; }
+    .kprop-chip { font-size:8px; padding:2px 6px; }
     .kprop-meta { font-size: 8px; }
     /* Stat rows (HRs Today) */
     .stat-row { padding: 8px 10px; gap: 8px; }
@@ -180,7 +181,7 @@
     .team-logo { width: 22px; height: 22px; }
     .pr-headshot { width: 24px; height: 24px; }
     .h2h-grid { grid-template-columns: repeat(2, 1fr); }
-    .kprop-reasoning { display: none; }
+    .kprop-reasoning { display:block; min-width:100%; }
     .zone-legend { display: none; }
     .btn-matchup { font-size: 8px; padding: 3px 5px; }
     .hrp-matchup-btn { font-size: 7px; }
@@ -193,6 +194,7 @@
   .pr-table thead th:first-child, .pr-table thead th:nth-child(2), .pr-table thead th:nth-child(3) { text-align: left; }
   .pr-table thead th:first-child { min-width: 80px; }
   .pr-table thead th:nth-child(2) { min-width: 210px; }
+  .pr-table thead th:nth-child(4), .pr-table tbody td:nth-child(4) { min-width: 120px; text-align: center; }
   .pr-table thead th.sort-asc::after { content: ' ▲'; color: var(--accent); }
   .pr-table thead th.sort-desc::after { content: ' ▼'; color: var(--accent); }
   .pr-table thead th:hover { color: var(--text); }
@@ -359,7 +361,57 @@
   .kprop-push-under { border-color:#e6394688 !important; color:#e63946cc !important; }
   .kprop-pred-val { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:1px; }
   .kprop-pred-lbl { font-size:9px; letter-spacing:1px; text-transform:uppercase; margin-top:1px; opacity:.8; }
-  .kprop-reasoning { font-size:10px; color:var(--muted); line-height:1.5; flex:1; min-width:180px; }
+  .kprop-reasoning { font-size:10px; color:var(--muted); line-height:1.5; flex:1.35; min-width:240px; }
+  .kprop-reason-title { font-size:9px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text); margin-bottom:5px; }
+  .kprop-reason-list { display:flex; flex-wrap:wrap; gap:5px; }
+  .kprop-chip { display:inline-flex; align-items:center; gap:4px; background:var(--bg); border:1px solid var(--border); border-radius:999px; padding:3px 8px; font-size:10px; color:var(--muted); white-space:nowrap; }
+  .kprop-chip.pos { border-color:#2ecc7166; color:#2ecc71; }
+  .kprop-chip.neg { border-color:#e6394666; color:#e63946; }
+  .kprop-chip.neu { border-color:#f4a26166; color:#f4a261; }
+  .kprop-summary { margin-top:5px; color:var(--muted); font-size:10px; line-height:1.45; }
+
+  /* K Props readability cleanup */
+  .kprop-row { align-items:center; }
+  .kprop-pitcher { flex:1.4; }
+  .kprop-reasoning { flex:1.8; min-width:260px; color:#8fa3c8; }
+  .kprop-reason-title { font-size:9px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .kprop-reason-list { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:6px; }
+  .kprop-chip { display:inline-flex; align-items:center; border:1px solid var(--border); background:var(--bg); border-radius:999px; padding:2px 7px; font-size:9px; font-weight:700; letter-spacing:.2px; color:var(--muted); line-height:1.4; }
+  .kprop-chip.pos { border-color:#2ecc7166; color:#2ecc71; background:#0d2a1a; }
+  .kprop-chip.neg { border-color:#e6394666; color:#e63946; background:#2a0d0d; }
+  .kprop-chip.neu { border-color:var(--border); color:var(--muted); background:var(--surface2); }
+  .kprop-summary { font-size:11px; color:#8fa3c8; line-height:1.45; }
+
+  /* K Props colored quick-read labels */
+  .kprop-chip.decision { border-color:#a78bfa; color:#c4b5fd; background:#1a1233; box-shadow:0 0 10px rgba(167,139,250,.12); }
+  .kprop-chip.matchup { border-color:#4a9eff; color:#60a5fa; background:#081a33; box-shadow:0 0 10px rgba(74,158,255,.10); }
+  .kprop-chip.matchup-good { border-color:#2ecc71; color:#2ecc71; background:#0d2a1a; }
+  .kprop-chip.matchup-bad { border-color:#e63946; color:#e63946; background:#2a0d0d; }
+  .kprop-chip.profile { border-color:#22d3ee; color:#67e8f9; background:#08242b; box-shadow:0 0 10px rgba(34,211,238,.10); }
+  .kprop-chip.profile-strong { border-color:#2ecc71; color:#2ecc71; background:#0d2a1a; }
+  .kprop-chip.profile-low { border-color:#e63946; color:#e63946; background:#2a0d0d; }
+  .kprop-chip.rate { border-color:#facc15; color:#facc15; background:#2a2300; box-shadow:0 0 10px rgba(250,204,21,.10); }
+  .kprop-chip.k9 { border-color:#4a9eff; color:#93c5fd; background:#07182c; }
+  .kprop-chip.projection { border-color:#818cf8; color:#a5b4fc; background:#111432; }
+
+
+  /* HR Potential matchup button layout */
+  .hrp-batter-sub { align-items:center; }
+  .hrp-matchup-wrap { width:100%; margin-top:4px; display:flex; justify-content:flex-start; }
+  .hrp-matchup-btn { max-width:100%; white-space:nowrap; }
+
+  /* Pitcher Report expanded lineup layout */
+  .lineup-batter-card { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; padding:10px 0 10px 11px; border-bottom:1px solid var(--border); }
+  .lineup-batter-card.hr-today { padding-left:8px; background:linear-gradient(90deg,#2a1a00 0%,#1a1200 100%); border-left:3px solid var(--accent2); border-radius:4px; }
+  .lineup-batter-main { display:flex; align-items:flex-start; gap:10px; min-width:0; }
+  .lineup-batter-details { min-width:0; flex:1; }
+  .lineup-matchup-action { display:flex; justify-content:flex-end; align-items:center; }
+  .lineup-matchup-action .btn-matchup { padding:5px 10px; font-size:10px; }
+  @media (max-width:768px) {
+    .lineup-batter-card { grid-template-columns:1fr; gap:8px; }
+    .lineup-matchup-action { justify-content:flex-start; }
+  }
+
   /* Live Alert Banner */
   @keyframes marquee {
     0%   { transform: translateX(0); }
@@ -514,10 +566,10 @@
 
     <div class="live-badge"><div class="live-dot"></div>LIVE NOW</div>
     <div class="games-grid" id="live-games"><div style="color:var(--muted);font-size:13px">Loading scores…</div></div>
-    <p class="section-title" style="font-size:18px;margin-top:20px;">FINAL <span>SCORES</span></p>
-    <div class="games-grid" id="final-games"></div>
     <p class="section-title" style="font-size:18px;margin-top:20px;">UPCOMING <span>GAMES</span></p>
     <div class="games-grid" id="scheduled-games"></div>
+    <p class="section-title" style="font-size:18px;margin-top:20px;">FINAL <span>SCORES</span></p>
+    <div class="games-grid" id="final-games"></div>
   </section>
 
 
@@ -544,21 +596,22 @@
       </div>
     </div>
 
-    <!-- HR Potential -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-      <p class="section-title" style="margin-bottom:0">HR <span>POTENTIAL</span></p>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <button onclick="filterHRP('top')" id="filter-top-btn" style="background:var(--surface2);border:1px solid #f4a261;color:#f4a261;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">⚡ TOP HR THREAT</button>
-        <button onclick="filterHRP('drought')" id="filter-drought-btn" style="background:var(--surface2);border:1px solid #e63946;color:#e63946;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">🔴 DROUGHT</button>
-        <button onclick="filterHRP('favorable')" id="filter-favorable-btn" style="background:var(--surface2);border:1px solid #2ecc71;color:#2ecc71;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">🟢 FAVORABLE MATCHUP FOR BATTER</button>
-        <button onclick="filterHRP('all')" id="filter-all-btn" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">ALL</button>
-        <div id="props-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Loading…</div>
-      </div>
+    <!-- HR Potential filters -->
+    <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <button onclick="filterHRP('top')" id="filter-top-btn" style="background:var(--surface2);border:1px solid #f4a261;color:#f4a261;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">⚡ TOP HR THREAT</button>
+      <button onclick="filterHRP('drought')" id="filter-drought-btn" style="background:var(--surface2);border:1px solid #e63946;color:#e63946;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">🔴 DROUGHT</button>
+      <button onclick="filterHRP('favorable')" id="filter-favorable-btn" style="background:var(--surface2);border:1px solid #2ecc71;color:#2ecc71;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">🟢 FAVORABLE MATCHUP FOR BATTER</button>
+      <button onclick="filterHRP('all')" id="filter-all-btn" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">ALL</button>
+      <div id="props-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Loading…</div>
     </div>
 
     <!-- HR Potential + K's Today side by side -->
     <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start" class="props-grid">
-      <div id="hr-potential-content" style="max-height:560px;overflow-y:auto;overflow-x:auto;overscroll-behavior:contain;border:1px solid var(--border);border-radius:8px;background:var(--surface)"><div class="mu-empty"><span class="spin"></span>Loading HR potential…</div></div>
+      <!-- HR Potential column -->
+      <div>
+        <p class="section-title" style="font-size:18px;margin-bottom:10px">HR <span>POTENTIAL</span></p>
+        <div id="hr-potential-content" style="max-height:560px;overflow-y:auto;overflow-x:auto;overscroll-behavior:contain;border:1px solid var(--border);border-radius:8px;background:var(--surface)"><div class="mu-empty"><span class="spin"></span>Loading HR potential…</div></div>
+      </div>
 
       <!-- K's Today sidebar -->
       <div>
@@ -598,7 +651,7 @@
     <!-- Game Props -->
     <div style="margin-top:28px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-        <p class="section-title" style="font-size:20px;margin-bottom:0">DR <span>PICK</span></p>
+        <p class="section-title" style="font-size:20px;margin-bottom:0">DR GAME <span>PICKS</span></p>
         <div id="gameprops-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)"></div>
       </div>
       <div id="gameprops-content" style="max-height:600px;overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--border);border-radius:8px;background:var(--surface)"><div class="mu-empty"><span class="spin"></span>Loading game props…</div></div>
@@ -968,12 +1021,12 @@ const prevBannerHRCounts = {};  // batterId -> previous HR count
 let breakingHRActive = false;
 let breakingHRTimeout = null;
 let breakingHRNames = [];
-let hrpRows = [], hrpSortCol = 'hrProb', hrpSortDir = -1, hrpFilter = 'top';
+let hrpRows = [], hrpSortCol = 'hrProb', hrpSortDir = -1, hrpFilter = 'all';
 const prevHrpHRs = {};          // batterId -> todayHR count for diff detection
 let kPropsData = [];
 let kPropsLoadedAt = null;
 let hrpRetryTimer = null;
-let hrpFilterActive = 'top';
+let hrpFilterActive = 'all';
 let prSortCol = null, prSortDir = 1, prRows = [];
 const lineupCache = {};
 const lineupMeta  = {}; // pitcherId -> {pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp}
@@ -1087,12 +1140,13 @@ function pill(val, dispFn, goodBelow, badAbove) {
 
 function renderPRTable() {
   const el = document.getElementById('pr-content');
-  const colCount = 14;
+  const colCount = 15;
 
   const cols = [
     {key:'gameTime', label:'TIME',    sortable:true,  tip:'Game start time'},
     {key:'name',     label:'PITCHER', sortable:false, tip:'Starting pitcher'},
     {key:'vs',       label:'VS',      sortable:false, tip:'Opposing team'},
+    {key:'kprop',    label:'K PROP',  sortable:true,  tip:'Projected Ks today based on opposing lineup K% vs pitcher K/9'},
     {key:'ip',       label:'IP',      sortable:true,  tip:'Innings Pitched'},
     {key:'bf',       label:'BF',      sortable:true,  tip:'Batters Faced'},
     {key:'fip',      label:'FIP',     sortable:true,  tip:'Fielding Independent Pitching — ERA based only on K, BB, HR'},
@@ -1104,7 +1158,6 @@ function renderPRTable() {
     {key:'hr9',      label:'HR/9',    sortable:true,  tip:'Home Runs per 9 Innings'},
     {key:'tb',       label:'TB',      sortable:true,  tip:'Total Bases Allowed'},
     {key:'kpg',      label:'K/GM',    sortable:true,  tip:'Average Strikeouts per Game Started'},
-    {key:'kprop',    label:'K PROP',  sortable:true,  tip:'Projected Ks today based on opposing lineup K% vs pitcher K/9'},
   ];
 
   const sorted = [...prRows].sort((a,b) => {
@@ -1149,7 +1202,6 @@ function renderPRTable() {
             <span class="pr-pitcher-name">${p.name}</span>
             <div class="pr-pitcher-sub">
               <span class="pr-wl">${p.teamAbbr} · ${r.wl}</span>
-              ${kProjTag}
               <button class="btn-lineup${isExpanded?' active':''}" onclick="toggleLineup('${p.id}', '${p.name.replace(/'/g,"\\'")}', ${p.gamePk}, '${p.side}', ${p.oppTeamId}, ${r.rawHr9}, ${r.rawIp})">
                 ${isExpanded ? '▲ HIDE' : '▼ BATTING LINEUP & MATCHUPS'}
               </button>
@@ -1158,6 +1210,12 @@ function renderPRTable() {
         </div>
       </td>
       <td style="color:var(--muted);font-size:11px">@ ${p.oppAbbr}</td>
+      <td id="kprop-cell-${r.pitcher.id}">
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap">
+          ${kProjTag}
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:${r.rawK9>=9?'var(--green)':r.rawK9>=7?'var(--accent2)':'var(--muted)'}">${r.kprop??'–'}</span>
+        </div>
+      </td>
       <td><span class="pr-plain">${r.ip!=null?r.ip.toFixed(1):'–'}</span></td>
       <td><span class="pr-plain">${r.bf!=null?r.bf:'–'}</span></td>
       <td>${pill(r.fip,  v=>v.toFixed(2), 3.25, 4.50)}</td>
@@ -1169,7 +1227,6 @@ function renderPRTable() {
       <td>${pill(r.hr9,  v=>v.toFixed(2), 0.80, 1.50)}</td>
       <td><span class="pr-plain">${r.tb!=null?r.tb:'–'}</span></td>
       <td><span class="pr-plain" style="color:${r.kpg>=7?'var(--green)':r.kpg>=5?'var(--text)':'var(--muted)'}">${r.kpg??'–'}</span></td>
-      <td id="kprop-cell-${r.pitcher.id}"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:${r.rawK9>=9?'var(--green)':r.rawK9>=7?'var(--accent2)':'var(--muted)'}">${r.kprop??'–'}</span></td>
     </tr>`;
 
     const expandRow = `<tr class="pr-expand-row" id="${expandId}" style="${isExpanded?'':'display:none'}">
@@ -1400,11 +1457,17 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
     const tAbbr = teamAbbr || oppAbbr || '–';
     const pOppAbbr = prRow?.pitcher.oppAbbr || oppAbbr || '–';
 
-    withProbs.forEach(b => {
+    withProbs.forEach((b, i) => {
       if (!b.id) return;
-      // Only add if not already in hrpRows
-      const exists = hrpRows.some(r => r.id === b.id && r.pitcherId == pitcherId);
-      if (!exists) {
+      const isTopThreat = i === topIdx;
+      // Only add if not already in hrpRows; if it exists, preserve/upgrade TOP HR THREAT status
+      const existing = hrpRows.find(r => r.id === b.id && r.pitcherId == pitcherId);
+      if (existing) {
+        existing.topHrThreat = existing.topHrThreat || isTopThreat;
+        existing.hrProb = Math.max(existing.hrProb || 0, b.hrProb || 0);
+        return;
+      }
+      if (!existing) {
         const s = b.stats || {};
         hrpRows.push({
           id: b.id,
@@ -1422,6 +1485,7 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
           last10HR: b.last10HR ?? null,
           todayHR: b.todayHR || 0,
           hrProb: b.hrProb,
+          topHrThreat: isTopThreat,
           streakDays: 1,
           hrVsPitcher: null,
           avg: parseFloat(s.avg) || 0,
@@ -1471,30 +1535,25 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
     const bName = b.name.replace(/'/g,"\\'");
     const rowBg = homerToday ? 'background:linear-gradient(90deg,#2a1a00 0%,#1a1200 100%);border-left:3px solid var(--accent2);' : '';
 
-    return `<div data-batter-id="${b.id}" style="display:flex;align-items:center;gap:12px;padding:10px 0 10px ${homerToday?'8px':'11px'};border-bottom:1px solid var(--border);${rowBg}border-radius:${homerToday?'4px':'0'}">
-      <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-width:14px">${i+1}</span>
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <span class="batter-name-span" style="font-size:13px;font-weight:700;color:${homerToday?'var(--accent2)':'var(--text)'}">${b.name}</span>
-          <span class="batter-pos">${b.pos}</span>
-          ${homerToday ? `<span class="hr-today-badge" style="background:#2a1500;color:#f4a261;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166">💥 HR TODAY${b.todayHR>1?' x'+b.todayHR:''}</span>` : ''}
-          ${isTop ? `<span class="top-hr-badge">⚡ TOP HR THREAT</span>` : ''}
-        </div>
-        <div style="margin-top:3px">${matchupLabel(s)}</div>
-        <div class="batter-stats-line" style="display:flex;gap:12px;margin-top:4px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);flex-wrap:wrap">
-          ${buildBatterStatsLine(b)}
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-        <div>
-          <div style="font-size:9px;color:var(--muted);letter-spacing:.5px;margin-bottom:3px;text-align:right">HR PROB/AB</div>
-          <div class="hr-prob-cell">
-            <div class="hr-bar-wrap"><div class="hr-bar-fill" style="width:${barPct.toFixed(0)}%;background:${barColor}"></div></div>
-            <span class="hr-pct" style="color:${homerToday?'var(--accent2)':isTop?'var(--accent2)':'var(--muted)'}">${b.hrProb.toFixed(1)}%</span>
+    return `<div data-batter-id="${b.id}" class="lineup-batter-card${homerToday?' hr-today':''}">
+      <div class="lineup-batter-main">
+        <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-width:14px">${i+1}</span>
+        <div class="lineup-batter-details">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span class="batter-name-span" style="font-size:13px;font-weight:700;color:${homerToday?'var(--accent2)':'var(--text)'}">${b.name}</span>
+            <span class="batter-pos">${b.pos}</span>
+            ${homerToday ? `<span class="hr-today-badge" style="background:#2a1500;color:#f4a261;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166">💥 HR TODAY${b.todayHR>1?' x'+b.todayHR:''}</span>` : ''}
+            ${isTop ? `<span class="top-hr-badge">⚡ TOP HR THREAT</span>` : ''}
+          </div>
+          <div style="margin-top:3px">${matchupLabel(s)}</div>
+          <div class="batter-stats-line" style="display:flex;gap:12px;margin-top:4px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);flex-wrap:wrap">
+            ${buildBatterStatsLine(b)}
           </div>
         </div>
+      </div>
+      <div class="lineup-matchup-action">
         <button class="btn-matchup" onclick="openMatchup(${b.id},'${bName}',${pitcherId},'${pName}')" title="Batter vs Pitcher analysis">
-          ⚔ BATTER vs PITCHER
+          ⚔ Pitcher Matchup vs ${pName}
         </button>
       </div>
     </div>`;
@@ -1836,7 +1895,7 @@ async function loadSchedule() {
   try {
     const today = new Date();
     const dates = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 1; i <= 5; i++) {
       const d = new Date(today);
       d.setDate(d.getDate() + i);
       dates.push(d.toLocaleDateString('en-CA', {timeZone:'America/Chicago'}));
@@ -1855,7 +1914,7 @@ async function loadSchedule() {
       if (!games.length) return '';
       const dt = new Date(date + 'T12:00:00');
       const dayLabel = dt.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}).toUpperCase();
-      const isToday = date === new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+      const isToday = false;
 
       const cards = games.map(g => {
         const away = g.teams.away, home = g.teams.home;
@@ -2776,10 +2835,12 @@ async function loadHRPotential() {
         const ydStr=yd.toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
         const dbStr=db2.toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
 
-        // Fetch all batters in parallel (with cache)
-        await Promise.all(batters.slice(0,9).map(async b => {
+        // Fetch all batters in parallel (with cache), then tag the same TOP HR THREAT
+        // batter that the Pitcher Report lineup would tag. This prevents the Props tab
+        // from depending on opening Pitcher Report first.
+        const batterRowsForPitcher = (await Promise.all(batters.slice(0,9).map(async b => {
           const pid = b.player.person?.id;
-          if (!pid) return;
+          if (!pid) return null;
           let s=b.player.seasonStats?.batting||{};
           let last10HR=null, todayHR=0, streakDays=1, hrVsPitcher=null, logs=[];
           try {
@@ -2811,15 +2872,24 @@ async function loadHRPotential() {
           const isDrought=!hrInLast8&&hr>0;
           const batterOPS=parseFloat(s.ops)||0;
           const isFavorable=batterOPS>=.800&&(pitcherWhip>=1.25||pitcherAvg>=.260);
-          addBatter({
+          return {
             id:pid, name:b.player.person?.fullName||'–', pos:b.player.position?.abbreviation||'–',
             teamAbbr, oppAbbr, pitcherName:pitcher.fullName, pitcherId:pitcher.id,
             timeLabel, timeColor, gameTimestamp:dt.getTime(), gamePk:g.gamePk,
             stats:s, last10HR, todayHR, hrProb, streakDays, hrVsPitcher,
             avg:parseFloat(s.avg)||0, hrSeason:hr, ops:batterOPS,
             iso:(parseFloat(s.slg)||0)-(parseFloat(s.avg)||0), isDrought, isFavorable,
+            topHrThreat:false,
+          };
+        }))).filter(Boolean);
+
+        if (batterRowsForPitcher.length) {
+          const topRow = batterRowsForPitcher.reduce((best, row) => row.hrProb > best.hrProb ? row : best, batterRowsForPitcher[0]);
+          batterRowsForPitcher.forEach(row => {
+            row.topHrThreat = row.id === topRow.id;
+            addBatter(row);
           });
-        }));
+        }
       }));
     }));
 
@@ -2851,10 +2921,11 @@ function renderHRPTable() {
   if (hrpFilter === 'drought') displayRows = displayRows.filter(r => r.isDrought);
   else if (hrpFilter === 'favorable') displayRows = displayRows.filter(r => r.isFavorable);
   else if (hrpFilter === 'top') {
-    // Top HR Threat: top 30% by hrProb, minimum 3 players shown
+    // Top HR Threat: include every batter tagged TOP HR THREAT from Pitcher Report,
+    // plus the top 30% by HR probability as a fallback when lineup tags are not available.
     const sorted0 = [...hrpRows].sort((a,b) => b.hrProb - a.hrProb);
     const threshold = sorted0.length > 0 ? sorted0[Math.max(0, Math.floor(sorted0.length * 0.3) - 1)]?.hrProb || 0 : 0;
-    displayRows = displayRows.filter(r => r.hrProb >= threshold);
+    displayRows = displayRows.filter(r => r.topHrThreat || r.hrProb >= threshold);
     if (displayRows.length === 0) displayRows = [...hrpRows]; // fallback to all if none qualify
   }
 
@@ -2865,10 +2936,18 @@ function renderHRPTable() {
   });
 
   const sorted = [...displayRows].sort((a,b) => {
+    // Default priority: TOP HR THREAT rows first, then highest HR probability.
+    // This keeps the most important bats at the top without requiring the user to open Pitcher Report first.
+    const aTop = (a.topHrThreat || a.hrProb >= 8) ? 1 : 0;
+    const bTop = (b.topHrThreat || b.hrProb >= 8) ? 1 : 0;
+    if (aTop !== bTop) return bTop - aTop;
+
     const av = a[hrpSortCol], bv = b[hrpSortCol];
     if (av==null&&bv==null) return 0;
     if (av==null) return 1; if (bv==null) return -1;
-    return (av-bv)*hrpSortDir;
+    const primary = (av-bv)*hrpSortDir;
+    if (primary !== 0) return primary;
+    return (b.hrProb || 0) - (a.hrProb || 0);
   });
 
   const hs = id => `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_34,q_auto:best/v1/people/${id}/headshot/67/current`;
@@ -2897,7 +2976,7 @@ function renderHRPTable() {
             <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
               <span class="hrp-batter-name" style="color:${homerToday?'var(--accent2)':'var(--text)'}">${r.name}</span>
               ${homerToday?`<span style="background:#2a1500;color:#f4a261;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166;white-space:nowrap">💥 HR TODAY${r.todayHR>1?' ×'+r.todayHR:''}</span>`:''}
-              ${r.hrProb>=8?`<span class="top-hr-badge">⚡ TOP HR THREAT</span>`:''}
+              ${(r.topHrThreat || r.hrProb>=8)?`<span class="top-hr-badge">⚡ TOP HR THREAT</span>`:''}
               ${r.isDrought?`<span style="background:#1a0505;color:#ff4444;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;border:1px solid #ff444466;white-space:nowrap">🔴 DROUGHT</span>`:''}
               ${r.isFavorable?`<span style="background:#0a1a0a;color:#2ecc71;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;border:1px solid #2ecc7166;white-space:nowrap">🟢 FAVORABLE MATCHUP FOR BATTER</span>`:''}
             </div>
@@ -2912,14 +2991,14 @@ function renderHRPTable() {
                 ${r.hrVsPitcher !== null && r.hrVsPitcher !== undefined ? `<span style="background:${r.hrVsPitcher>0?'#2a1500':'var(--bg)'};border:1px solid ${r.hrVsPitcher>0?'#f4a261':'var(--border)'};border-radius:3px;padding:1px 6px;font-size:9px;font-family:'JetBrains Mono',monospace;white-space:nowrap"><span style="color:var(--muted)">vs P </span><strong style="color:${r.hrVsPitcher>0?'var(--accent2)':'var(--muted)'}">${r.hrVsPitcher} HR</strong></span>` : ''}
                 ${r.streakDays>=3?`<span style="background:#1a1200;color:#ffd700;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;border:1px solid #ffd70066;white-space:nowrap">👑 ON A HEATER</span>`:r.streakDays===2?`<span style="background:#1a0d00;color:#ff8c00;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;border:1px solid #ff8c0066;white-space:nowrap">🔥 BACK TO BACK</span>`:''}
               </div>
-              <div style="width:100%;margin-top:2px">
+              <div class="hrp-matchup-wrap">
                 <button class="hrp-matchup-btn"
                   data-batter-id="${r.id}"
                   data-batter-name="${r.name.replace(/"/g,'&quot;')}"
                   data-pitcher-id="${r.pitcherId}"
                   data-pitcher-name="${r.pitcherName.replace(/"/g,'&quot;')}"
                   onclick="const d=this.dataset;checkMatchupAccess(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName)"
-                >${matchupUnlocked ? '⚔' : '🔒'} PITCHER MATCHUP · vs ${r.pitcherName}</button>
+                >${matchupUnlocked ? '⚔' : '🔒'} PITCHER MATCHUP vs ${r.pitcherName}</button>
               </div>
             </div>
           </div>
@@ -3161,41 +3240,7 @@ async function loadKProps() {
     const entry = schedData.dates?.find(d=>d.date===today)||schedData.dates?.[0];
     const games = entry?.games||[];
 
-    // ── Fetch DraftKings pitcher strikeout props from The Odds API ──
-    const ODDS_KEY = '5977e11fd23bea467834cc76502612b2';
-    const dkLines = {}; // pitcherName (lowercase) -> { line, overOdds, underOdds }
-    try {
-      const oddsData = await fetchJSON(
-        `https://api.the-odds-api.com/v4/sports/baseball_mlb/player-props?apiKey=${ODDS_KEY}&regions=us&markets=pitcher_strikeouts&bookmakers=draftkings&oddsFormat=american`
-      );
-      if (Array.isArray(oddsData)) {
-        oddsData.forEach(event => {
-          event.bookmakers?.forEach(bm => {
-            if (bm.key !== 'draftkings') return;
-            bm.markets?.forEach(mkt => {
-              if (mkt.key !== 'pitcher_strikeouts') return;
-              // Group outcomes by player description
-              const byPlayer = {};
-              mkt.outcomes?.forEach(o => {
-                const key = o.description?.toLowerCase().trim();
-                if (!key) return;
-                if (!byPlayer[key]) byPlayer[key] = {};
-                if (o.name === 'Over') {
-                  byPlayer[key].line = o.point;
-                  byPlayer[key].overOdds = o.price;
-                } else if (o.name === 'Under') {
-                  byPlayer[key].underOdds = o.price;
-                  byPlayer[key].line = byPlayer[key].line ?? o.point;
-                }
-              });
-              Object.assign(dkLines, byPlayer);
-            });
-          });
-        });
-      }
-    } catch(e) {
-      console.warn('DraftKings odds fetch failed:', e.message);
-    }
+    // K Props now use DR projections only. External sportsbook line cards have been removed.
 
     const props = [];
 
@@ -3242,23 +3287,25 @@ async function loadKProps() {
         const pred = diff >= 0.3 ? 'OVER' : diff <= -0.3 ? 'UNDER' : 'PUSH';
         const pushLean = diff > 0 ? 'OVER' : diff < 0 ? 'UNDER' : null;
 
-        const reasoning = pred==='OVER'
-          ? `${pitcher.fullName} averages ${k9.toFixed(1)} K/9. Opp lineup strikes out at ${(oppKpct*100).toFixed(0)}% — projects ${projK.toFixed(1)} Ks.`
-          : pred==='UNDER'
-          ? `Opposing lineup makes contact (${(oppKpct*100).toFixed(0)}% K%). Projects ${projK.toFixed(1)} Ks vs line of ${ouLine}.`
-          : `Projected ${projK.toFixed(1)} Ks closely matches the ${ouLine} line — lean based on live lineup.`;
+        const oppKpctLabel = `${(oppKpct*100).toFixed(0)}% opp K rate`;
+        const k9Label = `${k9.toFixed(1)} K/9`;
+        const workloadLabel = `${projIP.toFixed(1)} proj IP`;
+        const projectionLabel = `${projK.toFixed(1)} Ks projected`;
+        const lineLabel = `${ouLine} DR line`;
+        const matchupTag = oppKpct >= 0.245 ? 'High-K matchup' : oppKpct <= 0.195 ? 'Contact-heavy matchup' : 'Average K matchup';
+        const k9Tag = k9 >= 9 ? 'Strong K pitcher' : k9 <= 7 ? 'Lower K profile' : 'Solid K profile';
+        const decisionTag = pred==='OVER' ? 'Over lean' : pred==='UNDER' ? 'Under lean' : (pushLean ? `Push / ${pushLean} lean` : 'Push');
+        const reasoning = {
+          matchupTag, k9Tag, decisionTag,
+          oppKpctLabel, k9Label, workloadLabel, projectionLabel, lineLabel,
+          summary: pred==='OVER'
+            ? `Lineup swing-and-miss plus pitcher K profile point above the DR line.`
+            : pred==='UNDER'
+            ? `Contact profile and projection sit below the DR line.`
+            : `Projection is close to the DR line, so treat this as a lean instead of a strong edge.`
+        };
 
-        // Match DraftKings line — try full name, then last name
-        const nameKey = pitcher.fullName.toLowerCase().trim();
-        const lastNameKey = pitcher.fullName.split(' ').slice(1).join(' ').toLowerCase().trim();
-        const dkData = dkLines[nameKey] || dkLines[lastNameKey] || null;
 
-        // DR vs DK comparison
-        let dkVsDR = null;
-        if (dkData?.line != null) {
-          const drDiff = projK - dkData.line;
-          dkVsDR = drDiff >= 0.3 ? 'OVER' : drDiff <= -0.3 ? 'UNDER' : 'PUSH';
-        }
 
         props.push({
           pitcherName: pitcher.fullName, pitcherId: pitcher.id,
@@ -3267,10 +3314,6 @@ async function loadKProps() {
           wl:`${wins}-${losses}`, era: era.toFixed(2), k9: k9.toFixed(1),
           ouLine, projK: projK.toFixed(1), pred, pushLean, reasoning,
           timeStr, gameTimestamp: dt.getTime(),
-          dkLine: dkData?.line ?? null,
-          dkOverOdds: dkData?.overOdds ?? null,
-          dkUnderOdds: dkData?.underOdds ?? null,
-          dkVsDR,
         });
       }
     }
@@ -3302,32 +3345,21 @@ function renderKProps() {
       const predCls = p.pred==='OVER' ? 'kprop-over' : p.pred==='UNDER' ? 'kprop-under' : p.pushLean==='OVER' ? 'kprop-push kprop-push-over' : p.pushLean==='UNDER' ? 'kprop-push kprop-push-under' : 'kprop-push';
       const predLabel = p.pred==='PUSH' && p.pushLean ? `PUSH (${p.pushLean} LEAN)` : p.pred;
 
-      // DraftKings block
-      let dkBlock = '';
-      if (p.dkLine != null) {
-        const dkOverCls  = p.dkVsDR==='OVER'  ? 'color:#2ecc71;font-weight:700' : 'color:var(--muted)';
-        const dkUnderCls = p.dkVsDR==='UNDER' ? 'color:#e63946;font-weight:700' : 'color:var(--muted)';
-        const fmtOdds = o => o == null ? '' : (o > 0 ? `+${o}` : `${o}`);
-        // DR pick vs DK line
-        const dkPickCls = p.dkVsDR==='OVER' ? 'kprop-over' : p.dkVsDR==='UNDER' ? 'kprop-under' : 'kprop-push';
-        const dkPickLabel = p.dkVsDR || 'PUSH';
-        dkBlock = `
-          <div class="kprop-line" style="border-color:#1a3a5e;background:#060e1a">
-            <div class="kprop-line-val" style="color:#4a9eff">${p.dkLine}</div>
-            <div class="kprop-line-lbl" style="color:#4a9eff">DK LINE</div>
-            <div style="display:flex;gap:4px;margin-top:4px;font-size:9px;font-family:'JetBrains Mono',monospace">
-              <span style="${dkOverCls}">O ${fmtOdds(p.dkOverOdds)}</span>
-              <span style="color:var(--border)">|</span>
-              <span style="${dkUnderCls}">U ${fmtOdds(p.dkUnderOdds)}</span>
-            </div>
-          </div>
-          <div class="kprop-pred ${dkPickCls}" style="min-width:70px">
-            <div class="kprop-pred-val" style="font-size:14px">DR: ${dkPickLabel}</div>
-            <div class="kprop-pred-lbl">vs DK LINE</div>
-          </div>`;
-      } else {
-        dkBlock = `<div class="kprop-line" style="border-color:var(--border);opacity:.4"><div class="kprop-line-val" style="font-size:14px;color:var(--muted)">–</div><div class="kprop-line-lbl">DK LINE</div></div>`;
-      }
+      const reason = p.reasoning || {};
+      const matchupCls = reason.matchupTag?.includes('High') ? 'matchup matchup-good' : reason.matchupTag?.includes('Contact') ? 'matchup matchup-bad' : 'matchup';
+      const k9Cls = reason.k9Tag?.includes('Strong') ? 'profile profile-strong' : reason.k9Tag?.includes('Lower') ? 'profile profile-low' : 'profile';
+      const decisionCls = 'decision';
+      const reasonHTML = `
+        <div class="kprop-reason-title">Quick Read</div>
+        <div class="kprop-reason-list">
+          <span class="kprop-chip ${decisionCls}">${reason.decisionTag || predLabel}</span>
+          <span class="kprop-chip ${matchupCls}">${reason.matchupTag || 'Matchup check'}</span>
+          <span class="kprop-chip ${k9Cls}">${reason.k9Tag || 'K profile'}</span>
+          <span class="kprop-chip rate">${reason.oppKpctLabel || 'Opp K rate'}</span>
+          <span class="kprop-chip k9">${reason.k9Label || `${p.k9} K/9`}</span>
+          <span class="kprop-chip projection">${reason.projectionLabel || `${p.projK} Ks projected`}</span>
+        </div>
+        <div class="kprop-summary">${reason.summary || ''}</div>`;
 
       return `<div class="kprop-row">
         <img src="${hs(p.pitcherId)}" style="width:38px;height:38px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" onerror="this.style.visibility='hidden'" alt="">
@@ -3343,8 +3375,7 @@ function renderKProps() {
           <div class="kprop-pred-val" style="font-size:${p.pred==='PUSH'?'16px':'24px'}">${predLabel}</div>
           <div class="kprop-pred-lbl">${p.projK} PROJ</div>
         </div>
-        ${dkBlock}
-        <div class="kprop-reasoning">${p.reasoning}</div>
+        <div class="kprop-reasoning">${reasonHTML}</div>
       </div>`;
     }).join('')}</div>`;
 }
