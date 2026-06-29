@@ -550,7 +550,7 @@
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <button onclick="filterHRP('top')" id="filter-top-btn" style="background:var(--surface2);border:1px solid #f4a261;color:#f4a261;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">⚡ TOP HR THREAT</button>
         <button onclick="filterHRP('drought')" id="filter-drought-btn" style="background:var(--surface2);border:1px solid #e63946;color:#e63946;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">🔴 DROUGHT</button>
-        <button onclick="filterHRP('favorable')" id="filter-favorable-btn" style="background:var(--surface2);border:1px solid #2ecc71;color:#2ecc71;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">🟢 FAVORABLE MATCHUP</button>
+        <button onclick="filterHRP('favorable')" id="filter-favorable-btn" style="background:var(--surface2);border:1px solid #2ecc71;color:#2ecc71;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">🟢 FAVORABLE MATCHUP FOR BATTER</button>
         <button onclick="filterHRP('all')" id="filter-all-btn" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">ALL</button>
         <div id="props-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Loading…</div>
       </div>
@@ -1061,6 +1061,16 @@ async function loadPitcherReport() {
 
     renderPRTable();
     loadKsToday();
+
+    // ── Silently fetch all lineups in background to populate HR Potential ──
+    setTimeout(() => {
+      prRows.forEach(r => {
+        const p = r.pitcher;
+        if (p.id && p.gamePk && p.side != null) {
+          fetchAndRenderLineup(p.id, p.name, p.gamePk, p.side, p.oppTeamId, r.rawHr9, r.rawIp).catch(()=>{});
+        }
+      });
+    }, 500); // slight delay so PR table renders first
   } catch(e) {
     document.getElementById('pr-content').innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
@@ -2846,7 +2856,7 @@ function renderHRPTable() {
               ${homerToday?`<span style="background:#2a1500;color:#f4a261;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166;white-space:nowrap">💥 HR TODAY${r.todayHR>1?' ×'+r.todayHR:''}</span>`:''}
               ${r.hrProb>=8?`<span class="top-hr-badge">⚡ TOP HR THREAT</span>`:''}
               ${r.isDrought?`<span style="background:#1a0505;color:#ff4444;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;border:1px solid #ff444466;white-space:nowrap">🔴 DROUGHT</span>`:''}
-              ${r.isFavorable?`<span style="background:#0a1a0a;color:#2ecc71;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;border:1px solid #2ecc7166;white-space:nowrap">🟢 FAVORABLE MATCHUP</span>`:''}
+              ${r.isFavorable?`<span style="background:#0a1a0a;color:#2ecc71;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;border:1px solid #2ecc7166;white-space:nowrap">🟢 FAVORABLE MATCHUP FOR BATTER</span>`:''}
             </div>
             <div class="hrp-batter-sub" style="gap:3px;flex-wrap:wrap;margin-top:2px">
               <div style="display:flex;align-items:center;gap:4px">
@@ -2891,7 +2901,7 @@ function renderHRPTable() {
     <div style="padding:8px 12px;font-size:10px;color:var(--muted);line-height:1.8;border-top:1px solid var(--border)">
       HR Prob = blend of batter HR/AB (60%) + pitcher HR/9 rate (40%)<br>
       🔴 <strong>DROUGHT</strong> — No home run in the last 8 games (due for one)<br>
-      🟢 <strong>FAVORABLE MATCHUP</strong> — Batter has OPS ≥ .800 against a pitcher allowing high AVG or WHIP ≥ 1.25
+      🟢 <strong>FAVORABLE MATCHUP FOR BATTER</strong> — Batter has OPS ≥ .800 against a pitcher allowing high AVG or WHIP ≥ 1.25
     </div>`;
 }
 
