@@ -918,7 +918,7 @@ async function loadScores() {
     [...live, ...final, ...upcoming].forEach(g => { prevGames[gameKey(g)] = { ...g }; });
 
     const now = new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
-    document.getElementById('scores-refresh').textContent = `Last Last updated ${now}`;
+    const srEl = document.getElementById('scores-refresh'); if(srEl) srEl.textContent = `Last updated ${now}`;
     updatePropsLiveBanner(live);
     // Load HR/K data for the Today's Games banner on first load
     loadHRsToday();
@@ -2421,11 +2421,9 @@ function triggerBreakingHR(newHitters) {
 function renderBanner() {
   const scoresBanner = document.getElementById('scores-alert-banner');
   const scoresTrack  = document.getElementById('scores-alert-track');
-  const liveBadge    = document.querySelector('#scores-alert-banner > div > div:first-child');
   if (!scoresBanner || !scoresTrack) return;
 
   if (breakingHRActive && breakingHRNames.length) {
-    // BREAKING MODE — flash red, big text, stop scrolling
     const breakingHTML = breakingHRNames.map(n =>
       `<span style="display:inline-flex;align-items:center;gap:10px;padding:0 20px">
         <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#ffffff;animation:pulse 0.6s infinite">🚨 BREAKING</span>
@@ -2433,26 +2431,22 @@ function renderBanner() {
         <span style="font-size:20px">💥</span>
       </span>`
     ).join('<span style="color:#334155;padding:0 10px;font-size:20px">·</span>');
-
     scoresTrack.innerHTML = breakingHTML;
-    scoresTrack.style.animation = 'none';
-    scoresTrack.style.justifyContent = 'center';
-    scoresTrack.style.flexWrap = 'wrap';
-    scoresTrack.style.width = '100%';
+    scoresTrack.style.cssText = 'display:inline-flex;align-items:center;padding:8px 20px;animation:none;justify-content:center;flex-wrap:wrap;width:100%';
     scoresBanner.style.background = 'linear-gradient(90deg,#1a0000,#2a0500,#1a0000)';
     scoresBanner.style.borderColor = '#f97316';
-    if (liveBadge) { liveBadge.style.background = 'linear-gradient(135deg,#f97316,#dc2626)'; }
+    const liveBadge = scoresBanner.querySelector('div > div:first-child');
+    if (liveBadge) liveBadge.style.background = 'linear-gradient(135deg,#f97316,#dc2626)';
     const scoresSection = document.getElementById('scores');
-    if (scoresSection && scoresSection.classList.contains('active')) {
-      scoresBanner.style.display = 'block';
-    }
+    if (scoresSection && scoresSection.classList.contains('active')) scoresBanner.style.display = 'block';
     return;
   }
 
   // Reset banner style
   scoresBanner.style.background = 'linear-gradient(90deg,#0a0e1a 0%,#0f172a 40%,#0a0e1a 100%)';
   scoresBanner.style.borderColor = '#1e3a5f';
-  if (liveBadge) { liveBadge.style.background = 'linear-gradient(135deg,#dc2626,#991b1b)'; }
+  const liveBadge2 = scoresBanner.querySelector('div > div:first-child');
+  if (liveBadge2) liveBadge2.style.background = 'linear-gradient(135deg,#dc2626,#991b1b)';
 
   const chips = [];
   Object.values(bannerHRs).forEach(h => {
@@ -2470,15 +2464,15 @@ function renderBanner() {
   const shouldScroll = chips.length >= 3;
   const looped = shouldScroll ? content + '<span class="alert-sep" style="padding:0 30px">·</span>' + content : content;
   const duration = Math.max(15, chips.length * 5);
+
   scoresTrack.innerHTML = looped;
   scoresTrack.style.animation = shouldScroll ? `marquee ${duration}s linear infinite` : 'none';
   scoresTrack.style.justifyContent = shouldScroll ? 'flex-start' : 'center';
   scoresTrack.style.flexWrap = shouldScroll ? 'nowrap' : 'wrap';
   scoresTrack.style.width = shouldScroll ? 'max-content' : '100%';
+
   const scoresSection = document.getElementById('scores');
-  if (scoresSection && scoresSection.classList.contains('active')) {
-    scoresBanner.style.display = 'block';
-  }
+  if (scoresSection && scoresSection.classList.contains('active')) scoresBanner.style.display = 'block';
 }
 
 function updateLiveBanner() {
@@ -2696,7 +2690,7 @@ function renderHRPTable() {
               ${r.isDrought?`<span style="background:#1a0505;color:#ff4444;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;border:1px solid #ff444466;white-space:nowrap">🔴 DROUGHT</span>`:''}
               ${r.isFavorable?`<span style="background:#0a1a0a;color:#2ecc71;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;border:1px solid #2ecc7166;white-space:nowrap">🟢 FAVORABLE MATCHUP</span>`:''}
             </div>
-            <div class="hrp-batter-sub" style="gap:5px;flex-wrap:wrap;margin-top:3px">
+            <div class="hrp-batter-sub" style="gap:3px;flex-wrap:wrap;margin-top:2px">
               <div style="display:flex;align-items:center;gap:4px">
                 ${tl(r.teamAbbr)}
                 <span style="font-size:10px;color:var(--muted)">${r.teamAbbr} · ${r.pos}</span>
@@ -2707,7 +2701,7 @@ function renderHRPTable() {
                 ${r.hrVsPitcher !== null && r.hrVsPitcher !== undefined ? `<span style="background:${r.hrVsPitcher>0?'#2a1500':'var(--bg)'};border:1px solid ${r.hrVsPitcher>0?'#f4a261':'var(--border)'};border-radius:3px;padding:1px 6px;font-size:9px;font-family:'JetBrains Mono',monospace;white-space:nowrap"><span style="color:var(--muted)">vs P </span><strong style="color:${r.hrVsPitcher>0?'var(--accent2)':'var(--muted)'}">${r.hrVsPitcher} HR</strong></span>` : ''}
                 ${r.streakDays>=3?`<span style="background:#1a1200;color:#ffd700;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;border:1px solid #ffd70066;white-space:nowrap">👑 ON A HEATER</span>`:r.streakDays===2?`<span style="background:#1a0d00;color:#ff8c00;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;border:1px solid #ff8c0066;white-space:nowrap">🔥 BACK TO BACK</span>`:''}
               </div>
-              <div style="width:100%;margin-top:4px">
+              <div style="width:100%;margin-top:2px">
                 <button class="hrp-matchup-btn"
                   data-batter-id="${r.id}"
                   data-batter-name="${r.name.replace(/"/g,'&quot;')}"
