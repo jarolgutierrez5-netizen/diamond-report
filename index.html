@@ -483,10 +483,10 @@
 </div>
 
 <nav class="nav">
-  <div class="tab active" onclick="showTab('scores', this)">Live Scores</div>
-  <div class="tab" onclick="showTab('matchups', this)">Pitcher Report</div>
-  <div class="tab" onclick="showTab('props', this)">Props</div>
-  <div class="tab" onclick="showTab('schedule', this)">Upcoming Games</div>
+  <div class="tab active" onclick="showTab('scores', this)" data-tab="scores">Live Scores</div>
+  <div class="tab" onclick="showTab('matchups', this)" data-tab="matchups">Pitcher Report</div>
+  <div class="tab" onclick="showTab('props', this)" data-tab="props">Props</div>
+  <div class="tab" onclick="showTab('schedule', this)" data-tab="schedule">Upcoming Games</div>
 </nav>
 
 
@@ -497,8 +497,8 @@
       <div id="scores-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Loading…</div>
     </div>
 
-    <!-- In-game alerts banner inside scores tab -->
-    <div id="scores-alert-banner" style="display:none;background:linear-gradient(90deg,#0a0e1a 0%,#0f172a 40%,#0a0e1a 100%);border:1px solid #1e3a5f;border-radius:8px;overflow:hidden;position:relative;margin-bottom:16px">
+    <!-- Banner temporarily removed -->
+    <div id="scores-alert-banner" style="display:none!important" hidden style="display:none;background:linear-gradient(90deg,#0a0e1a 0%,#0f172a 40%,#0a0e1a 100%);border:1px solid #1e3a5f;border-radius:8px;overflow:hidden;position:relative;margin-bottom:16px">
       <div style="position:absolute;left:0;top:0;bottom:0;width:50px;background:linear-gradient(90deg,#0a0e1a,transparent);z-index:2;pointer-events:none"></div>
       <div style="position:absolute;right:0;top:0;bottom:0;width:50px;background:linear-gradient(270deg,#0a0e1a,transparent);z-index:2;pointer-events:none"></div>
       <div style="display:flex;align-items:center">
@@ -876,7 +876,7 @@ async function loadScores() {
         ? final.map(g => `<div id="game-${gameKey(g)}">${gameCard(g)}</div>`).join('')
         : '<div style="color:var(--muted);font-size:13px;padding:4px 0">No final games yet today.</div>';
 
-      document.getElementById('scheduled-games').innerHTML =
+      const sgEl = document.getElementById('scheduled-games'); if(sgEl) sgEl.innerHTML =
         upcoming.map(g => `<div id="game-${gameKey(g)}">${upcomingCard(g)}</div>`).join('');
 
     } else {
@@ -920,7 +920,7 @@ async function loadScores() {
           : '<div style="color:var(--muted);font-size:13px;padding:4px 0">No final games yet today.</div>';
       }
       if (upcomingChanged) {
-        document.getElementById('scheduled-games').innerHTML =
+        const sgEl = document.getElementById('scheduled-games'); if(sgEl) sgEl.innerHTML =
           upcoming.map(g => `<div id="game-${gameKey(g)}">${upcomingCard(g)}</div>`).join('');
       }
     }
@@ -2307,19 +2307,42 @@ async function loadKsToday() {
 
       // Try to get boxscore from hydrated data or fetch it
       let box = g.teams;
-      if (!box?.away?.pitchers) {
+      const gameNotStarted = state === 'Preview' || state === 'pre' || (!g.teams?.away?.pitchers?.length && state !== 'Final');
+      if (!box?.away?.pitchers?.length) {
         try {
           const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
           box = bd.teams;
-        } catch { continue; }
+        } catch {}
       }
 
+      // For upcoming games with no boxscore pitchers, use probable pitchers from schedule
       ['away','home'].forEach(side => {
-        const team = box?.[side];
-        if (!team) return;
         const abbr = side === 'away' ? awayAbbr : homeAbbr;
-        const gameFinal = g.status.abstractGameState === 'Final' || g.status.detailedState === 'Final';
-        const gameLive  = g.status.abstractGameState === 'Live'  || g.status.detailedState === 'In Progress';
+        const gameFinal = g.status.abstractGameState === 'Final';
+        const gameLive  = g.status.abstractGameState === 'Live' || g.status.detailedState === 'In Progress';
+        const team = box?.[side];
+        const hasPitchers = team?.pitchers?.length > 0;
+
+        if (!hasPitchers) {
+          // Use probable pitcher from schedule data
+          const prob = g.teams[side].probablePitcher;
+          if (prob) {
+            allPitchers.push({
+              name: prob.fullName || '–',
+              id: prob.id,
+              teamAbbr: abbr,
+              ks: 0, ip: '0.0', hrs: 0, pitches: 0, relievedInning: null,
+              gameLabel, timeStr,
+              gameTimestamp: dt.getTime(),
+              isSP: true,
+              isFinal: false,
+              isLive: false,
+              isUpcoming: true,
+            });
+          }
+          return;
+        }
+
         (team.pitchers || []).forEach(id => {
           const p = team.players?.[`ID${id}`];
           if (!p) return;
@@ -2410,14 +2433,20 @@ async function loadKsToday() {
             <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">${p.gameLabel}</span>
           </div>
           <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:1px">
-            <span style="font-size:8px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">${p.isSP?'SP · ':''}${p.ip} IP${p.pitches>0?' · '+p.pitches+' pitches':''}</span>
+            ${p.isUpcoming
+              ? `<span style="font-size:8px;color:var(--accent2);font-family:'JetBrains Mono',monospace;white-space:nowrap">SP · ${p.timeStr} CDT</span>`
+              : `<span style="font-size:8px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">${p.isSP?'SP · ':''}${p.ip} IP${p.pitches>0?' · '+p.pitches+' pitches':''}</span>`
+            }
             ${p.hrs>0?`<span style="background:#2a0d0d;color:var(--accent);font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid #e6394644;white-space:nowrap">💥 ${p.hrs} HR${p.hrs>1?'s':''} allowed</span>`:''}
             ${!p.isSP&&p.relievedInning?`<span style="background:var(--bg);color:var(--muted);font-size:8px;padding:1px 5px;border-radius:3px;border:1px solid var(--border);white-space:nowrap">Relieved in ${p.relievedInning}</span>`:''}
           </div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0;flex-shrink:0;min-width:36px">
-          <span style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;line-height:1;color:${ksColor}">${p.ks}</span>
-          <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:1px">K</span>
+          ${p.isUpcoming
+            ? `<span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;text-align:right;line-height:1.4">–</span>`
+            : `<span style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;line-height:1;color:${ksColor}">${p.ks}</span>
+               <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:1px">K</span>`
+          }
         </div>
       </div>`;
     }).join('');
@@ -2641,8 +2670,14 @@ async function loadHRPotential() {
     const games = entry?.games || [];
 
     const allBatters = [];
+    const batterStatCache = {}; // cache batter stats to avoid duplicate fetches
+    const boxscoreCache = {};   // cache boxscores by gamePk
 
-    for (const g of games) {
+    // Show partial results as they come in
+    const addBatter = (b) => { allBatters.push(b); };
+
+    // Process all games in parallel
+    await Promise.all(games.map(async g => {
       const dt = new Date(g.gameDate);
       const timeStr = dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'});
       const state = g.status.abstractGameState;
@@ -2651,105 +2686,87 @@ async function loadHRPotential() {
       const timeColor = isLive ? 'var(--live)' : isFinal ? 'var(--muted)' : 'var(--text)';
       const timeLabel = isLive ? '● LIVE' : isFinal ? 'FINAL' : timeStr;
 
-      for (const [side, opp] of [['away','home'],['home','away']]) {
+      // Fetch boxscore once per game
+      let bd = null;
+      try {
+        if (!boxscoreCache[g.gamePk]) {
+          boxscoreCache[g.gamePk] = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
+        }
+        bd = boxscoreCache[g.gamePk];
+      } catch {}
+
+      // Process both pitchers in parallel
+      await Promise.all([['away','home'],['home','away']].map(async ([side, opp]) => {
         const pitcher = g.teams[opp].probablePitcher;
-        if (!pitcher) continue;
+        if (!pitcher) return;
         const teamAbbr = g.teams[side].team.abbreviation;
         const oppAbbr  = g.teams[opp].team.abbreviation;
 
-        // Fetch pitcher stats
-        let pitcherHr9 = 0, pitcherAvg = .240, pitcherSlg = .380, pitcherWhip = 1.25, pitcherK9 = 8;
+        let pitcherHr9=0, pitcherAvg=.240, pitcherSlg=.380, pitcherWhip=1.25, pitcherK9=8;
         try {
           const pd = await fetchJSON(`https://diamondreport.app/api/v1/people/${pitcher.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
-          const ps = pd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || {};
-          pitcherHr9 = parseFloat(ps.homeRunsPer9) || 0;
-          pitcherAvg = parseFloat(ps.avg) || .240;
-          pitcherSlg = parseFloat(ps.slg) || .380;
-          pitcherWhip = parseFloat(ps.whip) || 1.25;
-          pitcherK9 = parseFloat(ps.strikeoutsPer9Inn) || 8;
+          const ps = pd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||{};
+          pitcherHr9=parseFloat(ps.homeRunsPer9)||0; pitcherAvg=parseFloat(ps.avg)||.240;
+          pitcherSlg=parseFloat(ps.slg)||.380; pitcherWhip=parseFloat(ps.whip)||1.25;
+          pitcherK9=parseFloat(ps.strikeoutsPer9Inn)||8;
         } catch {}
 
-        // Fetch opposing lineup from boxscore
-        const oppSide = opp === 'away' ? 'home' : 'away'; // batters face pitcher from opp side
-        const batterSide = side;
-        let batters = [];
-        try {
-          const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
-          const teamBox = bd.teams?.[batterSide];
-          batters = (teamBox?.batters || []).map(id => {
-            const p = teamBox.players[`ID${id}`];
-            return p ? { id, player: p } : null;
-          }).filter(Boolean);
+        const teamBox = bd?.teams?.[side];
+        const batters = (teamBox?.batters||[]).map(id=>{const p=teamBox.players[`ID${id}`];return p?{id,player:p}:null;}).filter(Boolean);
+        if (!batters.length) return;
 
-          // If no batters yet, skip
-          if (!batters.length) continue;
+        const batterToday = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+        const yd=new Date(); yd.setDate(yd.getDate()-1);
+        const db2=new Date(); db2.setDate(db2.getDate()-2);
+        const ydStr=yd.toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+        const dbStr=db2.toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
 
-          // Fetch each batter's season stats + today HR + last10
-          const batterToday = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
-          for (const b of batters.slice(0,9)) {
-            const pid = b.player.person?.id;
-            if (!pid) continue;
-            let s = b.player.seasonStats?.batting || {};
-            let last10HR = null, todayHR = 0, streakDays = 1, hrVsPitcher = null, logs = [];
-            try {
-              const [sd, ld, h2hd] = await Promise.all([
+        // Fetch all batters in parallel (with cache)
+        await Promise.all(batters.slice(0,9).map(async b => {
+          const pid = b.player.person?.id;
+          if (!pid) return;
+          let s=b.player.seasonStats?.batting||{};
+          let last10HR=null, todayHR=0, streakDays=1, hrVsPitcher=null, logs=[];
+          try {
+            if (!batterStatCache[pid]) {
+              const [sd,ld] = await Promise.all([
                 fetchJSON(`https://diamondreport.app/api/v1/people/${pid}?hydrate=stats(group=hitting,type=season,season=2026)`),
                 fetchJSON(`https://diamondreport.app/api/v1/people/${pid}/stats?stats=gameLog&group=hitting&season=2026&gameType=R`),
-                fetchJSON(`https://diamondreport.app/api/v1/people/${pid}/stats?stats=vsPlayer&opposingPlayerId=${pitcher.id}&group=hitting&season=2026`)
               ]);
-              s = sd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || s;
-              logs = ld.stats?.[0]?.splits || [];
-              last10HR = logs.slice(0,10).reduce((n,g)=>n+(parseInt(g.stat?.homeRuns)||0),0);
-              const todayLog = logs.find(g=>g.date===batterToday);
-              todayHR = Math.max(parseInt(todayLog?.stat?.homeRuns)||0, parseInt(b.player.stats?.batting?.homeRuns)||0);
-              // Streak detection
-              const yd = new Date(); yd.setDate(yd.getDate()-1);
-              const db = new Date(); db.setDate(db.getDate()-2);
-              const ydStr = yd.toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
-              const dbStr = db.toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
-              const hitYd = logs.some(g=>g.date===ydStr&&parseInt(g.stat?.homeRuns)>0);
-              const hitDb = logs.some(g=>g.date===dbStr&&parseInt(g.stat?.homeRuns)>0);
-              streakDays = hitYd && hitDb ? 3 : hitYd ? 2 : 1;
-              // H2H HRs vs this pitcher (2026)
-              const h2hStat = h2hd.stats?.[0]?.splits?.[0]?.stat;
-              if (h2hStat) hrVsPitcher = parseInt(h2hStat.homeRuns) || 0;
-            } catch {}
-
-            const ab = parseInt(s.atBats)||0;
-            const hr = parseInt(s.homeRuns)||0;
-            const batterRate = ab>0 ? hr/ab : 0;
-            const pitcherRate = pitcherHr9>0 ? pitcherHr9/27 : 0.03;
-            const hrProb = Math.min(((batterRate*0.6)+(pitcherRate*0.4))*100, 25);
-
-            // Drought: no HR in last 8 games
-            const hrInLast8 = (logs || []).slice(0,8).some(g => parseInt(g.stat?.homeRuns) > 0);
-            const isDrought = !hrInLast8 && hr > 0; // only flag if they have HRs this season
-
-            // Favorable Batter Matchup: batter OPS > .800 AND pitcher WHIP > 1.25 OR pitcher AVG > .265
-            const batterOPS = parseFloat(s.ops) || 0;
-            const isFavorable = batterOPS >= .800 && (pitcherWhip >= 1.25 || pitcherAvg >= .260);
-
-            allBatters.push({
-              id: pid,
-              name: b.player.person?.fullName || '–',
-              pos: b.player.position?.abbreviation || '–',
-              teamAbbr, oppAbbr,
-              pitcherName: pitcher.fullName,
-              pitcherId: pitcher.id,
-              timeLabel, timeColor,
-              gameTimestamp: dt.getTime(),
-              gamePk: g.gamePk,
-              stats: s, last10HR, todayHR, hrProb, streakDays, hrVsPitcher,
-              avg: parseFloat(s.avg)||0,
-              hrSeason: hr,
-              ops: batterOPS,
-              iso: (parseFloat(s.slg)||0)-(parseFloat(s.avg)||0),
-              isDrought, isFavorable,
-            });
-          }
-        } catch {}
-      }
-    }
+              batterStatCache[pid]={sd,ld};
+            }
+            const {sd,ld}=batterStatCache[pid];
+            const h2hd = await fetchJSON(`https://diamondreport.app/api/v1/people/${pid}/stats?stats=vsPlayer&opposingPlayerId=${pitcher.id}&group=hitting&season=2026`).catch(()=>null);
+            s=sd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||s;
+            logs=ld.stats?.[0]?.splits||[];
+            last10HR=logs.slice(0,10).reduce((n,g2)=>n+(parseInt(g2.stat?.homeRuns)||0),0);
+            const todayLog=logs.find(g2=>g2.date===batterToday);
+            todayHR=Math.max(parseInt(todayLog?.stat?.homeRuns)||0,parseInt(b.player.stats?.batting?.homeRuns)||0);
+            const hitYd=logs.some(g2=>g2.date===ydStr&&parseInt(g2.stat?.homeRuns)>0);
+            const hitDb=logs.some(g2=>g2.date===dbStr&&parseInt(g2.stat?.homeRuns)>0);
+            streakDays=hitYd&&hitDb?3:hitYd?2:1;
+            const h2hStat=h2hd?.stats?.[0]?.splits?.[0]?.stat;
+            if(h2hStat) hrVsPitcher=parseInt(h2hStat.homeRuns)||0;
+          } catch {}
+          const ab=parseInt(s.atBats)||0, hr=parseInt(s.homeRuns)||0;
+          const batterRate=ab>0?hr/ab:0;
+          const pitcherRate=pitcherHr9>0?pitcherHr9/27:0.03;
+          const hrProb=Math.min(((batterRate*0.6)+(pitcherRate*0.4))*100,25);
+          const hrInLast8=(logs||[]).slice(0,8).some(g2=>parseInt(g2.stat?.homeRuns)>0);
+          const isDrought=!hrInLast8&&hr>0;
+          const batterOPS=parseFloat(s.ops)||0;
+          const isFavorable=batterOPS>=.800&&(pitcherWhip>=1.25||pitcherAvg>=.260);
+          addBatter({
+            id:pid, name:b.player.person?.fullName||'–', pos:b.player.position?.abbreviation||'–',
+            teamAbbr, oppAbbr, pitcherName:pitcher.fullName, pitcherId:pitcher.id,
+            timeLabel, timeColor, gameTimestamp:dt.getTime(), gamePk:g.gamePk,
+            stats:s, last10HR, todayHR, hrProb, streakDays, hrVsPitcher,
+            avg:parseFloat(s.avg)||0, hrSeason:hr, ops:batterOPS,
+            iso:(parseFloat(s.slg)||0)-(parseFloat(s.avg)||0), isDrought, isFavorable,
+          });
+        }));
+      }));
+    }));
 
     hrpRows = allBatters;
     renderHRPTable();
@@ -2959,11 +2976,11 @@ async function loadHRsToday() {
     allHRs.sort((a,b) => a.gameTimestamp-b.gameTimestamp || b.hrs-a.hrs);
 
     if (!allHRs.length) {
-      if (el) el.innerHTML=`<div class="mu-empty">No home runs yet today.</div>`;
+      if (el) el.innerHTML=`<div class="mu-empty">No HRs at this time.</div>`;
       const countEl = document.getElementById('hrs-today-count');
       if (countEl) countEl.style.display = 'none';
       const projEl = document.getElementById('proj-hits-content');
-      if (projEl) projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">Loading HR's Completed from Projection…</div>`;
+      if (projEl) projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">No HR's Completed from Projections Yet</div>`;
       updateLiveBanner();
       return;
     }
@@ -3027,7 +3044,7 @@ async function loadHRsToday() {
     if (projEl) {
       const projHits = allHRs.filter(h => hrpRows.some(r => r.id === h.id));
       if (!projHits.length) {
-        projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">Loading HR's Completed from Projection…</div>`;
+        projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">No HR's Completed from Projections Yet</div>`;
         const phCount = document.getElementById('proj-hits-count');
         if (phCount) phCount.style.display = 'none';
       } else {
@@ -3068,11 +3085,11 @@ async function loadHRsToday() {
 async function loadKProps() {
   const el = document.getElementById('kprops-content');
   const refreshEl = document.getElementById('kprops-refresh');
-  if (!el) return;
+  // Don't return early — still need to cache data even if Props tab isn't open
 
   const now = new Date();
 
-  // Only run between 7am–11pm CDT; skip if already loaded today within 2 hours
+  // Skip if already loaded within last 2 hours
   if (kPropsLoadedAt) {
     const msSince = now - kPropsLoadedAt;
     if (msSince < 2 * 60 * 60 * 1000) { renderKProps(); return; }
@@ -3304,7 +3321,8 @@ function initPropsTab() {
   propsInitDone = true;
   loadHRPotentialWithRetry();
   loadHRsToday();
-  scheduleKPropsLoad();
+  loadKsToday();
+  loadKProps();      // load immediately, don't wait for 7am gate
   loadGameProps();
 }
 
@@ -3322,7 +3340,7 @@ function showTab(id, el) {
   document.getElementById(id).classList.add('active');
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  sessionStorage.setItem('activeTab', id);
+  localStorage.setItem('activeTab', id);
   if (id === 'matchups' && !matchupLoaded) {
     matchupLoaded = true;
     loadPitcherReport();
@@ -3333,9 +3351,9 @@ function showTab(id, el) {
 
 // Restore last active tab on page load
 (function restoreTab() {
-  const saved = sessionStorage.getItem('activeTab');
+  const saved = localStorage.getItem('activeTab');
   if (!saved || saved === 'scores') return; // scores is default, no action needed
-  const tabEl = document.querySelector(`.tab[onclick*="'${saved}'"]`);
+  const tabEl = document.querySelector(`.tab[data-tab='${saved}']`) || document.querySelector(`.tab[onclick*="'${saved}'"]`);
   const sectionEl = document.getElementById(saved);
   if (!tabEl || !sectionEl) return;
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
