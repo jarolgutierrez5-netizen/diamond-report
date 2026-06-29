@@ -461,7 +461,7 @@
 </header>
 
 <!-- Horizontal Ad -->
-<div style="background:var(--surface);padding:6px 24px;border-bottom:1px solid var(--border);text-align:center">
+<div style="background:var(--surface);padding:0 24px;border-bottom:1px solid var(--border);text-align:center;min-height:0;overflow:hidden" id="ad-container">
   <ins class="adsbygoogle"
        style="display:block"
        data-ad-client="ca-pub-6433797533342090"
@@ -2151,25 +2151,73 @@ function scheduleMidnightRefresh() {
 scheduleMidnightRefresh();
 
 // ── 5AM HR POTENTIAL REFRESH ─────────────────────────────────────────
-// Lineups and probable pitchers are usually posted by 5am CDT
+// Checks on load and reschedules daily — handles cases where tab wasn't open at 5am
+const HR_POTENTIAL_STORAGE_KEY = 'hrp_last_loaded_date';
+
+function getHRPLastLoadedDate() {
+  try { return localStorage.getItem(HR_POTENTIAL_STORAGE_KEY) || ''; } catch { return ''; }
+}
+function setHRPLastLoadedDate(dateStr) {
+  try { localStorage.setItem(HR_POTENTIAL_STORAGE_KEY, dateStr); } catch {}
+}
+
+function shouldRefreshHRPotential() {
+  const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
+  const lastLoaded = getHRPLastLoadedDate();
+  const cdtNow = new Date(new Date().toLocaleString('en-US', {timeZone:'America/Chicago'}));
+  const hour = cdtNow.getHours();
+  // Refresh if: never loaded today, OR loaded before 5am today and it's now past 5am
+  if (lastLoaded !== today) return true;
+  return false; // already loaded fresh today
+}
+
+function triggerHRPotentialRefresh() {
+  if (shouldRefreshHRPotential()) {
+    const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
+    setHRPLastLoadedDate(today);
+    loadHRPotentialWithRetry();
+  } else if (!hrpRows.length) {
+    // Data was never successfully populated — retry regardless
+    loadHRPotentialWithRetry();
+  }
+}
+
+let hrpRetryTimer = null;
+
+function loadHRPotentialWithRetry() {
+  loadHRPotential().then(() => {
+    if (!hrpRows.length) {
+      // Lineups not posted yet — retry in 15 minutes
+      if (hrpRetryTimer) clearTimeout(hrpRetryTimer);
+      hrpRetryTimer = setTimeout(loadHRPotentialWithRetry, 15 * 60 * 1000);
+      const el = document.getElementById('hr-potential-content');
+      if (el) el.innerHTML = `<div class="mu-empty">Lineups not posted yet — checking again in 15 min.<br><span style="font-size:10px;color:var(--muted)">Last checked: ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span></div>`;
+    } else {
+      if (hrpRetryTimer) { clearTimeout(hrpRetryTimer); hrpRetryTimer = null; }
+    }
+  }).catch(() => {
+    // On error also retry
+    if (hrpRetryTimer) clearTimeout(hrpRetryTimer);
+    hrpRetryTimer = setTimeout(loadHRPotentialWithRetry, 15 * 60 * 1000);
+  });
+}
+
 function schedule5amHRRefresh() {
-  const now = new Date();
-  const cdtNow = new Date(now.toLocaleString('en-US', {timeZone:'America/Chicago'}));
+  const cdtNow = new Date(new Date().toLocaleString('en-US', {timeZone:'America/Chicago'}));
   const next5am = new Date(cdtNow);
-  next5am.setHours(5, 0, 5, 0); // 5:00:05am CDT
-  if (cdtNow >= next5am) next5am.setDate(next5am.getDate() + 1); // already past 5am today → schedule tomorrow
+  next5am.setHours(5, 0, 5, 0);
+  if (cdtNow >= next5am) next5am.setDate(next5am.getDate() + 1);
   const msUntil5am = next5am - cdtNow;
   setTimeout(() => {
-    // Force reload HR Potential with fresh lineups
-    if (propsInitDone) {
-      loadHRPotential();
-    } else {
-      // Props not opened yet — just prime the data so it's ready when user opens Props
-      loadHRPotential();
-    }
-    schedule5amHRRefresh(); // reschedule for next day
+    const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
+    setHRPLastLoadedDate(today);
+    loadHRPotential();
+    schedule5amHRRefresh();
   }, msUntil5am);
 }
+
+// On page load: refresh if stale, then schedule daily
+triggerHRPotentialRefresh();
 schedule5amHRRefresh();
 
 
@@ -2178,7 +2226,7 @@ schedule5amHRRefresh();
 // ── K'S TODAY ────────────────────────────────────────────────────────
 async function loadKsToday() {
   const el = document.getElementById('ks-today-props');
-  if (!el) return;
+  // Don't return early if el is null — still need to update pitcher O/U tags
   try {
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
     const data = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team&language=en`);
@@ -2235,7 +2283,7 @@ async function loadKsToday() {
     }
 
     if (!allPitchers.length) {
-      el.innerHTML = `<div class="mu-empty">No strikeout data yet — check back once games are underway.</div>`;
+      if (el) el.innerHTML = `<div class="mu-empty">No strikeout data yet — check back once games are underway.</div>`;
       return;
     }
 
@@ -2312,7 +2360,7 @@ async function loadKsToday() {
       </div>`;
     }).join('');
 
-    el.innerHTML = rows || `<div class="mu-empty">No strikeout data yet.</div>`;
+    if (el) el.innerHTML = rows || `<div class="mu-empty">No strikeout data yet.</div>`;
 
     // ── Patch Pitcher Report rows with live O/U status ──
     allPitchers.forEach(p => {
@@ -3192,16 +3240,16 @@ let propsInitDone = false;
 function initPropsTab() {
   if (propsInitDone) return;
   propsInitDone = true;
-  loadHRPotential();
+  loadHRPotentialWithRetry();
   loadHRsToday();
   scheduleKPropsLoad();
   loadGameProps();
 }
 
-// Auto-refresh Props tab every 60s
+// Auto-refresh Props tab every 60s (HR Potential only if stale, HRs Today always)
 setInterval(() => {
   if (propsInitDone) {
-    loadHRPotential();
+    triggerHRPotentialRefresh();
     loadHRsToday();
   }
 }, 60000);
