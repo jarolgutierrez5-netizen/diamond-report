@@ -1424,11 +1424,10 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
       }
     });
 
-    // If HR Potential was empty, re-render it now with this lineup data
+    // Re-render HR Potential whenever new batter data is added from lineup
     const hrpEl = document.getElementById('hr-potential-content');
     if (hrpEl && hrpRows.length > 0) {
-      const isEmpty = hrpEl.textContent.includes('Lineups not posted') || hrpEl.textContent.includes('No HR potential');
-      if (isEmpty) renderHRPTable();
+      renderHRPTable();
     }
   }
 
@@ -2798,7 +2797,13 @@ function renderHRPTable() {
   let displayRows = [...hrpRows];
   if (hrpFilter === 'drought') displayRows = displayRows.filter(r => r.isDrought);
   else if (hrpFilter === 'favorable') displayRows = displayRows.filter(r => r.isFavorable);
-  else if (hrpFilter === 'top') displayRows = displayRows.filter(r => r.hrProb >= 6);
+  else if (hrpFilter === 'top') {
+    // Top HR Threat: top 30% by hrProb, minimum 3 players shown
+    const sorted0 = [...hrpRows].sort((a,b) => b.hrProb - a.hrProb);
+    const threshold = sorted0.length > 0 ? sorted0[Math.max(0, Math.floor(sorted0.length * 0.3) - 1)]?.hrProb || 0 : 0;
+    displayRows = displayRows.filter(r => r.hrProb >= threshold);
+    if (displayRows.length === 0) displayRows = [...hrpRows]; // fallback to all if none qualify
+  }
 
   // Update button active states
   ['top','drought','favorable','all'].forEach(f => {
