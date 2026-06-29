@@ -2150,6 +2150,28 @@ function scheduleMidnightRefresh() {
 }
 scheduleMidnightRefresh();
 
+// ── 5AM HR POTENTIAL REFRESH ─────────────────────────────────────────
+// Lineups and probable pitchers are usually posted by 5am CDT
+function schedule5amHRRefresh() {
+  const now = new Date();
+  const cdtNow = new Date(now.toLocaleString('en-US', {timeZone:'America/Chicago'}));
+  const next5am = new Date(cdtNow);
+  next5am.setHours(5, 0, 5, 0); // 5:00:05am CDT
+  if (cdtNow >= next5am) next5am.setDate(next5am.getDate() + 1); // already past 5am today → schedule tomorrow
+  const msUntil5am = next5am - cdtNow;
+  setTimeout(() => {
+    // Force reload HR Potential with fresh lineups
+    if (propsInitDone) {
+      loadHRPotential();
+    } else {
+      // Props not opened yet — just prime the data so it's ready when user opens Props
+      loadHRPotential();
+    }
+    schedule5amHRRefresh(); // reschedule for next day
+  }, msUntil5am);
+}
+schedule5amHRRefresh();
+
 
 
 
