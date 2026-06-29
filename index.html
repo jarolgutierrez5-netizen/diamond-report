@@ -960,6 +960,11 @@ setInterval(() => {
 
 // ── PITCHER REPORT ───────────────────────────────────────────────────
 let matchupLoaded = false;
+
+// ── BANNER STATE — declared early so loadKsToday/loadHRsToday can use them ──
+const bannerHRs = {};           // batterId -> { id, name, teamAbbr, oppAbbr, count }
+const bannerKs  = {};           // pitcherId -> { name, teamAbbr, oppAbbr, ks, ouLine }
+const prevBannerHRCounts = {};  // batterId -> previous HR count (to detect new HRs)
 let prSortCol = null, prSortDir = 1, prRows = [];
 const lineupCache = {};
 const lineupMeta  = {}; // pitcherId -> {pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp}
@@ -1767,10 +1772,10 @@ async function loadGameProps() {
     }));
 
     // Tally correct picks from final games
-    const finalResults = gameCards.filter(c => c.resultCorrect !== null);
+    const finalResults = gameCards.filter(c => c && c.resultCorrect !== null && c.resultCorrect !== undefined);
     const correctCount = finalResults.filter(c => c.resultCorrect === true).length;
     const totalFinal   = finalResults.length;
-    const totalGames   = gameCards.length;
+    const totalGames   = gameCards.filter(Boolean).length;
 
     const tallyHTML = totalFinal > 0 ? `
       <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px">
@@ -1780,7 +1785,7 @@ async function loadGameProps() {
         <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">${totalFinal>0?Math.round(correctCount/totalFinal*100)+'% accuracy':''}</span>
       </div>` : '';
 
-    el.innerHTML = tallyHTML + (gameCards.map(c=>c.html).join('') || `<div class="mu-empty">No game data available.</div>`);
+    el.innerHTML = tallyHTML + (gameCards.filter(Boolean).map(c=>c.html).join('') || `<div class="mu-empty">No game data available.</div>`);
     const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
     if (refreshEl) refreshEl.textContent = `Last updated ${now}`;
     gamePropsLoaded = true;
@@ -2559,9 +2564,6 @@ function updatePropsLiveBanner(liveGames) {
 }
 
 
-const bannerHRs  = {}; // batterId -> { name, teamAbbr, count, oppAbbr }
-const bannerKs   = {}; // pitcherId -> { name, teamAbbr, ks, ouLine }
-const prevBannerHRCounts = {}; // track previous HR counts to detect new HRs
 let breakingHRActive = false;
 let breakingHRTimeout = null;
 let breakingHRNames = []; // names of players who just hit HRs
