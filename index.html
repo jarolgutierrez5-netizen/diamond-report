@@ -957,6 +957,103 @@
     .games-grid { grid-template-columns:1fr; gap:12px; }
   }
 
+
+  /* ── FINAL FIX: Scores live/breaking banner alignment ─────────────── */
+  .hero-live-banner {
+    display:none;
+    grid-template-columns: 180px minmax(0, 1fr) 42px;
+    align-items:center;
+    gap:18px;
+    min-height:118px;
+    padding:16px;
+    background:linear-gradient(180deg,rgba(11,18,32,.96),rgba(7,13,24,.98)) !important;
+    border:1px solid #ff7a1a !important;
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .hero-live-banner::before,
+  .hero-live-banner::after { display:none !important; }
+  .hero-live-card {
+    width:100%;
+    min-width:0;
+    min-height:74px;
+    justify-content:center;
+    background:linear-gradient(135deg,#ff841f,#ef233c) !important;
+    box-shadow:0 12px 34px rgba(249,115,22,.25);
+  }
+  .hero-alert-rail {
+    width:100%;
+    min-width:0;
+    overflow:hidden;
+    align-self:stretch;
+    display:flex;
+    align-items:center;
+  }
+  .hero-alert-track {
+    display:flex !important;
+    align-items:center !important;
+    gap:22px;
+    min-width:0;
+    padding:0 8px !important;
+    white-space:nowrap;
+  }
+  .breaking-alert-item {
+    display:inline-flex;
+    align-items:center;
+    gap:14px;
+    min-height:42px;
+    white-space:nowrap;
+    font-family:'Bebas Neue',sans-serif;
+    letter-spacing:2px;
+    line-height:1;
+  }
+  .breaking-alert-label {
+    color:#f8fafc;
+    font-size:26px;
+    opacity:.9;
+    text-shadow:0 0 12px rgba(255,255,255,.12);
+  }
+  .breaking-alert-player {
+    color:#ff7a1a;
+    font-size:27px;
+    text-shadow:0 0 16px rgba(249,115,22,.55);
+  }
+  .breaking-alert-copy {
+    color:#f8fafc;
+    font-size:27px;
+  }
+  .breaking-alert-icon { font-size:22px; }
+  .hero-next {
+    justify-self:end;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:36px;
+    height:100%;
+    font-size:56px;
+    color:#dbe4f3;
+    opacity:.95;
+  }
+
+  @media (max-width: 900px) {
+    .hero-live-banner {
+      display:none;
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap:10px;
+      min-height:78px;
+      padding:10px;
+      overflow:hidden;
+    }
+    .hero-live-card { min-height:56px; }
+    .hero-alert-rail { overflow-x:auto; }
+    .hero-alert-track { gap:12px; }
+    .breaking-alert-label,
+    .breaking-alert-player,
+    .breaking-alert-copy { font-size:18px; }
+    .breaking-alert-icon { font-size:16px; }
+    .hero-next { display:none; }
+  }
+
 </style>
 <meta name="google-adsense-account" content="ca-pub-6433797533342090">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6433797533342090"
@@ -3092,7 +3189,7 @@ function updatePropsLiveBanner(liveGames) {
   container.style.justifyContent = shouldScroll ? 'flex-start' : 'center';
   container.style.flexWrap = shouldScroll ? 'nowrap' : 'wrap';
   container.style.width = shouldScroll ? 'max-content' : '100%';
-  banner.style.display = 'block';
+  banner.style.display = 'grid';
 }
 
 
@@ -3117,28 +3214,33 @@ function renderBanner() {
 
   if (breakingHRActive && breakingHRNames.length) {
     const breakingHTML = breakingHRNames.map(n =>
-      `<span style="display:inline-flex;align-items:center;gap:10px;padding:0 20px">
-        <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#ffffff;animation:pulse 0.6s infinite">🚨 BREAKING</span>
-        <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#f97316;text-shadow:0 0 12px #f97316">${n} HIT A HOME RUN!</span>
-        <span style="font-size:20px">💥</span>
+      `<span class="breaking-alert-item">
+        <span class="breaking-alert-label">🚨 BREAKING:</span>
+        <span class="breaking-alert-player">${n}</span>
+        <span class="breaking-alert-copy">HIT A HOME RUN!</span>
+        <span class="breaking-alert-icon">💥</span>
       </span>`
-    ).join('<span style="color:#334155;padding:0 10px;font-size:20px">·</span>');
+    ).join('<span class="alert-sep">·</span>');
+
     scoresTrack.innerHTML = breakingHTML;
-    scoresTrack.style.cssText = 'display:inline-flex;align-items:center;padding:8px 20px;animation:none;justify-content:center;flex-wrap:wrap;width:100%';
-    scoresBanner.style.background = 'linear-gradient(90deg,#1a0000,#2a0500,#1a0000)';
-    scoresBanner.style.borderColor = '#f97316';
-    const liveBadge = scoresBanner.querySelector('div > div:first-child');
-    if (liveBadge) liveBadge.style.background = 'linear-gradient(135deg,#f97316,#dc2626)';
-    // Banner is inside #scores so always set display block — section visibility handles the rest
-    scoresBanner.style.display = 'flex';
+    scoresTrack.style.animation = 'none';
+    scoresTrack.style.justifyContent = 'center';
+    scoresTrack.style.flexWrap = breakingHRNames.length > 3 ? 'nowrap' : 'wrap';
+    scoresTrack.style.width = '100%';
+
+    scoresBanner.style.background = '';
+    scoresBanner.style.borderColor = '';
+    const liveBadge = scoresBanner.querySelector('.hero-live-card');
+    if (liveBadge) liveBadge.style.background = '';
+    scoresBanner.style.display = 'grid';
     return;
   }
 
   // Reset banner style
-  scoresBanner.style.background = 'linear-gradient(90deg,#0a0e1a 0%,#0f172a 40%,#0a0e1a 100%)';
-  scoresBanner.style.borderColor = '#1e3a5f';
+  scoresBanner.style.background = '';
+  scoresBanner.style.borderColor = '';
   const liveBadge2 = scoresBanner.querySelector('div > div:first-child');
-  if (liveBadge2) liveBadge2.style.background = 'linear-gradient(135deg,#dc2626,#991b1b)';
+  if (liveBadge2) liveBadge2.style.background = '';
 
   const chips = [];
   Object.values(bannerHRs).forEach(h => {
@@ -3184,7 +3286,7 @@ function renderBanner() {
 
   // Always show the banner — visibility is controlled by the section being active
   // The banner sits INSIDE #scores so it's naturally hidden when scores is hidden
-  scoresBanner.style.display = 'flex';
+  scoresBanner.style.display = 'grid';
 }
 
 function updateLiveBanner() {
