@@ -537,7 +537,10 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
       <p class="section-title" style="margin-bottom:0">HR <span>POTENTIAL</span></p>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <button onclick="sortHRP('hrProb')" style="background:${'' /* set dynamically */};background:var(--surface2);border:1px solid #f4a261;color:#f4a261;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px" id="sort-top-hr-btn">⚡ TOP HR THREAT</button>
+        <button onclick="filterHRP('top')" id="filter-top-btn" style="background:var(--surface2);border:1px solid #f4a261;color:#f4a261;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">⚡ TOP HR THREAT</button>
+        <button onclick="filterHRP('drought')" id="filter-drought-btn" style="background:var(--surface2);border:1px solid #e63946;color:#e63946;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">🔴 DROUGHT</button>
+        <button onclick="filterHRP('favorable')" id="filter-favorable-btn" style="background:var(--surface2);border:1px solid #2ecc71;color:#2ecc71;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">🟢 FAVORABLE MATCHUP</button>
+        <button onclick="filterHRP('all')" id="filter-all-btn" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">ALL</button>
         <div id="props-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Loading…</div>
       </div>
     </div>
@@ -2495,7 +2498,7 @@ function updateLiveBanner() {
 
 
 let propsLoaded = false;
-let hrpRows = [], hrpSortCol = 'hrProb', hrpSortDir = -1;
+let hrpRows = [], hrpSortCol = 'hrProb', hrpSortDir = -1, hrpFilter = 'top';
 const prevHrpHRs = {}; // batterId -> todayHR count for diff detection
 let kPropsData = []; // cached K props (loaded at 7am, refreshed by 9am)
 let kPropsLoadedAt = null;
@@ -2528,13 +2531,15 @@ async function loadHRPotential() {
         const oppAbbr  = g.teams[opp].team.abbreviation;
 
         // Fetch pitcher stats
-        let pitcherHr9 = 0, pitcherAvg = .240, pitcherSlg = .380;
+        let pitcherHr9 = 0, pitcherAvg = .240, pitcherSlg = .380, pitcherWhip = 1.25, pitcherK9 = 8;
         try {
           const pd = await fetchJSON(`https://diamondreport.app/api/v1/people/${pitcher.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
           const ps = pd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || {};
           pitcherHr9 = parseFloat(ps.homeRunsPer9) || 0;
           pitcherAvg = parseFloat(ps.avg) || .240;
           pitcherSlg = parseFloat(ps.slg) || .380;
+          pitcherWhip = parseFloat(ps.whip) || 1.25;
+          pitcherK9 = parseFloat(ps.strikeoutsPer9Inn) || 8;
         } catch {}
 
         // Fetch opposing lineup from boxscore
@@ -2558,7 +2563,7 @@ async function loadHRPotential() {
             const pid = b.player.person?.id;
             if (!pid) continue;
             let s = b.player.seasonStats?.batting || {};
-            let last10HR = null, todayHR = 0, streakDays = 1, hrVsPitcher = null;
+            let last10HR = null, todayHR = 0, streakDays = 1, hrVsPitcher = null, logs = [];
             try {
               const [sd, ld, h2hd] = await Promise.all([
                 fetchJSON(`https://diamondreport.app/api/v1/people/${pid}?hydrate=stats(group=hitting,type=season,season=2026)`),
@@ -2566,7 +2571,7 @@ async function loadHRPotential() {
                 fetchJSON(`https://diamondreport.app/api/v1/people/${pid}/stats?stats=vsPlayer&opposingPlayerId=${pitcher.id}&group=hitting&season=2026`)
               ]);
               s = sd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || s;
-              const logs = ld.stats?.[0]?.splits || [];
+              logs = ld.stats?.[0]?.splits || [];
               last10HR = logs.slice(0,10).reduce((n,g)=>n+(parseInt(g.stat?.homeRuns)||0),0);
               const todayLog = logs.find(g=>g.date===batterToday);
               todayHR = Math.max(parseInt(todayLog?.stat?.homeRuns)||0, parseInt(b.player.stats?.batting?.homeRuns)||0);
@@ -2589,6 +2594,14 @@ async function loadHRPotential() {
             const pitcherRate = pitcherHr9>0 ? pitcherHr9/27 : 0.03;
             const hrProb = Math.min(((batterRate*0.6)+(pitcherRate*0.4))*100, 25);
 
+            // Drought: no HR in last 8 games
+            const hrInLast8 = (logs || []).slice(0,8).some(g => parseInt(g.stat?.homeRuns) > 0);
+            const isDrought = !hrInLast8 && hr > 0; // only flag if they have HRs this season
+
+            // Favorable Batter Matchup: batter OPS > .800 AND pitcher WHIP > 1.25 OR pitcher AVG > .265
+            const batterOPS = parseFloat(s.ops) || 0;
+            const isFavorable = batterOPS >= .800 && (pitcherWhip >= 1.25 || pitcherAvg >= .260);
+
             allBatters.push({
               id: pid,
               name: b.player.person?.fullName || '–',
@@ -2602,8 +2615,9 @@ async function loadHRPotential() {
               stats: s, last10HR, todayHR, hrProb, streakDays, hrVsPitcher,
               avg: parseFloat(s.avg)||0,
               hrSeason: hr,
-              ops: parseFloat(s.ops)||0,
+              ops: batterOPS,
               iso: (parseFloat(s.slg)||0)-(parseFloat(s.avg)||0),
+              isDrought, isFavorable,
             });
           }
         } catch {}
@@ -2633,7 +2647,19 @@ function renderHRPTable() {
     {key:'name',      label:'BATTER', r:false, sortable:false},
   ];
 
-  const sorted = [...hrpRows].sort((a,b) => {
+  // Apply active filter
+  let displayRows = [...hrpRows];
+  if (hrpFilter === 'drought') displayRows = displayRows.filter(r => r.isDrought);
+  else if (hrpFilter === 'favorable') displayRows = displayRows.filter(r => r.isFavorable);
+  else if (hrpFilter === 'top') displayRows = displayRows.filter(r => r.hrProb >= 6);
+
+  // Update button active states
+  ['top','drought','favorable','all'].forEach(f => {
+    const btn = document.getElementById(`filter-${f}-btn`);
+    if (btn) btn.style.opacity = (hrpFilter === f || (f==='all' && !hrpFilter)) ? '1' : '0.5';
+  });
+
+  const sorted = [...displayRows].sort((a,b) => {
     const av = a[hrpSortCol], bv = b[hrpSortCol];
     if (av==null&&bv==null) return 0;
     if (av==null) return 1; if (bv==null) return -1;
@@ -2667,6 +2693,8 @@ function renderHRPTable() {
               <span class="hrp-batter-name" style="color:${homerToday?'var(--accent2)':'var(--text)'}">${r.name}</span>
               ${homerToday?`<span style="background:#2a1500;color:#f4a261;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166;white-space:nowrap">💥 HR TODAY${r.todayHR>1?' ×'+r.todayHR:''}</span>`:''}
               ${r.hrProb>=8?`<span class="top-hr-badge">⚡ TOP HR THREAT</span>`:''}
+              ${r.isDrought?`<span style="background:#1a0505;color:#ff4444;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;border:1px solid #ff444466;white-space:nowrap">🔴 DROUGHT</span>`:''}
+              ${r.isFavorable?`<span style="background:#0a1a0a;color:#2ecc71;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;border:1px solid #2ecc7166;white-space:nowrap">🟢 FAVORABLE MATCHUP</span>`:''}
             </div>
             <div class="hrp-batter-sub" style="gap:5px;flex-wrap:wrap;margin-top:3px">
               <div style="display:flex;align-items:center;gap:4px">
@@ -2679,13 +2707,15 @@ function renderHRPTable() {
                 ${r.hrVsPitcher !== null && r.hrVsPitcher !== undefined ? `<span style="background:${r.hrVsPitcher>0?'#2a1500':'var(--bg)'};border:1px solid ${r.hrVsPitcher>0?'#f4a261':'var(--border)'};border-radius:3px;padding:1px 6px;font-size:9px;font-family:'JetBrains Mono',monospace;white-space:nowrap"><span style="color:var(--muted)">vs P </span><strong style="color:${r.hrVsPitcher>0?'var(--accent2)':'var(--muted)'}">${r.hrVsPitcher} HR</strong></span>` : ''}
                 ${r.streakDays>=3?`<span style="background:#1a1200;color:#ffd700;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;border:1px solid #ffd70066;white-space:nowrap">👑 ON A HEATER</span>`:r.streakDays===2?`<span style="background:#1a0d00;color:#ff8c00;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;border:1px solid #ff8c0066;white-space:nowrap">🔥 BACK TO BACK</span>`:''}
               </div>
-              <button class="hrp-matchup-btn"
-                data-batter-id="${r.id}"
-                data-batter-name="${r.name.replace(/"/g,'&quot;')}"
-                data-pitcher-id="${r.pitcherId}"
-                data-pitcher-name="${r.pitcherName.replace(/"/g,'&quot;')}"
-                onclick="const d=this.dataset;checkMatchupAccess(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName)"
-              >${matchupUnlocked ? '⚔' : '🔒'} PITCHER MATCHUP · vs ${r.pitcherName}</button>
+              <div style="width:100%;margin-top:4px">
+                <button class="hrp-matchup-btn"
+                  data-batter-id="${r.id}"
+                  data-batter-name="${r.name.replace(/"/g,'&quot;')}"
+                  data-pitcher-id="${r.pitcherId}"
+                  data-pitcher-name="${r.pitcherName.replace(/"/g,'&quot;')}"
+                  onclick="const d=this.dataset;checkMatchupAccess(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName)"
+                >${matchupUnlocked ? '⚔' : '🔒'} PITCHER MATCHUP · vs ${r.pitcherName}</button>
+              </div>
             </div>
           </div>
         </div>
@@ -2700,13 +2730,27 @@ function renderHRPTable() {
     return `<th class="${cls}"${tip} onclick="sortHRP('${c.key}')">${c.label}</th>`;
   }).join('');
 
+  if (!sorted.length) {
+    el.innerHTML = `<div class="mu-empty" style="padding:24px">No players match this filter right now.</div>`;
+    return;
+  }
+
   el.innerHTML = `<div style="overflow-x:auto;overscroll-behavior-x:contain;touch-action:pan-y"><table class="hrp-table"><thead><tr>${ths}</tr></thead><tbody>${rows}</tbody></table></div>
-    <div style="margin-top:8px;font-size:10px;color:var(--muted)">HR Prob = blend of batter HR/AB (60%) + pitcher HR/9 rate (40%) · Sorted by HR probability</div>`;
+    <div style="padding:8px 12px;font-size:10px;color:var(--muted);line-height:1.8;border-top:1px solid var(--border)">
+      HR Prob = blend of batter HR/AB (60%) + pitcher HR/9 rate (40%)<br>
+      🔴 <strong>DROUGHT</strong> — No home run in the last 8 games (due for one)<br>
+      🟢 <strong>FAVORABLE MATCHUP</strong> — Batter has OPS ≥ .800 against a pitcher allowing high AVG or WHIP ≥ 1.25
+    </div>`;
 }
 
-function sortHRP(col) {
-  if (hrpSortCol===col) hrpSortDir*=-1;
-  else { hrpSortCol=col; hrpSortDir=-1; }
+let hrpFilterActive = 'top'; // track active filter (managed by hrpFilter)
+
+function filterHRP(filter) {
+  hrpFilter = filter;
+  if (filter === 'top') {
+    hrpSortCol = 'hrProb';
+    hrpSortDir = -1;
+  }
   renderHRPTable();
 }
 
