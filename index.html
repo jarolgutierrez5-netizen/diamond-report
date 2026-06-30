@@ -23,7 +23,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.5; min-height: 100vh; }
 
-  .header { background: var(--surface); border-bottom: 2px solid var(--accent); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; }
+  .header { background: var(--surface); border-bottom: 2px solid var(--accent); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 60px; position: sticky; top: 0; z-index: 100; overflow:hidden; }
   .logo { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 3px; display: flex; align-items: center; gap: 10px; }
   .logo-dot { width: 10px; height: 10px; background: var(--accent); border-radius: 50%; animation: pulse 1.5s infinite; }
   @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
@@ -34,7 +34,7 @@
   .tab:hover { color: var(--text); }
   .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-  main { padding: 20px 24px; max-width: 1200px; margin: 0 auto; }
+  main { padding: 20px 24px; max-width: 1280px; margin: 0 auto; }
   .section { display: none; }
   .section.active { display: block; }
 
@@ -51,6 +51,8 @@
   .game-status.live { color: var(--live); }
   .game-status.closed { color: var(--muted); }
   .game-status.scheduled { color: var(--accent2); }
+  .game-status.countdown-pulse { color: var(--live); animation: countdownPulse 1.5s ease-in-out infinite; }
+  @keyframes countdownPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
   .matchup { display: flex; align-items: center; justify-content: space-between; }
   .team-block { text-align: center; flex: 1; }
   .team-abbr { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 1px; }
@@ -92,6 +94,29 @@
     .nav { padding: 8px 12px 0; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
     .nav::-webkit-scrollbar { display: none; }
     .tab { padding: 6px 12px; font-size: 10px; letter-spacing: .5px; white-space: nowrap; flex-shrink: 0; }
+
+    /* Tracker tab — compact layout for mobile */
+    .tracker-card { padding: 10px 12px; }
+    .tracker-card h3 { font-size: 9px; margin-bottom: 6px; }
+    /* Top summary stat cards (big numbers) — keep 2-column, just compact */
+    .tracker-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+    .tracker-big { font-size: 22px; }
+    .tracker-sub { font-size: 9px; margin-top: 2px; line-height: 1.3; }
+    .tracker-header-pct { font-size: 9px; padding: 1px 6px; margin-left: 5px; }
+    /* Content-heavy cards (next-day prediction lists, team analyzer) need full width — stack to 1 column */
+    .tracker-grid-stack { grid-template-columns: 1fr !important; }
+    .tracker-scroll table { min-width: 0; width: 100%; font-size: 9px; table-layout: fixed; }
+    .tracker-scroll th, .tracker-scroll td { padding: 5px 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tracker-pill { font-size: 7px; padding: 2px 4px; gap: 2px; white-space: nowrap; }
+    /* Status column needs the most room; let other columns shrink first */
+    .tracker-scroll table th:last-child, .tracker-scroll table td:last-child { width: 30%; }
+    /* Source stack & model input pill rows — let them wrap tightly instead of forcing width */
+    #tracker-source-stack, #tracker-model-inputs { gap: 4px !important; }
+    #tracker-source-stack .tracker-pill, #tracker-model-inputs .tracker-pill { font-size: 8px; padding: 2px 6px; }
+    /* Next-day prediction stat rows */
+    .tracker-scroll .stat-row { padding: 6px 0; gap: 6px; }
+    .tracker-scroll .stat-row-num { font-size: 14px; min-width: 18px; }
+    .tracker-scroll .stat-row > div[style*="font-weight:800"] { font-size: 12px; }
 
     /* Main padding */
     main { padding: 10px 12px; }
@@ -172,6 +197,41 @@
 
     /* ── SCHEDULE ── */
     #scheduled-games { grid-template-columns: 1fr; }
+
+    /* ── DR PICK / GAME PROPS CARDS ── */
+    /* The matchup/pick/win-bars flex row is too wide to fit side-by-side on a phone —
+       stack each section full-width instead of relying on flex-wrap, which can still
+       force individual blocks past the viewport on narrow screens. */
+    .gp-card > div[style*="display:flex"] { flex-direction: column; align-items: stretch !important; gap: 10px !important; }
+    .gp-matchup { min-width: 0 !important; flex-direction: row; justify-content: space-between; }
+    .gp-team { min-width: 0; flex: 1; }
+    .gp-team-abbr { font-size: 14px; }
+    .gp-team-logo { width: 26px; height: 26px; }
+    .gp-pick { width: 100%; }
+    .gp-pick-val { font-size: 18px; }
+    .gp-factors { gap: 5px; }
+    .gp-factor { font-size: 9px; padding: 2px 6px; }
+    /* Win % bars row needs full width once stacked, not a fixed min-width */
+    .gp-card div[style*="min-width:120px"] { min-width: 0 !important; width: 100%; }
+
+    /* ── HR POTENTIAL FILTER BUTTONS ── */
+    #filter-top-btn, #filter-drought-btn, #filter-favorable-btn, #filter-all-btn {
+      font-size: 8px !important;
+      padding: 3px 7px !important;
+    }
+
+    /* ── TRACKER: NEXT-DAY PREDICTION ROWS ── */
+    /* These had a fixed min-width:200px that could overflow a narrow phone screen
+       even after the parent grid was stacked to 1 column */
+    #tracker-nextday-hrp div[style*="min-width:200px"],
+    #tracker-nextday-drp div[style*="min-width:200px"],
+    #tracker-nextday-kprops div[style*="min-width:200px"] {
+      min-width: 0 !important;
+      flex-basis: 100%;
+    }
+    #tracker-nextday-hrp .stat-row, #tracker-nextday-drp .stat-row, #tracker-nextday-kprops .stat-row {
+      align-items: flex-start;
+    }
   }
 
   @media (max-width: 480px) {
@@ -185,6 +245,13 @@
     .zone-legend { display: none; }
     .btn-matchup { font-size: 8px; padding: 3px 5px; }
     .hrp-matchup-btn { font-size: 7px; }
+
+    /* Tracker tab — single column on the smallest screens */
+    .tracker-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+    .tracker-big { font-size: 19px; }
+    .tracker-card { padding: 8px 10px; }
+    .tracker-card h3 { font-size: 8px; }
+    .tracker-sub { font-size: 8px; }
   }
 
 
@@ -473,646 +540,343 @@
   .gp-confidence { height:4px; border-radius:2px; background:var(--border); overflow:hidden; margin-top:8px; }
   .gp-confidence-fill { height:100%; border-radius:2px; }
 
-
-  /* ── MOBILE PROPS: independent scroll panels ─────────────────────
-     Keeps each Props section usable without scrolling through the full page. */
-  @media (max-width: 768px) {
-    #props {
-      overflow: visible !important;
-    }
-
-    #hr-potential-content,
-    #ks-today-props,
-    #hrs-today-content,
-    #proj-hits-content,
-    #gameprops-content,
-    #kprops-content {
-      overflow-y: auto !important;
-      overflow-x: hidden !important;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: contain;
-      touch-action: pan-y;
-      border-radius: 10px !important;
-    }
-
-    /* Main HR projection panel gets the most space. */
-    #hr-potential-content {
-      max-height: 58vh !important;
-      min-height: 340px;
-    }
-
-    /* Smaller side/support panels. */
-    #ks-today-props,
-    #hrs-today-content,
-    #proj-hits-content {
-      max-height: 38vh !important;
-      min-height: 120px;
-    }
-
-    /* Game picks and K props need more room but should still scroll internally. */
-    #gameprops-content,
-    #kprops-content {
-      max-height: 56vh !important;
-      min-height: 320px;
-    }
-
-    /* Make each Props block feel like a contained mobile module. */
-    #props .props-grid > div,
-    #props .hrs-today-grid > div,
-    #props > div[style*="margin-top:28px"] {
-      margin-bottom: 18px !important;
-    }
-
-    #props .section-title {
-      position: sticky;
-      top: 0;
-      z-index: 2;
-      background: var(--bg);
-      padding: 4px 0 8px;
-    }
+  /* Layout guard: prevents live/ad banners from bleeding outside the viewport */
+  html, body { width: 100%; overflow-x: hidden; }
+  body::before, body::after { display: none !important; content: none !important; }
+  header, nav, #ad-container, #props-live-banner { max-width: 100vw; }
+  #props-live-banner {
+    margin-left: 0 !important;
+    width: 100% !important;
+    overflow: hidden !important;
+    contain: paint;
   }
-
-  @media (max-width: 430px) {
-    #hr-potential-content { max-height: 55vh !important; min-height: 320px; }
-    #gameprops-content, #kprops-content { max-height: 52vh !important; min-height: 300px; }
-    #ks-today-props, #hrs-today-content, #proj-hits-content { max-height: 34vh !important; }
+  #props-live-banner > div[style*="LIVE"] {
+    position: relative !important;
+    left: auto !important;
+    min-width: 0;
   }
 
 
-  /* ── MOBILE HOTFIX: prevent horizontal bleed, ad gaps, and banner overlay ── */
-  html, body { width:100%; max-width:100%; overflow-x:hidden; }
-  img, svg, video, canvas { max-width:100%; }
-
-  @media (max-width: 768px) {
-    html, body { width:100% !important; max-width:100% !important; overflow-x:hidden !important; }
-    body { position:relative; }
-
-    /* Hide mobile ad/banner spaces that were creating the large blank area and red overlay. */
-    #ad-container,
-    #scores-alert-banner {
-      display:none !important;
-      visibility:hidden !important;
-      max-height:0 !important;
-      height:0 !important;
-      min-height:0 !important;
-      margin:0 !important;
-      padding:0 !important;
-      border:0 !important;
-      overflow:hidden !important;
-    }
-
-    .header {
-      width:100% !important;
-      max-width:100% !important;
-      padding:0 12px !important;
-      height:64px !important;
-      overflow:hidden !important;
-      position:sticky;
-      top:0;
-    }
-    .header .logo svg {
-      height:48px !important;
-      width:auto !important;
-      max-width:150px !important;
-      display:block !important;
-    }
-    .date-badge {
-      max-width:50vw;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
-    .nav {
-      width:100% !important;
-      max-width:100% !important;
-      padding:0 10px !important;
-      height:50px !important;
-      align-items:flex-end !important;
-      overflow-x:auto !important;
-      overflow-y:hidden !important;
-      -webkit-overflow-scrolling:touch;
-      white-space:nowrap;
-      position:sticky;
-      top:64px;
-      z-index:90;
-    }
-    .tab {
-      flex:0 0 auto;
-      padding:14px 12px 10px !important;
-      font-size:11px !important;
-      line-height:1 !important;
-    }
-
-    main, .section, #scores, #matchups, #props, #schedule {
-      width:100% !important;
-      max-width:100% !important;
-      overflow-x:hidden !important;
-    }
-    main { padding:12px !important; }
-
-    /* Keep cards from forcing the page wider than the viewport. */
-    .games-grid,
-    #live-games,
-    #scheduled-games,
-    #final-games,
-    #gameprops-content,
-    #kprops-content,
-    #hr-potential-content,
-    #hrs-today-content,
-    #proj-hits-content {
-      width:100% !important;
-      max-width:100% !important;
-    }
-
-    .game-card, .gp-card, .kprop-row, .stat-row {
-      width:100% !important;
-      max-width:100% !important;
-    }
-
-    /* Make live-score cards breathe on phones. */
-    .game-card { padding:14px 12px !important; }
-    .matchup { gap:8px; }
-    .team-block { min-width:0; }
-    .team-name, .standings-badge { white-space:normal; }
-
-    /* Props filters: allow wrapping instead of pushing page sideways. */
-    #props button { max-width:100%; white-space:normal; }
+  /* Breaking HR ticker: moving banner, not stacked list */
+  .breaking-banner {
+    display: none;
+    background: linear-gradient(90deg,#260000 0%,#120000 55%,#260000 100%);
+    border: 1px solid #ff6b00;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 16px;
+    height: 54px;
+  }
+  .breaking-banner-inner {
+    display: flex;
+    align-items: center;
+    height: 100%;
+  }
+  .breaking-label {
+    background: linear-gradient(135deg,#ff6b00,#991b1b);
+    color: white;
+    font-family: 'Bebas Neue',sans-serif;
+    font-size: 15px;
+    letter-spacing: 2px;
+    padding: 0 18px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+    z-index: 3;
+  }
+  .breaking-label::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: #fff;
+    border-radius: 50%;
+    animation: pulse 1s infinite;
+  }
+  .breaking-window {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .breaking-track {
+    display: inline-flex;
+    align-items: center;
+    gap: 34px;
+    padding-left: 100%;
+    animation: breaking-scroll 28s linear infinite;
+    white-space: nowrap;
+  }
+  .breaking-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+    font-family: 'Bebas Neue',sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    white-space: nowrap;
+  }
+  .breaking-player {
+    color: #ff6b00;
+  }
+  .breaking-time {
+    color: #8fa3c8;
+    font-family: 'JetBrains Mono',monospace;
+    font-size: 10px;
+    letter-spacing: 0;
+  }
+  @keyframes breaking-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+  }
+  @media (max-width:768px) {
+    .breaking-banner { height: 46px; }
+    .breaking-label { font-size: 12px; padding: 0 12px; }
+    .breaking-item { font-size: 16px; letter-spacing: 1px; }
   }
 
 
+  /* Tracker tab */
+  .tracker-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow: visible;
+  }
+  .tracker-card h3 {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .tracker-big {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 34px;
+    letter-spacing: 1px;
+    line-height: 1;
+  }
+  .tracker-sub {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 4px;
+  }
+  .tracker-good { color: var(--green); }
+  .tracker-bad { color: var(--accent); }
+  .tracker-warn { color: var(--accent2); }
+  .tracker-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .tracker-pill.hit { border-color: #2ecc71; color: #2ecc71; background: #0d2a1a; }
+  .tracker-pill.miss { border-color: #e63946; color: #e63946; background: #2a0d0d; }
+  .tracker-pill.pending { border-color: #f4a261; color: #f4a261; background: #2a1800; }
+  .tracker-header-pct {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--muted);
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .tracker-header-pct.good { border-color: #2ecc71; color: #2ecc71; background: #0d2a1a; }
+  .tracker-header-pct.bad { border-color: #e63946; color: #e63946; background: #2a0d0d; }
+  .tracker-header-pct.mid { border-color: #f4a261; color: #f4a261; background: #2a1800; }
+  .tracker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+  .tracker-scroll {
+    max-height: 420px;
+    overflow-y: auto;
+    overflow-x: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tracker-scroll table {
+    width: 100%;
+  }
 
-  /* ── PRODUCTION LAYOUT: header + live banner ───────────────────── */
-  body {
-    background:
-      radial-gradient(circle at 20% 0%, rgba(230,57,70,.10), transparent 24rem),
-      linear-gradient(180deg, #070b14 0%, #0a0e1a 42%, #070b14 100%);
-  }
-  .header { display:none !important; }
-  .app-topbar {
-    height:78px;
-    width:100%;
-    position:sticky;
-    top:0;
-    z-index:100;
-    display:flex;
-    align-items:center;
-    gap:28px;
-    padding:0 40px;
-    background:rgba(7,11,20,.94);
-    backdrop-filter: blur(14px);
-    border-bottom:1px solid rgba(142,160,198,.18);
-    box-shadow:0 12px 34px rgba(0,0,0,.28);
-  }
-  .brand-lockup {
-    display:flex;
-    align-items:center;
-    gap:12px;
-    min-width:220px;
-    cursor:pointer;
-  }
-  .mlb-mark {
-    width:58px;
-    height:36px;
-    border:2px solid rgba(255,255,255,.92);
-    border-radius:6px;
-    background:linear-gradient(90deg,#123b73 0 50%,#e63946 50%);
-    position:relative;
-    box-shadow:0 0 22px rgba(230,57,70,.18);
-  }
-  .mlb-dot {
-    position:absolute;
-    width:10px;
-    height:10px;
-    border-radius:50%;
-    background:white;
-    left:15px;
-    top:13px;
-  }
-  .brand-main {
-    font-family:'Bebas Neue',sans-serif;
-    font-size:30px;
-    line-height:.86;
-    letter-spacing:1px;
-    color:#fff;
-    white-space:nowrap;
-  }
-  .brand-sub {
-    margin-top:2px;
-    font-size:11px;
-    font-weight:900;
-    letter-spacing:2px;
-    color:var(--accent);
-    text-transform:uppercase;
-  }
-  .app-nav.nav {
-    flex:1;
-    display:flex;
-    align-items:stretch;
-    gap:22px;
-    height:100%;
-    padding:0;
-    background:transparent;
-    border:0;
-    overflow:visible;
-  }
-  .app-nav .tab {
-    appearance:none;
-    border:0;
-    border-bottom:3px solid transparent;
-    background:transparent;
-    color:#a7b1c8;
+
+  /* K Props live/final K count badge */
+  .kprop-kcount {
     display:inline-flex;
     align-items:center;
-    gap:8px;
-    height:100%;
-    padding:0 4px;
-    font-size:14px;
-    font-weight:900;
-    letter-spacing:.5px;
-    text-transform:uppercase;
-    cursor:pointer;
-    white-space:nowrap;
-    font-family:'Inter',sans-serif;
-  }
-  .app-nav .tab:hover { color:#fff; }
-  .app-nav .tab.active {
-    color:#ff3b48;
-    border-bottom-color:#ff3b48;
-    text-shadow:0 0 16px rgba(255,59,72,.25);
-  }
-  .topbar-actions {
-    display:flex;
-    align-items:center;
-    justify-content:flex-end;
-    gap:12px;
-    min-width:210px;
-  }
-  .topbar-actions .date-badge {
-    background:transparent;
-    border:0;
-    color:#a7b1c8;
-    font-size:12px;
-    letter-spacing:.4px;
-  }
-  .icon-btn {
-    width:38px;
-    height:38px;
-    border:1px solid rgba(142,160,198,.22);
-    color:#a7b1c8;
-    background:rgba(17,24,39,.6);
+    gap:5px;
+    margin-top:6px;
+    border:1px solid var(--border);
     border-radius:999px;
-    cursor:pointer;
-    font-size:20px;
-    line-height:1;
-  }
-  .icon-btn:hover { color:white; border-color:rgba(255,255,255,.35); }
-  main {
-    max-width:1520px;
-    padding:36px 26px 28px;
-  }
-  #scores > div:first-child { margin-bottom:22px !important; }
-  .section-title {
-    font-size:34px;
-    letter-spacing:2px;
-    text-shadow:0 2px 18px rgba(0,0,0,.35);
-  }
-  .hero-live-banner {
-    display:none;
-    align-items:center;
-    gap:26px;
-    width:100%;
-    min-height:106px;
-    padding:14px 16px;
-    margin:0 0 26px;
-    border:1px solid rgba(85,115,158,.34);
-    border-radius:10px;
-    background:linear-gradient(180deg,rgba(15,26,45,.92),rgba(9,16,29,.96));
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.035), 0 18px 44px rgba(0,0,0,.22);
-    overflow:hidden;
-    position:relative;
-  }
-  .hero-live-banner::before,
-  .hero-live-banner::after {
-    content:'';
-    position:absolute;
-    top:0;
-    bottom:0;
-    width:72px;
-    pointer-events:none;
-    z-index:2;
-  }
-  .hero-live-banner::before { left:180px; background:linear-gradient(90deg,#0d1728,transparent); }
-  .hero-live-banner::after { right:0; background:linear-gradient(270deg,#0d1728,transparent); }
-  .hero-live-card {
-    flex:0 0 auto;
-    min-width:198px;
-    min-height:74px;
-    display:flex;
-    align-items:center;
-    gap:14px;
-    padding:16px 20px;
-    border-radius:8px;
-    background:linear-gradient(135deg,#b91c2a,#7f111c);
-    box-shadow:0 10px 24px rgba(230,57,70,.24);
-    color:#fff;
-    z-index:3;
-  }
-  .hero-live-icon { font-size:24px; animation:pulse 1.2s infinite; }
-  .hero-live-title { font-family:'Bebas Neue',sans-serif; font-size:32px; line-height:.9; letter-spacing:2px; }
-  .hero-live-sub { font-size:12px; font-weight:900; letter-spacing:1px; text-transform:uppercase; opacity:.95; white-space:nowrap; }
-  .hero-alert-rail { min-width:0; flex:1; overflow:hidden; z-index:1; }
-  .hero-alert-track {
-    display:inline-flex;
-    align-items:center;
-    gap:24px;
-    padding:6px 10px;
-    white-space:nowrap;
-  }
-  .alert-chip {
-    margin:0;
-    min-height:54px;
-    padding:0 26px;
-    border-radius:999px;
-    font-size:16px;
-    letter-spacing:.1px;
-  }
-  .alert-hr {
-    background:linear-gradient(180deg,#9a4217,#82300c);
-    border:1px solid #ff8c24;
-    box-shadow:0 0 20px rgba(249,115,22,.62), inset 0 1px 0 rgba(255,255,255,.18);
-  }
-  .alert-k {
-    background:linear-gradient(180deg,#116231,#0f4727);
-    border:1px solid #4ade80;
-    box-shadow:0 0 18px rgba(34,197,94,.46), inset 0 1px 0 rgba(255,255,255,.12);
-  }
-  .alert-sep { color:#53617c; padding:0 2px; }
-  .hero-next {
-    flex:0 0 auto;
-    color:#dce5f6;
-    font-size:52px;
-    line-height:1;
-    z-index:3;
-    opacity:.95;
-  }
-  .games-grid {
-    grid-template-columns:repeat(3,minmax(290px,1fr));
-    gap:20px;
-  }
-  .game-card {
-    border-radius:9px;
-    padding:20px 22px 16px;
-    background:linear-gradient(180deg,rgba(16,28,49,.96),rgba(10,18,32,.98));
-    box-shadow:0 14px 30px rgba(0,0,0,.25);
-  }
-  .game-card::before { height:3px; }
-
-
-  .score-alert-chip {
-    display:inline-flex;
-    align-items:center;
-    gap:10px;
-    min-height:54px;
-    padding:0 24px;
-    border-radius:999px;
-    background:rgba(17,24,39,.82);
-    border:1px solid rgba(85,115,158,.55);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 0 16px rgba(74,158,255,.08);
-    white-space:nowrap;
-  }
-  .score-alert-team {
-    font-family:'Bebas Neue',sans-serif;
-    font-size:20px;
-    letter-spacing:1px;
-    color:#a7b1c8;
-  }
-  .score-alert-score {
-    font-family:'JetBrains Mono',monospace;
-    font-size:20px;
-    font-weight:900;
-    color:#8c98b3;
-  }
-  .score-alert-team.winning,
-  .score-alert-score.winning { color:var(--green); }
-  .score-alert-dash { color:#334155; }
-  .score-alert-inning {
+    padding:3px 8px;
     font-size:10px;
-    color:var(--live);
-    font-family:'JetBrains Mono',monospace;
-    font-weight:900;
-    margin-left:4px;
-  }
-
-  @media (max-width: 900px) {
-    .app-topbar {
-      height:116px;
-      padding:10px 12px 0;
-      flex-wrap:wrap;
-      gap:8px 12px;
-      align-content:flex-start;
-    }
-    .brand-lockup { min-width:0; flex:1; }
-    .brand-main { font-size:24px; }
-    .brand-sub { font-size:9px; }
-    .mlb-mark { width:44px; height:28px; }
-    .mlb-dot { left:11px; top:9px; }
-    .topbar-actions { min-width:0; gap:4px; }
-    .topbar-actions .date-badge { max-width:130px; font-size:10px; }
-    .icon-btn { width:32px; height:32px; font-size:17px; }
-    .app-nav.nav {
-      order:3;
-      width:100%;
-      height:48px;
-      flex:0 0 100%;
-      gap:20px;
-      overflow-x:auto;
-      overflow-y:hidden;
-      -webkit-overflow-scrolling:touch;
-      scrollbar-width:none;
-    }
-    .app-nav.nav::-webkit-scrollbar { display:none; }
-    .app-nav .tab { font-size:11px; flex:0 0 auto; }
-    main { padding:18px 12px; }
-    .section-title { font-size:26px; }
-    .hero-live-banner {
-      min-height:auto;
-      gap:10px;
-      padding:10px;
-      margin-bottom:18px;
-      overflow-x:auto;
-      -webkit-overflow-scrolling:touch;
-    }
-    .hero-live-banner::before,
-    .hero-live-banner::after { display:none; }
-    .hero-live-card { min-width:118px; min-height:56px; padding:10px 12px; gap:8px; }
-    .hero-live-icon { font-size:16px; }
-    .hero-live-title { font-size:24px; }
-    .hero-live-sub { font-size:9px; white-space:normal; }
-    .hero-alert-rail { overflow:visible; }
-    .hero-alert-track { gap:10px; animation:none !important; flex-wrap:nowrap; }
-    .alert-chip, .score-alert-chip { min-height:42px; padding:0 14px; font-size:12px; }
-    .score-alert-team, .score-alert-score { font-size:15px; }
-    .hero-next { display:none; }
-    .games-grid { grid-template-columns:1fr; gap:12px; }
-  }
-
-
-  /* ── FINAL FIX: Scores live/breaking banner alignment ─────────────── */
-  .hero-live-banner {
-    display:none;
-    grid-template-columns: 180px minmax(0, 1fr) 42px;
-    align-items:center;
-    gap:18px;
-    min-height:118px;
-    padding:16px;
-    background:linear-gradient(180deg,rgba(11,18,32,.96),rgba(7,13,24,.98)) !important;
-    border:1px solid #ff7a1a !important;
-    border-radius:10px;
-    overflow:hidden;
-  }
-  .hero-live-banner::before,
-  .hero-live-banner::after { display:none !important; }
-  .hero-live-card {
-    width:100%;
-    min-width:0;
-    min-height:74px;
-    justify-content:center;
-    background:linear-gradient(135deg,#ff841f,#ef233c) !important;
-    box-shadow:0 12px 34px rgba(249,115,22,.25);
-  }
-  .hero-alert-rail {
-    width:100%;
-    min-width:0;
-    overflow:hidden;
-    align-self:stretch;
-    display:flex;
-    align-items:center;
-  }
-  .hero-alert-track {
-    display:flex !important;
-    align-items:center !important;
-    gap:22px;
-    min-width:0;
-    padding:0 8px !important;
+    font-weight:800;
+    letter-spacing:.3px;
     white-space:nowrap;
+    width:max-content;
   }
-  .breaking-alert-item {
-    display:inline-flex;
-    align-items:center;
-    gap:14px;
-    min-height:42px;
-    white-space:nowrap;
-    font-family:'Bebas Neue',sans-serif;
-    letter-spacing:2px;
-    line-height:1;
+  .kprop-kcount.live {
+    background:#2a0d0d;
+    border-color:#e63946;
+    color:#ff6b6b;
   }
-  .breaking-alert-label {
-    color:#f8fafc;
-    font-size:26px;
-    opacity:.9;
-    text-shadow:0 0 12px rgba(255,255,255,.12);
+  .kprop-kcount.final {
+    background:#0d2a1a;
+    border-color:#2ecc71;
+    color:#2ecc71;
   }
-  .breaking-alert-player {
-    color:#ff7a1a;
-    font-size:27px;
-    text-shadow:0 0 16px rgba(249,115,22,.55);
-  }
-  .breaking-alert-copy {
-    color:#f8fafc;
-    font-size:27px;
-  }
-  .breaking-alert-icon { font-size:22px; }
-  .hero-next {
-    justify-self:end;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    width:36px;
-    height:100%;
-    font-size:56px;
-    color:#dbe4f3;
-    opacity:.95;
-  }
-
-  @media (max-width: 900px) {
-    .hero-live-banner {
-      display:none;
-      grid-template-columns: 112px minmax(0, 1fr);
-      gap:10px;
-      min-height:78px;
-      padding:10px;
-      overflow:hidden;
-    }
-    .hero-live-card { min-height:56px; }
-    .hero-alert-rail { overflow-x:auto; }
-    .hero-alert-track { gap:12px; }
-    .breaking-alert-label,
-    .breaking-alert-player,
-    .breaking-alert-copy { font-size:18px; }
-    .breaking-alert-icon { font-size:16px; }
-    .hero-next { display:none; }
+  .kprop-kcount.pending {
+    background:var(--surface2);
+    border-color:var(--border);
+    color:var(--muted);
   }
 
 </style>
+<!-- ============================================================ -->
+<!-- ⚠️  GOOGLE ADSENSE — DO NOT REMOVE OR MODIFY THIS BLOCK  ⚠️   -->
+<!-- This verification meta tag + script loader must remain on    -->
+<!-- every page for AdSense to function. Removing or editing      -->
+<!-- ca-pub-6433797533342090 will break ad monetization sitewide. -->
+<!-- ============================================================ -->
 <meta name="google-adsense-account" content="ca-pub-6433797533342090">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6433797533342090"
      crossorigin="anonymous"></script>
+<!-- ============== END ADSENSE HEAD BLOCK — DO NOT REMOVE ============== -->
+
+<style id="kcount-color-patch">
+.kprop-kcount.live{
+  background:#1a2438 !important;
+  border:1px solid #3b82f6 !important;
+  color:#60a5fa !important;
+}
+.kprop-kcount.final{
+  background:#14301f !important;
+  border:1px solid #22c55e !important;
+  color:#86efac !important;
+}
+.kprop-kcount.pending{
+  background:#2b2438 !important;
+  border:1px solid #a855f7 !important;
+  color:#c084fc !important;
+}
+</style>
+
+
+<style id="kcount-result-color-patch">
+.kprop-kcount.correct{
+  background:#14301f !important;
+  border:1px solid #22c55e !important;
+  color:#86efac !important;
+}
+.kprop-kcount.wrong{
+  background:#351216 !important;
+  border:1px solid #ef4444 !important;
+  color:#fca5a5 !important;
+}
+.kprop-kcount.neutral{
+  background:#2b2438 !important;
+  border:1px solid #a855f7 !important;
+  color:#c084fc !important;
+}
+</style>
+
 </head>
 <body>
 
-<header class="app-topbar">
-  <div class="brand-lockup" onclick="showTab('scores', document.querySelector('[data-tab=scores]'))" title="Diamond Report">
-    <div class="mlb-mark" aria-hidden="true">
-      <span class="mlb-dot"></span>
-    </div>
-    <div class="brand-text">
-      <div class="brand-main">Diamond Report</div>
-      <div class="brand-sub">MLB Analytics</div>
-    </div>
+<header class="header">
+  <div class="logo" style="padding:0;background:none;border:none;display:flex;align-items:center">
+    <svg height="46" viewBox="0 0 680 340" style="width:auto;display:block" role="img" aria-label="Diamond Report">
+      <rect width="680" height="340" fill="#07090f"/>
+      <polygon points="0,0 420,0 320,340 0,340" fill="#0d1020"/>
+      <polygon points="640,0 680,0 680,340 580,340" fill="#0d1020"/>
+      <polygon points="580,0 620,0 510,340 470,340" fill="#e63946" opacity="0.9"/>
+      <polygon points="625,0 638,0 528,340 515,340" fill="#ffffff" opacity="0.07"/>
+      <g transform="translate(140,170)">
+        <polygon points="0,-88 88,0 0,88 -88,0" fill="#e63946" opacity="0.15"/>
+        <polygon points="0,-82 82,0 0,82 -82,0" fill="none" stroke="#e63946" stroke-width="4"/>
+        <rect x="-7"  y="-89" width="14" height="14" rx="2" fill="#e63946"/>
+        <rect x="75"  y="-7"  width="14" height="14" rx="2" fill="#e63946"/>
+        <rect x="-7"  y="75"  width="14" height="14" rx="2" fill="#ffffff" opacity="0.8"/>
+        <rect x="-89" y="-7"  width="14" height="14" rx="2" fill="#e63946"/>
+        <circle cx="0" cy="0" r="8" fill="#e63946"/>
+        <circle cx="0" cy="0" r="4" fill="#ffffff"/>
+      </g>
+      <g transform="skewX(-4)">
+        <text x="278" y="178" font-family="Impact,Arial Black,sans-serif" font-weight="900" font-size="108" fill="#ffffff" letter-spacing="-2">DIAMOND</text>
+      </g>
+      <g transform="skewX(-4)">
+        <text x="284" y="247" font-family="Impact,Arial Black,sans-serif" font-weight="900" font-size="72" fill="#07090f" opacity="0.6" letter-spacing="18">REPORT</text>
+        <text x="282" y="244" font-family="Impact,Arial Black,sans-serif" font-weight="900" font-size="72" fill="#e63946" letter-spacing="18">REPORT</text>
+      </g>
+      <rect x="278" y="256" width="355" height="26" rx="3" fill="#e63946"/>
+      <text x="455" y="273" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="12" fill="#ffffff" letter-spacing="5">MLB ANALYTICS</text>
+      <line x1="0" y1="336" x2="680" y2="336" stroke="#e63946" stroke-width="2.5"/>
+    </svg>
   </div>
-
-  <nav class="nav app-nav" aria-label="Primary">
-    <button class="tab active" onclick="showTab('scores', this)" data-tab="scores" type="button"><span>◉</span> Live Scores</button>
-    <button class="tab" onclick="showTab('matchups', this)" data-tab="matchups" type="button"><span>▣</span> Pitcher Report</button>
-    <button class="tab" onclick="showTab('props', this)" data-tab="props" type="button"><span>♕</span> Props</button>
-    <button class="tab" onclick="showTab('schedule', this)" data-tab="schedule" type="button"><span>▤</span> Upcoming Games</button>
-  </nav>
-
-  <div class="topbar-actions">
-    <div class="date-badge" id="header-date"></div>
-    <button class="icon-btn" type="button" onclick="loadScores()" title="Refresh scores">↻</button>
-  </div>
+  <div class="date-badge" id="header-date"></div>
 </header>
 
 <!-- Horizontal Ad -->
-<div id="ad-container" style="display:none!important;background:var(--surface);border-bottom:1px solid var(--border);text-align:center;overflow:hidden;max-height:0;transition:max-height 0.3s ease">
+<!-- ============================================================ -->
+<!-- ⚠️  GOOGLE ADSENSE AD UNIT — DO NOT REMOVE THIS BLOCK  ⚠️     -->
+<!-- This is the actual ad slot (publisher ca-pub-6433797533342090, -->
+<!-- slot 4578437627). Deleting #ad-container removes ad revenue   -->
+<!-- from the site entirely. Safe to restyle, never safe to delete. -->
+<!-- ============================================================ -->
+<div id="ad-container" style="display:none;background:var(--surface);border-bottom:1px solid var(--border);text-align:center;overflow:hidden;max-height:0;transition:max-height 0.3s ease">
   <ins class="adsbygoogle"
        style="display:block"
        data-ad-client="ca-pub-6433797533342090"
        data-ad-slot="4578437627"
        data-ad-format="auto"
        data-full-width-responsive="true"></ins>
+  <script>
+       (adsbygoogle = window.adsbygoogle || []).push({});
+       // Expand container once ad loads
+       window.addEventListener('load', function() {
+         setTimeout(function() {
+           var ad = document.querySelector('#ad-container .adsbygoogle[data-ad-status]');
+           if (ad && ad.getAttribute('data-ad-status') !== 'unfilled') {
+             var adContainer = document.getElementById('ad-container');
+             adContainer.style.display = 'block';
+             adContainer.style.maxHeight = '120px';
+           }
+         }, 2000);
+       });
+  </script>
 </div>
+<!-- ============== END ADSENSE AD UNIT — DO NOT REMOVE ============== -->
+
+<nav class="nav">
+  <div class="tab active" onclick="showTab('scores', this)" data-tab="scores">Live Scores</div>
+  <div class="tab" onclick="showTab('matchups', this)" data-tab="matchups">Pitcher Report</div>
+  <div class="tab" onclick="showTab('props', this)" data-tab="props">Props</div>
+  <div class="tab" onclick="showTab('schedule', this)" data-tab="schedule">Upcoming Games</div>
+</nav>
+
+
 <main>
   <section class="section active" id="scores">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <p class="section-title" style="margin-bottom:0">TODAY'S <span>GAMES</span></p>
       <div id="scores-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Loading…</div>
-    </div>
-
-    <div id="scores-alert-banner" class="hero-live-banner">
-      <div class="hero-live-card">
-        <div class="hero-live-icon">◉</div>
-        <div>
-          <div class="hero-live-title">LIVE</div>
-          <div class="hero-live-sub" id="hero-live-count">Tracking games now</div>
-        </div>
-      </div>
-      <div class="hero-alert-rail">
-        <div id="scores-alert-track" class="hero-alert-track"></div>
-      </div>
-      <div class="hero-next">›</div>
     </div>
 
     <div class="live-badge"><div class="live-dot"></div>LIVE NOW</div>
@@ -1133,38 +897,34 @@
   <section class="section" id="props">
 
     <!-- Live Games Banner -->
-    <div id="props-live-banner" style="display:none;background:linear-gradient(90deg,#0a0e1a 0%,#0f172a 40%,#0a0e1a 100%);border:1px solid #1e3a5f;border-radius:8px;overflow:hidden;position:relative;margin-bottom:20px">
-      <div style="position:absolute;left:0;top:0;bottom:0;width:50px;background:linear-gradient(90deg,#0a0e1a,transparent);z-index:2;pointer-events:none"></div>
-      <div style="position:absolute;right:0;top:0;bottom:0;width:50px;background:linear-gradient(270deg,#0a0e1a,transparent);z-index:2;pointer-events:none"></div>
-      <div style="display:flex;align-items:center">
-        <div style="background:linear-gradient(135deg,#dc2626,#991b1b);color:white;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;padding:10px 16px;flex-shrink:0;display:flex;align-items:center;gap:6px;border-right:1px solid #7f1d1d;z-index:3;animation:shimmer 1.5s infinite">
-          <span style="display:inline-block;width:8px;height:8px;background:#fff;border-radius:50%;animation:pulse 1s infinite;flex-shrink:0"></span>
-          LIVE
-        </div>
-        <div style="overflow:hidden;flex:1">
-          <div id="props-live-games" style="display:inline-flex;align-items:center;gap:0;padding:6px 20px;animation:marquee 30s linear infinite"></div>
+    <div id="props-live-banner" class="breaking-banner">
+      <div class="breaking-banner-inner">
+        <div class="breaking-label">LIVE</div>
+        <div class="breaking-window">
+          <div id="props-live-games" class="breaking-track"></div>
         </div>
       </div>
     </div>
+
 
     <!-- HR Potential filters -->
     <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:14px;flex-wrap:wrap;gap:8px">
       <button onclick="filterHRP('top')" id="filter-top-btn" style="background:var(--surface2);border:1px solid #f4a261;color:#f4a261;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">⚡ TOP HR THREAT</button>
       <button onclick="filterHRP('drought')" id="filter-drought-btn" style="background:var(--surface2);border:1px solid #e63946;color:#e63946;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">🔴 DROUGHT</button>
-      <button onclick="filterHRP('favorable')" id="filter-favorable-btn" style="background:var(--surface2);border:1px solid #2ecc71;color:#2ecc71;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">🟢 FAVORABLE MATCHUP FOR BATTER</button>
+      <button onclick="filterHRP('favorable')" id="filter-favorable-btn" style="background:var(--surface2);border:1px solid #2ecc71;color:#2ecc71;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">🟢 FAVORABLE MATCHUP</button>
       <button onclick="filterHRP('all')" id="filter-all-btn" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">ALL</button>
       <div id="props-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Loading…</div>
     </div>
 
     <!-- HR Potential + K's Today side by side -->
     <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start" class="props-grid">
-      <!-- HR Potential column -->
       <div>
         <p class="section-title" style="font-size:18px;margin-bottom:10px">HR <span>POTENTIAL</span></p>
-        <div id="hr-potential-content" style="max-height:560px;overflow-y:auto;overflow-x:auto;overscroll-behavior:contain;border:1px solid var(--border);border-radius:8px;background:var(--surface)"><div class="mu-empty"><span class="spin"></span>Loading HR potential…</div></div>
+        <div id="hr-potential-content" style="max-height:560px;overflow-y:auto;overflow-x:auto;overscroll-behavior:contain;border:1px solid var(--border);border-radius:8px;background:var(--surface)">
+          <div class="mu-empty"><span class="spin"></span>Loading HR potential…</div>
+        </div>
       </div>
 
-      <!-- K's Today sidebar -->
       <div>
         <p class="section-title" style="font-size:18px;margin-bottom:10px">K'S <span>TODAY</span></p>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:560px;overflow-y:auto;overscroll-behavior:contain">
@@ -1202,7 +962,7 @@
     <!-- Game Props -->
     <div style="margin-top:28px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-        <p class="section-title" style="font-size:20px;margin-bottom:0">DR GAME <span>PICKS</span></p>
+        <p class="section-title" style="font-size:20px;margin-bottom:0">DIAMOND REPORT <span>PICKS</span></p>
         <div id="gameprops-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)"></div>
       </div>
       <div id="gameprops-content" style="max-height:600px;overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--border);border-radius:8px;background:var(--surface)"><div class="mu-empty"><span class="spin"></span>Loading game props…</div></div>
@@ -1224,6 +984,7 @@
     <div id="schedule-loading" style="color:var(--muted);font-size:13px;padding:20px 0"><span class="spin"></span> Loading schedule…</div>
     <div id="schedule-content"></div>
   </section>
+
 </main>
 
 <!-- Paywall Modal -->
@@ -1397,10 +1158,23 @@ function gameCard(g) {
   </div>`;
 }
 
+function formatCountdown(gameDateMs) {
+  const msLeft = gameDateMs - Date.now();
+  if (msLeft <= 0 || msLeft > 60 * 60 * 1000) return null; // only show inside the 1-hour window
+  const totalMin = Math.floor(msLeft / 60000);
+  const sec = Math.floor((msLeft % 60000) / 1000);
+  if (totalMin >= 1) return `Starts in ${totalMin}m`;
+  return `Starts in ${sec}s`;
+}
+
 function upcomingCard(g) {
   const sl = buildStandingsLookup();
+  const countdown = g.gameDateMs ? formatCountdown(g.gameDateMs) : null;
+  const statusHTML = countdown
+    ? `<div class="game-status scheduled countdown-pulse" data-game-date="${g.gameDateMs}">⏱ ${countdown}</div>`
+    : `<div class="game-status scheduled">UPCOMING</div>`;
   return `<div class="game-card scheduled">
-    <div class="game-status scheduled">UPCOMING</div>
+    ${statusHTML}
     <div class="matchup">
       ${teamBlock(g.awayAbbr, g.awayName, sl)}
       <div style="font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--accent2);padding:0 8px">VS</div>
@@ -1441,10 +1215,14 @@ async function loadScores() {
       const dt = new Date(g.gameDate);
       const timeStr = dt.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', timeZone:'America/Chicago'}) + ' CDT';
       const linescore = g.linescore || {};
-      const inningStr = linescore.currentInning
+      // Only show an inning count once the game has genuinely started — 'Warmup' means
+      // first pitch hasn't happened yet, so any currentInning value from the API during
+      // warmup/delay states is not a real inning and shouldn't be displayed.
+      const trulyInProgress = detailedState === 'In Progress';
+      const inningStr = (trulyInProgress && linescore.currentInning)
         ? `${linescore.inningHalf === 'Bottom' ? '▼' : '▲'} ${linescore.currentInning}`
-        : detailedState === 'In Progress' ? 'LIVE' : null;
-      const isLive   = state === 'Live' || detailedState === 'In Progress' || detailedState === 'Warmup';
+        : trulyInProgress ? 'LIVE' : null;
+      const isLive   = state === 'Live' || trulyInProgress;
       const isFinal  = state === 'Final' || detailedState === 'Final' || detailedState === 'Game Over';
 
       const card = {
@@ -1457,6 +1235,7 @@ async function loadScores() {
         homeScore: home.score ?? null,
         inning: inningStr,
         time: timeStr,
+        gameDateMs: dt.getTime(), // raw start time, used for the "starts in X min" countdown
         status: isLive ? 'live' : isFinal ? 'final' : 'upcoming'
       };
 
@@ -1500,15 +1279,25 @@ async function loadScores() {
           return;
         }
 
-        if (!prev || scoresDiffer(prev, g)) {
-          // Only update this card's inner HTML
-          el.innerHTML = g.status === 'upcoming' ? upcomingCard(g) : gameCard(g);
-        }
-
-        // Check if status bucket changed (e.g. game went from live → final)
+        // Detect bucket transitions FIRST, before deciding whether to patch in place.
+        // A game's element persists in the DOM by id even after moving sections, so we
+        // must explicitly check if its status bucket changed — not just whether content differs.
         if (prev && prev.status !== g.status) {
           if (prev.status === 'live') liveChanged = true;
+          if (prev.status === 'upcoming') upcomingChanged = true;
+          if (g.status === 'live') liveChanged = true;
           if (g.status === 'final') finalChanged = true;
+          if (g.status === 'upcoming') upcomingChanged = true;
+          // Remove the stale element from its old container — the full re-render below
+          // will recreate it in the correct section. Without this, the card stays visually
+          // stuck in its original container (e.g. live-games) even after going final.
+          el.remove();
+          return;
+        }
+
+        if (!prev || scoresDiffer(prev, g)) {
+          // Only update this card's inner HTML — status bucket unchanged
+          el.innerHTML = g.status === 'upcoming' ? upcomingCard(g) : gameCard(g);
         }
       });
 
@@ -1534,9 +1323,7 @@ async function loadScores() {
 
     const now = new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
     const srEl = document.getElementById('scores-refresh'); if(srEl) srEl.textContent = `Last updated ${now}`;
-    window.currentLiveGamesForBanner = live;
     updatePropsLiveBanner(live);
-    renderBanner();
     // Load HR/K data for the Today's Games banner — defer slightly to ensure DOM is ready
     setTimeout(() => { loadHRsToday(); loadKsToday(); }, 0);
   } catch(e) {
@@ -1547,6 +1334,22 @@ async function loadScores() {
 
 loadScores();
 setInterval(loadScores, 30000);
+
+// Tick countdown labels every second so they count down smoothly between full data refreshes
+setInterval(() => {
+  document.querySelectorAll('.game-status[data-game-date]').forEach(el => {
+    const gameDateMs = Number(el.getAttribute('data-game-date'));
+    const countdown = formatCountdown(gameDateMs);
+    if (countdown) {
+      el.textContent = `⏱ ${countdown}`;
+    } else {
+      // Countdown window expired (game started or passed 1hr-out) — next loadScores() will
+      // correctly move this card to the live/upcoming bucket; just clear the live pulse for now
+      el.textContent = 'UPCOMING';
+      el.classList.remove('countdown-pulse');
+    }
+  });
+}, 1000);
 
 // Auto-refresh all open lineup panels every 60 seconds (picks up live HRs)
 setInterval(() => {
@@ -1580,6 +1383,7 @@ let kPropsData = [];
 let kPropsLoadedAt = null;
 let hrpRetryTimer = null;
 let hrpFilterActive = 'all';
+let latestPitcherKData = {}; // pitcherId -> { ks, isFinal, isLive } — kept fresh by loadKsToday, read by renderKProps for the W-L tally
 let prSortCol = null, prSortDir = 1, prRows = [];
 const lineupCache = {};
 const lineupMeta  = {}; // pitcherId -> {pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp}
@@ -2410,6 +2214,7 @@ async function loadGameProps() {
     const tallyHTML = totalFinal > 0 ? `
       <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px">
         <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase">TODAY'S RECORD</span>
+        <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">${new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</span>
         <span style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;color:${correctCount===totalFinal?'#2ecc71':correctCount>totalFinal/2?'var(--accent2)':'var(--accent)'}">${correctCount}-${totalFinal-correctCount}</span>
         <span style="font-size:11px;color:var(--muted)">${totalFinal} of ${totalGames} games final</span>
         <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">${totalFinal>0?Math.round(correctCount/totalFinal*100)+'% accuracy':''}</span>
@@ -2983,6 +2788,7 @@ async function loadKsToday() {
           const ks     = parseInt(p.stats?.pitching?.strikeOuts) || 0;
           const ip     = p.stats?.pitching?.inningsPitched || '0.0';
           const hrs    = parseInt(p.stats?.pitching?.homeRuns) || 0;
+          const runs   = parseInt(p.stats?.pitching?.runs) || 0;
           const pitches = parseInt(p.stats?.pitching?.numberOfPitches) || 0;
           const isRelieved = !gameLive && !gameFinal && parseFloat(ip) > 0 && p.stats?.pitching?.inningsPitched;
           const relievedInning = parseFloat(ip) > 0 ? Math.ceil(parseFloat(ip)) : null;
@@ -2990,7 +2796,7 @@ async function loadKsToday() {
             name: p.person?.fullName || '–',
             id: p.person?.id,
             teamAbbr: abbr,
-            ks, ip, hrs, pitches, relievedInning,
+            ks, ip, hrs, runs, pitches, relievedInning,
             gameLabel, timeStr,
             gameTimestamp: dt.getTime(),
             isSP: (team.pitchers || [])[0] === id,
@@ -3013,6 +2819,14 @@ async function loadKsToday() {
       if (a.isLive || a.isFinal) return b.ks - a.ks;
       return a.gameTimestamp - b.gameTimestamp;
     });
+
+    // Keep a global snapshot of each pitcher's current K count/status so K Props
+    // can compute a live "today's record" W-L tally without re-scraping the DOM
+    latestPitcherKData = {};
+    allPitchers.forEach(p => {
+      if (p.id) latestPitcherKData[p.id] = { ks: p.ks, isFinal: p.isFinal, isLive: p.isLive };
+    });
+    if (kPropsData.length) renderKProps();
 
     // Feed live pitchers to banner
     allPitchers.forEach(p => {
@@ -3071,7 +2885,7 @@ async function loadKsToday() {
               ? `<span style="font-size:8px;color:var(--accent2);font-family:'JetBrains Mono',monospace;white-space:nowrap">SP · ${p.timeStr} CDT</span>`
               : `<span style="font-size:8px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">${p.isSP?'SP · ':''}${p.ip} IP${p.pitches>0?' · '+p.pitches+' pitches':''}</span>`
             }
-            ${p.hrs>0?`<span style="background:#2a0d0d;color:var(--accent);font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid #e6394644;white-space:nowrap">💥 ${p.hrs} HR${p.hrs>1?'s':''} allowed</span>`:''}
+            ${p.runs>0?`<span style="background:#2a0d0d;color:var(--accent);font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid #e6394644;white-space:nowrap">⚾ ${p.runs} Run${p.runs>1?'s':''} Allowed${p.hrs>0?` (${p.hrs} HR${p.hrs>1?'s':''})`:''}</span>`:''}
             ${!p.isSP&&p.relievedInning?`<span style="background:var(--bg);color:var(--muted);font-size:8px;padding:1px 5px;border-radius:3px;border:1px solid var(--border);white-space:nowrap">Relieved in ${p.relievedInning}</span>`:''}
           </div>
         </div>
@@ -3189,7 +3003,7 @@ function updatePropsLiveBanner(liveGames) {
   container.style.justifyContent = shouldScroll ? 'flex-start' : 'center';
   container.style.flexWrap = shouldScroll ? 'nowrap' : 'wrap';
   container.style.width = shouldScroll ? 'max-content' : '100%';
-  banner.style.display = 'grid';
+  banner.style.display = 'block';
 }
 
 
@@ -3214,33 +3028,28 @@ function renderBanner() {
 
   if (breakingHRActive && breakingHRNames.length) {
     const breakingHTML = breakingHRNames.map(n =>
-      `<span class="breaking-alert-item">
-        <span class="breaking-alert-label">🚨 BREAKING:</span>
-        <span class="breaking-alert-player">${n}</span>
-        <span class="breaking-alert-copy">HIT A HOME RUN!</span>
-        <span class="breaking-alert-icon">💥</span>
+      `<span style="display:inline-flex;align-items:center;gap:10px;padding:0 20px">
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#ffffff;animation:pulse 0.6s infinite">🚨 BREAKING</span>
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#f97316;text-shadow:0 0 12px #f97316">${n} HIT A HOME RUN!</span>
+        <span style="font-size:20px">💥</span>
       </span>`
-    ).join('<span class="alert-sep">·</span>');
-
+    ).join('<span style="color:#334155;padding:0 10px;font-size:20px">·</span>');
     scoresTrack.innerHTML = breakingHTML;
-    scoresTrack.style.animation = 'none';
-    scoresTrack.style.justifyContent = 'center';
-    scoresTrack.style.flexWrap = breakingHRNames.length > 3 ? 'nowrap' : 'wrap';
-    scoresTrack.style.width = '100%';
-
-    scoresBanner.style.background = '';
-    scoresBanner.style.borderColor = '';
-    const liveBadge = scoresBanner.querySelector('.hero-live-card');
-    if (liveBadge) liveBadge.style.background = '';
-    scoresBanner.style.display = 'grid';
+    scoresTrack.style.cssText = 'display:inline-flex;align-items:center;padding:8px 20px;animation:none;justify-content:center;flex-wrap:wrap;width:100%';
+    scoresBanner.style.background = 'linear-gradient(90deg,#1a0000,#2a0500,#1a0000)';
+    scoresBanner.style.borderColor = '#f97316';
+    const liveBadge = scoresBanner.querySelector('div > div:first-child');
+    if (liveBadge) liveBadge.style.background = 'linear-gradient(135deg,#f97316,#dc2626)';
+    // Banner is inside #scores so always set display block — section visibility handles the rest
+    scoresBanner.style.display = 'block';
     return;
   }
 
   // Reset banner style
-  scoresBanner.style.background = '';
-  scoresBanner.style.borderColor = '';
+  scoresBanner.style.background = 'linear-gradient(90deg,#0a0e1a 0%,#0f172a 40%,#0a0e1a 100%)';
+  scoresBanner.style.borderColor = '#1e3a5f';
   const liveBadge2 = scoresBanner.querySelector('div > div:first-child');
-  if (liveBadge2) liveBadge2.style.background = '';
+  if (liveBadge2) liveBadge2.style.background = 'linear-gradient(135deg,#dc2626,#991b1b)';
 
   const chips = [];
   Object.values(bannerHRs).forEach(h => {
@@ -3252,31 +3061,12 @@ function renderBanner() {
     }
   });
 
-  let displayChips = chips;
-  let chipMode = 'alerts';
-  if (!displayChips.length && Array.isArray(window.currentLiveGamesForBanner) && window.currentLiveGamesForBanner.length) {
-    chipMode = 'games';
-    displayChips = window.currentLiveGamesForBanner.map(g => {
-      const awayW = Number(g.awayScore || 0) > Number(g.homeScore || 0);
-      const homeW = Number(g.homeScore || 0) > Number(g.awayScore || 0);
-      return `<span class="score-alert-chip">
-        <span class="score-alert-team ${awayW ? 'winning' : ''}">${g.awayAbbr}</span>
-        <span class="score-alert-score ${awayW ? 'winning' : ''}">${g.awayScore ?? 0}</span>
-        <span class="score-alert-dash">–</span>
-        <span class="score-alert-score ${homeW ? 'winning' : ''}">${g.homeScore ?? 0}</span>
-        <span class="score-alert-team ${homeW ? 'winning' : ''}">${g.homeAbbr}</span>
-        <span class="score-alert-inning">${g.inning || 'LIVE'}</span>
-      </span>`;
-    });
-  }
-  const liveCountEl = document.getElementById('hero-live-count');
-  if (liveCountEl) liveCountEl.textContent = chipMode === 'games' ? `${displayChips.length} games live now` : (displayChips.length ? `${displayChips.length} live alerts now` : 'No live alerts yet');
-  if (!displayChips.length) { scoresBanner.style.display = 'none'; return; }
+  if (!chips.length) { scoresBanner.style.display = 'none'; return; }
 
-  const content = displayChips.join('<span class="alert-sep">·</span>');
-  const shouldScroll = displayChips.length >= 3;
+  const content = chips.join('<span class="alert-sep">·</span>');
+  const shouldScroll = chips.length >= 3;
   const looped = shouldScroll ? content + '<span class="alert-sep" style="padding:0 30px">·</span>' + content : content;
-  const duration = Math.max(15, displayChips.length * 5);
+  const duration = Math.max(15, chips.length * 5);
 
   scoresTrack.innerHTML = looped;
   scoresTrack.style.animation = shouldScroll ? `marquee ${duration}s linear infinite` : 'none';
@@ -3286,7 +3076,7 @@ function renderBanner() {
 
   // Always show the banner — visibility is controlled by the section being active
   // The banner sits INSIDE #scores so it's naturally hidden when scores is hidden
-  scoresBanner.style.display = 'grid';
+  scoresBanner.style.display = 'block';
 }
 
 function updateLiveBanner() {
@@ -3493,18 +3283,10 @@ function renderHRPTable() {
     {key:'name',      label:'BATTER', r:false, sortable:false},
   ];
 
-  // Apply active filter
+  // 'all' shows every batter with no extra prioritization beyond the default sort below.
+  // Clicking TOP HR THREAT / FAVORABLE MATCHUP / DROUGHT no longer hides anyone — it just
+  // re-prioritizes the full list so matching players float to the top.
   let displayRows = [...hrpRows];
-  if (hrpFilter === 'drought') displayRows = displayRows.filter(r => r.isDrought);
-  else if (hrpFilter === 'favorable') displayRows = displayRows.filter(r => r.isFavorable);
-  else if (hrpFilter === 'top') {
-    // Top HR Threat: include every batter tagged TOP HR THREAT from Pitcher Report,
-    // plus the top 30% by HR probability as a fallback when lineup tags are not available.
-    const sorted0 = [...hrpRows].sort((a,b) => b.hrProb - a.hrProb);
-    const threshold = sorted0.length > 0 ? sorted0[Math.max(0, Math.floor(sorted0.length * 0.3) - 1)]?.hrProb || 0 : 0;
-    displayRows = displayRows.filter(r => r.topHrThreat || r.hrProb >= threshold);
-    if (displayRows.length === 0) displayRows = [...hrpRows]; // fallback to all if none qualify
-  }
 
   // Update button active states
   ['top','drought','favorable','all'].forEach(f => {
@@ -3513,11 +3295,23 @@ function renderHRPTable() {
   });
 
   const sorted = [...displayRows].sort((a,b) => {
-    // Default priority: TOP HR THREAT rows first, then highest HR probability.
-    // This keeps the most important bats at the top without requiring the user to open Pitcher Report first.
-    const aTop = (a.topHrThreat || a.hrProb >= 8) ? 1 : 0;
-    const bTop = (b.topHrThreat || b.hrProb >= 8) ? 1 : 0;
-    if (aTop !== bTop) return bTop - aTop;
+    // Active filter priority: whichever filter is selected, matching players go first.
+    if (hrpFilter === 'drought') {
+      const aMatch = a.isDrought ? 1 : 0, bMatch = b.isDrought ? 1 : 0;
+      if (aMatch !== bMatch) return bMatch - aMatch;
+    } else if (hrpFilter === 'favorable') {
+      const aMatch = a.isFavorable ? 1 : 0, bMatch = b.isFavorable ? 1 : 0;
+      if (aMatch !== bMatch) return bMatch - aMatch;
+    } else if (hrpFilter === 'top') {
+      const aMatch = (a.topHrThreat || a.hrProb >= 8) ? 1 : 0;
+      const bMatch = (b.topHrThreat || b.hrProb >= 8) ? 1 : 0;
+      if (aMatch !== bMatch) return bMatch - aMatch;
+    } else {
+      // Default ('all'): TOP HR THREAT rows still float up first, same baseline as before.
+      const aTop = (a.topHrThreat || a.hrProb >= 8) ? 1 : 0;
+      const bTop = (b.topHrThreat || b.hrProb >= 8) ? 1 : 0;
+      if (aTop !== bTop) return bTop - aTop;
+    }
 
     const av = a[hrpSortCol], bv = b[hrpSortCol];
     if (av==null&&bv==null) return 0;
@@ -3871,7 +3665,7 @@ async function loadKProps() {
         const lineLabel = `${ouLine} DR line`;
         const matchupTag = oppKpct >= 0.245 ? 'High-K matchup' : oppKpct <= 0.195 ? 'Contact-heavy matchup' : 'Average K matchup';
         const k9Tag = k9 >= 9 ? 'Strong K pitcher' : k9 <= 7 ? 'Lower K profile' : 'Solid K profile';
-        const decisionTag = pred==='OVER' ? 'Over lean' : pred==='UNDER' ? 'Under lean' : (pushLean ? `Push / ${pushLean} lean` : 'Push');
+        const decisionTag = pred==='OVER' ? 'OVER' : pred==='UNDER' ? 'UNDER' : (pushLean ? `Push / ${pushLean} lean` : 'Push');
         const reasoning = {
           matchupTag, k9Tag, decisionTag,
           oppKpctLabel, k9Label, workloadLabel, projectionLabel, lineLabel,
@@ -3917,7 +3711,29 @@ function renderKProps() {
   const hs = id => `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_38,q_auto:best/v1/people/${id}/headshot/67/current`;
   const tl = abbr => { const id=teamIds[abbr]; return id?`<img src="https://www.mlbstatic.com/team-logos/${id}.svg" style="width:20px;height:20px;object-fit:contain;vertical-align:middle" onerror="this.style.display='none'" alt="">`:'' };
 
-  el.innerHTML = `<div style="overflow-x:auto;overscroll-behavior-x:contain;touch-action:pan-y;min-width:0">
+  // Compute today's record: compare each pick's projected OVER/UNDER against the
+  // pitcher's actual final K count, using the live snapshot kept by loadKsToday
+  let kpCorrect = 0, kpFinal = 0;
+  const kpResults = {}; // pitcherId -> true/false/null (null = not final yet)
+  kPropsData.forEach(p => {
+    const live = latestPitcherKData[p.pitcherId];
+    if (!live || !live.isFinal || p.pred === 'PUSH') { kpResults[p.pitcherId] = null; return; }
+    const correct = p.pred === 'OVER' ? live.ks > p.ouLine : live.ks < p.ouLine;
+    kpResults[p.pitcherId] = correct;
+    kpFinal++;
+    if (correct) kpCorrect++;
+  });
+
+  const kpTallyHTML = kpFinal > 0 ? `
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px">
+      <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase">TODAY'S RECORD</span>
+      <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">${new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</span>
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;color:${kpCorrect===kpFinal?'#2ecc71':kpCorrect>kpFinal/2?'var(--accent2)':'var(--accent)'}">${kpCorrect}-${kpFinal-kpCorrect}</span>
+      <span style="font-size:11px;color:var(--muted)">${kpFinal} of ${kPropsData.length} final</span>
+      <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">${Math.round(kpCorrect/kpFinal*100)}% accuracy</span>
+    </div>` : '';
+
+  el.innerHTML = `${kpTallyHTML}<div style="overflow-x:auto;overscroll-behavior-x:contain;touch-action:pan-y;min-width:0">
     ${kPropsData.map(p => {
       const predCls = p.pred==='OVER' ? 'kprop-over' : p.pred==='UNDER' ? 'kprop-under' : p.pushLean==='OVER' ? 'kprop-push kprop-push-over' : p.pushLean==='UNDER' ? 'kprop-push kprop-push-under' : 'kprop-push';
       const predLabel = p.pred==='PUSH' && p.pushLean ? `PUSH (${p.pushLean} LEAN)` : p.pred;
@@ -3938,6 +3754,48 @@ function renderKProps() {
         </div>
         <div class="kprop-summary">${reason.summary || ''}</div>`;
 
+      // ── Live/Final K Count label ──
+      // Color rules:
+      //  - Projected OVER: turns green the moment actual K count exceeds the DR Line —
+      //    once it's happened it can't be undone, so no need to wait for the game to end.
+      //  - Projected UNDER: stays neutral while live (can't confirm "stayed under" until
+      //    the game ends — a pitcher could still come back out and add Ks), turns green
+      //    only once final and the K count actually finished under the line, or red if
+      //    they exceeded it by the end.
+      //  - PUSH predictions don't get graded — always neutral.
+      const live = latestPitcherKData[p.pitcherId];
+      let kCountHTML = '';
+      if (live && (live.isLive || live.isFinal) && p.pred !== 'PUSH') {
+        const ks = live.ks;
+        let kColor, kBg, kBorder, kIcon, kLabel;
+        if (p.pred === 'OVER') {
+          if (ks > p.ouLine) {
+            kColor = '#2ecc71'; kBg = '#0d2a1a'; kBorder = '#2ecc71'; kIcon = '✅';
+            kLabel = live.isFinal ? 'Final' : 'Live';
+          } else if (live.isFinal) {
+            kColor = '#e63946'; kBg = '#2a0d0d'; kBorder = '#e63946'; kIcon = '❌';
+            kLabel = 'Final';
+          } else {
+            kColor = 'var(--muted)'; kBg = 'var(--bg)'; kBorder = 'var(--border)'; kIcon = '⏳';
+            kLabel = 'Live';
+          }
+        } else { // UNDER
+          if (live.isFinal) {
+            if (ks < p.ouLine) {
+              kColor = '#2ecc71'; kBg = '#0d2a1a'; kBorder = '#2ecc71'; kIcon = '✅';
+            } else {
+              kColor = '#e63946'; kBg = '#2a0d0d'; kBorder = '#e63946'; kIcon = '❌';
+            }
+            kLabel = 'Final';
+          } else {
+            // Still live — can't confirm "stayed under" yet, even if currently under the line
+            kColor = 'var(--muted)'; kBg = 'var(--bg)'; kBorder = 'var(--border)'; kIcon = '⏳';
+            kLabel = 'Live';
+          }
+        }
+        kCountHTML = `<div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;background:${kBg};border:1px solid ${kBorder};color:${kColor};border-radius:6px;padding:6px 12px;font-weight:700;font-size:12px">${kIcon} ${kLabel} K Count: ${ks}</div>`;
+      }
+
       return `<div class="kprop-row">
         <img src="${hs(p.pitcherId)}" style="width:38px;height:38px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" onerror="this.style.visibility='hidden'" alt="">
         <div class="kprop-pitcher">
@@ -3952,7 +3810,7 @@ function renderKProps() {
           <div class="kprop-pred-val" style="font-size:${p.pred==='PUSH'?'16px':'24px'}">${predLabel}</div>
           <div class="kprop-pred-lbl">${p.projK} PROJ</div>
         </div>
-        <div class="kprop-reasoning">${reasonHTML}</div>
+        <div class="kprop-reasoning">${reasonHTML}${kCountHTML}</div>
       </div>`;
     }).join('')}</div>`;
 }
@@ -3990,7 +3848,7 @@ function initPropsTab() {
   loadHRPotentialWithRetry();
   loadHRsToday();
   loadKsToday();
-  loadKProps();      // load immediately, don't wait for 7am gate
+  loadKProps();
   loadGameProps();
 }
 
@@ -4008,28 +3866,182 @@ function showTab(id, el) {
   document.getElementById(id).classList.add('active');
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  localStorage.setItem('activeTab', id);
+  sessionStorage.setItem('activeTab', id);
   if (id === 'matchups' && !matchupLoaded) {
     matchupLoaded = true;
     loadPitcherReport();
   }
   if (id === 'schedule' && !scheduleLoaded) loadSchedule();
-  if (id === 'props') initPropsTab();
+  // Always warm up Props data (Game Props, K Props) in the background, regardless of
+  // which tab is visited — the Tracker tab depends on this data existing in the DOM
+  // and previously only loaded it if the user had manually opened Props first.
+  initPropsTab();
 }
 
 // Restore last active tab on page load
+// Restore the active tab using sessionStorage (not localStorage) so the behavior is:
+//  - Refresh/reload while browsing → stays on whatever tab you were viewing
+//  - Fresh launch (new tab, new browser session, app reopened from scratch) → always
+//    starts on Live Scores, since sessionStorage is empty for a brand new session
 (function restoreTab() {
-  const saved = localStorage.getItem('activeTab');
-  if (!saved || saved === 'scores') return; // scores is default, no action needed
+  const saved = sessionStorage.getItem('activeTab');
+  if (!saved || saved === 'scores') {
+    initPropsTab(); // still warm up Props data even if landing on scores/default tab
+    return;
+  }
   const tabEl = document.querySelector(`.tab[data-tab='${saved}']`) || document.querySelector(`.tab[onclick*="'${saved}'"]`);
   const sectionEl = document.getElementById(saved);
-  if (!tabEl || !sectionEl) return;
+  if (!tabEl || !sectionEl) { initPropsTab(); return; }
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   sectionEl.classList.add('active');
   tabEl.classList.add('active');
   if (saved === 'matchups' && !matchupLoaded) { matchupLoaded = true; loadPitcherReport(); }
-  if (saved === 'props') initPropsTab();
+  initPropsTab(); // always warm up Props data, not just when saved === 'props'
+})();
+
+
+
+
+// Diamond Report K Props label cleanup: keep PROJ underneath, simplify label to OVER/UNDER
+(function(){
+  function cleanKPropLabels(){
+    document.querySelectorAll('#kprops-content .kprop-pred-val, #kprops-content .kprop-chip, #kprops-content *').forEach(el => {
+      if(!el || !el.childNodes || el.childNodes.length > 1) return;
+      const raw = (el.textContent || '').trim();
+      if(/^PUSH\s*\[\s*OVER\s*LEAN\s*\]$/i.test(raw) || /^PUSH\s*\/\s*OVER\s*LEAN$/i.test(raw) || /^OVER\s*LEAN$/i.test(raw)){
+        el.textContent = 'OVER';
+      }
+      if(/^PUSH\s*\[\s*UNDER\s*LEAN\s*\]$/i.test(raw) || /^PUSH\s*\/\s*UNDER\s*LEAN$/i.test(raw) || /^UNDER\s*LEAN$/i.test(raw)){
+        el.textContent = 'UNDER';
+      }
+    });
+  }
+  window.cleanKPropLabels = cleanKPropLabels;
+  function hook(fnName){
+    const original = window[fnName];
+    if(typeof original !== 'function' || original.__kPropLabelHooked) return;
+    const wrapped = async function(...args){
+      const result = await original.apply(this,args);
+      setTimeout(cleanKPropLabels, 100);
+      return result;
+    };
+    wrapped.__kPropLabelHooked = true;
+    window[fnName] = wrapped;
+  }
+  function start(){
+    cleanKPropLabels();
+    ['loadKProps','renderKProps','renderKPropRows'].forEach(hook);
+    setInterval(cleanKPropLabels, 5000); // throttled from 1000ms to reduce DOM scan frequency
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
+
+
+// Diamond Report: Live Scores breaking banner removed
+(function(){
+  function hideLiveScoresBanner(){
+    const banner = document.getElementById('scores-alert-banner');
+    if(!banner) return;
+    banner.hidden = true;
+    banner.style.display = 'none';
+    const track = document.getElementById('scores-alert-track');
+    if(track) track.innerHTML = '';
+  }
+  window.hideLiveScoresBanner = hideLiveScoresBanner;
+  hideLiveScoresBanner();
+  setInterval(hideLiveScoresBanner, 3000); // throttled from 1000ms
+})();
+
+
+// Keep static projection label instead of live K label
+(function(){
+  function normalizeProjLabels(){
+    document.querySelectorAll('#kprops-content .kprop-pred-val, #kprops-content .kprop-pick, #kprops-content *').forEach(el=>{
+      if(!el || !el.textContent) return;
+      const t = el.textContent.trim();
+      if(/^\d+(\.\d+)?K\s+LIVE$/i.test(t)){
+        const m=t.match(/^(\d+(?:\.\d+)?)K/i);
+        if(m) el.textContent = `${m[1]} PROJ`;
+      }
+    });
+  }
+  const run=()=>normalizeProjLabels();
+  run();
+  setInterval(run, 5000); // throttled from 1000ms — full wildcard query was too aggressive
+})();
+
+
+// Permanent K Props recommendation label patch
+(function(){
+  function cleanKPropRecommendationLabels(){
+    const roots = document.querySelectorAll('#kprops-content .kprop-pred, #kprops-content .kprop-chip, #kprops-content .kprop-row');
+    roots.forEach(root => {
+      root.querySelectorAll('*').forEach(el => {
+        if(!el || !el.childNodes || el.childNodes.length !== 1) return;
+        const raw = (el.textContent || '').trim();
+        if(/^PUSH\s*\[\s*OVER\s*LEAN\s*\]$/i.test(raw) || /^PUSH\s*\/\s*OVER\s*LEAN$/i.test(raw) || /^OVER\s*LEAN$/i.test(raw)){
+          el.textContent = 'OVER';
+        }
+        if(/^PUSH\s*\[\s*UNDER\s*LEAN\s*\]$/i.test(raw) || /^PUSH\s*\/\s*UNDER\s*LEAN$/i.test(raw) || /^UNDER\s*LEAN$/i.test(raw)){
+          el.textContent = 'UNDER';
+        }
+      });
+
+      [...root.childNodes].forEach(node => {
+        if(node.nodeType !== Node.TEXT_NODE) return;
+        const raw = node.textContent.trim();
+        if(/^PUSH\s*\[\s*OVER\s*LEAN\s*\]$/i.test(raw)) node.textContent = 'OVER';
+        if(/^PUSH\s*\[\s*UNDER\s*LEAN\s*\]$/i.test(raw)) node.textContent = 'UNDER';
+      });
+    });
+  }
+
+  function runKPropRecommendationPatch(){
+    cleanKPropRecommendationLabels();
+  }
+
+  function startKPropRecommendationPatch(){
+    runKPropRecommendationPatch();
+    // Throttled to 5s instead of 500ms — full DOM walk doesn't need to run twice a second
+    setInterval(runKPropRecommendationPatch, 5000);
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startKPropRecommendationPatch);
+  else startKPropRecommendationPatch();
+})();
+
+
+
+// Lightweight Diamond Report safety cleanup — no intervals or observers
+(function(){
+  function cleanupDRPMatchupRowsOnce(){
+    const tbody = document.getElementById('tracker-drp-results');
+    if(!tbody) return;
+    [...tbody.querySelectorAll('tr')].forEach(row => {
+      const first = row.querySelector('td');
+      if(!first) return;
+      if(!/@/.test(first.textContent || '')) row.remove();
+    });
+    if(!tbody.querySelector('tr')){
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:left;color:var(--muted)">Waiting for completed matchups. Single-team rows are hidden.</td></tr>';
+    }
+  }
+
+  function runSafetyCleanup(){
+    cleanupDRPMatchupRowsOnce();
+    document.querySelectorAll('#kprops-content .kprop-pred-val').forEach(el => {
+      const raw = (el.textContent || '').trim();
+      if(/^PUSH\s*\[\s*OVER\s*LEAN\s*\]$/i.test(raw) || /^OVER\s+LEAN$/i.test(raw)) el.textContent = 'OVER';
+      if(/^PUSH\s*\[\s*UNDER\s*LEAN\s*\]$/i.test(raw) || /^UNDER\s+LEAN$/i.test(raw)) el.textContent = 'UNDER';
+    });
+  }
+
+  window.runDiamondReportSafetyCleanup = runSafetyCleanup;
+  document.addEventListener('click', () => setTimeout(runSafetyCleanup, 50), { passive:true });
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(runSafetyCleanup, 300));
+  else setTimeout(runSafetyCleanup, 300);
 })();
 
 </script>
