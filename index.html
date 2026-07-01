@@ -800,6 +800,49 @@ body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) spa
  font-size:1.08em!important;
 }
 
+
+/* v6.2 Production Pitcher Report Lineup Glitch Fix */
+.pr-expand-row > td {
+  background: #080d17;
+  overflow: hidden;
+}
+.pr-expand-panel {
+  contain: layout paint;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  transition: none !important;
+}
+.btn-lineup[disabled] {
+  opacity: .65;
+  cursor: wait;
+}
+@media (max-width: 768px) {
+  .pr-expand-row > td {
+    width: 100vw;
+    max-width: 100vw;
+  }
+  .pr-expand-panel {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    overflow-x: hidden;
+  }
+  .lineup-batter-card,
+  .lineup-batter-main,
+  .lineup-batter-details {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .lineup-batter-card {
+    overflow: hidden;
+  }
+  .lineup-matchup-action .btn-matchup {
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.25;
+  }
+}
+
 </style>
 <!-- ============================================================ -->
 <!-- ⚠️  GOOGLE ADSENSE — DO NOT REMOVE OR MODIFY THIS BLOCK  ⚠️   -->
@@ -3906,8 +3949,12 @@ setInterval(() => {
 // Auto-refresh all open lineup panels every 60 seconds (picks up live HRs)
 setInterval(() => {
   expandedRows.forEach(pid => {
-    const meta = lineupMeta[pid];
-    if (meta) fetchAndRenderLineup(pid, meta.pitcherName, meta.gamePk, meta.side, meta.oppTeamId, meta.pitcherHr9, meta.pitcherIp);
+    const key = normalizePitcherId(pid);
+    const meta = lineupMeta[key];
+    const rowVisible = document.getElementById(`pr-expand-${key}`)?.style.display !== 'none';
+    if (meta && rowVisible && !lineupLoading.has(key)) {
+      fetchAndRenderLineup(key, meta.pitcherName, meta.gamePk, meta.side, meta.oppTeamId, meta.pitcherHr9, meta.pitcherIp);
+    }
   });
 }, 60000);
 
@@ -3945,6 +3992,11 @@ let repoLineupsData = null;
 let repoLineupsLoaded = false;
 const lineupMeta  = {}; // pitcherId -> {pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp}
 const expandedRows = new Set();
+// Production stability patch: normalize pitcher ids and prevent stale lineup requests
+// from overwriting an actively opened Batting Lineup & Matchup panel.
+const lineupLoading = new Set();
+const lineupRequestTokens = {};
+const normalizePitcherId = (id) => String(id);
 
 async function loadRepoLineups() {
   if (repoLineupsLoaded) return repoLineupsData;
@@ -4126,7 +4178,7 @@ function renderPRTable() {
     const p = r.pitcher;
     const rowId = `pr-row-${p.id}`;
     const expandId = `pr-expand-${p.id}`;
-    const isExpanded = expandedRows.has(p.id);
+    const isExpanded = expandedRows.has(normalizePitcherId(p.id));
 
     // K O/U tag — modeled from K/9 and innings projection
     // Typical start ~5-6 IP, so projected Ks = K/9 * projectedIP / 9
@@ -4228,33 +4280,70 @@ function renderPRTable() {
 }
 
 async function toggleLineup(pitcherId, pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp) {
-  const expandRow = document.getElementById(`pr-expand-${pitcherId}`);
-  const panel = document.getElementById(`panel-${pitcherId}`);
-  const btn = document.querySelector(`#pr-row-${pitcherId} .btn-lineup`);
+  const pid = normalizePitcherId(pitcherId);
+  const expandRow = document.getElementById(`pr-expand-${pid}`);
+  const panel = document.getElementById(`panel-${pid}`);
+  const btn = document.querySelector(`#pr-row-${pid} .btn-lineup`);
 
-  if (expandedRows.has(pitcherId)) {
-    expandedRows.delete(pitcherId);
+  if (!expandRow || !panel) return;
+
+  // If a user taps while an existing background lineup request is running,
+  // open the row and let that request complete instead of stacking duplicate
+  // fetches. If the row is already open, ignore extra taps until loading ends.
+  if (lineupLoading.has(pid) && !expandedRows.has(pid)) {
+    expandedRows.add(pid);
+    expandRow.style.display = '';
+    if (btn) {
+      btn.textContent = '▲ HIDE';
+      btn.classList.add('active');
+      btn.disabled = true;
+    }
+    lineupMeta[pid] = { pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp };
+    return;
+  }
+  if (lineupLoading.has(pid) && expandedRows.has(pid)) return;
+
+  if (expandedRows.has(pid)) {
+    expandedRows.delete(pid);
     expandRow.style.display = 'none';
-    if (btn) { btn.textContent = '▼ BATTING LINEUP & MATCHUPS'; btn.classList.remove('active'); }
+    if (btn) {
+      btn.textContent = '▼ BATTING LINEUP & MATCHUPS';
+      btn.classList.remove('active');
+      btn.disabled = false;
+    }
     return;
   }
 
-  expandedRows.add(pitcherId);
+  expandedRows.add(pid);
   expandRow.style.display = '';
-  if (btn) { btn.textContent = '▲ HIDE'; btn.classList.add('active'); }
+  if (btn) {
+    btn.textContent = '▲ HIDE';
+    btn.classList.add('active');
+    btn.disabled = true;
+  }
 
-  // Store params so auto-refresh can re-fetch
-  lineupMeta[pitcherId] = { pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp };
+  // Store params so auto-refresh can re-fetch visible open panels only.
+  lineupMeta[pid] = { pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp };
 
-  await fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp);
+  await fetchAndRenderLineup(pid, pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp);
+
+  const finalBtn = document.querySelector(`#pr-row-${pid} .btn-lineup`);
+  if (finalBtn) finalBtn.disabled = false;
 }
-
 async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp) {
-  const panel = document.getElementById(`panel-${pitcherId}`);
+  const pid = normalizePitcherId(pitcherId);
+  const panel = document.getElementById(`panel-${pid}`);
   if (!panel) return;
 
+  const token = `${Date.now()}-${Math.random()}`;
+  lineupRequestTokens[pid] = token;
+  lineupLoading.add(pid);
+
   const isFirstLoad = !panel.querySelector('[data-batter-id]');
-  if (isFirstLoad) panel.innerHTML = `<div style="padding:12px 0;color:var(--muted);font-size:12px"><span class="spin"></span> Loading lineup…</div>`;
+  if (isFirstLoad) {
+    panel.style.minHeight = '86px';
+    panel.innerHTML = `<div style="padding:12px 0;color:var(--muted);font-size:12px"><span class="spin"></span> Loading lineup…</div>`;
+  }
 
   try {
     const oppSide = side === 'away' ? 'home' : 'away';
@@ -4267,7 +4356,8 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
     if (!batters.length && repoLineup?.lineup?.length) {
       const cacheKey = `${gamePk}-${side}`;
       lineupCache[cacheKey] = { lineup: repoLineup.lineup, oppSide, teamAbbr: repoLineup.teamAbbr, source: repoLineup.source, updatedAt: repoLineup.updatedAt };
-      renderLineup(`panel-${pitcherId}`, lineupCache[cacheKey], pitcherHr9, pitcherIp, null, pitcherId, pitcherName);
+      if (lineupRequestTokens[pid] !== token) return;
+      renderLineup(`panel-${pid}`, lineupCache[cacheKey], pitcherHr9, pitcherIp, null, pid, pitcherName);
       return;
     }
 
@@ -4316,18 +4406,21 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
     const prevLineup = lineupCache[cacheKey]?.lineup || [];
     lineupCache[cacheKey] = { lineup, oppSide, teamAbbr: box.teams?.[oppSide]?.team?.abbreviation || '' };
 
+    if (lineupRequestTokens[pid] !== token) return;
+
     if (isFirstLoad) {
       // Full render on first load
-      renderLineup(`panel-${pitcherId}`, lineupCache[cacheKey], pitcherHr9, pitcherIp, null, pitcherId, pitcherName);
+      if (lineupRequestTokens[pid] !== token) return;
+      renderLineup(`panel-${pid}`, lineupCache[cacheKey], pitcherHr9, pitcherIp, null, pid, pitcherName);
 
       // Patch K Prop cell with lineup-adjusted projection
-      const kpropCell = document.getElementById(`kprop-cell-${pitcherId}`);
+      const kpropCell = document.getElementById(`kprop-cell-${pid}`);
       if (kpropCell && lineup.length) {
         const avgKpct = lineup.reduce((sum, b) => {
           const s = b.stats;
           return sum + ((s.strikeOuts && s.plateAppearances) ? s.strikeOuts/s.plateAppearances : 0.22);
         }, 0) / lineup.length;
-        const row = prRows.find(r => r.pitcher.id == pitcherId);
+        const row = prRows.find(r => normalizePitcherId(r.pitcher.id) === pid);
         if (row) {
           const k9 = row.rawK9 || 8;
           const kpctAdj = (avgKpct - 0.22) * 10;
@@ -4373,7 +4466,16 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
       if (tsEl) tsEl.textContent = `Last updated ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
     }
   } catch(e) {
-    if (isFirstLoad && panel) panel.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error loading lineup: ${e.message}</div>`;
+    if (lineupRequestTokens[pid] === token && isFirstLoad && panel) {
+      panel.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error loading lineup: ${e.message}</div>`;
+    }
+  } finally {
+    if (lineupRequestTokens[pid] === token) {
+      lineupLoading.delete(pid);
+      panel.style.minHeight = '';
+      const btn = document.querySelector(`#pr-row-${pid} .btn-lineup`);
+      if (btn) btn.disabled = false;
+    }
   }
 }
 

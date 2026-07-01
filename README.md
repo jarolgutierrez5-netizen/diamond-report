@@ -1,5 +1,26 @@
 # Diamond Intelligence Engine (DIE)
 
+## v6.2 Live Production Pitcher Report Lineup Glitch Fix
+
+Production hotfix for the public no-tracker build.
+
+### v6.2 Changes
+- Fixed Pitcher Report visual glitch when tapping **Batting Lineup & Matchups**.
+- Normalized pitcher row IDs so expanded lineup panels stay stable after refresh/re-render.
+- Prevented overlapping lineup fetches from stacking on iPhone/mobile.
+- Added stale-request protection so background lineup refreshes cannot overwrite the active opened panel.
+- Added mobile containment styles for expanded lineup panels to reduce layout jump and horizontal overflow.
+
+### Deployment
+Replace only:
+- `index.html`
+
+Optional documentation files:
+- `README.md`
+- `CHANGELOG.md`
+
+---
+
 ## v6.1 Emergency No-Tracker Fix
 
 Emergency public build with the Tracker removed from `index.html`.
