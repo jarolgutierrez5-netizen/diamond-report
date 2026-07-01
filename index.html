@@ -3419,6 +3419,144 @@ video {
   #kprops-content .kprop-line{ width:72px !important; }
 }
 </style>
+<style id="v6-3-live-props-responsive-optimization">
+
+/* ============================================================
+   v6.3 LIVE Production Props Responsive Layout Optimization
+   Purpose: force Props tab into the requested dashboard layout across
+   mobile, tablet, laptop, and desktop without touching data/scripts.
+   ============================================================ */
+#props .props-grid{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) minmax(300px,340px)!important;
+  gap:16px!important;
+  align-items:start!important;
+}
+#props .hrs-today-grid{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  gap:16px!important;
+  margin-top:18px!important;
+}
+#props .props-grid > div,
+#props .hrs-today-grid > div{
+  min-width:0!important;
+}
+#props #hr-potential-content,
+#props #ks-today-props,
+#props #hrs-today-content,
+#props #proj-hits-content{
+  min-width:0!important;
+}
+#props #hr-potential-content{
+  overflow-x:auto!important;
+  overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch;
+}
+#props .hrp-table{
+  min-width:620px;
+}
+#props .section-title{
+  line-height:1.05;
+}
+@media (min-width:769px) and (max-width:1180px){
+  main{
+    padding-left:16px!important;
+    padding-right:16px!important;
+  }
+  #props .props-grid{
+    grid-template-columns:minmax(0,1fr) minmax(260px,320px)!important;
+    gap:14px!important;
+  }
+  #props .hrs-today-grid{
+    gap:14px!important;
+  }
+  #props .hrp-table{
+    min-width:600px;
+  }
+}
+@media (max-width:768px){
+  #props .props-grid{
+    grid-template-columns:minmax(0,1.2fr) minmax(116px,.8fr)!important;
+    gap:8px!important;
+  }
+  #props .hrs-today-grid{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    gap:8px!important;
+    margin-top:12px!important;
+  }
+  #props .props-grid p.section-title,
+  #props .hrs-today-grid p.section-title{
+    font-size:14px!important;
+    letter-spacing:1px!important;
+    margin-bottom:7px!important;
+  }
+  #props #hr-potential-content{
+    max-height:460px!important;
+  }
+  #props .props-grid > div:nth-child(2) > div{
+    max-height:460px!important;
+  }
+  #props .hrs-today-grid > div > div:last-child{
+    max-height:320px!important;
+  }
+  #props .hrp-table{
+    min-width:540px!important;
+  }
+  #props .ks-today-row{
+    align-items:flex-start!important;
+    padding:7px 6px!important;
+    gap:5px!important;
+  }
+  #props .ks-count{
+    font-size:18px!important;
+    min-width:20px!important;
+  }
+  #props .ks-today-row img{
+    width:24px!important;
+    height:24px!important;
+  }
+  #props .stat-row{
+    padding:7px 6px!important;
+    gap:6px!important;
+  }
+  #props .stat-row-num{
+    font-size:18px!important;
+    min-width:20px!important;
+  }
+}
+@media (max-width:430px){
+  main{
+    padding-left:8px!important;
+    padding-right:8px!important;
+  }
+  #props .props-grid{
+    grid-template-columns:minmax(0,1.18fr) minmax(104px,.82fr)!important;
+    gap:6px!important;
+  }
+  #props .hrs-today-grid{
+    gap:6px!important;
+  }
+  #props .props-grid p.section-title,
+  #props .hrs-today-grid p.section-title{
+    font-size:12px!important;
+    letter-spacing:.8px!important;
+  }
+  #props #hr-potential-content{
+    max-height:420px!important;
+  }
+  #props .props-grid > div:nth-child(2) > div{
+    max-height:420px!important;
+  }
+  #props .hrp-table{
+    min-width:500px!important;
+  }
+  #props .hrp-table thead th,
+  #props .hrp-table tbody td{
+    padding:6px 5px!important;
+  }
+}
+</style>
 </head>
 <body>
 <header class="header">

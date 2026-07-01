@@ -1,36 +1,17 @@
-# Diamond Intelligence Engine (DIE)
+# Diamond Report DIE Live Production
 
-## v6.2 Live Production Pitcher Report Lineup Glitch Fix
+## v6.3 — Props Tab Responsive Layout Optimization
 
-Production hotfix for the public no-tracker build.
+This live-production patch is based on the provided v6.2 Live Pitcher Report Lineup Glitch Fix package.
 
-### v6.2 Changes
-- Fixed Pitcher Report visual glitch when tapping **Batting Lineup & Matchups**.
-- Normalized pitcher row IDs so expanded lineup panels stay stable after refresh/re-render.
-- Prevented overlapping lineup fetches from stacking on iPhone/mobile.
-- Added stale-request protection so background lineup refreshes cannot overwrite the active opened panel.
-- Added mobile containment styles for expanded lineup panels to reduce layout jump and horizontal overflow.
+### Updated
+- Optimized the Props tab layout for mobile, tablet, laptop, and desktop.
+- Forced HR Potential and K's Today to display next to each other.
+- Forced HR's Today and HRs Completed From Projection to display next to each other below the top row.
+- Added responsive sizing/scrolling guards so the Props tab remains usable on smaller screens.
+- Preserved the existing Pitcher Report lineup/matchup glitch fix.
 
 ### Deployment
-Replace only:
-- `index.html`
+Replace only `index.html` for this patch.
 
-Optional documentation files:
-- `README.md`
-- `CHANGELOG.md`
-
----
-
-## v6.1 Emergency No-Tracker Fix
-
-Emergency public build with the Tracker removed from `index.html`.
-
-### Changes
-- Removed public Tracker navigation tab.
-- Removed Tracker page/section markup.
-- Disabled the browser-side Tracker engine from the public index.
-- Added a small safety guard to remove any cached Tracker UI reference if a browser had previously opened it.
-
-### Notes
-- This does not delete repository data/workflows unless you remove them separately.
-- Live public UI should only show Live Scores, Pitcher Report, Props, and Upcoming Games.
+Do not update `data/`, `scripts/`, or `.github/`.
