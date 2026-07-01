@@ -1,17 +1,1365 @@
 {
   "version": 1,
-  "date": null,
-  "generatedAt": null,
+  "date": "2026-07-01",
+  "generatedAt": "2026-07-01T12:49:17.563Z",
   "status": {
     "allConfirmed": false,
     "confirmedTeams": 0,
-    "totalTeams": 0,
-    "pendingTeams": 0,
-    "message": "Lineup Intelligence has not run yet."
+    "totalTeams": 28,
+    "pendingTeams": 28,
+    "confirmedGames": 0,
+    "totalGames": 14,
+    "skippedConfirmedTeams": 0,
+    "message": "28 team lineup(s) still projected. Hourly Action keeps checking only unconfirmed teams."
   },
   "changedGames": [],
   "impactedTeams": [],
   "recalcNeeded": false,
   "recalcTargets": [],
-  "games": {}
+  "games": {
+    "822791": {
+      "gamePk": 822791,
+      "matchup": "NYM @ TOR",
+      "status": "Scheduled",
+      "allLineupsConfirmed": false,
+      "away": {
+        "abbr": "NYM",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 805999,
+            "name": "A.J. Ewing",
+            "pos": "CF",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 666182,
+            "name": "Bo Bichette",
+            "pos": "SS",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 683146,
+            "name": "Brett Baty",
+            "pos": "3B",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 701807,
+            "name": "Carson Benge",
+            "pos": "RF",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 676572,
+            "name": "Eric Wagaman",
+            "pos": "1B",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:805999|2:666182|3:683146|4:701807|5:676572|6:682626|7:596019|8:676724|9:665742"
+      },
+      "home": {
+        "abbr": "TOR",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 672386,
+            "name": "Alejandro Kirk",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 665926,
+            "name": "Andrés Giménez",
+            "pos": "SS",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 678218,
+            "name": "Brandon Valenzuela",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 662139,
+            "name": "Daulton Varsho",
+            "pos": "CF",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 676391,
+            "name": "Ernie Clement",
+            "pos": "2B",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:672386|2:665926|3:678218|4:662139|5:676391|6:543807|7:672960|8:649966|9:664702"
+      }
+    },
+    "823446": {
+      "gamePk": 823446,
+      "matchup": "PIT @ PHI",
+      "status": "Scheduled",
+      "allLineupsConfirmed": false,
+      "away": {
+        "abbr": "PIT",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 695257,
+            "name": "Billy Cook",
+            "pos": "RF",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 664040,
+            "name": "Brandon Lowe",
+            "pos": "2B",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 668804,
+            "name": "Bryan Reynolds",
+            "pos": "LF",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 682848,
+            "name": "Endy Rodríguez",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 699013,
+            "name": "Esmerlyn Valdez",
+            "pos": "RF",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:695257|2:664040|3:668804|4:682848|5:699013|6:680779|7:663968|8:669707|9:804606"
+      },
+      "home": {
+        "abbr": "PHI",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 664761,
+            "name": "Alec Bohm",
+            "pos": "3B",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 669016,
+            "name": "Brandon Marsh",
+            "pos": "LF",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 547180,
+            "name": "Bryce Harper",
+            "pos": "1B",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 681082,
+            "name": "Bryson Stott",
+            "pos": "2B",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 656537,
+            "name": "Derek Hill",
+            "pos": "RF",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:664761|2:669016|3:547180|4:681082|5:656537|6:624641|7:687282|8:596117|9:592663"
+      }
+    },
+    "823530": {
+      "gamePk": 823530,
+      "matchup": "DET @ NYY",
+      "status": "Scheduled",
+      "allLineupsConfirmed": false,
+      "away": {
+        "abbr": "DET",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 701162,
+            "name": "Ben Malgeri",
+            "pos": "CF",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 690993,
+            "name": "Colt Keith",
+            "pos": "3B",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 693307,
+            "name": "Dillon Dingler",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 701678,
+            "name": "Hao-Yu Lee",
+            "pos": "2B",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 663330,
+            "name": "Jahmai Jones",
+            "pos": "DH",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:701162|2:690993|3:693307|4:701678|5:663330|6:668670|7:681546|8:681481|9:805808"
+      },
+      "home": {
+        "abbr": "NYY",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 645305,
+            "name": "Ali Sánchez",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 642708,
+            "name": "Amed Rosario",
+            "pos": "3B",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 683011,
+            "name": "Anthony Volpe",
+            "pos": "SS",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 669224,
+            "name": "Austin Wells",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 700250,
+            "name": "Ben Rice",
+            "pos": "1B",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:645305|2:642708|3:683011|4:669224|5:700250|6:641355|7:691176|8:665862|9:676609"
+      }
+    },
+    "823767": {
+      "gamePk": 823767,
+      "matchup": "CIN @ MIL",
+      "status": "Scheduled",
+      "allLineupsConfirmed": false,
+      "away": {
+        "abbr": "CIN",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 695490,
+            "name": "Edwin Arroyo",
+            "pos": "2B",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 682829,
+            "name": "Elly De La Cruz",
+            "pos": "SS",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 553993,
+            "name": "Eugenio Suárez",
+            "pos": "DH",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 671155,
+            "name": "Ivan Johnson",
+            "pos": "2B",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 668709,
+            "name": "JJ Bleday",
+            "pos": "LF",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:695490|2:682829|3:553993|4:671155|5:668709|6:624431|7:680574|8:663993|9:682622"
+      },
+      "home": {
+        "abbr": "MIL",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 683734,
+            "name": "Andrew Vaughn",
+            "pos": "1B",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 663368,
+            "name": "Blake Perkins",
+            "pos": "CF",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 668930,
+            "name": "Brice Turang",
+            "pos": "2B",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 592885,
+            "name": "Christian Yelich",
+            "pos": "DH",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 806198,
+            "name": "Cooper Pratt",
+            "pos": "SS",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:683734|2:663368|3:668930|4:592885|5:806198|6:666152|7:669003|8:596142|9:694192"
+      }
+    },
+    "824094": {
+      "gamePk": 824094,
+      "matchup": "TB @ KC",
+      "status": "Scheduled",
+      "allLineupsConfirmed": false,
+      "away": {
+        "abbr": "TB",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 810938,
+            "name": "Ben Williamson",
+            "pos": "2B",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 656775,
+            "name": "Cedric Mullins",
+            "pos": "CF",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 802415,
+            "name": "Chandler Simpson",
+            "pos": "LF",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 676439,
+            "name": "Hunter Feduccia",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 666018,
+            "name": "Jonathan Aranda",
+            "pos": "1B",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:810938|2:656775|3:802415|4:676439|5:666018|6:676356|7:691406|8:663743|9:680700"
+      },
+      "home": {
+        "abbr": "KC",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 677951,
+            "name": "Bobby Witt Jr.",
+            "pos": "SS",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 695600,
+            "name": "Carter Jensen",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 686555,
+            "name": "Isaac Collins",
+            "pos": "LF",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 695506,
+            "name": "Jac Caglianone",
+            "pos": "RF",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 670231,
+            "name": "John Rave",
+            "pos": "RF",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:677951|2:695600|3:686555|4:695506|5:670231|6:668942|7:670224|8:657041|9:686681"
+      }
+    },
+    "824174": {
+      "gamePk": 824174,
+      "matchup": "MIN @ HOU",
+      "status": "Scheduled",
+      "allLineupsConfirmed": false,
+      "away": {
+        "abbr": "MIN",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 656577,
+            "name": "Alex Jackson",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 668885,
+            "name": "Austin Martin",
+            "pos": "RF",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 686797,
+            "name": "Brooks Lee",
+            "pos": "SS",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 621439,
+            "name": "Byron Buxton",
+            "pos": "CF",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 605137,
+            "name": "Josh Bell",
+            "pos": "DH",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:656577|2:668885|3:686797|4:621439|5:605137|6:665019|7:693459|8:807712|9:668904"
+      },
+      "home": {
+        "abbr": "HOU",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 694728,
+            "name": "Brice Matthews",
+            "pos": "CF",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 701358,
+            "name": "Cam Smith",
+            "pos": "RF",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 543877,
+            "name": "Christian Vázquez",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 572233,
+            "name": "Christian Walker",
+            "pos": "1B",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 670623,
+            "name": "Isaac Paredes",
+            "pos": "3B",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:694728|2:701358|3:543877|4:572233|5:670623|6:676694|7:694388|8:514888|9:669397"
+      }
+    },
+    "824337": {
+      "gamePk": 824337,
+      "matchup": "MIA @ COL",
+      "status": "Scheduled",
+      "allLineupsConfirmed": false,
+      "away": {
+        "abbr": "MIA",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 640459,
+            "name": "Brian Navarreto",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 665923,
+            "name": "Esteury Ruiz",
+            "pos": "RF",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 665052,
+            "name": "Griffin Conine",
+            "pos": "LF",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 681715,
+            "name": "Heriberto Hernández",
+            "pos": "LF",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 805300,
+            "name": "Jakob Marsee",
+            "pos": "CF",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:640459|2:665923|3:665052|4:681715|5:805300|6:691594|7:691788|8:669065|9:677870"
+      },
+      "home": {
+        "abbr": "COL",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 690924,
+            "name": "Braxton Fulford",
+            "pos": "DH",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 664954,
+            "name": "Brett Sullivan",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 694249,
+            "name": "Cole Carrigg",
+            "pos": "CF",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 666397,
+            "name": "Edouard Julien",
+            "pos": "2B",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 678662,
+            "name": "Ezequiel Tovar",
+            "pos": "SS",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:690924|2:664954|3:694249|4:666397|5:678662|6:696100|7:664983|8:691720|9:666160"
+      }
+    },
+    "824419": {
+      "gamePk": 824419,
+      "matchup": "TEX @ CLE",
+      "status": "Scheduled",
+      "allLineupsConfirmed": false,
+      "away": {
+        "abbr": "TEX",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 696030,
+            "name": "Alejandro Osuna",
+            "pos": "LF",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 607043,
+            "name": "Brandon Nimmo",
+            "pos": "RF",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 695508,
+            "name": "Cam Cauley",
+            "pos": "SS",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 608369,
+            "name": "Corey Seager",
+            "pos": "SS",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 553869,
+            "name": "Elias Díaz",
+            "pos": "C",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:696030|2:607043|3:695508|4:608369|5:553869|6:694497|7:677649|8:669394|9:592626"
+      },
+      "home": {
+        "abbr": "CLE",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 595978,
+            "name": "Austin Hedges",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 677587,
+            "name": "Brayan Rocchio",
+            "pos": "SS",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 800050,
+            "name": "Chase DeLauter",
+            "pos": "RF",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 694876,
+            "name": "Cooper Ingle",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 682177,
+            "name": "Daniel Schneemann",
+            "pos": "CF",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:595978|2:677587|3:800050|4:694876|5:682177|6:681807|7:672356|8:696135|9:700932"
+      }
+    },
+    "824660": {
+      "gamePk": 824660,
+      "matchup": "SD @ CHC",
+      "status": "Scheduled",
+      "allLineupsConfirmed": false,
+      "away": {
+        "abbr": "SD",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 665487,
+            "name": "Fernando Tatis Jr.",
+            "pos": "RF",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 666023,
+            "name": "Freddy Fermin",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 657757,
+            "name": "Gavin Sheets",
+            "pos": "1B",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 701538,
+            "name": "Jackson Merrill",
+            "pos": "CF",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 630105,
+            "name": "Jake Cronenworth",
+            "pos": "2B",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:665487|2:666023|3:657757|4:701538|5:630105|6:687749|7:592518|8:609280|9:660710"
+      },
+      "home": {
+        "abbr": "CHC",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 608324,
+            "name": "Alex Bregman",
+            "pos": "3B",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 608348,
+            "name": "Carson Kelly",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 621020,
+            "name": "Dansby Swanson",
+            "pos": "SS",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 664023,
+            "name": "Ian Happ",
+            "pos": "LF",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 681909,
+            "name": "Justin Dean",
+            "pos": "CF",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:608324|2:608348|3:621020|4:664023|5:681909|6:682634|7:683737|8:624424|9:665804"
+      }
+    },
+    "824740": {
+      "gamePk": 824740,
+      "matchup": "WSH @ BOS",
+      "status": "Scheduled",
+      "allLineupsConfirmed": false,
+      "away": {
+        "abbr": "WSH",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 665953,
+            "name": "Andrés Chaparro",
+            "pos": "1B",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 682928,
+            "name": "CJ Abrams",
+            "pos": "SS",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 678554,
+            "name": "Curtis Mead",
+            "pos": "3B",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 695734,
+            "name": "Daylen Lile",
+            "pos": "LF",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 686452,
+            "name": "Drew Millas",
+            "pos": "C",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:665953|2:682928|3:678554|4:695734|5:686452|6:686611|7:696285|8:695578|9:678391"
+      },
+      "home": {
+        "abbr": "BOS",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 655316,
+            "name": "Andruw Monasterio",
+            "pos": "SS",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 678011,
+            "name": "Anthony Seigler",
+            "pos": "2B",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 702332,
+            "name": "Caleb Durbin",
+            "pos": "3B",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 665966,
+            "name": "Carlos Narváez",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 678882,
+            "name": "Ceddanne Rafaela",
+            "pos": "CF",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:655316|2:678011|3:702332|4:665966|5:678882|6:657136|7:680776|8:807799|9:681987"
+      }
+    },
+    "824818": {
+      "gamePk": 824818,
+      "matchup": "CWS @ BAL",
+      "status": "Scheduled",
+      "allLineupsConfirmed": false,
+      "away": {
+        "abbr": "CWS",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 643217,
+            "name": "Andrew Benintendi",
+            "pos": "DH",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 695731,
+            "name": "Braden Montgomery",
+            "pos": "RF",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 805367,
+            "name": "Chase Meidroth",
+            "pos": "2B",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 695657,
+            "name": "Colson Montgomery",
+            "pos": "SS",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 691011,
+            "name": "Drew Romo",
+            "pos": "C",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:643217|2:695731|3:805367|4:695657|5:691011|6:694378|7:678577|8:691019|9:682668"
+      },
+      "home": {
+        "abbr": "BAL",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 668939,
+            "name": "Adley Rutschman",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 677942,
+            "name": "Blaze Alexander",
+            "pos": "3B",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 644433,
+            "name": "Chadwick Tromp",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 691723,
+            "name": "Coby Mayo",
+            "pos": "3B",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 681297,
+            "name": "Colton Cowser",
+            "pos": "CF",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:668939|2:677942|3:644433|4:691723|5:681297|6:687637|7:683002|8:702616|9:665750"
+      }
+    },
+    "824905": {
+      "gamePk": 824905,
+      "matchup": "STL @ ATL",
+      "status": "Scheduled",
+      "allLineupsConfirmed": false,
+      "away": {
+        "abbr": "STL",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 676475,
+            "name": "Alec Burleson",
+            "pos": "1B",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 691458,
+            "name": "Blaze Jordan",
+            "pos": "3B",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 663494,
+            "name": "Bryan Torres",
+            "pos": "LF",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 671056,
+            "name": "Iván Herrera",
+            "pos": "DH",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 802139,
+            "name": "JJ Wetherholt",
+            "pos": "2B",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:676475|2:691458|3:663494|4:671056|5:802139|6:699625|7:691023|8:665877|9:663457"
+      },
+      "home": {
+        "abbr": "ATL",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 663586,
+            "name": "Austin Riley",
+            "pos": "3B",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 642086,
+            "name": "Dominic Smith",
+            "pos": "DH",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 686948,
+            "name": "Drake Baldwin",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 642201,
+            "name": "Eli White",
+            "pos": "RF",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 673490,
+            "name": "Ha-Seong Kim",
+            "pos": "SS",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:663586|2:642086|3:686948|4:642201|5:673490|6:663698|7:622761|8:621566|9:643289"
+      }
+    },
+    "824985": {
+      "gamePk": 824985,
+      "matchup": "LAD @ ATH",
+      "status": "Scheduled",
+      "allLineupsConfirmed": false,
+      "away": {
+        "abbr": "LAD",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 669743,
+            "name": "Alex Call",
+            "pos": "LF",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 690976,
+            "name": "Alex Freeland",
+            "pos": "2B",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 681624,
+            "name": "Andy Pages",
+            "pos": "CF",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 642020,
+            "name": "Chuckie Robinson",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 687221,
+            "name": "Dalton Rushing",
+            "pos": "C",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:669743|2:690976|3:681624|4:642020|5:687221|6:518692|7:663656|8:571970|9:500743"
+      },
+      "home": {
+        "abbr": "ATH",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 675961,
+            "name": "Alika Williams",
+            "pos": "SS",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 666126,
+            "name": "Carlos Cortes",
+            "pos": "RF",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 687515,
+            "name": "Colby Thomas",
+            "pos": "RF",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 687231,
+            "name": "Darell Hernaiz",
+            "pos": "SS",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 703607,
+            "name": "Henry Bolte",
+            "pos": "CF",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:675961|2:666126|3:687515|4:687231|5:703607|6:643446|7:608841|8:641680|9:811965"
+      }
+    },
+    "825064": {
+      "gamePk": 825064,
+      "matchup": "SF @ AZ",
+      "status": "Scheduled",
+      "allLineupsConfirmed": false,
+      "away": {
+        "abbr": "SF",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 805811,
+            "name": "Bryce Eldridge",
+            "pos": "DH",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 669477,
+            "name": "Casey Schmitt",
+            "pos": "LF",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 701852,
+            "name": "Drew Cavanaugh",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 687551,
+            "name": "Drew Gilbert",
+            "pos": "CF",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 606992,
+            "name": "Eric Haase",
+            "pos": "C",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:805811|2:669477|3:701852|4:687551|5:606992|6:671218|7:813841|8:808982|9:650333"
+      },
+      "home": {
+        "abbr": "AZ",
+        "confirmed": false,
+        "source": "projected active-roster lineup",
+        "topPowerBats": [
+          {
+            "order": 1,
+            "id": 680728,
+            "name": "Adrian Del Castillo",
+            "pos": "DH",
+            "score": 2.65
+          },
+          {
+            "order": 2,
+            "id": 682998,
+            "name": "Corbin Carroll",
+            "pos": "RF",
+            "score": 2.65
+          },
+          {
+            "order": 3,
+            "id": 672515,
+            "name": "Gabriel Moreno",
+            "pos": "C",
+            "score": 2.65
+          },
+          {
+            "order": 4,
+            "id": 672695,
+            "name": "Geraldo Perdomo",
+            "pos": "SS",
+            "score": 2.65
+          },
+          {
+            "order": 5,
+            "id": 545121,
+            "name": "Ildemaro Vargas",
+            "pos": "1B",
+            "score": 2.65
+          }
+        ],
+        "avgPowerScore": 2.65,
+        "avgKRate": 0.22,
+        "lineupKey": "1:680728|2:682998|3:672515|4:672695|5:545121|6:678489|7:606466|8:666971|9:694410"
+      }
+    }
+  }
 }
