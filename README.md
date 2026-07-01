@@ -1,15 +1,15 @@
 # Diamond Report DIE Live Production
 
-## v6.3 — Props Tab Responsive Layout Optimization
+## v6.4 — Live Pitcher Report Lineup Mobile Stability Fix
 
-This live-production patch is based on the provided v6.2 Live Pitcher Report Lineup Glitch Fix package.
+This live-production patch is based on the provided v6.3 Live Props Responsive Optimization package.
 
-### Updated
-- Optimized the Props tab layout for mobile, tablet, laptop, and desktop.
-- Forced HR Potential and K's Today to display next to each other.
-- Forced HR's Today and HRs Completed From Projection to display next to each other below the top row.
-- Added responsive sizing/scrolling guards so the Props tab remains usable on smaller screens.
-- Preserved the existing Pitcher Report lineup/matchup glitch fix.
+### Fixed
+- Fixed the Pitcher Report mobile glitch where tapping **Batting Lineup & Matchups** could briefly show the lineup and then leave the expanded area blank.
+- Reworked the expanded lineup panel CSS to avoid iPhone Safari rendering issues caused by aggressive layout containment.
+- Added safer expanded-row restore logic so open lineup panels survive table refreshes, sorting, and live re-renders.
+- Preserved expanded lineup state while live data refreshes in the background.
+- Kept the v6.3 Props tab responsive layout optimization intact.
 
 ### Deployment
 Replace only `index.html` for this patch.
