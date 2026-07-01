@@ -1,8 +1,2973 @@
 {
-  "version": 1,
-  "date": null,
-  "generatedAt": null,
+  "version": 6,
+  "date": "2026-07-01",
+  "generatedAt": "2026-07-01T12:47:49.884Z",
   "timezone": "America/Chicago",
-  "note": "This file is updated daily at 7:00 AM Central by .github/workflows/lineup-update.yml.",
-  "games": {}
+  "status": {
+    "allConfirmed": false,
+    "confirmedTeams": 0,
+    "totalTeams": 28,
+    "pendingTeams": 28,
+    "confirmedGames": 0,
+    "totalGames": 14,
+    "skippedConfirmedTeams": 0,
+    "message": "28 team lineup(s) still projected. Hourly Action keeps checking only unconfirmed teams."
+  },
+  "note": "Official MLB batting order is used as soon as the Stats API boxscore exposes at least nine batters. Confirmed teams are preserved and skipped on later hourly runs. Projected teams keep updating until confirmed.",
+  "games": {
+    "822791": {
+      "gamePk": 822791,
+      "date": "2026-07-01",
+      "gameDate": "2026-07-01T19:07:00Z",
+      "status": "Scheduled",
+      "matchup": "NYM @ TOR",
+      "allLineupsConfirmed": false,
+      "lastCheckedAt": "2026-07-01T12:47:50.278Z",
+      "teams": {
+        "away": {
+          "id": 121,
+          "abbr": "NYM",
+          "name": "New York Mets",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 805999,
+              "name": "A.J. Ewing",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 666182,
+              "name": "Bo Bichette",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 683146,
+              "name": "Brett Baty",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 701807,
+              "name": "Carson Benge",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 676572,
+              "name": "Eric Wagaman",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 682626,
+              "name": "Francisco Alvarez",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 596019,
+              "name": "Francisco Lindor",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 676724,
+              "name": "Jared Young",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 665742,
+              "name": "Juan Soto",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        },
+        "home": {
+          "id": 141,
+          "abbr": "TOR",
+          "name": "Toronto Blue Jays",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 672386,
+              "name": "Alejandro Kirk",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 665926,
+              "name": "Andrés Giménez",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 678218,
+              "name": "Brandon Valenzuela",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 662139,
+              "name": "Daulton Varsho",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 676391,
+              "name": "Ernie Clement",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 543807,
+              "name": "George Springer",
+              "pos": "DH",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 672960,
+              "name": "Kazuma Okamoto",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 649966,
+              "name": "Luis Urías",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 664702,
+              "name": "Myles Straw",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        }
+      }
+    },
+    "823446": {
+      "gamePk": 823446,
+      "date": "2026-07-01",
+      "gameDate": "2026-07-01T22:40:00Z",
+      "status": "Scheduled",
+      "matchup": "PIT @ PHI",
+      "allLineupsConfirmed": false,
+      "lastCheckedAt": "2026-07-01T12:47:50.352Z",
+      "teams": {
+        "away": {
+          "id": 134,
+          "abbr": "PIT",
+          "name": "Pittsburgh Pirates",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 695257,
+              "name": "Billy Cook",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 664040,
+              "name": "Brandon Lowe",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 668804,
+              "name": "Bryan Reynolds",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 682848,
+              "name": "Endy Rodríguez",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 699013,
+              "name": "Esmerlyn Valdez",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 680779,
+              "name": "Henry Davis",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 663968,
+              "name": "Jake Mangum",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 669707,
+              "name": "Jared Triolo",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 804606,
+              "name": "Konnor Griffin",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        },
+        "home": {
+          "id": 143,
+          "abbr": "PHI",
+          "name": "Philadelphia Phillies",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 664761,
+              "name": "Alec Bohm",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 669016,
+              "name": "Brandon Marsh",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 547180,
+              "name": "Bryce Harper",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 681082,
+              "name": "Bryson Stott",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 656537,
+              "name": "Derek Hill",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 624641,
+              "name": "Edmundo Sosa",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 687282,
+              "name": "Gabriel Rincones Jr.",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 596117,
+              "name": "Garrett Stubbs",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 592663,
+              "name": "J.T. Realmuto",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        }
+      }
+    },
+    "823530": {
+      "gamePk": 823530,
+      "date": "2026-07-01",
+      "gameDate": "2026-07-01T17:35:00Z",
+      "status": "Scheduled",
+      "matchup": "DET @ NYY",
+      "allLineupsConfirmed": false,
+      "lastCheckedAt": "2026-07-01T12:47:50.130Z",
+      "teams": {
+        "away": {
+          "id": 116,
+          "abbr": "DET",
+          "name": "Detroit Tigers",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 701162,
+              "name": "Ben Malgeri",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 690993,
+              "name": "Colt Keith",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 693307,
+              "name": "Dillon Dingler",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 701678,
+              "name": "Hao-Yu Lee",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 663330,
+              "name": "Jahmai Jones",
+              "pos": "DH",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 668670,
+              "name": "Jake Rogers",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 681546,
+              "name": "James Outman",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 681481,
+              "name": "Kerry Carpenter",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 805808,
+              "name": "Kevin McGonigle",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        },
+        "home": {
+          "id": 147,
+          "abbr": "NYY",
+          "name": "New York Yankees",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 645305,
+              "name": "Ali Sánchez",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 642708,
+              "name": "Amed Rosario",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 683011,
+              "name": "Anthony Volpe",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 669224,
+              "name": "Austin Wells",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 700250,
+              "name": "Ben Rice",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 641355,
+              "name": "Cody Bellinger",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 691176,
+              "name": "Jasson Domínguez",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 665862,
+              "name": "Jazz Chisholm Jr.",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 676609,
+              "name": "José Caballero",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        }
+      }
+    },
+    "823767": {
+      "gamePk": 823767,
+      "date": "2026-07-01",
+      "gameDate": "2026-07-02T00:10:00Z",
+      "status": "Scheduled",
+      "matchup": "CIN @ MIL",
+      "allLineupsConfirmed": false,
+      "lastCheckedAt": "2026-07-01T12:47:50.668Z",
+      "teams": {
+        "away": {
+          "id": 113,
+          "abbr": "CIN",
+          "name": "Cincinnati Reds",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 695490,
+              "name": "Edwin Arroyo",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 682829,
+              "name": "Elly De La Cruz",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 553993,
+              "name": "Eugenio Suárez",
+              "pos": "DH",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 671155,
+              "name": "Ivan Johnson",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 668709,
+              "name": "JJ Bleday",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 624431,
+              "name": "Jose Trevino",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 680574,
+              "name": "Matt McLain",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 663993,
+              "name": "Nathaniel Lowe",
+              "pos": "DH",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 682622,
+              "name": "Noelvi Marte",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        },
+        "home": {
+          "id": 158,
+          "abbr": "MIL",
+          "name": "Milwaukee Brewers",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 683734,
+              "name": "Andrew Vaughn",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 663368,
+              "name": "Blake Perkins",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 668930,
+              "name": "Brice Turang",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 592885,
+              "name": "Christian Yelich",
+              "pos": "DH",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 806198,
+              "name": "Cooper Pratt",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 666152,
+              "name": "David Hamilton",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 669003,
+              "name": "Garrett Mitchell",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 596142,
+              "name": "Gary Sánchez",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 694192,
+              "name": "Jackson Chourio",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        }
+      }
+    },
+    "824094": {
+      "gamePk": 824094,
+      "date": "2026-07-01",
+      "gameDate": "2026-07-01T23:40:00Z",
+      "status": "Scheduled",
+      "matchup": "TB @ KC",
+      "allLineupsConfirmed": false,
+      "lastCheckedAt": "2026-07-01T12:47:50.515Z",
+      "teams": {
+        "away": {
+          "id": 139,
+          "abbr": "TB",
+          "name": "Tampa Bay Rays",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 810938,
+              "name": "Ben Williamson",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 656775,
+              "name": "Cedric Mullins",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 802415,
+              "name": "Chandler Simpson",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 676439,
+              "name": "Hunter Feduccia",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 666018,
+              "name": "Jonathan Aranda",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 676356,
+              "name": "Jonny DeLuca",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 691406,
+              "name": "Junior Caminero",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 663743,
+              "name": "Nick Fortes",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 680700,
+              "name": "Richie Palacios",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        },
+        "home": {
+          "id": 118,
+          "abbr": "KC",
+          "name": "Kansas City Royals",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 677951,
+              "name": "Bobby Witt Jr.",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 695600,
+              "name": "Carter Jensen",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 686555,
+              "name": "Isaac Collins",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 695506,
+              "name": "Jac Caglianone",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 670231,
+              "name": "John Rave",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 668942,
+              "name": "Josh Rojas",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 670224,
+              "name": "Kameron Misner",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 657041,
+              "name": "Lane Thomas",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 686681,
+              "name": "Michael Massey",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        }
+      }
+    },
+    "824174": {
+      "gamePk": 824174,
+      "date": "2026-07-01",
+      "gameDate": "2026-07-02T00:10:00Z",
+      "status": "Scheduled",
+      "matchup": "MIN @ HOU",
+      "allLineupsConfirmed": false,
+      "lastCheckedAt": "2026-07-01T12:47:50.598Z",
+      "teams": {
+        "away": {
+          "id": 142,
+          "abbr": "MIN",
+          "name": "Minnesota Twins",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 656577,
+              "name": "Alex Jackson",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 668885,
+              "name": "Austin Martin",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 686797,
+              "name": "Brooks Lee",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 621439,
+              "name": "Byron Buxton",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 605137,
+              "name": "Josh Bell",
+              "pos": "DH",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 665019,
+              "name": "Kody Clemens",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 693459,
+              "name": "Kyler Fedko",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 807712,
+              "name": "Luke Keaschall",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 668904,
+              "name": "Royce Lewis",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        },
+        "home": {
+          "id": 117,
+          "abbr": "HOU",
+          "name": "Houston Astros",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 694728,
+              "name": "Brice Matthews",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 701358,
+              "name": "Cam Smith",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 543877,
+              "name": "Christian Vázquez",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 572233,
+              "name": "Christian Walker",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 670623,
+              "name": "Isaac Paredes",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 676694,
+              "name": "Jake Meyers",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 694388,
+              "name": "Joey Loperfido",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 514888,
+              "name": "Jose Altuve",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 669397,
+              "name": "Nick Allen",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        }
+      }
+    },
+    "824337": {
+      "gamePk": 824337,
+      "date": "2026-07-01",
+      "gameDate": "2026-07-02T00:40:00Z",
+      "status": "Scheduled",
+      "matchup": "MIA @ COL",
+      "allLineupsConfirmed": false,
+      "lastCheckedAt": "2026-07-01T12:47:50.748Z",
+      "teams": {
+        "away": {
+          "id": 146,
+          "abbr": "MIA",
+          "name": "Miami Marlins",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 640459,
+              "name": "Brian Navarreto",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 665923,
+              "name": "Esteury Ruiz",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 665052,
+              "name": "Griffin Conine",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 681715,
+              "name": "Heriberto Hernández",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 805300,
+              "name": "Jakob Marsee",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 691594,
+              "name": "Javier Sanoja",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 691788,
+              "name": "Joe Mack",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 669065,
+              "name": "Kyle Stowers",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 677870,
+              "name": "Leo Jiménez",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        },
+        "home": {
+          "id": 115,
+          "abbr": "COL",
+          "name": "Colorado Rockies",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 690924,
+              "name": "Braxton Fulford",
+              "pos": "DH",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 664954,
+              "name": "Brett Sullivan",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 694249,
+              "name": "Cole Carrigg",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 666397,
+              "name": "Edouard Julien",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 678662,
+              "name": "Ezequiel Tovar",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 696100,
+              "name": "Hunter Goodman",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 664983,
+              "name": "Jake McCarthy",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 691720,
+              "name": "Kyle Karros",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 666160,
+              "name": "Mickey Moniak",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        }
+      }
+    },
+    "824419": {
+      "gamePk": 824419,
+      "date": "2026-07-01",
+      "gameDate": "2026-07-01T17:10:00Z",
+      "status": "Scheduled",
+      "matchup": "TEX @ CLE",
+      "allLineupsConfirmed": false,
+      "lastCheckedAt": "2026-07-01T12:47:49.968Z",
+      "teams": {
+        "away": {
+          "id": 140,
+          "abbr": "TEX",
+          "name": "Texas Rangers",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 696030,
+              "name": "Alejandro Osuna",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 607043,
+              "name": "Brandon Nimmo",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 695508,
+              "name": "Cam Cauley",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 608369,
+              "name": "Corey Seager",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 553869,
+              "name": "Elias Díaz",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 694497,
+              "name": "Evan Carter",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 677649,
+              "name": "Ezequiel Duran",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 669394,
+              "name": "Jake Burger",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 592626,
+              "name": "Joc Pederson",
+              "pos": "DH",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        },
+        "home": {
+          "id": 114,
+          "abbr": "CLE",
+          "name": "Cleveland Guardians",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 595978,
+              "name": "Austin Hedges",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 677587,
+              "name": "Brayan Rocchio",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 800050,
+              "name": "Chase DeLauter",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 694876,
+              "name": "Cooper Ingle",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 682177,
+              "name": "Daniel Schneemann",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 681807,
+              "name": "David Fry",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 672356,
+              "name": "Gabriel Arias",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 696135,
+              "name": "Kahlil Watson",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 700932,
+              "name": "Kyle Manzardo",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        }
+      }
+    },
+    "824660": {
+      "gamePk": 824660,
+      "date": "2026-07-01",
+      "gameDate": "2026-07-01T18:20:00Z",
+      "status": "Scheduled",
+      "matchup": "SD @ CHC",
+      "allLineupsConfirmed": false,
+      "lastCheckedAt": "2026-07-01T12:47:50.202Z",
+      "teams": {
+        "away": {
+          "id": 135,
+          "abbr": "SD",
+          "name": "San Diego Padres",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 665487,
+              "name": "Fernando Tatis Jr.",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 666023,
+              "name": "Freddy Fermin",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 657757,
+              "name": "Gavin Sheets",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 701538,
+              "name": "Jackson Merrill",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 630105,
+              "name": "Jake Cronenworth",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 687749,
+              "name": "Jase Bowen",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 592518,
+              "name": "Manny Machado",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 609280,
+              "name": "Miguel Andujar",
+              "pos": "DH",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 660710,
+              "name": "Rodolfo Durán",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        },
+        "home": {
+          "id": 112,
+          "abbr": "CHC",
+          "name": "Chicago Cubs",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 608324,
+              "name": "Alex Bregman",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 608348,
+              "name": "Carson Kelly",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 621020,
+              "name": "Dansby Swanson",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 664023,
+              "name": "Ian Happ",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 681909,
+              "name": "Justin Dean",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 682634,
+              "name": "Kevin Alcántara",
+              "pos": "DH",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 683737,
+              "name": "Michael Busch",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 624424,
+              "name": "Michael Conforto",
+              "pos": "DH",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 665804,
+              "name": "Miguel Amaya",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        }
+      }
+    },
+    "824740": {
+      "gamePk": 824740,
+      "date": "2026-07-01",
+      "gameDate": "2026-07-01T17:35:00Z",
+      "status": "Scheduled",
+      "matchup": "WSH @ BOS",
+      "allLineupsConfirmed": false,
+      "lastCheckedAt": "2026-07-01T12:47:50.048Z",
+      "teams": {
+        "away": {
+          "id": 120,
+          "abbr": "WSH",
+          "name": "Washington Nationals",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 665953,
+              "name": "Andrés Chaparro",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 682928,
+              "name": "CJ Abrams",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 678554,
+              "name": "Curtis Mead",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 695734,
+              "name": "Daylen Lile",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 686452,
+              "name": "Drew Millas",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 686611,
+              "name": "Dylan Crews",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 696285,
+              "name": "Jacob Young",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 695578,
+              "name": "James Wood",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 678391,
+              "name": "Jorbit Vivas",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        },
+        "home": {
+          "id": 111,
+          "abbr": "BOS",
+          "name": "Boston Red Sox",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 655316,
+              "name": "Andruw Monasterio",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 678011,
+              "name": "Anthony Seigler",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 702332,
+              "name": "Caleb Durbin",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 665966,
+              "name": "Carlos Narváez",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 678882,
+              "name": "Ceddanne Rafaela",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 657136,
+              "name": "Connor Wong",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 680776,
+              "name": "Jarren Duran",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 807799,
+              "name": "Masataka Yoshida",
+              "pos": "DH",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 681987,
+              "name": "Nate Eaton",
+              "pos": "OF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        }
+      }
+    },
+    "824818": {
+      "gamePk": 824818,
+      "date": "2026-07-01",
+      "gameDate": "2026-07-01T16:35:00Z",
+      "status": "Scheduled",
+      "matchup": "CWS @ BAL",
+      "allLineupsConfirmed": false,
+      "lastCheckedAt": "2026-07-01T12:47:49.884Z",
+      "teams": {
+        "away": {
+          "id": 145,
+          "abbr": "CWS",
+          "name": "Chicago White Sox",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 643217,
+              "name": "Andrew Benintendi",
+              "pos": "DH",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 695731,
+              "name": "Braden Montgomery",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 805367,
+              "name": "Chase Meidroth",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 695657,
+              "name": "Colson Montgomery",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 691011,
+              "name": "Drew Romo",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 694378,
+              "name": "Jacob Gonzalez",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 678577,
+              "name": "Junior Perez",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 691019,
+              "name": "Kyle Teel",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 682668,
+              "name": "Luisangel Acuña",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        },
+        "home": {
+          "id": 110,
+          "abbr": "BAL",
+          "name": "Baltimore Orioles",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 668939,
+              "name": "Adley Rutschman",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 677942,
+              "name": "Blaze Alexander",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 644433,
+              "name": "Chadwick Tromp",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 691723,
+              "name": "Coby Mayo",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 681297,
+              "name": "Colton Cowser",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 687637,
+              "name": "Dylan Beavers",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 683002,
+              "name": "Gunnar Henderson",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 702616,
+              "name": "Jackson Holliday",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 665750,
+              "name": "Leody Taveras",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        }
+      }
+    },
+    "824905": {
+      "gamePk": 824905,
+      "date": "2026-07-01",
+      "gameDate": "2026-07-01T23:15:00Z",
+      "status": "Scheduled",
+      "matchup": "STL @ ATL",
+      "allLineupsConfirmed": false,
+      "lastCheckedAt": "2026-07-01T12:47:50.437Z",
+      "teams": {
+        "away": {
+          "id": 138,
+          "abbr": "STL",
+          "name": "St. Louis Cardinals",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 676475,
+              "name": "Alec Burleson",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 691458,
+              "name": "Blaze Jordan",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 663494,
+              "name": "Bryan Torres",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 671056,
+              "name": "Iván Herrera",
+              "pos": "DH",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 802139,
+              "name": "JJ Wetherholt",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 699625,
+              "name": "Jimmy Crooks",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 691023,
+              "name": "Jordan Walker",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 665877,
+              "name": "José Fermín",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 663457,
+              "name": "Lars Nootbaar",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        },
+        "home": {
+          "id": 144,
+          "abbr": "ATL",
+          "name": "Atlanta Braves",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 663586,
+              "name": "Austin Riley",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 642086,
+              "name": "Dominic Smith",
+              "pos": "DH",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 686948,
+              "name": "Drake Baldwin",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 642201,
+              "name": "Eli White",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 673490,
+              "name": "Ha-Seong Kim",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 663698,
+              "name": "Joey Bart",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 622761,
+              "name": "Jorge Mateo",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 621566,
+              "name": "Matt Olson",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 643289,
+              "name": "Mauricio Dubón",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        }
+      }
+    },
+    "824985": {
+      "gamePk": 824985,
+      "date": "2026-07-01",
+      "gameDate": "2026-07-02T01:40:00Z",
+      "status": "Scheduled",
+      "matchup": "LAD @ ATH",
+      "allLineupsConfirmed": false,
+      "lastCheckedAt": "2026-07-01T12:47:50.812Z",
+      "teams": {
+        "away": {
+          "id": 119,
+          "abbr": "LAD",
+          "name": "Los Angeles Dodgers",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 669743,
+              "name": "Alex Call",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 690976,
+              "name": "Alex Freeland",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 681624,
+              "name": "Andy Pages",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 642020,
+              "name": "Chuckie Robinson",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 687221,
+              "name": "Dalton Rushing",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 518692,
+              "name": "Freddie Freeman",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 663656,
+              "name": "Kyle Tucker",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 571970,
+              "name": "Max Muncy",
+              "pos": "3B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 500743,
+              "name": "Miguel Rojas",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        },
+        "home": {
+          "id": 133,
+          "abbr": "ATH",
+          "name": "Athletics",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 675961,
+              "name": "Alika Williams",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 666126,
+              "name": "Carlos Cortes",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 687515,
+              "name": "Colby Thomas",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 687231,
+              "name": "Darell Hernaiz",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 703607,
+              "name": "Henry Bolte",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 643446,
+              "name": "Jeff McNeil",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 608841,
+              "name": "Joey Meneses",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 641680,
+              "name": "Jonah Heim",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 811965,
+              "name": "Joshua Kuroda-Grauer",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        }
+      }
+    },
+    "825064": {
+      "gamePk": 825064,
+      "date": "2026-07-01",
+      "gameDate": "2026-07-02T01:40:00Z",
+      "status": "Scheduled",
+      "matchup": "SF @ AZ",
+      "allLineupsConfirmed": false,
+      "lastCheckedAt": "2026-07-01T12:47:50.880Z",
+      "teams": {
+        "away": {
+          "id": 137,
+          "abbr": "SF",
+          "name": "San Francisco Giants",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 805811,
+              "name": "Bryce Eldridge",
+              "pos": "DH",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 669477,
+              "name": "Casey Schmitt",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 701852,
+              "name": "Drew Cavanaugh",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 687551,
+              "name": "Drew Gilbert",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 606992,
+              "name": "Eric Haase",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 671218,
+              "name": "Heliot Ramos",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 813841,
+              "name": "Jonah Cox",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 808982,
+              "name": "Jung Hoo Lee",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 650333,
+              "name": "Luis Arraez",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        },
+        "home": {
+          "id": 109,
+          "abbr": "AZ",
+          "name": "Arizona Diamondbacks",
+          "lineup": [
+            {
+              "order": 1,
+              "id": 680728,
+              "name": "Adrian Del Castillo",
+              "pos": "DH",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 2,
+              "id": 682998,
+              "name": "Corbin Carroll",
+              "pos": "RF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 3,
+              "id": 672515,
+              "name": "Gabriel Moreno",
+              "pos": "C",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 4,
+              "id": 672695,
+              "name": "Geraldo Perdomo",
+              "pos": "SS",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 5,
+              "id": 545121,
+              "name": "Ildemaro Vargas",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 6,
+              "id": 678489,
+              "name": "Jorge Barrosa",
+              "pos": "CF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 7,
+              "id": 606466,
+              "name": "Ketel Marte",
+              "pos": "2B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 8,
+              "id": 666971,
+              "name": "Lourdes Gurriel Jr.",
+              "pos": "LF",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            },
+            {
+              "order": 9,
+              "id": 694410,
+              "name": "LuJames Groover",
+              "pos": "1B",
+              "stats": {},
+              "todayHR": 0,
+              "confirmed": false,
+              "source": "active-roster projection"
+            }
+          ],
+          "source": "projected active-roster lineup",
+          "confirmed": false,
+          "confirmedAt": null
+        }
+      }
+    }
+  }
 }
