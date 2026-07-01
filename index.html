@@ -770,6 +770,34 @@
     color:var(--muted);
   }
 
+
+
+/* v5.4 Global Font Increase (excluding Tracker tab) */
+body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) {
+  font-size: 1.08em;
+}
+body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) h1{font-size:2.3rem!important;}
+body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) h2{font-size:1.8rem!important;}
+body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) h3{font-size:1.45rem!important;}
+body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) h4,
+body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) .section-title,
+body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) .card-title{
+ font-size:1.25rem!important;
+}
+body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) td,
+body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) th,
+body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) label,
+body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) button,
+body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) input,
+body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) select,
+body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) .player-name,
+body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) .stat-value,
+body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) .metric,
+body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) p,
+body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) span{
+ font-size:1.08em!important;
+}
+
 </style>
 <!-- ============================================================ -->
 <!-- ⚠️  GOOGLE ADSENSE — DO NOT REMOVE OR MODIFY THIS BLOCK  ⚠️   -->
@@ -2011,56 +2039,6 @@ button,
 </script>
 
 
-<style id="live-production-no-tracker-patch">
-/* Live Production: Tracker/DIE are not exposed publicly */
-#tracker,
-#diamond-intelligence-engine,
-[data-tab="tracker"] {
-  display: none !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-</style>
-
-<script id="live-production-no-tracker-script">
-(function () {
-  window.DIAMOND_REPORT_BUILD = "LIVE_PRODUCTION_DIE_FOUNDATION_NO_TRACKER";
-
-  function removeTrackerExposure() {
-    document.querySelectorAll('[data-tab="tracker"]').forEach(function (el) { el.remove(); });
-    var tracker = document.getElementById('tracker');
-    if (tracker) {
-      tracker.classList.remove('active');
-      tracker.style.display = 'none';
-      tracker.setAttribute('aria-hidden', 'true');
-    }
-    var die = document.getElementById('diamond-intelligence-engine');
-    if (die) {
-      die.style.display = 'none';
-      die.setAttribute('aria-hidden', 'true');
-    }
-    if (location.hash && location.hash.toLowerCase().includes('tracker')) {
-      history.replaceState(null, '', location.pathname + location.search);
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded', removeTrackerExposure);
-  window.addEventListener('load', removeTrackerExposure);
-  setInterval(removeTrackerExposure, 2000);
-
-  var previousShowTab = window.showTab;
-  window.showTab = function (tabName, el) {
-    if (tabName === 'tracker') {
-      var first = document.querySelector('[data-tab="scores"]');
-      if (typeof previousShowTab === 'function') return previousShowTab('scores', first);
-      return;
-    }
-    if (typeof previousShowTab === 'function') return previousShowTab(tabName, el);
-  };
-})();
-</script>
-
-
 <style id="v5-2-responsive-optimization">
 /* ============================================================
    Diamond Report v5.2 — Responsive Optimization
@@ -2465,6 +2443,967 @@ table {
 }
 </style>
 
+
+<style id="v5-2-responsive-stability-patch">
+/* ============================================================
+   Diamond Report DIE v5.2 — Responsive Stability Patch
+   Optimized for phone, tablet, laptop, and desktop.
+   This patch intentionally loads last and overrides older rules.
+   ============================================================ */
+
+:root {
+  --dr-page-max: 1360px;
+  --dr-pad-desktop: 24px;
+  --dr-pad-tablet: 16px;
+  --dr-pad-phone: 10px;
+  --dr-card-radius: 10px;
+  --dr-font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  --dr-font-display: 'Bebas Neue', Impact, 'Arial Black', sans-serif;
+  --dr-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+html,
+body {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  -webkit-text-size-adjust: 100% !important;
+  text-size-adjust: 100% !important;
+}
+
+body {
+  font-family: var(--dr-font-body) !important;
+  min-height: 100svh !important;
+}
+
+body *:not(svg):not(svg *) {
+  box-sizing: border-box !important;
+}
+
+/* Header / nav */
+.header {
+  width: 100% !important;
+  max-width: 100vw !important;
+  min-width: 0 !important;
+}
+
+.header .logo {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.header .logo svg {
+  max-width: min(320px, 62vw) !important;
+  height: auto !important;
+  display: block !important;
+}
+
+.date-badge,
+#header-date {
+  display: none !important;
+}
+
+.nav {
+  width: 100% !important;
+  max-width: 100vw !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+  white-space: nowrap !important;
+}
+
+.nav::-webkit-scrollbar {
+  display: none !important;
+}
+
+.tab {
+  flex: 0 0 auto !important;
+  min-height: 38px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  font-family: var(--dr-font-body) !important;
+}
+
+/* Main layout */
+main {
+  width: 100% !important;
+  max-width: var(--dr-page-max) !important;
+  margin: 0 auto !important;
+  padding: 20px var(--dr-pad-desktop) !important;
+}
+
+.section {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.section-title {
+  font-family: var(--dr-font-body) !important;
+  font-weight: 900 !important;
+  letter-spacing: .075em !important;
+  line-height: 1.2 !important;
+  text-transform: uppercase !important;
+  overflow-wrap: anywhere !important;
+}
+
+/* Universal overflow guards */
+img,
+svg,
+canvas,
+video {
+  max-width: 100% !important;
+}
+
+.game-card,
+.tracker-card,
+.gp-card,
+.kprop-row,
+.stat-row,
+.hrp-batter-cell,
+.pr-pitcher-cell,
+.lineup-batter-card,
+.die-panel,
+.die-card {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.game-card,
+.tracker-card,
+.gp-card,
+.die-card {
+  border-radius: var(--dr-card-radius) !important;
+  overflow: hidden !important;
+}
+
+.tracker-scroll,
+#hr-potential-content,
+#pr-content,
+.mu-modal,
+.die-feed {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-x: contain !important;
+}
+
+/* Tables should scroll inside their containers, not break the page */
+.hrp-table,
+.pr-table,
+.tracker-scroll table,
+.lineup-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+}
+
+/* Desktop */
+@media (min-width: 1200px) {
+  main {
+    padding: 22px var(--dr-pad-desktop) !important;
+  }
+
+  .games-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+    gap: 14px !important;
+  }
+
+  .tracker-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+  }
+
+  .tracker-grid.tracker-grid-stack {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .die-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .tracker-big,
+  .die-big {
+    font-size: 34px !important;
+  }
+}
+
+/* Laptop / small desktop */
+@media (min-width: 992px) and (max-width: 1199px) {
+  main {
+    padding: 18px var(--dr-pad-tablet) !important;
+  }
+
+  .games-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .tracker-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 13px !important;
+  }
+
+  .tracker-grid.tracker-grid-stack,
+  .die-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .props-grid,
+  .hrs-today-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Tablet */
+@media (min-width: 769px) and (max-width: 991px) {
+  .header {
+    height: 56px !important;
+    padding: 0 14px !important;
+  }
+
+  main {
+    padding: 16px var(--dr-pad-tablet) !important;
+  }
+
+  .games-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .tracker-grid,
+  .die-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .tracker-grid.tracker-grid-stack {
+    grid-template-columns: 1fr !important;
+  }
+
+  .props-grid,
+  .hrs-today-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .hrp-table {
+    min-width: 720px !important;
+  }
+
+  .pr-table {
+    min-width: 760px !important;
+  }
+
+  .tracker-big,
+  .die-big {
+    font-size: 30px !important;
+  }
+
+  .tracker-card h3,
+  .die-card h4 {
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+  }
+}
+
+/* Phones */
+@media (max-width: 768px) {
+  .header {
+    height: 52px !important;
+    padding: 0 10px !important;
+  }
+
+  .header .logo svg {
+    max-width: min(210px, 68vw) !important;
+  }
+
+  .nav {
+    padding: 8px 10px 0 !important;
+  }
+
+  .tab {
+    padding: 7px 12px !important;
+    font-size: 10px !important;
+    letter-spacing: .04em !important;
+  }
+
+  main {
+    padding: 10px var(--dr-pad-phone) !important;
+  }
+
+  .section-title {
+    font-size: 16px !important;
+    letter-spacing: .055em !important;
+    margin-bottom: 12px !important;
+  }
+
+  .games-grid,
+  .props-grid,
+  .hrs-today-grid,
+  .tracker-grid,
+  .tracker-grid.tracker-grid-stack,
+  .die-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .game-card,
+  .tracker-card,
+  .die-card {
+    padding: 11px 12px !important;
+  }
+
+  .tracker-card h3,
+  .die-card h4 {
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+    letter-spacing: .055em !important;
+    margin-bottom: 7px !important;
+    white-space: normal !important;
+  }
+
+  .tracker-big,
+  .die-big {
+    font-size: 28px !important;
+  }
+
+  .tracker-sub,
+  .die-small {
+    font-size: 10px !important;
+    line-height: 1.35 !important;
+  }
+
+  .team-logo {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  .team-abbr {
+    font-size: 19px !important;
+  }
+
+  .score-block {
+    font-size: 20px !important;
+    gap: 5px !important;
+  }
+
+  .team-name,
+  .game-time,
+  .standings-badge {
+    font-size: 9px !important;
+  }
+
+  .hrp-table {
+    min-width: 650px !important;
+  }
+
+  .pr-table {
+    min-width: 700px !important;
+  }
+
+  .tracker-scroll table {
+    min-width: 560px !important;
+  }
+
+  .tracker-scroll th,
+  .tracker-scroll td {
+    padding: 7px 6px !important;
+    font-size: 10px !important;
+    white-space: nowrap !important;
+  }
+
+  .tracker-pill,
+  .die-chip,
+  .kprop-chip,
+  .hrp-hot-chip,
+  .hrp-hot-badge {
+    font-size: 9px !important;
+    padding: 3px 7px !important;
+  }
+
+  .kprop-row {
+    display: grid !important;
+    grid-template-columns: 1fr 74px 84px !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 11px 12px !important;
+  }
+
+  .kprop-pitcher {
+    min-width: 0 !important;
+    order: 0 !important;
+  }
+
+  .kprop-name {
+    font-size: 13px !important;
+    color: #fff !important;
+  }
+
+  .kprop-meta {
+    font-size: 9px !important;
+  }
+
+  .kprop-line,
+  .kprop-pred {
+    min-width: 0 !important;
+    width: 100% !important;
+    padding: 6px 7px !important;
+  }
+
+  .kprop-line-val,
+  .kprop-pred-val {
+    font-size: 20px !important;
+  }
+
+  .kprop-reasoning {
+    grid-column: 1 / -1 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    font-size: 10px !important;
+  }
+
+  .stat-row {
+    padding: 9px 10px !important;
+    gap: 8px !important;
+  }
+
+  .stat-row-num {
+    font-size: 22px !important;
+    min-width: 24px !important;
+  }
+
+  .die-panel {
+    padding: 12px !important;
+    margin-top: 16px !important;
+  }
+
+  .die-head {
+    gap: 10px !important;
+  }
+
+  .die-title {
+    font-size: 15px !important;
+    line-height: 1.25 !important;
+  }
+
+  .die-status-list {
+    grid-template-columns: 1fr !important;
+  }
+
+  .die-weight-row {
+    grid-template-columns: 86px 1fr 38px !important;
+    gap: 6px !important;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 390px) {
+  main {
+    padding: 8px !important;
+  }
+
+  .header .logo svg {
+    max-width: 185px !important;
+  }
+
+  .tab {
+    padding: 7px 10px !important;
+    font-size: 9px !important;
+  }
+
+  .game-card,
+  .tracker-card,
+  .die-card {
+    padding: 10px !important;
+  }
+
+  .tracker-big,
+  .die-big {
+    font-size: 25px !important;
+  }
+
+  .tracker-sub,
+  .die-small {
+    font-size: 9px !important;
+  }
+
+  .kprop-row {
+    grid-template-columns: 1fr 66px 78px !important;
+  }
+
+  .kprop-line-val,
+  .kprop-pred-val {
+    font-size: 18px !important;
+  }
+}
+
+/* Landscape phones */
+@media (max-width: 900px) and (orientation: landscape) {
+  .games-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .tracker-grid,
+  .die-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+</style>
+
+
+<style id="v5-3-mobile-hr-k-fix">
+/* ============================================================
+   Diamond Report DIE v5.3 — Mobile HR Potential + K's Today Fix
+   - Makes HR Potential usable on iPhone without losing columns.
+   - Makes K's Today compact, readable, and non-overflowing.
+   - Keeps tablet/desktop layout intact.
+   ============================================================ */
+
+/* Base safety */
+#hr-potential-content,
+#ks-today-props {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Make the HR table horizontally scroll inside its own card only */
+#hr-potential-content {
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-x: contain !important;
+}
+
+#hr-potential-content .hrp-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+}
+
+/* K's Today should never force horizontal page scroll */
+#ks-today-props {
+  overflow-x: hidden !important;
+}
+
+@media (max-width: 768px) {
+  /* Props tab should always stack: HR Potential first, K's Today below */
+  #props .props-grid,
+  .props-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* HR Potential mobile table: wide enough to read, contained enough not to break the page */
+  #hr-potential-content .hrp-table {
+    min-width: 560px !important;
+    table-layout: fixed !important;
+  }
+
+  #hr-potential-content .hrp-table th,
+  #hr-potential-content .hrp-table td {
+    padding: 7px 6px !important;
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+    white-space: nowrap !important;
+    vertical-align: middle !important;
+  }
+
+  /* Batter column gets most space */
+  #hr-potential-content .hrp-table th:first-child,
+  #hr-potential-content .hrp-table td:first-child {
+    width: 190px !important;
+    text-align: left !important;
+  }
+
+  #hr-potential-content .hrp-batter-cell {
+    display: flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  #hr-potential-content .hrp-headshot {
+    width: 30px !important;
+    height: 30px !important;
+    flex: 0 0 30px !important;
+  }
+
+  #hr-potential-content .hrp-batter-info {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+
+  #hr-potential-content .hrp-batter-name {
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+    color: #fff !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 136px !important;
+  }
+
+  #hr-potential-content .hrp-batter-sub {
+    gap: 4px !important;
+    flex-wrap: wrap !important;
+    max-width: 138px !important;
+  }
+
+  #hr-potential-content .hrp-hot-badge,
+  #hr-potential-content .hrp-hot-chip,
+  #hr-potential-content .matchup-label {
+    font-size: 7.5px !important;
+    padding: 1px 5px !important;
+    line-height: 1.25 !important;
+  }
+
+  #hr-potential-content .hrp-matchup-wrap {
+    margin-top: 3px !important;
+    width: 100% !important;
+  }
+
+  #hr-potential-content .hrp-matchup-btn {
+    font-size: 7.5px !important;
+    padding: 2px 5px !important;
+    line-height: 1.2 !important;
+    max-width: 132px !important;
+    white-space: normal !important;
+    text-align: left !important;
+  }
+
+  #hr-potential-content .hrp-prob-cell {
+    min-width: 54px !important;
+    width: 62px !important;
+  }
+
+  #hr-potential-content .hrp-prob-num {
+    font-size: 19px !important;
+    line-height: 1 !important;
+  }
+
+  #hr-potential-content .hrp-prob-boost {
+    font-size: 7.5px !important;
+    white-space: nowrap !important;
+  }
+
+  #hr-potential-content .hrp-bar-wrap {
+    width: 48px !important;
+    height: 5px !important;
+  }
+
+  /* K's Today mobile cards */
+  #ks-today-props {
+    max-height: none !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+  }
+
+  #ks-today-props .ks-today-row,
+  .ks-today-row {
+    display: grid !important;
+    grid-template-columns: 34px minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 9px 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  #ks-today-props .ks-count,
+  .ks-count {
+    font-size: 22px !important;
+    min-width: 0 !important;
+    width: 34px !important;
+    text-align: center !important;
+    line-height: 1 !important;
+  }
+
+  #ks-today-props .ks-today-row > div,
+  .ks-today-row > div {
+    min-width: 0 !important;
+  }
+
+  #ks-today-props .ks-today-row div[style*="font-weight"],
+  .ks-today-row div[style*="font-weight"] {
+    font-size: 12px !important;
+    color: #fff !important;
+    line-height: 1.2 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  #ks-today-props .ks-today-row div[style*="color:var(--muted)"],
+  .ks-today-row div[style*="color:var(--muted)"] {
+    font-size: 9px !important;
+    line-height: 1.25 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  #ks-today-props .kprop-kcount,
+  .ks-today-row .kprop-kcount {
+    justify-self: end !important;
+    width: auto !important;
+    max-width: 82px !important;
+    font-size: 8px !important;
+    padding: 3px 6px !important;
+    margin-top: 0 !important;
+    white-space: nowrap !important;
+  }
+}
+
+@media (max-width: 430px) {
+  #hr-potential-content .hrp-table {
+    min-width: 520px !important;
+  }
+
+  #hr-potential-content .hrp-table th,
+  #hr-potential-content .hrp-table td {
+    padding: 6px 5px !important;
+    font-size: 9px !important;
+  }
+
+  #hr-potential-content .hrp-table th:first-child,
+  #hr-potential-content .hrp-table td:first-child {
+    width: 174px !important;
+  }
+
+  #hr-potential-content .hrp-headshot {
+    width: 28px !important;
+    height: 28px !important;
+    flex-basis: 28px !important;
+  }
+
+  #hr-potential-content .hrp-batter-name {
+    max-width: 122px !important;
+    font-size: 11px !important;
+  }
+
+  #hr-potential-content .hrp-batter-sub {
+    max-width: 124px !important;
+  }
+
+  #hr-potential-content .hrp-matchup-btn {
+    max-width: 118px !important;
+    font-size: 7px !important;
+  }
+
+  #ks-today-props .ks-today-row,
+  .ks-today-row {
+    grid-template-columns: 30px minmax(0, 1fr) auto !important;
+    gap: 6px !important;
+    padding: 8px 9px !important;
+  }
+
+  #ks-today-props .ks-count,
+  .ks-count {
+    width: 30px !important;
+    font-size: 20px !important;
+  }
+
+  #ks-today-props .kprop-kcount,
+  .ks-today-row .kprop-kcount {
+    max-width: 76px !important;
+    font-size: 7.5px !important;
+    padding: 2px 5px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  #hr-potential-content .hrp-table {
+    min-width: 500px !important;
+  }
+
+  #ks-today-props .ks-today-row,
+  .ks-today-row {
+    grid-template-columns: 28px minmax(0, 1fr) auto !important;
+  }
+
+  #ks-today-props .kprop-kcount,
+  .ks-today-row .kprop-kcount {
+    display: none !important;
+  }
+}
+</style>
+
+
+
+<style id="v5-4-professional-responsive-layout-fix">
+/* ============================================================
+   Diamond Report DIE v5.4 — Professional Responsive Layout Fix
+   - Fixes mobile Props: HR Potential, K's Today, and K Props overflow/clipping.
+   - Adds clean tablet and desktop card/table balance.
+   - Tracker tab untouched.
+   ============================================================ */
+
+/* Global containment for generated sections */
+#props, #props * { min-width: 0; }
+#props { overflow-x: hidden; }
+
+/* Desktop / large screens: keep K Props in one clean row */
+@media (min-width: 1100px){
+  #kprops-content > div[style*="overflow-x"]{ overflow-x:hidden !important; }
+  #kprops-content .kprop-row{
+    display:grid !important;
+    grid-template-columns: 44px minmax(190px,1.2fr) 92px 132px minmax(280px,1.6fr) !important;
+    align-items:center !important;
+    gap:12px !important;
+    flex-wrap:nowrap !important;
+  }
+  #kprops-content .kprop-row > img{ width:42px !important; height:42px !important; }
+  #kprops-content .kprop-pitcher{ min-width:0 !important; flex:none !important; }
+  #kprops-content .kprop-reasoning{ min-width:0 !important; flex:none !important; }
+  #kprops-content .kprop-line,
+  #kprops-content .kprop-pred{ min-width:0 !important; width:100% !important; }
+}
+
+/* Tablet: professional stacked dashboard without cramped sidebars */
+@media (min-width: 769px) and (max-width: 1099px){
+  #props .props-grid,
+  #props .hrs-today-grid{ grid-template-columns:1fr !important; gap:16px !important; }
+  #hr-potential-content{ max-height:620px !important; }
+  #ks-today-props{ max-height:none !important; }
+  #kprops-content .kprop-row{
+    display:grid !important;
+    grid-template-columns: 46px minmax(0,1fr) 90px 124px !important;
+    grid-template-areas: "photo pitcher line pred" "reason reason reason reason" !important;
+    align-items:center !important;
+    gap:10px !important;
+  }
+  #kprops-content .kprop-row > img{ grid-area:photo; }
+  #kprops-content .kprop-pitcher{ grid-area:pitcher; min-width:0 !important; }
+  #kprops-content .kprop-line{ grid-area:line; min-width:0 !important; width:100% !important; }
+  #kprops-content .kprop-pred{ grid-area:pred; min-width:0 !important; width:100% !important; }
+  #kprops-content .kprop-reasoning{ grid-area:reason; min-width:0 !important; width:100% !important; }
+}
+
+/* Mobile: convert HR Potential table into cards so it never breaks the viewport */
+@media (max-width: 768px){
+  main{ padding:12px !important; }
+  #props .section-title{ letter-spacing:1.6px !important; }
+  #props .props-grid,
+  #props .hrs-today-grid{ grid-template-columns:1fr !important; gap:14px !important; }
+  #hr-potential-content,
+  #kprops-content,
+  #gameprops-content{ max-width:100% !important; overflow-x:hidden !important; border-radius:12px !important; }
+  #hr-potential-content{ max-height:580px !important; overflow-y:auto !important; }
+  #hr-potential-content > div:first-child{ overflow-x:hidden !important; touch-action:pan-y !important; }
+  #hr-potential-content .hrp-table{ min-width:0 !important; width:100% !important; display:block !important; table-layout:auto !important; }
+  #hr-potential-content .hrp-table thead{ display:none !important; }
+  #hr-potential-content .hrp-table tbody{ display:block !important; width:100% !important; }
+  #hr-potential-content .hrp-table tr{
+    display:grid !important;
+    grid-template-columns: 78px minmax(0,1fr) 70px !important;
+    gap:8px !important;
+    align-items:center !important;
+    width:100% !important;
+    padding:12px 10px !important;
+    border-bottom:1px solid var(--border) !important;
+  }
+  #hr-potential-content .hrp-table td{
+    display:block !important;
+    padding:0 !important;
+    width:auto !important;
+    min-width:0 !important;
+    white-space:normal !important;
+    overflow:visible !important;
+    text-align:left !important;
+    font-size:10px !important;
+  }
+  #hr-potential-content .hrp-table td:first-child{ grid-column:1; width:auto !important; }
+  #hr-potential-content .hrp-table td:nth-child(2){ grid-column:2; width:auto !important; }
+  #hr-potential-content .hrp-table td:nth-child(3){ grid-column:3; text-align:right !important; width:auto !important; }
+  #hr-potential-content .hrp-batter-cell{ gap:8px !important; align-items:center !important; }
+  #hr-potential-content .hrp-headshot{ width:34px !important; height:34px !important; flex:0 0 34px !important; }
+  #hr-potential-content .hrp-batter-info{ width:100% !important; min-width:0 !important; }
+  #hr-potential-content .hrp-batter-name{ max-width:100% !important; font-size:13px !important; line-height:1.15 !important; white-space:normal !important; overflow:visible !important; }
+  #hr-potential-content .hrp-batter-sub{ max-width:100% !important; gap:4px !important; }
+  #hr-potential-content .top-hr-badge,
+  #hr-potential-content .hrp-hot-badge,
+  #hr-potential-content .hrp-hot-chip,
+  #hr-potential-content .matchup-label,
+  #hr-potential-content span[style*="FAVORABLE MATCHUP"],
+  #hr-potential-content span[style*="TOP HR THREAT"],
+  #hr-potential-content span[style*="DROUGHT"]{ font-size:7.5px !important; padding:2px 5px !important; line-height:1.15 !important; }
+  #hr-potential-content .hrp-matchup-btn{ max-width:100% !important; font-size:7px !important; padding:3px 6px !important; }
+  #hr-potential-content .hrp-prob-num{ font-size:18px !important; }
+  #hr-potential-content .hrp-bar-wrap{ width:54px !important; }
+
+  /* K's Today stays compact, readable, and visible on phones */
+  #ks-today-props .ks-today-row{
+    display:grid !important;
+    grid-template-columns:38px minmax(0,1fr) auto !important;
+    gap:8px !important;
+    padding:10px !important;
+  }
+  #ks-today-props .ks-count{ width:38px !important; font-size:22px !important; text-align:center !important; }
+  #ks-today-props .kprop-kcount{ max-width:92px !important; font-size:8px !important; padding:3px 6px !important; }
+
+  /* K Props mobile: card layout with clear hierarchy */
+  #kprops-content{ max-height:none !important; overflow-y:visible !important; }
+  #kprops-content > div[style*="overflow-x"]{ overflow-x:hidden !important; }
+  #kprops-content .kprop-row{
+    display:grid !important;
+    grid-template-columns:48px minmax(0,1fr) 78px !important;
+    grid-template-areas:
+      "photo pitcher line"
+      "pred pred pred"
+      "reason reason reason" !important;
+    align-items:center !important;
+    gap:10px !important;
+    padding:14px 12px !important;
+    flex-wrap:nowrap !important;
+    border-bottom:1px solid var(--border) !important;
+  }
+  #kprops-content .kprop-row > img{ grid-area:photo !important; width:44px !important; height:44px !important; }
+  #kprops-content .kprop-pitcher{ grid-area:pitcher !important; min-width:0 !important; flex:none !important; order:0 !important; }
+  #kprops-content .kprop-name{ font-size:14px !important; line-height:1.2 !important; white-space:normal !important; }
+  #kprops-content .kprop-meta{ font-size:9px !important; line-height:1.35 !important; white-space:normal !important; margin-top:3px !important; }
+  #kprops-content .kprop-line{ grid-area:line !important; min-width:0 !important; width:78px !important; padding:7px 6px !important; border-radius:9px !important; }
+  #kprops-content .kprop-line-val{ font-size:22px !important; line-height:1 !important; }
+  #kprops-content .kprop-line-lbl{ font-size:8px !important; letter-spacing:.8px !important; }
+  #kprops-content .kprop-pred{ grid-area:pred !important; min-width:0 !important; width:100% !important; padding:10px 8px !important; border-radius:10px !important; }
+  #kprops-content .kprop-pred-val{ font-size:22px !important; line-height:1.05 !important; text-align:center !important; }
+  #kprops-content .kprop-pred-lbl{ font-size:10px !important; }
+  #kprops-content .kprop-reasoning{ grid-area:reason !important; min-width:0 !important; width:100% !important; font-size:10px !important; line-height:1.45 !important; flex:none !important; }
+  #kprops-content .kprop-reason-title{ font-size:10px !important; margin-bottom:6px !important; }
+  #kprops-content .kprop-reason-list{ gap:6px !important; }
+  #kprops-content .kprop-chip{ font-size:9px !important; padding:3px 7px !important; white-space:normal !important; }
+  #kprops-content .kprop-summary{ font-size:10px !important; line-height:1.45 !important; }
+}
+
+@media (max-width: 430px){
+  #hr-potential-content .hrp-table tr{ grid-template-columns:62px minmax(0,1fr) 58px !important; gap:7px !important; padding:11px 9px !important; }
+  #hr-potential-content .hrp-headshot{ width:30px !important; height:30px !important; flex-basis:30px !important; }
+  #hr-potential-content .hrp-batter-name{ font-size:12px !important; }
+  #hr-potential-content .hrp-prob-num{ font-size:16px !important; }
+  #hr-potential-content .hrp-bar-wrap{ width:46px !important; }
+  #kprops-content .kprop-row{ grid-template-columns:44px minmax(0,1fr) 72px !important; padding:13px 10px !important; }
+  #kprops-content .kprop-row > img{ width:40px !important; height:40px !important; }
+  #kprops-content .kprop-line{ width:72px !important; }
+}
+</style>
+
 </head>
 <body>
 
@@ -2537,6 +3476,7 @@ table {
   <div class="tab" onclick="showTab('matchups', this)" data-tab="matchups">Pitcher Report</div>
   <div class="tab" onclick="showTab('props', this)" data-tab="props">Props</div>
   <div class="tab" onclick="showTab('schedule', this)" data-tab="schedule">Upcoming Games</div>
+  <div class="tab" onclick="showTab('tracker', this)" data-tab="tracker">Tracker</div>
 </nav>
 
 
@@ -3162,7 +4102,9 @@ async function loadScores() {
   }
 }
 
-loadScores();
+// Startup is coordinated by bootDiamondReportStartup() near the end of this script.
+// Delaying the first call prevents early async responses from touching state before
+// all modules (HRs Today, HR Potential, Pitcher Report, Tracker) are initialized.
 setInterval(loadScores, 30000);
 
 // Tick countdown labels every second so they count down smoothly between full data refreshes
@@ -4684,7 +5626,11 @@ function triggerHRPotentialRefresh() {
 
 
 function loadHRPotentialWithRetry() {
-  loadHRPotential().then(() => {
+  return loadHRPotential().then(() => {
+    // Re-run HRs Today after HR Potential is available so the
+    // "HRs Completed from Projection" panel cross-references real rows on first load.
+    if (typeof loadHRsToday === 'function') loadHRsToday();
+
     if (!hrpRows.length) {
       // Lineups not posted yet — retry in 15 minutes
       if (hrpRetryTimer) clearTimeout(hrpRetryTimer);
@@ -4715,9 +5661,7 @@ function schedule5amHRRefresh() {
   }, msUntil5am);
 }
 
-// On page load: refresh if stale, then schedule daily
-triggerHRPotentialRefresh();
-schedule5amHRRefresh();
+// HR Potential startup is coordinated by bootDiamondReportStartup() near the end of this script.
 
 
 
@@ -4958,8 +5902,32 @@ async function loadKsToday() {
   }
 }
 
-// Refresh Ks Today every 60s
-setInterval(() => { if (document.getElementById('ks-today-props')) loadKsToday(); }, 60000);
+// Robust K's Today startup/refresh helper. On a cold first load, the Props tab can be
+// initialized before the MLB schedule/boxscore response is ready, which left K's Today
+// empty until a manual reload. Run a few light retries and keep refreshing in the
+// background so the panel is populated the first time the Props tab is opened.
+let ksTodayRetryTimer = null;
+function loadKsTodayWithRetry(attempt = 0) {
+  const el = document.getElementById('ks-today-props');
+  if (!el) return;
+
+  Promise.resolve(loadKsToday()).then(() => {
+    const text = (el.textContent || '').trim().toLowerCase();
+    const stillWaiting = !text || text.includes('loading') || text.includes('no strikeout data yet') || text.includes('error loading ks');
+    if (stillWaiting && attempt < 4) {
+      clearTimeout(ksTodayRetryTimer);
+      ksTodayRetryTimer = setTimeout(() => loadKsTodayWithRetry(attempt + 1), [750, 1500, 3000, 5000][attempt] || 5000);
+    }
+  }).catch(() => {
+    if (attempt < 4) {
+      clearTimeout(ksTodayRetryTimer);
+      ksTodayRetryTimer = setTimeout(() => loadKsTodayWithRetry(attempt + 1), [750, 1500, 3000, 5000][attempt] || 5000);
+    }
+  });
+}
+
+// Refresh K's Today every 60s
+setInterval(() => { if (document.getElementById('ks-today-props')) loadKsTodayWithRetry(); }, 60000);
 
 
 // ── PROPS LIVE BANNER ────────────────────────────────────────────────
@@ -5867,7 +6835,7 @@ function initPropsTab() {
   propsInitDone = true;
   loadHRPotentialWithRetry();
   loadHRsToday();
-  loadKsToday();
+  loadKsTodayWithRetry();
   // loadKProps/loadGameProps are async — chain a tracker sync after each resolves so the
   // Diamond Report Picks / K Props tracker tables update without depending on the window-hook
   // pattern (which can miss this very first call if it fires before the hook attaches)
@@ -5880,6 +6848,7 @@ setInterval(() => {
   if (propsInitDone) {
     triggerHRPotentialRefresh();
     loadHRsToday();
+    loadKsTodayWithRetry();
   }
 }, 60000);
 
@@ -7503,6 +8472,37 @@ function showTab(id, el) {
   else startKPropRecommendationPatch();
 })();
 
+
+
+// ── ROBUST FIRST-LOAD BOOTSTRAP ──────────────────────────────────────
+// Keeps the first page visit from requiring a manual reload. The boot runs after
+// the full script is parsed, then warms the modules whose panels depend on each
+// other: HR Potential -> HRs Completed from Projection, Pitcher Report -> lineups,
+// and live scores -> HR/K banners.
+let diamondReportBooted = false;
+function bootDiamondReportStartup() {
+  if (diamondReportBooted) return;
+  diamondReportBooted = true;
+
+  loadScores();
+  initPropsTab();
+  triggerHRPotentialRefresh();
+  loadKsTodayWithRetry();
+  schedule5amHRRefresh();
+
+  // Warm Pitcher Report data in the background so opening the tab does not require
+  // a second page load. Mark it loaded to prevent duplicate simultaneous fetches.
+  if (!matchupLoaded) {
+    matchupLoaded = true;
+    loadPitcherReport();
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootDiamondReportStartup, { once: true });
+} else {
+  setTimeout(bootDiamondReportStartup, 0);
+}
 
 
 // Lightweight Diamond Report safety cleanup — no intervals or observers
