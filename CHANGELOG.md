@@ -1,5 +1,12 @@
 # Changelog
 
+## v6.5 — Pitcher Report Mobile/Tablet Card Stability Fix
+- Added a mobile/tablet-only Pitcher Report card layout for screens up to 1024px wide.
+- Removed table-row expansion dependency on mobile/tablet to avoid iOS Safari and tablet rendering glitches.
+- Fixed expanded lineup panels so **Batting Lineup & Matchups** stays visible after tapping.
+- Desktop keeps the existing full table layout unchanged.
+- Preserved v6.4 lineup cache and expanded-state rehydration logic.
+
 ## v6.4 — Live Pitcher Report Lineup Mobile Stability Fix
 - Fixed Pitcher Report expanded lineup blank/glitch behavior on mobile.
 - Removed the risky mobile `contain: layout paint` behavior from lineup expansion panels.

@@ -854,6 +854,136 @@ body:not(.tracker-active) .tab-panel:not(#tracker):not([data-tab="tracker"]) spa
   }
 }
 
+
+
+/* v6.5 Production Pitcher Report Mobile/Tablet Card Stability Fix */
+@media (max-width: 1024px) {
+  #pr-content {
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: auto !important;
+  }
+  .pr-mobile-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+  }
+  .pr-mobile-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    overflow: visible;
+    max-width: 100%;
+  }
+  .pr-mobile-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .pr-mobile-pitcher {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .pr-mobile-name {
+    font-size: 14px !important;
+    font-weight: 800;
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+  .pr-mobile-sub {
+    font-size: 10px !important;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .pr-mobile-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px !important;
+    white-space: nowrap;
+    text-align: right;
+  }
+  .pr-mobile-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    margin: 10px 0;
+  }
+  .pr-mobile-stat {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 6px;
+    min-width: 0;
+    text-align: center;
+  }
+  .pr-mobile-stat-label {
+    display: block;
+    font-size: 8px !important;
+    color: var(--muted);
+    letter-spacing: .6px;
+    margin-bottom: 3px;
+  }
+  .pr-mobile-stat-value {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px !important;
+    font-weight: 800;
+    color: var(--text);
+  }
+  .pr-mobile-expand {
+    display: none;
+    background: #080d17;
+    border-top: 1px solid var(--border);
+    margin-top: 10px;
+    padding-top: 10px;
+    overflow: visible !important;
+    width: 100%;
+    max-width: 100%;
+  }
+  .pr-mobile-expand[style*="display: block"],
+  .pr-mobile-expand[style*="display:"] {
+    display: block;
+  }
+  .pr-mobile-expand .pr-expand-panel {
+    padding: 0 !important;
+    overflow: visible !important;
+    transform: none !important;
+    -webkit-transform: none !important;
+  }
+  .pr-mobile-card .btn-lineup {
+    width: 100%;
+    justify-content: center;
+    margin-top: 6px;
+    white-space: normal;
+    line-height: 1.25;
+  }
+  .pr-mobile-card .lineup-batter-card {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    padding: 10px 0 !important;
+    overflow: visible !important;
+  }
+  .pr-mobile-card .lineup-matchup-action {
+    justify-content: stretch !important;
+    width: 100%;
+  }
+  .pr-mobile-card .lineup-matchup-action .btn-matchup {
+    width: 100%;
+    white-space: normal !important;
+  }
+}
+@media (max-width: 480px) {
+  .pr-mobile-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pr-mobile-top { flex-direction: column; }
+  .pr-mobile-time { text-align: left; }
+}
 </style>
 <!-- ============================================================ -->
 <!-- ⚠️  GOOGLE ADSENSE — DO NOT REMOVE OR MODIFY THIS BLOCK  ⚠️   -->
@@ -4285,6 +4415,107 @@ async function loadPitcherReport() {
 // K O/U lookup: pitcherId -> ouLine (populated by renderPRTable)
 const pitcherOULines = {};
 
+
+function isPRMobileTabletView() {
+  return window.matchMedia && window.matchMedia('(max-width: 1024px)').matches;
+}
+
+function getSortedPRRowsForCurrentSort() {
+  return [...prRows].sort((a,b) => {
+    if (!prSortCol) return 0;
+    const av=a[prSortCol], bv=b[prSortCol];
+    if (av==null&&bv==null) return 0;
+    if (av==null) return 1; if (bv==null) return -1;
+    return (av-bv)*prSortDir;
+  });
+}
+
+function rehydrateExpandedPitcherRows() {
+  expandedRows.forEach(rawPid => {
+    const pid = normalizePitcherId(rawPid);
+    const row = prRows.find(r => normalizePitcherId(r.pitcher.id) === pid);
+    if (!row) return;
+    const panel = document.getElementById(`panel-${pid}`);
+    const expandRow = document.getElementById(`pr-expand-${pid}`);
+    const btn = document.querySelector(`#pr-row-${pid} .btn-lineup`);
+    if (expandRow) expandRow.style.display = 'block';
+    if (btn) { btn.textContent = '▲ HIDE'; btn.classList.add('active'); }
+    if (!panel) return;
+    const cacheKey = `${row.pitcher.gamePk}-${row.pitcher.side}`;
+    lineupMeta[pid] = lineupMeta[pid] || {
+      pitcherName: row.pitcher.name,
+      gamePk: row.pitcher.gamePk,
+      side: row.pitcher.side,
+      oppTeamId: row.pitcher.oppTeamId,
+      pitcherHr9: row.rawHr9,
+      pitcherIp: row.rawIp
+    };
+    if (lineupCache[cacheKey]) {
+      renderLineup(`panel-${pid}`, lineupCache[cacheKey], row.rawHr9, row.rawIp, row.pitcher.oppAbbr, pid, row.pitcher.name);
+    } else if (!lineupLoading.has(pid)) {
+      fetchAndRenderLineup(pid, row.pitcher.name, row.pitcher.gamePk, row.pitcher.side, row.pitcher.oppTeamId, row.rawHr9, row.rawIp).catch(()=>{});
+    }
+  });
+}
+
+function renderPRMobileCards() {
+  const el = document.getElementById('pr-content');
+  if (!el) return;
+  const sorted = getSortedPRRowsForCurrentSort();
+  const hs = id => `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_46,q_auto:best/v1/people/${id}/headshot/67/current`;
+
+  const cards = sorted.map(r => {
+    const p = r.pitcher;
+    const pid = normalizePitcherId(p.id);
+    const isExpanded = expandedRows.has(pid);
+    const k9 = r.rawK9 || 0;
+    const kProjTag = k9 >= 9.5
+      ? `<span class="k-proj-tag k-proj-high">⬆ HIGH K GAME</span>`
+      : k9 <= 6.0
+      ? `<span class="k-proj-tag k-proj-low">⬇ LOW K GAME</span>`
+      : `<span class="k-proj-tag k-proj-avg">AVG K GAME</span>`;
+    const stat = (label, value) => `<div class="pr-mobile-stat"><span class="pr-mobile-stat-label">${label}</span><span class="pr-mobile-stat-value">${value}</span></div>`;
+    return `<div class="pr-mobile-card" id="pr-row-${pid}">
+      <div class="pr-mobile-top">
+        <div class="pr-mobile-pitcher">
+          <img class="pr-headshot" src="${hs(p.id)}" alt="${p.name}" onerror="this.style.visibility='hidden'">
+          <div style="min-width:0">
+            <div class="pr-mobile-name">${p.name}</div>
+            <div class="pr-mobile-sub">${p.teamAbbr} · ${r.wl} · vs ${p.oppAbbr}</div>
+          </div>
+        </div>
+        <div class="pr-mobile-time" style="color:${p.timeColor};font-weight:${p.timeLabel.includes('LIVE')?700:400}">${p.timeLabel}</div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        ${kProjTag}
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:800;color:${r.rawK9>=9?'var(--green)':r.rawK9>=7?'var(--accent2)':'var(--muted)'}">K PROP ${r.kprop??'–'}</span>
+      </div>
+      <div class="pr-mobile-stats">
+        ${stat('IP', r.ip!=null?r.ip.toFixed(1):'–')}
+        ${stat('BF', r.bf!=null?r.bf:'–')}
+        ${stat('FIP', r.fip!=null?r.fip.toFixed(2):'–')}
+        ${stat('AVG', r.avg!=null?r.avg.toFixed(3).replace(/^0/,''):'–')}
+        ${stat('WHIP', r.whip!=null?r.whip.toFixed(2):'–')}
+        ${stat('HR/9', r.hr9!=null?r.hr9.toFixed(2):'–')}
+      </div>
+      <button class="btn-lineup${isExpanded?' active':''}" onclick="toggleLineup('${pid}', '${p.name.replace(/'/g,"\\'")}', ${p.gamePk}, '${p.side}', ${p.oppTeamId}, ${r.rawHr9}, ${r.rawIp})">
+        ${isExpanded ? '▲ HIDE' : '▼ BATTING LINEUP & MATCHUPS'}
+      </button>
+      <div class="pr-mobile-expand" id="pr-expand-${pid}" style="${isExpanded?'display:block':'display:none'}">
+        <div class="pr-expand-panel" id="panel-${pid}">
+          <span class="spin"></span> Loading lineup…
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `<div class="pr-mobile-list">${cards}</div>
+    <div style="margin-top:10px;font-size:10px;color:var(--muted)">
+      Mobile/tablet card layout active · Tap Batting Lineup & Matchups to expand.
+    </div>`;
+  rehydrateExpandedPitcherRows();
+}
+
 function pill(val, dispFn, goodBelow, badAbove) {
   if (val==null) return `<span class="stat-pill pill-neu">–</span>`;
   const cls = val<=goodBelow ? 'pill-green' : val>=badAbove ? 'pill-red' : 'pill-neu';
@@ -4292,6 +4523,7 @@ function pill(val, dispFn, goodBelow, badAbove) {
 }
 
 function renderPRTable() {
+  if (isPRMobileTabletView()) { renderPRMobileCards(); return; }
   const el = document.getElementById('pr-content');
   const colCount = 15;
 
@@ -4423,7 +4655,7 @@ function renderPRTable() {
     const panel = document.getElementById(`panel-${pid}`);
     const expandRow = document.getElementById(`pr-expand-${pid}`);
     const btn = document.querySelector(`#pr-row-${pid} .btn-lineup`);
-    if (expandRow) expandRow.style.display = '';
+    if (expandRow) expandRow.style.display = isPRMobileTabletView() ? 'block' : '';
     if (btn) { btn.textContent = '▲ HIDE'; btn.classList.add('active'); }
     if (!panel) return;
     const cacheKey = `${row.pitcher.gamePk}-${row.pitcher.side}`;
@@ -4456,7 +4688,7 @@ async function toggleLineup(pitcherId, pitcherName, gamePk, side, oppTeamId, pit
   // fetches. If the row is already open, ignore extra taps until loading ends.
   if (lineupLoading.has(pid) && !expandedRows.has(pid)) {
     expandedRows.add(pid);
-    expandRow.style.display = '';
+    expandRow.style.display = isPRMobileTabletView() ? 'block' : '';
     if (btn) {
       btn.textContent = '▲ HIDE';
       btn.classList.add('active');
@@ -4479,7 +4711,7 @@ async function toggleLineup(pitcherId, pitcherName, gamePk, side, oppTeamId, pit
   }
 
   expandedRows.add(pid);
-  expandRow.style.display = '';
+  expandRow.style.display = isPRMobileTabletView() ? 'block' : '';
   if (btn) {
     btn.textContent = '▲ HIDE';
     btn.classList.add('active');
