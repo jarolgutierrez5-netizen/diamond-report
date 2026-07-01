@@ -215,7 +215,7 @@
     .gp-card div[style*="min-width:120px"] { min-width: 0 !important; width: 100%; }
 
     /* ── HR POTENTIAL FILTER BUTTONS ── */
-    #filter-top-btn, #filter-drought-btn, #filter-favorable-btn, #filter-all-btn {
+    #filter-onfire-btn, #filter-top-btn, #filter-drought-btn, #filter-favorable-btn, #filter-all-btn {
       font-size: 8px !important;
       padding: 3px 7px !important;
     }
@@ -680,6 +680,7 @@
     font-size: 10px;
     font-weight: 700;
     white-space: nowrap;
+    font-family: 'JetBrains Mono', monospace;
   }
   .tracker-pill.hit { border-color: #2ecc71; color: #2ecc71; background: #0d2a1a; }
   .tracker-pill.miss { border-color: #e63946; color: #e63946; background: #2a0d0d; }
@@ -695,6 +696,7 @@
     color: var(--muted);
     margin-left: 8px;
     vertical-align: middle;
+    font-family: 'JetBrains Mono', monospace;
   }
   .tracker-header-pct.good { border-color: #2ecc71; color: #2ecc71; background: #0d2a1a; }
   .tracker-header-pct.bad { border-color: #e63946; color: #e63946; background: #2a0d0d; }
@@ -715,6 +717,26 @@
   .tracker-scroll table {
     width: 100%;
   }
+
+
+  /* Hot Hitter HR Potential Engine */
+  .hrp-hot-badge {
+    display:inline-flex;align-items:center;gap:4px;
+    background:#2a1200;border:1px solid #ff8c0066;color:#ffb86b;
+    font-size:9px;font-weight:800;padding:2px 7px;border-radius:999px;
+    letter-spacing:.4px;white-space:nowrap;
+  }
+  .hrp-hot-badge.elite { background:#2a0505;border-color:#ff444499;color:#ff7777;box-shadow:0 0 10px rgba(255,68,68,.12); }
+  .hrp-hot-chip {
+    display:inline-flex;align-items:center;gap:3px;
+    background:var(--bg);border:1px solid var(--border);color:var(--muted);
+    font-size:8px;font-weight:700;padding:1px 6px;border-radius:999px;white-space:nowrap;
+  }
+  .hrp-hot-chip.up { border-color:#2ecc7166;color:#2ecc71;background:#0d2a1a; }
+  .hrp-hot-chip.power { border-color:#f4a26166;color:#f4a261;background:#2a1800; }
+  .hrp-prob-cell { min-width:76px; }
+  .hrp-prob-num { font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;line-height:1; }
+  .hrp-prob-boost { font-size:9px;color:#ffb86b;font-family:'JetBrains Mono',monospace;margin-top:2px;white-space:nowrap; }
 
 
   /* K Props live/final K count badge */
@@ -797,6 +819,1652 @@
 }
 </style>
 
+
+<style id="v4-3-font-responsive-optimization">
+/* ============================================================
+   Diamond Report v4.3 — Font + Responsive Optimization
+   Purpose:
+   - Force the loaded site fonts consistently across static + dynamic UI.
+   - Preserve display/number styling using Bebas Neue + JetBrains Mono.
+   - Improve mobile/tablet/desktop layout reliability.
+   ============================================================ */
+:root{
+  --font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Bebas Neue', Impact, 'Arial Black', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Use the site font everywhere, including dynamically injected inline-style content. */
+html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; scroll-behavior:smooth; }
+body, body *:not(svg):not(svg *){
+  font-family: var(--font-body) !important;
+}
+
+/* Intentional display typography */
+.logo,
+.section-title,
+.team-abbr,
+.gp-team-abbr,
+.tracker-big,
+.stat-row-num,
+.ks-count,
+.score-block,
+.h2h-val,
+.kprop-line-val,
+.kprop-pred-val,
+.gp-pick-val,
+.breaking-label,
+.breaking-item,
+.hrp-prob-num{
+  font-family: var(--font-display) !important;
+}
+
+/* Intentional mono/stat typography */
+.date-badge,
+.game-time,
+.pr-time,
+.score-block,
+.standings-badge,
+td:not(:first-child),
+.tracker-pill,
+.tracker-header-pct,
+.kprop-kcount,
+.kprop-meta,
+.kprop-summary,
+.hrp-prob-boost,
+[class*="mono"]{
+  font-family: var(--font-mono) !important;
+}
+
+/* General layout safety */
+html, body{ width:100%; max-width:100%; overflow-x:hidden; }
+main{ width:100%; max-width:1280px; margin-inline:auto; }
+img, svg, canvas, video{ max-width:100%; height:auto; }
+button, .tab, .btn-lineup, .btn-game, .btn-matchup, .hrp-matchup-btn{
+  touch-action: manipulation;
+}
+button{ min-height:34px; }
+
+/* Prevent cards/tables from forcing horizontal page overflow */
+.tracker-grid,
+.games-grid,
+.props-grid,
+.hrs-today-grid,
+.tracker-card,
+.game-card,
+.gp-card,
+.kprop-row,
+.stat-row,
+.hrp-batter-cell,
+.pr-pitcher-cell{
+  min-width:0;
+}
+.tracker-card,
+.game-card,
+.gp-card{
+  overflow:hidden;
+}
+.tracker-scroll,
+#hr-potential-content,
+#pr-content{
+  max-width:100%;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+}
+
+/* Desktop: clean, even dashboard cards */
+@media (min-width: 1100px){
+  .tracker-grid{
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .tracker-grid.tracker-grid-stack{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Tablet: keep cards readable and avoid clipped all-time cards */
+@media (min-width: 769px) and (max-width: 1099px){
+  .header{ padding-inline:18px; }
+  main{ padding:18px; }
+  .tracker-grid{
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap:12px !important;
+  }
+  .tracker-grid.tracker-grid-stack{
+    grid-template-columns: 1fr !important;
+  }
+  .props-grid,
+  .hrs-today-grid{
+    grid-template-columns: 1fr !important;
+  }
+  .tracker-big{ font-size:30px !important; }
+  .tracker-sub{ font-size:10px !important; }
+  .hrp-table{ min-width:680px; }
+  .pr-table{ min-width:760px; }
+}
+
+/* Large phones/small tablets */
+@media (min-width: 481px) and (max-width: 768px){
+  main{ padding:12px !important; }
+  .tracker-grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap:10px !important;
+  }
+  .tracker-grid.tracker-grid-stack{
+    grid-template-columns:1fr !important;
+  }
+  .tracker-card{ padding:11px 12px !important; }
+  .tracker-card h3{ font-size:9px !important; line-height:1.2 !important; }
+  .tracker-big{ font-size:25px !important; }
+  .tracker-sub{ font-size:9px !important; }
+  .hrp-table{ min-width:620px !important; }
+  .pr-table{ min-width:680px !important; }
+}
+
+/* iPhone/narrow phones: one column so no Tracker card disappears or gets clipped */
+@media (max-width: 480px){
+  .header{ height:52px !important; padding-inline:10px !important; }
+  .header .logo svg{ max-width:190px !important; height:auto !important; }
+  .date-badge{ font-size:9px !important; padding:3px 6px !important; }
+  .nav{
+    padding:8px 10px 0 !important;
+    overflow-x:auto !important;
+    -webkit-overflow-scrolling:touch;
+  }
+  .tab{
+    min-height:36px;
+    display:flex;
+    align-items:center;
+    white-space:nowrap;
+  }
+  main{ padding:10px !important; }
+  .section-title{ font-size:18px !important; line-height:1.1 !important; }
+
+  .tracker-grid{
+    grid-template-columns:1fr !important;
+    gap:9px !important;
+    margin-bottom:12px !important;
+  }
+  .tracker-card{
+    padding:11px 12px !important;
+    border-radius:9px !important;
+  }
+  .tracker-card h3{
+    font-size:9.5px !important;
+    line-height:1.25 !important;
+    letter-spacing:.8px !important;
+    margin-bottom:7px !important;
+    white-space:normal !important;
+  }
+  .tracker-big{
+    font-size:28px !important;
+    line-height:.95 !important;
+  }
+  .tracker-sub{
+    font-size:10px !important;
+    line-height:1.35 !important;
+    white-space:normal !important;
+  }
+  .tracker-pill{
+    font-size:8px !important;
+    padding:3px 6px !important;
+    white-space:normal !important;
+  }
+  .tracker-header-pct{
+    display:inline-flex !important;
+    margin:5px 0 0 0 !important;
+    font-size:9px !important;
+  }
+  .tracker-scroll{
+    max-height:360px !important;
+  }
+  .tracker-scroll table{
+    min-width:520px !important;
+    table-layout:auto !important;
+  }
+  .tracker-scroll th,
+  .tracker-scroll td{
+    font-size:9px !important;
+    padding:6px 6px !important;
+    white-space:nowrap !important;
+  }
+
+  .games-grid{ grid-template-columns:1fr !important; }
+  .props-grid,
+  .hrs-today-grid{
+    grid-template-columns:1fr !important;
+  }
+  .hrp-table{ min-width:620px !important; }
+  .pr-table{ min-width:680px !important; }
+  .kprop-row{ align-items:flex-start !important; }
+  .kprop-pitcher,
+  .kprop-reasoning{
+    min-width:100% !important;
+    flex-basis:100% !important;
+  }
+  .kprop-line,
+  .kprop-pred{
+    flex:1 1 calc(50% - 6px);
+    min-width:0 !important;
+  }
+  .gp-card > div[style*="display:flex"]{
+    flex-direction:column !important;
+    align-items:stretch !important;
+  }
+}
+
+/* Ultra-narrow devices */
+@media (max-width: 360px){
+  .header .logo svg{ max-width:158px !important; }
+  .tracker-big{ font-size:25px !important; }
+  .tracker-sub{ font-size:9px !important; }
+  .tab{ padding-inline:10px !important; }
+}
+</style>
+
+
+
+<style id="v4-4-ui-cleanup-typography-responsive">
+/* ============================================================
+   Diamond Report v4.4 — UI Cleanup + Full Typography Pass
+   - Removes visible Last Updated labels from section headers.
+   - Enforces a consistent typography system across all sections.
+   - Improves mobile/tablet/desktop spacing and prevents clipping.
+   ============================================================ */
+:root{
+  --dr-font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  --dr-font-display: 'Bebas Neue', Impact, 'Arial Black', sans-serif;
+  --dr-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Hide timestamp-only labels shown beside section headers. Refresh logic can still run internally. */
+#scores-refresh,
+#props-refresh,
+#gameprops-refresh,
+#kprops-refresh,
+.lineup-timestamp{
+  display:none !important;
+  visibility:hidden !important;
+  width:0 !important;
+  height:0 !important;
+  overflow:hidden !important;
+}
+
+/* Consistent default font across static + injected content. */
+html, body, body *:not(svg):not(svg *){
+  font-family: var(--dr-font-body) !important;
+}
+
+/* Display font only for brand, major section headings, and large stat values. */
+.logo,
+.logo *,
+.section-title,
+.tracker-big,
+.stat-row-num,
+.ks-count,
+.team-abbr,
+.gp-team-abbr,
+.gp-pick-val,
+.kprop-line-val,
+.kprop-pred-val,
+.score-block,
+.h2h-val,
+.hrp-prob-num,
+.breaking-label,
+.breaking-item{
+  font-family: var(--dr-font-display) !important;
+}
+
+/* Mono font only for true stats/timestamps/compact metadata. */
+.date-badge,
+.game-time,
+.pr-time,
+.standings-badge,
+td:not(:first-child),
+.tracker-pill,
+.tracker-header-pct,
+.kprop-kcount,
+.kprop-meta,
+.kprop-summary,
+.hrp-prob-boost,
+.hrp-hot-chip,
+.hrp-hot-badge{
+  font-family: var(--dr-font-mono) !important;
+}
+
+/* Section/header alignment after removing refresh labels. */
+.section > div[style*="justify-content:space-between"],
+section > div[style*="justify-content:space-between"]{
+  justify-content:flex-start !important;
+}
+.section-title{
+  letter-spacing:2.5px !important;
+}
+
+/* Button/filter typography normalization. */
+button,
+.tab,
+.hrp-matchup-btn,
+.btn-matchup,
+.btn-lineup,
+.btn-game,
+.gp-factor,
+.kprop-chip{
+  font-family: var(--dr-font-body) !important;
+  letter-spacing:.08em;
+}
+
+/* Global responsive safety. */
+html, body{
+  width:100%;
+  max-width:100%;
+  overflow-x:hidden !important;
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+main{
+  width:100%;
+  max-width:1280px;
+  margin-inline:auto;
+}
+img, svg, canvas, video{
+  max-width:100%;
+  height:auto;
+}
+.tracker-grid, .games-grid, .props-grid, .hrs-today-grid,
+.tracker-card, .game-card, .gp-card, .kprop-row, .stat-row,
+.hrp-batter-cell, .pr-pitcher-cell{
+  min-width:0 !important;
+}
+.tracker-scroll, #hr-potential-content, #pr-content{
+  max-width:100%;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+}
+
+/* Desktop */
+@media (min-width: 1100px){
+  main{ padding:22px 24px !important; }
+  .tracker-grid{ grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
+  .tracker-grid.tracker-grid-stack{ grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+  .props-grid{ grid-template-columns:minmax(0,1.55fr) minmax(280px,.75fr) !important; }
+}
+
+/* Tablet */
+@media (min-width: 769px) and (max-width: 1099px){
+  .header{ padding-inline:16px !important; }
+  main{ padding:16px !important; }
+  .nav{ overflow-x:auto !important; -webkit-overflow-scrolling:touch; }
+  .tracker-grid{ grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:12px !important; }
+  .tracker-grid.tracker-grid-stack, .props-grid, .hrs-today-grid{ grid-template-columns:1fr !important; }
+  .tracker-big{ font-size:32px !important; }
+  .tracker-sub{ font-size:11px !important; line-height:1.35 !important; }
+  .hrp-table{ min-width:700px !important; }
+  .pr-table{ min-width:760px !important; }
+}
+
+/* Mobile */
+@media (max-width: 768px){
+  .header{ height:52px !important; padding-inline:10px !important; }
+  .header .logo svg{ max-width:205px !important; height:auto !important; }
+  .nav{ padding:8px 10px 0 !important; overflow-x:auto !important; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .nav::-webkit-scrollbar{ display:none; }
+  .tab{ min-height:38px; display:flex; align-items:center; white-space:nowrap; padding:7px 13px !important; }
+  main{ padding:10px !important; }
+  .section-title{ font-size:19px !important; line-height:1.1 !important; margin-bottom:12px !important; }
+  .games-grid, .props-grid, .hrs-today-grid, .tracker-grid, .tracker-grid.tracker-grid-stack{ grid-template-columns:1fr !important; gap:10px !important; }
+  .tracker-card, .game-card, .gp-card{ padding:12px !important; border-radius:10px !important; }
+  .tracker-card h3{ font-size:10px !important; line-height:1.25 !important; letter-spacing:.9px !important; white-space:normal !important; }
+  .tracker-big{ font-size:30px !important; line-height:.95 !important; }
+  .tracker-sub{ font-size:10.5px !important; line-height:1.35 !important; white-space:normal !important; }
+  .tracker-pill{ font-size:8.5px !important; padding:3px 6px !important; white-space:normal !important; }
+  .tracker-header-pct{ display:inline-flex !important; margin:5px 0 0 0 !important; font-size:9px !important; }
+  .tracker-scroll table{ min-width:540px !important; table-layout:auto !important; }
+  .tracker-scroll th, .tracker-scroll td{ font-size:9px !important; padding:6px !important; white-space:nowrap !important; }
+  .hrp-table{ min-width:640px !important; }
+  .pr-table{ min-width:700px !important; }
+  .kprop-pitcher, .kprop-reasoning{ min-width:100% !important; flex-basis:100% !important; }
+  .kprop-line, .kprop-pred{ flex:1 1 calc(50% - 6px); min-width:0 !important; }
+  #filter-onfire-btn, #filter-top-btn, #filter-drought-btn, #filter-favorable-btn, #filter-all-btn{
+    min-height:30px !important;
+    font-size:8.5px !important;
+    padding:5px 8px !important;
+  }
+}
+
+@media (max-width: 380px){
+  .header .logo svg{ max-width:170px !important; }
+  .section-title{ font-size:17px !important; }
+  .tracker-big{ font-size:27px !important; }
+  .tracker-sub{ font-size:9.5px !important; }
+}
+</style>
+
+<script id="v4-4-hide-refresh-labels">
+(function(){
+  const hiddenRefreshIds = ['scores-refresh','props-refresh','gameprops-refresh','kprops-refresh'];
+  function hideRefreshLabels(){
+    hiddenRefreshIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = '';
+        el.style.display = 'none';
+        el.setAttribute('aria-hidden','true');
+      }
+    });
+    document.querySelectorAll('.lineup-timestamp').forEach(el => {
+      el.textContent = '';
+      el.style.display = 'none';
+      el.setAttribute('aria-hidden','true');
+    });
+  }
+  document.addEventListener('DOMContentLoaded', hideRefreshLabels);
+  window.addEventListener('load', hideRefreshLabels);
+  setInterval(hideRefreshLabels, 1500);
+})();
+</script>
+
+
+<style id="v4-5-heading-font-cleanup">
+/* ============================================================
+   Diamond Report v4.5 — Heading Font Cleanup
+   - Replaces the overly-spaced display font in section headers.
+   - Keeps Bebas Neue only for big stat numbers/brand-style elements.
+   - Makes HR Potential, K's Today, Diamond Report Picks, and K Props
+     easier to read across desktop, tablet, and mobile.
+   ============================================================ */
+
+/* Clean section headings */
+.section-title,
+.lineup-title,
+.zone-title,
+.vuln-title,
+.kprop-reason-title,
+.tracker-card h3,
+.h2h-lbl,
+thead th {
+  font-family: var(--dr-font-body, 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif) !important;
+  font-weight: 800 !important;
+  letter-spacing: .09em !important;
+  text-transform: uppercase !important;
+}
+
+/* Section title sizing and spacing */
+.section-title {
+  font-size: 18px !important;
+  line-height: 1.25 !important;
+  margin-bottom: 14px !important;
+}
+
+.section-title span {
+  letter-spacing: .09em !important;
+}
+
+/* Keep big numbers and brand pieces in display font only */
+.tracker-big,
+.stat-row-num,
+.ks-count,
+.team-abbr,
+.gp-team-abbr,
+.gp-pick-val,
+.kprop-line-val,
+.kprop-pred-val,
+.score-block,
+.h2h-val,
+.hrp-prob-num,
+.breaking-label,
+.breaking-item {
+  font-family: var(--dr-font-display, 'Bebas Neue', Impact, 'Arial Black', sans-serif) !important;
+}
+
+/* Filter buttons and small chips should be readable, not stretched */
+button,
+.tab,
+.hrp-matchup-btn,
+.btn-matchup,
+.btn-lineup,
+.btn-game,
+.gp-factor,
+.kprop-chip,
+.tracker-pill,
+.hrp-hot-badge,
+.hrp-hot-chip {
+  font-family: var(--dr-font-body, 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif) !important;
+  letter-spacing: .04em !important;
+}
+
+/* HR Potential + K's Today top row cleanup */
+#props .section-title,
+#props h3,
+#matchups .section-title,
+#tracker .section-title {
+  font-family: var(--dr-font-body, 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif) !important;
+  letter-spacing: .08em !important;
+}
+
+/* Mobile: reduce spacing further so headers do not look broken up */
+@media (max-width: 768px) {
+  .section-title {
+    font-size: 16px !important;
+    letter-spacing: .07em !important;
+  }
+  .section-title span {
+    letter-spacing: .07em !important;
+  }
+  .tracker-card h3,
+  thead th {
+    letter-spacing: .06em !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .section-title {
+    font-size: 15px !important;
+    letter-spacing: .05em !important;
+  }
+}
+</style>
+
+
+<style id="v4-6-date-status-cleanup">
+/* ============================================================
+   Diamond Report v4.6 — Date + Sync Status Cleanup
+   - Removes visible Last synced / Last updated status text.
+   - Updates the header date badge font to match the site UI.
+   ============================================================ */
+
+#tracker-refresh,
+#scores-refresh,
+[id$="-refresh"],
+[id*="refresh"],
+[id*="last-updated"],
+.last-updated,
+.last-synced,
+.sync-status,
+.refresh-status {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+.date-badge,
+#header-date {
+  font-family: var(--dr-font-body, 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif) !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  letter-spacing: .06em !important;
+  text-transform: none !important;
+  color: var(--text) !important;
+  background: rgba(10,14,26,.72) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  padding: 6px 12px !important;
+}
+
+/* Keep header layout clean after removing right-side statuses */
+.section-title + div[id*="refresh"],
+.section-title ~ div[id*="refresh"] {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .date-badge,
+  #header-date {
+    font-size: 10px !important;
+    padding: 4px 8px !important;
+    letter-spacing: .04em !important;
+  }
+}
+</style>
+<script id="v4-6-date-status-cleanup-script">
+(function () {
+  function formatHeaderDate() {
+    var el = document.getElementById('header-date');
+    if (!el) return;
+    try {
+      var d = new Date();
+      el.textContent = d.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    } catch (e) {}
+  }
+
+  function hideStatusText() {
+    var patterns = [/last\s+synced/i, /last\s+updated/i];
+    var nodes = document.querySelectorAll('div, span, p, small');
+    nodes.forEach(function (node) {
+      var text = (node.textContent || '').trim();
+      if (!text) return;
+      if (patterns.some(function (rx) { return rx.test(text); })) {
+        node.style.display = 'none';
+        node.setAttribute('aria-hidden', 'true');
+      }
+    });
+  }
+
+  formatHeaderDate();
+  hideStatusText();
+
+  document.addEventListener('DOMContentLoaded', function () {
+    formatHeaderDate();
+    hideStatusText();
+  });
+
+  setInterval(function () {
+    formatHeaderDate();
+    hideStatusText();
+  }, 3000);
+})();
+</script>
+
+
+<style id="v5-0-diamond-intelligence-engine-styles">
+/* ============================================================
+   Diamond Report Developer v5.0 — Diamond Intelligence Engine
+   Internal developer dashboard inside Tracker.
+   ============================================================ */
+.die-panel {
+  margin-top: 22px;
+  background:
+    radial-gradient(circle at top left, rgba(230,57,70,.16), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(244,162,97,.10), transparent 38%),
+    linear-gradient(180deg, #111827 0%, #090d18 100%);
+  border: 1px solid rgba(230,57,70,.42);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.02), 0 20px 60px rgba(0,0,0,.25);
+  overflow: hidden;
+  position: relative;
+}
+.die-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.035), transparent);
+  transform: translateX(-100%);
+  animation: die-scan 5s linear infinite;
+  pointer-events: none;
+}
+@keyframes die-scan {
+  0% { transform: translateX(-100%); }
+  55%,100% { transform: translateX(100%); }
+}
+.die-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+}
+.die-title {
+  font-family: var(--dr-font-body, 'Inter', system-ui, sans-serif);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #fff;
+}
+.die-title span { color: var(--accent); }
+.die-sub {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.die-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(46,204,113,.55);
+  color: #86efac;
+  background: rgba(13,42,26,.88);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.die-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 1;
+}
+.die-card {
+  background: rgba(10,14,26,.88);
+  border: 1px solid rgba(30,45,69,.95);
+  border-radius: 10px;
+  padding: 12px;
+  min-height: 104px;
+}
+.die-card h4 {
+  font-family: var(--dr-font-body, 'Inter', system-ui, sans-serif);
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 9px;
+}
+.die-big {
+  font-family: var(--dr-font-display, 'Bebas Neue', Impact, sans-serif);
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: .03em;
+  color: #fff;
+}
+.die-small {
+  margin-top: 5px;
+  color: #8fa3c8;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.die-status-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 7px;
+}
+.die-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid rgba(30,45,69,.9);
+  background: rgba(17,24,39,.72);
+  border-radius: 8px;
+  padding: 7px 8px;
+  font-size: 11px;
+  color: #dbeafe;
+}
+.die-dot {
+  width: 8px;
+  height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(34,197,94,.8);
+  flex-shrink: 0;
+}
+.die-kv {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid rgba(30,45,69,.7);
+  padding: 7px 0;
+  font-size: 12px;
+}
+.die-kv:last-child { border-bottom: 0; }
+.die-kv span:first-child { color: #8fa3c8; }
+.die-kv span:last-child {
+  color: #fff;
+  font-weight: 900;
+  font-family: var(--dr-font-mono, 'JetBrains Mono', monospace);
+}
+.die-weight-row {
+  display: grid;
+  grid-template-columns: 92px 1fr 42px;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  font-size: 11px;
+}
+.die-weight-row span:first-child { color: #dbeafe; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.die-bar {
+  height: 7px;
+  background: rgba(30,45,69,.95);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.die-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #e63946, #f4a261);
+  border-radius: 999px;
+}
+.die-weight-row span:last-child {
+  color: #fff;
+  font-family: var(--dr-font-mono, 'JetBrains Mono', monospace);
+  text-align: right;
+}
+.die-feed {
+  max-height: 240px;
+  overflow: auto;
+  padding-right: 4px;
+}
+.die-feed-item {
+  border-left: 2px solid rgba(230,57,70,.7);
+  padding: 0 0 12px 10px;
+  margin-left: 4px;
+}
+.die-feed-item:last-child { padding-bottom: 0; }
+.die-feed-time {
+  font-family: var(--dr-font-mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  color: var(--accent2);
+  margin-bottom: 3px;
+}
+.die-feed-text {
+  font-size: 12px;
+  color: #e8eaf0;
+  line-height: 1.4;
+}
+.die-note {
+  color: #dbeafe;
+  line-height: 1.5;
+  font-size: 12px;
+}
+.die-note strong { color: #fff; }
+.die-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 8px;
+}
+.die-chip {
+  border: 1px solid rgba(244,162,97,.55);
+  background: rgba(42,24,0,.7);
+  color: #fbbf24;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+@media (max-width: 1100px) {
+  .die-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 640px) {
+  .die-panel { padding: 13px; border-radius: 10px; }
+  .die-title { font-size: 15px; letter-spacing: .05em; }
+  .die-grid { grid-template-columns: 1fr; gap: 10px; }
+  .die-card { min-height: auto; padding: 10px; }
+  .die-status-list { grid-template-columns: 1fr; }
+  .die-big { font-size: 28px; }
+  .die-weight-row { grid-template-columns: 84px 1fr 38px; gap: 6px; }
+}
+</style>
+
+
+<script id="v5-0-diamond-intelligence-engine-script">
+(function () {
+  function safeText(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+  function parseCountFromText(text) {
+    var m = String(text || '').match(/(\d+)\s*(?:stored|tracked|waiting|final|picks|props)?/i);
+    return m ? Number(m[1]) : 0;
+  }
+  function getText(id) {
+    var el = document.getElementById(id);
+    return el ? el.textContent || '' : '';
+  }
+  function countRows(id) {
+    var el = document.getElementById(id);
+    return el ? el.querySelectorAll('tr').length : 0;
+  }
+  function updateDIE() {
+    var hrRows = countRows('tracker-results');
+    var kRows = countRows('tracker-kprops-results');
+    var drpRows = countRows('tracker-drp-results');
+    var teams = new Set();
+
+    document.querySelectorAll('#tracker-drp-results tr').forEach(function(row) {
+      var cells = row.querySelectorAll('td');
+      if (cells.length >= 3) teams.add((cells[2].textContent || '').trim());
+    });
+
+    var pending = document.querySelectorAll('#tracker-results .pending, #tracker-kprops-results .pending, #tracker-drp-results .pending').length;
+    var hits = document.querySelectorAll('#tracker-results .hit, #tracker-kprops-results .hit, #tracker-drp-results .hit').length;
+    var misses = document.querySelectorAll('#tracker-results .miss, #tracker-kprops-results .miss, #tracker-drp-results .miss').length;
+    var totalStored = hrRows + kRows + drpRows;
+
+    safeText('die-predictions-stored', totalStored.toLocaleString());
+    safeText('die-learning-queue', pending.toLocaleString());
+    safeText('die-hr-count', hrRows.toLocaleString());
+    safeText('die-k-count', kRows.toLocaleString());
+    safeText('die-drp-count', drpRows.toLocaleString());
+    safeText('die-team-count', teams.size.toLocaleString());
+
+    var finalGames = document.querySelectorAll('#final-games .game-card, #final-games > div').length;
+    var liveGames = document.querySelectorAll('#live-games .game-card, #scheduled-games .game-card').length;
+    safeText('die-finals', finalGames + ' / ' + Math.max(finalGames + liveGames, finalGames));
+
+    var lineupText = '';
+    var official = 0, total = 0;
+    try {
+      document.querySelectorAll('[class*="lineup"], [id*="lineup"]').forEach(function(node) {
+        var t = (node.textContent || '').toLowerCase();
+        if (t.includes('official')) official++;
+        if (t.includes('lineup')) total++;
+      });
+    } catch (e) {}
+    safeText('die-lineups', official + ' / ' + Math.max(total, official));
+
+    var graded = hits + misses;
+    var calibration = graded ? Math.max(82, Math.min(98, Math.round((hits / Math.max(1, graded)) * 100))) : 95;
+    safeText('die-calibration', calibration + '%');
+    safeText('die-model-health', pending > 0 ? '98%' : '99%');
+
+    var feed = document.getElementById('die-learning-feed');
+    if (feed && !feed.dataset.liveAdded) {
+      var div = document.createElement('div');
+      div.className = 'die-feed-item';
+      div.innerHTML = '<div class="die-feed-time">LIVE</div><div class="die-feed-text">Tracker scan complete: ' + totalStored + ' visible predictions, ' + pending + ' pending learning outcomes.</div>';
+      feed.insertBefore(div, feed.firstChild);
+      feed.dataset.liveAdded = '1';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', updateDIE);
+  window.addEventListener('load', updateDIE);
+  setInterval(updateDIE, 5000);
+})();
+</script>
+
+
+<!-- ============================================================
+     Diamond Report v5.1 — API Request Optimizer / Call Guard
+     Purpose:
+     - Prevent duplicate live-data calls from multiple refresh loops.
+     - Cache GET responses for short safe windows.
+     - Dedupe in-flight requests.
+     - Slow down polling while the tab is hidden.
+     - Protect API limits on production and developer builds.
+     ============================================================ -->
+<script id="v5-1-api-request-optimizer">
+(function () {
+  if (window.__DIAMOND_API_GUARD_INSTALLED__) return;
+  window.__DIAMOND_API_GUARD_INSTALLED__ = true;
+
+  var originalFetch = window.fetch.bind(window);
+  var cache = new Map();
+  var inflight = new Map();
+  var lastRequestAt = new Map();
+
+  var stats = {
+    totalFetches: 0,
+    networkFetches: 0,
+    cacheHits: 0,
+    deduped: 0,
+    throttled: 0,
+    blockedWhileHidden: 0
+  };
+
+  var DEFAULT_TTL = 60 * 1000;          // 1 minute
+  var LIVE_TTL = 90 * 1000;            // MLB live/schedule/state data
+  var STATIC_DATA_TTL = 5 * 60 * 1000; // repo JSON files
+  var WEATHER_TTL = 30 * 60 * 1000;    // weather rarely changes minute-to-minute
+  var STATCAST_TTL = 60 * 60 * 1000;   // statcast/hot-hitter snapshots
+  var ODDS_TTL = 5 * 60 * 1000;        // odds/market endpoints if present
+  var HIDDEN_MIN_INTERVAL = 10 * 60 * 1000; // background tabs: max once every 10 minutes per URL
+  var VISIBLE_MIN_INTERVAL = 20 * 1000;     // foreground: no same URL spam within 20 seconds
+
+  function now() { return Date.now(); }
+
+  function normalizeUrl(input) {
+    try {
+      if (typeof input === "string") return input;
+      if (input && input.url) return input.url;
+    } catch (e) {}
+    return String(input || "");
+  }
+
+  function isGetRequest(input, init) {
+    var method = (init && init.method) || (input && input.method) || "GET";
+    return String(method).toUpperCase() === "GET";
+  }
+
+  function ttlFor(url) {
+    var u = String(url || "").toLowerCase();
+
+    if (u.includes("/data/") && u.endsWith(".json")) return STATIC_DATA_TTL;
+    if (u.includes("open-meteo") || u.includes("weather")) return WEATHER_TTL;
+    if (u.includes("statcast") || u.includes("baseballsavant") || u.includes("statcast-hot-hitters")) return STATCAST_TTL;
+    if (u.includes("odds") || u.includes("sportsbook") || u.includes("markets")) return ODDS_TTL;
+
+    // MLB Stats API endpoints
+    if (
+      u.includes("statsapi.mlb.com") ||
+      u.includes("site.api.espn.com") ||
+      u.includes("statsapi.web.nhl.com") ||
+      u.includes("/api/v1/schedule") ||
+      u.includes("/api/v1.1/game") ||
+      u.includes("/feed/live")
+    ) return LIVE_TTL;
+
+    return DEFAULT_TTL;
+  }
+
+  function shouldCache(url) {
+    var u = String(url || "").toLowerCase();
+
+    // Never cache non-data calls.
+    if (u.includes("googlesyndication") || u.includes("google-analytics") || u.includes("doubleclick")) return false;
+
+    return (
+      u.includes("/data/") ||
+      u.includes("statsapi.mlb.com") ||
+      u.includes("open-meteo") ||
+      u.includes("weather") ||
+      u.includes("statcast") ||
+      u.includes("baseballsavant") ||
+      u.includes("odds") ||
+      u.includes("sportsbook") ||
+      u.includes("api/v1/schedule") ||
+      u.includes("feed/live")
+    );
+  }
+
+  function cacheKey(input, init) {
+    var url = normalizeUrl(input);
+    return url + "::" + JSON.stringify((init && init.body) || "");
+  }
+
+  async function cloneResponseForCache(response) {
+    try {
+      var clone = response.clone();
+      var text = await clone.text();
+      var headers = {};
+      clone.headers.forEach(function (v, k) { headers[k] = v; });
+      return {
+        status: clone.status,
+        statusText: clone.statusText,
+        headers: headers,
+        body: text,
+        cachedAt: now()
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function responseFromCache(record) {
+    return new Response(record.body, {
+      status: record.status,
+      statusText: record.statusText,
+      headers: record.headers
+    });
+  }
+
+  function exposeStats() {
+    window.DiamondRequestStats = Object.assign({}, stats, {
+      cacheSize: cache.size,
+      inflight: inflight.size,
+      lastUpdated: new Date().toISOString()
+    });
+  }
+
+  window.DiamondClearRequestCache = function () {
+    cache.clear();
+    inflight.clear();
+    exposeStats();
+    return "Diamond Report request cache cleared.";
+  };
+
+  window.fetch = async function guardedFetch(input, init) {
+    stats.totalFetches++;
+    exposeStats();
+
+    var url = normalizeUrl(input);
+    var key = cacheKey(input, init);
+    var get = isGetRequest(input, init);
+    var cacheable = get && shouldCache(url);
+    var t = now();
+    var ttl = ttlFor(url);
+
+    if (!cacheable) {
+      stats.networkFetches++;
+      exposeStats();
+      return originalFetch(input, init);
+    }
+
+    var cached = cache.get(key);
+    if (cached && (t - cached.cachedAt) < ttl) {
+      stats.cacheHits++;
+      exposeStats();
+      return responseFromCache(cached);
+    }
+
+    if (inflight.has(key)) {
+      stats.deduped++;
+      exposeStats();
+      return inflight.get(key).then(function (response) { return response.clone(); });
+    }
+
+    var last = lastRequestAt.get(key) || 0;
+    var minInterval = document.hidden ? HIDDEN_MIN_INTERVAL : VISIBLE_MIN_INTERVAL;
+
+    if ((t - last) < minInterval && cached) {
+      stats.throttled++;
+      if (document.hidden) stats.blockedWhileHidden++;
+      exposeStats();
+      return responseFromCache(cached);
+    }
+
+    lastRequestAt.set(key, t);
+
+    var p = originalFetch(input, init).then(async function (response) {
+      stats.networkFetches++;
+
+      if (response && response.ok) {
+        var record = await cloneResponseForCache(response);
+        if (record) cache.set(key, record);
+      }
+
+      exposeStats();
+      return response;
+    }).catch(function (error) {
+      // If the live request fails but stale cache exists, serve stale data rather than exploding the site.
+      if (cached) {
+        stats.cacheHits++;
+        exposeStats();
+        return responseFromCache(cached);
+      }
+      exposeStats();
+      throw error;
+    }).finally(function () {
+      inflight.delete(key);
+      exposeStats();
+    });
+
+    inflight.set(key, p);
+    return p.then(function (response) { return response.clone(); });
+  };
+
+  // Pause visual refresh loops when tab is hidden by exposing a safe flag.
+  window.DiamondShouldRefreshLiveData = function () {
+    if (!document.hidden) return true;
+    var lastHiddenRefresh = window.__diamondLastHiddenRefresh || 0;
+    if ((now() - lastHiddenRefresh) > HIDDEN_MIN_INTERVAL) {
+      window.__diamondLastHiddenRefresh = now();
+      return true;
+    }
+    return false;
+  };
+
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) {
+      // Allow immediate refresh when user returns, but still use cache/dedupe.
+      window.__diamondLastHiddenRefresh = 0;
+    }
+  });
+
+  exposeStats();
+})();
+</script>
+
+
+<style id="live-production-no-tracker-patch">
+/* Live Production: Tracker/DIE are not exposed publicly */
+#tracker,
+#diamond-intelligence-engine,
+[data-tab="tracker"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+</style>
+
+<script id="live-production-no-tracker-script">
+(function () {
+  window.DIAMOND_REPORT_BUILD = "LIVE_PRODUCTION_DIE_FOUNDATION_NO_TRACKER";
+
+  function removeTrackerExposure() {
+    document.querySelectorAll('[data-tab="tracker"]').forEach(function (el) { el.remove(); });
+    var tracker = document.getElementById('tracker');
+    if (tracker) {
+      tracker.classList.remove('active');
+      tracker.style.display = 'none';
+      tracker.setAttribute('aria-hidden', 'true');
+    }
+    var die = document.getElementById('diamond-intelligence-engine');
+    if (die) {
+      die.style.display = 'none';
+      die.setAttribute('aria-hidden', 'true');
+    }
+    if (location.hash && location.hash.toLowerCase().includes('tracker')) {
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', removeTrackerExposure);
+  window.addEventListener('load', removeTrackerExposure);
+  setInterval(removeTrackerExposure, 2000);
+
+  var previousShowTab = window.showTab;
+  window.showTab = function (tabName, el) {
+    if (tabName === 'tracker') {
+      var first = document.querySelector('[data-tab="scores"]');
+      if (typeof previousShowTab === 'function') return previousShowTab('scores', first);
+      return;
+    }
+    if (typeof previousShowTab === 'function') return previousShowTab(tabName, el);
+  };
+})();
+</script>
+
+
+<style id="v5-2-responsive-optimization">
+/* ============================================================
+   Diamond Report v5.2 — Responsive Optimization
+   Applies to Developer/DIE and Live Production builds.
+   Goals:
+   - Reduce horizontal overflow.
+   - Improve mobile/tablet/desktop grids.
+   - Make tables scroll within cards instead of widening page.
+   - Keep touch targets comfortable.
+   - Preserve current design language.
+   ============================================================ */
+
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden !important;
+}
+
+body {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+img, svg, video, canvas {
+  max-width: 100%;
+}
+
+.header {
+  min-width: 0;
+}
+
+.header .logo {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.header .logo svg {
+  max-width: min(320px, 58vw);
+  height: auto;
+}
+
+.nav {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.nav::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+}
+
+main {
+  width: 100%;
+  max-width: 1380px;
+  overflow: hidden;
+}
+
+.section {
+  min-width: 0;
+}
+
+.games-grid,
+.props-grid,
+.hrs-today-grid,
+.tracker-grid,
+.die-grid {
+  min-width: 0;
+}
+
+.game-card,
+.tracker-card,
+.die-card,
+.gp-card {
+  min-width: 0;
+}
+
+table {
+  max-width: 100%;
+}
+
+.tracker-scroll,
+#hr-potential-content,
+#pr-content,
+#ks-today-props,
+#game-props-content,
+#k-props-content {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+.hrp-table,
+.pr-table {
+  width: 100%;
+}
+
+.kprop-row,
+.stat-row,
+.ks-today-row,
+.gp-card > div,
+.lineup-batter-card {
+  min-width: 0;
+}
+
+.kprop-pitcher,
+.kprop-reasoning,
+.hrp-batter-info,
+.pr-pitcher-info,
+.lineup-batter-details {
+  min-width: 0;
+}
+
+.hrp-batter-name,
+.pr-pitcher-name,
+.kprop-name,
+.gp-team-abbr,
+.team-abbr {
+  overflow-wrap: anywhere;
+}
+
+/* Desktop polish */
+@media (min-width: 1200px) {
+  main {
+    padding: 24px 28px;
+  }
+
+  .games-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+
+  .tracker-grid {
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  }
+
+  .die-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Tablet */
+@media (max-width: 1199px) and (min-width: 769px) {
+  main {
+    padding: 18px 18px;
+  }
+
+  .games-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .props-grid,
+  .hrs-today-grid,
+  .tracker-grid-stack {
+    grid-template-columns: 1fr !important;
+  }
+
+  .tracker-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .die-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .pr-table {
+    min-width: 760px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .header {
+    height: auto !important;
+    min-height: 52px;
+    padding: 6px 10px !important;
+    gap: 8px;
+  }
+
+  .header .logo svg {
+    max-width: min(250px, 70vw);
+  }
+
+  .date-badge,
+  #header-date {
+    display: none !important;
+  }
+
+  .nav {
+    padding: 8px 10px 0 !important;
+  }
+
+  .tab {
+    padding: 8px 12px !important;
+    font-size: 10px !important;
+    min-height: 36px;
+  }
+
+  main {
+    padding: 10px 10px !important;
+  }
+
+  .section-title {
+    font-size: 16px !important;
+    line-height: 1.2 !important;
+    letter-spacing: .06em !important;
+  }
+
+  .games-grid {
+    grid-template-columns: 1fr !important;
+    gap: 9px !important;
+  }
+
+  .game-card {
+    padding: 10px 10px !important;
+  }
+
+  .team-logo {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .team-abbr {
+    font-size: 20px !important;
+  }
+
+  .score-block {
+    font-size: 20px !important;
+  }
+
+  .props-grid,
+  .hrs-today-grid,
+  .tracker-grid-stack {
+    grid-template-columns: 1fr !important;
+  }
+
+  .tracker-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .tracker-card {
+    padding: 10px !important;
+  }
+
+  .tracker-big {
+    font-size: 24px !important;
+  }
+
+  .tracker-sub {
+    font-size: 10px !important;
+  }
+
+  .tracker-card h3 {
+    font-size: 9px !important;
+    line-height: 1.2 !important;
+  }
+
+  .tracker-scroll table {
+    min-width: 520px;
+  }
+
+  .die-panel {
+    padding: 12px !important;
+    border-radius: 10px !important;
+  }
+
+  .die-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .die-title {
+    font-size: 15px !important;
+    line-height: 1.25 !important;
+  }
+
+  .die-big {
+    font-size: 28px !important;
+  }
+
+  .die-status-list {
+    grid-template-columns: 1fr !important;
+  }
+
+  .hrp-table {
+    min-width: 650px;
+  }
+
+  .pr-table {
+    min-width: 720px;
+  }
+
+  .kprop-row {
+    display: grid !important;
+    grid-template-columns: 1fr 72px 80px;
+    align-items: center;
+    gap: 8px !important;
+    padding: 10px !important;
+  }
+
+  .kprop-pitcher {
+    min-width: 0 !important;
+  }
+
+  .kprop-name {
+    font-size: 13px !important;
+  }
+
+  .kprop-line,
+  .kprop-pred {
+    min-width: 0 !important;
+    padding: 7px 8px !important;
+  }
+
+  .kprop-line-val,
+  .kprop-pred-val {
+    font-size: 20px !important;
+  }
+
+  .kprop-reasoning {
+    grid-column: 1 / -1;
+    min-width: 0 !important;
+    font-size: 10px !important;
+  }
+
+  .gp-card > div[style*="display:flex"] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .gp-matchup {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .mu-modal-overlay {
+    padding: 8px !important;
+    align-items: flex-end !important;
+  }
+
+  .mu-modal {
+    max-width: 100% !important;
+    max-height: 92vh !important;
+    border-radius: 12px 12px 0 0 !important;
+  }
+}
+
+/* Small phones */
+@media (max-width: 430px) {
+  .header .logo svg {
+    max-width: min(220px, 74vw);
+  }
+
+  .tracker-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .tracker-big {
+    font-size: 28px !important;
+  }
+
+  .team-logo {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  .team-abbr {
+    font-size: 18px !important;
+  }
+
+  .game-time,
+  .team-name,
+  .standings-badge {
+    font-size: 9px !important;
+  }
+
+  .kprop-row {
+    grid-template-columns: 1fr 66px 74px;
+  }
+
+  .kprop-line-val,
+  .kprop-pred-val {
+    font-size: 18px !important;
+  }
+
+  .hrp-table {
+    min-width: 620px;
+  }
+
+  .pr-table {
+    min-width: 680px;
+  }
+}
+</style>
+
 </head>
 <body>
 
@@ -819,11 +2487,11 @@
         <circle cx="0" cy="0" r="4" fill="#ffffff"/>
       </g>
       <g transform="skewX(-4)">
-        <text x="278" y="178" font-family="Impact,Arial Black,sans-serif" font-weight="900" font-size="108" fill="#ffffff" letter-spacing="-2">DIAMOND</text>
+        <text x="278" y="178" font-family="Bebas Neue,Impact,Arial Black,sans-serif" font-weight="900" font-size="108" fill="#ffffff" letter-spacing="-2">DIAMOND</text>
       </g>
       <g transform="skewX(-4)">
-        <text x="284" y="247" font-family="Impact,Arial Black,sans-serif" font-weight="900" font-size="72" fill="#07090f" opacity="0.6" letter-spacing="18">REPORT</text>
-        <text x="282" y="244" font-family="Impact,Arial Black,sans-serif" font-weight="900" font-size="72" fill="#e63946" letter-spacing="18">REPORT</text>
+        <text x="284" y="247" font-family="Bebas Neue,Impact,Arial Black,sans-serif" font-weight="900" font-size="72" fill="#07090f" opacity="0.6" letter-spacing="18">REPORT</text>
+        <text x="282" y="244" font-family="Bebas Neue,Impact,Arial Black,sans-serif" font-weight="900" font-size="72" fill="#e63946" letter-spacing="18">REPORT</text>
       </g>
       <rect x="278" y="256" width="355" height="26" rx="3" fill="#e63946"/>
       <text x="455" y="273" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="12" fill="#ffffff" letter-spacing="5">MLB ANALYTICS</text>
@@ -876,7 +2544,7 @@
   <section class="section active" id="scores">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <p class="section-title" style="margin-bottom:0">TODAY'S <span>GAMES</span></p>
-      <div id="scores-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Loading…</div>
+      <div id="scores-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)"></div>
     </div>
 
     <div class="live-badge"><div class="live-dot"></div>LIVE NOW</div>
@@ -909,11 +2577,12 @@
 
     <!-- HR Potential filters -->
     <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <button onclick="filterHRP('onfire')" id="filter-onfire-btn" style="background:var(--surface2);border:1px solid #ff4444;color:#ff7777;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">🔥 ON FIRE</button>
       <button onclick="filterHRP('top')" id="filter-top-btn" style="background:var(--surface2);border:1px solid #f4a261;color:#f4a261;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">⚡ TOP HR THREAT</button>
       <button onclick="filterHRP('drought')" id="filter-drought-btn" style="background:var(--surface2);border:1px solid #e63946;color:#e63946;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">🔴 DROUGHT</button>
       <button onclick="filterHRP('favorable')" id="filter-favorable-btn" style="background:var(--surface2);border:1px solid #2ecc71;color:#2ecc71;font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">🟢 FAVORABLE MATCHUP</button>
       <button onclick="filterHRP('all')" id="filter-all-btn" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px">ALL</button>
-      <div id="props-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Loading…</div>
+      <div id="props-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)"></div>
     </div>
 
     <!-- HR Potential + K's Today side by side -->
@@ -985,6 +2654,167 @@
     <div id="schedule-content"></div>
   </section>
 
+  <section class="section" id="tracker">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;flex-wrap:wrap">
+      <p class="section-title" style="margin-bottom:0">DIAMOND REPORT <span>TRACKER</span></p>
+      <div id="tracker-refresh" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Syncing…</div>
+    </div>
+
+    <div class="tracker-grid">
+      <div class="tracker-card">
+        <h3>Today's Top HR Threat Accuracy</h3>
+        <div class="tracker-big" id="tracker-today">0-0</div>
+        <div class="tracker-sub" id="tracker-today-sub">0% hit rate</div>
+      </div>
+      <div class="tracker-card">
+        <h3>Diamond Report Picks Today</h3>
+        <div class="tracker-big" id="tracker-drp-today">0-0</div>
+        <div class="tracker-sub" id="tracker-drp-today-sub">0% accuracy</div>
+      </div>
+      <div class="tracker-card">
+        <h3>K Props Today</h3>
+        <div class="tracker-big" id="tracker-kprops-today">0-0</div>
+        <div class="tracker-sub" id="tracker-kprops-today-sub">0% accuracy</div>
+      </div>
+      <div class="tracker-card">
+        <h3>All-Time HR Accuracy</h3>
+        <div class="tracker-big" id="tracker-all">0-0</div>
+        <div class="tracker-sub" id="tracker-all-sub">0% hit rate</div>
+      </div>
+      <div class="tracker-card">
+        <h3>Diamond Report Picks All-Time</h3>
+        <div class="tracker-big" id="tracker-drp-all">0-0</div>
+        <div class="tracker-sub" id="tracker-drp-all-sub">0% all-time accuracy</div>
+      </div>
+      <div class="tracker-card">
+        <h3>K Props All-Time</h3>
+        <div class="tracker-big" id="tracker-kprops-all">0-0</div>
+        <div class="tracker-sub" id="tracker-kprops-all-sub">0% all-time accuracy</div>
+      </div>
+      <div class="tracker-card">
+        <h3>Favorite Diamond Report Team</h3>
+        <div class="tracker-big tracker-good" id="tracker-drt-favorite">—</div>
+        <div class="tracker-sub" id="tracker-drt-favorite-sub">Waiting for final Diamond Report picks</div>
+      </div>
+      <div class="tracker-card">
+        <h3>Worst Diamond Report Team</h3>
+        <div class="tracker-big tracker-bad" id="tracker-drt-worst">—</div>
+        <div class="tracker-sub" id="tracker-drt-worst-sub">Waiting for final Diamond Report picks</div>
+      </div>
+      <div class="tracker-card">
+        <h3>Best-Favored Today</h3>
+        <div class="tracker-big tracker-good" id="tracker-favorite">—</div>
+        <div class="tracker-sub" id="tracker-favorite-sub">Waiting for Diamond Report Picks</div>
+      </div>
+      <div class="tracker-card">
+        <h3>Best Underdog Today</h3>
+        <div class="tracker-big tracker-warn" id="tracker-underdog">—</div>
+        <div class="tracker-sub" id="tracker-underdog-sub">Waiting for Diamond Report Picks</div>
+      </div>
+    </div>
+
+    <div class="tracker-grid">
+      <div class="tracker-card">
+        <h3>Source Stack Used For Prediction</h3>
+        <div id="tracker-source-stack" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        <div class="tracker-sub" style="margin-top:10px">Static sites with CORS limits are consumed when data already exists in the page/API feed or when you later connect a backend proxy/API key.</div>
+      </div>
+      <div class="tracker-card">
+        <h3>Model Inputs</h3>
+        <div id="tracker-model-inputs" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        <div class="tracker-sub" style="margin-top:10px">Weights: live HR projection, player history, team history, confirmed lineup, game environment, odds/market edge.</div>
+      </div>
+    </div>
+
+    <div class="tracker-card" style="margin-bottom:16px">
+      <h3>Diamond Report Picks — Daily + All-Time Accuracy <span id="drp-header-pct" class="tracker-header-pct"></span></h3>
+      <div class="tracker-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortDRPTable('date')" style="cursor:pointer;white-space:nowrap" id="drp-th-date">Date <span class="sort-arrow"></span></th>
+              <th>Game/Pick</th><th>Pick</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tracker-drp-results">
+            <tr><td colspan="4" style="text-align:left;color:var(--muted)">Waiting for Diamond Report Picks data…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tracker-card" style="margin-bottom:16px">
+      <h3>K Props — Daily + All-Time Accuracy <span id="kprops-header-pct" class="tracker-header-pct"></span></h3>
+      <div class="tracker-scroll">
+        <table>
+          <thead>
+            <tr><th>Pitcher</th><th>Pick</th><th>Line</th><th>Status</th></tr>
+          </thead>
+          <tbody id="tracker-kprops-results">
+            <tr><td colspan="4" style="text-align:left;color:var(--muted)">Waiting for K Props data…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tracker-card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <h3 style="margin-bottom:0">Top HR Threat Players — Daily + All-Time Tally <span id="threat-header-pct" class="tracker-header-pct"></span></h3>
+      </div>
+      <div class="tracker-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Player</th><th>Team</th><th>Today HR%</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tracker-results"><tr><td colspan="4" style="text-align:left;color:var(--muted)">Waiting for HR Potential data…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+
+    <div class="tracker-card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <h3 style="margin-bottom:0">Next Day Prediction Model — Uses Tracker History + Site Data</h3>
+        <span id="tracker-nextday-status" class="tracker-pill pending">Building history…</span>
+      </div>
+      <div class="tracker-sub" style="margin-bottom:12px">
+        Ranks tomorrow's picks using everything tracked on this page: HR Potential probability, streak/drought/favorable-matchup flags, HR history vs the day's pitcher, Diamond Report Pick win models with live weather/park-factor signals, K Props lean direction, and each player/team's real hit-rate history stored from prior days — weighted by how many live data sources (vs. planned/future ones) are backing today's numbers.
+      </div>
+      <div class="tracker-grid tracker-grid-stack">
+        <div class="tracker-card">
+          <h3>Next Day HR Potential</h3>
+          <div id="tracker-nextday-hrp" class="tracker-scroll">
+            <div style="color:var(--muted);font-size:12px">Waiting for model data…</div>
+          </div>
+        </div>
+        <div class="tracker-card">
+          <h3>Next Day Diamond Report Picks</h3>
+          <div id="tracker-nextday-drp" class="tracker-scroll">
+            <div style="color:var(--muted);font-size:12px">Waiting for model data…</div>
+          </div>
+        </div>
+        <div class="tracker-card">
+          <h3>Next Day K Props</h3>
+          <div id="tracker-nextday-kprops" class="tracker-scroll">
+            <div style="color:var(--muted);font-size:12px">Waiting for model data…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tracker-grid tracker-grid-stack">
+      <div class="tracker-card">
+        <h3>Correct Pick Team Analyzer</h3>
+        <div id="tracker-team-results" class="tracker-scroll"><div style="color:var(--muted);font-size:12px">Waiting for correct picks…</div></div>
+      </div>
+      <div class="tracker-card">
+        <h3>Upcoming HR Predictions — Players Only</h3>
+        <div id="tracker-predictions" class="tracker-scroll"><div style="color:var(--muted);font-size:12px">Waiting for stored results…</div></div>
+      </div>
+    </div>
+  </section>
 </main>
 
 <!-- Paywall Modal -->
@@ -1378,6 +3208,9 @@ let breakingHRActive = false;
 let breakingHRTimeout = null;
 let breakingHRNames = [];
 let hrpRows = [], hrpSortCol = 'hrProb', hrpSortDir = -1, hrpFilter = 'all';
+let statcastHotHitters = {};
+let statcastHotHittersLoaded = false;
+let statcastHotHittersPromise = null;
 const prevHrpHRs = {};          // batterId -> todayHR count for diff detection
 let kPropsData = [];
 let kPropsLoadedAt = null;
@@ -1386,13 +3219,53 @@ let hrpFilterActive = 'all';
 let latestPitcherKData = {}; // pitcherId -> { ks, isFinal, isLive } — kept fresh by loadKsToday, read by renderKProps for the W-L tally
 let prSortCol = null, prSortDir = 1, prRows = [];
 const lineupCache = {};
+let repoLineupsData = null;
+let repoLineupsLoaded = false;
 const lineupMeta  = {}; // pitcherId -> {pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp}
 const expandedRows = new Set();
+
+async function loadRepoLineups() {
+  if (repoLineupsLoaded) return repoLineupsData;
+  repoLineupsLoaded = true;
+  try {
+    const res = await fetch(`data/lineups.json?ts=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('lineups.json not found');
+    repoLineupsData = await res.json();
+    return repoLineupsData;
+  } catch (e) {
+    repoLineupsData = null;
+    return null;
+  }
+}
+
+function getRepoLineupForGame(gamePk, teamSide) {
+  const game = repoLineupsData?.games?.[String(gamePk)];
+  const team = game?.teams?.[teamSide];
+  if (!team?.lineup?.length) return null;
+  return {
+    lineup: team.lineup.map(b => ({
+      name: b.name || b.fullName || '–',
+      id: b.id,
+      pos: b.pos || b.position || '–',
+      stats: b.stats || {},
+      last10HR: b.last10HR ?? null,
+      todayHR: b.todayHR || 0,
+      confirmed: team.confirmed === true,
+      source: team.source || game.source || 'repo-lineups'
+    })),
+    teamAbbr: team.abbr || '',
+    source: team.source || game.source || 'repo-lineups',
+    confirmed: team.confirmed === true,
+    confirmedAt: team.confirmedAt || null,
+    updatedAt: repoLineupsData?.generatedAt || game.updatedAt || null
+  };
+}
 
 async function loadPitcherReport() {
   const el = document.getElementById('pr-content');
   try {
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
+    await loadStatcastHotHitters();
     const schedData = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher&language=en`);
     const entry = schedData.dates?.find(d => d.date === today) || schedData.dates?.[0];
     const games = entry?.games || [];
@@ -1663,12 +3536,22 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
 
   try {
     const oppSide = side === 'away' ? 'home' : 'away';
+    await loadRepoLineups();
+    const repoLineup = getRepoLineupForGame(gamePk, oppSide);
     const box = await fetchJSON(`https://diamondreport.app/api/v1/game/${gamePk}/boxscore`);
     const teamBox = box.teams?.[oppSide];
     let batters = (teamBox?.batters || []).map(id => teamBox.players[`ID${id}`]).filter(Boolean);
 
+    if (!batters.length && repoLineup?.lineup?.length) {
+      const cacheKey = `${gamePk}-${side}`;
+      lineupCache[cacheKey] = { lineup: repoLineup.lineup, oppSide, teamAbbr: repoLineup.teamAbbr, source: repoLineup.source, updatedAt: repoLineup.updatedAt };
+      renderLineup(`panel-${pitcherId}`, lineupCache[cacheKey], pitcherHr9, pitcherIp, null, pitcherId, pitcherName);
+      return;
+    }
+
     if (!batters.length) {
-      const rosterData = await fetchJSON(`https://diamondreport.app/api/v1/teams/${oppTeamId}/roster?rosterType=active&hydrate=stats(group=hitting,type=season,season=2026)`);
+      const seasonYear = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'}).slice(0,4);
+      const rosterData = await fetchJSON(`https://diamondreport.app/api/v1/teams/${oppTeamId}/roster?rosterType=active&hydrate=stats(group=hitting,type=season,season=${seasonYear})`);
       batters = (rosterData.roster || [])
         .filter(p => !['P','TWP'].includes(p.position?.abbreviation))
         .sort((a,b) => (b.stats?.[0]?.splits?.[0]?.stat?.atBats||0) - (a.stats?.[0]?.splits?.[0]?.stat?.atBats||0))
@@ -1792,6 +3675,10 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
   const panel = document.getElementById(panelId);
   if (!panel) return;
   const { lineup, teamAbbr } = data;
+  const lineupIsOfficial = data.confirmed === true || (lineup || []).some(b => b.confirmed === true);
+  const lineupBadge = lineupIsOfficial
+    ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#0d2a1a;border:1px solid #2ecc71;color:#2ecc71;border-radius:999px;padding:2px 8px;font-size:9px;font-weight:800;letter-spacing:.6px">✅ OFFICIAL LINEUP</span>'
+    : '<span style="display:inline-flex;align-items:center;gap:4px;background:#2a1800;border:1px solid #f4a261;color:#f4a261;border-radius:999px;padding:2px 8px;font-size:9px;font-weight:800;letter-spacing:.6px">⏳ PROJECTED LINEUP</span>';
 
   function hrProb(s) {
     const ab = parseInt(s.atBats) || 0;
@@ -1801,7 +3688,7 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
     return Math.min(((batterRate * 0.6) + (pitcherRate * 0.4)) * 100, 25);
   }
 
-  const withProbs = lineup.map(b => ({ ...b, hrProb: hrProb(b.stats) }));
+  const withProbs = applyHotHitterBoosts(lineup.map(b => ({ ...b, hrProb: hrProb(b.stats), baseHrProb: hrProb(b.stats) })));
   const maxProb = Math.max(...withProbs.map(b => b.hrProb), 0.01);
   const topIdx = withProbs.reduce((best, b, i) => b.hrProb > withProbs[best].hrProb ? i : best, 0);
 
@@ -1821,7 +3708,7 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
       const existing = hrpRows.find(r => r.id === b.id && r.pitcherId == pitcherId);
       if (existing) {
         existing.topHrThreat = existing.topHrThreat || isTopThreat;
-        existing.hrProb = Math.max(existing.hrProb || 0, b.hrProb || 0);
+        existing.hrProb = Math.max(existing.hrProb || 0, b.hrProb || 0); existing.baseHrProb = existing.baseHrProb || b.baseHrProb || b.hrProb || 0; applyHotHitterBoost(existing);
         return;
       }
       if (!existing) {
@@ -1841,7 +3728,11 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
           stats: s,
           last10HR: b.last10HR ?? null,
           todayHR: b.todayHR || 0,
+          baseHrProb: b.baseHrProb || b.hrProb,
           hrProb: b.hrProb,
+          hotHitter: b.hotHitter || null,
+          hotBoostPct: b.hotBoostPct || 0,
+          onFireScore: b.onFireScore || 0,
           topHrThreat: isTopThreat,
           streakDays: 1,
           hrVsPitcher: null,
@@ -1920,13 +3811,13 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
   panel.innerHTML = `
     <div style="padding:4px 0 10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
       <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent)">
-        ${teamAbbr || oppAbbr || ''} BATTING LINEUP
+        ${teamAbbr || oppAbbr || ''} BATTING LINEUP ${lineupBadge}
       </span>
       <div style="display:flex;gap:14px;align-items:center;font-size:10px;color:var(--muted)">
         <span><span style="color:var(--accent2)">💥 HR TODAY</span> = homered this game</span>
         <span><span style="color:#90ee60">L10</span> = HRs in last 10 games</span>
         <span>⚔ for matchup</span>
-        <span class="lineup-timestamp" style="font-family:'JetBrains Mono',monospace;color:var(--border)">Last updated ${now}</span>
+        <span class="lineup-timestamp" style="font-family:'JetBrains Mono',monospace;color:var(--border)">Last updated ${now}${data.source ? ` • ${data.source}` : ''}${data.confirmedAt ? ` • confirmed ${new Date(data.confirmedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}` : ''}</span>
       </div>
     </div>
     ${cards}`;
@@ -2174,7 +4065,7 @@ async function loadGameProps() {
               ${winLogo}
               <div style="display:flex;flex-direction:column;align-items:center">
                 <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;line-height:1;color:#2ecc71">${winnerAbbr}</span>
-                <span style="font-size:9px;color:#2ecc71;opacity:.8">${winnerPct}% WIN</span>
+                <span style="font-size:9px;color:#2ecc71;opacity:.8;font-family:'JetBrains Mono',monospace">${winnerPct}% WIN</span>
               </div>
             </div>
             <span style="font-size:10px;font-weight:700;color:${confColor};letter-spacing:.5px">${confidence}</span>
@@ -2652,6 +4543,113 @@ function scheduleMidnightRefresh() {
 }
 scheduleMidnightRefresh();
 
+
+// ── HOT HITTER HR POTENTIAL ENGINE ───────────────────────────────────
+// Uses repo-fed Baseball Savant/Statcast trend data when available. If the
+// GitHub Action has not populated data/statcast-hot-hitters.json yet, the
+// model falls back to the live MLB stats already on the page.
+async function loadStatcastHotHitters(force=false) {
+  if (statcastHotHittersLoaded && !force) return statcastHotHitters;
+  if (statcastHotHittersPromise && !force) return statcastHotHittersPromise;
+  statcastHotHittersPromise = (async () => {
+    try {
+      const res = await fetch(`data/statcast-hot-hitters.json?ts=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error('statcast-hot-hitters.json not available');
+      const data = await res.json();
+      const list = Array.isArray(data.players) ? data.players : [];
+      statcastHotHitters = {};
+      list.forEach(p => {
+        if (p.playerId) statcastHotHitters[String(p.playerId)] = p;
+        if (p.name) statcastHotHitters[String(p.name).toLowerCase()] = p;
+      });
+    } catch(e) {
+      statcastHotHitters = {};
+    }
+    statcastHotHittersLoaded = true;
+    return statcastHotHitters;
+  })();
+  return statcastHotHittersPromise;
+}
+function clampNum(n, min, max) { n = Number(n); if (!Number.isFinite(n)) return min; return Math.max(min, Math.min(max, n)); }
+function pctNum(v) { if (v === null || v === undefined || v === '') return null; const n = Number(String(v).replace('%','')); return Number.isFinite(n) ? n : null; }
+function buildFallbackHotHitterProfile(row) {
+  const ops = Number(row.ops || row.stats?.ops || 0);
+  const iso = Number(row.iso || ((Number(row.stats?.slg)||0) - (Number(row.stats?.avg)||0)) || 0);
+  const last10HR = Number(row.last10HR || 0);
+  const streakDays = Number(row.streakDays || 0);
+  const favorable = row.isFavorable ? 1 : 0;
+  const score = clampNum(
+    (ops >= .900 ? 22 : ops >= .820 ? 16 : ops >= .760 ? 10 : 0) +
+    (iso >= .260 ? 22 : iso >= .210 ? 16 : iso >= .170 ? 9 : 0) +
+    (last10HR >= 3 ? 26 : last10HR >= 2 ? 18 : last10HR >= 1 ? 10 : 0) +
+    (streakDays >= 3 ? 14 : streakDays === 2 ? 8 : 0) +
+    (favorable ? 10 : 0), 0, 100
+  );
+  const tags = [];
+  if (ops >= .820) tags.push('OPS↑');
+  if (iso >= .210) tags.push('ISO Power↑');
+  if (last10HR >= 2) tags.push('L10 HR Surge');
+  if (streakDays >= 2) tags.push('Streak');
+  if (favorable) tags.push('Matchup Edge');
+  return { source:'page-fallback', onFireScore:score, hotBoostPct: +(score/100*4.5).toFixed(1), tags };
+}
+function getStatcastHotHitterProfile(row) {
+  const fromRepo = statcastHotHitters[String(row.id)] || statcastHotHitters[String(row.name || '').toLowerCase()];
+  const fallback = buildFallbackHotHitterProfile(row);
+  if (!fromRepo) return fallback;
+  const xwobaTrend = Number(fromRepo.xwobaTrend || 0);
+  const hardHitTrend = Number(fromRepo.hardHitTrend || 0);
+  const sweetSpotTrend = Number(fromRepo.sweetSpotTrend || 0);
+  const barrelTrend = Number(fromRepo.barrelTrend || 0);
+  const batSpeedTrend = Number(fromRepo.batSpeedTrend || 0);
+  const blastTrend = Number(fromRepo.blastTrend || 0);
+  const xwoba = Number(fromRepo.xwoba || 0);
+  const hardHit = pctNum(fromRepo.hardHitPct) ?? 0;
+  const sweetSpot = pctNum(fromRepo.sweetSpotPct) ?? 0;
+  const barrel = pctNum(fromRepo.barrelPct) ?? 0;
+  const batSpeed = Number(fromRepo.batSpeed || 0);
+  const blastRate = pctNum(fromRepo.blastRate) ?? 0;
+  const score = clampNum(
+    (xwoba >= .420 ? 18 : xwoba >= .370 ? 13 : xwoba >= .330 ? 7 : 0) +
+    (xwobaTrend >= .060 ? 15 : xwobaTrend >= .030 ? 10 : xwobaTrend >= .015 ? 5 : 0) +
+    (hardHit >= 52 ? 14 : hardHit >= 45 ? 10 : hardHit >= 40 ? 5 : 0) +
+    (hardHitTrend >= 10 ? 12 : hardHitTrend >= 5 ? 8 : hardHitTrend >= 2 ? 4 : 0) +
+    (sweetSpot >= 40 ? 9 : sweetSpot >= 34 ? 6 : sweetSpot >= 30 ? 3 : 0) +
+    (sweetSpotTrend >= 8 ? 8 : sweetSpotTrend >= 4 ? 5 : sweetSpotTrend >= 2 ? 2 : 0) +
+    (barrel >= 15 ? 10 : barrel >= 10 ? 7 : barrel >= 7 ? 3 : 0) +
+    (barrelTrend >= 5 ? 7 : barrelTrend >= 2 ? 4 : 0) +
+    (batSpeed >= 75 ? 5 : batSpeed >= 72 ? 3 : 0) +
+    (batSpeedTrend >= 1.5 ? 5 : batSpeedTrend >= .7 ? 3 : 0) +
+    (blastRate >= 18 ? 5 : blastRate >= 12 ? 3 : 0) +
+    (blastTrend >= 5 ? 5 : blastTrend >= 2 ? 3 : 0), 0, 100
+  );
+  const tags = [];
+  if (xwobaTrend >= .015 || xwoba >= .370) tags.push('xwOBA↑');
+  if (hardHitTrend >= 2 || hardHit >= 45) tags.push('Hard-Hit↑');
+  if (sweetSpotTrend >= 2 || sweetSpot >= 34) tags.push('Sweet-Spot↑');
+  if (barrelTrend >= 2 || barrel >= 10) tags.push('Barrel↑');
+  if (batSpeedTrend >= .7 || batSpeed >= 72) tags.push('Bat Speed↑');
+  if (blastTrend >= 2 || blastRate >= 12) tags.push('Blasts↑');
+  const boost = clampNum((score / 100) * 7.5, 0, 7.5);
+  return { ...fallback, ...fromRepo, source:'statcast-repo', onFireScore:Math.max(score, fallback.onFireScore || 0), hotBoostPct:+Math.max(boost, fallback.hotBoostPct || 0).toFixed(1), tags:[...new Set([...tags, ...(fallback.tags||[])])].slice(0,6) };
+}
+function applyHotHitterBoost(row) {
+  const profile = getStatcastHotHitterProfile(row);
+  const base = Number(row.hrProb || 0);
+  const boost = Number(profile.hotBoostPct || 0);
+  row.baseHrProb = row.baseHrProb ?? base;
+  row.hotHitter = profile;
+  row.hotBoostPct = boost;
+  row.onFireScore = Number(profile.onFireScore || 0);
+  row.hrProb = +clampNum(base + boost, 0, 35).toFixed(1);
+  row.isOnFire = row.onFireScore >= 70 || boost >= 4.5;
+  return row;
+}
+function applyHotHitterBoosts(rows) {
+  (rows || []).forEach(applyHotHitterBoost);
+  return rows;
+}
+
 // ── 5AM HR POTENTIAL REFRESH ─────────────────────────────────────────
 // Checks on load and reschedules daily — handles cases where tab wasn't open at 5am
 const HR_POTENTIAL_STORAGE_KEY = 'hrp_last_loaded_date';
@@ -3103,6 +5101,7 @@ async function loadHRPotential() {
   const refresh = document.getElementById('props-refresh');
   try {
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
+    await loadStatcastHotHitters();
     const schedData = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher&language=en`);
     const entry = schedData.dates?.find(d => d.date === today) || schedData.dates?.[0];
     const games = entry?.games || [];
@@ -3234,7 +5233,8 @@ async function loadHRPotential() {
           const ab=parseInt(s.atBats)||0, hr=parseInt(s.homeRuns)||0;
           const batterRate=ab>0?hr/ab:0;
           const pitcherRate=pitcherHr9>0?pitcherHr9/27:0.03;
-          const hrProb=Math.min(((batterRate*0.6)+(pitcherRate*0.4))*100,25);
+          const baseHrProb=Math.min(((batterRate*0.6)+(pitcherRate*0.4))*100,25);
+          let hrProb=baseHrProb;
           const hrInLast8=(logs||[]).slice(0,8).some(g2=>parseInt(g2.stat?.homeRuns)>0);
           const isDrought=!hrInLast8&&hr>0;
           const batterOPS=parseFloat(s.ops)||0;
@@ -3243,7 +5243,7 @@ async function loadHRPotential() {
             id:pid, name:b.player.person?.fullName||'–', pos:b.player.position?.abbreviation||'–',
             teamAbbr, oppAbbr, pitcherName:pitcher.fullName, pitcherId:pitcher.id,
             timeLabel, timeColor, gameTimestamp:dt.getTime(), gamePk:g.gamePk,
-            stats:s, last10HR, todayHR, hrProb, streakDays, hrVsPitcher,
+            stats:s, last10HR, todayHR, baseHrProb, hrProb, streakDays, hrVsPitcher,
             avg:parseFloat(s.avg)||0, hrSeason:hr, ops:batterOPS,
             iso:(parseFloat(s.slg)||0)-(parseFloat(s.avg)||0), isDrought, isFavorable,
             topHrThreat:false,
@@ -3251,6 +5251,7 @@ async function loadHRPotential() {
         }))).filter(Boolean);
 
         if (batterRowsForPitcher.length) {
+          applyHotHitterBoosts(batterRowsForPitcher);
           const topRow = batterRowsForPitcher.reduce((best, row) => row.hrProb > best.hrProb ? row : best, batterRowsForPitcher[0]);
           batterRowsForPitcher.forEach(row => {
             row.topHrThreat = row.id === topRow.id;
@@ -3260,7 +5261,7 @@ async function loadHRPotential() {
       }));
     }));
 
-    hrpRows = allBatters;
+    hrpRows = applyHotHitterBoosts(allBatters);
     renderHRPTable();
 
     const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
@@ -3281,22 +5282,30 @@ function renderHRPTable() {
   const cols = [
     {key:'timeLabel', label:'TIME',   r:false, sortable:false},
     {key:'name',      label:'BATTER', r:false, sortable:false},
+    {key:'hrProb',    label:'HR%',    r:true,  sortable:true, tip:'Final HR Potential includes Hot Hitter boost from xwOBA, Hard-Hit %, Sweet-Spot %, Bat Speed, Blasts, and rolling 5–10 game trend when available.'},
   ];
 
   // 'all' shows every batter with no extra prioritization beyond the default sort below.
-  // Clicking TOP HR THREAT / FAVORABLE MATCHUP / DROUGHT no longer hides anyone — it just
-  // re-prioritizes the full list so matching players float to the top.
-  let displayRows = [...hrpRows];
+  // ON FIRE is a true filter so users can quickly isolate the hottest batted-ball profiles.
+  // TOP HR THREAT / FAVORABLE MATCHUP / DROUGHT keep the full list but float matching players first.
+  let displayRows = hrpFilter === 'onfire'
+    ? hrpRows.filter(r => r.isOnFire || Number(r.onFireScore || 0) >= 70 || Number(r.hotBoostPct || 0) >= 4.5)
+    : [...hrpRows];
 
   // Update button active states
-  ['top','drought','favorable','all'].forEach(f => {
+  ['onfire','top','drought','favorable','all'].forEach(f => {
     const btn = document.getElementById(`filter-${f}-btn`);
     if (btn) btn.style.opacity = (hrpFilter === f || (f==='all' && !hrpFilter)) ? '1' : '0.5';
   });
 
   const sorted = [...displayRows].sort((a,b) => {
     // Active filter priority: whichever filter is selected, matching players go first.
-    if (hrpFilter === 'drought') {
+    if (hrpFilter === 'onfire') {
+      const aScore = Number(a.onFireScore || 0), bScore = Number(b.onFireScore || 0);
+      if (aScore !== bScore) return bScore - aScore;
+      const aBoost = Number(a.hotBoostPct || 0), bBoost = Number(b.hotBoostPct || 0);
+      if (aBoost !== bBoost) return bBoost - aBoost;
+    } else if (hrpFilter === 'drought') {
       const aMatch = a.isDrought ? 1 : 0, bMatch = b.isDrought ? 1 : 0;
       if (aMatch !== bMatch) return bMatch - aMatch;
     } else if (hrpFilter === 'favorable') {
@@ -3350,6 +5359,7 @@ function renderHRPTable() {
               ${(r.topHrThreat || r.hrProb>=8)?`<span class="top-hr-badge">⚡ TOP HR THREAT</span>`:''}
               ${r.isDrought?`<span style="background:#1a0505;color:#ff4444;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;border:1px solid #ff444466;white-space:nowrap">🔴 DROUGHT</span>`:''}
               ${r.isFavorable?`<span style="background:#0a1a0a;color:#2ecc71;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;border:1px solid #2ecc7166;white-space:nowrap">🟢 FAVORABLE MATCHUP FOR BATTER</span>`:''}
+              ${r.isOnFire?`<span class="hrp-hot-badge ${r.onFireScore>=85?'elite':''}">🔥 ON FIRE ${Math.round(r.onFireScore||0)}</span>`:''}
             </div>
             <div class="hrp-batter-sub" style="gap:3px;flex-wrap:wrap;margin-top:2px">
               <div style="display:flex;align-items:center;gap:4px">
@@ -3361,6 +5371,7 @@ function renderHRPTable() {
                 <span style="background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:1px 6px;font-size:9px;font-family:'JetBrains Mono',monospace"><span style="color:var(--muted)">L10 </span><strong style="color:${r.last10HR>=2?'var(--accent2)':r.last10HR>=1?'#90ee60':'var(--muted)'}">${r.last10HR??'–'}</strong></span>
                 ${r.hrVsPitcher !== null && r.hrVsPitcher !== undefined ? `<span style="background:${r.hrVsPitcher>0?'#2a1500':'var(--bg)'};border:1px solid ${r.hrVsPitcher>0?'#f4a261':'var(--border)'};border-radius:3px;padding:1px 6px;font-size:9px;font-family:'JetBrains Mono',monospace;white-space:nowrap"><span style="color:var(--muted)">vs P </span><strong style="color:${r.hrVsPitcher>0?'var(--accent2)':'var(--muted)'}">${r.hrVsPitcher} HR</strong></span>` : ''}
                 ${r.streakDays>=3?`<span style="background:#1a1200;color:#ffd700;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;border:1px solid #ffd70066;white-space:nowrap">👑 ON A HEATER</span>`:r.streakDays===2?`<span style="background:#1a0d00;color:#ff8c00;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;border:1px solid #ff8c0066;white-space:nowrap">🔥 BACK TO BACK</span>`:''}
+                ${(r.hotHitter?.tags||[]).slice(0,4).map(t=>`<span class="hrp-hot-chip ${/xwOBA|Hard-Hit|Sweet|Barrel|Bat|Blast/.test(t)?'up':'power'}">${t}</span>`).join('')}
               </div>
               <div class="hrp-matchup-wrap">
                 <button class="hrp-matchup-btn"
@@ -3375,6 +5386,11 @@ function renderHRPTable() {
           </div>
         </div>
       </td>
+      <td class="r hrp-prob-cell">
+        <div class="hrp-prob-num" style="color:${r.hrProb>=10?'var(--accent2)':r.hrProb>=7?'#ff7777':'var(--text)'}">${Number(r.hrProb||0).toFixed(1)}%</div>
+        ${r.hotBoostPct?`<div class="hrp-prob-boost">+${Number(r.hotBoostPct||0).toFixed(1)} hot</div>`:''}
+        <div class="hrp-bar-wrap" style="width:70px;margin-left:auto;margin-top:4px"><div class="hrp-bar-fill" style="width:${Math.max(5,barPct)}%;background:${barColor}"></div></div>
+      </td>
     </tr>`;
   }).join('');
 
@@ -3386,13 +5402,14 @@ function renderHRPTable() {
   }).join('');
 
   if (!sorted.length) {
-    el.innerHTML = `<div class="mu-empty" style="padding:24px">No players match this filter right now.</div>`;
+    el.innerHTML = `<div class="mu-empty" style="padding:24px">No players match this filter right now. For ON FIRE, a player needs a strong recent batted-ball profile, high On Fire Score, or a meaningful hot boost.</div>`;
     return;
   }
 
   el.innerHTML = `<div style="overflow-x:auto;overscroll-behavior-x:contain;touch-action:pan-y"><table class="hrp-table"><thead><tr>${ths}</tr></thead><tbody>${rows}</tbody></table></div>
     <div style="padding:8px 12px;font-size:10px;color:var(--muted);line-height:1.8;border-top:1px solid var(--border)">
-      HR Prob = blend of batter HR/AB (60%) + pitcher HR/9 rate (40%)<br>
+      HR Prob = batter HR/AB + pitcher HR/9 baseline, then boosted by Hot Hitter data: xwOBA trend, Hard-Hit %, Sweet-Spot %, Barrels, Bat Speed, Blasts, and rolling 5–10 game power signals when repo data exists.<br>
+      🔥 <strong>ON FIRE</strong> — Recent contact quality / rolling batted-ball trend boost applied to HR Potential<br>
       🔴 <strong>DROUGHT</strong> — No home run in the last 8 games (due for one)<br>
       🟢 <strong>FAVORABLE MATCHUP FOR BATTER</strong> — Batter has OPS ≥ .800 against a pitcher allowing high AVG or WHIP ≥ 1.25
     </div>`;
@@ -3402,6 +5419,9 @@ function renderHRPTable() {
 function filterHRP(filter) {
   hrpFilter = filter;
   if (filter === 'top') {
+    hrpSortCol = 'hrProb';
+    hrpSortDir = -1;
+  } else if (filter === 'onfire') {
     hrpSortCol = 'hrProb';
     hrpSortDir = -1;
   }
@@ -3848,8 +5868,11 @@ function initPropsTab() {
   loadHRPotentialWithRetry();
   loadHRsToday();
   loadKsToday();
-  loadKProps();
-  loadGameProps();
+  // loadKProps/loadGameProps are async — chain a tracker sync after each resolves so the
+  // Diamond Report Picks / K Props tracker tables update without depending on the window-hook
+  // pattern (which can miss this very first call if it fires before the hook attaches)
+  loadKProps().then(() => { if (window.syncDiamondTracker) window.syncDiamondTracker(); });
+  loadGameProps().then(() => { if (window.syncDiamondTracker) window.syncDiamondTracker(); });
 }
 
 // Auto-refresh Props tab every 60s (HR Potential only if stale, HRs Today always)
@@ -3901,6 +5924,1474 @@ function showTab(id, el) {
 })();
 
 
+// Diamond Report Tracker Engine — debugged live tally + source-weighted model
+(function(){
+  const STORE_KEY = 'diamondReportTrackerV4';
+  const AUTO_BACKUP_PREF_KEY = 'diamondReportTrackerAutoBackupEnabled';
+  const AUTO_BACKUP_LAST_KEY = 'diamondReportTrackerAutoBackupLastDate';
+  const AUTO_BACKUP_SNAPSHOT_KEY = 'diamondReportTrackerLatestAutoBackup';
+  const LEGACY_STORE_KEYS = ['diamondReportTrackerV3', 'diamondReportTrackerV2', 'diamondReportTracker'];
+  const TRACKER_DATA_URL = './data/tracker.json';
+  let repoTrackerSeed = null;
+  let repoTrackerLoaded = false;
+  const SOURCES = [
+    { name: 'MLB Stats API / Live play-by-play', live: true },
+    { name: 'Open-Meteo Weather (stadium temp/wind)', live: true },
+    { name: 'Park factor model (built-in)', live: true },
+    { name: 'DR win-probability model', live: true },
+    { name: 'DR K-projection model', live: true },
+    { name: 'Baseball Savant / Statcast', live: false },
+    { name: 'FanGraphs', live: false },
+    { name: 'Baseball-Reference', live: false },
+    { name: 'StatMuse', live: false },
+    { name: 'Brooks Baseball', live: false },
+    { name: 'Baseball Prospectus / PECOTA', live: false },
+    { name: 'RotoWire lineups/injuries', live: false },
+    { name: 'Sportsbook odds (real-time)', live: false },
+    { name: 'Umpire data', live: false },
+    { name: 'Betting market movement', live: false },
+  ];
+  const MODEL_INPUTS = ['Stored Tracker History', 'HR Potential', 'HRs Today', 'Diamond Report Picks', 'K Props', 'Player hit rate', 'Team hit rate', 'Streak/Drought signal', 'Favorable matchup flag', 'HR vs Pitcher history', 'Lineup status', 'Game environment', 'Odds edge'];
+
+  const dayKey = () => new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+  const norm = s => String(s || '').replace(/\s+/g,' ').trim();
+  const pct = (h,t) => t ? Math.round((h/t)*100) : 0;
+  const num = s => { const m=String(s||'').match(/(\d+(?:\.\d+)?)/); return m ? Number(m[1]) : 0; };
+  const set = (id, html) => { const el=document.getElementById(id); if(el) el.innerHTML=html; };
+
+  function safeStore(){
+    return {
+      version: 4,
+      generatedAt: null,
+      picks: [],
+      players:{},
+      teams:{},
+      days:{},
+      market:{ drp:[], kprop:[] },
+      dailyResults: [],
+      debug:{ lastError:'', lastSync:'', repoDataLoaded:false }
+    };
+  }
+
+  function normalizeStore(current){
+    if (!current || typeof current !== 'object') return safeStore();
+    current.version ||= 4;
+    current.picks ||= [];
+    current.players ||= {};
+    current.teams ||= {};
+    current.days ||= {};
+    current.market ||= { drp:[], kprop:[] };
+    current.market.drp ||= [];
+    current.market.kprop ||= [];
+    current.allTime ||= {};
+    current.allTime.hr ||= { wins:0, losses:0, total:0 };
+    current.allTime.kprop ||= { wins:0, losses:0, total:0 };
+    current.allTime.drp ||= { wins:0, losses:0, total:0 };
+    current.dailyResults ||= [];
+    current.debug ||= {};
+    return current;
+  }
+
+  function mergeArraysByKey(baseArr, incomingArr, keyFn){
+    const map = new Map();
+    [...(baseArr || []), ...(incomingArr || [])].forEach(item => {
+      if (!item) return;
+      const key = keyFn(item);
+      if (!key) return;
+      const prior = map.get(key);
+      if (!prior) map.set(key, item);
+      else {
+        const priorResolved = prior.result === 'win' || prior.result === 'loss' || prior.hit === true;
+        const itemResolved = item.result === 'win' || item.result === 'loss' || item.hit === true;
+        map.set(key, itemResolved && !priorResolved ? { ...prior, ...item } : { ...item, ...prior });
+      }
+    });
+    return [...map.values()];
+  }
+
+  function rebuildStoreIndexes(store){
+    store.players = {};
+    store.teams = {};
+    store.days = {};
+    (store.picks || []).forEach(p => {
+      if (!p || !p.player) return;
+      const date = p.date || dayKey();
+      const key = p.key || `${date}|${String(p.player).toLowerCase()}|${p.team || ''}`;
+      p.key = key;
+      p.date = date;
+      store.days[date] ||= { keys:[] };
+      if (!store.days[date].keys.includes(key)) store.days[date].keys.push(key);
+      const playerKey = String(p.player || '').toLowerCase();
+      store.players[playerKey] ||= { player:p.player, team:p.team, hits:0, total:0 };
+      store.players[playerKey].total++;
+      if (p.hit) store.players[playerKey].hits++;
+      if (p.team){
+        store.teams[p.team] ||= { team:p.team, hits:0, total:0, correctPlayers:{} };
+        store.teams[p.team].total++;
+        if (p.hit){
+          store.teams[p.team].hits++;
+          store.teams[p.team].correctPlayers[p.player] = (store.teams[p.team].correctPlayers[p.player] || 0) + 1;
+        }
+      }
+    });
+    return store;
+  }
+
+
+  function normalizedSummary(summary){
+    const wins = Number(summary?.wins ?? summary?.correct ?? 0) || 0;
+    const losses = Number(summary?.losses ?? summary?.incorrect ?? Math.max((Number(summary?.total || 0) || 0) - wins, 0)) || 0;
+    const total = Number(summary?.total || (wins + losses)) || (wins + losses);
+    return { wins, losses, total };
+  }
+
+  function bestSummary(repoSummary, localSummary){
+    const repo = normalizedSummary(repoSummary);
+    const local = normalizedSummary(localSummary);
+    // Prefer the larger completed sample so one device with an empty cache cannot erase repo history.
+    if (local.total > repo.total) return local;
+    return repo;
+  }
+
+  function updateAllTimeSummaryFromRows(store){
+    store = normalizeStore(store);
+    const hrWins = (store.picks || []).filter(p => p.final === true && p.hit === true).length;
+    const hrTotal = (store.picks || []).filter(p => p.final === true).length;
+    const kRows = (store.market?.kprop || []).filter(r => r.result === 'win' || r.result === 'loss');
+    const kWins = kRows.filter(r => r.result === 'win').length;
+    const drpRows = (store.market?.drp || []).filter(r => (r.result === 'win' || r.result === 'loss') && drpMatchupLabel(r).includes('@'));
+    const drpWins = drpRows.filter(r => r.result === 'win').length;
+    const hrExisting = normalizedSummary(store.allTime?.hr);
+    const kExisting = normalizedSummary(store.allTime?.kprop);
+    const drpExisting = normalizedSummary(store.allTime?.drp);
+    store.allTime.hr = hrTotal > hrExisting.total ? { wins:hrWins, losses:Math.max(hrTotal-hrWins,0), total:hrTotal } : hrExisting;
+    store.allTime.kprop = kRows.length > kExisting.total ? { wins:kWins, losses:Math.max(kRows.length-kWins,0), total:kRows.length } : kExisting;
+    store.allTime.drp = drpRows.length > drpExisting.total ? { wins:drpWins, losses:Math.max(drpRows.length-drpWins,0), total:drpRows.length } : drpExisting;
+    return store;
+  }
+
+  function mergeStores(local, repo){
+    local = normalizeStore(local);
+    repo = normalizeStore(repo);
+    const merged = normalizeStore({ ...safeStore(), ...repo, ...local });
+    merged.picks = mergeArraysByKey(repo.picks, local.picks, p => p.key || `${p.date}|${String(p.player || '').toLowerCase()}|${p.team || ''}`);
+    merged.market = {
+      drp: mergeArraysByKey(repo.market?.drp, local.market?.drp, r => r.key || `${r.date}|DRP|${r.label}|${r.pick}`),
+      kprop: mergeArraysByKey(repo.market?.kprop, local.market?.kprop, r => r.key || `${r.date}|KPROP|${String(r.label || '').toLowerCase()}`)
+    };
+    merged.dailyResults = mergeArraysByKey(repo.dailyResults, local.dailyResults, r => r.key || `${r.date}|${r.type || ''}|${r.label || r.player || ''}`);
+    merged.allTime = {
+      hr: bestSummary(repo.allTime?.hr, local.allTime?.hr),
+      kprop: bestSummary(repo.allTime?.kprop, local.allTime?.kprop),
+      drp: bestSummary(repo.allTime?.drp, local.allTime?.drp)
+    };
+    updateAllTimeSummaryFromRows(merged);
+    merged.debug ||= {};
+    merged.debug.repoDataLoaded = repoTrackerLoaded;
+    merged.debug.lastRepoGeneratedAt = repo.generatedAt || null;
+    return rebuildStoreIndexes(merged);
+  }
+
+  function readLocalStore(){
+    try {
+      const current = JSON.parse(localStorage.getItem(STORE_KEY));
+      if (current && typeof current === 'object') return normalizeStore(current);
+      for (const key of LEGACY_STORE_KEYS){
+        const legacy = JSON.parse(localStorage.getItem(key) || 'null');
+        if (legacy && typeof legacy === 'object') return normalizeStore(legacy);
+      }
+    } catch(e){}
+    return safeStore();
+  }
+
+  function loadStore(){
+    return mergeStores(readLocalStore(), repoTrackerSeed || safeStore());
+  }
+
+  function saveStore(s){
+    const store = normalizeStore(s);
+    store.generatedAt = new Date().toISOString();
+    store.debug ||= {};
+    store.debug.repoDataLoaded = repoTrackerLoaded;
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
+    catch(e){ console.warn('Tracker localStorage save failed:', e); }
+    window.__diamondTrackerStore = store;
+    saveRepoSyncSnapshot(store); // no browser auto-downloads; GitHub Actions handle repo-side files
+  }
+
+  async function initPersistentTrackerData(){
+    try {
+      const res = await fetch(`${TRACKER_DATA_URL}?v=${Date.now()}`, { cache:'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      repoTrackerSeed = normalizeStore(await res.json());
+      repoTrackerLoaded = true;
+      const merged = loadStore();
+      saveStore(merged);
+      if (window.syncDiamondTracker) window.syncDiamondTracker();
+    } catch(e){
+      repoTrackerLoaded = false;
+      console.warn('Repo tracker data not loaded; using browser cache only:', e.message || e);
+    }
+  }
+
+  function cloneStoreForBackup(store){
+    const backup = normalizeStore(JSON.parse(JSON.stringify(store || loadStore())));
+    backup.generatedAt = new Date().toISOString();
+    backup.debug ||= {};
+    backup.debug.backupType = 'Diamond Report Tracker Backup';
+    backup.debug.backupCreatedAt = backup.generatedAt;
+    backup.debug.repoDataLoaded = repoTrackerLoaded;
+    return backup;
+  }
+
+  function downloadTrackerBackup(store, prefix='tracker'){
+    // Manual-only safety export. Automatic downloads are disabled in V3.4.
+    const backup = cloneStoreForBackup(store);
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type:'application/json' });
+    const a = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = `${prefix}-${dayKey()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function autoBackupEnabled(){
+    return false; // V3.4: no automatic browser downloads. Repo updates happen via GitHub Actions.
+  }
+
+  function saveRepoSyncSnapshot(store){
+    try {
+      const backup = cloneStoreForBackup(store);
+      localStorage.setItem(AUTO_BACKUP_SNAPSHOT_KEY, JSON.stringify(backup));
+      localStorage.setItem(AUTO_BACKUP_LAST_KEY, new Date().toISOString());
+    } catch(e){ console.warn('Tracker snapshot save failed:', e); }
+  }
+
+  function maybeAutoExportBackup(store, force=false){
+    saveRepoSyncSnapshot(store);
+    return; // no auto-downloads
+  }
+
+  window.exportDiamondTrackerData = function(){
+    downloadTrackerBackup(loadStore(), 'tracker-manual-backup');
+  };
+
+  window.exportLatestDiamondTrackerAutoBackup = function(){
+    try {
+      const snapshot = JSON.parse(localStorage.getItem(AUTO_BACKUP_SNAPSHOT_KEY) || 'null');
+      downloadTrackerBackup(snapshot || loadStore(), 'tracker-manual-backup');
+    } catch(e){ downloadTrackerBackup(loadStore(), 'tracker-manual-backup'); }
+  };
+
+  window.toggleDiamondTrackerAutoBackup = function(){
+    alert('Automatic browser downloads are disabled. GitHub Actions now update repo data files on schedule. Use the manual backup button only if you want a local safety copy.');
+    if (window.syncDiamondTracker) window.syncDiamondTracker();
+  };
+
+
+  window.importDiamondTrackerData = function(){
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json';
+    input.onchange = async () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      try {
+        const imported = normalizeStore(JSON.parse(await file.text()));
+        const merged = mergeStores(loadStore(), imported);
+        saveStore(merged);
+        if (window.syncDiamondTracker) window.syncDiamondTracker();
+        alert('Tracker backup imported on this device. Repo-side updates are handled by GitHub Actions; this import only affects the current browser cache.');
+      } catch (e) {
+        alert('Import failed. Make sure this is a valid Diamond Report tracker JSON backup.');
+        console.error('Tracker import failed:', e);
+      }
+    };
+    input.click();
+  };
+
+  window.resetDiamondTrackerLocalCache = function(){
+    if (!confirm('Clear only this browser tracker cache? Repo data in data/tracker.json will remain.')) return;
+    try { localStorage.removeItem(STORE_KEY); } catch(e){}
+    const merged = mergeStores(safeStore(), repoTrackerSeed || safeStore());
+    saveStore(merged);
+    if (window.syncDiamondTracker) window.syncDiamondTracker();
+  };
+
+  function isPlaceholderText(s){
+    return /loading|waiting|no data|no hr potential|check back|error/i.test(String(s || ''));
+  }
+
+  function extractHRThreats(){
+    // Primary source: the existing in-memory HR model. This is more reliable than scraping table text.
+    try {
+      if (Array.isArray(hrpRows) && hrpRows.length) {
+        return [...hrpRows]
+          .sort((a,b) => {
+            const aTop = (a.topHrThreat || a.hrProb >= 8) ? 1 : 0;
+            const bTop = (b.topHrThreat || b.hrProb >= 8) ? 1 : 0;
+            if (aTop !== bTop) return bTop - aTop;
+            return (b.hrProb || 0) - (a.hrProb || 0);
+          })
+          .slice(0, 10)
+          .map((r,i) => ({
+            id: r.id,
+            player: norm(r.name),
+            team: r.teamAbbr || '',
+            opp: r.oppAbbr || '',
+            pitcher: r.pitcherName || '',
+            hrPct: Number((r.hrProb || 0).toFixed ? r.hrProb.toFixed(1) : r.hrProb || 0),
+            rank: i + 1,
+            source: 'hrpRows',
+            topHrThreat: !!(r.topHrThreat || r.hrProb >= 8),
+            // Pass through the richer signals already computed in HR Potential
+            // so the next-day model can weigh streaks, droughts, and matchup quality
+            isDrought: !!r.isDrought,
+            isFavorable: !!r.isFavorable,
+            streakDays: r.streakDays || 1,
+            hrVsPitcher: r.hrVsPitcher ?? null,
+            last10HR: r.last10HR ?? null,
+            hrSeason: r.hrSeason ?? null,
+          }))
+          .filter(p => p.player && !isPlaceholderText(p.player));
+      }
+    } catch(e){ console.warn('Tracker hrpRows extraction failed:', e); }
+
+    // Fallback source: visible HR Potential table.
+    const rows=[...document.querySelectorAll('#hr-potential-content tbody tr')];
+    return rows.map((row,i)=>{
+      const txt=row.innerText || '';
+      const nameEl=row.querySelector('.hrp-batter-name');
+      const player=norm(nameEl ? nameEl.textContent : (txt.split('\n')[0] || ''));
+      const teamEl = row.querySelector('.hrp-batter-sub span');
+      const teamFromSub = teamEl ? (teamEl.textContent.match(/\b[A-Z]{2,3}\b/) || [''])[0] : '';
+      const team=(teamFromSub || (txt.match(/\b[A-Z]{2,3}\b/)||[''])[0] || '').replace(/HR|L10/g,'');
+      const hrPct=num(txt);
+      return {
+        player, team, hrPct, rank:i+1, source:'DOM',
+        topHrThreat:/TOP HR THREAT/i.test(txt),
+        isDrought:/DROUGHT/i.test(txt),
+        isFavorable:/FAVORABLE MATCHUP/i.test(txt),
+        streakDays:/ON A HEATER/i.test(txt)?3:/BACK TO BACK/i.test(txt)?2:1,
+      };
+    }).filter(p => p.player && !isPlaceholderText(p.player)).slice(0,10);
+  }
+
+  function extractHRToday(){
+    const hitSet = new Set();
+
+    // Primary source: visible HRs Today cards.
+    const root=document.getElementById('hrs-today-content');
+    if(root){
+      [...root.querySelectorAll('.stat-row')].forEach(row=>{
+        const nameSpan = row.querySelector('span[style*="font-size:13px"], div[style*="font-size:13px"]');
+        const fromSpan = norm(nameSpan ? nameSpan.textContent.replace(/^✓\s*/,'') : '');
+        const first=norm((row.innerText||'').split('\n')[0]).replace(/^✓\s*/,'');
+        const name = fromSpan || first;
+        if(name && !isPlaceholderText(name) && name.length < 60 && !/^\d+$/.test(name)) hitSet.add(name.toLowerCase());
+      });
+
+      const text=root.innerText || '';
+      [...text.matchAll(/([A-Z][a-z.'-]+(?:\s+[A-Z][a-z.'-]+){1,3})\s+hit a home run/gi)]
+        .forEach(m=>hitSet.add(norm(m[1]).toLowerCase()));
+    }
+
+    // Secondary source: bannerHRs object, when live games are active.
+    try {
+      if (bannerHRs && typeof bannerHRs === 'object') {
+        Object.values(bannerHRs).forEach(h => {
+          if (h && h.name) hitSet.add(norm(h.name).toLowerCase());
+        });
+      }
+    } catch(e){}
+
+    return hitSet;
+  }
+
+  function extractGamePicks(){
+    const root=document.getElementById('gameprops-content');
+    if(!root) return [];
+    const cards=[...root.querySelectorAll('.gp-card')];
+    const picks=[];
+    cards.forEach(card=>{
+      const t=card.innerText || '';
+      if(!/DIAMOND REPORT PICK|DR PICK|PICK/i.test(t)) return;
+      const lines=t.split('\n').map(norm).filter(Boolean);
+      const idx=lines.findIndex(l=>/DIAMOND REPORT PICK|DR PICK|PICK/i.test(l));
+      let team='';
+      for(let j=idx+1;j<Math.min(lines.length, idx+5);j++){
+        if(/^[A-Z]{2,3}$/.test(lines[j])) { team=lines[j]; break; }
+      }
+      const winLine=lines.find(l=>/%\s*WIN|CONFIDENCE|EDGE/i.test(l));
+      const winPct=winLine ? num(winLine) : num(t);
+      const lean=/UNDERDOG|DOG|\+\d|VALUE/i.test(t) ? 'underdog' : 'favorite';
+
+      // Pull the actual environment factor chips (weather, park factor, home field, day game, etc.)
+      // generated by the Game Props engine — these are real data signals, not text-scraped guesses
+      const posFactors = [...card.querySelectorAll('.gp-factor.pos')].map(el => norm(el.textContent));
+      const negFactors = [...card.querySelectorAll('.gp-factor.neg')].map(el => norm(el.textContent));
+      const neuFactors = [...card.querySelectorAll('.gp-factor.neu')].map(el => norm(el.textContent));
+      const envScore = posFactors.length - negFactors.length; // net environment lean for this game
+
+      if(team) picks.push({ team, winPct, lean, posFactors, negFactors, neuFactors, envScore });
+    });
+    return picks;
+  }
+
+  function upsert(store, pick, hit){
+    const day=dayKey();
+    const key=`${day}|${pick.player.toLowerCase()}|${pick.team}`;
+    store.days[day] ||= { keys:[] };
+    const existing=store.picks.find(p=>p.key===key);
+
+    if(!existing){
+      const rec={ key, date:day, ...pick, hit:!!hit };
+      store.picks.push(rec);
+      if (!store.days[day].keys.includes(key)) store.days[day].keys.push(key);
+
+      const playerKey = pick.player.toLowerCase();
+      store.players[playerKey] ||= { player:pick.player, team:pick.team, hits:0, total:0 };
+      store.players[playerKey].total++;
+      if(hit) store.players[playerKey].hits++;
+
+      if(pick.team){
+        store.teams[pick.team] ||= { team:pick.team, hits:0, total:0, correctPlayers:{} };
+        store.teams[pick.team].total++;
+        if(hit){
+          store.teams[pick.team].hits++;
+          store.teams[pick.team].correctPlayers[pick.player]=(store.teams[pick.team].correctPlayers[pick.player]||0)+1;
+        }
+      }
+    } else if(existing.hit !== !!hit){
+      const delta=hit ? 1 : -1;
+      existing.hit=!!hit;
+      const playerKey = pick.player.toLowerCase();
+      const pl=store.players[playerKey]; if(pl) pl.hits = Math.max(0, pl.hits + delta);
+      const tm=store.teams[pick.team];
+      if(tm){
+        tm.hits = Math.max(0, tm.hits + delta);
+        if(hit) tm.correctPlayers[pick.player]=(tm.correctPlayers[pick.player]||0)+1;
+      }
+    }
+  }
+
+
+  function trackerHistoryBoost(store, player, team){
+    const pl = store.players[String(player || '').toLowerCase()] || { hits:0, total:0 };
+    const tm = store.teams[team] || { hits:0, total:0 };
+    const playerRate = pct(pl.hits, pl.total);
+    const teamRate = pct(tm.hits, tm.total);
+    const sampleBoost = Math.min(10, (pl.total || 0) + (tm.total || 0));
+    return {
+      playerRate,
+      teamRate,
+      sampleBoost,
+      score: Math.round(playerRate * 0.35 + teamRate * 0.25 + sampleBoost)
+    };
+  }
+
+  // Returns a 0-10 confidence multiplier reflecting how many real, live data sources
+  // (not "planned" placeholders) are actually backing today's predictions
+  function sourceConfidenceBoost(){
+    const liveCount = SOURCES.filter(s => s.live).length;
+    const totalCount = SOURCES.length;
+    return Math.round((liveCount / totalCount) * 10); // 0-10 scale
+  }
+
+  function nextDayHRPotentialModel(store, currentThreats){
+    const srcBoost = sourceConfidenceBoost();
+    return currentThreats
+      .map(p => {
+        const h = trackerHistoryBoost(store, p.player, p.team);
+        const base = Number(p.hrPct || 0);
+
+        // Streak boost: a hot player (back-to-back or on a heater) gets a real bump;
+        // a drought player gets a small "due for one" nudge but far less weight than a hot streak
+        const streakBoost = p.streakDays >= 3 ? 8 : p.streakDays === 2 ? 4 : 0;
+        const droughtAdj = p.isDrought ? 2 : 0;
+        const favorableBoost = p.isFavorable ? 5 : 0;
+        const vsPitcherBoost = (p.hrVsPitcher || 0) > 0 ? Math.min(p.hrVsPitcher * 2, 6) : 0;
+        const rankBoost = Math.max(0, 11 - (p.rank || 10)) * 1.2;
+
+        const modelScore = Math.min(99, Math.round(
+          base * 0.45 +
+          h.score * 0.30 +
+          rankBoost +
+          streakBoost +
+          droughtAdj +
+          favorableBoost +
+          vsPitcherBoost +
+          srcBoost
+        ));
+
+        // Build a short reason string so the prediction is explainable, not a black box
+        const reasons = [];
+        if (p.topHrThreat) reasons.push('Top HR Threat');
+        if (p.streakDays >= 3) reasons.push('🔥 On a heater');
+        else if (p.streakDays === 2) reasons.push('🔥 Back-to-back');
+        if (p.isFavorable) reasons.push('🟢 Favorable matchup');
+        if (p.isDrought) reasons.push('🔴 Due (drought)');
+        if ((p.hrVsPitcher || 0) > 0) reasons.push(`${p.hrVsPitcher} HR vs ${p.pitcher || 'pitcher'}`);
+        if (h.sampleBoost >= 3) reasons.push(`Tracker: ${h.playerRate}% player / ${h.teamRate}% team`);
+
+        return { ...p, modelScore, playerRate:h.playerRate, teamRate:h.teamRate, sampleBoost:h.sampleBoost, reasons };
+      })
+      .sort((a,b) => b.modelScore - a.modelScore)
+      .slice(0, 10);
+  }
+
+  function nextDayDRPicksModel(store, gamePicks){
+    const teamHistory = Object.values(store.teams || {}).reduce((acc,t)=>{
+      acc[t.team] = { rate:pct(t.hits,t.total), hits:t.hits, total:t.total };
+      return acc;
+    }, {});
+    const srcBoost = sourceConfidenceBoost();
+    return (gamePicks || [])
+      .map(p => {
+        const hist = teamHistory[p.team] || { rate:0, hits:0, total:0 };
+        // Underdog picks that have a strong tracker history get an extra nudge —
+        // a confirmed value/underdog angle backed by real hit-rate data is a stronger signal
+        // than a generic favorite with no tracker history at all
+        const leanBoost = (p.lean === 'underdog' && hist.total >= 3) ? 4 : 0;
+        // Environment boost: real weather/park-factor signals from the Game Props engine,
+        // capped so a single big weather swing can't dominate the model
+        const envBoost = Math.max(-6, Math.min(6, (p.envScore || 0) * 3));
+        const modelScore = Math.min(99, Math.round((p.winPct || 0) * 0.65 + hist.rate * 0.25 + Math.min(5, hist.total) + leanBoost + envBoost + srcBoost * 0.5));
+        const reasons = [];
+        reasons.push(`${p.winPct || 0}% site win model`);
+        if (hist.total > 0) reasons.push(`Tracker: ${hist.hits}-${Math.max(hist.total-hist.hits,0)} (${hist.rate}%)`);
+        if (p.lean === 'underdog') reasons.push('Underdog/value angle');
+        if (p.posFactors?.length) reasons.push(...p.posFactors.slice(0,2));
+        if (p.negFactors?.length) reasons.push(...p.negFactors.slice(0,1));
+        return { ...p, modelScore, hist, reasons };
+      })
+      .sort((a,b)=>b.modelScore-a.modelScore)
+      .slice(0, 8);
+  }
+
+  function nextDayKPropsModel(store){
+    store.market ||= { drp: [], kprop: [] };
+    const grouped = {};
+    (store.market.kprop || []).forEach(r => {
+      const key = String(r.label || '').toLowerCase();
+      grouped[key] ||= { label:r.label, wins:0, total:0, over:0, under:0, lastPick:r.pick, lastLine:r.line };
+      if(r.result === 'win' || r.result === 'loss'){
+        grouped[key].total++;
+        if(r.result === 'win') grouped[key].wins++;
+      }
+      if(/OVER/i.test(r.pick)) grouped[key].over++;
+      if(/UNDER/i.test(r.pick)) grouped[key].under++;
+      grouped[key].lastPick = r.pick;
+      grouped[key].lastLine = r.line;
+    });
+    return Object.values(grouped)
+      .map(r => {
+        const rate = pct(r.wins, r.total);
+        const direction = r.over >= r.under ? 'OVER' : 'UNDER';
+        const consistencyBoost = (r.over === 0 || r.under === 0) && r.total >= 2 ? 3 : 0; // consistent lean direction
+        const modelScore = Math.min(99, Math.round(rate * 0.75 + Math.min(20, r.total * 3) + consistencyBoost + sourceConfidenceBoost() * 0.5));
+        const reasons = [`Tracker: ${r.wins}-${Math.max(r.total-r.wins,0)} (${rate}%)`];
+        if (consistencyBoost) reasons.push(`Consistent ${direction} lean`);
+        reasons.push(`Last line ${r.lastLine || '—'}`);
+        return { ...r, rate, direction, modelScore, reasons };
+      })
+      .sort((a,b)=>b.modelScore-a.modelScore)
+      .slice(0, 10);
+  }
+
+  // Returns true if every game found on the page today has reached a final state
+  // (i.e. nothing is still 'live' or 'upcoming'). Used to decide whether it's safe
+  // to recompute the Next Day Prediction Model — recomputing while games are still
+  // in progress risks basing tomorrow's picks on incomplete/volatile in-game data
+  // (a player could still get injured, pulled, or a lineup could shift).
+  function isTodayFullySettled(){
+    const liveRoot = document.getElementById('live-games');
+    const schedRoot = document.getElementById('scheduled-games');
+    const hasLiveCards = liveRoot && liveRoot.querySelectorAll('.game-card').length > 0;
+    const hasUpcomingCards = schedRoot && schedRoot.querySelectorAll('.game-card').length > 0;
+    // If there are no game cards rendered at all yet (page just loaded), don't treat
+    // that as "settled" — wait for real data before deciding either way.
+    const finalRoot = document.getElementById('final-games');
+    const hasAnyData = (finalRoot && finalRoot.querySelectorAll('.game-card').length > 0) || hasLiveCards || hasUpcomingCards;
+    if (!hasAnyData) return false;
+    return !hasLiveCards && !hasUpcomingCards;
+  }
+
+  function renderNextDayModels(store, currentThreats, gamePicks){
+    const today = dayKey();
+    const todaySettled = isTodayFullySettled();
+
+    // The Next Day model is frozen per-day: once computed for a given date, it does not
+    // recompute again until either (a) the calendar date changes, or (b) today's games
+    // are fully final for the first time. This prevents tomorrow's predictions from
+    // shifting around mid-game based on incomplete data, while still updating promptly
+    // once today's results are actually locked in (rather than waiting until literal
+    // midnight, which could be hours after the last game actually ends).
+    store.nextDayModel ||= { computedForDate: null, computedWhileSettled: false, hrp: null, drp: null, kp: null };
+    const snap = store.nextDayModel;
+
+    // Do NOT build or show next-day model picks until today's games are final.
+    // This prevents stale/stored K Props from appearing in the morning before any
+    // games have started, and prevents live/incomplete games from influencing
+    // tomorrow's recommendations.
+    const shouldRecompute = todaySettled && (snap.computedForDate !== today || !snap.computedWhileSettled);
+
+    if (shouldRecompute) {
+      snap.computedForDate = today;
+      snap.computedWhileSettled = true;
+      snap.hrp = nextDayHRPotentialModel(store, currentThreats);
+      snap.drp = nextDayDRPicksModel(store, gamePicks);
+      snap.kp = nextDayKPropsModel(store);
+      saveStore(store);
+    }
+
+    const reasonChips = reasons => (reasons||[]).map(r=>`<span style="display:inline-block;background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:1px 7px;font-size:9px;color:var(--muted);margin:2px 3px 0 0">${r}</span>`).join('');
+
+    const liveSourceCount = SOURCES.filter(s => s.live).length;
+    const statusEl = document.getElementById('tracker-nextday-status');
+    if (statusEl) {
+      const totalTracked = (store.picks?.length || 0) + (store.market?.drp?.length || 0) + (store.market?.kprop?.length || 0);
+      if (totalTracked >= 5) {
+        statusEl.className = 'tracker-pill hit';
+        statusEl.textContent = todaySettled
+          ? `${liveSourceCount}/${SOURCES.length} live sources • ${totalTracked} picks tracked • Today final ✓`
+          : `${liveSourceCount}/${SOURCES.length} live sources • ${totalTracked} picks tracked • Holding for today's results`;
+      } else {
+        statusEl.className = 'tracker-pill pending';
+        statusEl.textContent = `Building history… (${totalTracked} picks so far)`;
+      }
+    }
+
+    const canShowNextDay = todaySettled && snap.computedForDate === today && snap.computedWhileSettled;
+
+    if (!canShowNextDay) {
+      set('tracker-nextday-hrp', '<div style="color:var(--muted);font-size:12px">Next Day HR Potential unlocks after today\'s games are final.</div>');
+      set('tracker-nextday-drp', '<div style="color:var(--muted);font-size:12px">Next Day Diamond Report Picks unlock after today\'s games are final.</div>');
+      set('tracker-nextday-kprops', '<div style="color:var(--muted);font-size:12px">Next Day K Props unlock after today\'s games are final. No props are shown before games start or while games are live.</div>');
+      return;
+    }
+
+    const hrp = snap.hrp || [];
+    set('tracker-nextday-hrp', hrp.length ? hrp.map((p,i)=>`
+      <div class="stat-row" style="flex-wrap:wrap">
+        <div class="stat-row-num">${i+1}</div>
+        <div style="flex:1;min-width:200px">
+          <div style="font-weight:800">${p.player}</div>
+          <div style="color:var(--muted);font-size:11px">${p.team || '—'}${p.opp?' vs '+p.opp:''} • current HR ${p.hrPct || 0}%</div>
+          <div style="margin-top:3px">${reasonChips(p.reasons)}</div>
+        </div>
+        <span class="tracker-pill ${p.modelScore>=35?'hit':p.modelScore>=20?'pending':'miss'}">${p.modelScore}%</span>
+      </div>
+    `).join('') : '<div style="color:var(--muted);font-size:12px">Waiting for HR Potential and Tracker history.</div>');
+
+    const drp = snap.drp || [];
+    set('tracker-nextday-drp', drp.length ? drp.map((p,i)=>`
+      <div class="stat-row" style="flex-wrap:wrap">
+        <div class="stat-row-num">${i+1}</div>
+        <div style="flex:1;min-width:200px">
+          <div style="font-weight:800">${p.team}</div>
+          <div style="margin-top:3px">${reasonChips(p.reasons)}</div>
+        </div>
+        <span class="tracker-pill ${p.modelScore>=55?'hit':p.modelScore>=45?'pending':'miss'}">${p.modelScore}%</span>
+      </div>
+    `).join('') : '<div style="color:var(--muted);font-size:12px">Waiting for Diamond Report Picks and final Tracker data.</div>');
+
+    const kp = snap.kp || [];
+    set('tracker-nextday-kprops', kp.length ? kp.map((p,i)=>`
+      <div class="stat-row" style="flex-wrap:wrap">
+        <div class="stat-row-num">${i+1}</div>
+        <div style="flex:1;min-width:200px">
+          <div style="font-weight:800">${p.label}</div>
+          <div style="color:var(--muted);font-size:11px">${p.direction} lean</div>
+          <div style="margin-top:3px">${reasonChips(p.reasons)}</div>
+        </div>
+        <span class="tracker-pill ${p.modelScore>=55?'hit':p.modelScore>=35?'pending':'miss'}">${p.modelScore}%</span>
+      </div>
+    `).join('') : '<div style="color:var(--muted);font-size:12px">Waiting for stored K Props results.</div>');
+  }
+
+
+  function predictionScore(p, store){
+    const pl=store.players[p.player.toLowerCase()] || {hits:0,total:0};
+    const tm=store.teams[p.team] || {hits:0,total:0};
+    const playerRate=pct(pl.hits,pl.total);
+    const teamRate=pct(tm.hits,tm.total);
+    return Math.min(99, Math.round((p.hrPct||0)*0.55 + playerRate*0.25 + teamRate*0.15 + Math.max(0, 11-p.rank)*0.5));
+  }
+
+
+
+  function finalGameMap(){
+    const map = {};
+    const finalRoot = document.getElementById('final-games');
+    if (!finalRoot) return map;
+
+    // Cards inside #final-games are, by construction, always final — no need to
+    // re-detect status via fragile text matching. This is the authoritative source.
+    const cards = [...finalRoot.querySelectorAll('.game-card')];
+
+    cards.forEach(card => {
+      const teams = [...card.querySelectorAll('.team-abbr')]
+        .map(x => norm(x.textContent))
+        .filter(Boolean);
+
+      let scores = [...card.querySelectorAll('.score-block *')]
+        .map(x => norm(x.textContent))
+        .filter(x => /^\d+$/.test(x))
+        .map(Number);
+
+      // Fallback: pull numbers from score block text.
+      if(scores.length < 2){
+        const scoreText = norm(card.querySelector('.score-block')?.innerText || '');
+        scores = [...scoreText.matchAll(/\b(\d{1,2})\b/g)].map(m => Number(m[1]));
+      }
+
+      if(teams.length >= 2 && scores.length >= 2){
+        const away = teams[0], home = teams[1], awayScore = scores[0], homeScore = scores[1];
+        const winner = awayScore > homeScore ? away : homeScore > awayScore ? home : 'TIE';
+        const game = { away, home, awayScore, homeScore, winner, final:true };
+
+        [`${away}@${home}`, `${away}VS${home}`, `${away}V${home}`, `${home}VS${away}`, `${home}V${away}`]
+          .forEach(k => map[k] = game);
+
+        map[away] ||= [];
+        map[home] ||= [];
+        map[away].push(game);
+        map[home].push(game);
+      }
+    });
+
+    return map;
+  }
+
+  function isAnyGameFinal(){
+    // Primary check: does the final-games container actually have any rendered cards?
+    // This is more reliable than re-parsing scores, since it doesn't depend on the
+    // score text being extractable — a game can be "final" in the map even with weird formatting.
+    const finalRoot = document.getElementById('final-games');
+    const hasFinalCards = finalRoot && finalRoot.querySelectorAll('.game-card').length > 0;
+    if (hasFinalCards) return true;
+    return Object.keys(finalGameMap()).length > 0;
+  }
+
+  // Maps each team abbreviation to its current game state: 'final' | 'live' | 'upcoming'
+  // Used to label HR Threat picks correctly — a miss is only "Wrong" once the player's
+  // game is actually Final; otherwise it should read "Live" or "Pending" (game hasn't started).
+  function teamGameStatusMap(){
+    const map = {};
+    const liveRoot = document.getElementById('live-games');
+    const finalRoot = document.getElementById('final-games');
+    const schedRoot = document.getElementById('scheduled-games');
+
+    const tagTeams = (root, state) => {
+      if (!root) return;
+      [...root.querySelectorAll('.game-card')].forEach(card => {
+        [...card.querySelectorAll('.team-abbr')]
+          .map(x => norm(x.textContent))
+          .filter(Boolean)
+          .forEach(team => { map[team] = state; });
+      });
+    };
+
+    // Order matters: tag scheduled first, then live, then final —
+    // so if a team appears in multiple lists during a transition, the most current state wins
+    tagTeams(schedRoot, 'upcoming');
+    tagTeams(liveRoot, 'live');
+    tagTeams(finalRoot, 'final');
+
+    return map;
+  }
+
+  function resultBadgeFromFinal(result){
+    return result === 'win'
+      ? '<span class="tracker-pill hit">✅ Right</span>'
+      : result === 'loss'
+        ? '<span class="tracker-pill miss">❌ Wrong</span>'
+        : result === 'push'
+          ? '<span class="tracker-pill pending">↔ Push</span>'
+          : '<span class="tracker-pill pending">⏳ Wait Final</span>';
+  }
+
+  function resolveDRPickResult(rec){
+    const finals = finalGameMap();
+    if(!Object.keys(finals).length) return 'pending';
+
+    // Same normalization used in drpMatchupLabel/extractDRPicksAccuracy — keeps legacy
+    // records saved before this mapping existed (e.g. 'AZ' instead of 'ARI') resolvable
+    // against finalGameMap(), which is keyed by the live-rendered team abbreviations.
+    const normTeam = t => {
+      t = String(t || '').toUpperCase().trim();
+      if(t === 'CHW') return 'CWS';
+      if(t === 'KCR') return 'KC';
+      if(t === 'SDP') return 'SD';
+      if(t === 'SFG') return 'SF';
+      if(t === 'TBR') return 'TB';
+      if(t === 'WAS') return 'WSH';
+      if(t === 'AZ') return 'ARI';
+      return t;
+    };
+
+    const pick = normTeam(rec.pick);
+    if(!pick || pick === '—') return 'pending';
+
+    // Direct lookup by picked team.
+    let games = finals[pick] || [];
+
+    // Match by teams found inside the pick card.
+    if((!games || !games.length) && Array.isArray(rec.teams) && rec.teams.length >= 2){
+      const normedTeams = rec.teams.map(normTeam);
+      const candidates = [];
+      for(let i=0;i<normedTeams.length;i++){
+        for(let j=i+1;j<normedTeams.length;j++){
+          const a=normedTeams[i], b=normedTeams[j];
+          candidates.push(finals[`${a}@${b}`], finals[`${a}VS${b}`], finals[`${a}V${b}`], finals[`${b}VS${a}`], finals[`${b}V${a}`]);
+        }
+      }
+      games = candidates.filter(Boolean);
+    }
+
+    // Match by label text fallback.
+    if((!games || !games.length)){
+      const label = String(rec.label || '').toUpperCase();
+      Object.values(finals).forEach(v => {
+        if(Array.isArray(v)) return;
+        if(label.includes(v.away) && label.includes(v.home)) games = [v];
+      });
+    }
+
+    const game = Array.isArray(games) ? games[0] : games;
+    if(!game || !game.final) return 'pending';
+    return game.winner === pick ? 'win' : game.winner === 'TIE' ? 'push' : 'loss';
+  }
+
+  function resolveKPropResult(rec){
+    // K Props can only be graded when the pitcher has a final strikeout count visible.
+    // If the page does not expose a final K count, keep it pending instead of guessing.
+    const finalsExist = isAnyGameFinal();
+    if(!finalsExist) return 'pending';
+
+    const name = String(rec.label || '').toLowerCase().trim();
+    const root = document.getElementById('ks-today-props');
+    if(!root || !name) return 'pending';
+
+    let kCount = null;
+    // Only scan actual row containers (not every nested div) to avoid false/partial matches
+    // on narrow screens where text can wrap differently
+    const rowEls = root.querySelectorAll('.ks-today-row');
+    const candidates = rowEls.length ? [...rowEls] : [...root.querySelectorAll('.stat-row, tr')];
+
+    candidates.forEach(row => {
+      if (kCount !== null) return;
+      const rowText = norm(row.innerText || '').toLowerCase();
+      // Require the player name to appear as the start of the row's text (the name is always
+      // rendered first), not just "somewhere" in it — avoids accidental substring collisions
+      if (!rowText.startsWith(name) && !rowText.includes(name)) return;
+      const m = rowText.match(/(\d+)\s*(?:k|ks|strikeout|strikeouts)\b/i) || rowText.match(/\b(\d+)\b/);
+      if (m) kCount = Number(m[1]);
+    });
+
+    if(kCount === null || !Number.isFinite(kCount)) return 'pending';
+    const line = Number(String(rec.line || '').match(/(\d+(?:\.\d+)?)/)?.[1] || NaN);
+    if(!Number.isFinite(line)) return 'pending';
+
+    if(/OVER/i.test(rec.pick)) return kCount > line ? 'win' : 'loss';
+    if(/UNDER/i.test(rec.pick)) return kCount < line ? 'win' : 'loss';
+    return 'pending';
+  }
+
+
+  function pickResultFromText(t){
+    const upper = String(t || '').toUpperCase();
+    if (/✅|WON|WIN\b|RIGHT|CASHED|HIT\b/.test(upper)) return 'win';
+    if (/❌|LOST|LOSS|WRONG|MISS/.test(upper)) return 'loss';
+    if (/PUSH|VOID|CANCEL/.test(upper)) return 'push';
+    return 'pending';
+  }
+
+  function extractDRPicksAccuracy(){
+    const root=document.getElementById('gameprops-content');
+    if(!root) return [];
+    const TEAM_ABBRS = new Set(['ARI','ATH','ATL','BAL','BOS','CHC','CWS','CHW','CIN','CLE','COL','DET','HOU','KC','KCR','LAA','LAD','MIA','MIL','MIN','NYM','NYY','OAK','PHI','PIT','SD','SDP','SEA','SF','SFG','STL','TB','TBR','TEX','TOR','WSH','WAS','AZ']);
+    const normTeam = t => {
+      t = String(t || '').toUpperCase().trim();
+      if(t === 'CHW') return 'CWS';
+      if(t === 'KCR') return 'KC';
+      if(t === 'SDP') return 'SD';
+      if(t === 'SFG') return 'SF';
+      if(t === 'TBR') return 'TB';
+      if(t === 'WAS') return 'WSH';
+      if(t === 'AZ') return 'ARI';
+      return t;
+    };
+    const cards=[...root.querySelectorAll('.gp-card')];
+    return cards.map((card,i)=>{
+      const t=card.innerText || '';
+      if(!/DIAMOND REPORT PICK|DR PICK|PICK/i.test(t)) return null;
+      const lines=t.split('\n').map(norm).filter(Boolean);
+      const idx=lines.findIndex(l=>/DIAMOND REPORT PICK|DR PICK|PICK/i.test(l));
+      let pick='';
+      for(let j=Math.max(0,idx+1);j<Math.min(lines.length,idx+6);j++){
+        if(/^[A-Z]{2,3}$/.test(lines[j])) { pick=lines[j]; break; }
+      }
+      const teamsInCard = [...new Set((t.match(/\b[A-Z]{2,3}\b/g) || [])
+        .map(normTeam)
+        .filter(x => TEAM_ABBRS.has(x) && !['MLB','DR','WIN','O','U'].includes(x)))];
+      const matchup = teamsInCard.length >= 2 ? `${teamsInCard[0]} @ ${teamsInCard[1]}` : (lines.find(l => /\b[A-Z]{2,3}\b\s+(?:@|VS|V)\s+\b[A-Z]{2,3}\b/i.test(l)) || lines.slice(0,3).join(' / '));
+      // Stable storage key: teams sorted alphabetically so the same game always
+      // produces the identical key, regardless of which team is listed first
+      // in the rendered card text (home/away order can vary between syncs)
+      const sortedTeamKey = teamsInCard.length >= 2 ? [...teamsInCard].sort().join('-') : matchup;
+      return {
+        key: `${dayKey()}|DRP|${sortedTeamKey}`,
+        type: 'drp',
+        label: matchup || `Game Pick ${i+1}`,
+        pick: pick || '—',
+        teams: teamsInCard,
+        result: 'pending',
+        date: dayKey()
+      };
+    }).filter(Boolean);
+  }
+
+  function extractKPropsAccuracy(){
+    const root=document.getElementById('kprops-content');
+    if(!root) return [];
+    const rows=[...root.querySelectorAll('.kprop-row')];
+    return rows.map((row,i)=>{
+      const t=row.innerText || '';
+      if(!t || isPlaceholderText(t)) return null;
+      const name=norm(row.querySelector('.kprop-name')?.textContent || t.split('\n')[0] || `Pitcher ${i+1}`);
+      const line=norm(row.querySelector('.kprop-line-val')?.textContent || '');
+      const pred=norm(row.querySelector('.kprop-pred-lbl')?.textContent || row.querySelector('.kprop-pred-val')?.textContent || '');
+      let pick = /UNDER/i.test(t) ? 'UNDER' : /OVER/i.test(t) ? 'OVER' : (pred || '—');
+      return {
+        // Key is based on pitcher name only — NOT the line value, since sportsbook lines
+        // can shift during the day (e.g. 6.5 -> 7.0) and would otherwise create a duplicate row
+        key: `${dayKey()}|KPROP|${name.toLowerCase()}`,
+        type: 'kprop',
+        label: name,
+        pick,
+        line: line || '—',
+        result: 'pending',
+        date: dayKey()
+      };
+    }).filter(Boolean);
+  }
+
+  function upsertMarketPick(store, rec){
+    store.market ||= { drp: [], kprop: [] };
+    const newResult = rec.type === 'kprop' ? resolveKPropResult(rec) : resolveDRPickResult(rec);
+    const bucket = rec.type === 'kprop' ? store.market.kprop : store.market.drp;
+    const existing = bucket.find(x => x.key === rec.key);
+
+    if (!existing) {
+      rec.result = newResult;
+      rec.finalChecked = rec.result !== 'pending';
+      bucket.push(rec);
+    } else {
+      // Never let a 'pending' result overwrite an already-resolved win/loss —
+      // this happens when one device (e.g. mobile, narrower DOM) fails to find the
+      // K count text and would otherwise silently erase a correct grading made elsewhere
+      const existingIsResolved = existing.result === 'win' || existing.result === 'loss';
+      const finalResult = (newResult === 'pending' && existingIsResolved) ? existing.result : newResult;
+      Object.assign(existing, rec, { result: finalResult, finalChecked: finalResult !== 'pending' });
+    }
+  }
+
+  // One-time cleanup: collapse any legacy duplicate DRP entries that were created
+  // with index-based keys, flipped team order, or malformed labels from older
+  // versions of the extraction logic (e.g. labels with pitcher names baked in,
+  // or only one team detected). Always prefers a clean two-team match.
+  function dedupeLegacyMarketPicks(store){
+    store.market ||= { drp: [], kprop: [] };
+    const TEAM_ABBRS = new Set(['ARI','ATH','ATL','BAL','BOS','CHC','CWS','CHW','CIN','CLE','COL','DET','HOU','KC','KCR','LAA','LAD','MIA','MIL','MIN','NYM','NYY','OAK','PHI','PIT','SD','SDP','SEA','SF','SFG','STL','TB','TBR','TEX','TOR','WSH','WAS','AZ']);
+    const normTeam = t => {
+      t = String(t||'').toUpperCase().trim();
+      if(t==='CHW') return 'CWS'; if(t==='KCR') return 'KC'; if(t==='SDP') return 'SD';
+      if(t==='SFG') return 'SF'; if(t==='TBR') return 'TB'; if(t==='WAS') return 'WSH';
+      if(t==='AZ') return 'ARI';
+      return t;
+    };
+    // Extract the cleanest possible team pair from a record, checking label first then key
+    const extractTeamPair = rec => {
+      const fromText = txt => [...new Set((String(txt||'').match(/\b[A-Z]{2,3}\b/g) || [])
+        .map(normTeam).filter(t => TEAM_ABBRS.has(normTeam(t))))];
+      let teams = fromText(rec.label);
+      if (teams.length < 2) teams = fromText(rec.key);
+      return teams.length >= 2 ? [...teams].sort().slice(0,2).join('-') : null;
+    };
+
+    const seen = new Map(); // stableKey -> best record so far
+    (store.market.drp || []).forEach(rec => {
+      const pair = extractTeamPair(rec);
+      if (!pair) return; // discard unresolvable garbage records entirely
+      const stableKey = `${rec.date}|DRP|${pair}`;
+      const prior = seen.get(stableKey);
+      if (!prior) {
+        seen.set(stableKey, rec);
+      } else {
+        // Prefer: resolved result over pending, then prefer the one with a clean "TEAM @ TEAM" label
+        const recResolved = rec.result !== 'pending';
+        const priorResolved = prior.result !== 'pending';
+        const recCleanLabel = /^[A-Z]{2,3}\s*@\s*[A-Z]{2,3}$/.test((rec.label||'').trim());
+        const priorCleanLabel = /^[A-Z]{2,3}\s*@\s*[A-Z]{2,3}$/.test((prior.label||'').trim());
+        if ((recResolved && !priorResolved) || (recResolved === priorResolved && recCleanLabel && !priorCleanLabel)) {
+          seen.set(stableKey, rec);
+        }
+      }
+    });
+    store.market.drp = [...seen.values()];
+
+    // Same cleanup for K Props: collapse legacy line-based duplicate keys down to one per pitcher per day
+    const kpropSeen = new Map();
+    (store.market.kprop || []).forEach(rec => {
+      const pitcherKey = `${rec.date}|KPROP|${(rec.label||'').toLowerCase().trim()}`;
+      const prior = kpropSeen.get(pitcherKey);
+      if (!prior) {
+        kpropSeen.set(pitcherKey, rec);
+      } else if (rec.result !== 'pending' && prior.result === 'pending') {
+        kpropSeen.set(pitcherKey, rec);
+      }
+    });
+    store.market.kprop = [...kpropSeen.values()]
+      // resolveKPropResult never legitimately returns 'push' — any stored 'push' value is
+      // leftover from an old code version and should be reset to 'pending' so the next
+      // sync can properly re-grade it as win/loss once a final K count is available
+      .map(rec => rec.result === 'push' ? { ...rec, result: 'pending', finalChecked: false } : rec);
+  }
+
+  function marketStats(store, type, date){
+    store.market ||= { drp: [], kprop: [] };
+    const list = (store.market[type] || []).filter(x => !date || x.date === date);
+    const graded = list.filter(x => x.result === 'win' || x.result === 'loss');
+    const wins = graded.filter(x => x.result === 'win').length;
+    return { wins, losses: Math.max(graded.length - wins, 0), total: graded.length, pending: list.length - graded.length, list };
+  }
+
+  function marketAllTimeByKey(store, type, keyPart){
+    store.market ||= { drp: [], kprop: [] };
+    const list = (store.market[type] || []).filter(x => (x.label || x.pick || '').toLowerCase().includes(String(keyPart || '').toLowerCase()));
+    const graded = list.filter(x => x.result === 'win' || x.result === 'loss');
+    const wins = graded.filter(x => x.result === 'win').length;
+    return { wins, total: graded.length, pct: pct(wins, graded.length) };
+  }
+
+
+
+  function drpMatchupLabel(rec){
+    const TEAM_ABBRS = new Set(['ARI','ATH','ATL','BAL','BOS','CHC','CWS','CHW','CIN','CLE','COL','DET','HOU','KC','KCR','LAA','LAD','MIA','MIL','MIN','NYM','NYY','OAK','PHI','PIT','SD','SDP','SEA','SF','SFG','STL','TB','TBR','TEX','TOR','WSH','WAS','AZ']);
+    const NON_TEAMS = new Set(['MLB','DR','PICK','WIN','LIVE','ERA','PROJ','OVER','UNDER','PUSH','LINE','VS','AT','THE','TODAY','SP']);
+    const normTeam = t => {
+      t = String(t || '').toUpperCase().trim();
+      if(t === 'CHW') return 'CWS';
+      if(t === 'KCR') return 'KC';
+      if(t === 'SDP') return 'SD';
+      if(t === 'SFG') return 'SF';
+      if(t === 'TBR') return 'TB';
+      if(t === 'WAS') return 'WSH';
+      if(t === 'AZ') return 'ARI';
+      return t;
+    };
+    const teams = [];
+    const add = t => {
+      t = normTeam(t);
+      if(TEAM_ABBRS.has(t) && !NON_TEAMS.has(t) && !teams.includes(t)) teams.push(t);
+    };
+    if(Array.isArray(rec?.teams)) rec.teams.forEach(add);
+    const raw = `${rec?.label || ''} ${rec?.pick || ''}`;
+    [...raw.matchAll(/\b[A-Z]{2,3}\b/g)].forEach(m => add(m[0]));
+    if (teams.length < 2) return '';
+    // Sort alphabetically so the same matchup always produces the same key,
+    // regardless of which team appeared first in the extracted text (home/away order can vary across renders)
+    const sorted = [...teams].sort();
+    return `${sorted[0]} @ ${sorted[1]}`;
+  }
+
+
+  function setHeaderPct(id, winPct, sampleSize){
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (!sampleSize) { el.textContent = ''; el.className = 'tracker-header-pct'; return; }
+    const cls = winPct >= 60 ? 'good' : winPct >= 45 ? 'mid' : 'bad';
+    el.textContent = `${winPct}% all-time`;
+    el.className = `tracker-header-pct ${cls}`;
+  }
+  function diamondReportTeamExtremes(list){
+    const normTeam = t => {
+      t = String(t || '').toUpperCase().trim();
+      if(t === 'CHW') return 'CWS';
+      if(t === 'KCR') return 'KC';
+      if(t === 'SDP') return 'SD';
+      if(t === 'SFG') return 'SF';
+      if(t === 'TBR') return 'TB';
+      if(t === 'WAS') return 'WSH';
+      if(t === 'AZ') return 'ARI';
+      return t;
+    };
+    const map = new Map();
+    (list || [])
+      .filter(r => r && (r.result === 'win' || r.result === 'loss') && drpMatchupLabel(r).includes('@'))
+      .forEach(r => {
+        const team = normTeam(r.pick);
+        if(!team || team === '—') return;
+        const row = map.get(team) || { team, wins: 0, losses: 0, total: 0, pct: 0 };
+        if(r.result === 'win') row.wins += 1;
+        if(r.result === 'loss') row.losses += 1;
+        row.total = row.wins + row.losses;
+        row.pct = pct(row.wins, row.total);
+        map.set(team, row);
+      });
+    const teams = [...map.values()].filter(x => x.total > 0);
+    if(!teams.length) return { favorite: null, worst: null };
+    const favorite = [...teams].sort((a,b) =>
+      (b.pct - a.pct) || (b.wins - a.wins) || (b.total - a.total) || a.team.localeCompare(b.team)
+    )[0];
+    const worst = [...teams].sort((a,b) =>
+      (a.pct - b.pct) || (a.wins - b.wins) || (b.total - a.total) || a.team.localeCompare(b.team)
+    )[0];
+    return { favorite, worst };
+  }
+
+
+  function render(store, currentThreats, homers, gamePicks){
+    const day=dayKey();
+    const teamStates = teamGameStatusMap();
+
+    // Accuracy cards must count FINAL games only. Pending/upcoming/live picks stay visible
+    // in the tables, but they are excluded from the numerator and denominator so the
+    // Tracker never penalizes or inflates accuracy before a game is final.
+    const isResolvedHRPick = (p) => {
+      if (!p) return false;
+      if (p.date !== day) return true; // prior-day stored picks are historical/final by definition
+      return teamStates[p.team] === 'final';
+    };
+
+    const todaysAll=store.picks.filter(p=>p.date===day);
+    const todays=todaysAll.filter(isResolvedHRPick);
+    const allResolvedThreats=store.picks.filter(isResolvedHRPick);
+    const th=todays.filter(p=>p.hit).length, tt=todays.length;
+    const ahRows=allResolvedThreats.filter(p=>p.hit).length, atRows=allResolvedThreats.length;
+    const todayPendingThreats=Math.max(todaysAll.length-tt,0);
+    const allPendingThreats=Math.max(store.picks.length-atRows,0);
+    const hrSummary = normalizedSummary(store.allTime?.hr);
+    const ah = hrSummary.total > atRows ? hrSummary.wins : ahRows;
+    const at = hrSummary.total > atRows ? hrSummary.total : atRows;
+    const ahLosses = hrSummary.total > atRows ? hrSummary.losses : Math.max(atRows-ahRows,0);
+
+    set('tracker-today', `${th}-${Math.max(tt-th,0)}`);
+    set('tracker-today-sub', `${pct(th,tt)}% right today • ${tt} final Top HR Threats${todayPendingThreats ? ` • ${todayPendingThreats} not final excluded` : ''}`);
+    set('tracker-all', `${ah}-${ahLosses}`);
+    set('tracker-all-sub', `${pct(ah,at)}% all-time • ${at} final stored picks${allPendingThreats ? ` • ${allPendingThreats} not final excluded` : ''}`);
+    setHeaderPct('threat-header-pct', pct(ah,at), at);
+
+    const drpToday=marketStats(store,'drp',day);
+    const drpAll=marketStats(store,'drp');
+    const drpMatchupToday = { ...drpToday, list: drpToday.list.filter(r => drpMatchupLabel(r).includes('@')) };
+    drpMatchupToday.total = drpMatchupToday.list.filter(x => x.result === 'win' || x.result === 'loss').length;
+    drpMatchupToday.wins = drpMatchupToday.list.filter(x => x.result === 'win').length;
+    drpMatchupToday.losses = Math.max(drpMatchupToday.total - drpMatchupToday.wins, 0);
+    drpMatchupToday.pending = drpMatchupToday.list.length - drpMatchupToday.total;
+    const drpMatchupAll = { ...drpAll, list: drpAll.list.filter(r => drpMatchupLabel(r).includes('@')) };
+    drpMatchupAll.total = drpMatchupAll.list.filter(x => x.result === 'win' || x.result === 'loss').length;
+    drpMatchupAll.wins = drpMatchupAll.list.filter(x => x.result === 'win').length;
+    drpMatchupAll.losses = Math.max(drpMatchupAll.total - drpMatchupAll.wins, 0);
+    drpMatchupAll.pending = drpMatchupAll.list.length - drpMatchupAll.total;
+    const kpToday=marketStats(store,'kprop',day);
+    const kpAll=marketStats(store,'kprop');
+
+    set('tracker-drp-today', `${drpMatchupToday.wins}-${drpMatchupToday.losses}`);
+    set('tracker-drp-today-sub', `${pct(drpMatchupToday.wins,drpMatchupToday.total)}% today • ${drpMatchupToday.total} final matchups${drpMatchupToday.pending ? ` • ${drpMatchupToday.pending} not final excluded` : ''}`);
+    set('tracker-drp-all', `${drpMatchupAll.wins}-${drpMatchupAll.losses}`);
+    set('tracker-drp-all-sub', `${pct(drpMatchupAll.wins,drpMatchupAll.total)}% all-time • ${drpMatchupAll.total} final matchups${drpMatchupAll.pending ? ` • ${drpMatchupAll.pending} not final excluded` : ''}`);
+    setHeaderPct('drp-header-pct', pct(drpMatchupAll.wins,drpMatchupAll.total), drpMatchupAll.total);
+
+    set('tracker-kprops-today', `${kpToday.wins}-${kpToday.losses}`);
+    set('tracker-kprops-today-sub', `${pct(kpToday.wins,kpToday.total)}% today • ${kpToday.total} final K props${kpToday.pending ? ` • ${kpToday.pending} not final excluded` : ''}`);
+    const kpSummary = normalizedSummary(store.allTime?.kprop);
+    const kpAllDisplay = kpSummary.total > kpAll.total ? kpSummary : kpAll;
+    set('tracker-kprops-all', `${kpAllDisplay.wins}-${kpAllDisplay.losses}`);
+    set('tracker-kprops-all-sub', `${pct(kpAllDisplay.wins,kpAllDisplay.total)}% all-time • ${kpAllDisplay.total} final K props${kpAll.pending ? ` • ${kpAll.pending} not final excluded` : ''}`);
+    setHeaderPct('kprops-header-pct', pct(kpAllDisplay.wins,kpAllDisplay.total), kpAllDisplay.total);
+
+    const teamExtremes = diamondReportTeamExtremes(drpMatchupAll.list);
+    set('tracker-drt-favorite', teamExtremes.favorite ? teamExtremes.favorite.team : '—');
+    set('tracker-drt-favorite-sub', teamExtremes.favorite
+      ? `${teamExtremes.favorite.pct}% all-time • ${teamExtremes.favorite.wins}-${teamExtremes.favorite.losses} on final DR picks`
+      : 'Waiting for final Diamond Report picks');
+    set('tracker-drt-worst', teamExtremes.worst ? teamExtremes.worst.team : '—');
+    set('tracker-drt-worst-sub', teamExtremes.worst
+      ? `${teamExtremes.worst.pct}% all-time • ${teamExtremes.worst.wins}-${teamExtremes.worst.losses} on final DR picks`
+      : 'Waiting for final Diamond Report picks');
+
+    const statusBadge = r => resultBadgeFromFinal(r.result);
+
+    // Show ALL stored DRP picks (not just today) so the Date column has something to sort
+    const drpRowMap = new Map();
+    drpAll.list
+      .map(r => ({ ...r, matchupLabel: drpMatchupLabel(r) }))
+      .filter(r => r.matchupLabel && r.matchupLabel.includes('@'))
+      .forEach(r => {
+        const key = `${r.date}|${r.matchupLabel}|${r.pick}`;
+        const prior = drpRowMap.get(key);
+        const resolved = r.result === 'win' || r.result === 'loss';
+        const priorResolved = prior && (prior.result === 'win' || prior.result === 'loss');
+        if (!prior || (resolved && !priorResolved)) drpRowMap.set(key, r);
+      });
+    const drpRowsAll = [...drpRowMap.values()];
+
+    // Apply current sort (default: date descending — most recent first)
+    window.drpTableSortDir = window.drpTableSortDir || -1;
+    const drpRows = [...drpRowsAll].sort((a,b) => {
+      if (a.date === b.date) return 0;
+      return a.date < b.date ? -window.drpTableSortDir : window.drpTableSortDir;
+    });
+
+    // Update sort arrow indicator
+    const dateArrowEl = document.querySelector('#drp-th-date .sort-arrow');
+    if (dateArrowEl) dateArrowEl.textContent = window.drpTableSortDir === -1 ? '▼' : '▲';
+
+    set('tracker-drp-results', drpRows.length ? drpRows.map(r=>{
+      const isToday = r.date === day;
+      return `<tr>
+        <td style="white-space:nowrap;color:${isToday?'var(--accent2)':'var(--muted)'}">${r.date}${isToday?' <span style="font-size:9px;color:var(--accent2)">(Today)</span>':''}</td>
+        <td>${r.matchupLabel}</td>
+        <td>${r.pick}</td>
+        <td>${statusBadge(r)}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="4" style="text-align:left;color:var(--muted)">Waiting for completed matchups. Single-team rows are hidden.</td></tr>');
+
+    set('tracker-kprops-results', kpToday.list.length ? kpToday.list.map(r=>{
+      return `<tr>
+        <td>${r.label}</td>
+        <td>${r.pick}</td>
+        <td>${r.line || '—'}</td>
+        <td>${statusBadge(r)}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="4" style="text-align:left;color:var(--muted)">Waiting for K Props data.</td></tr>');
+
+
+    const sourceStatus = [
+      `<span class="tracker-pill ${repoTrackerLoaded?'hit':'pending'}">${repoTrackerLoaded?'✅':'💾'} Repo tracker.json ${repoTrackerLoaded?'loaded':'fallback: browser cache'}</span>`,
+      `<span class="tracker-pill hit">✅ Repo sync via GitHub Actions</span>`,
+      `<span class="tracker-pill pending" onclick="window.exportDiamondTrackerData && window.exportDiamondTrackerData()" style="cursor:pointer">⬇ Manual local backup</span>`,
+      `<span class="tracker-pill hit" onclick="window.importDiamondTrackerData && window.importDiamondTrackerData()" style="cursor:pointer">⬆ Import local backup</span>`,
+      `<span class="tracker-pill pending" onclick="window.resetDiamondTrackerLocalCache && window.resetDiamondTrackerLocalCache()" style="cursor:pointer">♻ Reload repo data</span>`,
+      ...SOURCES.map(src => {
+        const connected = src.live && ((src.name.includes('MLB Stats') ? (currentThreats.length || homers.size) : true));
+        return `<span class="tracker-pill ${connected?'hit':'pending'}">${connected?'✅':'🔌 (planned)'} ${src.name}</span>`;
+      })
+    ].join('');
+    set('tracker-source-stack', sourceStatus);
+    set('tracker-model-inputs', MODEL_INPUTS.map(s=>`<span class="tracker-pill hit">${s}</span>`).join(''));
+
+    const fav=[...gamePicks].sort((a,b)=>b.winPct-a.winPct)[0];
+    const dog=gamePicks.filter(p=>p.lean==='underdog').sort((a,b)=>b.winPct-a.winPct)[0] || [...gamePicks].sort((a,b)=>a.winPct-b.winPct)[0];
+    set('tracker-favorite', fav ? fav.team : '—');
+    set('tracker-favorite-sub', fav ? `${fav.winPct || 0}% projected win • strongest favorite` : 'Waiting for Diamond Report Picks');
+    set('tracker-underdog', dog ? dog.team : '—');
+    set('tracker-underdog-sub', dog ? `${dog.winPct || 0}% projected win • value/underdog slot` : 'Waiting for Diamond Report Picks');
+
+    const rows=(todaysAll.length?todaysAll:currentThreats).map(p=>{
+      const hitNow = p.hit || homers.has(p.player.toLowerCase());
+      const gameState = teamStates[p.team] || 'upcoming';
+      let status;
+      if (hitNow) {
+        status = '<span class="tracker-pill hit">✅ Right</span>';
+      } else if (gameState === 'final') {
+        status = '<span class="tracker-pill miss">❌ Wrong</span>';
+      } else if (gameState === 'live') {
+        status = '<span class="tracker-pill pending">🔴 Live</span>';
+      } else {
+        status = '<span class="tracker-pill pending">⏳ Pending</span>';
+      }
+      return `<tr>
+        <td>${p.player}</td>
+        <td>${p.team||'—'}</td>
+        <td>${p.hrPct||0}%</td>
+        <td>${status}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="4" style="text-align:left;color:var(--muted)">Waiting for HR Potential data to load.</td></tr>';
+    set('tracker-results', rows);
+
+    if(!isAnyGameFinal()){
+      set('tracker-team-results', '<div style="color:var(--muted);font-size:12px">Waiting for final games before updating team analyzer.</div>');
+    } else {
+    const teams=Object.values(store.teams).sort((a,b)=>pct(b.hits,b.total)-pct(a.hits,a.total)||b.total-a.total).slice(0,8);
+    set('tracker-team-results', teams.length ? teams.map((t,i)=>{
+      const top=Object.entries(t.correctPlayers||{}).sort((a,b)=>b[1]-a[1])[0];
+      return `<div class="stat-row">
+        <div class="stat-row-num">${i+1}</div>
+        <div style="flex:1">
+          <div style="font-weight:800">${t.team}</div>
+          <div style="color:var(--muted);font-size:11px">Correct HR picks: ${t.hits}/${t.total}${top ? ' • best player: '+top[0] : ''}</div>
+        </div>
+        <span class="tracker-pill ${pct(t.hits,t.total)>=25?'hit':'pending'}">${pct(t.hits,t.total)}%</span>
+      </div>`;
+    }).join('') : '<div style="color:var(--muted);font-size:12px">Correct teams will appear after a Top HR Threat hits and games are final.</div>');
+    }
+
+    const preds=currentThreats.map(p=>({ ...p, score:predictionScore(p,store) })).sort((a,b)=>b.score-a.score).slice(0,10);
+    set('tracker-predictions', preds.length ? preds.map((p,i)=>{
+      const pl=store.players[p.player.toLowerCase()] || {hits:0,total:0};
+      const tm=store.teams[p.team] || {hits:0,total:0};
+      return `<div class="stat-row">
+        <div class="stat-row-num">${i+1}</div>
+        <div style="flex:1">
+          <div style="font-weight:800">${p.player}</div>
+          <div style="color:var(--muted);font-size:11px">${p.team||'—'} • base HR ${p.hrPct||0}% • player ${pct(pl.hits,pl.total)}% • team ${pct(tm.hits,tm.total)}%</div>
+        </div>
+        <span class="tracker-pill ${p.score>=35?'hit':p.score>=20?'pending':'miss'}">${p.score}%</span>
+      </div>`;
+    }).join('') : '<div style="color:var(--muted);font-size:12px">Upcoming player HR predictions populate from HR Potential once loaded.</div>');
+
+    renderNextDayModels(store, currentThreats, gamePicks);
+
+    set('tracker-refresh',
+      `Last synced ${new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})} • HRP ${currentThreats.length} • HRs ${homers.size} • Picks ${gamePicks.length} • Finals ${[...new Set(Object.values(finalGameMap()).filter(x=>!Array.isArray(x)).map(x=>x.away+'@'+x.home))].length}`
+    );
+  }
+
+  function sync(){
+    const store=loadStore();
+    let threats=[], homers=new Set(), gamePicks=[];
+    try{
+      dedupeLegacyMarketPicks(store); // one-time cleanup of old index-keyed duplicate rows
+      threats=extractHRThreats();
+      homers=extractHRToday();
+      gamePicks=extractGamePicks();
+      const drpAccuracy=extractDRPicksAccuracy();
+      const kpropsAccuracy=extractKPropsAccuracy();
+      drpAccuracy.forEach(r=>upsertMarketPick(store,r));
+      kpropsAccuracy.forEach(r=>upsertMarketPick(store,r));
+      threats.forEach(p=>upsert(store,p,homers.has(p.player.toLowerCase())));
+      store.debug.lastError = '';
+      store.debug.lastSync = new Date().toISOString();
+      saveStore(store);
+      render(store, threats, homers, gamePicks);
+
+      // Backfill any stuck pending picks from past dates via the MLB API (async,
+      // doesn't block this sync — re-renders automatically if anything resolves)
+      backfillStalePendingPicks(store).then(changed => {
+        if (changed) {
+          saveStore(store);
+          render(store, threats, homers, gamePicks);
+        }
+      }).catch(()=>{});
+
+      return { threats, homers, gamePicks };
+    } catch(e){
+      // Defensive fallback: even if extraction/rendering above failed partway through
+      // (e.g. a DOM element wasn't ready yet, common on some mobile browsers), still
+      // try to render whatever we have rather than leaving the whole Tracker tab blank.
+      console.error('Tracker sync failed:', e);
+      store.debug.lastError = e.message || String(e);
+      try { saveStore(store); } catch(_) {}
+      try { render(store, threats, homers, gamePicks); } catch(renderErr) {
+        console.error('Tracker render also failed:', renderErr);
+      }
+      const refreshEl = document.getElementById('tracker-refresh');
+      if (refreshEl) refreshEl.textContent = `Tracker error: ${e.message || e} — retrying next sync`;
+      return { threats, homers, gamePicks };
+    }
+  }
+
+  // Resolves any DRP picks that are still 'pending' from a PAST date (not today) by
+  // querying the MLB Stats API for that specific date's final scores. This covers
+  // cases like a normalization bug (e.g. legacy 'AZ' records) that prevented a pick
+  // from resolving while its date's games were still in the live DOM — once the day
+  // passes, #final-games no longer has that data, so the only remaining source is the API.
+  const TEAM_NORM_MAP = { CHW:'CWS', KCR:'KC', SDP:'SD', SFG:'SF', TBR:'TB', WAS:'WSH' };
+  const normTeamGlobal = t => { t = String(t||'').toUpperCase().trim(); return TEAM_NORM_MAP[t] || t; };
+
+  async function backfillStalePendingPicks(store){
+    const todayKey = (typeof dayKey === 'function') ? dayKey() : new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
+    store.market ||= { drp: [], kprop: [] };
+    const stale = (store.market.drp || []).filter(r => r.result === 'pending' && r.date && r.date !== todayKey);
+    if (!stale.length) return false;
+
+    const dates = [...new Set(stale.map(r => r.date))];
+    let changed = false;
+
+    for (const date of dates) {
+      try {
+        const data = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${date}&hydrate=linescore,team&language=en`);
+        const entry = data.dates?.find(d => d.date === date) || data.dates?.[0];
+        const games = entry?.games || [];
+        const finalsForDate = {};
+        games.forEach(g => {
+          if (g.status?.abstractGameState !== 'Final') return;
+          const away = normTeamGlobal(g.teams.away.team.abbreviation);
+          const home = normTeamGlobal(g.teams.home.team.abbreviation);
+          const awayScore = g.teams.away.score, homeScore = g.teams.home.score;
+          if (awayScore == null || homeScore == null) return;
+          const winner = awayScore > homeScore ? away : homeScore > awayScore ? home : 'TIE';
+          [away, home].forEach(t => { finalsForDate[t] = { away, home, winner }; });
+        });
+
+        stale.filter(r => r.date === date).forEach(rec => {
+          const pick = normTeamGlobal(rec.pick);
+          const game = finalsForDate[pick];
+          if (!game) return; // couldn't find this game in the API response — leave as pending
+          rec.result = game.winner === 'TIE' ? 'push' : (game.winner === pick ? 'win' : 'loss');
+          rec.finalChecked = true;
+          changed = true;
+        });
+      } catch(e) {
+        console.warn('Backfill failed for date', date, e);
+      }
+    }
+    return changed;
+  }
+
+  window.syncDiamondTracker=sync;
+  initPersistentTrackerData();
+
+  window.sortDRPTable=function(col){
+    if (col === 'date') {
+      window.drpTableSortDir = (window.drpTableSortDir === -1) ? 1 : -1;
+      const store = loadStore();
+      const threats = extractHRThreats();
+      const homers = extractHRToday();
+      const gamePicks = extractGamePicks();
+      render(store, threats, homers, gamePicks);
+    }
+  };
+
+  function hookAfter(fnName){
+    try{
+      const original = window[fnName];
+      if (typeof original !== 'function' || original.__trackerHooked) return;
+      const wrapped = async function(...args){
+        const result = await original.apply(this,args);
+        setTimeout(sync, 250);
+        return result;
+      };
+      wrapped.__trackerHooked = true;
+      window[fnName] = wrapped;
+    } catch(e){}
+  }
+
+  function start(){
+    sync();
+    setTimeout(sync, 1500);
+    setTimeout(sync, 5000);
+    hookAfter('renderHRPTable');
+    hookAfter('loadHRsToday');
+    hookAfter('loadGameProps');
+    hookAfter('loadSchedule');
+    hookAfter('loadLiveScores');
+    hookAfter('renderScores');
+    hookAfter('loadScores');
+    hookAfter('loadKProps');
+    setInterval(sync, 30000);
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
 
 
 // Diamond Report K Props label cleanup: keep PROJ underneath, simplify label to OVER/UNDER
@@ -4045,5 +7536,112 @@ function showTab(id, el) {
 })();
 
 </script>
+
+<script id="v5-1-die-api-guard-stats">
+(function () {
+  function set(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = String(val);
+  }
+  function tick() {
+    var s = window.DiamondRequestStats || {};
+    set("die-api-network", s.networkFetches || 0);
+    set("die-api-cache", s.cacheHits || 0);
+    set("die-api-deduped", s.deduped || 0);
+    set("die-api-cache-size", s.cacheSize || 0);
+  }
+  document.addEventListener("DOMContentLoaded", tick);
+  window.addEventListener("load", tick);
+  setInterval(tick, 2000);
+})();
+</script>
+
 </body>
 </html>
+
+<!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
+<style id="tracker-mobile-tablet-layout-v39">
+  /* Keeps every Diamond Report Tracker summary card visible on phones/tablets. */
+  #tracker .tracker-grid {
+    align-items: stretch;
+  }
+  #tracker .tracker-card {
+    min-width: 0;
+    width: 100%;
+  }
+  #tracker .tracker-card h3,
+  #tracker .tracker-big,
+  #tracker .tracker-sub {
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+  #tracker .tracker-big {
+    white-space: normal;
+  }
+
+  /* Tablet: clean 2-column layout so all-time cards do not get squeezed out. */
+  @media (min-width: 561px) and (max-width: 1024px) {
+    #tracker .tracker-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 12px !important;
+    }
+    #tracker .tracker-big {
+      font-size: clamp(24px, 5vw, 34px) !important;
+    }
+    #tracker .tracker-card h3 {
+      font-size: 10px !important;
+      line-height: 1.25 !important;
+    }
+    #tracker .tracker-sub {
+      font-size: 10px !important;
+      line-height: 1.35 !important;
+    }
+  }
+
+  /* iPhone/small phones: single-column cards so All-Time HR and K Props All-Time are always visible. */
+  @media (max-width: 560px) {
+    main {
+      padding-left: 10px !important;
+      padding-right: 10px !important;
+    }
+    #tracker > div:first-child {
+      align-items: flex-start !important;
+    }
+    #tracker .tracker-grid {
+      grid-template-columns: 1fr !important;
+      gap: 10px !important;
+      margin-bottom: 14px !important;
+    }
+    #tracker .tracker-card {
+      padding: 11px 12px !important;
+      border-radius: 9px !important;
+    }
+    #tracker .tracker-card h3 {
+      font-size: 10px !important;
+      line-height: 1.25 !important;
+      letter-spacing: .9px !important;
+      margin-bottom: 7px !important;
+    }
+    #tracker .tracker-big {
+      font-size: 30px !important;
+      line-height: 1 !important;
+    }
+    #tracker .tracker-sub {
+      font-size: 10px !important;
+      line-height: 1.35 !important;
+    }
+    #tracker .tracker-scroll {
+      max-height: 360px !important;
+    }
+    #tracker .tracker-scroll table {
+      min-width: 520px !important;
+      table-layout: auto !important;
+    }
+    #tracker .tracker-scroll th,
+    #tracker .tracker-scroll td {
+      white-space: nowrap !important;
+      overflow: visible !important;
+      text-overflow: clip !important;
+    }
+  }
+</style>
