@@ -8777,6 +8777,7 @@ var analytics='<div class="tp-analytics-grid">'+
 
 /* ---- from <script id="anonymous"> ---- */
 function showPremiumGate(feature){
+  feature = (feature === "team" ? "team-performance" : (feature || "parlay"));
   document.querySelectorAll('.gamepick-pane').forEach(function(p){
     p.hidden = true;
     p.classList.remove('active');
@@ -8812,64 +8813,143 @@ function showPremiumGate(feature){
   container.classList.add('active');
 }
 
-/* ---- from <script id="dr-native-navigation-controller"> ---- */
+
+/* ---- PROD v11.29: Clean native navigation controller ---- */
 (function(){
-  const map = {
-    game:'gamepick-tab-game',
-    hr:'gamepick-tab-hr',
-    k:'gamepick-tab-k',
-    hits:'gamepick-tab-hits',
-    rbis:'gamepick-tab-rbis',
-    tb:'gamepick-tab-tb',
-    sb:'gamepick-tab-sb',
-    hrrbi:'gamepick-tab-hrrbi'
-  };
+  if (window.__DR_V1129_NAV_CONTROLLER__) return;
+  window.__DR_V1129_NAV_CONTROLLER__ = true;
 
-  function navigate(section){
-    if(section === 'parlay' || section === 'team' || section === 'deep'){
-      if(typeof showPremiumGate === 'function') showPremiumGate();
-      return;
-    }
-    const id = map[section];
-    const tab = id && document.getElementById(id);
-    if(tab){
-      tab.click();
-      return;
-    }
-    if(typeof showGamePickPane === 'function'){
-      showGamePickPane(section);
-    }
+  var FREE_PANES = new Set(['game','hr','k','hits','rbis','tb','sb','hrrbi']);
+  var PREMIUM_PANES = new Set(['parlay','team-performance','team','deep']);
+  var NORMALIZE = { team:'team-performance', teamPerformance:'team-performance' };
+
+  function normalizePane(pane){
+    pane = String(pane || 'game').trim();
+    return NORMALIZE[pane] || pane;
   }
 
-  function closeDrawer(drawer, overlay){
-    drawer.classList.remove('open');
-    drawer.setAttribute('aria-hidden','true');
-    if(overlay) overlay.classList.remove('open');
-  }
-
-  function init(){
-    const btn=document.getElementById('dr-mobile-menu-btn');
-    const drawer=document.getElementById('dr-mobile-drawer');
-    const overlay=document.getElementById('dr-mobile-overlay');
-    const closeBtn=document.getElementById('dr-mobile-close');
-    if(!btn || !drawer) return;
-
-    btn.onclick=()=>{
-      drawer.classList.add('open');
-      drawer.setAttribute('aria-hidden','false');
-      if(overlay) overlay.classList.add('open');
-    };
-    if(overlay) overlay.onclick=()=>closeDrawer(drawer, overlay);
-    if(closeBtn) closeBtn.onclick=()=>closeDrawer(drawer, overlay);
-
-    drawer.querySelectorAll('.dr-menu-item[data-tab]').forEach(item=>{
-      item.onclick=()=>{
-        navigate(item.dataset.tab);
-        closeDrawer(drawer, overlay);
-      };
+  function setDesktopTabState(pane){
+    var activePane = normalizePane(pane);
+    document.querySelectorAll('.gamepick-tab').forEach(function(tab){
+      var key = normalizePane(tab.getAttribute('data-gamepick-pane') || '');
+      var active = key === activePane;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-selected', active ? 'true' : 'false');
     });
   }
-  document.addEventListener('DOMContentLoaded',init);
+
+  function openPremiumPane(pane){
+    pane = normalizePane(pane);
+    setDesktopTabState(pane);
+    if (typeof window.showPremiumGate === 'function') {
+      window.showPremiumGate(pane);
+    }
+  }
+
+  function navigateToPane(pane, opts){
+    pane = normalizePane(pane);
+    opts = opts || {};
+
+    if (PREMIUM_PANES.has(pane)) {
+      openPremiumPane(pane);
+      closeDrawer();
+      return;
+    }
+
+    if (!FREE_PANES.has(pane)) pane = 'game';
+
+    if (typeof window.showGamePickPane === 'function') {
+      window.showGamePickPane(pane);
+    } else {
+      var target = document.getElementById('gamepick-pane-' + pane);
+      document.querySelectorAll('.gamepick-pane').forEach(function(panel){
+        var active = panel === target;
+        panel.hidden = !active;
+        panel.classList.toggle('active', active);
+      });
+      setDesktopTabState(pane);
+    }
+
+    closeDrawer();
+
+    if (!opts.noScroll) {
+      try {
+        var props = document.getElementById('props');
+        if (props && window.matchMedia('(max-width:1179px)').matches) {
+          props.scrollIntoView({ block:'start', behavior:'smooth' });
+        }
+      } catch(e) {}
+    }
+  }
+
+  function getEls(){
+    return {
+      btn: document.getElementById('dr-mobile-menu-btn'),
+      drawer: document.getElementById('dr-mobile-drawer'),
+      overlay: document.getElementById('dr-mobile-overlay'),
+      close: document.getElementById('dr-mobile-close')
+    };
+  }
+
+  function openDrawer(){
+    var els = getEls();
+    if (!els.drawer) return;
+    els.drawer.classList.add('open');
+    els.drawer.setAttribute('aria-hidden','false');
+    if (els.overlay) els.overlay.classList.add('open');
+    document.body.classList.add('dr-mobile-menu-open');
+  }
+
+  function closeDrawer(){
+    var els = getEls();
+    if (els.drawer) {
+      els.drawer.classList.remove('open');
+      els.drawer.setAttribute('aria-hidden','true');
+    }
+    if (els.overlay) els.overlay.classList.remove('open');
+    document.body.classList.remove('dr-mobile-menu-open');
+  }
+
+  function bindNavigation(){
+    var els = getEls();
+    if (els.btn && !els.btn.dataset.drNavReady) {
+      els.btn.dataset.drNavReady = '1';
+      els.btn.addEventListener('click', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        var isOpen = els.drawer && els.drawer.classList.contains('open');
+        isOpen ? closeDrawer() : openDrawer();
+      });
+    }
+    if (els.close && !els.close.dataset.drNavReady) {
+      els.close.dataset.drNavReady = '1';
+      els.close.addEventListener('click', function(e){ e.preventDefault(); closeDrawer(); });
+    }
+    if (els.overlay && !els.overlay.dataset.drNavReady) {
+      els.overlay.dataset.drNavReady = '1';
+      els.overlay.addEventListener('click', function(e){ e.preventDefault(); closeDrawer(); });
+    }
+    if (els.drawer) {
+      els.drawer.querySelectorAll('.dr-menu-item[data-tab]').forEach(function(item){
+        if (item.dataset.drNavReady) return;
+        item.dataset.drNavReady = '1';
+        item.addEventListener('click', function(e){
+          e.preventDefault();
+          e.stopPropagation();
+          navigateToPane(item.getAttribute('data-tab') || 'game');
+        });
+      });
+    }
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDrawer(); }, { passive:true });
+  }
+
+  window.DiamondNavigateToPane = navigateToPane;
+  window.DiamondOpenMobileMenu = openDrawer;
+  window.DiamondCloseMobileMenu = closeDrawer;
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindNavigation, { once:true });
+  else bindNavigation();
+  window.addEventListener('load', bindNavigation, { once:true });
 })();
 
 /* ---- from <script id="v8-74-lineup-game-projection-lock"> ---- */

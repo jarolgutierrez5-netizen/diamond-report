@@ -96,7 +96,7 @@
 </head>
 <body>
 <header class="header">
-<button id="dr-mobile-menu-btn" aria-label="Open menu" class="dr-mobile-menu-btn">☰</button>
+<button id="dr-mobile-menu-btn" type="button" aria-label="Open menu" class="dr-mobile-menu-btn">☰</button>
 <div class="logo" style="padding:0;background:none;border:none;display:flex;align-items:center">
 <svg aria-label="Diamond Report" height="46" role="img" style="width:auto;display:block" viewbox="0 0 680 340">
 <rect fill="#07090f" height="340" width="680"></rect>
@@ -131,18 +131,19 @@
 <div id="dr-mobile-overlay" class="dr-mobile-overlay"></div>
 <div id="dr-mobile-drawer" class="dr-mobile-drawer" aria-hidden="true">
   <div class="dr-mobile-drawer-inner">
-    <button class="dr-mobile-close" id="dr-mobile-close">✕</button>
-    <button data-tab="game" class="dr-menu-item">📊 Games Today</button>
-    <button data-tab="hr" class="dr-menu-item">🔥 Home Runs</button>
-    <button data-tab="k" class="dr-menu-item">🎯 Strikeouts</button>
-    <button data-tab="hits" class="dr-menu-item">⚾ Hits</button>
-    <button data-tab="rbis" class="dr-menu-item">💰 RBIs</button>
-    <button data-tab="tb" class="dr-menu-item">💎 Total Bases</button>
-    <button data-tab="sb" class="dr-menu-item">🏃 Stolen Bases</button>
-    <button data-tab="hrrbi" class="dr-menu-item">📈 Hits+Runs+RBI</button>
-    <button data-tab="parlay" class="dr-menu-item locked">🔒 🧾 Parlay Builds</button>
-    <button data-tab="team" class="dr-menu-item locked">🔒 🆚 Team Performance</button>
-    <button data-tab="deep" class="dr-menu-item locked">🔒 🧠 Deep Research</button>
+    <div class="dr-mobile-drawer-title">Diamond Report</div>
+    <button type="button" class="dr-mobile-close" id="dr-mobile-close" aria-label="Close menu">✕</button>
+    <button type="button" data-tab="game" class="dr-menu-item">📊 Games Today</button>
+    <button type="button" data-tab="hr" class="dr-menu-item">🔥 Home Runs</button>
+    <button type="button" data-tab="k" class="dr-menu-item">🎯 Strikeouts</button>
+    <button type="button" data-tab="hits" class="dr-menu-item">⚾ Hits</button>
+    <button type="button" data-tab="rbis" class="dr-menu-item">💰 RBIs</button>
+    <button type="button" data-tab="tb" class="dr-menu-item">💎 Total Bases</button>
+    <button type="button" data-tab="sb" class="dr-menu-item">🏃 Stolen Bases</button>
+    <button type="button" data-tab="hrrbi" class="dr-menu-item">📈 Hits+Runs+RBI</button>
+    <button type="button" data-tab="parlay" class="dr-menu-item locked">🔒 🧾 Parlay Builds</button>
+    <button type="button" data-tab="team-performance" class="dr-menu-item locked">🔒 🆚 Team Performance</button>
+    <button type="button" data-tab="deep" class="dr-menu-item locked">🔒 🧠 Deep Research</button>
   </div>
 </div>
 
