@@ -9676,3 +9676,50 @@ function showPremiumGate(feature){
  }
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',hook); else hook();
 })();
+
+/* v11.31: Pause infinite CSS animations when the tab is hidden or the
+   element is scrolled off-screen. Targets the live-dot pulse, skeleton
+   shimmer, spin loaders, and countdown pulse -- these were running
+   continuously with no pause logic, costing GPU/compositor time even when
+   nothing animated was actually visible. Pairs with the .dr-paused /
+   .dr-anim-offscreen CSS rules added alongside this. */
+(function(){
+  var ANIM_SELECTOR = '.live-dot, .dr-v9-skeleton, .game-status.countdown-pulse, .spin, .ks-today-live';
+
+  // Pause everything site-wide while the tab/app is backgrounded.
+  document.addEventListener('visibilitychange', function(){
+    document.body.classList.toggle('dr-paused', document.hidden);
+  });
+  if (document.hidden) document.body.classList.add('dr-paused');
+
+  // Pause per-element when it scrolls out of the viewport (with a small
+  // margin so it resumes just before it would come back into view).
+  var io = ('IntersectionObserver' in window) ? new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      entry.target.classList.toggle('dr-anim-offscreen', !entry.isIntersecting);
+    });
+  }, { rootMargin: '150px 0px' }) : null;
+
+  function observeAnimatedElements(){
+    if (!io) return;
+    document.querySelectorAll(ANIM_SELECTOR).forEach(function(el){
+      if (!el.dataset.drAnimObserved) {
+        el.dataset.drAnimObserved = '1';
+        io.observe(el);
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', observeAnimatedElements, { once: true });
+  } else {
+    observeAnimatedElements();
+  }
+
+  // Live data refreshes create/remove these elements dynamically (new game
+  // cards, new skeleton loaders, etc.), so periodically pick up new ones.
+  // Only scans while the tab is visible -- no work done in the background.
+  setInterval(function(){
+    if (document.visibilityState === 'visible') observeAnimatedElements();
+  }, 5000);
+})();

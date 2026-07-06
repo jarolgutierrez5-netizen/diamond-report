@@ -1005,3 +1005,18 @@
     -webkit-backdrop-filter: none !important;
   }
 }
+
+/* v11.31: Pause infinite CSS animations (live-dot pulse, skeleton shimmer,
+   spin loaders, countdown pulse) when the tab is backgrounded and when the
+   element scrolls off-screen. These animations run indefinitely with no
+   pause logic at all today, meaning the GPU/compositor keeps working even
+   when nothing is visible -- a steady drain on frame budget and battery
+   that competes with scroll/tap responsiveness. */
+body.dr-paused *,
+body.dr-paused *::before,
+body.dr-paused *::after,
+.dr-anim-offscreen,
+.dr-anim-offscreen::before,
+.dr-anim-offscreen::after {
+  animation-play-state: paused !important;
+}
