@@ -1389,9 +1389,35 @@ document.addEventListener('DOMContentLoaded',()=>{
 .tp-ai-summary{line-height:1.5;font-size:13px}
 @media(max-width:900px){.tp-analytics-grid{grid-template-columns:1fr}}
 </style>
+
+
+<style id="dr-mobile-drawer-fix">
+/* v11.28: previously-missing CSS for the mobile hamburger drawer.
+   Without this, toggling .open had no visual effect. */
+.dr-mobile-menu-btn{display:none;background:transparent;border:1px solid var(--border);color:var(--text);width:38px;height:38px;border-radius:8px;font-size:18px;line-height:1;cursor:pointer;align-items:center;justify-content:center}
+@media (max-width:1179px){.dr-mobile-menu-btn{display:inline-flex}}
+
+.dr-mobile-overlay{position:fixed;inset:0;background:rgba(3,7,17,.6);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .2s ease;z-index:1099}
+.dr-mobile-overlay.open{opacity:1;visibility:visible}
+
+.dr-mobile-drawer{position:fixed;top:0;left:0;bottom:0;width:min(84vw,320px);background:linear-gradient(180deg,rgba(10,14,26,.99),rgba(6,10,18,.99));border-right:1px solid rgba(230,57,70,.28);box-shadow:18px 0 40px rgba(0,0,0,.45);transform:translateX(-100%);transition:transform .25s ease;z-index:1100;overflow-y:auto}
+.dr-mobile-drawer.open{transform:translateX(0)}
+.dr-mobile-drawer-inner{display:flex;flex-direction:column;padding:18px 14px;gap:4px}
+.dr-mobile-close{align-self:flex-end;background:transparent;border:1px solid var(--border);color:var(--text);width:34px;height:34px;border-radius:8px;font-size:16px;cursor:pointer;margin-bottom:10px}
+.dr-mobile-drawer .dr-menu-item{display:flex;align-items:center;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid rgba(45,72,104,.5);color:var(--text);font-family:'Manrope',sans-serif;font-size:14px;font-weight:700;letter-spacing:.3px;padding:14px 6px;cursor:pointer}
+.dr-mobile-drawer .dr-menu-item:hover{color:var(--accent2)}
+.dr-mobile-drawer .dr-menu-item.locked{color:var(--muted)}
+
+/* Hamburger drawer now owns navigation on mobile/tablet; hide the
+   redundant horizontal Game Picks tab strip at the same breakpoint. */
+@media (max-width:1179px){
+  .gamepick-tabs-wrap{display:none !important}
+}
+</style>
 </head>
 <body>
 <header class="header">
+<button id="dr-mobile-menu-btn" aria-label="Open menu" class="dr-mobile-menu-btn">☰</button>
 <div class="logo" style="padding:0;background:none;border:none;display:flex;align-items:center">
 <svg aria-label="Diamond Report" height="46" role="img" style="width:auto;display:block" viewbox="0 0 680 340">
 <rect fill="#07090f" height="340" width="680"></rect>
@@ -1423,6 +1449,26 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 <div class="date-badge" id="header-date"></div>
 </header>
+<div id="dr-mobile-overlay" class="dr-mobile-overlay"></div>
+<div id="dr-mobile-drawer" class="dr-mobile-drawer" aria-hidden="true">
+  <div class="dr-mobile-drawer-inner">
+    <button class="dr-mobile-close" id="dr-mobile-close">✕</button>
+    <button data-tab="game" class="dr-menu-item">📊 Games Today</button>
+    <button data-tab="hr" class="dr-menu-item">🔥 Home Runs</button>
+    <button data-tab="k" class="dr-menu-item">🎯 Strikeouts</button>
+    <button data-tab="hits" class="dr-menu-item">⚾ Hits</button>
+    <button data-tab="rbis" class="dr-menu-item">💰 RBIs</button>
+    <button data-tab="tb" class="dr-menu-item">💎 Total Bases</button>
+    <button data-tab="sb" class="dr-menu-item">🏃 Stolen Bases</button>
+    <button data-tab="hrrbi" class="dr-menu-item">📈 Hits+Runs+RBI</button>
+    <button data-tab="parlay" class="dr-menu-item locked">🔒 🧾 Parlay Builds</button>
+    <button data-tab="team" class="dr-menu-item locked">🔒 🆚 Team Performance</button>
+    <button data-tab="deep" class="dr-menu-item locked">🔒 🧠 Deep Research</button>
+  </div>
+</div>
+
+
+
 <!-- Horizontal Ad -->
 
 <!-- ============================================================ -->
@@ -10256,6 +10302,72 @@ function showPremiumGate(feature){
   container.classList.add('active');
 }
 </script>
+
+<!-- v11.28 Native Navigation Controller Cleanup -->
+<!-- Removed duplicate #dr-mobile-drawer / #dr-mobile-overlay (previously caused
+     duplicate-ID + data-key mismatch bugs). Single drawer now lives right after
+     the header, wired up below. -->
+<script id="dr-native-navigation-controller">
+(function(){
+  const map = {
+    game:'gamepick-tab-game',
+    hr:'gamepick-tab-hr',
+    k:'gamepick-tab-k',
+    hits:'gamepick-tab-hits',
+    rbis:'gamepick-tab-rbis',
+    tb:'gamepick-tab-tb',
+    sb:'gamepick-tab-sb',
+    hrrbi:'gamepick-tab-hrrbi'
+  };
+
+  function navigate(section){
+    if(section === 'parlay' || section === 'team' || section === 'deep'){
+      if(typeof showPremiumGate === 'function') showPremiumGate();
+      return;
+    }
+    const id = map[section];
+    const tab = id && document.getElementById(id);
+    if(tab){
+      tab.click();
+      return;
+    }
+    if(typeof showGamePickPane === 'function'){
+      showGamePickPane(section);
+    }
+  }
+
+  function closeDrawer(drawer, overlay){
+    drawer.classList.remove('open');
+    drawer.setAttribute('aria-hidden','true');
+    if(overlay) overlay.classList.remove('open');
+  }
+
+  function init(){
+    const btn=document.getElementById('dr-mobile-menu-btn');
+    const drawer=document.getElementById('dr-mobile-drawer');
+    const overlay=document.getElementById('dr-mobile-overlay');
+    const closeBtn=document.getElementById('dr-mobile-close');
+    if(!btn || !drawer) return;
+
+    btn.onclick=()=>{
+      drawer.classList.add('open');
+      drawer.setAttribute('aria-hidden','false');
+      if(overlay) overlay.classList.add('open');
+    };
+    if(overlay) overlay.onclick=()=>closeDrawer(drawer, overlay);
+    if(closeBtn) closeBtn.onclick=()=>closeDrawer(drawer, overlay);
+
+    drawer.querySelectorAll('.dr-menu-item[data-tab]').forEach(item=>{
+      item.onclick=()=>{
+        navigate(item.dataset.tab);
+        closeDrawer(drawer, overlay);
+      };
+    });
+  }
+  document.addEventListener('DOMContentLoaded',init);
+})();
+</script>
+
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
