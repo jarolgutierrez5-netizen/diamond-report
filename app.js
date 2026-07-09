@@ -5095,16 +5095,22 @@ async function loadHRsToday() {
     const games = await getTodaySchedule('boxscore,team,probablePitcher');
 
     const allHRs = [];
-    for (const g of games) {
+    // Fetch each game's boxscore in parallel instead of sequentially: with many
+    // live games, awaiting them one at a time multiplied load time by the game count.
+    const gameBoxes = await Promise.all(games.map(async g => {
+      let box = g.teams;
+      if (!box?.away?.batters) {
+        try { const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`); box = bd.teams; } catch { return null; }
+      }
+      return { g, box };
+    }));
+    for (const entry of gameBoxes) {
+      if (!entry) continue;
+      const { g, box } = entry;
       const dt = new Date(g.gameDate);
       const timeStr = dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'});
       const awayAbbr = g.teams.away.team.abbreviation;
       const homeAbbr = g.teams.home.team.abbreviation;
-
-      let box = g.teams;
-      if (!box?.away?.batters) {
-        try { const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`); box=bd.teams; } catch { continue; }
-      }
 
       ['away','home'].forEach(side => {
         const team = box?.[side]; if (!team) return;
@@ -8962,6 +8968,7 @@ function showPremiumGate(feature){
   var WATCH_PREFIX = 'dr-lineup-watch-state:' + VERSION + ':';
   var readinessCache = { at: 0, ready: false, detail: '' };
   var READINESS_TTL = 2 * 60 * 1000;
+  var scoreObserver = null;
 
   function centralDateKey(){
     try { return new Date().toLocaleDateString('en-CA', { timeZone:'America/Chicago' }); }
@@ -9154,47 +9161,56 @@ function showPremiumGate(feature){
       var data = await r.json();
       var entry = data.dates && (data.dates.find(function(d){ return d.date === today; }) || data.dates[0]);
       var games = (entry && entry.games) || [];
-      games.forEach(function(g){
-        var card = el.querySelector('.gp-card[data-game-pk="' + g.gamePk + '"]');
-        if (!card) return;
-        var awayScore = g.teams && g.teams.away ? g.teams.away.score : null;
-        var homeScore = g.teams && g.teams.home ? g.teams.home.score : null;
-        var state = g.status && g.status.abstractGameState;
-        var detailed = g.status && g.status.detailedState;
-        var isFinal = state === 'Final';
-        var isLive = state === 'Live' || detailed === 'In Progress';
-        var awayAbbr = card.getAttribute('data-away') || (g.teams && g.teams.away && g.teams.away.team && g.teams.away.team.abbreviation) || 'AWAY';
-        var homeAbbr = card.getAttribute('data-home') || (g.teams && g.teams.home && g.teams.home.team && g.teams.home.team.abbreviation) || 'HOME';
-        var winnerAbbr = card.getAttribute('data-winner') || '';
-        var badge = '';
-        if (isFinal && awayScore != null && homeScore != null) {
-          var actualWinnerAbbr = awayScore > homeScore ? awayAbbr : homeScore > awayScore ? homeAbbr : null;
-          if (actualWinnerAbbr) {
-            var ok = actualWinnerAbbr === winnerAbbr;
-            badge = '<span style="background:'+(ok?'#0d2a1a':'#2a0d0d')+';color:'+(ok?'#2ecc71':'#e63946')+';font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid '+(ok?'#2ecc7166':'#e6394666')+'">'+(ok?'✓ CORRECT':'✗ INCORRECT')+' — '+actualWinnerAbbr+' won '+awayScore+'-'+homeScore+'</span>';
+      // Disconnect while we write: this function's own edits are childList
+      // mutations inside the observed subtree, and re-observing only after
+      // writing keeps those edits from re-triggering scheduleAuthoritativeRefresh
+      // (an unbounded fetch+repaint loop every ~80ms).
+      if (scoreObserver) scoreObserver.disconnect();
+      try {
+        games.forEach(function(g){
+          var card = el.querySelector('.gp-card[data-game-pk="' + g.gamePk + '"]');
+          if (!card) return;
+          var awayScore = g.teams && g.teams.away ? g.teams.away.score : null;
+          var homeScore = g.teams && g.teams.home ? g.teams.home.score : null;
+          var state = g.status && g.status.abstractGameState;
+          var detailed = g.status && g.status.detailedState;
+          var isFinal = state === 'Final';
+          var isLive = state === 'Live' || detailed === 'In Progress';
+          var awayAbbr = card.getAttribute('data-away') || (g.teams && g.teams.away && g.teams.away.team && g.teams.away.team.abbreviation) || 'AWAY';
+          var homeAbbr = card.getAttribute('data-home') || (g.teams && g.teams.home && g.teams.home.team && g.teams.home.team.abbreviation) || 'HOME';
+          var winnerAbbr = card.getAttribute('data-winner') || '';
+          var badge = '';
+          if (isFinal && awayScore != null && homeScore != null) {
+            var actualWinnerAbbr = awayScore > homeScore ? awayAbbr : homeScore > awayScore ? homeAbbr : null;
+            if (actualWinnerAbbr) {
+              var ok = actualWinnerAbbr === winnerAbbr;
+              badge = '<span style="background:'+(ok?'#0d2a1a':'#2a0d0d')+';color:'+(ok?'#2ecc71':'#e63946')+';font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid '+(ok?'#2ecc7166':'#e6394666')+'">'+(ok?'✓ CORRECT':'✗ INCORRECT')+' — '+actualWinnerAbbr+' won '+awayScore+'-'+homeScore+'</span>';
+            }
+          } else if (isLive && awayScore != null && homeScore != null) {
+            var leadingAbbr = awayScore > homeScore ? awayAbbr : homeScore > awayScore ? homeAbbr : null;
+            if (leadingAbbr) {
+              var pickLeading = leadingAbbr === winnerAbbr;
+              badge = '<span style="background:'+(pickLeading?'#0d2a1a':'#2a0d0d')+';color:'+(pickLeading?'#2ecc71':'#e63946')+';font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid '+(pickLeading?'#2ecc7166':'#e6394666')+'">'+(pickLeading?'▲':'▼')+' LIVE '+leadingAbbr+' leads '+awayScore+'-'+homeScore+'</span>';
+            } else {
+              badge = '<span style="background:rgba(255,193,7,.10);color:var(--accent2);font-size:10px;font-weight:800;padding:3px 10px;border-radius:4px;border:1px solid rgba(255,193,7,.45)">● LIVE TIED '+awayScore+'-'+homeScore+'</span>';
+            }
           }
-        } else if (isLive && awayScore != null && homeScore != null) {
-          var leadingAbbr = awayScore > homeScore ? awayAbbr : homeScore > awayScore ? homeAbbr : null;
-          if (leadingAbbr) {
-            var pickLeading = leadingAbbr === winnerAbbr;
-            badge = '<span style="background:'+(pickLeading?'#0d2a1a':'#2a0d0d')+';color:'+(pickLeading?'#2ecc71':'#e63946')+';font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid '+(pickLeading?'#2ecc7166':'#e6394666')+'">'+(pickLeading?'▲':'▼')+' LIVE '+leadingAbbr+' leads '+awayScore+'-'+homeScore+'</span>';
-          } else {
-            badge = '<span style="background:rgba(255,193,7,.10);color:var(--accent2);font-size:10px;font-weight:800;padding:3px 10px;border-radius:4px;border:1px solid rgba(255,193,7,.45)">● LIVE TIED '+awayScore+'-'+homeScore+'</span>';
+          clearProjectionResultZones(card);
+          var zone = card.querySelector('.gp-live-result-zone,[data-live-score-badge="1"]');
+          if (!zone) {
+            zone = document.createElement('div');
+            zone.className = 'gp-live-result-zone';
+            zone.setAttribute('data-live-score-badge','1');
+            zone.style.marginTop = '8px';
+            card.appendChild(zone);
           }
-        }
-        clearProjectionResultZones(card);
-        var zone = card.querySelector('.gp-live-result-zone,[data-live-score-badge="1"]');
-        if (!zone) {
-          zone = document.createElement('div');
-          zone.className = 'gp-live-result-zone';
-          zone.setAttribute('data-live-score-badge','1');
-          zone.style.marginTop = '8px';
-          card.appendChild(zone);
-        }
-        zone.innerHTML = badge || '';
-      });
-      var refreshEl = document.getElementById('gameprops-refresh');
-      if (refreshEl) refreshEl.textContent = 'Scores updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+          zone.innerHTML = badge || '';
+        });
+        var refreshEl = document.getElementById('gameprops-refresh');
+        if (refreshEl) refreshEl.textContent = 'Scores updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+      } finally {
+        if (scoreObserver) scoreObserver.observe(el, { childList:true, subtree:true });
+      }
       return true;
     } catch(e){ return false; }
   }
@@ -9210,10 +9226,10 @@ function showPremiumGate(feature){
     if (!el || el.__drLiveScoreMutationGuard) return;
     el.__drLiveScoreMutationGuard = true;
     try {
-      var mo = new MutationObserver(function(){
+      scoreObserver = new MutationObserver(function(){
         if (readLock()) scheduleAuthoritativeRefresh();
       });
-      mo.observe(el, { childList:true, subtree:true });
+      scoreObserver.observe(el, { childList:true, subtree:true });
     } catch(e) {}
   }
 
@@ -9264,6 +9280,7 @@ function showPremiumGate(feature){
   var applying = false;
   var fetching = false;
   var observerInstalled = false;
+  var mo = null;
 
   function ctDate(){
     try { return new Date().toLocaleDateString('en-CA', { timeZone:'America/Chicago' }); }
@@ -9381,6 +9398,12 @@ function showPremiumGate(feature){
     var root = document.getElementById('gameprops-content');
     if (!root || !Array.isArray(games) || !games.length || applying) return false;
     applying = true;
+    // This function's own writes below (badges, tally) are childList mutations
+    // on `root`, which the installed MutationObserver watches. Disconnecting
+    // while we write keeps those writes from re-triggering the observer, which
+    // otherwise re-invoked applyGames on an unbounded loop (fetching + repainting
+    // every card indefinitely, worst once games start going final).
+    if (mo) mo.disconnect();
     try {
       var byPk = {};
       games.forEach(function(g){ if (g && g.gamePk != null) byPk[String(g.gamePk)] = g; });
@@ -9409,7 +9432,10 @@ function showPremiumGate(feature){
       var refreshEl = document.getElementById('gameprops-refresh');
       if (refreshEl) refreshEl.textContent = 'Scores updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
       return true;
-    } finally { applying = false; }
+    } finally {
+      applying = false;
+      if (mo) mo.observe(root, { childList:true, subtree:false });
+    }
   }
   async function fetchAndApply(){
     if (fetching) return false;
@@ -9438,7 +9464,7 @@ function showPremiumGate(feature){
     var root = document.getElementById('gameprops-content');
     if (!root) return;
     observerInstalled = true;
-    var mo = new MutationObserver(function(){
+    mo = new MutationObserver(function(){
       if (applying) return;
       applyCachedSoon();
     });
