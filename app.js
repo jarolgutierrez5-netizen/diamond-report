@@ -3668,7 +3668,12 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
           ? '<span class="dr1041-chip good" style="font-size:9px;padding:2px 6px;margin-left:6px">Exact</span>'
           : '<span class="dr1041-chip neutral" style="font-size:9px;padding:2px 6px;margin-left:6px">Season profile</span>';
         const rowHr = +(st.homeRuns ?? st.hr ?? st.hrs ?? 0) || 0;
-        const hrSpotTag = rowHr > 0 ? '<span class="dr1041-chip weak" style="font-size:9px;padding:2px 7px;margin-right:4px">🔥 HR Spot</span>' : '';
+        // "Has hit at least one HR off this pitch" is true for nearly every pitch type
+        // a real power hitter sees over a season, so that alone tagged every row. Only
+        // flag pitches where the actual HR(s) are backed by a Strong/Excellent composite
+        // grade (xSLG, hard-hit%, barrel%, usage) — a genuine standout, not season noise.
+        const hrSpotTag = (rowHr > 0 && grade.score !== null && grade.score >= 64)
+          ? '<span class="dr1041-chip weak" style="font-size:9px;padding:2px 7px;margin-right:4px">🔥 HR Spot</span>' : '';
         return `<tr>
           <td><strong>${p.name}</strong>${sourceBadge}</td>
           <td class="usage">${p.usage ? p.usage.toFixed(0)+'%' : '–'}</td>
