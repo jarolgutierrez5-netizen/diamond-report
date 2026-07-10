@@ -5715,6 +5715,7 @@ function renderKProps() {
           <span class="dr109-chip"><span>K/9:</span><strong>${p.k9 ?? '–'}</strong></span>
           <span class="dr109-chip"><span>ERA:</span><strong>${p.era ?? '–'}</strong></span>
           <span class="dr109-chip"><span>WHIP:</span><strong>${p.whip ?? '–'}</strong></span>
+          <span class="dr109-chip"><span>HR/9:</span><strong>${p.hr9 ?? '–'}</strong></span>
           <span class="dr109-chip ${strikeoutCushion >= 1 ? 'good' : strikeoutCushion >= 0 ? 'warn' : ''}"><span>Cushion:</span><strong>${strikeoutCushionText}</strong></span>
         </div>
         <div class="dr109-reason"><strong>Why it supports the line:</strong> ${p.pitcherName} grades at ${chance}% for ${strikeoutLineText} because the model combines ${p.k9 ?? '–'} K/9, ${p.era ?? '–'} ERA/${p.whip ?? '–'} WHIP command profile, projected workload, and opponent contact tendency. Opponent context: ${p.oppAbbr}.</div>
