@@ -1002,6 +1002,17 @@ function upcomingCard(g) {
 // loadGameProps, loadKProps, loadHRPotential, loadKsToday and loadPitcherReport
 // all need today's schedule. Without this they fire independently on startup.
 const _scheduleCache = {};
+
+// Canonical hydrate string for "today's live schedule" -- every caller that needs
+// today's games with scores must use this EXACT string (not just something with the
+// same fields), because getTodaySchedule's cache key is `${today}|${hydrate}` and a
+// reordered/differently-worded hydrate string silently creates a separate,
+// non-sharing cache entry even for an identical underlying request. This was the root
+// cause of live-game slowness: loadScores, tpBase, and fetchAndApply each built their
+// own schedule URL slightly differently and fetched independently instead of sharing
+// this cache -- during live games that meant several uncoordinated network requests
+// per poll cycle for the same data. Union of every field any of those callers reads.
+const DR_LIVE_SCHEDULE_HYDRATE = 'team,linescore,probablePitcher';
 async function getTodaySchedule(hydrate = 'team,probablePitcher', opts = {}) {
   const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
   const key = `${today}|${hydrate}`;
@@ -1052,12 +1063,11 @@ function scoresDiffer(a, b) {
 }
 
 async function loadScores() {
-  const today = new Date().toLocaleDateString('en-CA', {timeZone: 'America/Chicago'});
-  const url = `https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=linescore,team&language=en`;
   try {
-    const data = await fetchJSON(url);
-    const dateEntry = data.dates?.find(d => d.date === today) || data.dates?.[0];
-    const games = dateEntry?.games || [];
+    // Was its own direct fetchJSON(url) call with a separately-built URL -- now shares
+    // getTodaySchedule's cache/in-flight-dedup with tpBase/fetchAndApply/getGames
+    // instead of firing an independent request every poll during live games.
+    const games = await getTodaySchedule(DR_LIVE_SCHEDULE_HYDRATE);
 
     const live = [], final = [], upcoming = [];
     const freshKeys = new Set();
@@ -8489,7 +8499,7 @@ if (document.readyState === 'loading') {
   function getJSON(url,force){ if(typeof window.fetchJSON==='function') return window.fetchJSON(url,{force:!!force}); return fetch(url+(url.indexOf('?')>-1?'&':'?')+'_v104='+Date.now(),{cache:force?'no-store':'default'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})}
   function abbr(t){return (t&&(t.abbreviation||t.abbr||String(t.teamCode||'').toUpperCase()||t.fileCode))||''}
   function logo(id,cls){return id?'<img class="'+(cls||'pp-logo')+'" src="https://www.mlbstatic.com/team-logos/'+id+'.svg" onerror="this.style.display=\'none\'" alt="" loading="lazy" decoding="async">':''}
-  async function tpBase(force){if(TP.booted&&!force&&Date.now()-TP.last<5*60*1000)return;var td=nowDate();var all=await Promise.all([getJSON('https://diamondreport.app/api/v1/teams?sportId=1&activeStatus=Y',false),getJSON('https://diamondreport.app/api/v1/schedule?sportId=1&date='+td+'&hydrate=team,linescore,probablePitcher&language=en',!!force),getJSON('https://diamondreport.app/api/v1/standings?leagueId=103,104&season='+season()+'&standingsTypes=regularSeason',false)]);TP.teams=(all[0].teams||[]).filter(function(t){return t.sport&&t.sport.id===1}).map(function(t){return {id:t.id,name:t.name,abbr:abbr(t)}}).sort(function(a,b){return a.name.localeCompare(b.name)});TP.todayGames=((all[1].dates&&all[1].dates[0]&&all[1].dates[0].games)||[]).map(function(g){return {away:{id:g.teams.away.team.id,name:g.teams.away.team.name,abbr:abbr(g.teams.away.team),score:g.teams.away.score},home:{id:g.teams.home.team.id,name:g.teams.home.team.name,abbr:abbr(g.teams.home.team),score:g.teams.home.score},status:g.status&&g.status.detailedState}});TP.records={};(all[2].records||[]).forEach(function(div){(div.teamRecords||[]).forEach(function(r){TP.records[r.team.id]={wins:r.wins,losses:r.losses,pct:r.winningPercentage,streak:r.streak&&r.streak.streakCode,rank:r.divisionRank}})});TP.booted=true;TP.last=Date.now();fillTP()}
+  async function tpBase(force){if(TP.booted&&!force&&Date.now()-TP.last<5*60*1000)return;var all=await Promise.all([getJSON('https://diamondreport.app/api/v1/teams?sportId=1&activeStatus=Y',false),getTodaySchedule(DR_LIVE_SCHEDULE_HYDRATE,{force:!!force}),getJSON('https://diamondreport.app/api/v1/standings?leagueId=103,104&season='+season()+'&standingsTypes=regularSeason',false)]);TP.teams=(all[0].teams||[]).filter(function(t){return t.sport&&t.sport.id===1}).map(function(t){return {id:t.id,name:t.name,abbr:abbr(t)}}).sort(function(a,b){return a.name.localeCompare(b.name)});TP.todayGames=(all[1]||[]).map(function(g){return {away:{id:g.teams.away.team.id,name:g.teams.away.team.name,abbr:abbr(g.teams.away.team),score:g.teams.away.score},home:{id:g.teams.home.team.id,name:g.teams.home.team.name,abbr:abbr(g.teams.home.team),score:g.teams.home.score},status:g.status&&g.status.detailedState}});TP.records={};(all[2].records||[]).forEach(function(div){(div.teamRecords||[]).forEach(function(r){TP.records[r.team.id]={wins:r.wins,losses:r.losses,pct:r.winningPercentage,streak:r.streak&&r.streak.streakCode,rank:r.divisionRank}})});TP.booted=true;TP.last=Date.now();fillTP()}
   function fillTP(){var a=document.getElementById('team-performance-a'),b=document.getElementById('team-performance-b');if(!a||!b||!TP.teams.length)return;var opts=TP.teams.map(function(t){return '<option value="'+t.id+'">'+esc(t.name)+'</option>'}).join('');if(!a.dataset.v104){a.innerHTML=opts;a.dataset.v104='1'}if(!b.dataset.v104){b.innerHTML=opts;b.dataset.v104='1'}var g=TP.todayGames[0];if(g&&!a.value&&!b.value){a.value=g.away.id;b.value=g.home.id}else{if(!a.value)a.value=TP.teams[0].id;if(!b.value)b.value=(TP.teams[1]||TP.teams[0]).id}}
   function tBy(id){return TP.teams.find(function(t){return String(t.id)===String(id)})||{id:id,name:'Team '+id,abbr:''}}
   function rec(id){var r=TP.records[id]||{};return Number.isFinite(Number(r.wins))?r.wins+'-'+r.losses+' · '+(r.pct||'')+(r.streak?' · '+r.streak:''):'—'}
@@ -9415,12 +9425,10 @@ function showPremiumGate(feature){
     if (fetching) return false;
     fetching = true;
     try {
-      var r = await fetch(scoreUrl(), { cache:'no-store' });
-      if (!r.ok) return false;
-      var data = await r.json();
-      var today = ctDate();
-      var entry = data.dates && (data.dates.find(function(d){ return d.date === today; }) || data.dates[0]);
-      latestGames = (entry && entry.games) || [];
+      // Was its own raw fetch(scoreUrl()) with a fresh cache-buster every call -- now
+      // shares getTodaySchedule's cache/in-flight-dedup with loadScores/tpBase/getGames
+      // instead of firing an independent request every poll during live games.
+      latestGames = await getTodaySchedule(DR_LIVE_SCHEDULE_HYDRATE, { force: true });
       latestAt = Date.now();
       window.__DR_LATEST_GAME_PROJECTION_SCORES__ = { games: latestGames, at: latestAt };
       return applyGames(latestGames);
@@ -9594,7 +9602,7 @@ function showPremiumGate(feature){
   function score(g){var aw=g.teams&&g.teams.away,hm=g.teams&&g.teams.home;var ar=aw&&Number.isFinite(+aw.score)?+aw.score:null;var hr=hm&&Number.isFinite(+hm.score)?+hm.score:null;return (ar==null||hr==null)?'':ar+'-'+hr}
   function statusLabel(g){var d=(g.status&&g.status.detailedState)||'';if(isFinal(g))return 'Final';if(isLive(g))return 'Live';if(/scheduled|pre-game|preview/i.test(d))return 'Scheduled';return d||'Scheduled'}
   function matchupCard(g){var aw=g.teams&&g.teams.away&&g.teams.away.team,hm=g.teams&&g.teams.home&&g.teams.home.team;if(!aw||!hm)return '';var aid=aw.id,hid=hm.id,sc=score(g),st=statusLabel(g),cls=isLive(g)?'tp-mini-status-live':isFinal(g)?'tp-mini-status-final':'';return '<div class="tp-mini-card" onclick="if(window.selectTeamPerformanceMatchup)window.selectTeamPerformanceMatchup(\''+esc(aid)+'\',\''+esc(hid)+'\')"><div class="tp-mini-title">'+esc(abbr(aw))+' @ '+esc(abbr(hm))+(sc?'<span class="tp-mini-score">'+esc(sc)+'</span>':'')+'</div><div class="tp-mini-sub"><span class="'+cls+'">'+esc(st)+'</span> · '+esc(teamName(aw))+' vs '+esc(teamName(hm))+'</div></div>'}
-  function getGames(){if(typeof window.getTodaySchedule==='function')return window.getTodaySchedule('team,linescore',{force:true});var url='https://diamondreport.app/api/v1/schedule?sportId=1&date='+today()+'&hydrate=team,linescore&language=en&_tp1010='+Date.now();return fetch(url,{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(d){return (d.dates&&d.dates[0]&&d.dates[0].games)||[]})}
+  function getGames(){if(typeof window.getTodaySchedule==='function')return window.getTodaySchedule(DR_LIVE_SCHEDULE_HYDRATE,{force:true});var url='https://diamondreport.app/api/v1/schedule?sportId=1&date='+today()+'&hydrate='+DR_LIVE_SCHEDULE_HYDRATE+'&language=en&_tp1010='+Date.now();return fetch(url,{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(d){return (d.dates&&d.dates[0]&&d.dates[0].games)||[]})}
   function edgePanel(){return '<div id="tp-performance-edge-always"><div class="tp-edge-title">Diamond Report Team Edge</div><p class="tp-edge-copy">Compare today’s matchups with a consistent read on head-to-head results, run differential, recent form, offense, pitching, bullpen, defense, park context, and matchup momentum. Tap any matchup below to load the detailed team comparison.</p><div class="tp-edge-metrics"><div class="tp-edge-metric"><b>H2H</b><span>Season Matchup</span></div><div class="tp-edge-metric"><b>Offense</b><span>Runs / OPS</span></div><div class="tp-edge-metric"><b>Pitching</b><span>Starter + Pen</span></div><div class="tp-edge-metric"><b>Form</b><span>Last 10</span></div></div></div>'}
   function matchupsPanel(html){return '<div id="tp-always-matchups"><div class="tp-always-head"><div class="tp-always-title">Today’s Matchups</div><div class="tp-always-refresh">'+(cache.updated?'Updated '+new Date(cache.updated).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):'Loading…')+'</div></div>'+(html||'<div class="mu-empty"><span class="spin"></span>Loading today’s matchups…</div>')+'</div>'}
   async function refreshMatchups(force){if(cache.loading)return; if(!force&&cache.html&&Date.now()-cache.updated<45000)return; cache.loading=true;try{var games=await getGames();cache.html='<div class="tp-today-grid">'+(games||[]).map(matchupCard).join('')+'</div>';cache.updated=Date.now();}catch(e){cache.html='<div class="mu-empty">Today’s matchups could not load right now.</div>';cache.updated=Date.now();}finally{cache.loading=false;ensurePanels(false)}}
