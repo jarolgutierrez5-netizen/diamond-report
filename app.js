@@ -203,6 +203,64 @@
   };
 })();
 
+/* ---- from <script id="v9-6-stale-cache-sweep"> ---- */
+// Several caches embed the calendar date directly in their localStorage key
+// (static daily dump, Deep Research snapshot, lineup/game-projection lock)
+// and their manual-clear helpers only ever clear *today's* key, never past
+// days'. Left unchecked those grow by one full entry per day visited,
+// forever — the root cause of the multi-hundred-MB Safari "Website Data"
+// bloat reported on iPad after months of daily use. This sweep removes any
+// entry from those families whose embedded date isn't today's, once per
+// page load, before anything else runs.
+(function(){
+  if (window.__DR_STALE_CACHE_SWEEP__) return;
+  window.__DR_STALE_CACHE_SWEEP__ = true;
+  try {
+    function chicagoDateKey(){
+      try { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }); }
+      catch(e) { return new Date().toISOString().slice(0,10); }
+    }
+    function localDateKey(){
+      try { return new Date().toLocaleDateString('en-CA'); }
+      catch(e) { return new Date().toISOString().slice(0,10); }
+    }
+    var todayChicago = chicagoDateKey();
+    var todayLocal = localDateKey();
+    var datePattern = /\d{4}-\d{2}-\d{2}/;
+    var families = [
+      { prefix: 'dr-static-dump:', today: todayChicago },
+      { prefix: 'DR_DEEP_RESEARCH_STATIC_SNAPSHOT_', today: todayLocal },
+      { prefix: 'dr-official-lineup-game-projections:', today: todayChicago },
+      { prefix: 'dr-lineup-watch-state:', today: todayChicago }
+    ];
+    var removed = 0;
+    Object.keys(localStorage).forEach(function(key){
+      for (var i = 0; i < families.length; i++) {
+        var f = families[i];
+        if (key.indexOf(f.prefix) !== 0) continue;
+        var m = key.match(datePattern);
+        if (m && m[0] !== f.today) {
+          try { localStorage.removeItem(key); removed++; } catch(e) {}
+        }
+        break;
+      }
+    });
+    // The URL-keyed fetch cache doesn't multiply by day, but nothing ever
+    // expired its entries either. Evict anything old enough that it's no
+    // longer useful even as a stale-network fallback.
+    var STALE_MS = 4 * 24 * 60 * 60 * 1000;
+    var now = Date.now();
+    Object.keys(localStorage).forEach(function(key){
+      if (key.indexOf('dr-v9-fetch:') !== 0) return;
+      try {
+        var rec = JSON.parse(localStorage.getItem(key) || 'null');
+        if (rec && rec.ts && (now - rec.ts) > STALE_MS) { localStorage.removeItem(key); removed++; }
+      } catch(e) {}
+    });
+    if (removed) { try { console.info('[DiamondReport] Cleared ' + removed + ' stale cached entries from localStorage.'); } catch(e) {} }
+  } catch(e) {}
+})();
+
 /* ---- from <script id="v4-4-hide-refresh-labels"> ---- */
 (function(){
   const hiddenRefreshIds = ['scores-refresh','props-refresh','gameprops-refresh','kprops-refresh'];
