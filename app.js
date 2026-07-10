@@ -9769,6 +9769,7 @@ function showPremiumGate(feature){
   var applying = false;
   var fetching = false;
   var observerInstalled = false;
+  var mo = null;
 
   function ctDate(){
     try { return new Date().toLocaleDateString('en-CA', { timeZone:'America/Chicago' }); }
@@ -9886,6 +9887,15 @@ function showPremiumGate(feature){
     var root = document.getElementById('gameprops-content');
     if (!root || !Array.isArray(games) || !games.length || applying) return false;
     applying = true;
+    // This function's own DOM writes below (removeOldTally/insertBefore, score badge
+    // add/remove) are childList mutations on the exact node the MutationObserver in
+    // installObserver() watches. Without disconnecting first, every call here re-fires
+    // that observer, which schedules three more applyGames() calls via applyCachedSoon()
+    // - each of which mutates again and re-triggers the observer again. That self-
+    // sustaining, multiplying cascade (visible once today's games render in this panel,
+    // worse the longer the tab stays open and visible) was the real cause behind
+    // "site gets slow over a long session with live games on."
+    if (mo) mo.disconnect();
     try {
       var byPk = {};
       games.forEach(function(g){ if (g && g.gamePk != null) byPk[String(g.gamePk)] = g; });
@@ -9914,7 +9924,10 @@ function showPremiumGate(feature){
       var refreshEl = document.getElementById('gameprops-refresh');
       if (refreshEl) refreshEl.textContent = 'Scores updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
       return true;
-    } finally { applying = false; }
+    } finally {
+      applying = false;
+      if (mo && root) mo.observe(root, { childList:true, subtree:false });
+    }
   }
   async function fetchAndApply(){
     if (fetching) return false;
@@ -9943,7 +9956,7 @@ function showPremiumGate(feature){
     var root = document.getElementById('gameprops-content');
     if (!root) return;
     observerInstalled = true;
-    var mo = new MutationObserver(function(){
+    mo = new MutationObserver(function(){
       if (applying) return;
       applyCachedSoon();
     });
