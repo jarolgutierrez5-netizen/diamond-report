@@ -1201,3 +1201,19 @@ body.dr-paused *::after,
     white-space:nowrap !important;
   }
 }
+
+/* ---- iPad-mini-portrait HR Threats photo fix ---- */
+/* A legacy #hr-potential-content img{position:absolute} rule (scoped to
+   max-width:768px) pulls the HR card photo out of the .dr1027-hr-head grid's
+   normal flow. The reset back to position:static only covers max-width:700px,
+   leaving a 701-768px gap where the photo drops out of grid placement and the
+   remaining two items (name/meta, score) shift left to fill its 48px column,
+   squeezing the batter name into a ~48px-wide column (iPad mini portrait). */
+@media (min-width:701px) and (max-width:768px) {
+  #hr-potential-content .dr1027-hr-photo,
+  #props #hr-potential-content .dr1027-hr-photo {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+  }
+}
