@@ -4166,7 +4166,17 @@ async function loadKsToday() {
 
     const allPitchers = [];
 
-    for (const g of games) {
+    // Fetch any missing boxscores in parallel — sequential per-game awaits here
+    // used to serialize N network round-trips back-to-back on a full live slate.
+    const ksBoxscores = await Promise.all(games.map(async g => {
+      if (g.teams?.away?.pitchers?.length) return g.teams;
+      try {
+        const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
+        return bd.teams;
+      } catch { return g.teams; }
+    }));
+
+    games.forEach((g, gi) => {
       const dt = new Date(g.gameDate);
       const timeStr = dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'});
       const awayAbbr = g.teams.away.team.abbreviation;
@@ -4174,15 +4184,8 @@ async function loadKsToday() {
       const gameLabel = `${awayAbbr} @ ${homeAbbr}`;
       const state = g.status.abstractGameState;
 
-      // Try to get boxscore from hydrated data or fetch it
-      let box = g.teams;
+      const box = ksBoxscores[gi];
       const gameNotStarted = state === 'Preview' || state === 'pre' || (!g.teams?.away?.pitchers?.length && state !== 'Final');
-      if (!box?.away?.pitchers?.length) {
-        try {
-          const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
-          box = bd.teams;
-        } catch {}
-      }
 
       // For upcoming games with no boxscore pitchers, use probable pitchers from schedule
       ['away','home'].forEach(side => {
@@ -4238,7 +4241,7 @@ async function loadKsToday() {
           });
         });
       });
-    }
+    });
 
     if (!allPitchers.length) {
       if (el) el.innerHTML = `<div class="mu-empty">No strikeout data yet — check back once games are underway.</div>`;
@@ -5095,16 +5098,23 @@ async function loadHRsToday() {
     const games = await getTodaySchedule('boxscore,team,probablePitcher');
 
     const allHRs = [];
-    for (const g of games) {
+
+    // Fetch any missing boxscores in parallel — sequential per-game awaits here
+    // used to serialize N network round-trips back-to-back on a full live slate.
+    const hrBoxscores = await Promise.all(games.map(async g => {
+      if (g.teams?.away?.batters) return g.teams;
+      try { const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`); return bd.teams; }
+      catch { return null; }
+    }));
+
+    games.forEach((g, gi) => {
       const dt = new Date(g.gameDate);
       const timeStr = dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'});
       const awayAbbr = g.teams.away.team.abbreviation;
       const homeAbbr = g.teams.home.team.abbreviation;
 
-      let box = g.teams;
-      if (!box?.away?.batters) {
-        try { const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`); box=bd.teams; } catch { continue; }
-      }
+      const box = hrBoxscores[gi];
+      if (!box) return;
 
       ['away','home'].forEach(side => {
         const team = box?.[side]; if (!team) return;
@@ -5130,7 +5140,7 @@ async function loadHRsToday() {
           }
         });
       });
-    }
+    });
 
     allHRs.sort((a,b) => a.gameTimestamp-b.gameTimestamp || b.hrs-a.hrs);
 
