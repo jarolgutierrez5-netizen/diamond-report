@@ -696,6 +696,51 @@ window.DiamondClearStaticDailyDump = function(){
   } catch(e) { return 'Unable to clear static dump: ' + (e.message || e); }
 };
 
+// ── Data QA guardrail ────────────────────────────────────────────────────
+// Cheap, non-blocking plausibility check for computed stat values. This exists
+// because bugs like the Pitch Mix Advantage barrel% scaling issue (a real 1%
+// rate silently rewritten to a fabricated 100%) don't throw or crash anything —
+// the page renders fine, the number is just wrong. This flags values that fall
+// outside the realistic range for a given stat kind so a bad value shows up as
+// a console warning immediately instead of waiting for someone to notice a
+// grade or number that looks off. It never alters the value or blocks
+// rendering — pure observation, safe to call anywhere.
+window.DR_DATA_QA_WARNINGS = window.DR_DATA_QA_WARNINGS || [];
+const DR_STAT_RANGES = {
+  avg:      { min: 0,    max: 0.60  },  // batting average (career-high ~.440; generous headroom for tiny samples)
+  slg:      { min: 0,    max: 1.20  },  // slugging
+  xslg:     { min: 0,    max: 1.20  },  // expected slugging
+  woba:     { min: 0,    max: 0.60  },  // wOBA (or OBP used as its stand-in)
+  obp:      { min: 0,    max: 0.60  },
+  iso:      { min: 0,    max: 0.55  },  // isolated power
+  era:      { min: 0,    max: 15    },
+  whip:     { min: 0,    max: 4     },
+  k9:       { min: 0,    max: 25    },  // strikeouts per 9
+  hr9:      { min: 0,    max: 8     },  // home runs per 9
+  kPerGm:   { min: 0,    max: 20    },  // strikeouts per game
+  fip:      { min: -2,   max: 15    },
+  hardHit:  { min: 0,    max: 80    },  // hard-hit rate — realistic ceiling well under 100%
+  barrel:   { min: 0,    max: 35    },  // barrel rate — elite hitters top out ~25-28%
+  whiff:    { min: 0,    max: 75    },  // whiff rate
+  usage:    { min: 0,    max: 100   },  // pitch usage share — a one-pitch reliever can approach 100%
+  pct:      { min: 0,    max: 100   },  // generic percent fallback when no specific kind applies
+};
+function drCheckStat(context, label, value, kind) {
+  if (value === null || value === undefined || value === '' || value === '–') return value;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return value;
+  const range = DR_STAT_RANGES[kind];
+  if (!range) return value;
+  if (n < range.min || n > range.max) {
+    const entry = { ts: Date.now(), context, label, value: n, kind, range };
+    window.DR_DATA_QA_WARNINGS.push(entry);
+    if (window.DR_DATA_QA_WARNINGS.length > 200) window.DR_DATA_QA_WARNINGS.shift();
+    console.warn(`[DR data QA] ${context}: ${label} = ${n} is outside the plausible ${kind} range (${range.min}–${range.max})`, entry);
+  }
+  return value;
+}
+window.DiamondReportDataWarnings = function(){ return window.DR_DATA_QA_WARNINGS.slice(); };
+
 // ── Shared response cache (TTL: static daily dump for all data, fallback TTLs) ──────────
 const _fetchCache = new Map();
 const _fetchInFlight = new Map();
@@ -3408,14 +3453,17 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     const n = parseFloat(v);
     return Number.isNaN(n) ? null : n;
   }
-  function fmtDec(v, d=3) {
+  function fmtDec(v, d=3, kind=null) {
     const n = parseDecVal(v);
     if (n === null) return '–';
+    if (kind) drCheckStat('Pitch Mix Advantage', kind, n, kind);
     return n.toFixed(d).replace(/^0(?=\.)/, '');
   }
-  function fmtPctVal(v, d=0) {
+  function fmtPctVal(v, d=0, kind=null) {
     const n = parsePctVal(v);
-    return n === null ? '–' : `${n.toFixed(d)}%`;
+    if (n === null) return '–';
+    if (kind) drCheckStat('Pitch Mix Advantage', kind, n, kind);
+    return `${n.toFixed(d)}%`;
   }
   function getBatterSeasonPitchProfile(pitchName, splitHand) {
     const key = normalizePitchLabel(pitchName);
@@ -3540,13 +3588,13 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         return `<tr>
           <td><strong>${p.name}</strong>${sourceBadge}</td>
           <td class="usage">${p.usage ? p.usage.toFixed(0)+'%' : '–'}</td>
-          <td class="num">${fmtDec(st.avg ?? st.battingAverage)}</td>
-          <td class="num">${fmtDec(st.slg ?? st.slugging)}</td>
-          <td class="num">${fmtDec(st.xslg ?? st.xSLG ?? st.expectedSlugging)}</td>
+          <td class="num">${fmtDec(st.avg ?? st.battingAverage, 3, 'avg')}</td>
+          <td class="num">${fmtDec(st.slg ?? st.slugging, 3, 'slg')}</td>
+          <td class="num">${fmtDec(st.xslg ?? st.xSLG ?? st.expectedSlugging, 3, 'xslg')}</td>
           <td class="num">${+(st.homeRuns ?? st.hr ?? st.hrs ?? 0) || 0}</td>
-          <td class="num">${fmtPctVal(st.hardHitPct ?? st.hardHitRate)}</td>
-          <td class="num">${fmtPctVal(st.barrelPct ?? st.barrelRate,1)}</td>
-          <td class="num">${fmtPctVal(st.whiffPct ?? st.whiffRate,1)}</td>
+          <td class="num">${fmtPctVal(st.hardHitPct ?? st.hardHitRate, 0, 'hardHit')}</td>
+          <td class="num">${fmtPctVal(st.barrelPct ?? st.barrelRate, 1, 'barrel')}</td>
+          <td class="num">${fmtPctVal(st.whiffPct ?? st.whiffRate, 1, 'whiff')}</td>
           <td><span class="dr1041-chip${chipCls}">${grade.label}${grade.score!==null?' · '+grade.score:''}</span></td>
         </tr>`;
       }).join('');
@@ -3648,7 +3696,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       const chipCls = grade.score >= 78 ? '' : grade.score >= 64 ? ' good' : grade.score >= 45 ? ' neutral' : ' weak';
       const dotCls = grade.score >= 78 ? 'hot' : grade.score >= 64 ? 'warm' : grade.score >= 45 ? 'good' : 'cool';
       const mini = Array.from({length:9}, (_, i) => `<span class="dr1041-mini-dot ${[1,3,4,5,7].includes((i+idx)%9) ? dotCls : ''}"></span>`).join('');
-      const avg = fmtDec(st.avg ?? st.battingAverage);
+      const avg = fmtDec(st.avg ?? st.battingAverage, 3, 'avg');
       const hr = +(st.homeRuns ?? st.hr ?? st.hrs ?? 0) || 0;
       return `<tr>
         <td><strong>${p.name}</strong></td>
@@ -5322,6 +5370,16 @@ async function loadKProps() {
           // name, which isn't reliable across MLB Stats API responses.
           const hrAllowed = parseFloat(ps.homeRuns);
           hr9 = (ip > 0 && !isNaN(hrAllowed)) ? (hrAllowed / ip) * 9 : null;
+          const _qaCtx = 'K Props (legacy): ' + (pitcher.fullName || pitcher.id);
+          drCheckStat(_qaCtx, 'ERA', era, 'era');
+          drCheckStat(_qaCtx, 'WHIP', whip, 'whip');
+          drCheckStat(_qaCtx, 'K/9', k9, 'k9');
+          drCheckStat(_qaCtx, 'HR/9', hr9, 'hr9');
+          drCheckStat(_qaCtx, 'AVG', avg, 'avg');
+          drCheckStat(_qaCtx, 'wOBA (OBP stand-in)', woba, 'obp');
+          drCheckStat(_qaCtx, 'ISO', iso, 'iso');
+          drCheckStat(_qaCtx, 'SLG', slg, 'slg');
+          drCheckStat(_qaCtx, 'FIP', fip, 'fip');
           bf=parseInt(ps.battersFaced)||0;
           tbf=bf;
           const gamesStarted=parseInt(ps.gamesStarted)||Math.max(wins+losses,1);
@@ -5937,6 +5995,16 @@ function scheduleKPropsLoad() {
     // precomputed "per 9" field name, which is unreliable across MLB Stats API responses.
     var homeRunsAllowed = n(stat.homeRuns, NaN);
     var hr9Val = (ip > 0 && Number.isFinite(homeRunsAllowed)) ? (homeRunsAllowed / ip) * 9 : NaN;
+    var _qaCtx = 'K Props: ' + (pitcher.fullName || pitcher.id);
+    drCheckStat(_qaCtx, 'ERA', era, 'era');
+    drCheckStat(_qaCtx, 'WHIP', whip, 'whip');
+    drCheckStat(_qaCtx, 'K/9', k9, 'k9');
+    drCheckStat(_qaCtx, 'HR/9', hr9Val, 'hr9');
+    drCheckStat(_qaCtx, 'AVG', avg, 'avg');
+    drCheckStat(_qaCtx, 'wOBA (OBP stand-in)', obp, 'obp');
+    drCheckStat(_qaCtx, 'ISO', iso, 'iso');
+    drCheckStat(_qaCtx, 'SLG', slg, 'slg');
+    drCheckStat(_qaCtx, 'FIP', fip, 'fip');
     var reason = {
       matchupTag: 'Average K matchup',
       k9Tag: k9 >= 9 ? 'Strong K pitcher' : k9 <= 7 ? 'Lower K profile' : 'Solid K profile',
