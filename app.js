@@ -4818,14 +4818,28 @@ async function loadHRPotential() {
       const timeColor = isLive ? 'var(--live)' : isFinal ? 'var(--muted)' : 'var(--text)';
       const timeLabel = isLive ? '● LIVE' : isFinal ? 'FINAL' : timeStr;
 
-      // Fetch boxscore once per game
+      // Fetch boxscore once per game. A single failed attempt here used to drop the
+      // entire game's batters (up to 18 — both teams' starters) from the scan for that
+      // refresh: every fallback path below (lineupCache, the roster-derived fallback)
+      // also reads from this same bd/boxscore, so if the fetch failed once, they all came
+      // up empty too and the whole side got skipped. Same fix as the roster-fetch retry —
+      // recover the common transient case instead of silently losing a whole game.
       let bd = null;
-      try {
-        if (!boxscoreCache[g.gamePk]) {
-          boxscoreCache[g.gamePk] = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
+      if (!boxscoreCache[g.gamePk]) {
+        let lastErr;
+        for (let i = 0; i < 3; i++) {
+          try {
+            boxscoreCache[g.gamePk] = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
+            lastErr = null;
+            break;
+          } catch (e) {
+            lastErr = e;
+            if (i < 2) await new Promise(r => setTimeout(r, 300 * (i + 1)));
+          }
         }
-        bd = boxscoreCache[g.gamePk];
-      } catch {}
+        if (lastErr) delete boxscoreCache[g.gamePk];
+      }
+      bd = boxscoreCache[g.gamePk] || null;
 
       // Process both pitchers in parallel
       await Promise.all([['away','home'],['home','away']].map(async ([side, opp]) => {
