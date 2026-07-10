@@ -4834,14 +4834,22 @@ async function loadHRPotential() {
         const teamAbbr = g.teams[side].team.abbreviation;
         const oppAbbr  = g.teams[opp].team.abbreviation;
 
-        let pitcherHr9=0, pitcherAvg=.240, pitcherSlg=.380, pitcherWhip=1.25, pitcherK9=8;
+        let pitcherHr9=0, pitcherAvg=.240, pitcherSlg=.380, pitcherWhip=1.25, pitcherK9=8, pitcherSbAllowed=0, pitcherCsAllowed=0;
         try {
           const pd = await fetchJSON(`https://diamondreport.app/api/v1/people/${pitcher.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
           const ps = pd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||{};
           pitcherHr9=parseFloat(ps.homeRunsPer9)||0; pitcherAvg=parseFloat(ps.avg)||.240;
           pitcherSlg=parseFloat(ps.slg)||.380; pitcherWhip=parseFloat(ps.whip)||1.25;
           pitcherK9=parseFloat(ps.strikeoutsPer9Inn)||8;
+          // Stolen bases/caught stealing allowed while this pitcher is on the mound — a
+          // practical stand-in for catcher caught-stealing% (true catcher-specific data
+          // would need identifying and querying the starting catcher separately, which
+          // doubles the request volume for a page already known to be request-heavy).
+          // The pitcher's own allowed rate already captures most of the same signal since
+          // it's the battery's combined ability to control the running game.
+          pitcherSbAllowed=parseInt(ps.stolenBases)||0; pitcherCsAllowed=parseInt(ps.caughtStealing)||0;
         } catch {}
+        const gameParkFactor = parkFactors[g.teams.home.team.abbreviation] || 100;
 
         const teamBox = bd?.teams?.[side];
         let batters = (teamBox?.batters||[]).map(id=>{const p=teamBox?.players[`ID${id}`];return p?{id,player:p}:null;}).filter(Boolean);
@@ -4960,6 +4968,21 @@ async function loadHRPotential() {
           const isDrought=!hrInLast8&&hr>0;
           const batterOPS=parseFloat(s.ops)||0;
           const isFavorable=batterOPS>=.800&&(pitcherWhip>=1.25||pitcherAvg>=.260);
+          // Same small-sample shrinkage as the HR rate above, applied to the rate stats the
+          // Hits/RBI/TB/SB/H+R+RBI boards read (r.avg/r.ops/r.obp/r.slg) — a hot 10-AB stretch
+          // shouldn't score identically to a full, reliable season sample.
+          const LEAGUE_AVG_AVG = 0.245, LEAGUE_AVG_OPS = 0.720, LEAGUE_AVG_OBP = 0.315, LEAGUE_AVG_SLG = 0.400;
+          const rawObp = parseFloat(s.obp)||0, rawSlg = parseFloat(s.slg)||0;
+          const shrunkAvg = ((parseFloat(s.avg)||0)*hrpSampleWeight) + (LEAGUE_AVG_AVG*(1-hrpSampleWeight));
+          const shrunkOps = (batterOPS*hrpSampleWeight) + (LEAGUE_AVG_OPS*(1-hrpSampleWeight));
+          const shrunkObp = (rawObp*hrpSampleWeight) + (LEAGUE_AVG_OBP*(1-hrpSampleWeight));
+          const shrunkSlg = (rawSlg*hrpSampleWeight) + (LEAGUE_AVG_SLG*(1-hrpSampleWeight));
+          // Lineup slot (1-9). MLB's battingOrder is a 3-digit code where the leading
+          // digit(s) are the lineup spot (100 = batting 1st, 900 = batting 9th) regardless
+          // of starter/substitute suffix — this is the PA-opportunity signal Hits/RBI/
+          // H+R+RBI were missing entirely.
+          const battingOrderRaw = Number(b.player?.battingOrder ?? b.player?.stats?.batting?.battingOrder ?? NaN);
+          const battingOrder = Number.isFinite(battingOrderRaw) ? Math.max(1, Math.min(9, Math.floor(battingOrderRaw/100))) : null;
           const todayBoxStats = (isLive || isFinal) ? (b.player.stats?.batting || {}) : {};
           const todayHits = parseInt(todayBoxStats.hits) || 0;
           const todayRBI = parseInt(todayBoxStats.rbi ?? todayBoxStats.runsBattedIn) || 0;
@@ -4971,7 +4994,10 @@ async function loadHRPotential() {
             teamAbbr, oppAbbr, pitcherName:pitcher.fullName, pitcherId:pitcher.id,
             timeLabel, timeColor, gameTimestamp:dt.getTime(), gamePk:g.gamePk,
             stats:s, todayStats: todayBoxStats, todayHits, todayRBI, todayTB, todaySB, todayRuns, todayHR, last10HR, baseHrProb, hrProb, streakDays, hrVsPitcher,
-            avg:parseFloat(s.avg)||0, hrSeason:hr, ops:batterOPS,
+            avg:shrunkAvg, hrSeason:hr, ops:shrunkOps, obp:shrunkObp, slg:shrunkSlg,
+            battingOrder,
+            pitcherAvgAllowed: pitcherAvg, pitcherSlgAllowed: pitcherSlg, pitcherWhipAllowed: pitcherWhip,
+            pitcherSbAllowed, pitcherCsAllowed, parkFactor: gameParkFactor,
             iso:(parseFloat(s.slg)||0)-(parseFloat(s.avg)||0), isDrought, isFavorable,
             // "Due" = drought + at least 2 supporting signals: power profile, favorable matchup, decent OPS
             isDue: isDrought && (
@@ -8781,7 +8807,56 @@ var analytics='<div class="tp-analytics-grid">'+
   function hit(type,r){ return actual(type,r) >= target(type); }
   function label(type){ return ({hits:'Hits',rbis:'RBIs',tb:'Total Bases',sb:'Stolen Bases',hrrbi:'Hits+Runs+RBI'})[type] || 'Prop'; }
   function line(type){ return ({hits:'Over 0.5 Hits',rbis:'Over 0.5 RBI',tb:'Over 1.5 Total Bases',sb:'Over 0.5 SB',hrrbi:'Over 1.5 H+R+RBI'})[type] || 'Line'; }
-  function score(type,r){ var s=stats(r),avg=n(r.avg||s.avg),ops=n(r.ops||s.ops),iso=n(r.iso||s.iso),hr=n(r.hrSeason||s.homeRuns),prob=n(r.hrProb),obp=n(s.obp),slg=n(s.slg),sb=n(s.stolenBases),l10=n(r.last10HR),hits=n(s.hits),runs=n(s.runs),rbi=n(s.rbi||s.runsBattedIn); var base=50; if(type==='hits')base=38+avg*120+ops*8+(r.isFavorable?6:0)+obp*12; if(type==='rbis')base=35+ops*10+iso*72+hr*.8+prob*.35+(r.topHrThreat?5:0); if(type==='tb')base=36+ops*8+iso*96+prob*.45+l10*2+slg*8; if(type==='sb')base=28+sb*2.5+avg*40+obp*28+(/SS|CF|2B|LF|RF/.test(String(r.pos||''))?8:0); if(type==='hrrbi')base=42+avg*55+ops*9+hr*.45+prob*.32+(r.isFavorable?5:0)+obp*8; return pct(base); }
+  function score(type,r){
+    var s=stats(r),
+        avg=n(r.avg||s.avg), ops=n(r.ops||s.ops), iso=n(r.iso||s.iso),
+        hr=n(r.hrSeason||s.homeRuns), prob=n(r.hrProb),
+        // r.obp/r.slg (sample-size-shrunk, set by loadHRPotential) take priority over the
+        // raw season stat blob.
+        obp=n(r.obp||s.obp), slg=n(r.slg||s.slg),
+        sb=n(s.stolenBases), cs=n(s.caughtStealing),
+        l10=n(r.last10HR), hits=n(s.hits), runs=n(s.runs), rbi=n(s.rbi||s.runsBattedIn);
+    var base=50;
+    var pAvgAllowed = r.pitcherAvgAllowed || .260, pSlgAllowed = r.pitcherSlgAllowed || .400;
+    var bo = r.battingOrder; // 1-9 lineup slot, or null if unknown
+    if(type==='hits'){
+      // Batting order stands in for projected plate appearances — the top of the order
+      // gets meaningfully more trips per game than the bottom. Opposing pitcher's AVG
+      // allowed adds real matchup context beyond the generic isFavorable flag.
+      var paBoost = bo ? Math.max(0,(6-bo))*.7 : 0;
+      base = 38 + avg*120 + ops*8 + obp*12 + (pAvgAllowed-.260)*70 + paBoost + (r.isFavorable?4:0);
+    }
+    if(type==='rbis'){
+      // RBI opportunity depends heavily on lineup slot — 3-4-5 hitters bat with runners on
+      // base far more often than leadoff or bottom-of-the-order hitters. This was the
+      // single biggest missing signal for this market.
+      var rbiSlot = bo ? ({2:4,3:9,4:11,5:8,6:4}[bo]||0) : 0;
+      base = 35 + ops*10 + iso*72 + hr*.8 + prob*.35 + rbiSlot + (r.topHrThreat?4:0);
+    }
+    if(type==='tb'){
+      var parkBoost = r.parkFactor ? (r.parkFactor-100)*.12 : 0;
+      base = 36 + ops*8 + iso*96 + prob*.45 + l10*2 + slg*8 + (pSlgAllowed-.400)*45 + parkBoost;
+    }
+    if(type==='sb'){
+      // Attempt-adjusted success rate instead of a raw season total — 20 SB in 25 attempts
+      // and 20 SB in 45 attempts used to score identically. Falls back to a neutral rate
+      // below a 5-attempt sample rather than trusting a tiny denominator. The battery term
+      // uses the opposing pitcher's own SB/CS allowed as a practical stand-in for catcher
+      // caught-stealing% (true catcher-specific data would need an extra fetch per game).
+      var att = sb+cs;
+      var sbRate = att>=5 ? sb/att : (sb>0?0.70:0.60);
+      var pAtt = (r.pitcherSbAllowed||0)+(r.pitcherCsAllowed||0);
+      var battery = pAtt>=5 ? (((r.pitcherSbAllowed||0)/pAtt)-0.72)*22 : 0;
+      base = 26 + Math.min(sb,20)*1.6 + sbRate*22 + avg*26 + obp*18 + battery + (/SS|CF|2B|LF|RF/.test(String(r.pos||''))?6:0);
+    }
+    if(type==='hrrbi'){
+      // Combines the Hits and RBI gaps — any prominent lineup slot (leadoff through
+      // cleanup) gets more combined hit/run/RBI opportunity than the bottom of the order.
+      var lineupBoost = bo ? Math.max(0, 5-Math.abs(bo-3))*1.3 : 0;
+      base = 42 + avg*55 + ops*9 + hr*.45 + prob*.32 + (r.isFavorable?5:0) + obp*8 + lineupBoost;
+    }
+    return pct(base);
+  }
   function chip(k,v,cls){ return '<span class="dr109-chip '+(cls||'')+'"><span>'+esc(k)+':</span><strong>'+esc(v)+'</strong></span>'; }
   function chipSet(type,r){ var s=stats(r),avg=n(r.avg||s.avg),ops=n(r.ops||s.ops),iso=n(r.iso||s.iso),obp=n(s.obp),slg=n(s.slg),hr=n(r.hrSeason||s.homeRuns),prob=n(r.hrProb),sb=n(s.stolenBases),rbi=n(s.rbi||s.runsBattedIn),runs=n(s.runs),hits=n(s.hits),a=[]; if(hit(type,r)) a.push(['✓ HIT', actual(type,r)+' / '+target(type), 'hit-check']); else if(hasLive(r)) a.push(['Live', actual(type,r)+' / '+target(type), '']);
     if(type==='hits')a=a.concat([['Line',line(type),'good'],['AVG',f(avg),''],['xBA proxy',f(avg+(r.isFavorable?.012:0)),'good'],['OBP',f(obp),''],['Contact',pct(66+avg*80)+'%','good'],['PA Est','4.1','']]);
@@ -9763,7 +9838,39 @@ function showPremiumGate(feature){
   function int(v){v=n(v); return v?String(Math.round(v)):'–'}
   function head(id){return id?'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_84,q_auto:best/v1/people/'+id+'/headshot/67/current':''}
   function rows(){try{return (window.getProductionPropRows?window.getProductionPropRows():(window.hrpRows||[])).filter(function(r){return !window.isActiveForHRThreat||window.isActiveForHRThreat(r)})}catch(e){return []}}
-  function score(type,r){var s=r.stats||{},avg=n(r.avg),ops=n(r.ops),iso=n(r.iso),hr=n(r.hrSeason),prob=n(r.hrProb),obp=n(s.obp),slg=n(s.slg),sb=n(s.stolenBases),l10=n(r.last10HR);var base=50;if(type==='hits')base=38+avg*120+ops*8+(r.isFavorable?6:0)+obp*12;if(type==='rbis')base=35+ops*10+iso*72+hr*.8+prob*.35+(r.topHrThreat?5:0);if(type==='tb')base=36+ops*8+iso*96+prob*.45+l10*2+slg*8;if(type==='sb')base=28+sb*2.5+avg*40+obp*28+(String(r.pos||'').match(/SS|CF|2B|LF|RF/)?8:0);if(type==='hrrbi')base=42+avg*55+ops*9+hr*.45+prob*.32+(r.isFavorable?5:0)+obp*8;return pct(base)}
+  function score(type,r){
+    var s=r.stats||{},
+        avg=n(r.avg), ops=n(r.ops), iso=n(r.iso), hr=n(r.hrSeason), prob=n(r.hrProb),
+        obp=n(r.obp||s.obp), slg=n(r.slg||s.slg),
+        sb=n(s.stolenBases), cs=n(s.caughtStealing), l10=n(r.last10HR);
+    var base=50;
+    var pAvgAllowed = r.pitcherAvgAllowed || .260, pSlgAllowed = r.pitcherSlgAllowed || .400;
+    var bo = r.battingOrder;
+    if(type==='hits'){
+      var paBoost = bo ? Math.max(0,(6-bo))*.7 : 0;
+      base = 38 + avg*120 + ops*8 + obp*12 + (pAvgAllowed-.260)*70 + paBoost + (r.isFavorable?4:0);
+    }
+    if(type==='rbis'){
+      var rbiSlot = bo ? ({2:4,3:9,4:11,5:8,6:4}[bo]||0) : 0;
+      base = 35 + ops*10 + iso*72 + hr*.8 + prob*.35 + rbiSlot + (r.topHrThreat?4:0);
+    }
+    if(type==='tb'){
+      var parkBoost = r.parkFactor ? (r.parkFactor-100)*.12 : 0;
+      base = 36 + ops*8 + iso*96 + prob*.45 + l10*2 + slg*8 + (pSlgAllowed-.400)*45 + parkBoost;
+    }
+    if(type==='sb'){
+      var att = sb+cs;
+      var sbRate = att>=5 ? sb/att : (sb>0?0.70:0.60);
+      var pAtt = (r.pitcherSbAllowed||0)+(r.pitcherCsAllowed||0);
+      var battery = pAtt>=5 ? (((r.pitcherSbAllowed||0)/pAtt)-0.72)*22 : 0;
+      base = 26 + Math.min(sb,20)*1.6 + sbRate*22 + avg*26 + obp*18 + battery + (String(r.pos||'').match(/SS|CF|2B|LF|RF/)?6:0);
+    }
+    if(type==='hrrbi'){
+      var lineupBoost = bo ? Math.max(0, 5-Math.abs(bo-3))*1.3 : 0;
+      base = 42 + avg*55 + ops*9 + hr*.45 + prob*.32 + (r.isFavorable?5:0) + obp*8 + lineupBoost;
+    }
+    return pct(base);
+  }
   function label(type){return {hits:'Hits',rbis:'RBIs',tb:'Total Bases',sb:'Stolen Bases',hrrbi:'Hits+Runs+RBI',hr:'Home Runs'}[type]||'Prop'}
   function line(type){return {hits:'Over 0.5 Hits',rbis:'Over 0.5 RBI',tb:'Over 1.5 Total Bases',sb:'Over 0.5 SB',hrrbi:'Over 1.5 H+R+RBI',hr:'HR Anytime / 1+ Total Base'}[type]||'Line'}
   function chips(type,r){var s=r.stats||{},avg=n(r.avg),ops=n(r.ops),iso=n(r.iso),obp=n(s.obp),slg=n(s.slg),hr=n(r.hrSeason),prob=n(r.hrProb),sb=n(s.stolenBases),rbi=n(s.rbi||s.runsBattedIn),runs=n(s.runs),hits=n(s.hits);var a=[];
