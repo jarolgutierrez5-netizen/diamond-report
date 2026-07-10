@@ -4850,7 +4850,23 @@ async function loadHRPotential() {
 
         let pitcherHr9=0, pitcherAvg=.240, pitcherSlg=.380, pitcherWhip=1.25, pitcherK9=8, pitcherSbAllowed=0, pitcherCsAllowed=0;
         try {
-          const pd = await fetchJSON(`https://diamondreport.app/api/v1/people/${pitcher.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
+          // Same zero-retry problem as the roster/boxscore/batter-stats fetches fixed
+          // earlier: pitcherHr9 feeds hrProb at a real 40% weight (see baseHrProb below),
+          // so a single failed attempt here used to silently fall back to pitcherHr9=0,
+          // which replaces the pitcher's actual HR-prone or HR-suppressing profile with a
+          // flat 0.03 constant for that refresh — the matchup context just disappears.
+          let pd, lastErr;
+          for (let i = 0; i < 3; i++) {
+            try {
+              pd = await fetchJSON(`https://diamondreport.app/api/v1/people/${pitcher.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
+              lastErr = null;
+              break;
+            } catch (e) {
+              lastErr = e;
+              if (i < 2) await new Promise(r => setTimeout(r, 250 * (i + 1)));
+            }
+          }
+          if (lastErr) throw lastErr;
           const ps = pd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||{};
           pitcherHr9=parseFloat(ps.homeRunsPer9)||0; pitcherAvg=parseFloat(ps.avg)||.240;
           pitcherSlg=parseFloat(ps.slg)||.380; pitcherWhip=parseFloat(ps.whip)||1.25;
