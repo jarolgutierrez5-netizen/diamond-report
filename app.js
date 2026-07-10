@@ -5313,7 +5313,10 @@ async function loadKProps() {
           woba=parseFloat(ps.obp)||null;
           slg=parseFloat(ps.slg)||null;
           iso=slg!=null&&avg!=null ? Math.round((slg-avg)*1000)/1000 : null;
-          hr9=parseFloat(ps.homeRunsPer9)||null;
+          // Derived from raw HR-allowed count / IP rather than a precomputed "per 9" field
+          // name, which isn't reliable across MLB Stats API responses.
+          const hrAllowed = parseFloat(ps.homeRuns);
+          hr9 = (ip > 0 && !isNaN(hrAllowed)) ? (hrAllowed / ip) * 9 : null;
           bf=parseInt(ps.battersFaced)||0;
           tbf=bf;
           const gamesStarted=parseInt(ps.gamesStarted)||Math.max(wins+losses,1);
@@ -5560,6 +5563,10 @@ function renderKProps() {
   const sortedProps = _kPropsSort
     ? [...gameFilteredProps].sort((a, b) => {
         function num(v){
+          // Number(null) and Number('') both coerce to 0, which made a genuinely missing
+          // stat (e.g. HR/9 before it loaded) look like a perfect 0 and sort to the top
+          // instead of falling to the bottom with the other unavailable rows below.
+          if (v == null || v === '') return NaN;
           const n = Number(v);
           return Number.isFinite(n) ? n : NaN;
         }
@@ -5914,6 +5921,10 @@ function scheduleKPropsLoad() {
     var slg = n(stat.slg, NaN);
     var obp = n(stat.obp, NaN);
     var iso = Number.isFinite(slg) && Number.isFinite(avg) ? Math.round((slg-avg)*1000)/1000 : null;
+    // Derived from raw HR-allowed count / innings pitched rather than trusting a
+    // precomputed "per 9" field name, which is unreliable across MLB Stats API responses.
+    var homeRunsAllowed = n(stat.homeRuns, NaN);
+    var hr9Val = (ip > 0 && Number.isFinite(homeRunsAllowed)) ? (homeRunsAllowed / ip) * 9 : NaN;
     var reason = {
       matchupTag: 'Average K matchup',
       k9Tag: k9 >= 9 ? 'Strong K pitcher' : k9 <= 7 ? 'Lower K profile' : 'Solid K profile',
@@ -5936,7 +5947,7 @@ function scheduleKPropsLoad() {
       woba: Number.isFinite(obp) ? obp.toFixed(3) : null,
       iso: iso != null ? iso.toFixed(3) : null,
       slg: Number.isFinite(slg) ? slg.toFixed(3) : null,
-      hr9: stat.homeRunsPer9 != null ? n(stat.homeRunsPer9).toFixed(2) : null,
+      hr9: Number.isFinite(hr9Val) ? hr9Val.toFixed(2) : null,
       kPerGm: gs > 0 ? (k9*(ip/Math.max(gs,1))/9).toFixed(1) : null,
       whip: whip.toFixed(2), sbLine: sbLine,
       ouLine: recommendedOverLine, modelLine: Math.round(projK*2)/2, compareLine: recommendedOverLine,
