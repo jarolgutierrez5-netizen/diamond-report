@@ -4245,7 +4245,14 @@ function getStatcastHotHitterProfile(row) {
 }
 function applyHotHitterBoost(row) {
   const profile = getStatcastHotHitterProfile(row);
-  const base = Number(row.hrProb || 0);
+  // Read from the stable, un-boosted baseHrProb rather than the current (possibly
+  // already-boosted) row.hrProb. loadHRPotential's progressive render re-applies this
+  // to every row seen so far on each debounce cycle (not just newly added ones), so
+  // reading row.hrProb here used to stack another boost on top of the previous one
+  // every cycle - rows added early accumulated many boosts and converged on the 35%
+  // clamp regardless of their real signal, which is why unrelated players ended up
+  // tied at the exact same HR probability.
+  const base = Number(row.baseHrProb ?? row.hrProb ?? 0);
   const boost = Number(profile.hotBoostPct || 0);
   row.baseHrProb = row.baseHrProb ?? base;
   row.hotHitter = profile;
@@ -8948,6 +8955,28 @@ var analytics='<div class="tp-analytics-grid">'+
   if(window.__DR_V1030_PROP_HITS__) return; window.__DR_V1030_PROP_HITS__ = true;
   function n(v){ v=parseFloat(v); return Number.isFinite(v)?v:0; }
   function pct(v){ return Math.max(1,Math.min(99,Math.round(v))); }
+  // The raw `base` values from score() below routinely land in the 90-110+ range for
+  // any genuinely strong player (see the per-type coefficients in score()), so a flat
+  // clamp(1,99) meant most good-to-great matchups all piled up at exactly 99% with no
+  // way to tell a merely strong play from the single best one on the slate. CAL below
+  // remaps each type's raw base so a true league-average matchup reads ~50% and a
+  // realistic elite matchup (great power/contact profile, hot streak, favorable park
+  // and matchup all aligning) reads ~92%, leaving 93-99% for genuinely rare, everything-
+  // aligned plays. avg/elite anchors were derived from each formula's own coefficients
+  // using representative league-average vs. realistic-elite input stat lines - they
+  // reshape the display scale only, the underlying per-signal reasoning is unchanged.
+  var CAL = {
+    hits:  { avg: 77.6,  elite: 93.43 },
+    rbis:  { avg: 70.06, elite: 110.2 },
+    tb:    { avg: 64.65, elite: 97.37 },
+    sb:    { avg: 58.24, elite: 90.91 },
+    hrrbi: { avg: 75.32, elite: 101.24 }
+  };
+  function calibrate(type, base){
+    var c = CAL[type];
+    if(!c) return pct(base);
+    return pct(50 + (base - c.avg) * (42 / (c.elite - c.avg)));
+  }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function f(v,d){ v=n(v); return v ? v.toFixed(d==null?3:d).replace(/^0(?=\.)/,'') : '–'; }
   function rows(){ try{ return (window.getProductionPropRows?window.getProductionPropRows():(window.hrpRows||[])).filter(function(r){ return r && r.name && (!window.isActiveForHRThreat || window.isActiveForHRThreat(r)); }); }catch(e){ return []; } }
@@ -9024,7 +9053,7 @@ var analytics='<div class="tp-analytics-grid">'+
       var lineupBoost = bo ? Math.max(0, 5-Math.abs(bo-3))*1.3 : 0;
       base = 42 + avg*55 + ops*9 + hr*.45 + prob*.32 + (r.isFavorable?5:0) + obp*8 + lineupBoost;
     }
-    return pct(base);
+    return calibrate(type, base);
   }
   function chip(k,v,cls){ return '<span class="dr109-chip '+(cls||'')+'"><span>'+esc(k)+':</span><strong>'+esc(v)+'</strong></span>'; }
   function chipSet(type,r){ var s=stats(r),avg=n(r.avg||s.avg),ops=n(r.ops||s.ops),iso=n(r.iso||s.iso),obp=n(r.obp||s.obp),slg=n(r.slg||s.slg),hr=n(r.hrSeason||s.homeRuns),prob=n(r.hrProb),sb=n(s.stolenBases),rbi=n(s.rbi||s.runsBattedIn),runs=n(s.runs),hits=n(s.hits),a=[]; if(hit(type,r)) a.push(['✓ HIT', actual(type,r)+' / '+target(type), 'hit-check']); else if(hasLive(r)) a.push(['Live', actual(type,r)+' / '+target(type), '']);
