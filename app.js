@@ -3392,11 +3392,16 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
 
 
   function parsePctVal(v) {
+    // Every caller here (usagePct, hardHitPct, barrelPct, whiffPct) comes from the
+    // repo-synced data files, which already store plain 0-100 percent numbers — the
+    // same convention used successfully elsewhere in the app (see pctNum()). This used
+    // to guess that any value <= 1 must be a fraction and multiply it by 100, which
+    // silently turned a genuine low rate like a 1% barrel rate into a fabricated 100%.
     if (v === null || v === undefined || v === '' || v === '–') return null;
     if (typeof v === 'string' && v.trim().endsWith('%')) return parseFloat(v);
     const n = parseFloat(v);
     if (Number.isNaN(n)) return null;
-    return n <= 1 ? n * 100 : n;
+    return n;
   }
   function parseDecVal(v) {
     if (v === null || v === undefined || v === '' || v === '–') return null;
