@@ -5162,10 +5162,15 @@ async function loadHRPotential() {
             battingOrder,
             pitcherAvgAllowed: pitcherAvg, pitcherSlgAllowed: pitcherSlg, pitcherWhipAllowed: pitcherWhip,
             pitcherSbAllowed, pitcherCsAllowed, parkFactor: gameParkFactor,
-            iso:(parseFloat(s.slg)||0)-(parseFloat(s.avg)||0), isDrought, isFavorable,
+            // Same sample-size shrinkage as avg/ops/obp/slg above — a raw ISO from a
+            // handful of AB (e.g. a 1-for-1 season debut with a HR) can exceed 3.000,
+            // which isn't a real power signal and used to inflate the TB/RBI/H+R+RBI
+            // scores (iso*96/iso*72/etc.) to a false 99% for players with almost no
+            // MLB sample this season.
+            iso: Math.max(0, shrunkSlg - shrunkAvg), isDrought, isFavorable,
             // "Due" = drought + at least 2 supporting signals: power profile, favorable matchup, decent OPS
             isDue: isDrought && (
-              ((parseFloat(s.slg)||0)-(parseFloat(s.avg)||0) >= 0.170 ? 1 : 0) +
+              ((shrunkSlg - shrunkAvg) >= 0.170 ? 1 : 0) +
               (isFavorable ? 1 : 0) +
               ((parseFloat(s.ops)||0) >= 0.750 ? 1 : 0) +
               ((last10HR === 0 && hr >= 8) ? 1 : 0) // proven HR hitter in deep drought
@@ -9022,7 +9027,7 @@ var analytics='<div class="tp-analytics-grid">'+
     return pct(base);
   }
   function chip(k,v,cls){ return '<span class="dr109-chip '+(cls||'')+'"><span>'+esc(k)+':</span><strong>'+esc(v)+'</strong></span>'; }
-  function chipSet(type,r){ var s=stats(r),avg=n(r.avg||s.avg),ops=n(r.ops||s.ops),iso=n(r.iso||s.iso),obp=n(s.obp),slg=n(s.slg),hr=n(r.hrSeason||s.homeRuns),prob=n(r.hrProb),sb=n(s.stolenBases),rbi=n(s.rbi||s.runsBattedIn),runs=n(s.runs),hits=n(s.hits),a=[]; if(hit(type,r)) a.push(['✓ HIT', actual(type,r)+' / '+target(type), 'hit-check']); else if(hasLive(r)) a.push(['Live', actual(type,r)+' / '+target(type), '']);
+  function chipSet(type,r){ var s=stats(r),avg=n(r.avg||s.avg),ops=n(r.ops||s.ops),iso=n(r.iso||s.iso),obp=n(r.obp||s.obp),slg=n(r.slg||s.slg),hr=n(r.hrSeason||s.homeRuns),prob=n(r.hrProb),sb=n(s.stolenBases),rbi=n(s.rbi||s.runsBattedIn),runs=n(s.runs),hits=n(s.hits),a=[]; if(hit(type,r)) a.push(['✓ HIT', actual(type,r)+' / '+target(type), 'hit-check']); else if(hasLive(r)) a.push(['Live', actual(type,r)+' / '+target(type), '']);
     if(type==='hits')a=a.concat([['Line',line(type),'good'],['AVG',f(avg),''],['xBA proxy',f(avg+(r.isFavorable?.012:0)),'good'],['OBP',f(obp),''],['Contact',pct(66+avg*80)+'%','good'],['PA Est','4.1','']]);
     if(type==='rbis')a=a.concat([['Line',line(type),'good'],['RBI',rbi||'–',''],['RISP proxy',pct(42+ops*20)+'%','good'],['Run Env',r.isFavorable?'Plus':'Neutral',r.isFavorable?'good':''],['OPS',f(ops),''],['ISO',f(iso),'warn'],['Team Stack','Supported',''],['Lineup','Middle/Power','']]);
     if(type==='tb')a=a.concat([['Line',line(type),'good'],['SLG',f(slg),''],['xSLG proxy',f(slg+iso*.12),'good'],['ISO',f(iso),'warn'],['Power',r.topHrThreat?'Top':'Model',r.topHrThreat?'warn':'']]);
