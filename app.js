@@ -5080,7 +5080,25 @@ async function loadHRPotential() {
                 }
               }
               if (lastErr) throw lastErr;
-              const ld = await fetchJSON(`https://diamondreport.app/api/v1/people/${pid}/stats?stats=lastXGames&group=hitting&season=2026&limit=12&gameType=R`).catch(()=>({stats:[]}));
+              // Same zero-retry problem as the season-stats fetch above: this drives
+              // last10HR/streakDays, which feed the hot-hitter boost fallback profile
+              // (buildFallbackHotHitterProfile) added to hrProb. A single failed attempt
+              // used to silently produce logs=[], zeroing last10HR/streakDays for that
+              // refresh and shifting hrProb enough to move a batter across the 5%/10%
+              // HR Threats cutoff — the same "list/count jumps on refresh" bug as the
+              // fetches already fixed above, just via a different endpoint.
+              let ld, ldErr;
+              for (let i = 0; i < 3; i++) {
+                try {
+                  ld = await fetchJSON(`https://diamondreport.app/api/v1/people/${pid}/stats?stats=lastXGames&group=hitting&season=2026&limit=12&gameType=R`);
+                  ldErr = null;
+                  break;
+                } catch (e) {
+                  ldErr = e;
+                  if (i < 2) await new Promise(r => setTimeout(r, 250 * (i + 1)));
+                }
+              }
+              if (ldErr) ld = { stats: [] };
               batterStatCache[pid]={sd,ld};
             }
             const {sd,ld}=batterStatCache[pid];
