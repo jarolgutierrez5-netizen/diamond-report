@@ -1052,12 +1052,11 @@ function scoresDiffer(a, b) {
 }
 
 async function loadScores() {
-  const today = new Date().toLocaleDateString('en-CA', {timeZone: 'America/Chicago'});
-  const url = `https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=linescore,team&language=en`;
   try {
-    const data = await fetchJSON(url);
-    const dateEntry = data.dates?.find(d => d.date === today) || data.dates?.[0];
-    const games = dateEntry?.games || [];
+    // Routed through the shared schedule cache so loadScores(), called from the 120s
+    // interval, the day-rollover reload, the manual reload button, and startup all dedupe
+    // against each other instead of each firing an independent uncached network request.
+    const games = await getTodaySchedule('linescore,team');
 
     const live = [], final = [], upcoming = [];
     const freshKeys = new Set();
@@ -4159,10 +4158,10 @@ async function loadKsToday() {
   const el = document.getElementById('ks-today-props');
   // Don't return early if el is null — still need to update pitcher O/U tags
   try {
-    const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
-    const data = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=boxscore,team,probablePitcher&language=en`);
-    const entry = data.dates?.find(d => d.date === today) || data.dates?.[0];
-    const games = entry?.games || [];
+    // Shares the schedule cache/dedupe with loadHRsToday, which requests the exact
+    // same hydrate string — these two are called back-to-back on every Props refresh,
+    // and used to each independently re-fetch the identical schedule endpoint.
+    const games = await getTodaySchedule('boxscore,team,probablePitcher');
 
     const allPitchers = [];
 
@@ -7610,6 +7609,11 @@ function showTab(id, el) {
   }
 
   function sync(){
+    // The Tracker tab isn't shipped in production (no #tracker-page-title or any other
+    // tracker markup in index.html), so there's nothing for this to render into. Skip the
+    // DOM scraping/regex extraction and render() work entirely rather than doing it on a
+    // 30s interval plus after every scores/props/K-props refresh for a tab nobody sees.
+    if (!document.getElementById('tracker-page-title')) return;
     const store=loadStore();
     let threats=[], homers=new Set(), gamePicks=[];
     try{
