@@ -8409,23 +8409,6 @@ if (document.readyState === 'loading') {
   });
 })();
 
-/* ---- from <script id="v7-22-dashboard-summary-sync"> ---- */
-(function(){
-  function txt(sel){var el=document.querySelector(sel);return el?el.textContent.trim():'';}
-  function set(id,val){var el=document.getElementById(id); if(el && val) el.textContent=val;}
-  function syncPremiumDashboard(){
-    var games=document.querySelectorAll('#live-games .game-card, #scheduled-games .game-card, #final-games .game-card').length;
-    if(games) set('dr-dash-games', String(games));
-    var hrRows=document.querySelectorAll('#hr-potential-content .dr1027-hr-card');
-    if(hrRows.length) set('dr-dash-hr', String(hrRows.length));
-    var kRows=document.querySelectorAll('#kprops-content .dr109-card');
-    if(kRows.length) set('dr-dash-k', String(kRows.length));
-    var upd=txt('#props-refresh') || txt('#header-date'); if(upd) set('dr-dash-updated', upd.replace('Last updated:','').trim().slice(0,16));
-  }
-  setInterval(() => { if (document.visibilityState === 'visible') syncPremiumDashboard(); }, 5000);
-  document.addEventListener('DOMContentLoaded',syncPremiumDashboard);
-})();
-
 /* ---- from <script id="v7-24-dashboard-copy-sync"> ---- */
 (function(){
   function set(id,val){var el=document.getElementById(id); if(el && val) el.textContent=val;}
