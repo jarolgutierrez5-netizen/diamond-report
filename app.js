@@ -4884,7 +4884,15 @@ async function loadHRPotential() {
             if (last10HR == null && b.player?.last10HR != null) last10HR = b.player.last10HR;
           }
           const ab=parseInt(s.atBats)||0, hr=parseInt(s.homeRuns)||0;
-          const batterRate=ab>0?hr/ab:0;
+          // Below a minimum sample, a raw HR/AB rate is too noisy to trust outright — 2 HR
+          // in 10 AB is not a real 20% HR rate. Shrink toward league-average HR rate in
+          // proportion to how little season data backs the number (0 AB = pure league
+          // average, 40+ AB = fully trust the batter's own rate).
+          const HRP_MIN_AB_FOR_RATE = 40;
+          const HRP_LEAGUE_AVG_HR_RATE = 0.031; // ~1 HR per 32 AB, roughly MLB seasonal average
+          const rawBatterRate = ab>0?hr/ab:0;
+          const hrpSampleWeight = Math.min(ab, HRP_MIN_AB_FOR_RATE) / HRP_MIN_AB_FOR_RATE;
+          const batterRate = (rawBatterRate*hrpSampleWeight) + (HRP_LEAGUE_AVG_HR_RATE*(1-hrpSampleWeight));
           const pitcherRate=pitcherHr9>0?pitcherHr9/27:0.03;
           const baseHrProb=Math.min(((batterRate*0.6)+(pitcherRate*0.4))*100,25);
           let hrProb=baseHrProb;
@@ -4964,7 +4972,11 @@ function renderHRPTable() {
         return false;
       })
     : [...hrpRows]
-  ).filter(isActiveForHRThreat).filter(r => r.topHrThreat || r.hrProb >= 8);
+  // HRP_BOARD_MIN_PROB: bare inclusion floor, raised from 8% to 10% to cut weaker signals.
+  // topHrThreat no longer bypasses the floor outright — it used to guarantee one hitter per
+  // pitcher matchup regardless of how weak that "best of a bad lineup" pick actually was;
+  // now it only lowers the bar to 5% instead of waiving it completely.
+  ).filter(isActiveForHRThreat).filter(r => (r.topHrThreat && r.hrProb >= 5) || r.hrProb >= 10);
 
   // Update button active states
   const allActive = !hasFilter;
@@ -8805,7 +8817,10 @@ var analytics='<div class="tp-analytics-grid">'+
   function grade(p){ p=n(p); return p>=25?'A+':p>=18?'A':p>=10?'B+':'B'; }
   function hrChip(k,v,cls){ return '<span class="dr1027-chip '+(cls||'')+'"><b>'+esc(k)+'</b> '+esc(v)+'</span>'; }
   function labelChip(k,v,cls){ return '<span class="dr1027-chip '+(cls||'')+'"><b>'+esc(k)+'</b> '+esc(v)+'</span>'; }
-  function getHRRows(){ return rows().filter(function(r){return n(r.hrProb)>0 && (r.topHrThreat || n(r.hrProb)>=8);}); }
+  // Bare inclusion floor raised from 8% to 10%. topHrThreat no longer bypasses the floor
+  // outright — it used to guarantee one hitter per pitcher matchup regardless of how weak
+  // that "best of a bad lineup" pick actually was; now it only lowers the bar to 5%.
+  function getHRRows(){ return rows().filter(function(r){return n(r.hrProb)>0 && ((r.topHrThreat && n(r.hrProb)>=5) || n(r.hrProb)>=10);}); }
   function getFilters(){ if(!window.__hrpFilterSet) window.__hrpFilterSet=new Set(); return window.__hrpFilterSet; }
   function getHRGameFilter(){ return window.__hrpGameFilter||''; }
   window.setHRGameFilter=function(val){ window.__hrpGameFilter=val||''; renderHRPTableV1032(); };
@@ -8818,7 +8833,7 @@ var analytics='<div class="tp-analytics-grid">'+
     sel.innerHTML='<option value="">All Games</option>'+games.map(function(g){ return '<option value="'+g.pk+'"'+(cur===g.pk?' selected':'')+'>'+esc(g.label)+'</option>'; }).join('');
     sel.value=cur;
   }
-  function applyHRFilters(arr){ var s=getFilters(); var gf=getHRGameFilter(); if(gf) arr=arr.filter(function(r){ return String(r.gamePk)===gf; }); if(!s.size)return arr; return arr.filter(function(r){ if(s.has('onfire')&&!r.isOnFire)return false; if(s.has('top')&&!(r.topHrThreat||n(r.hrProb)>=8))return false; if(s.has('drought')&&!r.isDrought)return false; if(s.has('due')&&!r.isDue)return false; if(s.has('favorable')&&!r.isFavorable)return false; return true; }); }
+  function applyHRFilters(arr){ var s=getFilters(); var gf=getHRGameFilter(); if(gf) arr=arr.filter(function(r){ return String(r.gamePk)===gf; }); if(!s.size)return arr; return arr.filter(function(r){ if(s.has('onfire')&&!r.isOnFire)return false; if(s.has('top')&&!((r.topHrThreat&&n(r.hrProb)>=5)||n(r.hrProb)>=10))return false; if(s.has('drought')&&!r.isDrought)return false; if(s.has('due')&&!r.isDue)return false; if(s.has('favorable')&&!r.isFavorable)return false; return true; }); }
   function setButtons(){ var s=getFilters(); ['all','onfire','top','drought','due','favorable'].forEach(function(f){ var b=document.getElementById('filter-'+f+'-btn'); if(!b)return; b.classList.toggle('active', f==='all'?s.size===0:s.has(f)); }); }
   function whyHR(r){ return esc((r.name||'This player')+' grades at '+n(r.hrProb).toFixed(1)+'% HR probability against '+(r.pitcherName||r.oppAbbr||'today’s opponent')+' because the model combines on-fire recent form, favorable pitcher matchup, ISO power, strong OPS, top HR threat signal, season HR rate, recent trend, and pitcher HR/9 baseline. Opponent context: '+(r.oppAbbr||'opponent')+'.'); }
   function hrSummary(arr){ if(!arr.length)return ''; var top=arr[0], sample=arr.slice(0,Math.min(8,arr.length)), avg=sample.reduce(function(a,r){return a+n(r.hrProb);},0)/Math.max(1,sample.length); return '<div class="dr1027-hr-summary"><div class="dr1027-summary-title">📊 EXPANDED <span>HR THREATS DATA</span></div><p class="dr1027-summary-copy">Players who have homered today are highlighted using live/final box score data while keeping the same HR threat criteria and filters.</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>'+esc(top.name||'–')+'</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>'+Math.round(avg)+'%</b><span>Board Avg Confidence</span></div><div class="dr1027-summary-metric"><b>'+arr.length+'</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>HR Prob '+n(top.hrProb).toFixed(1)+'%</b><span>Primary Signal</span></div></div></div>'; }
