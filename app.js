@@ -4846,6 +4846,21 @@ async function loadHRPotential() {
         const teamBox = bd?.teams?.[side];
         let batters = (teamBox?.batters||[]).map(id=>{const p=teamBox?.players[`ID${id}`];return p?{id,player:p}:null;}).filter(Boolean);
 
+        // Confirmed starters only. MLB's battingOrder convention encodes the starting
+        // lineup spot as a value ending in "00" (100, 200, ... 900); a substitute who
+        // enters mid-game gets a non-"00" suffix (e.g. 101). Without this, a live or final
+        // game's boxscore.batters list keeps growing all game — pinch hitters, defensive
+        // subs, double switches — so how many extra names got scanned (and counted toward
+        // Players Scanned) depended entirely on how far along the game happened to be at
+        // the moment of refresh, on top of the roster-gate race fixed separately above.
+        if (batters.length) {
+          const starters = batters.filter(b => {
+            const bo = Number(b.player?.battingOrder ?? b.player?.stats?.batting?.battingOrder ?? NaN);
+            return Number.isFinite(bo) && bo % 100 === 0;
+          });
+          batters = starters.length ? starters : batters.slice(0, 9);
+        }
+
         // If no game batters are available yet, prefer lineupCache from Pitcher Report.
         // This keeps HR Threats populated before official lineups are posted, without using
         // random active-roster timing from the boxscore as the primary source.
