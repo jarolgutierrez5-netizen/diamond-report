@@ -1425,6 +1425,10 @@ let statcastHotHittersPromise = null;
 const prevHrpHRs = {};          // batterId -> todayHR count for diff detection
 let kPropsData = [];
 let kPropsLoadedAt = null;
+// Full today's schedule as loaded for K Props — kept separately from kPropsData so the
+// GAME filter can list every game today, not just games that already have an announced
+// probable pitcher (kPropsData only contains rows for confirmed starters).
+let kPropsAllGames = [];
 // Pre-game prop snapshots — keyed by pitcherId.
 // Once locked (game goes live/final), the projection never changes.
 // This prevents ERA/WHIP updates during the season from shifting the line mid-game.
@@ -5303,12 +5307,13 @@ async function loadKProps() {
           wins=ps.wins??0; losses=ps.losses??0;
           era=parseFloat(ps.era)||4.00;
           whip=parseFloat(ps.whip)||1.25;
-          fip=parseFloat(ps.fielding ?? ps.fieldingIndependentPitching) || null;
+          fip=parseFloat(ps.fip) || null;
           avg=parseFloat(ps.avg)||null;
-          woba=parseFloat(ps.woba ?? ps.wobaCalculated)||null;
+          // Real wOBA isn't part of this stat object — OBP-against stands in, same as Pitcher Report.
+          woba=parseFloat(ps.obp)||null;
           slg=parseFloat(ps.slg)||null;
           iso=slg!=null&&avg!=null ? Math.round((slg-avg)*1000)/1000 : null;
-          hr9=parseFloat(ps.homeRunsPer9Inn ?? ps.hrPer9Inn)||null;
+          hr9=parseFloat(ps.homeRunsPer9)||null;
           bf=parseInt(ps.battersFaced)||0;
           tbf=bf;
           const gamesStarted=parseInt(ps.gamesStarted)||Math.max(wins+losses,1);
@@ -5518,14 +5523,31 @@ function renderKProps() {
     ? kPropsData.filter(p => String(p.gamePk||'') === _kPropsGameFilter)
     : kPropsData;
 
+  // Built from the full day's schedule (not kPropsData) so every game today shows up in
+  // the filter, including games that don't have an announced probable pitcher yet —
+  // kPropsData only ever contains rows for confirmed starters.
   const kpGamesSeen = {};
   const kpGamesList = [];
-  kPropsData.forEach(p => {
-    const pk = String(p.gamePk||'');
-    if (!pk || kpGamesSeen[pk]) return;
-    kpGamesSeen[pk] = 1;
-    kpGamesList.push({ pk, label: `${p.teamAbbr||'?'} vs ${p.oppAbbr||'?'}`, ts: p.gameTimestamp||0 });
-  });
+  const kpScheduleSource = kPropsAllGames.length ? kPropsAllGames : null;
+  if (kpScheduleSource) {
+    kpScheduleSource.forEach(g => {
+      const pk = String(g.gamePk||'');
+      if (!pk || kpGamesSeen[pk]) return;
+      kpGamesSeen[pk] = 1;
+      const away = g.teams?.away?.team?.abbreviation || '?';
+      const home = g.teams?.home?.team?.abbreviation || '?';
+      kpGamesList.push({ pk, label: `${away} vs ${home}`, ts: new Date(g.gameDate).getTime() || 0 });
+    });
+  } else {
+    // Fallback for the rare case the schedule wasn't captured — derive from whatever
+    // pitcher rows did load.
+    kPropsData.forEach(p => {
+      const pk = String(p.gamePk||'');
+      if (!pk || kpGamesSeen[pk]) return;
+      kpGamesSeen[pk] = 1;
+      kpGamesList.push({ pk, label: `${p.teamAbbr||'?'} vs ${p.oppAbbr||'?'}`, ts: p.gameTimestamp||0 });
+    });
+  }
   kpGamesList.sort((a,b) => a.ts - b.ts);
   const kpGameOptsHTML = `<option value="">All Games</option>` + kpGamesList.map(g =>
     `<option value="${g.pk}"${_kPropsGameFilter===g.pk?' selected':''}>${g.label}</option>`
@@ -5883,9 +5905,14 @@ function scheduleKPropsLoad() {
     var overEdge = projK - recommendedOverLine;
     var overProb = Math.max(34, Math.min(78, Math.round(50 + (overEdge * 14))));
     var confidenceTier = overProb >= 70 ? 'Elite' : overProb >= 63 ? 'Strong' : overProb >= 56 ? 'Good' : overProb >= 50 ? 'Lean' : 'Low';
-    var fip = n(stat.fielding || stat.fieldingIndependentPitching, NaN);
+    // Field names must match what the MLB Stats API pitching/season stat object actually
+    // returns (same endpoint/hydrate as Pitcher Report, which reads these same names
+    // successfully) — stat.fielding/fieldingIndependentPitching/homeRunsPer9Inn/woba don't
+    // exist on that object, so those columns always rendered blank.
+    var fip = n(stat.fip, NaN);
     var avg = n(stat.avg, NaN);
     var slg = n(stat.slg, NaN);
+    var obp = n(stat.obp, NaN);
     var iso = Number.isFinite(slg) && Number.isFinite(avg) ? Math.round((slg-avg)*1000)/1000 : null;
     var reason = {
       matchupTag: 'Average K matchup',
@@ -5904,16 +5931,18 @@ function scheduleKPropsLoad() {
       era: era.toFixed(2), k9: k9.toFixed(1), ip: ip.toFixed(1), bf: n(stat.battersFaced,0),
       fip: Number.isFinite(fip) ? fip.toFixed(2) : null,
       avg: Number.isFinite(avg) ? avg.toFixed(3) : null,
-      woba: stat.woba ? n(stat.woba).toFixed(3) : null,
+      // Real wOBA isn't part of the MLB Stats API pitching stat object — OBP-against is
+      // used as the stand-in here, same as the Pitcher Report tab does.
+      woba: Number.isFinite(obp) ? obp.toFixed(3) : null,
       iso: iso != null ? iso.toFixed(3) : null,
       slg: Number.isFinite(slg) ? slg.toFixed(3) : null,
-      hr9: stat.homeRunsPer9Inn ? n(stat.homeRunsPer9Inn).toFixed(2) : null,
+      hr9: stat.homeRunsPer9 != null ? n(stat.homeRunsPer9).toFixed(2) : null,
       kPerGm: gs > 0 ? (k9*(ip/Math.max(gs,1))/9).toFixed(1) : null,
       whip: whip.toFixed(2), sbLine: sbLine,
       ouLine: recommendedOverLine, modelLine: Math.round(projK*2)/2, compareLine: recommendedOverLine,
       recommendedOverLine: recommendedOverLine.toFixed(1), overProb: overProb, confidenceTier: confidenceTier,
       projK: projK.toFixed(1), pred: 'OVER', pushLean: null, reasoning: reason,
-      timeStr: timeStr, gameTimestamp: dt.getTime()
+      timeStr: timeStr, gameTimestamp: dt.getTime(), gamePk: g.gamePk
     };
   }
   async function mapLimit(items, limit, fn){
@@ -5942,6 +5971,7 @@ function scheduleKPropsLoad() {
         try { if (typeof loadSportsbookKLines === 'function') await withTimeout(loadSportsbookKLines(today), 3500); } catch(e){}
         var games = [];
         try { games = await withTimeout(getTodaySchedule('team,probablePitcher'), 10000) || []; } catch(e){ games = []; }
+        try { kPropsAllGames = games; } catch(e) { window.kPropsAllGames = games; }
         var starters = [];
         (games || []).forEach(function(g){ ['away','home'].forEach(function(side){ var p = g && g.teams && g.teams[side] && g.teams[side].probablePitcher; if (p) starters.push({g:g,side:side,p:p}); }); });
         if (!starters.length) {
