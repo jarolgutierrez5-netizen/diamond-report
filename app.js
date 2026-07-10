@@ -6237,7 +6237,7 @@ function scheduleKPropsLoad() {
     } catch(e){ return {}; }
   }
   function lineFmt(v){ try { return typeof formatKLine === 'function' ? formatKLine(v) : String(v); } catch(e){ return String(v); } }
-  function buildRow(g, side, stat){
+  async function buildRow(g, side, stat){
     var opp = side === 'away' ? 'home' : 'away';
     var pitcher = g && g.teams && g.teams[side] && g.teams[side].probablePitcher;
     if (!pitcher) return null;
@@ -6248,7 +6248,29 @@ function scheduleKPropsLoad() {
     var gs = n(stat.gamesStarted, 0) || Math.max(n(stat.wins,0)+n(stat.losses,0), 1);
     var era = n(stat.era, 4.00), whip = n(stat.whip, 1.25);
     var projIP = ip > 0 ? Math.min(Math.max(ip / Math.max(gs,1), 4), 7) : 5.4;
+    // Real opposing-lineup strikeout rate — this used to be hardcoded to the exact same
+    // 0.22 constant it was compared against below, so (oppKpct - 0.22) always evaluated
+    // to zero and the opponent-matchup adjustment had no actual effect despite appearing
+    // in the formula and the "matchup" reasoning text. Now averages the projected/rostered
+    // batters' own season K rate (K / PA), each falling back to the 22% league average
+    // when a batter's own rate isn't known yet.
     var oppKpct = 0.22;
+    try {
+      var bd, lastErr;
+      for (var bi = 0; bi < 3; bi++) {
+        try { bd = await fetchJSON('https://diamondreport.app/api/v1/game/' + g.gamePk + '/boxscore'); lastErr = null; break; }
+        catch (e) { lastErr = e; if (bi < 2) await new Promise(function(r){ setTimeout(r, 250 * (bi + 1)); }); }
+      }
+      if (!lastErr && bd) {
+        var teamBox = bd.teams && bd.teams[opp];
+        var oppBatters = ((teamBox && teamBox.batters) || []).map(function(id){ return teamBox.players['ID'+id]; }).filter(Boolean).slice(0,9);
+        var kpcts = oppBatters.map(function(b){
+          var s = (b.seasonStats && b.seasonStats.batting) || {};
+          return (s.strikeOuts && s.plateAppearances) ? s.strikeOuts / s.plateAppearances : 0.22;
+        });
+        if (kpcts.length) oppKpct = kpcts.reduce(function(a,b){ return a+b; }, 0) / kpcts.length;
+      }
+    } catch(e) {}
     var projK = Math.max(1, (k9 * projIP / 9) + ((oppKpct - 0.22) * 10));
     var sbLine = null;
     try { if (typeof getSportsbookKLine === 'function') sbLine = getSportsbookKLine(pitcher.id, pitcher.fullName); } catch(e){}
@@ -6280,7 +6302,7 @@ function scheduleKPropsLoad() {
     drCheckStat(_qaCtx, 'SLG', slg, 'slg');
     drCheckStat(_qaCtx, 'FIP', fip, 'fip');
     var reason = {
-      matchupTag: 'Average K matchup',
+      matchupTag: oppKpct >= 0.245 ? 'High-K matchup' : oppKpct <= 0.195 ? 'Contact-heavy matchup' : 'Average K matchup',
       k9Tag: k9 >= 9 ? 'Strong K pitcher' : k9 <= 7 ? 'Lower K profile' : 'Solid K profile',
       eraTag: era <= 3.25 ? 'Elite ERA' : era >= 5 ? 'High ERA' : 'Mid ERA',
       whipTag: whip <= 1.10 ? 'Elite WHIP' : whip >= 1.40 ? 'High WHIP' : 'Avg WHIP',
@@ -6345,7 +6367,7 @@ function scheduleKPropsLoad() {
         }
         var rows = await mapLimit(starters, 4, async function(item){
           var stat = await seasonPitching(item.p.id);
-          return buildRow(item.g, item.side, stat);
+          return await buildRow(item.g, item.side, stat);
         });
         rows = rows.filter(Boolean).sort(function(a,b){ return a.gameTimestamp - b.gameTimestamp; });
         try { kPropsData = rows; } catch(e) { window.kPropsData = rows; }
