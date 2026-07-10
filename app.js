@@ -4567,6 +4567,27 @@ setInterval(() => { if (document.visibilityState === 'visible' && !window.__diam
 let activePlayerIdsToday = new Set();
 let activeRosterTeamIdsToday = new Set();
 let activePlayerIdsLoadedFor = '';
+// isActiveForHRThreat() only filters a team's players if that team's roster fetch
+// succeeded — a team whose fetch fails gets a complete pass, every player on that
+// roster included with zero filtering. With ~26-30 of these fetches firing at once
+// (one per team playing today) sharing the same request queue as everything else the
+// page loads, a handful failing on any given page load was ordinary, and which ones
+// failed varied refresh to refresh — directly changing the final "Players Scanned"
+// count each time. Retrying a failed fetch a couple of times before giving up fixes
+// the common transient case (timeout, momentary rate limit) without changing the
+// fail-open fallback for a fetch that's genuinely still down after retrying.
+async function fetchTeamRosterWithRetry(tid, attempts = 3) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fetchJSON(`https://diamondreport.app/api/v1/teams/${tid}/roster?rosterType=active&season=2026`);
+    } catch (e) {
+      lastErr = e;
+      if (i < attempts - 1) await new Promise(r => setTimeout(r, 300 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
 async function loadActivePlayerIdsForGames(games) {
   const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
   if (activePlayerIdsLoadedFor === today && activePlayerIdsToday.size) return activePlayerIdsToday;
@@ -4575,7 +4596,7 @@ async function loadActivePlayerIdsForGames(games) {
   const teamIdsForToday = [...new Set((games || []).flatMap(g => [g?.teams?.away?.team?.id, g?.teams?.home?.team?.id]).filter(Boolean))];
   await Promise.all(teamIdsForToday.map(async tid => {
     try {
-      const data = await fetchJSON(`https://diamondreport.app/api/v1/teams/${tid}/roster?rosterType=active&season=2026`);
+      const data = await fetchTeamRosterWithRetry(tid);
       if (Array.isArray(data.roster)) loadedTeamIds.add(String(tid));
       (data.roster || []).forEach(r => {
         const pid = r.person?.id || r.player?.id || r.id;
