@@ -3609,17 +3609,19 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         const sourceBadge = p.exact
           ? '<span class="dr1041-chip good" style="font-size:9px;padding:2px 6px;margin-left:6px">Exact</span>'
           : '<span class="dr1041-chip neutral" style="font-size:9px;padding:2px 6px;margin-left:6px">Season profile</span>';
+        const rowHr = +(st.homeRuns ?? st.hr ?? st.hrs ?? 0) || 0;
+        const hrSpotTag = rowHr > 0 ? '<span class="dr1041-chip weak" style="font-size:9px;padding:2px 7px;margin-right:4px">🔥 HR Spot</span>' : '';
         return `<tr>
           <td><strong>${p.name}</strong>${sourceBadge}</td>
           <td class="usage">${p.usage ? p.usage.toFixed(0)+'%' : '–'}</td>
           <td class="num">${fmtDec(st.avg ?? st.battingAverage, 3, 'avg')}</td>
           <td class="num">${fmtDec(st.slg ?? st.slugging, 3, 'slg')}</td>
           <td class="num">${fmtDec(st.xslg ?? st.xSLG ?? st.expectedSlugging, 3, 'xslg')}</td>
-          <td class="num">${+(st.homeRuns ?? st.hr ?? st.hrs ?? 0) || 0}</td>
+          <td class="num">${rowHr}</td>
           <td class="num">${fmtPctVal(st.hardHitPct ?? st.hardHitRate, 0, 'hardHit')}</td>
           <td class="num">${fmtPctVal(st.barrelPct ?? st.barrelRate, 1, 'barrel')}</td>
           <td class="num">${fmtPctVal(st.whiffPct ?? st.whiffRate, 1, 'whiff')}</td>
-          <td><span class="dr1041-chip${chipCls}">${grade.label}${grade.score!==null?' · '+grade.score:''}</span></td>
+          <td>${hrSpotTag}<span class="dr1041-chip${chipCls}">${grade.label}${grade.score!==null?' · '+grade.score:''}</span></td>
         </tr>`;
       }).join('');
       const score = weight ? Math.round(weighted / weight) : null;
@@ -3660,35 +3662,47 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     </div>`;
     return { html, score:auto.score, pitches:auto.pitches, usageChips };
   }
-  // ── Pitch type vulnerability (modeled from pitcher stats) ──
-  // Without Statcast we model likely pitch mix and batter vulnerability
-  // ── Pitch mix — real data when synced, estimated fallback otherwise ──
+  // ── Pitch type effectiveness table — the pitcher's own per-pitch numbers (not the
+  // batter's — that's the separate Pitch Mix Advantage table above). Real data when
+  // synced (data/pitcher-statcast.json), a per-pitcher differentiated estimate otherwise.
+  // Vulnerable/Putaway tags are derived from these same numbers, not fabricated —
+  // velocity and pitch counts are deliberately left out since we have no real source for
+  // either without the missing Statcast sync.
   const hasRealPitchMix = !!(pitcherProfile?.byPitch?.length);
   const pitchSectionLabel = hasRealPitchMix
-    ? `PITCH MIX · ${(pitcherProfile.totalPitches || 0).toLocaleString()} PITCHES THIS SEASON`
-    : 'PITCH MIX VULNERABILITY';
+    ? `${pitcherName.split(' ').pop()}'S PITCHES · ${(pitcherProfile.totalPitches || 0).toLocaleString()} THROWN THIS SEASON`
+    : `${pitcherName.split(' ').pop()}'S PITCHES · ESTIMATED PROFILE`;
+
+  function pitchEffTag(label, cls) { return `<span class="dr1041-chip ${cls}" style="font-size:9px;padding:2px 7px;margin-right:4px">${label}</span>`; }
+  function pitchEffRow(name, usage, avg, woba, slg, hr, whiffPct, veloTxt) {
+    const tags = [];
+    if (whiffPct != null && whiffPct >= 28) tags.push(pitchEffTag('🎯 Putaway','good'));
+    if ((avg != null && avg >= .260) || (slg != null && slg >= .430)) tags.push(pitchEffTag('⚠ Vulnerable','weak'));
+    return `<tr>
+      <td><strong>${name}</strong>${veloTxt||''}</td>
+      <td class="usage">${usage!=null?Number(usage).toFixed(0)+'%':'–'}</td>
+      <td class="num">${fmtDec(avg,3)}</td>
+      <td class="num">${fmtDec(woba,3)}</td>
+      <td class="num">${fmtDec(slg,3)}</td>
+      <td class="num">${hr!=null?hr:'–'}</td>
+      <td class="num">${whiffPct!=null?Number(whiffPct).toFixed(0)+'%':'–'}</td>
+      <td>${tags.join('') || '<span style="color:var(--muted);font-size:11px">–</span>'}</td>
+    </tr>`;
+  }
 
   let pitchRows;
   let pitchHrList = [];
   if (hasRealPitchMix) {
     pitchHrList = pitcherProfile.byPitch.map(p => ({ name: p.name, usagePct: p.usagePct }));
     // Real pitch mix from sync script.
-    // Color: red = hitter-friendly (high wOBA against), green = pitcher-friendly
     pitchRows = pitcherProfile.byPitch.map(p => {
-      const woba = p.wobaAgainst ?? p.xwobaContact;
-      const oppColor = woba == null ? 'var(--muted)'
-        : woba >= .370 ? '#e63946'
-        : woba >= .310 ? '#f4a261'
-        : '#2ecc71';
+      const woba = p.wobaAgainst ?? p.xwobaContact ?? null;
+      const avg = p.avg ?? p.avgAgainst ?? null;
+      const slg = p.slg ?? p.slgAgainst ?? null;
+      const hr = p.homeRuns ?? p.hr ?? null;
+      const whiffPct = p.whiffPct ?? p.whiffRate ?? null;
       const veloTxt = p.avgVelo ? ` · ${p.avgVelo} mph` : '';
-      const wobaTxt = woba != null ? `wOBA against: ${woba.toFixed(3).replace(/^0/,'')}` : 'usage';
-      return `<div class="pitch-row">
-        <span class="pitch-name">${p.name}${veloTxt}</span>
-        <div class="pitch-bar-wrap"><div class="pitch-bar-fill" style="width:${p.usagePct}%;background:${oppColor}"></div></div>
-        <span class="pitch-pct">${p.usagePct}%</span>
-        <span class="pitch-ba" style="color:${oppColor}">${wobaTxt}</span>
-        ${pitchHrHTML(p.name, p.usagePct)}
-      </div>`;
+      return pitchEffRow(p.name, p.usagePct, avg, woba, slg, hr, whiffPct, veloTxt);
     }).join('');
   } else {
     // Estimated fallback — this used to be one hardcoded 38/22/16/14/10 split shown
@@ -3715,16 +3729,23 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       { name: 'Sinker / 2-seam',   usage: pmSinker,   oppColor: '#f4a261' },
     ];
     pitchHrList = pitchTypes.map(pt => ({ name: pt.name, usage: pt.usage }));
-    pitchRows = pitchTypes.map(pt => `<div class="pitch-row">
-      <span class="pitch-name">${pt.name}</span>
-      <div class="pitch-bar-wrap"><div class="pitch-bar-fill" style="width:${pt.usage}%;background:${pt.oppColor}"></div></div>
-      <span class="pitch-pct">${pt.usage}%</span>
-      <span class="pitch-ba" style="color:${pt.oppColor}">usage</span>
-      ${pitchHrHTML(pt.name, pt.usage)}
-    </div>`).join('');
+    // Estimated AVG/SLG/HR/Whiff per pitch type, reusing the same pitch-specific tweak
+    // model used elsewhere in this modal (getPitchTypeProfileMetrics) but seeded from the
+    // pitcher's own overall allowed AVG/SLG instead of the batter's — same modeling
+    // approach already vetted in this file, applied from the pitcher's side. No real wOBA
+    // estimate exists for this path, so that column stays honestly blank ('–').
+    pitchRows = pitchTypes.map(pt => {
+      const est = getPitchTypeProfileMetrics(pt.name, pt.usage, { avg: pitcherAvgA, slg: pitcherVuln });
+      return pitchEffRow(pt.name, pt.usage, est.avg, null, est.slg, est.homeRuns, est.whiffPct, '');
+    }).join('');
   }
 
-
+  const pitchEffectivenessTableHTML = `<div class="dr1041-pitch-mix" style="margin-top:14px">
+    <div class="dr1041-pitch-head">
+      <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">${hasRealPitchMix ? `Real synced pitch-level data for ${pitcherName}.` : `${pitcherName}’s own AVG/SLG allowed, split out by an estimated pitch mix — modeled from his real K/9 and groundball rate, not real pitch-tracking data.`}</div></div>
+    </div>
+    <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage</th><th>AVG</th><th>wOBA</th><th>SLG</th><th>HR</th><th>Whiff%</th><th>Notes</th></tr></thead><tbody>${pitchRows}</tbody></table></div>
+  </div>`;
 
   function buildZoneFitPanelHTML(pitches) {
     const list = (pitches && pitches.length ? pitches : pitchHrList).slice(0,5);
@@ -3973,6 +3994,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
 
     <div class="dr1041-matchup-dashboard">
       ${pitchMixDashboard.html}
+      ${pitchEffectivenessTableHTML}
 
       <!-- Strike Zone + Zone Fit -->
       <div class="dr1041-zone-grid">
