@@ -134,6 +134,7 @@
     <div class="dr-mobile-drawer-title">Diamond Report</div>
     <button type="button" class="dr-mobile-close" id="dr-mobile-close" aria-label="Close menu">✕</button>
     <button type="button" data-tab="game" class="dr-menu-item">📊 Games Today</button>
+    <button type="button" data-tab="pr" class="dr-menu-item">📋 Pitcher Report</button>
     <button type="button" data-tab="hr" class="dr-menu-item">🔥 Home Runs</button>
     <button type="button" data-tab="k" class="dr-menu-item">🎯 Strikeouts</button>
     <button type="button" data-tab="hits" class="dr-menu-item">⚾ Hits</button>
@@ -194,6 +195,7 @@
 <div class="gamepick-tabs-wrap" aria-label="Game Picks section navigation">
   <div class="gamepick-tabs" role="tablist" aria-label="Game Picks Centers">
     <button class="gamepick-tab active" id="gamepick-tab-game" type="button" role="tab" aria-selected="true" aria-controls="gamepick-pane-game" data-gamepick-pane="game" onclick="showGamePickPane('game')">📊 Games Today</button>
+    <button class="gamepick-tab" id="gamepick-tab-pr" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-pr" data-gamepick-pane="pr" onclick="showGamePickPane('pr')">📋 Pitcher Report</button>
     <button class="gamepick-tab" id="gamepick-tab-hr" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-hr" data-gamepick-pane="hr" onclick="showGamePickPane('hr')">🔥 Home Runs</button>
     <button class="gamepick-tab" id="gamepick-tab-k" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-k" data-gamepick-pane="k" onclick="showGamePickPane('k')">🎯 Strikeouts</button>
     <button class="gamepick-tab" id="gamepick-tab-hits" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-hits" data-gamepick-pane="hits" onclick="showGamePickPane('hits')">⚾ Hits</button>
@@ -304,6 +306,19 @@
 <div class="gamepick-pane" id="gamepick-pane-hrrbi" role="tabpanel" aria-labelledby="gamepick-tab-hrrbi" data-gamepick-pane="hrrbi" hidden>
   <div class="dr-center-label">📈 Hits+Runs+RBI</div>
   <div class="dr-panel dr-panel-large dr-prop-center-panel"><div class="dr-panel-head"><div><p class="section-title">HITS + RUNS + RBIs <span>PROJECTIONS</span></p><small>Combined production opportunities ranked by on-base skill, power, run environment, and lineup position.</small></div></div><div id="hrrbi-props-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading Hits+Runs+RBI board…</div></div></div>
+</div>
+
+<div class="gamepick-pane" id="gamepick-pane-pr" role="tabpanel" aria-labelledby="gamepick-tab-pr" data-gamepick-pane="pr" hidden>
+  <div class="dr-center-label">📋 Pitcher Report</div>
+  <div class="dr-panel dr-panel-large dr-prop-center-panel">
+    <div class="dr-panel-head">
+      <div>
+        <p class="section-title">STARTING PITCHER <span>REPORT</span></p>
+        <small>Every starter's season stats side by side — sort any column, and colored pills flag elite vs. concerning numbers at a glance.</small>
+      </div>
+    </div>
+    <div id="pr-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading pitcher report…</div></div>
+  </div>
 </div>
 
 <div class="gamepick-pane" id="gamepick-pane-parlay" role="tabpanel" aria-labelledby="gamepick-tab-parlay" data-gamepick-pane="parlay" hidden>

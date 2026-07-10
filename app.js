@@ -2011,10 +2011,10 @@ function renderPRMobileCards() {
       <div class="pr-mobile-stats">
         ${stat('IP', r.ip!=null?r.ip.toFixed(1):'–')}
         ${stat('BF', r.bf!=null?r.bf:'–')}
-        ${stat('FIP', r.fip!=null?r.fip.toFixed(2):'–')}
-        ${stat('AVG', r.avg!=null?r.avg.toFixed(3).replace(/^0/,''):'–')}
-        ${stat('WHIP', r.whip!=null?r.whip.toFixed(2):'–')}
-        ${stat('HR/9', r.hr9!=null?r.hr9.toFixed(2):'–')}
+        ${stat('FIP', pill(r.fip, v=>v.toFixed(2), 3.25, 4.50))}
+        ${stat('AVG', pill(r.avg, v=>v.toFixed(3).replace(/^0/,''), .220, .270))}
+        ${stat('WHIP', pill(r.whip, v=>v.toFixed(2), 1.10, 1.40))}
+        ${stat('HR/9', pill(r.hr9, v=>v.toFixed(2), 0.80, 1.50))}
       </div>
       <button class="btn-lineup${isExpanded?' active':''}" onclick="toggleLineup('${pid}', '${p.name.replace(/'/g,"\\'")}', ${p.gamePk}, '${p.side}', ${p.oppTeamId}, ${r.rawHr9}, ${r.rawIp})">
         ${isExpanded ? '▲ HIDE' : '▼ BATTING LINEUP & MATCHUPS'}
@@ -8421,7 +8421,7 @@ if (document.readyState === 'loading') {
 
 /* ---- from <script id="prod-v8-70-performance-loader"> ---- */
 (function(){
-  const loaded = { game:false, hr:false, k:false, props:false, deep:false };
+  const loaded = { game:false, pr:false, hr:false, k:false, props:false, deep:false };
   const idle = window.requestIdleCallback || function(cb){ return setTimeout(cb, 900); };
 
   window.__drLoadGamePickPaneData = function(pane){
@@ -8431,6 +8431,12 @@ if (document.readyState === 'loading') {
         if (loaded.game) return;
         loaded.game = true;
         if (typeof window.loadGameProps === 'function') { var gp = window.loadGameProps({ force:true }); if (gp && gp.then) gp.then(() => { if (window.syncDiamondTracker) window.syncDiamondTracker(); }); }
+        return;
+      }
+      if (pane === 'pr') {
+        if (loaded.pr) return;
+        loaded.pr = true;
+        try { if (typeof window.loadPitcherReport === 'function') window.loadPitcherReport(); } catch(e) {}
         return;
       }
       if (pane === 'hr') {
@@ -8476,7 +8482,7 @@ if (document.readyState === 'loading') {
 // PROD v8.44 — Game Picks inner tab controller with persistent state
 (function(){
   var STORAGE_KEY = 'dr_gamepick_active_pane';
-  var VALID = { game: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, parlay: true, 'team-performance': true, deep: true };
+  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, parlay: true, 'team-performance': true, deep: true };
 
   function getRequestedPane(){
     try {
@@ -9307,7 +9313,7 @@ function showPremiumGate(feature){
   if (window.__DR_V1129_NAV_CONTROLLER__) return;
   window.__DR_V1129_NAV_CONTROLLER__ = true;
 
-  var FREE_PANES = new Set(['game','hr','k','hits','rbis','tb','sb','hrrbi']);
+  var FREE_PANES = new Set(['game','pr','hr','k','hits','rbis','tb','sb','hrrbi']);
   var PREMIUM_PANES = new Set(['parlay','team-performance','team','deep']);
   var NORMALIZE = { team:'team-performance', teamPerformance:'team-performance' };
 
