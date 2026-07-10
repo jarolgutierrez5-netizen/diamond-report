@@ -2746,6 +2746,25 @@ async function loadGameProps() {
       if (homeK9 > awayK9 + 1) { homeScore += 3; factors.push({team:'home', label:factorLabel('home', `${pitcherLastName('home')} K/9 edge (${homeK9.toFixed(1)})`), type:'pos'}); }
       else if (awayK9 > homeK9 + 1) { awayScore += 3; factors.push({team:'away', label:factorLabel('away', `${pitcherLastName('away')} K/9 edge (${awayK9.toFixed(1)})`), type:'pos'}); }
 
+      // Team record — previously this model had no team-strength input at all, only
+      // pitcher-matchup and venue factors, so a last-place team could out-project a
+      // first-place team on the back of one ERA edge. leagueRecord already comes back on
+      // every schedule game object (same schedule call this function already makes), so
+      // no extra fetch is needed. Skipped in the first ~10 games of the season, when the
+      // record itself is too small a sample to mean much.
+      const awayRecord = g.teams.away.leagueRecord || {};
+      const homeRecord = g.teams.home.leagueRecord || {};
+      const awayW = parseInt(awayRecord.wins) || 0, awayL = parseInt(awayRecord.losses) || 0;
+      const homeW = parseInt(homeRecord.wins) || 0, homeL = parseInt(homeRecord.losses) || 0;
+      if ((awayW + awayL) >= 10 && (homeW + homeL) >= 10) {
+        const awayWinPct = awayW / (awayW + awayL);
+        const homeWinPct = homeW / (homeW + homeL);
+        const recordDiff = awayWinPct - homeWinPct; // positive = away has the better record
+        const recordPts = Math.max(-18, Math.min(18, recordDiff * 60));
+        if (recordPts >= 1) { awayScore += recordPts; factors.push({team:'away', label:factorLabel('away', `${awayAbbr} record edge (${awayW}-${awayL})`), type:'pos'}); }
+        else if (recordPts <= -1) { homeScore += Math.abs(recordPts); factors.push({team:'home', label:factorLabel('home', `${homeAbbr} record edge (${homeW}-${homeL})`), type:'pos'}); }
+      }
+
       // Time of day factor — day games (before 5pm CDT) slightly favor home team; night games more even
       const gameHourCDT = new Date(g.gameDate).toLocaleString('en-US',{hour:'numeric',hour12:false,timeZone:'America/Chicago'});
       const isDayGame = parseInt(gameHourCDT) < 17;
@@ -2758,10 +2777,15 @@ async function loadGameProps() {
       homeScore += 3;
       factors.push({team:'home', label:factorLabel('home', 'Home field edge'), type:'pos'});
 
-      // Park factor
+      // Park factor — doesn't favor either team (both play in the same park), so this
+      // can't reasonably swing win probability toward one side. It used to be computed
+      // and shown as a "factor" chip while never actually touching awayScore/homeScore at
+      // all, which looked like it was informing the pick when it silently wasn't. Applying
+      // it symmetrically (same pattern already used for wind) at least makes the displayed
+      // chip reflect a real, if small and neutral, contribution instead of a decorative one.
       const pf = parkFactors[homeAbbr] || 100;
-      if (pf > 107) factors.push({team:'neutral', label:`${stadiumCoords[homeAbbr]?.name||homeAbbr}: HR-friendly park (${pf})`, type:'neu'});
-      else if (pf < 93) factors.push({team:'neutral', label:`${stadiumCoords[homeAbbr]?.name||homeAbbr}: Pitcher-friendly park (${pf})`, type:'neu'});
+      if (pf > 107) { awayScore += 2; homeScore += 2; factors.push({team:'neutral', label:`${stadiumCoords[homeAbbr]?.name||homeAbbr}: HR-friendly park (${pf})`, type:'neu'}); }
+      else if (pf < 93) { awayScore -= 1; homeScore -= 1; factors.push({team:'neutral', label:`${stadiumCoords[homeAbbr]?.name||homeAbbr}: Pitcher-friendly park (${pf})`, type:'neu'}); }
 
       // Weather impact
       if (weather) {
