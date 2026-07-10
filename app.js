@@ -2618,7 +2618,7 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
     const isTop = i === topIdx; // persists regardless of todayHR
     const homerToday = b.todayHR > 0;
     const barPct = maxProb > 0 ? (b.hrProb / maxProb) * 100 : 0;
-    const barColor = homerToday ? '#f4a261' : isTop ? '#f4a261' : b.hrProb > maxProb * 0.7 ? '#e63946' : '#2ecc71';
+    const barColor = homerToday ? '#f4a261' : isTop ? '#f4a261' : b.hrProb > maxProb * 0.7 ? '#dc2626' : '#2ecc71';
     const pName = (pitcherName||'').replace(/'/g,"\\'");
     const bName = b.name.replace(/'/g,"\\'");
     const rowBg = homerToday ? 'background:linear-gradient(90deg,#2a1a00 0%,#1a1200 100%);border-left:3px solid var(--accent2);' : '';
@@ -2890,13 +2890,13 @@ async function loadGameProps() {
         } else if (resultCorrect) {
           resultBadge = `<span style="background:#0d2a1a;color:#2ecc71;font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid #2ecc7166">✓ CORRECT — ${actualWinnerAbbr} won ${awayActual}-${homeActual}</span>`;
         } else {
-          resultBadge = `<span style="background:#2a0d0d;color:#e63946;font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid #e6394666">✗ INCORRECT — ${actualWinnerAbbr} won ${awayActual}-${homeActual}</span>`;
+          resultBadge = `<span style="background:#2a0d0d;color:#dc2626;font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid #dc262666">✗ INCORRECT — ${actualWinnerAbbr} won ${awayActual}-${homeActual}</span>`;
         }
       } else if (isLive && awayActual !== null && homeActual !== null) {
         const leadingAbbr = awayActual > homeActual ? awayAbbr : homeActual > awayActual ? homeAbbr : null;
         const isPickLeading = leadingAbbr === winnerAbbr;
         if (leadingAbbr) {
-          resultBadge = `<span style="background:${isPickLeading?'#0d2a1a':'#2a0d0d'};color:${isPickLeading?'#2ecc71':'#e63946'};font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid ${isPickLeading?'#2ecc7166':'#e6394666'}">${isPickLeading?'▲':'▼'} ${leadingAbbr} leads ${awayActual}-${homeActual}</span>`;
+          resultBadge = `<span style="background:${isPickLeading?'#0d2a1a':'#2a0d0d'};color:${isPickLeading?'#2ecc71':'#dc2626'};font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid ${isPickLeading?'#2ecc7166':'#dc262666'}">${isPickLeading?'▲':'▼'} ${leadingAbbr} leads ${awayActual}-${homeActual}</span>`;
         }
       }
 
@@ -3785,7 +3785,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     const pmChangeup  = Math.max(8,  Math.round(14 + kFactor*4 - gbFactor*3));
     const pmCurveball = Math.max(6, 100 - pmFastball - pmSinker - pmSlider - pmChangeup);
     const pitchTypes = [
-      { name: 'Fastball (4-seam)', usage: pmFastball, oppColor: pitcherAvgA > .260 ? '#e63946' : '#2ecc71' },
+      { name: 'Fastball (4-seam)', usage: pmFastball, oppColor: pitcherAvgA > .260 ? '#dc2626' : '#2ecc71' },
       { name: 'Slider',            usage: pmSlider,   oppColor: '#2ecc71' },
       { name: 'Changeup',          usage: pmChangeup, oppColor: pitcherVuln > .420 ? '#f4a261' : '#2ecc71' },
       { name: 'Curveball',         usage: pmCurveball, oppColor: '#2ecc71' },
@@ -5995,7 +5995,7 @@ function renderKProps() {
             kColor = '#2ecc71'; kBg = '#0d2a1a'; kBorder = '#2ecc71'; kIcon = '✅';
             kStatus = live.isFinal ? 'Final' : 'Live';
           } else if (live.isFinal) {
-            kColor = '#e63946'; kBg = '#2a0d0d'; kBorder = '#e63946'; kIcon = '❌';
+            kColor = '#dc2626'; kBg = '#2a0d0d'; kBorder = '#dc2626'; kIcon = '❌';
             kStatus = 'Final';
           } else {
             kColor = 'var(--muted)'; kBg = 'var(--bg)'; kBorder = 'var(--border)'; kIcon = '⏳';
@@ -6006,7 +6006,7 @@ function renderKProps() {
             if (ks < p.ouLine) {
               kColor = '#2ecc71'; kBg = '#0d2a1a'; kBorder = '#2ecc71'; kIcon = '✅';
             } else {
-              kColor = '#e63946'; kBg = '#2a0d0d'; kBorder = '#e63946'; kIcon = '❌';
+              kColor = '#dc2626'; kBg = '#2a0d0d'; kBorder = '#dc2626'; kIcon = '❌';
             }
             kStatus = 'Final';
           } else {
@@ -9620,13 +9620,13 @@ function showPremiumGate(feature){
           var actualWinnerAbbr = awayScore > homeScore ? awayAbbr : homeScore > awayScore ? homeAbbr : null;
           if (actualWinnerAbbr) {
             var ok = actualWinnerAbbr === winnerAbbr;
-            badge = '<span style="background:'+(ok?'#0d2a1a':'#2a0d0d')+';color:'+(ok?'#2ecc71':'#e63946')+';font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid '+(ok?'#2ecc7166':'#e6394666')+'">'+(ok?'✓ CORRECT':'✗ INCORRECT')+' — '+actualWinnerAbbr+' won '+awayScore+'-'+homeScore+'</span>';
+            badge = '<span style="background:'+(ok?'#0d2a1a':'#2a0d0d')+';color:'+(ok?'#2ecc71':'#dc2626')+';font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid '+(ok?'#2ecc7166':'#dc262666')+'">'+(ok?'✓ CORRECT':'✗ INCORRECT')+' — '+actualWinnerAbbr+' won '+awayScore+'-'+homeScore+'</span>';
           }
         } else if (isLive && awayScore != null && homeScore != null) {
           var leadingAbbr = awayScore > homeScore ? awayAbbr : homeScore > awayScore ? homeAbbr : null;
           if (leadingAbbr) {
             var pickLeading = leadingAbbr === winnerAbbr;
-            badge = '<span style="background:'+(pickLeading?'#0d2a1a':'#2a0d0d')+';color:'+(pickLeading?'#2ecc71':'#e63946')+';font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid '+(pickLeading?'#2ecc7166':'#e6394666')+'">'+(pickLeading?'▲':'▼')+' LIVE '+leadingAbbr+' leads '+awayScore+'-'+homeScore+'</span>';
+            badge = '<span style="background:'+(pickLeading?'#0d2a1a':'#2a0d0d')+';color:'+(pickLeading?'#2ecc71':'#dc2626')+';font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid '+(pickLeading?'#2ecc7166':'#dc262666')+'">'+(pickLeading?'▲':'▼')+' LIVE '+leadingAbbr+' leads '+awayScore+'-'+homeScore+'</span>';
           } else {
             badge = '<span style="background:rgba(255,193,7,.10);color:var(--accent2);font-size:10px;font-weight:800;padding:3px 10px;border-radius:4px;border:1px solid rgba(255,193,7,.45)">● LIVE TIED '+awayScore+'-'+homeScore+'</span>';
           }
@@ -9742,13 +9742,13 @@ function showPremiumGate(feature){
       var actualWinnerAbbr = awayScore > homeScore ? awayAbbr : homeScore > awayScore ? homeAbbr : null;
       if (!actualWinnerAbbr) return '<span style="background:#1a1a2e;color:var(--muted);font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid var(--border)">TIE GAME</span>';
       var ok = actualWinnerAbbr === winnerAbbr;
-      return '<span style="background:'+(ok?'#0d2a1a':'#2a0d0d')+';color:'+(ok?'#2ecc71':'#e63946')+';font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid '+(ok?'#2ecc7166':'#e6394666')+'">'+(ok?'✓ CORRECT':'✗ INCORRECT')+' — '+actualWinnerAbbr+' won '+awayScore+'-'+homeScore+'</span>';
+      return '<span style="background:'+(ok?'#0d2a1a':'#2a0d0d')+';color:'+(ok?'#2ecc71':'#dc2626')+';font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid '+(ok?'#2ecc7166':'#dc262666')+'">'+(ok?'✓ CORRECT':'✗ INCORRECT')+' — '+actualWinnerAbbr+' won '+awayScore+'-'+homeScore+'</span>';
     }
     if (st.isLive) {
       var leadingAbbr = awayScore > homeScore ? awayAbbr : homeScore > awayScore ? homeAbbr : null;
       if (!leadingAbbr) return '<span style="background:rgba(255,193,7,.10);color:var(--accent2);font-size:10px;font-weight:800;padding:3px 10px;border-radius:4px;border:1px solid rgba(255,193,7,.45)">● LIVE TIED '+awayScore+'-'+homeScore+'</span>';
       var pickLeading = leadingAbbr === winnerAbbr;
-      return '<span style="background:'+(pickLeading?'#0d2a1a':'#2a0d0d')+';color:'+(pickLeading?'#2ecc71':'#e63946')+';font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid '+(pickLeading?'#2ecc7166':'#e6394666')+'">'+(pickLeading?'▲':'▼')+' LIVE '+leadingAbbr+' leads '+awayScore+'-'+homeScore+'</span>';
+      return '<span style="background:'+(pickLeading?'#0d2a1a':'#2a0d0d')+';color:'+(pickLeading?'#2ecc71':'#dc2626')+';font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid '+(pickLeading?'#2ecc7166':'#dc262666')+'">'+(pickLeading?'▲':'▼')+' LIVE '+leadingAbbr+' leads '+awayScore+'-'+homeScore+'</span>';
     }
     return '';
   }
