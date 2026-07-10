@@ -4945,10 +4945,26 @@ async function loadHRPotential() {
               // Use last5 game type for streak detection instead of full season gameLog —
               // last5 returns the 5 most recent games and is a tiny fraction of the payload.
               // Full gameLog (162 games) was the single biggest API cost on the page.
-              const [sd,ld] = await Promise.all([
-                fetchJSON(`https://diamondreport.app/api/v1/people/${pid}?hydrate=stats(group=hitting,type=season,season=2026)`),
-                fetchJSON(`https://diamondreport.app/api/v1/people/${pid}/stats?stats=lastXGames&group=hitting&season=2026&limit=12&gameType=R`).catch(()=>({stats:[]})),
-              ]);
+              // The season-stats fetch (sd) drives ab/hr/avg/ops/obp/slg — everything
+              // feeding hrProb and the Hits/RBI/TB/SB/H+R+RBI scores. A single failed
+              // attempt used to fall back to whatever partial stat blob the boxscore
+              // happened to embed (often near-empty for a preview-state game), which the
+              // sample-size shrinkage then pulled almost entirely toward league average —
+              // a completely different number than a refresh where the fetch succeeded.
+              // Same retry fix as the roster and boxscore fetches.
+              let sd, lastErr;
+              for (let i = 0; i < 3; i++) {
+                try {
+                  sd = await fetchJSON(`https://diamondreport.app/api/v1/people/${pid}?hydrate=stats(group=hitting,type=season,season=2026)`);
+                  lastErr = null;
+                  break;
+                } catch (e) {
+                  lastErr = e;
+                  if (i < 2) await new Promise(r => setTimeout(r, 250 * (i + 1)));
+                }
+              }
+              if (lastErr) throw lastErr;
+              const ld = await fetchJSON(`https://diamondreport.app/api/v1/people/${pid}/stats?stats=lastXGames&group=hitting&season=2026&limit=12&gameType=R`).catch(()=>({stats:[]}));
               batterStatCache[pid]={sd,ld};
             }
             const {sd,ld}=batterStatCache[pid];
