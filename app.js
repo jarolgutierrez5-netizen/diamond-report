@@ -3691,13 +3691,28 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       </div>`;
     }).join('');
   } else {
-    // Estimated fallback
+    // Estimated fallback — this used to be one hardcoded 38/22/16/14/10 split shown
+    // identically for every pitcher without synced Statcast data (i.e. most pitchers,
+    // since data/pitcher-statcast.json isn't always populated). Derives a distribution
+    // that actually varies per pitcher from real season stats already fetched: K/9
+    // (higher strikeout pitchers lean more on breaking/offspeed stuff for whiffs) and
+    // GO/AO ratio (higher groundball rate means more sinker usage, less 4-seam). Still an
+    // estimate, not real pitch-tracking data, but no longer identical across pitchers.
+    const pmK9 = parseFloat(ps.strikeoutsPer9Inn) || 8;
+    const pmGoAo = parseFloat(ps.groundOutsToAirouts) || 1.0;
+    const kFactor = Math.max(0, Math.min(1, (pmK9 - 6) / 8));       // 0 at K9<=6, 1 at K9>=14
+    const gbFactor = Math.max(0, Math.min(1, (pmGoAo - 0.6) / 1.4)); // 0 at GO/AO<=0.6, 1 at >=2.0
+    const pmFastball = Math.max(20, Math.round(46 - kFactor*14 - gbFactor*8));
+    const pmSinker   = Math.max(5,  Math.round(8 + gbFactor*16));
+    const pmSlider    = Math.max(10, Math.round(16 + kFactor*10));
+    const pmChangeup  = Math.max(8,  Math.round(14 + kFactor*4 - gbFactor*3));
+    const pmCurveball = Math.max(6, 100 - pmFastball - pmSinker - pmSlider - pmChangeup);
     const pitchTypes = [
-      { name: 'Fastball (4-seam)', usage: 38, oppColor: pitcherAvgA > .260 ? '#e63946' : '#2ecc71' },
-      { name: 'Slider',            usage: 22, oppColor: '#2ecc71' },
-      { name: 'Changeup',          usage: 16, oppColor: pitcherVuln > .420 ? '#f4a261' : '#2ecc71' },
-      { name: 'Curveball',         usage: 14, oppColor: '#2ecc71' },
-      { name: 'Sinker / 2-seam',   usage: 10, oppColor: '#f4a261' },
+      { name: 'Fastball (4-seam)', usage: pmFastball, oppColor: pitcherAvgA > .260 ? '#e63946' : '#2ecc71' },
+      { name: 'Slider',            usage: pmSlider,   oppColor: '#2ecc71' },
+      { name: 'Changeup',          usage: pmChangeup, oppColor: pitcherVuln > .420 ? '#f4a261' : '#2ecc71' },
+      { name: 'Curveball',         usage: pmCurveball, oppColor: '#2ecc71' },
+      { name: 'Sinker / 2-seam',   usage: pmSinker,   oppColor: '#f4a261' },
     ];
     pitchHrList = pitchTypes.map(pt => ({ name: pt.name, usage: pt.usage }));
     pitchRows = pitchTypes.map(pt => `<div class="pitch-row">
