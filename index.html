@@ -2,7 +2,14 @@
 
 <html lang="en">
 <head>
-<link rel="stylesheet" href="styles.css">
+<!-- Prevents the browser (and any intermediary cache) from serving a stale copy of
+     this HTML document itself — without this, a plain reload could keep re-serving
+     an old page that still points at old app.js/styles.css versions, forcing a hard
+     refresh to see any update. -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<link rel="stylesheet" href="styles.css?v=20260711a">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -599,7 +606,7 @@
      the header, wired up below. -->
 
 
-<script src="app.js" defer></script>
+<script src="app.js?v=20260711a" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
