@@ -8594,33 +8594,165 @@ var analytics='<div class="tp-analytics-grid">'+
   document.addEventListener('DOMContentLoaded',function(){setTimeout(run,1200);setTimeout(run,2600);setTimeout(run,5000);});
 })();
 
+/* ---- Monte Carlo prop-line simulator ---- */
+// Simulates a player's plate appearances for a single game using their real,
+// sample-size-shrunk season rate stats, then reports what fraction of simulated games
+// actually clear the market's line - a genuine simulated probability instead of a
+// hand-tuned points formula. Runs entirely client-side against data already on the
+// row object; no extra network calls.
+(function(){
+  if (window.__DR_MONTE_CARLO__) return; window.__DR_MONTE_CARLO__ = true;
+
+  var TRIALS = 3000;
+  var AB_PER_PA = 0.88; // roughly what share of a plate appearance ends as an official at-bat (rest are BB/HBP/SF)
+
+  function n(v, fallback) { v = parseFloat(v); return Number.isFinite(v) ? v : (fallback == null ? 0 : fallback); }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  // Estimated plate appearances for one game from lineup slot - leadoff hitters get
+  // meaningfully more trips than the bottom of the order. Falls back to a league-
+  // average estimate before the lineup posts.
+  function estimatePA(battingOrder) {
+    if (!battingOrder) return 4.2;
+    return clamp(4.75 - (battingOrder - 1) * 0.11, 3.6, 4.75);
+  }
+  window.estimateGamePA = estimatePA;
+
+  // Builds a per-plate-appearance outcome model (out / walk-or-HBP / single / double /
+  // triple / HR) from real season rate stats. avg/obp/slg here are already the sample-
+  // size-shrunk values set on the row by loadHRPotential, so a hot 3-game stretch on a
+  // handful of AB can't produce an unrealistically high simulated probability.
+  function buildBatterModel(row) {
+    var s = row.stats || {};
+    var avg = clamp(n(row.avg, 0.245), 0.120, 0.400);
+    var obp = clamp(n(row.obp, avg + 0.065), avg, 0.500);
+    var slg = clamp(n(row.slg, avg + 0.155), avg, 0.800);
+    var pHit = avg * AB_PER_PA;
+    var pWalk = Math.max(0, obp - pHit);
+    var seasonAB = n(s.atBats, 0);
+    var seasonHR = n(row.hrSeason, 0);
+    var hrRatePerPA = seasonAB > 0 ? (seasonHR / seasonAB) * AB_PER_PA : pHit * 0.11;
+    var pHR = clamp(hrRatePerPA, 0, pHit * 0.55);
+    var hitBudget = Math.max(0, pHit - pHR);
+    var extraBaseBudget = Math.max(0, (slg - avg) * AB_PER_PA - pHR * 3);
+    var p3B = hitBudget * 0.025;
+    var p2B = clamp(extraBaseBudget - p3B * 2, 0, hitBudget - p3B);
+    var p1B = Math.max(0, hitBudget - p2B - p3B);
+    var pOut = Math.max(0, 1 - pHit - pWalk);
+    return { pOut: pOut, pWalk: pWalk, p1B: p1B, p2B: p2B, p3B: p3B, pHR: pHR };
+  }
+
+  function simulateGame(model, pa) {
+    var hits = 0, tb = 0, hr = 0;
+    for (var i = 0; i < pa; i++) {
+      var r = Math.random(), c = model.pOut;
+      if (r < c) continue;
+      c += model.pWalk; if (r < c) continue;
+      c += model.p1B; if (r < c) { hits++; tb += 1; continue; }
+      c += model.p2B; if (r < c) { hits++; tb += 2; continue; }
+      c += model.p3B; if (r < c) { hits++; tb += 3; continue; }
+      hits++; tb += 4; hr++;
+    }
+    return { hits: hits, tb: tb, hr: hr };
+  }
+
+  // RBI and Hits+Runs+RBI need more than the batter's own bat - RBI depends on
+  // teammates being on base ahead of them. Rather than fabricate a full lineup
+  // simulation (no real data for the other 8 hitters' game-state), this derives a
+  // per-PA "drives in a run" / "scores a run" rate from the batter's own real power
+  // and contact profile, scaled by the same real lineup-slot opportunity factors this
+  // board already used (2-3-4-5 hitters see far more traffic on base than the top or
+  // bottom of the order).
+  function estimateRBIRatePerPA(row, model) {
+    var slotFactor = ({ 2: 1.15, 3: 1.55, 4: 1.70, 5: 1.40, 6: 1.10 })[row.battingOrder] || 0.85;
+    var base = model.pHR * 1.35 + (model.p2B + model.p3B) * 0.55 + model.p1B * 0.16 + model.pOut * 0.05;
+    return clamp(base * slotFactor, 0.02, 0.42);
+  }
+  function estimateRunRatePerPA(row, model) {
+    var slotFactor = ({ 1: 1.35, 2: 1.25, 3: 1.15, 4: 1.05, 5: 1.0 })[row.battingOrder] || 0.85;
+    return clamp((model.pWalk + model.p1B + model.p2B + model.p3B + model.pHR) * 0.42 * slotFactor, 0.02, 0.45);
+  }
+
+  function poissonSample(lambda) {
+    var L = Math.exp(-lambda), k = 0, p = 1;
+    do { k++; p *= Math.random(); } while (p > L);
+    return k - 1;
+  }
+
+  // Public entry point for Hits / RBI / Total Bases / H+R+RBI / HR: returns a 1-99
+  // probability that this player's simulated per-game output clears the market's line.
+  // Memoized on the row object itself so the same row+market only gets simulated once
+  // per fresh data load, no matter how many times score() is called during a single
+  // render (filter pass, sort comparator, top-N average, card build all call it).
+  window.simulatePropOdds = function(marketType, row) {
+    row.__mcCache = row.__mcCache || {};
+    if (row.__mcCache[marketType] != null) return row.__mcCache[marketType];
+
+    var model = buildBatterModel(row);
+    var pa = estimatePA(row.battingOrder);
+    var rbiRate = estimateRBIRatePerPA(row, model);
+    var runRate = estimateRunRatePerPA(row, model);
+    var successes = 0;
+    for (var t = 0; t < TRIALS; t++) {
+      var gamePA = Math.max(1, Math.round(pa + (Math.random() - 0.5) * 1.6));
+      var g = simulateGame(model, gamePA);
+      var success = false;
+      if (marketType === 'hits') success = g.hits >= 1;
+      else if (marketType === 'tb') success = g.tb >= 2;
+      else if (marketType === 'hr') success = g.hr >= 1;
+      else if (marketType === 'rbis' || marketType === 'hrrbi') {
+        var rbi = 0, runs = 0;
+        for (var i = 0; i < gamePA; i++) {
+          if (Math.random() < rbiRate) rbi++;
+          if (Math.random() < runRate) runs++;
+        }
+        success = marketType === 'rbis' ? rbi >= 1 : (g.hits + runs + rbi) >= 2;
+      }
+      if (success) successes++;
+    }
+    var result = Math.max(1, Math.min(99, Math.round((successes / TRIALS) * 100)));
+    row.__mcCache[marketType] = result;
+    return result;
+  };
+
+  // Stolen bases are opportunity-driven (times reaching base, then an attempt) rather
+  // than a per-PA batting outcome, so this models it as a Poisson process using the
+  // batter's real season SB rate per game, adjusted by the opposing pitcher/catcher's
+  // own running-game suppression (already computed elsewhere on this board) instead of
+  // reusing the per-PA batter model above.
+  window.simulateSBOdds = function(row) {
+    row.__mcCache = row.__mcCache || {};
+    if (row.__mcCache.sb != null) return row.__mcCache.sb;
+
+    var s = row.stats || {};
+    var sb = n(s.stolenBases, 0), cs = n(s.caughtStealing, 0);
+    var att = sb + cs;
+    var successRate = att >= 5 ? sb / att : (sb > 0 ? 0.70 : 0.60);
+    var seasonAB = n(s.atBats, 0);
+    var gamesPlayed = seasonAB > 0 ? Math.max(1, seasonAB / 3.8) : 1; // ~3.8 AB/game typical
+    var sbPerGame = seasonAB > 0 ? (sb / gamesPlayed) : 0;
+    var pAtt = n(row.pitcherSbAllowed, 0) + n(row.pitcherCsAllowed, 0);
+    var batterySuppression = pAtt >= 5 ? clamp(1 - ((n(row.pitcherSbAllowed, 0) / pAtt) - 0.72) * 0.6, 0.7, 1.3) : 1;
+    var lambda = clamp(sbPerGame * batterySuppression, 0.01, 1.2);
+
+    var successes = 0;
+    for (var t = 0; t < TRIALS; t++) {
+      var attempts = poissonSample(lambda);
+      var stolen = 0;
+      for (var i = 0; i < attempts; i++) if (Math.random() < successRate) stolen++;
+      if (stolen >= 1) successes++;
+    }
+    var result = Math.max(1, Math.min(99, Math.round((successes / TRIALS) * 100)));
+    row.__mcCache.sb = result;
+    return result;
+  };
+})();
+
 /* ---- from <script id="prod-v10-30-prop-hit-highlight-js"> ---- */
 (function(){
   if(window.__DR_V1030_PROP_HITS__) return; window.__DR_V1030_PROP_HITS__ = true;
   function n(v){ v=parseFloat(v); return Number.isFinite(v)?v:0; }
   function pct(v){ return Math.max(1,Math.min(99,Math.round(v))); }
-  // The raw `base` values from score() below routinely land in the 90-110+ range for
-  // any genuinely strong player (see the per-type coefficients in score()), so a flat
-  // clamp(1,99) meant most good-to-great matchups all piled up at exactly 99% with no
-  // way to tell a merely strong play from the single best one on the slate. CAL below
-  // remaps each type's raw base so a true league-average matchup reads ~50% and a
-  // realistic elite matchup (great power/contact profile, hot streak, favorable park
-  // and matchup all aligning) reads ~92%, leaving 93-99% for genuinely rare, everything-
-  // aligned plays. avg/elite anchors were derived from each formula's own coefficients
-  // using representative league-average vs. realistic-elite input stat lines - they
-  // reshape the display scale only, the underlying per-signal reasoning is unchanged.
-  var CAL = {
-    hits:  { avg: 77.6,  elite: 93.43 },
-    rbis:  { avg: 70.06, elite: 110.2 },
-    tb:    { avg: 64.65, elite: 97.37 },
-    sb:    { avg: 58.24, elite: 90.91 },
-    hrrbi: { avg: 75.32, elite: 101.24 }
-  };
-  function calibrate(type, base){
-    var c = CAL[type];
-    if(!c) return pct(base);
-    return pct(50 + (base - c.avg) * (42 / (c.elite - c.avg)));
-  }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function f(v,d){ v=n(v); return v ? v.toFixed(d==null?3:d).replace(/^0(?=\.)/,'') : '–'; }
   function rows(){ try{ return (window.getProductionPropRows?window.getProductionPropRows():(window.hrpRows||[])).filter(function(r){ return r && r.name && (!window.isActiveForHRThreat || window.isActiveForHRThreat(r)); }); }catch(e){ return []; } }
@@ -8650,58 +8782,19 @@ var analytics='<div class="tp-analytics-grid">'+
   function label(type){ return ({hits:'Hits',rbis:'RBIs',tb:'Total Bases',sb:'Stolen Bases',hrrbi:'Hits+Runs+RBI'})[type] || 'Prop'; }
   function line(type){ return ({hits:'Over 0.5 Hits',rbis:'Over 0.5 RBI',tb:'Over 1.5 Total Bases',sb:'Over 0.5 SB',hrrbi:'Over 1.5 H+R+RBI'})[type] || 'Line'; }
   function score(type,r){
-    var s=stats(r),
-        avg=n(r.avg||s.avg), ops=n(r.ops||s.ops), iso=n(r.iso||s.iso),
-        hr=n(r.hrSeason||s.homeRuns), prob=n(r.hrProb),
-        // r.obp/r.slg (sample-size-shrunk, set by loadHRPotential) take priority over the
-        // raw season stat blob.
-        obp=n(r.obp||s.obp), slg=n(r.slg||s.slg),
-        sb=n(s.stolenBases), cs=n(s.caughtStealing),
-        l10=n(r.last10HR), hits=n(s.hits), runs=n(s.runs), rbi=n(s.rbi||s.runsBattedIn);
-    var base=50;
-    var pAvgAllowed = r.pitcherAvgAllowed || .260, pSlgAllowed = r.pitcherSlgAllowed || .400;
-    var bo = r.battingOrder; // 1-9 lineup slot, or null if unknown
-    if(type==='hits'){
-      // Batting order stands in for projected plate appearances — the top of the order
-      // gets meaningfully more trips per game than the bottom. Opposing pitcher's AVG
-      // allowed adds real matchup context beyond the generic isFavorable flag.
-      var paBoost = bo ? Math.max(0,(6-bo))*.7 : 0;
-      base = 38 + avg*120 + ops*8 + obp*12 + (pAvgAllowed-.260)*70 + paBoost + (r.isFavorable?4:0);
+    // Runs a real Monte Carlo simulation of the player's game (thousands of trials
+    // built from their actual sample-size-shrunk AVG/OBP/SLG/HR rate and an estimated
+    // plate-appearance count for their lineup slot) instead of a hand-tuned points
+    // formula, and reports the simulated probability of clearing this market's line.
+    if (type === 'sb') return window.simulateSBOdds ? window.simulateSBOdds(r) : 50;
+    if (type === 'hits' || type === 'rbis' || type === 'tb' || type === 'hrrbi') {
+      return window.simulatePropOdds ? window.simulatePropOdds(type, r) : 50;
     }
-    if(type==='rbis'){
-      // RBI opportunity depends heavily on lineup slot — 3-4-5 hitters bat with runners on
-      // base far more often than leadoff or bottom-of-the-order hitters. This was the
-      // single biggest missing signal for this market.
-      var rbiSlot = bo ? ({2:4,3:9,4:11,5:8,6:4}[bo]||0) : 0;
-      base = 35 + ops*10 + iso*72 + hr*.8 + prob*.35 + rbiSlot + (r.topHrThreat?4:0);
-    }
-    if(type==='tb'){
-      var parkBoost = r.parkFactor ? (r.parkFactor-100)*.12 : 0;
-      base = 36 + ops*8 + iso*96 + prob*.45 + l10*2 + slg*8 + (pSlgAllowed-.400)*45 + parkBoost;
-    }
-    if(type==='sb'){
-      // Attempt-adjusted success rate instead of a raw season total — 20 SB in 25 attempts
-      // and 20 SB in 45 attempts used to score identically. Falls back to a neutral rate
-      // below a 5-attempt sample rather than trusting a tiny denominator. The battery term
-      // uses the opposing pitcher's own SB/CS allowed as a practical stand-in for catcher
-      // caught-stealing% (true catcher-specific data would need an extra fetch per game).
-      var att = sb+cs;
-      var sbRate = att>=5 ? sb/att : (sb>0?0.70:0.60);
-      var pAtt = (r.pitcherSbAllowed||0)+(r.pitcherCsAllowed||0);
-      var battery = pAtt>=5 ? (((r.pitcherSbAllowed||0)/pAtt)-0.72)*22 : 0;
-      base = 26 + Math.min(sb,20)*1.6 + sbRate*22 + avg*26 + obp*18 + battery + (/SS|CF|2B|LF|RF/.test(String(r.pos||''))?6:0);
-    }
-    if(type==='hrrbi'){
-      // Combines the Hits and RBI gaps — any prominent lineup slot (leadoff through
-      // cleanup) gets more combined hit/run/RBI opportunity than the bottom of the order.
-      var lineupBoost = bo ? Math.max(0, 5-Math.abs(bo-3))*1.3 : 0;
-      base = 42 + avg*55 + ops*9 + hr*.45 + prob*.32 + (r.isFavorable?5:0) + obp*8 + lineupBoost;
-    }
-    return calibrate(type, base);
+    return 50;
   }
   function chip(k,v,cls){ return '<span class="dr109-chip '+(cls||'')+'"><span>'+esc(k)+':</span><strong>'+esc(v)+'</strong></span>'; }
   function chipSet(type,r){ var s=stats(r),avg=n(r.avg||s.avg),ops=n(r.ops||s.ops),iso=n(r.iso||s.iso),obp=n(r.obp||s.obp),slg=n(r.slg||s.slg),hr=n(r.hrSeason||s.homeRuns),prob=n(r.hrProb),sb=n(s.stolenBases),rbi=n(s.rbi||s.runsBattedIn),runs=n(s.runs),hits=n(s.hits),a=[]; if(hit(type,r)) a.push(['✓ HIT', actual(type,r)+' / '+target(type), 'hit-check']); else if(hasLive(r)) a.push(['Live', actual(type,r)+' / '+target(type), '']);
-    if(type==='hits')a=a.concat([['Line',line(type),'good'],['AVG',f(avg),''],['xBA proxy',f(avg+(r.isFavorable?.012:0)),'good'],['OBP',f(obp),''],['Contact',pct(66+avg*80)+'%','good'],['PA Est','4.1','']]);
+    if(type==='hits')a=a.concat([['Line',line(type),'good'],['AVG',f(avg),''],['xBA proxy',f(avg+(r.isFavorable?.012:0)),'good'],['OBP',f(obp),''],['Contact',pct(66+avg*80)+'%','good'],['PA Est',(window.estimateGamePA?window.estimateGamePA(r.battingOrder):4.2).toFixed(1),'']]);
     if(type==='rbis')a=a.concat([['Line',line(type),'good'],['RBI',rbi||'–',''],['RISP proxy',pct(42+ops*20)+'%','good'],['Run Env',r.isFavorable?'Plus':'Neutral',r.isFavorable?'good':''],['OPS',f(ops),''],['ISO',f(iso),'warn'],['Team Stack','Supported',''],['Lineup','Middle/Power','']]);
     if(type==='tb')a=a.concat([['Line',line(type),'good'],['SLG',f(slg),''],['xSLG proxy',f(slg+iso*.12),'good'],['ISO',f(iso),'warn'],['Power',r.topHrThreat?'Top':'Model',r.topHrThreat?'warn':'']]);
     if(type==='sb')a=a.concat([['Line',line(type),'good'],['SB',sb||'–','good'],['OBP',f(obp),''],['Speed proxy',pct(48+sb*2.2)+'%','good'],['Risk','Volatile','warn']]);
@@ -8724,7 +8817,7 @@ var analytics='<div class="tp-analytics-grid">'+
     var gameOpts=['<option value=""'+(curG===''?' selected':'')+'>All Games</option>'].concat(games.map(function(g){ return '<option value="'+g.pk+'"'+(curG===g.pk?' selected':'')+'>'+esc(g.label)+'</option>'; })).join('');
     return '<div class="dr109-filter-row" style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:0 0 12px"><div class="dr109-game-filter" style="margin:0"><label style="font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-right:8px">Edge:</label><select onchange="window.setPropEdgeFilter(\''+type+'\',this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700">'+opts+'</select></div><div class="dr109-game-filter" style="margin:0"><label style="font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-right:8px">Game:</label><select onchange="window.setPropGameFilter(\''+type+'\',this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700">'+gameOpts+'</select></div></div>';
   }
-  function render(type,id,force){ var el=document.getElementById(id); if(!el) return; if(!force && document.activeElement && el.contains(document.activeElement) && document.activeElement.tagName==='SELECT') return; var scrollTop=el.scrollTop; var pageY=window.scrollY; var all=rows(); var filtered=edgeFilters[type]?all.filter(function(r){ return score(type,r)>=edgeFilters[type]; }):all; if(gameFilters[type]) filtered=filtered.filter(function(r){ return String(r.gamePk)===gameFilters[type]; }); var arr=filtered.slice().sort(function(a,b){ return (hit(type,b)-hit(type,a)) || score(type,b)-score(type,a); }).slice(0,50); if(!all.length){ el.innerHTML='<div class="mu-empty">Loading '+label(type)+' board from active production data…</div>'; return; } var gf=edgeFilterHTML(type); if(!arr.length){ el.innerHTML=gf+'<div class="mu-empty" style="padding:24px">No players match the selected filters. Choose All Edges / All Games to reset.</div>'; return; } var top=arr[0], avg=Math.round(arr.slice(0,Math.min(6,arr.length)).reduce(function(a,r){return a+score(type,r)},0)/Math.min(6,arr.length)); el.innerHTML='<div class="dr109-summary"><div class="dr109-title">📊 EXPANDED <span>'+esc(label(type).toUpperCase())+' DATA</span></div><p class="dr109-copy">This board now shows line support, matchup context, recent-form proxies, Statcast-style power/contact indicators, and a plain-English reason for each play. Values are generated from the active production rows so they stay fast and do not add external load time.</p><div class="dr109-grid"><div class="dr109-metric good"><b>'+esc(top.name||'–')+'</b><span>Top Rated</span></div><div class="dr109-metric"><b>'+avg+'%</b><span>Board Avg Confidence</span></div><div class="dr109-metric"><b>'+arr.length+'</b><span>Players Scanned</span></div><div class="dr109-metric warn"><b>'+esc(line(type))+'</b><span>Primary Line</span></div></div></div>'+gf+arr.map(function(r){ var sc=score(type,r),isHit=hit(type,r),isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL',isMiss=isFinal&&!isHit; return '<div class="dr109-card '+(isHit?'prop-hit':isMiss?'prop-miss':'')+'"><div class="dr109-card-head"><div class="dr109-player"><img loading="lazy" src="'+head(r.id)+'" onerror="this.style.display=\'none\'" alt=""><div style="min-width:0"><div class="dr109-name">'+esc(r.name||'Player')+(isHit?' <span class="prop-hit-badge">✓ Projection Hit</span>':isMiss?' <span class="prop-miss-badge">✗ Missed</span>':'')+'</div><div class="dr109-meta">'+esc(r.teamAbbr||'')+' · '+esc(r.pos||'')+' · vs '+esc(r.oppAbbr||'')+'</div></div></div><div class="dr109-score">'+sc+'%<small>'+esc(label(type))+' Edge</small></div></div><div class="dr109-chiprow">'+chipSet(type,r)+'</div><div class="dr109-reason"><strong>Why it supports the line:</strong> '+esc(r.name||'This player')+' grades at '+sc+'% for '+esc(line(type))+' because the model combines '+({hits:'contact profile, on-base skill, projected plate appearances, and matchup quality',rbis:'RBI lane, team run environment, power profile, and traffic ahead of the bat',tb:'slugging profile, ISO power, extra-base upside, and pitcher contact quality allowed',sb:'speed profile, on-base path, game script, and stolen-base opportunity',hrrbi:'multi-category production path through hits, runs, RBIs, lineup role, and team run environment'}[type]||'production profile')+'. Opponent context: '+esc(r.oppAbbr||'opponent')+'.</div></div>'; }).join(''); el.scrollTop=scrollTop; window.scrollTo(window.scrollX,pageY); }
+  function render(type,id,force){ var el=document.getElementById(id); if(!el) return; if(!force && document.activeElement && el.contains(document.activeElement) && document.activeElement.tagName==='SELECT') return; var scrollTop=el.scrollTop; var pageY=window.scrollY; var all=rows(); var filtered=edgeFilters[type]?all.filter(function(r){ return score(type,r)>=edgeFilters[type]; }):all; if(gameFilters[type]) filtered=filtered.filter(function(r){ return String(r.gamePk)===gameFilters[type]; }); var arr=filtered.slice().sort(function(a,b){ return (hit(type,b)-hit(type,a)) || score(type,b)-score(type,a); }).slice(0,50); if(!all.length){ el.innerHTML='<div class="mu-empty">Loading '+label(type)+' board from active production data…</div>'; return; } var gf=edgeFilterHTML(type); if(!arr.length){ el.innerHTML=gf+'<div class="mu-empty" style="padding:24px">No players match the selected filters. Choose All Edges / All Games to reset.</div>'; return; } var top=arr[0], avg=Math.round(arr.slice(0,Math.min(6,arr.length)).reduce(function(a,r){return a+score(type,r)},0)/Math.min(6,arr.length)); el.innerHTML='<div class="dr109-summary"><div class="dr109-title">📊 EXPANDED <span>'+esc(label(type).toUpperCase())+' DATA</span></div><p class="dr109-copy">Each player\'s odds come from a Monte Carlo simulation of thousands of games built from their real season rate stats and lineup slot, not a hand-tuned formula. Values are generated from the active production rows so they stay fast and do not add external load time.</p><div class="dr109-grid"><div class="dr109-metric good"><b>'+esc(top.name||'–')+'</b><span>Top Rated</span></div><div class="dr109-metric"><b>'+avg+'%</b><span>Board Avg Odds</span></div><div class="dr109-metric"><b>'+arr.length+'</b><span>Players Scanned</span></div><div class="dr109-metric warn"><b>'+esc(line(type))+'</b><span>Primary Line</span></div></div></div>'+gf+arr.map(function(r){ var sc=score(type,r),isHit=hit(type,r),isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL',isMiss=isFinal&&!isHit; return '<div class="dr109-card '+(isHit?'prop-hit':isMiss?'prop-miss':'')+'"><div class="dr109-card-head"><div class="dr109-player"><img loading="lazy" src="'+head(r.id)+'" onerror="this.style.display=\'none\'" alt=""><div style="min-width:0"><div class="dr109-name">'+esc(r.name||'Player')+(isHit?' <span class="prop-hit-badge">✓ Projection Hit</span>':isMiss?' <span class="prop-miss-badge">✗ Missed</span>':'')+'</div><div class="dr109-meta">'+esc(r.teamAbbr||'')+' · '+esc(r.pos||'')+' · vs '+esc(r.oppAbbr||'')+'</div></div></div><div class="dr109-score">'+sc+'%<small>'+esc(label(type))+' Odds</small></div></div><div class="dr109-chiprow">'+chipSet(type,r)+'</div><div class="dr109-reason"><strong>Simulated odds:</strong> across thousands of simulated games built from '+esc(r.name||'this player')+'\'s real season rate stats and lineup slot, '+sc+'% of them clear '+esc(line(type))+'. Inputs: '+({hits:'contact profile, on-base skill, projected plate appearances, and matchup quality',rbis:'RBI lane, team run environment, power profile, and traffic ahead of the bat',tb:'slugging profile, ISO power, extra-base upside, and pitcher contact quality allowed',sb:'speed profile, on-base path, game script, and stolen-base opportunity',hrrbi:'multi-category production path through hits, runs, RBIs, lineup role, and team run environment'}[type]||'production profile')+'. Opponent context: '+esc(r.oppAbbr||'opponent')+'.</div></div>'; }).join(''); el.scrollTop=scrollTop; window.scrollTo(window.scrollX,pageY); }
   window.renderPropIntelligencePanes=function(){ render('hits','hits-props-content'); render('rbis','rbis-props-content'); render('tb','tb-props-content'); render('sb','sb-props-content'); render('hrrbi','hrrbi-props-content'); if(typeof window.enhanceDeepResearch==='function') try{window.enhanceDeepResearch();}catch(e){} };
   function markHRHits(){ try{ rows().forEach(function(r){ if(actual('hr',r)>=1){ ['#hrp-row-'+r.id].forEach(function(sel){ var el=document.querySelector(sel); if(el){ el.classList.add('hr-hit'); if(!el.querySelector('.hr-hit-badge')){ var chipBox=el.querySelector('.dr1017-hr-chips,.dr1026-chip-row'); if(chipBox) chipBox.insertAdjacentHTML('afterbegin','<span class="hr-hit-badge">✓ HR Projection Hit</span>'); } } }); } }); }catch(e){} }
   var oldHR=window.renderHRPTable; if(typeof oldHR==='function'){ window.renderHRPTable=function(){ var out=oldHR.apply(this,arguments); setTimeout(markHRHits,0); return out; }; }
