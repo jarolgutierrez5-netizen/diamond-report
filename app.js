@@ -10549,12 +10549,43 @@ function showPremiumGate(feature){
     '</div>';
   }
 
+  // Home Runs is already selected per game — group its cards under a small per-game
+  // header (rank restarts at #1 for each game) instead of one flat cross-game list, so
+  // the display matches how the picks are actually scoped.
+  function groupByGameForDisplay(picks){
+    var byGame = {}, order = [];
+    picks.forEach(function(entry){
+      var gp = entry.row.gamePk;
+      if (!byGame[gp]) { byGame[gp] = []; order.push(gp); }
+      byGame[gp].push(entry);
+    });
+    return order.map(function(gp){ return byGame[gp]; });
+  }
+
   function sectionHTML(m, picks){
-    var cards = picks.length ? picks.map(function(entry, rank){ return cardHTML(entry, rank, m.key); }).join('') :
-      '<div class="mu-empty" style="padding:16px">No elite picks clear the bar for this market yet today — check back once boards have loaded.</div>';
+    if (!picks.length) {
+      return '<div class="premium-section">' +
+        '<div class="premium-section-head">'+esc(m.label)+'</div>' +
+        '<div class="premium-card-list"><div class="mu-empty" style="padding:16px">No elite picks clear the bar for this market yet today — check back once boards have loaded.</div></div>' +
+      '</div>';
+    }
+    var body;
+    if (m.key === 'hr') {
+      body = groupByGameForDisplay(picks).map(function(entries){
+        var top = entries[0].row;
+        var head = esc(top.teamAbbr||'–') + ' vs ' + esc(top.oppAbbr||'–');
+        var cards = entries.map(function(entry, rank){ return cardHTML(entry, rank, m.key); }).join('');
+        return '<div class="premium-game-group">' +
+          '<div class="premium-game-head">'+head+'</div>' +
+          '<div class="premium-card-list">'+cards+'</div>' +
+        '</div>';
+      }).join('');
+    } else {
+      body = '<div class="premium-card-list">'+picks.map(function(entry, rank){ return cardHTML(entry, rank, m.key); }).join('')+'</div>';
+    }
     return '<div class="premium-section">' +
       '<div class="premium-section-head">'+esc(m.label)+'</div>' +
-      '<div class="premium-card-list">'+cards+'</div>' +
+      body +
     '</div>';
   }
 
