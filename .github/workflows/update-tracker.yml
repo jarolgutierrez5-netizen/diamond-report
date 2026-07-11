@@ -1,0 +1,41 @@
+name: Update Diamond Report Tracker
+
+on:
+  schedule:
+    # 14:00 UTC = 9am CDT / 10am EDT — before essentially all MLB first pitches.
+    - cron: '0 14 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-tracker
+  cancel-in-progress: false
+
+jobs:
+  update-tracker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run tracker updater
+        run: node scripts/update-tracker.mjs
+
+      - name: Commit and push if changed
+        run: |
+          if git diff --quiet -- data/tracker.json; then
+            echo "No changes to data/tracker.json — nothing to commit."
+            exit 0
+          fi
+          git config user.name "diamond-report-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/tracker.json
+          git commit -m "Update tracker: capture today's picks, grade prior day's results"
+          git push

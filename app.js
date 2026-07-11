@@ -1214,10 +1214,42 @@ function updateHeroTodayRecordStrip() {
     const pct = Math.round((kp.wins / kp.total) * 100);
     items.push(`<div class="dr-trust-item"><strong style="color:${recordColor(kp.wins, kp.total)}">${kp.wins}-${kp.losses}</strong><span>K Props · ${pct}% today</span></div>`);
   }
+  // All-time record, sourced from data/tracker.json (the automated nightly grading job —
+  // see scripts/update-tracker.mjs). Real, persisted, independently-computed history, not
+  // the DOM-scraped Tracker system this site never actually shipped a tab for.
+  const drAll = window.__drAllTimeRecord;
+  if (drAll && drAll.total > 0) {
+    const pct = Math.round((drAll.wins / drAll.total) * 100);
+    items.push(`<div class="dr-trust-item"><strong style="color:${recordColor(drAll.wins, drAll.total)}">${drAll.wins}-${drAll.losses}</strong><span>Diamond Report Pick · ${pct}% all-time</span></div>`);
+  }
+  const kpAll = window.__kpAllTimeRecord;
+  if (kpAll && kpAll.total > 0) {
+    const pct = Math.round((kpAll.wins / kpAll.total) * 100);
+    items.push(`<div class="dr-trust-item"><strong style="color:${recordColor(kpAll.wins, kpAll.total)}">${kpAll.wins}-${kpAll.losses}</strong><span>K Props · ${pct}% all-time</span></div>`);
+  }
   el.innerHTML = items.join('');
   el.style.display = items.length ? '' : 'none';
 }
 window.updateHeroTodayRecordStrip = updateHeroTodayRecordStrip;
+
+// Fetches the nightly-graded all-time record once on load. Gracefully no-ops until the
+// first scheduled run of scripts/update-tracker.mjs actually produces data/tracker.json —
+// no fabricated record shown before real history exists.
+async function loadAllTimeTrackerRecord() {
+  try {
+    const res = await fetch('./data/tracker.json', { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data?.allTime?.drp?.total > 0) window.__drAllTimeRecord = data.allTime.drp;
+    if (data?.allTime?.kprop?.total > 0) window.__kpAllTimeRecord = data.allTime.kprop;
+    updateHeroTodayRecordStrip();
+  } catch (e) {}
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadAllTimeTrackerRecord, { once: true });
+} else {
+  loadAllTimeTrackerRecord();
+}
 window.refreshFavoredPills = refreshFavoredPills;
 
 function gameKey(g) { return g.gamePk || `${g.awayAbbr}-${g.homeAbbr}`; }
