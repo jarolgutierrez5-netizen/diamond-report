@@ -50,6 +50,16 @@ import path from 'node:path';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TRACKER_PATH = path.join(__dirname, '..', 'data', 'tracker.json');
 const API = 'https://statsapi.mlb.com/api/v1';
+// Real sportsbook lines, when available — see fetchOddsLookup() below. Entirely
+// optional: everything gracefully falls back to the model's own line/analysis when
+// ODDS_API_KEY isn't set, a request fails, or a specific player/market isn't quoted.
+const ODDS_API_KEY = process.env.ODDS_API_KEY || '';
+const ODDS_API_BASE = 'https://api.the-odds-api.com/v4';
+// Budget note: the-odds-api.com's free tier is metered per month. One events-list call
+// plus one per-event odds call (all markets requested together in a single call per
+// event) runs roughly 15-16 requests/day if fetched daily — call this only from the
+// morning capture pass, not the afternoon Elite-Picks-only pass, to stay well within a
+// typical free-tier monthly quota.
 
 const PARK_FACTORS = {
   COL:145,CIN:112,TEX:108,PHI:107,BOS:106,NYY:105,MIL:104,CWS:103,
@@ -80,6 +90,73 @@ async function fetchJSON(url, attempts = 3) {
     }
   }
   throw lastErr;
+}
+
+function normalizeName(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z\s]/g, '').trim();
+}
+
+// Real sportsbook lines for K Props and the batter markets Elite Picks covers, from
+// the-odds-api.com. Two lookup maps come back: pitcherLines (strikeout O/U) and
+// batterLines (hits/home runs/RBIs/total bases/stolen bases O/U), each keyed by
+// normalized player name. Every failure mode here — no key, quota exceeded, an event
+// or market simply not offered yet — resolves to an empty lookup rather than throwing,
+// since this whole feature is a strict enhancement over the model-only fallback that
+// already works.
+async function fetchOddsLookup() {
+  const pitcherLines = new Map();
+  const batterLines = new Map();
+  if (!ODDS_API_KEY) {
+    console.log('ODDS_API_KEY not set — skipping real sportsbook lines, using model-only fallback.');
+    return { pitcherLines, batterLines };
+  }
+  try {
+    const events = await fetchJSON(`${ODDS_API_BASE}/sports/baseball_mlb/events?apiKey=${ODDS_API_KEY}`, 1);
+    if (!Array.isArray(events) || !events.length) {
+      console.warn('the-odds-api: no MLB events returned for today.');
+      return { pitcherLines, batterLines };
+    }
+    const markets = 'pitcher_strikeouts,batter_hits,batter_home_runs,batter_rbis,batter_total_bases,batter_stolen_bases';
+    for (const ev of events) {
+      try {
+        const odds = await fetchJSON(
+          `${ODDS_API_BASE}/sports/baseball_mlb/events/${ev.id}/odds?apiKey=${ODDS_API_KEY}&regions=us&markets=${markets}&oddsFormat=american`,
+          1,
+        );
+        const bookmakers = odds?.bookmakers || [];
+        // One consensus line per player/market: the first bookmaker that quotes it.
+        // Real lines vary slightly book to book; picking a single consistent source
+        // (rather than averaging) keeps grading simple and reproducible.
+        for (const book of bookmakers) {
+          for (const mkt of book.markets || []) {
+            const targetMap = mkt.key === 'pitcher_strikeouts' ? pitcherLines : batterLines;
+            const marketKey = mkt.key === 'pitcher_strikeouts' ? 'strikeouts' : mkt.key.replace('batter_', '');
+            const byName = {};
+            (mkt.outcomes || []).forEach(o => {
+              const name = normalizeName(o.description || o.name);
+              if (!name) return;
+              (byName[name] ||= {})[String(o.name).toLowerCase()] = o;
+            });
+            Object.entries(byName).forEach(([name, sides]) => {
+              const over = sides.over;
+              if (!over || !Number.isFinite(over.point)) return;
+              const key = name;
+              const existing = targetMap.get(key) || {};
+              if (existing[marketKey]) return; // already have a consensus line for this player/market
+              existing[marketKey] = { line: over.point, overPrice: over.price, underPrice: sides.under?.price ?? null, book: book.key };
+              targetMap.set(key, existing);
+            });
+          }
+        }
+      } catch (e) {
+        console.warn(`the-odds-api: props fetch failed for event ${ev.id}:`, e.message);
+      }
+    }
+    console.log(`the-odds-api: loaded lines for ${pitcherLines.size} pitcher(s), ${batterLines.size} batter(s).`);
+  } catch (e) {
+    console.warn('the-odds-api: events fetch failed, continuing model-only:', e.message);
+  }
+  return { pitcherLines, batterLines };
 }
 
 function emptyTracker() {
@@ -240,7 +317,7 @@ async function computeDRPick(g, season) {
 }
 
 // ── K Props model (ported from buildRow in app.js) ──
-async function computeKProp(g, side, season) {
+async function computeKProp(g, side, season, oddsLookup) {
   const opp = side === 'away' ? 'home' : 'away';
   const pitcher = g.teams[side].probablePitcher;
   if (!pitcher) return null;
@@ -267,9 +344,13 @@ async function computeKProp(g, side, season) {
   } catch (e) {}
 
   const projK = Math.max(1, (k9 * projIP / 9) + ((oppKpct - 0.22) * 10));
-  // No independent server-side sportsbook feed, so this grades against the same
-  // model-derived fallback line the client uses when no real book line has loaded.
-  const line = Math.max(0.5, Math.floor(projK) - 0.5);
+  // Real sportsbook line when available (grades against what a bettor would actually
+  // get, and lets us measure genuine edge vs. the market); falls back to the model's
+  // own derived line — same fallback the client uses when no real book line has
+  // loaded — when no odds feed is configured or this pitcher isn't quoted yet.
+  const sbLine = oddsLookup?.pitcherLines?.get(normalizeName(pitcher.fullName))?.strikeouts;
+  const line = sbLine ? sbLine.line : Math.max(0.5, Math.floor(projK) - 0.5);
+  const lineSource = sbLine ? 'sportsbook' : 'model';
 
   return {
     key: `${cdtDateString(new Date(g.gameDate))}|KPROP|${String(pitcher.fullName || '').toLowerCase()}`,
@@ -281,6 +362,8 @@ async function computeKProp(g, side, season) {
     opp: g.teams[opp].team.abbreviation,
     projK: Math.round(projK * 10) / 10,
     line,
+    lineSource,
+    book: sbLine?.book ?? null,
     pick: 'OVER',
     result: 'pending',
     finalK: null,
@@ -613,7 +696,12 @@ function buildEliteLists(pool) {
   return out;
 }
 
-async function captureEliteToday(store, previewGames, season) {
+// Maps Elite Picks market keys to their the-odds-api.com equivalent. hrrbi
+// (Hits+Runs+RBI) has no direct sportsbook market — no market context for that one,
+// which is expected, not a bug.
+const ELITE_TO_ODDS_MARKET = { hr: 'home_runs', hits: 'hits', rbis: 'rbis', tb: 'total_bases', sb: 'stolen_bases' };
+
+async function captureEliteToday(store, previewGames, season, oddsLookup) {
   store.market.premium ||= [];
   if (!previewGames.length) return 0;
   const pool = await buildEliteBatterPool(previewGames, season);
@@ -626,11 +714,16 @@ async function captureEliteToday(store, previewGames, season) {
       const r = entry.row;
       const key = `${today}|PREMIUM|${m}|${r.id}`;
       if (store.market.premium.some(x => x.key === key)) return;
+      // Informational only — real sportsbook line/price when quoted, for comparing our
+      // simulated probability against the market later. Never affects win/loss grading,
+      // which always stays the real, fixed stat threshold (see eliteHit below).
+      const oddsMarket = ELITE_TO_ODDS_MARKET[m];
+      const marketOdds = oddsMarket ? (oddsLookup?.batterLines?.get(normalizeName(r.name))?.[oddsMarket] ?? null) : null;
       store.market.premium.push({
         key, date: today, market: m, rank: rank + 1,
         playerId: r.id, playerName: r.name, team: r.teamAbbr, opp: r.oppAbbr,
         gamePk: previewGames.find(g => g.teams.away.team.abbreviation === r.teamAbbr || g.teams.home.team.abbreviation === r.teamAbbr)?.gamePk ?? null,
-        score: entry.score, quality: entry.quality,
+        score: entry.score, quality: entry.quality, marketOdds,
         result: 'pending', actual: null,
       });
       added++;
@@ -704,6 +797,18 @@ async function captureToday(store) {
   const previewGames = games.filter(g => g.status?.abstractGameState === 'Preview');
   let added = 0;
 
+  // Fetched at most once per day, not once per run — this script fires twice daily
+  // (morning capture + afternoon Elite Picks re-pass, see the workflow's cron entries),
+  // and re-fetching odds on the second run would double real API usage against a
+  // metered monthly quota for no benefit (K Props/DRP are already locked by then).
+  let oddsLookup = { pitcherLines: new Map(), batterLines: new Map() };
+  if (store.oddsLastFetchedDate !== today) {
+    oddsLookup = await fetchOddsLookup();
+    store.oddsLastFetchedDate = today;
+  } else {
+    console.log('Odds already fetched today — reusing model-only fallback for this pass.');
+  }
+
   for (const g of previewGames) {
     const gameDay = cdtDateString(new Date(g.gameDate));
     const drpKey = `${gameDay}|DRP|${[g.teams.away.team.abbreviation, g.teams.home.team.abbreviation].sort().join('-')}`;
@@ -726,7 +831,7 @@ async function captureToday(store) {
       const kpKey = `${gameDay}|KPROP|${String(pitcher.fullName || '').toLowerCase()}`;
       if (store.market.kprop.some(r => r.key === kpKey)) continue;
       try {
-        const kp = await computeKProp(g, side, season);
+        const kp = await computeKProp(g, side, season, oddsLookup);
         if (kp) { store.market.kprop.push(kp); added++; }
       } catch (e) {
         console.warn(`K Props capture failed for gamePk ${g.gamePk}/${side}:`, e.message);
@@ -735,7 +840,7 @@ async function captureToday(store) {
   }
   console.log(`Captured ${added} new pending DRP/K Props pick(s) for ${today}.`);
 
-  const eliteAdded = await captureEliteToday(store, previewGames, season);
+  const eliteAdded = await captureEliteToday(store, previewGames, season, oddsLookup);
   console.log(`Captured ${eliteAdded} new pending Elite Pick(s) for ${today}.`);
 }
 
@@ -826,5 +931,5 @@ export {
   cdtDateString, emptyTracker,
   buildEliteBatterPool, buildEliteLists, captureEliteToday, gradeElitePending,
   simulatePropOdds, simulateSBOdds, simulateHRGameOdds, scoreForMarket, eliteQualityScore,
-  eliteHit,
+  eliteHit, fetchOddsLookup, normalizeName,
 };

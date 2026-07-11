@@ -35,6 +35,11 @@ jobs:
           node-version: '22'
 
       - name: Run tracker updater
+        env:
+          # Optional — real sportsbook lines for K Props + market context for Elite
+          # Picks. Set in Settings → Secrets and variables → Actions. Everything
+          # falls back to the model-only line/analysis if this isn't set.
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: node scripts/update-tracker.mjs
 
       - name: Commit and push if changed
