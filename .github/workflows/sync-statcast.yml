@@ -2,9 +2,12 @@ name: Sync Pitcher/Batter Pitch-Arsenal Data
 
 on:
   schedule:
-    # 13:00 UTC = 8am CDT — before the update-tracker.yml morning run (14:00 UTC), so
+    # 13:04 UTC = ~8am CDT — before the update-tracker.yml morning run (14:07 UTC), so
     # today's Elite Picks/matchup pages have fresh pitch-arsenal data before first pitch.
-    - cron: '0 13 * * *'
+    # Offset off the top of the hour on purpose — see the comment in update-tracker.yml;
+    # every run of this workflow so far has been a manual workflow_dispatch, never an
+    # actual `schedule` trigger.
+    - cron: '4 13 * * *'
   workflow_dispatch: {}
 
 permissions:
