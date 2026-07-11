@@ -1124,6 +1124,55 @@ async function getTodaySchedule(hydrate = 'team,probablePitcher', opts = {}) {
   return _scheduleCache[key + '_p'];
 }
 
+// ── Shared pitcher recent-form cache — last-N-starts rolling ERA/WHIP/K9, blended into
+// the Diamond Report Pick and K Props models so a pitcher's full-season 3.50 ERA doesn't
+// get treated identically whether he's been dealing his last 3 starts or getting rocked.
+// Cached per pitcher so both boards share one fetch instead of each re-fetching the same
+// pitcher's recent games independently.
+const _recentFormCache = {};
+async function recentPitchingForm(pid, starts = 5) {
+  if (!pid) return null;
+  const key = `${pid}|${starts}`;
+  const cached = _recentFormCache[key];
+  if (cached && cached.ts && (Date.now() - cached.ts) < 5 * 60_000) return cached.data;
+  if (_recentFormCache[key + '_p']) return _recentFormCache[key + '_p'];
+  const p = (async () => {
+    try {
+      const d = await fetchJSON(`https://diamondreport.app/api/v1/people/${pid}/stats?stats=lastXGames&group=pitching&season=2026&limit=${starts}&gameType=R`);
+      const splits = d?.stats?.[0]?.splits || [];
+      if (!splits.length) return null;
+      let ip = 0, er = 0, bb = 0, h = 0, k = 0;
+      splits.forEach(s => {
+        const st = s.stat || {};
+        // Same innings-pitched parsing convention already used everywhere else in this
+        // file (parseFloat on the API's "X.Y" notation, where Y is really outs 0/1/2 —
+        // not tenths). Slightly undercounts fractional innings, but stays consistent
+        // with every other IP figure this site already computes.
+        ip += parseFloat(st.inningsPitched) || 0;
+        er += parseInt(st.earnedRuns) || 0;
+        bb += parseInt(st.baseOnBalls) || 0;
+        h += parseInt(st.hits) || 0;
+        k += parseInt(st.strikeOuts) || 0;
+      });
+      if (ip <= 0) return null;
+      return { starts: splits.length, ip, era: (er * 9) / ip, whip: (bb + h) / ip, k9: (k * 9) / ip };
+    } catch (e) { return null; }
+  })();
+  _recentFormCache[key + '_p'] = p;
+  const data = await p;
+  _recentFormCache[key] = { data, ts: Date.now() };
+  delete _recentFormCache[key + '_p'];
+  return data;
+}
+// Blends a season-long stat with its recent-form counterpart. Recent form's influence
+// scales with how much recent innings support it (capped at 50%) — a thin recent sample
+// shouldn't swing a projection as much as a real 5-start stretch would.
+function blendRecentForm(seasonVal, recent, key) {
+  if (!recent || !Number.isFinite(recent[key]) || !(recent.ip > 0)) return seasonVal;
+  const weight = Math.max(0, Math.min(0.5, recent.ip / 25));
+  return seasonVal * (1 - weight) + recent[key] * weight;
+}
+
 // Keyed game state cache — gamePk -> last known card data
 const prevGames = {};
 
@@ -2660,9 +2709,11 @@ async function loadGameProps() {
 
       if (!model) {
         // Fetch both pitcher stats
-        const [awayStats, homeStats] = await Promise.all([
+        const [awayStats, homeStats, awayRecentForm, homeRecentForm] = await Promise.all([
           awayP ? fetchJSON(`https://diamondreport.app/api/v1/people/${awayP.id}?hydrate=stats(group=pitching,type=season,season=2026)`).then(d=>d.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||{}).catch(()=>({})) : Promise.resolve({}),
           homeP ? fetchJSON(`https://diamondreport.app/api/v1/people/${homeP.id}?hydrate=stats(group=pitching,type=season,season=2026)`).then(d=>d.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||{}).catch(()=>({})) : Promise.resolve({}),
+          awayP ? recentPitchingForm(awayP.id) : Promise.resolve(null),
+          homeP ? recentPitchingForm(homeP.id) : Promise.resolve(null),
         ]);
 
         // Weather (Open-Meteo, free, no key)
@@ -2690,26 +2741,27 @@ async function loadGameProps() {
         const pitcherLastName = (side) => sidePitcher(side)?.fullName?.split(' ').pop() || (side === 'away' ? 'Away P' : 'Home P');
         const factorLabel = (side, text) => `${sideAbbr(side)}: ${text}`;
 
-        // Pitcher ERA comparison
-        const awayERA = parseFloat(awayStats.era)||4.5;
-        const homeERA = parseFloat(homeStats.era)||4.5;
+        // Pitcher ERA comparison — blended with each pitcher's last 5 starts so a
+        // season-long number doesn't outweigh a real recent hot/cold stretch.
+        const awayERA = blendRecentForm(parseFloat(awayStats.era)||4.5, awayRecentForm, 'era');
+        const homeERA = blendRecentForm(parseFloat(homeStats.era)||4.5, homeRecentForm, 'era');
         const eraDiff = awayERA - homeERA;
         if (Math.abs(eraDiff) > 0.3) {
           if (eraDiff > 0) { homeScore += Math.min(eraDiff*3, 8); factors.push({team:'home', label:factorLabel('home', `${pitcherLastName('home')} ERA adv (${homeERA.toFixed(2)})`), type:'pos'}); }
           else { awayScore += Math.min(Math.abs(eraDiff)*3, 8); factors.push({team:'away', label:factorLabel('away', `${pitcherLastName('away')} ERA adv (${awayERA.toFixed(2)})`), type:'pos'}); }
         }
 
-        // WHIP comparison
-        const awayWHIP = parseFloat(awayStats.whip)||1.3;
-        const homeWHIP = parseFloat(homeStats.whip)||1.3;
+        // WHIP comparison — same recent-form blend
+        const awayWHIP = blendRecentForm(parseFloat(awayStats.whip)||1.3, awayRecentForm, 'whip');
+        const homeWHIP = blendRecentForm(parseFloat(homeStats.whip)||1.3, homeRecentForm, 'whip');
         if (Math.abs(awayWHIP-homeWHIP) > 0.1) {
           if (awayWHIP > homeWHIP) { homeScore += 4; factors.push({team:'home', label:factorLabel('home', `${pitcherLastName('home')} WHIP edge (${homeWHIP.toFixed(2)})`), type:'pos'}); }
           else { awayScore += 4; factors.push({team:'away', label:factorLabel('away', `${pitcherLastName('away')} WHIP edge (${awayWHIP.toFixed(2)})`), type:'pos'}); }
         }
 
-        // K/9 — high K pitcher favored
-        const awayK9 = parseFloat(awayStats.strikeoutsPer9Inn)||8;
-        const homeK9 = parseFloat(homeStats.strikeoutsPer9Inn)||8;
+        // K/9 — high K pitcher favored, same recent-form blend
+        const awayK9 = blendRecentForm(parseFloat(awayStats.strikeoutsPer9Inn)||8, awayRecentForm, 'k9');
+        const homeK9 = blendRecentForm(parseFloat(homeStats.strikeoutsPer9Inn)||8, homeRecentForm, 'k9');
         if (homeK9 > awayK9 + 1) { homeScore += 3; factors.push({team:'home', label:factorLabel('home', `${pitcherLastName('home')} K/9 edge (${homeK9.toFixed(1)})`), type:'pos'}); }
         else if (awayK9 > homeK9 + 1) { awayScore += 3; factors.push({team:'away', label:factorLabel('away', `${pitcherLastName('away')} K/9 edge (${awayK9.toFixed(1)})`), type:'pos'}); }
 
@@ -6014,6 +6066,11 @@ function scheduleKPropsLoad() {
     var gs = n(stat.gamesStarted, 0) || Math.max(n(stat.wins,0)+n(stat.losses,0), 1);
     var era = n(stat.era, 4.00), whip = n(stat.whip, 1.25);
     var projIP = ip > 0 ? Math.min(Math.max(ip / Math.max(gs,1), 4), 7) : 5.4;
+    // Recent-form blend (last 5 starts) — kicked off now so it runs concurrently with the
+    // opposing-lineup boxscore fetch below, same recency signal the Diamond Report Pick
+    // model uses: a season-long ERA/WHIP/K9 reads the same whether the pitcher's been
+    // dealing his last 3 starts or getting rocked.
+    var recentFormPromise = recentPitchingForm(pitcher.id);
     // Real opposing-lineup strikeout rate — this used to be hardcoded to the exact same
     // 0.22 constant it was compared against below, so (oppKpct - 0.22) always evaluated
     // to zero and the opponent-matchup adjustment had no actual effect despite appearing
@@ -6037,6 +6094,10 @@ function scheduleKPropsLoad() {
         if (kpcts.length) oppKpct = kpcts.reduce(function(a,b){ return a+b; }, 0) / kpcts.length;
       }
     } catch(e) {}
+    var recentForm = await recentFormPromise;
+    era = blendRecentForm(era, recentForm, 'era');
+    whip = blendRecentForm(whip, recentForm, 'whip');
+    k9 = blendRecentForm(k9, recentForm, 'k9');
     var projK = Math.max(1, (k9 * projIP / 9) + ((oppKpct - 0.22) * 10));
     var sbLine = null;
     try { if (typeof getSportsbookKLine === 'function') sbLine = getSportsbookKLine(pitcher.id, pitcher.fullName); } catch(e){}
