@@ -736,7 +736,16 @@ async function drFetchDailyJSON(url, opts){
       }
     } catch(e) {}
   }
-  const requestUrl = drIsLiveScoreURL(cleanUrl) ? drLiveURL(cleanUrl) : cleanUrl;
+  // force-cache with no cache-busting on the actual request meant a browser that had
+  // ever cached an empty/404 response for one of these repo-synced files (e.g. before
+  // the daily sync backend had run yet) would keep serving that stale response
+  // indefinitely, with no way to notice the file now has real data — confirmed live:
+  // a pitcher whose real Statcast data existed in the repo still showed "no data" in a
+  // browser that had cached an earlier empty fetch. Appending a date key makes each new
+  // day's fetch a genuinely different URL, forcing exactly one fresh network fetch per
+  // day while still letting force-cache dedupe repeat fetches within the same day.
+  const dailyUrl = drIsLiveScoreURL(cleanUrl) ? cleanUrl : cleanUrl + (cleanUrl.includes('?') ? '&' : '?') + '_d=' + drStaticDateKey();
+  const requestUrl = drIsLiveScoreURL(cleanUrl) ? drLiveURL(cleanUrl) : dailyUrl;
   const requestOpts = drIsLiveScoreURL(cleanUrl) ? Object.assign({ cache:'no-store' }, opts || {}) : Object.assign({ cache:'force-cache' }, opts || {});
   const res = await fetch(requestUrl, requestOpts);
   if (!res.ok) throw new Error('HTTP ' + res.status);
