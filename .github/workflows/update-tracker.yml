@@ -2,8 +2,17 @@ name: Update Diamond Report Tracker
 
 on:
   schedule:
-    # 14:00 UTC = 9am CDT / 10am EDT — before essentially all MLB first pitches.
+    # 14:00 UTC = 9am CDT — grades the prior day and captures Diamond Report Pick/K
+    # Props for today (neither needs a posted lineup), plus a first pass at Elite
+    # Picks. Well before essentially all MLB first pitches.
     - cron: '0 14 * * *'
+    # 20:00 UTC = 3pm CDT — official MLB lineups are usually posted 1-4 hours before
+    # first pitch, so most are still not up at the 9am run. This second pass re-tries
+    # Elite Picks capture with real lineups now available for most of the evening
+    # slate. DRP/K Props are already captured by the morning run and get skipped
+    # (see the check-before-compute guard in captureToday), so this only adds newly
+    # lineup-qualified Elite Picks — it never re-touches an already-locked pick.
+    - cron: '0 20 * * *'
   workflow_dispatch: {}
 
 permissions:

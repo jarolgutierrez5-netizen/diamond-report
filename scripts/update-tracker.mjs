@@ -705,23 +705,29 @@ async function captureToday(store) {
   let added = 0;
 
   for (const g of previewGames) {
-    try {
-      const drp = await computeDRPick(g, season);
-      if (drp && !store.market.drp.some(r => r.key === drp.key)) {
-        store.market.drp.push(drp);
-        added++;
+    const gameDay = cdtDateString(new Date(g.gameDate));
+    const drpKey = `${gameDay}|DRP|${[g.teams.away.team.abbreviation, g.teams.home.team.abbreviation].sort().join('-')}`;
+    // Check-before-compute: this script runs more than once a day (see the afternoon
+    // Elite Picks pass below), and DRP/K Props are already fully captured on the first
+    // pass — skip the expensive model recompute entirely instead of doing the work and
+    // discarding it as a duplicate.
+    if (!store.market.drp.some(r => r.key === drpKey)) {
+      try {
+        const drp = await computeDRPick(g, season);
+        if (drp) { store.market.drp.push(drp); added++; }
+      } catch (e) {
+        console.warn(`DRP capture failed for gamePk ${g.gamePk}:`, e.message);
       }
-    } catch (e) {
-      console.warn(`DRP capture failed for gamePk ${g.gamePk}:`, e.message);
     }
 
     for (const side of ['away', 'home']) {
+      const pitcher = g.teams[side].probablePitcher;
+      if (!pitcher) continue;
+      const kpKey = `${gameDay}|KPROP|${String(pitcher.fullName || '').toLowerCase()}`;
+      if (store.market.kprop.some(r => r.key === kpKey)) continue;
       try {
         const kp = await computeKProp(g, side, season);
-        if (kp && !store.market.kprop.some(r => r.key === kp.key)) {
-          store.market.kprop.push(kp);
-          added++;
-        }
+        if (kp) { store.market.kprop.push(kp); added++; }
       } catch (e) {
         console.warn(`K Props capture failed for gamePk ${g.gamePk}/${side}:`, e.message);
       }
