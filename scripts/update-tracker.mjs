@@ -4,18 +4,24 @@
 // site's Tracker system was always meant to have (see the code comment in
 // app.js: "Tracker linkage will stay on the developer side later").
 //
-// Runs once daily, before first pitch, and does two things in one pass:
+// Runs before first pitch, and again in the afternoon once lineups are mostly posted
+// (see update-tracker.yml), and does two things in one pass:
 //
-//   1. CAPTURE — for TODAY's games, independently re-derives the Diamond
-//      Report Pick (game winner), K Props (strikeout over/under), and the
-//      Premium tab's Elite Picks (top 5 per market across Hits/RBI/Total
-//      Bases/Stolen Bases/HR/Hits+Runs+RBI, cross-market deduped) using
-//      only data available *before* the games start, and stores them as
-//      "pending" picks. This has to happen pre-game — season stats fetched
-//      *after* a game already include that game's own result, which would
-//      silently make every backtest look artificially accurate (lookahead
-//      bias). Capturing pre-game and grading later is the only honest way
-//      to measure this.
+//   1. CAPTURE — for TODAY's games, independently derives the Diamond Report Pick
+//      (game winner) and K Props (strikeout over/under), and *selects and locks in*
+//      the Premium tab's Elite Picks (Home Runs: top 3 per game; the other five
+//      markets — Hits/RBI/Total Bases/Stolen Bases/Hits+Runs+RBI — top 5 pooled
+//      across the slate; cross-market deduped) using only data available *before* the
+//      games start. This is the single source of truth for Elite Picks — the live
+//      client (app.js, the Premium: Elite Picks IIFE) reads these captured picks
+//      straight out of data/tracker.json rather than selecting its own, so every
+//      visitor sees the identical picks with the identical score, and once a pick is
+//      captured it's locked for the day: a later run in the same day only fills
+//      genuinely open slots, it never bumps an already-captured pick for one that's
+//      since scored higher. This has to happen pre-game — season stats fetched
+//      *after* a game already include that game's own result, which would silently
+//      make every backtest look artificially accurate (lookahead bias). Capturing
+//      pre-game and grading later is the only honest way to measure this.
 //
 //   2. GRADE — for any *earlier* day's picks still marked "pending", fetches
 //      the real final results and resolves them to win/loss/push.
@@ -379,10 +385,11 @@ async function computeKProp(g, side, season, oddsLookup) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Premium Elite Picks — server-side port of the client's cross-market
-// Monte Carlo engine + selection algorithm (app.js: the __DR_MONTE_CARLO__
-// IIFE and the Premium: Elite Picks IIFE). Ported as closely as possible;
-// two real simplifications, both noted where they apply below:
+// Premium Elite Picks — this is now the live selection engine, not just a grading
+// copy: the client (app.js, the Premium: Elite Picks IIFE) displays exactly what gets
+// captured here, joined against live row data for display only. Uses the same
+// cross-market Monte Carlo engine as the client's __DR_MONTE_CARLO__ IIFE, ported as
+// closely as possible; two real simplifications, both noted where they apply below:
 //   - No Statcast hot-hitter sync data available server-side, so the
 //     "recent hot form" signal uses a real, independently-computable proxy
 //     (last-10-game AVG trending meaningfully above season AVG, or a HR in
@@ -401,8 +408,8 @@ const MC_TRIALS = 3000;
 const MC_AB_PER_PA = 0.88;
 const ELITE_MIN_AB = 40;
 const ELITE_MIN_QUALITY = 2;
-const ELITE_CANDIDATE_DEPTH = 25;
 const ELITE_TOP_N = 5;
+const ELITE_HR_TOP_N_PER_GAME = 3;
 const LEAGUE_AVG_AVG = 0.245, LEAGUE_AVG_OBP = 0.315, LEAGUE_AVG_SLG = 0.400, LEAGUE_AVG_HR_RATE = 0.031;
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
@@ -715,7 +722,7 @@ async function buildEliteBatterPool(games, season) {
         // last 10 games.
         const isHot = !!recent && recent.ab >= 15 && ((recent.avg != null && recent.avg >= seasonAvg + 0.030) || recent.hr >= 1);
         return {
-          id: pid, name: person.fullName, teamAbbr, oppAbbr,
+          id: pid, name: person.fullName, teamAbbr, oppAbbr, gamePk: g.gamePk,
           avg, obp, slg, ops, iso, hrSeason, battingOrder,
           atBats: ab, stolenBases: n(stat.stolenBases), caughtStealing: n(stat.caughtStealing),
           pitcherHr9: n(pitcherStat.homeRunsPer9), pitcherSbAllowed: n(pitcherStat.stolenBases), pitcherCsAllowed: n(pitcherStat.caughtStealing),
@@ -729,44 +736,46 @@ async function buildEliteBatterPool(games, season) {
   return rows;
 }
 
-function buildEliteRankedLists(pool) {
+// Picks are locked in the moment they're first captured — a later run (the same day's
+// afternoon lineup re-check, see update-tracker.yml) never bumps an already-captured
+// player out in favor of someone who's since scored higher; it only fills genuinely
+// open slots (fewer picks captured so far than the target count). Mirrors the client's
+// per-game HR / pooled-other-markets scoping exactly (app.js, the Premium: Elite Picks
+// IIFE) so every site visitor and the graded record agree on the same picks.
+// usedIds/alreadyLockedCounts describe what's already locked in today (from earlier
+// runs); this only returns the NEW entries that should fill remaining open slots.
+function buildEliteFills(pool, usedIds, alreadyLockedCounts) {
   const eligible = pool.filter(r => r.atBats >= ELITE_MIN_AB);
-  const ranked = {};
-  ELITE_MARKETS.forEach(m => {
-    ranked[m] = eligible
-      .map(row => ({ row, score: scoreForMarket(m, row), quality: eliteQualityScore(m, row) }))
-      .filter(x => x.score > 0 && x.quality >= ELITE_MIN_QUALITY)
+  const fills = { hr: [] };
+
+  const byGame = {};
+  eligible.forEach(r => { if (r.gamePk == null) return; (byGame[r.gamePk] ||= []).push(r); });
+
+  Object.keys(byGame).forEach(gamePk => {
+    const already = alreadyLockedCounts.hr[gamePk] || 0;
+    const need = ELITE_HR_TOP_N_PER_GAME - already;
+    if (need <= 0) return;
+    byGame[gamePk]
+      .map(row => ({ row, score: scoreForMarket('hr', row), quality: eliteQualityScore('hr', row) }))
+      .filter(x => x.score > 0 && x.quality >= ELITE_MIN_QUALITY && !usedIds.has(x.row.id))
       .sort((a, b) => b.score - a.score)
-      .slice(0, ELITE_CANDIDATE_DEPTH);
+      .slice(0, need)
+      .forEach(c => { usedIds.add(c.row.id); fills.hr.push(c); });
   });
-  return ranked;
-}
 
-function assignEliteBestMarket(ranked) {
-  const bestRank = {};
-  ELITE_MARKETS.forEach(m => {
-    ranked[m].forEach((entry, idx) => {
-      const pid = entry.row.id;
-      if (!bestRank[pid] || idx < bestRank[pid].rank) bestRank[pid] = { market: m, rank: idx };
-    });
+  ELITE_MARKETS.filter(m => m !== 'hr').forEach(m => {
+    const need = ELITE_TOP_N - (alreadyLockedCounts[m] || 0);
+    fills[m] = [];
+    if (need <= 0) return;
+    eligible
+      .map(row => ({ row, score: scoreForMarket(m, row), quality: eliteQualityScore(m, row) }))
+      .filter(x => x.score > 0 && x.quality >= ELITE_MIN_QUALITY && !usedIds.has(x.row.id))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, need)
+      .forEach(c => { usedIds.add(c.row.id); fills[m].push(c); });
   });
-  return bestRank;
-}
 
-function buildEliteLists(pool) {
-  const ranked = buildEliteRankedLists(pool);
-  const bestMarket = assignEliteBestMarket(ranked);
-  const out = {};
-  ELITE_MARKETS.forEach(m => {
-    const picks = [];
-    ranked[m].forEach(entry => {
-      if (picks.length >= ELITE_TOP_N) return;
-      const pid = entry.row.id;
-      if (bestMarket[pid] && bestMarket[pid].market === m) picks.push(entry);
-    });
-    out[m] = picks;
-  });
-  return out;
+  return fills;
 }
 
 // Maps Elite Picks market keys to their the-odds-api.com equivalent. hrrbi
@@ -778,27 +787,45 @@ async function captureEliteToday(store, previewGames, season, oddsLookup) {
   store.market.premium ||= [];
   if (!previewGames.length) return 0;
   const pool = await buildEliteBatterPool(previewGames, season);
-  const lists = buildEliteLists(pool);
   const today = cdtDateString(new Date());
+
+  // What's already locked in today, across every slot — the cross-slot dedup set and
+  // per-slot counts that determine how many (if any) open slots remain to fill.
+  const todaysPicks = store.market.premium.filter(r => r.date === today);
+  const usedIds = new Set(todaysPicks.map(r => r.playerId));
+  const alreadyLockedCounts = { hr: {} };
+  todaysPicks.forEach(r => {
+    if (r.market === 'hr') {
+      const gp = String(r.gamePk);
+      alreadyLockedCounts.hr[gp] = (alreadyLockedCounts.hr[gp] || 0) + 1;
+    } else {
+      alreadyLockedCounts[r.market] = (alreadyLockedCounts[r.market] || 0) + 1;
+    }
+  });
+
+  const fills = buildEliteFills(pool, usedIds, alreadyLockedCounts);
   let added = 0;
 
   ELITE_MARKETS.forEach(m => {
-    (lists[m] || []).forEach((entry, rank) => {
+    (fills[m] || []).forEach(entry => {
       const r = entry.row;
       const key = `${today}|PREMIUM|${m}|${r.id}`;
-      if (store.market.premium.some(x => x.key === key)) return;
+      if (store.market.premium.some(x => x.key === key)) return; // safety net; shouldn't happen given usedIds
       // Informational only — real sportsbook line/price when quoted, for comparing our
       // simulated probability against the market later. Never affects win/loss grading,
       // which always stays the real, fixed stat threshold (see eliteHit below).
       const oddsMarket = ELITE_TO_ODDS_MARKET[m];
       const marketOdds = oddsMarket ? (oddsLookup?.batterLines?.get(normalizeName(r.name))?.[oddsMarket] ?? null) : null;
+      const existingForSlot = m === 'hr'
+        ? todaysPicks.filter(x => x.market === 'hr' && String(x.gamePk) === String(r.gamePk)).length
+        : todaysPicks.filter(x => x.market === m).length;
       store.market.premium.push({
-        key, date: today, market: m, rank: rank + 1,
-        playerId: r.id, playerName: r.name, team: r.teamAbbr, opp: r.oppAbbr,
-        gamePk: previewGames.find(g => g.teams.away.team.abbreviation === r.teamAbbr || g.teams.home.team.abbreviation === r.teamAbbr)?.gamePk ?? null,
+        key, date: today, market: m, rank: existingForSlot + 1,
+        playerId: r.id, playerName: r.name, team: r.teamAbbr, opp: r.oppAbbr, gamePk: r.gamePk,
         score: entry.score, quality: entry.quality, marketOdds,
         result: 'pending', actual: null,
       });
+      todaysPicks.push(store.market.premium[store.market.premium.length - 1]);
       added++;
     });
   });
@@ -1002,7 +1029,7 @@ export {
   loadTracker, saveTracker, recomputeAllTime, recentPitchingForm, blendRecentForm,
   seasonPitchingStat, computeDRPick, computeKProp, captureToday, gradePending, main,
   cdtDateString, emptyTracker,
-  buildEliteBatterPool, buildEliteLists, captureEliteToday, gradeElitePending,
+  buildEliteBatterPool, buildEliteFills, captureEliteToday, gradeElitePending,
   simulatePropOdds, simulateSBOdds, simulateHRGameOdds, scoreForMarket, eliteQualityScore,
   eliteHit, fetchOddsLookup, normalizeName,
 };

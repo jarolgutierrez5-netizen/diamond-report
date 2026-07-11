@@ -1251,10 +1251,15 @@ async function loadAllTimeTrackerRecord() {
     const data = await res.json();
     if (data?.allTime?.drp?.total > 0) window.__drAllTimeRecord = data.allTime.drp;
     if (data?.allTime?.kprop?.total > 0) window.__kpAllTimeRecord = data.allTime.kprop;
-    if (data?.allTime?.premium?.total > 0) {
-      window.__premiumAllTimeRecord = data.allTime.premium;
-      if (typeof window.renderPremiumPicks === 'function') window.renderPremiumPicks();
-    }
+    if (data?.allTime?.premium?.total > 0) window.__premiumAllTimeRecord = data.allTime.premium;
+    // Today's Elite Picks are selected and locked in server-side (scripts/update-tracker.mjs,
+    // captureEliteToday) so every visitor sees the exact same picks with the exact same
+    // score — the Premium tab only joins these against live row data for display, it no
+    // longer selects or scores anything client-side. Always set (even to []) so the
+    // Premium tab can tell "not loaded yet" apart from "loaded, nothing cleared the bar".
+    const todayCT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+    window.__premiumTodayPicksRaw = (data?.market?.premium || []).filter(r => r.date === todayCT);
+    if (typeof window.renderPremiumPicks === 'function') window.renderPremiumPicks();
     updateHeroTodayRecordStrip();
   } catch (e) {}
 }
@@ -1263,6 +1268,11 @@ if (document.readyState === 'loading') {
 } else {
   loadAllTimeTrackerRecord();
 }
+// The backend captures Elite Picks in two passes (morning + afternoon lineup re-check —
+// see update-tracker.yml); re-fetching periodically lets a tab left open pick up the
+// afternoon pass without a manual reload. tracker.json only changes a couple times a
+// day server-side, so this stays infrequent — no need for the 120s live-score cadence.
+setInterval(() => { if (document.visibilityState === 'visible') loadAllTimeTrackerRecord(); }, 300000);
 window.refreshFavoredPills = refreshFavoredPills;
 
 function gameKey(g) { return g.gamePk || `${g.awayAbbr}-${g.homeAbbr}`; }
@@ -10324,7 +10334,7 @@ function showPremiumGate(feature){
   }, 5000);
 })();
 
-/* ---- Premium: Elite Picks (cross-market curated top 5s) ---- */
+/* ---- Premium: Elite Picks (server-locked, per-game HR / pooled top 5s) ---- */
 (function(){
   if (window.__DR_PREMIUM_ELITE__) return; window.__DR_PREMIUM_ELITE__ = true;
 
@@ -10336,81 +10346,34 @@ function showPremiumGate(feature){
     { key:'sb',    label:'🏃 Stolen Bases' },
     { key:'hrrbi', label:'📈 Hits+Runs+RBI' },
   ];
-  var TOP_N = 5;
-  var MIN_AB = 40; // same real-season-sample floor used elsewhere on this site (HRP_MIN_AB_FOR_RATE)
-  var MIN_QUALITY_SCORE = 2; // must clear at least 2 of 4 real corroborating signals below
 
   function n(v){ v = parseFloat(v); return Number.isFinite(v) ? v : 0; }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 
+  // Elite Picks are selected, scored, and locked in server-side (scripts/update-tracker.mjs,
+  // captureEliteToday), the same way the Diamond Report Pick and K Props already are, and
+  // published in data/tracker.json (window.__premiumTodayPicksRaw, set by
+  // loadAllTimeTrackerRecord). Every visitor — and the graded accuracy record — therefore
+  // sees the exact same picks with the exact same score, instead of each browser
+  // independently recomputing and locking its own copy. This file only joins those locked
+  // picks against today's live row data for display (photo, live "why" chips, first-pitch
+  // lock badge) — it no longer selects or scores anything itself.
   function rows(){
     try {
       var src = (typeof window.getProductionPropRows === 'function') ? window.getProductionPropRows() : (window.hrpRows || []);
-      return (src || []).filter(function(r){ return r && r.name && r.id != null && (!window.isActiveForHRThreat || window.isActiveForHRThreat(r)); });
+      return (src || []).filter(function(r){ return r && r.name && r.id != null; });
     } catch(e) { return []; }
   }
 
-  function rawScoreFor(marketKey, row){
-    if (marketKey === 'hr') return n(row.hrProb);
-    if (marketKey === 'sb') return window.simulateSBOdds ? n(window.simulateSBOdds(row)) : 0;
-    return window.simulatePropOdds ? n(window.simulatePropOdds(marketKey, row)) : 0;
-  }
-
-  // Lock a player's Elite Picks score+quality the moment their own game goes live —
-  // not the whole board at a fixed time. Up until first pitch, a player keeps getting
-  // the freshest data (lineups posting, updated form), so picks only get *more*
-  // accurate through the day; once their game starts, re-fetched stats would include
-  // that game's own result, which would leak the outcome into the "prediction" (the
-  // same lookahead-bias risk the Diamond Report Pick/K Props locks exist to prevent).
-  // Snapshot persists on window (not the row object) since hrpRows gets rebuilt with
-  // fresh row instances on every data refresh — the row itself isn't a stable cache key
-  // across refreshes, only player id + market + day is.
-  window.__eliteSnapshot = window.__eliteSnapshot || {};
-  function todayKey(){ return new Date().toLocaleDateString('en-CA', { timeZone:'America/Chicago' }); }
   function isRowLocked(row){
     var tl = String(row.timeLabel || '').toUpperCase();
     return tl.indexOf('LIVE') >= 0 || tl === 'FINAL';
   }
-  function scoreAndQuality(marketKey, row){
-    var key = todayKey() + '|' + marketKey + '|' + row.id;
-    var snap = window.__eliteSnapshot[key];
-    if (isRowLocked(row) && snap) return snap;
-    var fresh = { score: rawScoreFor(marketKey, row), quality: qualityScore(marketKey, row) };
-    window.__eliteSnapshot[key] = fresh;
-    return fresh;
-  }
-
-  // Real corroborating signals (0-4), reusing fields already computed elsewhere on the
-  // site — nothing invented here. A candidate needs a genuine simulated edge AND real
-  // supporting context (matchup, form, lineup spot, market-specific quality) to clear the
-  // Elite bar, not just the highest raw number in a thin field.
-  function qualityScore(marketKey, row){
-    var score = 0;
-    if (row.isFavorable) score++;
-    var onFire = row.isOnFire || n(row.onFireScore) >= 60 || n(row.hotBoostPct) >= 3;
-    if (onFire) score++;
-    var slot = Number(row.battingOrder);
-    if (Number.isFinite(slot) && slot >= 1 && slot <= 5) score++;
-    if (marketKey === 'sb') {
-      var s = row.stats || {};
-      if ((n(s.stolenBases) + n(s.caughtStealing)) >= 5) score++;
-    } else if (marketKey === 'hr') {
-      if (n(row.iso) >= 0.180 || n(row.hrSeason) >= 15) score++;
-    } else {
-      if (n(row.ops) >= 0.780 || n(row.iso) >= 0.180) score++;
-    }
-    return score;
-  }
-
-  function eligible(row){
-    var ab = n((row.stats || {}).atBats);
-    return ab >= MIN_AB;
-  }
 
   var ORDINALS = { 1:'1st', 2:'2nd', 3:'3rd', 4:'4th', 5:'5th' };
-  // Short "why" chips for the card — mirrors qualityScore's signals exactly (nothing
-  // new computed here) so the displayed reasons always match what actually cleared the
-  // quality gate, capped at 2 to keep cards compact.
+  // Short "why" chips — cosmetic only, computed live from the row's current signals.
+  // Membership and the score/quality badge come from the locked server-side capture;
+  // only this descriptive text can vary if a row's live data shifts later in the day.
   function reasonsFor(marketKey, row){
     var bits = [];
     if (row.isFavorable) bits.push('Favorable matchup');
@@ -10429,102 +10392,27 @@ function showPremiumGate(feature){
     return bits.slice(0, 2);
   }
 
-  var HR_TOP_N_PER_GAME = 3;
-  var LOCK_STORAGE_KEY = 'dr_elite_picks_locked_v1';
-
-  // Elite Picks are locked in for the day: once a player is selected into a market's
-  // (or, for HR, a game's) list, later renders never bump them out in favor of someone
-  // who's since scored higher — only genuinely open slots (fewer picks than the target
-  // count) get filled with fresh candidates. Persisted to localStorage keyed by today's
-  // date so the lock survives page reloads, not just in-memory across one page load.
-  function loadLocks(){
-    var empty = { day: todayKey(), hr: {}, hits: [], rbis: [], tb: [], sb: [], hrrbi: [] };
-    try {
-      var raw = localStorage.getItem(LOCK_STORAGE_KEY);
-      if (!raw) return empty;
-      var parsed = JSON.parse(raw);
-      if (!parsed || parsed.day !== todayKey()) return empty;
-      parsed.hr = parsed.hr || {};
-      MARKETS.forEach(function(m){ if (m.key !== 'hr') parsed[m.key] = Array.isArray(parsed[m.key]) ? parsed[m.key] : []; });
-      return parsed;
-    } catch(e) { return empty; }
-  }
-  function saveLocks(locks){
-    try { localStorage.setItem(LOCK_STORAGE_KEY, JSON.stringify(locks)); } catch(e) {}
-  }
-
-  // Resolves one market/game's already-locked ids against fresh row + score data (a
-  // locked player stays as long as their row still exists at all today, even if their
-  // score/quality dips below the bar that got them in), then fills any remaining open
-  // slots (up to targetN) from the best unclaimed fresh candidates — which still must
-  // clear the quality bar to get in for the first time.
-  function resolveSlot(marketKey, rowsById, candidates, lockedIds, targetN, usedIds){
-    var candById = {};
-    candidates.forEach(function(c){ candById[c.row.id] = c; });
-    var entries = [];
-    var stillLocked = [];
-    lockedIds.forEach(function(id){
-      var row = rowsById[id];
-      if (!row) return; // player is gone from today's data entirely — drop the lock
-      var existing = candById[id];
-      var sq = existing || scoreAndQuality(marketKey, row);
-      entries.push({ row: row, score: sq.score, quality: sq.quality });
-      usedIds[id] = true;
-      stillLocked.push(id);
-    });
-    lockedIds.length = 0;
-    lockedIds.push.apply(lockedIds, stillLocked);
-
-    var need = targetN - entries.length;
-    if (need > 0) {
-      candidates
-        .filter(function(c){ return !usedIds[c.row.id]; })
-        .sort(function(a,b){ return b.score - a.score; })
-        .slice(0, need)
-        .forEach(function(c){ entries.push(c); lockedIds.push(c.row.id); usedIds[c.row.id] = true; });
+  // Joins a locked server-side pick record against today's live row data (for photo,
+  // pitcher name, current "why" chips, lock badge). Falls back to a minimal row built
+  // from the tracker record itself when no live match is found (e.g. the site's live
+  // row data hasn't loaded yet), so the pick still displays instead of silently vanishing.
+  function liveRowFor(pick, liveRows){
+    for (var i = 0; i < liveRows.length; i++) {
+      if (String(liveRows[i].id) === String(pick.playerId)) return liveRows[i];
     }
-    entries.sort(function(a,b){ return b.score - a.score; });
-    return entries;
+    return { id: pick.playerId, name: pick.playerName, teamAbbr: pick.team, oppAbbr: pick.opp, pitcherName: null, timeLabel: '', gamePk: pick.gamePk };
   }
 
   function buildEliteLists(){
-    var pool = rows().filter(eligible);
-    var rowsById = {};
-    pool.forEach(function(r){ rowsById[r.id] = r; });
-
-    var locks = loadLocks();
-    var usedIds = {};
-    Object.keys(locks.hr).forEach(function(gp){ (locks.hr[gp] || []).forEach(function(id){ usedIds[id] = true; }); });
-    MARKETS.forEach(function(m){ if (m.key !== 'hr') (locks[m.key] || []).forEach(function(id){ usedIds[id] = true; }); });
-
+    var todayPicks = window.__premiumTodayPicksRaw || [];
+    var liveRows = rows();
     var out = {};
-
-    // Home Runs: scoped per game, top 3 per game, locked in per game.
-    var byGame = {};
-    pool.forEach(function(r){ var gp = r.gamePk; if (gp == null) return; (byGame[gp] = byGame[gp] || []).push(r); });
-    var hrEntries = [];
-    Object.keys(byGame).forEach(function(gamePk){
-      var candidates = byGame[gamePk]
-        .map(function(r){ var sq = scoreAndQuality('hr', r); return { row:r, score:sq.score, quality:sq.quality }; })
-        .filter(function(x){ return x.score > 0 && x.quality >= MIN_QUALITY_SCORE; });
-      locks.hr[gamePk] = locks.hr[gamePk] || [];
-      resolveSlot('hr', rowsById, candidates, locks.hr[gamePk], HR_TOP_N_PER_GAME, usedIds).forEach(function(e){ hrEntries.push(e); });
-      if (!locks.hr[gamePk].length) delete locks.hr[gamePk];
+    MARKETS.forEach(function(m){ out[m.key] = []; });
+    todayPicks.forEach(function(p){
+      if (!out[p.market]) return;
+      out[p.market].push({ row: liveRowFor(p, liveRows), score: p.score, quality: p.quality, rank: p.rank || 99 });
     });
-    hrEntries.sort(function(a,b){ return b.score - a.score; });
-    out.hr = hrEntries;
-
-    // Other markets: pooled across the whole slate, top 5, locked in globally.
-    MARKETS.forEach(function(m){
-      if (m.key === 'hr') return;
-      var candidates = pool
-        .map(function(r){ var sq = scoreAndQuality(m.key, r); return { row:r, score:sq.score, quality:sq.quality }; })
-        .filter(function(x){ return x.score > 0 && x.quality >= MIN_QUALITY_SCORE; });
-      locks[m.key] = locks[m.key] || [];
-      out[m.key] = resolveSlot(m.key, rowsById, candidates, locks[m.key], TOP_N, usedIds);
-    });
-
-    saveLocks(locks);
+    MARKETS.forEach(function(m){ out[m.key].sort(function(a,b){ return a.rank - b.rank; }); });
     return out;
   }
 
@@ -10549,7 +10437,7 @@ function showPremiumGate(feature){
     '</div>';
   }
 
-  // Home Runs is already selected per game — group its cards under a small per-game
+  // Home Runs is selected per game server-side — group its cards under a small per-game
   // header (rank restarts at #1 for each game) instead of one flat cross-game list, so
   // the display matches how the picks are actually scoped.
   function groupByGameForDisplay(picks){
@@ -10604,6 +10492,10 @@ function showPremiumGate(feature){
   function render(){
     var el = document.getElementById('premium-content');
     if (!el) return;
+    if (!window.__premiumTodayPicksRaw) {
+      el.innerHTML = trackRecordHTML() + '<div class="mu-empty" style="padding:16px">Loading today’s Elite Picks…</div>';
+      return;
+    }
     var lists = buildEliteLists();
     el.innerHTML = trackRecordHTML() + MARKETS.map(function(m){ return sectionHTML(m, lists[m.key] || []); }).join('');
   }
