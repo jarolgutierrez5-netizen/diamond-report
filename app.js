@@ -3217,9 +3217,13 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   const pitcherSplitAvgAllowed = firstStat(pitcherVsBatterHand?.avg, ps.avg);
 
   // ── Strike zone vulnerability model ──
-  // Prefer real per-zone wOBA-against from the synced pitcher profile
-  // (data/pitcher-statcast.json). Fall back to the modeled heatmap when the
-  // sync hasn't run yet or this pitcher wasn't in today's probable list.
+  // Real per-zone wOBA-against from the synced pitcher profile
+  // (data/pitcher-statcast.json) only. There used to be a modeled heatmap fallback here
+  // (a hardcoded zone shape scaled by season AVG/SLG) whenever real zone data wasn't
+  // synced — removed on purpose, same reasoning as the pitch-mix tables above. Note this
+  // is a heavier data source than the pitch-arsenal sync currently covers (real zone
+  // data needs pitch-by-pitch location data, not just per-pitch-type aggregates), so this
+  // panel will show "no data" until that separate sync exists.
   const usingExpected = !!(px && (px.slg || px.avg));
   const pitcherVuln = parseFloat(px?.slg ?? ps.slg) || .350;
   const pitcherAvgA = parseFloat(px?.avg ?? ps.avg) || .240;
@@ -3229,25 +3233,18 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   const hasRealZones = !!(pitcherProfile?.byZone);
 
   // [TL, TM, TR, ML, MM, MR, BL, BM, BR] — Statcast zone order: 1-2-3 top, 4-5-6 mid, 7-8-9 bottom
-  let zoneVals;
+  let zoneVals = null;
   if (hasRealZones) {
     const zMap = pitcherProfile.byZone;
-    // Use xwOBA-on-contact when available (luck-stripped), else raw wOBA, else null → modeled fallback for that cell
+    // Use xwOBA-on-contact when available (luck-stripped), else raw wOBA, else null for that cell
     zoneVals = [1,2,3,4,5,6,7,8,9].map(z => {
       const cell = zMap[z];
-      if (!cell) return 0.5;
+      if (!cell) return null;
       const val = cell.xwobaContact ?? cell.wobaAgainst;
       // Normalise wOBA scale (0–1 readable): league avg wOBA ≈ .320. Scale so .320 = 0.5
-      return val != null ? Math.min(val / 0.640, 1.0) : 0.5;
+      return val != null ? Math.min(val / 0.640, 1.0) : null;
     });
-    // Still apply batter's power bias and H2H history on top of real zone data
-    const powerBias = Math.min(batterPow / 25, 0.25) + (batterXSLG && batterXSLG >= .500 ? 0.07 : 0);
-    zoneVals = zoneVals.map((v, i) => Math.min(v + (i < 3 ? powerBias * 0.5 : 0) + (h2h.homeRuns > 0 ? 0.08 : 0), 1.0));
-  } else {
-    const baseZone = [0.35, 0.55, 0.35, 0.60, 0.80, 0.60, 0.40, 0.45, 0.40];
-    const vulnScale = Math.min(pitcherVuln / 0.380, 1.6);
-    const powerBias = Math.min(batterPow / 25, 0.3) + (batterXSLG && batterXSLG >= .500 ? 0.08 : 0);
-    zoneVals = baseZone.map((z, i) => Math.min(z * vulnScale + (i < 3 ? powerBias : 0) + (h2h.homeRuns > 0 ? 0.15 : 0), 1.0));
+    if (zoneVals.every(v => v == null)) zoneVals = null;
   }
 
   function zoneColor(v) {
@@ -3258,16 +3255,18 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   }
 
   const zoneLabels = ['In/High','High','Out/High','Inside','Middle','Away','In/Low','Low','Out/Low'];
-  const zoneCells = zoneVals.map((v, i) => {
+  const zoneCells = zoneVals ? zoneVals.map((v, i) => {
+    if (v == null) return `<div class="sz-cell" style="background:#0d1220;color:var(--muted)" title="${zoneLabels[i]}: no data">–</div>`;
     const c = zoneColor(v);
     const pct = Math.round(v * 100);
     return `<div class="sz-cell" style="background:${c.bg};color:${c.text}" title="${zoneLabels[i]}: ${pct}% opportunity">
       ${pct}%
     </div>`;
-  }).join('');
+  }).join('') : '';
 
   function buildZoneFit() {
-    const weights = zoneVals.map((v, i) => ({ i, v })).sort((a,b) => b.v - a.v);
+    if (!zoneVals) return null;
+    const weights = zoneVals.map((v, i) => ({ i, v: v ?? 0 })).sort((a,b) => b.v - a.v);
     const topZones = weights.slice(0, 3);
     const topNames = topZones.map(z => zoneLabels[z.i]).join(' · ');
     const elevated = topZones.some(z => z.i <= 2);
@@ -3309,47 +3308,6 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     }
     return null;
   }
-  function getPitchTypeProfileMetrics(pitchName, usagePct, sourceStat=null) {
-    // Production pitch-type fallback: make the table useful even before exact
-    // pitch-type splits arrive. Values are intentionally pitch-specific so a
-    // hitter's fastball/slider/changeup profile does not render as identical rows.
-    // Exact synced rows still override this completely.
-    const key = normalizePitchLabel(pitchName);
-    const usage = parsePctVal(usagePct) ?? 0;
-    const baseAvg = parseDecVal(sourceStat?.avg ?? sourceStat?.battingAverage ?? bx?.avg ?? bs?.avg) ?? .245;
-    const baseSlg = parseDecVal(sourceStat?.slg ?? sourceStat?.slugging ?? bx?.slg ?? bs?.slg) ?? .400;
-    const baseXslg = parseDecVal(sourceStat?.xslg ?? sourceStat?.xSLG ?? sourceStat?.expectedSlugging ?? bx?.slg ?? bs?.slg) ?? baseSlg;
-    const baseHard = parsePctVal(sourceStat?.hardHitPct ?? sourceStat?.hardHitRate ?? hotHitter?.hardHitPct ?? hotHitter?.hardHitRate) ?? Math.max(30, Math.min(58, 33 + Math.max(0, baseSlg - .380) * 70));
-    const baseBarrel = parsePctVal(sourceStat?.barrelPct ?? sourceStat?.barrelRate ?? hotHitter?.barrelPct ?? hotHitter?.barrelRate) ?? Math.max(3, Math.min(20, 5 + Math.max(0, baseSlg - .390) * 28));
-    const baseWhiff = parsePctVal(sourceStat?.whiffPct ?? sourceStat?.whiffRate ?? hotHitter?.whiffPct ?? hotHitter?.whiffRate) ?? 22;
-    const tweaks = {
-      fastball:  { avg:+.012, slg:+.052, xslg:+.058, hard:+5.0, barrel:+2.4, whiff:-1.5, hr:1.08 },
-      sinker:    { avg:+.004, slg:+.018, xslg:+.022, hard:+2.4, barrel:+0.9, whiff:-1.0, hr:.86 },
-      slider:    { avg:-.022, slg:-.044, xslg:-.036, hard:-2.8, barrel:-1.5, whiff:+5.2, hr:.70 },
-      changeup:  { avg:+.006, slg:+.030, xslg:+.034, hard:+2.2, barrel:+1.1, whiff:+1.7, hr:.78 },
-      curveball: { avg:-.028, slg:-.058, xslg:-.050, hard:-4.0, barrel:-1.8, whiff:+6.0, hr:.62 },
-      cutter:    { avg:-.008, slg:-.014, xslg:-.010, hard:-1.2, barrel:-.4, whiff:+2.1, hr:.72 },
-      splitter:  { avg:-.020, slg:-.035, xslg:-.030, hard:-2.2, barrel:-1.0, whiff:+6.5, hr:.58 },
-      sweeper:   { avg:-.025, slg:-.048, xslg:-.042, hard:-3.2, barrel:-1.4, whiff:+7.0, hr:.56 }
-    };
-    const t = tweaks[key] || { avg:0, slg:0, xslg:0, hard:0, barrel:0, whiff:0, hr:.75 };
-    const power = Math.max(0, baseSlg - .380);
-    const hrSeason = parseFloat(sourceStat?.homeRuns ?? sourceStat?.hr ?? sourceStat?.hrs ?? bs?.homeRuns ?? bHR ?? 0) || 0;
-    const usageShare = Math.max(usage, 1) / 100;
-    const estHr = Math.max(0, Math.round((hrSeason * usageShare * (t.hr || 1)) + (power > .170 ? 0.75 : 0)));
-    return {
-      name: pitchName,
-      avg: Math.max(.050, Math.min(.430, baseAvg + t.avg)),
-      slg: Math.max(.100, Math.min(.850, baseSlg + t.slg)),
-      xslg: Math.max(.100, Math.min(.900, baseXslg + t.xslg)),
-      homeRuns: estHr,
-      hardHitPct: Math.max(10, Math.min(70, baseHard + t.hard)),
-      barrelPct: Math.max(0, Math.min(28, baseBarrel + t.barrel)),
-      whiffPct: Math.max(5, Math.min(45, baseWhiff + t.whiff)),
-      _proxy: true
-    };
-  }
-
   function getPitchTypeHrCount(pitchName, usagePct) {
     const syncedById = batterPitchTypeHr[String(batterId)];
     const syncedByName = batterPitchTypeHr[String(batterName || '').toLowerCase()];
@@ -3414,25 +3372,12 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       }
     }
 
-    const totalHr = parseInt(bs?.careerHomeRuns ?? bs?.allTimeHomeRuns ?? hotHitter?.careerHomeRuns ?? hotHitter?.allTimeHomeRuns ?? bs?.homeRuns ?? bHR) || 0;
-    const usage = parsePctVal(usagePct) ?? 0;
-    const est = Math.max(0, Math.round(totalHr * usage / 100));
-    const profile = getPitchTypeProfileMetrics(pitchName, usagePct, seasonSplit);
-    return {
-      value: est || profile.homeRuns || 0,
-      exact: false,
-      source: totalHr ? 'Estimated career profile' : 'Best available profile',
-      sourceClass: 'estimated',
-      estimated: true,
-      avg: profile.avg,
-      slg: profile.slg,
-      xslg: profile.xslg,
-      hardHit: profile.hardHitPct
-    };
+    return null;
   }
   function pitchHrHTML(pitchName, usagePct) {
     const hr = getPitchTypeHrCount(pitchName, usagePct);
-    return `<span class="pitch-hr-type ${hr.exact ? 'exact' : 'estimated'}" title="${hr.exact ? 'Batter career home runs against this pitch type from all-time pitch-split data.' : 'Best available pitch-type HR value using season split or estimated profile fallback.'}">${hr.value}</span>`;
+    if (!hr) return `<span class="pitch-hr-type" style="color:var(--muted)" title="No real data available">–</span>`;
+    return `<span class="pitch-hr-type ${hr.exact ? 'exact' : 'estimated'}" title="${hr.exact ? 'Batter career home runs against this pitch type from all-time pitch-split data.' : 'Batter season home runs against this pitch type from real synced season splits.'}">${hr.value}</span>`;
   }
   function buildPitchTypeHrCards(pitchList) {
     return '';
@@ -3570,9 +3515,6 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     return { score, cls, label };
   }
   function buildPitchMixAdvantageSection(pitchList) {
-    function buildSeasonProfileProxy(pitchName, usagePct) {
-      return getPitchTypeProfileMetrics(pitchName, usagePct, null);
-    }
     function pitchAbbr(name) {
       const n = String(name || '').toLowerCase();
       if (n.includes('fastball')) return 'FF';
@@ -3590,22 +3532,22 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       { key:'L', label:'vs LHP', hand:'L' }
     ];
     function buildMode(mode) {
+      // Real batter data only — a pitch type this batter has no synced season split
+      // against is dropped from the table entirely rather than filled in with a modeled
+      // guess (see data/batter-pitch-type-season.json / scripts/sync-pitcher-statcast.mjs).
       const pitches = (pitchList || []).map(p => {
         const usage = parseFloat(p.usagePct ?? p.usage ?? 0) || 0;
         const exact = getBatterSeasonPitchProfile(p.name, mode.hand);
-        const fallback = buildSeasonProfileProxy(p.name, usage);
-        const stat = handAdjustedPitchProfile(exact || fallback, p.name, usage, mode.hand);
-        return { name:p.name, usage, abbr:pitchAbbr(p.name), stat, exact: !!exact };
-      }).filter(p => p.name);
+        if (!exact) return null;
+        const stat = handAdjustedPitchProfile(exact, p.name, usage, mode.hand);
+        return { name:p.name, usage, abbr:pitchAbbr(p.name), stat, exact: true };
+      }).filter(Boolean).filter(p => p.name);
       let weighted = 0, weight = 0;
       const rows = pitches.map(p => {
         const st = p.stat || {};
         const grade = gradePitchAdvantage(st, p.usage);
         if (grade.score !== null && p.usage > 0) { weighted += grade.score * p.usage; weight += p.usage; }
         const chipCls = grade.score >= 78 ? '' : grade.score >= 64 ? ' good' : grade.score >= 45 ? ' neutral' : ' weak';
-        const sourceBadge = p.exact
-          ? '<span class="dr1041-chip good" style="font-size:9px;padding:2px 6px;margin-left:6px">Exact</span>'
-          : '<span class="dr1041-chip neutral" style="font-size:9px;padding:2px 6px;margin-left:6px">Season profile</span>';
         const rowHr = +(st.homeRuns ?? st.hr ?? st.hrs ?? 0) || 0;
         // "Has hit at least one HR off this pitch" is true for nearly every pitch type
         // a real power hitter sees over a season, so that alone tagged every row. Only
@@ -3620,7 +3562,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         const barrelRaw = parsePctVal(st.barrelPct ?? st.barrelRate);
         const whiffRaw = parsePctVal(st.whiffPct ?? st.whiffRate);
         return `<tr>
-          <td><strong>${p.name}</strong>${sourceBadge}</td>
+          <td><strong>${p.name}</strong></td>
           <td class="usage">${p.usage ? p.usage.toFixed(0)+'%' : '–'}</td>
           <td class="num${gbCls('avg',avgRaw)}">${fmtDec(st.avg ?? st.battingAverage, 3, 'avg')}</td>
           <td class="num${gbCls('slg',slgRaw)}">${fmtDec(st.slg ?? st.slugging, 3, 'slg')}</td>
@@ -3637,12 +3579,19 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       const handText = mode.hand === 'L' ? 'left-handed pitching' : mode.hand === 'R' ? 'right-handed pitching' : 'today’s starter hand';
       const summary = top
         ? `${mode.key === 'auto' ? 'AUTO is using today’s starter hand' : 'Viewing historical split'} vs ${mode.hand === 'L' ? 'LHP' : mode.hand === 'R' ? 'RHP' : 'starter'}. ${top.name} is the primary attack pitch at ${top.usage.toFixed(0)}%, and ${batterName.split(' ').pop()} profiles ${top.grade.label.toLowerCase()} against this ${handText} mix.`
-        : `Pitch mix is available and will strengthen as more synced rows become available.`;
+        : `No real pitch-level data available for ${batterName} vs this pitch mix yet.`;
       return { pitches, score, rows, summary };
     }
     const built = Object.fromEntries(modes.map(m => [m.key, buildMode(m)]));
     const auto = built.auto;
-    if (!auto.pitches.length) return { html:'', score:null, pitches:[] };
+    if (!auto.pitches.length) {
+      const html = `<div class="dr1041-pitch-mix">
+        <div class="dr1041-pitch-head">
+          <div><div class="dr1041-kicker">🎯 PITCH MIX ADVANTAGE · THIS SEASON</div><div class="dr1041-subtext">No real pitch-level data available for ${batterName} yet — this section will populate once the daily Statcast sync has run for both this pitcher's arsenal and this batter's season splits.</div></div>
+        </div>
+      </div>`;
+      return { html, score:null, pitches:[], usageChips:'' };
+    }
     const usageChips = auto.pitches.map(p => `<span class="dr1041-usage-chip"><b>${p.abbr}</b> ${p.usage ? p.usage.toFixed(0)+'%' : '–'}</span>`).join('');
     const uid = `pmix-${String(batterId||'b')}-${String(pitcherId||'p')}-${Math.random().toString(36).slice(2,8)}`;
     const bodies = modes.map(m => `<tbody class="dr1042-mode-body ${m.key==='auto'?'active':''}" data-mode="${m.key}">${built[m.key].rows}</tbody>`).join('');
@@ -3672,15 +3621,15 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     return { html, score:auto.score, pitches:auto.pitches, usageChips };
   }
   // ── Pitch type effectiveness table — the pitcher's own per-pitch numbers (not the
-  // batter's — that's the separate Pitch Mix Advantage table above). Real data when
-  // synced (data/pitcher-statcast.json), a per-pitcher differentiated estimate otherwise.
-  // Vulnerable/Putaway tags are derived from these same numbers, not fabricated —
-  // velocity and pitch counts are deliberately left out since we have no real source for
-  // either without the missing Statcast sync.
+  // batter's — that's the separate Pitch Mix Advantage table above). Real data only, from
+  // data/pitcher-statcast.json (see scripts/sync-pitcher-statcast.mjs). This used to fall
+  // back to a modeled estimate (derived from K/9 and groundball rate) whenever the sync
+  // hadn't run — removed on purpose: an estimate dressed up as a real per-pitch
+  // breakdown is worse than honestly saying no data exists yet.
   const hasRealPitchMix = !!(pitcherProfile?.byPitch?.length);
   const pitchSectionLabel = hasRealPitchMix
     ? `${pitcherName.split(' ').pop()}'S PITCHES · ${(pitcherProfile.totalPitches || 0).toLocaleString()} THROWN THIS SEASON`
-    : `${pitcherName.split(' ').pop()}'S PITCHES · ESTIMATED PROFILE`;
+    : `${pitcherName.split(' ').pop()}'S PITCHES · NO REAL DATA YET`;
 
   function pitchEffTag(label, cls) { return `<span class="dr1041-chip ${cls}" style="font-size:9px;padding:2px 7px;margin-right:4px">${label}</span>`; }
   function pitchEffRow(name, usage, avg, woba, slg, hr, whiffPct, veloTxt) {
@@ -3699,7 +3648,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     </tr>`;
   }
 
-  let pitchRows;
+  let pitchRows = '';
   let pitchHrList = [];
   if (hasRealPitchMix) {
     pitchHrList = pitcherProfile.byPitch.map(p => ({ name: p.name, usagePct: p.usagePct }));
@@ -3713,71 +3662,45 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       const veloTxt = p.avgVelo ? ` · ${p.avgVelo} mph` : '';
       return pitchEffRow(p.name, p.usagePct, avg, woba, slg, hr, whiffPct, veloTxt);
     }).join('');
-  } else {
-    // Estimated fallback — this used to be one hardcoded 38/22/16/14/10 split shown
-    // identically for every pitcher without synced Statcast data (i.e. most pitchers,
-    // since data/pitcher-statcast.json isn't always populated). Derives a distribution
-    // that actually varies per pitcher from real season stats already fetched: K/9
-    // (higher strikeout pitchers lean more on breaking/offspeed stuff for whiffs) and
-    // GO/AO ratio (higher groundball rate means more sinker usage, less 4-seam). Still an
-    // estimate, not real pitch-tracking data, but no longer identical across pitchers.
-    const pmK9 = parseFloat(ps.strikeoutsPer9Inn) || 8;
-    const pmGoAo = parseFloat(ps.groundOutsToAirouts) || 1.0;
-    const kFactor = Math.max(0, Math.min(1, (pmK9 - 6) / 8));       // 0 at K9<=6, 1 at K9>=14
-    const gbFactor = Math.max(0, Math.min(1, (pmGoAo - 0.6) / 1.4)); // 0 at GO/AO<=0.6, 1 at >=2.0
-    const pmFastball = Math.max(20, Math.round(46 - kFactor*14 - gbFactor*8));
-    const pmSinker   = Math.max(5,  Math.round(8 + gbFactor*16));
-    const pmSlider    = Math.max(10, Math.round(16 + kFactor*10));
-    const pmChangeup  = Math.max(8,  Math.round(14 + kFactor*4 - gbFactor*3));
-    const pmCurveball = Math.max(6, 100 - pmFastball - pmSinker - pmSlider - pmChangeup);
-    const pitchTypes = [
-      { name: 'Fastball (4-seam)', usage: pmFastball, oppColor: pitcherAvgA > .260 ? '#dc2626' : '#2ecc71' },
-      { name: 'Slider',            usage: pmSlider,   oppColor: '#2ecc71' },
-      { name: 'Changeup',          usage: pmChangeup, oppColor: pitcherVuln > .420 ? '#f4a261' : '#2ecc71' },
-      { name: 'Curveball',         usage: pmCurveball, oppColor: '#2ecc71' },
-      { name: 'Sinker / 2-seam',   usage: pmSinker,   oppColor: '#f4a261' },
-    ];
-    pitchHrList = pitchTypes.map(pt => ({ name: pt.name, usage: pt.usage }));
-    // Estimated AVG/SLG/HR/Whiff per pitch type, reusing the same pitch-specific tweak
-    // model used elsewhere in this modal (getPitchTypeProfileMetrics) but seeded from the
-    // pitcher's own overall allowed AVG/SLG instead of the batter's — same modeling
-    // approach already vetted in this file, applied from the pitcher's side. No real wOBA
-    // estimate exists for this path, so that column stays honestly blank ('–').
-    pitchRows = pitchTypes.map(pt => {
-      const est = getPitchTypeProfileMetrics(pt.name, pt.usage, { avg: pitcherAvgA, slg: pitcherVuln });
-      return pitchEffRow(pt.name, pt.usage, est.avg, null, est.slg, est.homeRuns, est.whiffPct, '');
-    }).join('');
   }
 
-  const pitchEffectivenessTableHTML = `<div class="dr1041-pitch-mix" style="margin-top:14px">
+  const pitchEffectivenessTableHTML = hasRealPitchMix ? `<div class="dr1041-pitch-mix" style="margin-top:14px">
     <div class="dr1041-pitch-head">
-      <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">${hasRealPitchMix ? `Real synced pitch-level data for ${pitcherName}.` : `${pitcherName}’s own AVG/SLG allowed, split out by an estimated pitch mix — modeled from his real K/9 and groundball rate, not real pitch-tracking data.`}</div></div>
+      <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">Real synced pitch-level data for ${pitcherName}.</div></div>
     </div>
     <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage</th><th>AVG</th><th>wOBA</th><th>SLG</th><th>HR</th><th>Whiff%</th><th>Notes</th></tr></thead><tbody>${pitchRows}</tbody></table></div>
     ${gbLegendHTML}
+  </div>` : `<div class="dr1041-pitch-mix" style="margin-top:14px">
+    <div class="dr1041-pitch-head">
+      <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">No real pitch-level data available for ${pitcherName} yet — this section will populate once the daily Statcast sync has run.</div></div>
+    </div>
   </div>`;
 
+  // Zone Fit's "Location Tendency" dot grid was always a fixed decorative pattern
+  // ([1,3,4,5,7].includes(...)), never real pitch-location data — there is no real data
+  // source for it without a full pitch-by-pitch Statcast location sync (a separate,
+  // heavier pipeline than the pitch-arsenal sync this modal now uses). Rather than keep
+  // a fake visualization alive, this panel is gated behind the same hasRealZones flag as
+  // the Strike Zone heatmap and shows nothing until real zone data exists.
   function buildZoneFitPanelHTML(pitches) {
-    const list = (pitches && pitches.length ? pitches : pitchHrList).slice(0,5);
-    const rows = list.map((p, idx) => {
-      const st = p.stat || getPitchTypeProfileMetrics(p.name, p.usage || p.usagePct || 0, null) || {};
+    const list = (pitches && pitches.length ? pitches : []).slice(0,5);
+    if (!hasRealZones || !list.length) return '';
+    const rows = list.map((p) => {
+      const st = p.stat || {};
       const grade = gradePitchAdvantage(st, p.usage || p.usagePct || 0);
       const fitLabel = grade.score >= 78 ? 'Excellent' : grade.score >= 64 ? 'Good' : grade.score >= 45 ? 'Neutral' : 'Weak';
       const chipCls = grade.score >= 78 ? '' : grade.score >= 64 ? ' good' : grade.score >= 45 ? ' neutral' : ' weak';
-      const dotCls = grade.score >= 78 ? 'hot' : grade.score >= 64 ? 'warm' : grade.score >= 45 ? 'good' : 'cool';
-      const mini = Array.from({length:9}, (_, i) => `<span class="dr1041-mini-dot ${[1,3,4,5,7].includes((i+idx)%9) ? dotCls : ''}"></span>`).join('');
       const avg = fmtDec(st.avg ?? st.battingAverage, 3, 'avg');
       const hr = +(st.homeRuns ?? st.hr ?? st.hrs ?? 0) || 0;
       return `<tr>
         <td><strong>${p.name}</strong></td>
         <td><span class="dr1041-chip${chipCls}">${fitLabel}</span></td>
-        <td><div class="dr1041-mini-zone" aria-label="Location tendency">${mini}</div></td>
         <td class="num">${avg} AVG / ${hr} HR</td>
       </tr>`;
     }).join('');
     return `<div class="zone-section zone-fit-section">
-      <div class="zone-title">🎯 ZONE FIT · HOW PITCHES ATTACK THE ZONE</div>
-      <table class="dr1041-zone-fit-table"><thead><tr><th>Pitch</th><th>Zone Fit</th><th>Location Tendency</th><th>Vs This Batter</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="zone-title">🎯 ZONE FIT · VS THIS PITCHER'S ARSENAL</div>
+      <table class="dr1041-zone-fit-table"><thead><tr><th>Pitch</th><th>Zone Fit</th><th>Vs This Batter</th></tr></thead><tbody>${rows}</tbody></table>
     </div>`;
   }
 
@@ -4045,7 +3968,8 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <!-- Strike Zone + Zone Fit -->
       <div class="dr1041-zone-grid">
       <div class="zone-section">
-        <div class="zone-title">${hasRealZones ? 'STRIKE ZONE · REAL wOBA AGAINST BY LOCATION' : 'STRIKE ZONE VULNERABILITY · WHERE TO ATTACK'}</div>
+        <div class="zone-title">${hasRealZones ? 'STRIKE ZONE · REAL wOBA AGAINST BY LOCATION' : 'STRIKE ZONE · NO REAL DATA YET'}</div>
+      ${hasRealZones ? `
       <div class="zone-wrap">
         <div class="zone-grid-outer">
           <span class="zone-label">OUTSIDE ←&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ INSIDE</span>
@@ -4070,7 +3994,8 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
             Zones based on the quality of contact ${pitcherName.split(' ').pop()} ${usingExpected ? 'should be allowing (luck removed)' : 'has allowed'} (${fv(pitcherVuln,3)}), his HR/9 (${pHR9}), and the batter's power profile. Higher scores = more damage opportunity.
           </div>
         </div>
-      </div>
+      </div>` : `
+      <div class="zone-note" style="padding:10px 0;color:var(--muted);font-size:12px">No real per-location Statcast data available for ${pitcherName} yet — this requires a separate pitch-location sync that hasn't been built.</div>`}
       </div>
       ${zoneFitPanelHTML}
       </div>

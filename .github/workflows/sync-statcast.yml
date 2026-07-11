@@ -1,0 +1,42 @@
+name: Sync Pitcher/Batter Pitch-Arsenal Data
+
+on:
+  schedule:
+    # 13:00 UTC = 8am CDT — before the update-tracker.yml morning run (14:00 UTC), so
+    # today's Elite Picks/matchup pages have fresh pitch-arsenal data before first pitch.
+    - cron: '0 13 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-statcast
+  cancel-in-progress: false
+
+jobs:
+  sync-statcast:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run Statcast pitch-arsenal sync
+        run: node scripts/sync-pitcher-statcast.mjs
+
+      - name: Commit and push if changed
+        run: |
+          if git diff --quiet -- data/pitcher-statcast.json data/batter-pitch-type-season.json; then
+            echo "No changes to sync — nothing to commit."
+            exit 0
+          fi
+          git config user.name "diamond-report-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/pitcher-statcast.json data/batter-pitch-type-season.json
+          git commit -m "Sync real pitch-arsenal data from Baseball Savant"
+          git push
