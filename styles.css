@@ -1217,3 +1217,177 @@ body.dr-paused *::after,
     left: auto !important;
   }
 }
+
+/* ---- Pitcher Report card layout ---- */
+/* Was a dense 15-column table on desktop and cards only below 1024px. Now the same
+   card treatment (already built and polished for mobile) is used at every width, in a
+   grid that's 1-up on narrow screens and 2-up on wide ones, matching the card style
+   used by the other Prediction Center boards (HR Threats, RBI, Total Bases, etc).
+
+   Every one of the .pr-mobile-* rules below used to live only inside
+   @media(max-width:1024px), since this markup previously only ever rendered on
+   mobile/tablet. Re-declared here without that wrapper so the same card chrome
+   (background, border, stat-cell styling, expand panel) applies at desktop widths
+   too, not just the grid column count. */
+#pr-content .pr-mobile-card {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  padding: 12px !important;
+  overflow: visible !important;
+  max-width: 100% !important;
+}
+#pr-content .pr-mobile-card.is-expanded {
+  border-color: var(--accent2) !important;
+  box-shadow: 0 0 0 1px rgba(244,162,97,.12) !important;
+}
+#pr-content .pr-mobile-top {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  margin-bottom: 10px !important;
+}
+#pr-content .pr-mobile-pitcher {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+}
+#pr-content .pr-mobile-name {
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  color: var(--text) !important;
+  overflow-wrap: anywhere !important;
+}
+#pr-content .pr-mobile-sub {
+  font-size: 11px !important;
+  color: var(--muted) !important;
+  margin-top: 2px !important;
+}
+#pr-content .pr-mobile-time {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px !important;
+  white-space: nowrap !important;
+  text-align: right !important;
+}
+#pr-content .pr-mobile-stats {
+  display: grid !important;
+  gap: 7px !important;
+  margin: 10px 0 !important;
+}
+#pr-content .pr-mobile-stat {
+  background: var(--surface2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  padding: 7px 6px !important;
+  min-width: 0 !important;
+  text-align: center !important;
+}
+#pr-content .pr-mobile-stat-label {
+  display: block !important;
+  font-size: 9px !important;
+  color: var(--muted) !important;
+  letter-spacing: .6px !important;
+  margin-bottom: 3px !important;
+}
+#pr-content .pr-mobile-stat-value {
+  display: block !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--text) !important;
+}
+#pr-content .pr-mobile-card .btn-lineup {
+  width: 100% !important;
+  justify-content: center !important;
+  margin-top: 6px !important;
+  white-space: normal !important;
+  line-height: 1.25 !important;
+}
+#pr-content .pr-mobile-expand {
+  display: none;
+  background: #080d17 !important;
+  border-top: 1px solid var(--border) !important;
+  margin-top: 10px !important;
+  padding-top: 10px !important;
+  overflow: visible !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+#pr-content .pr-mobile-expand[hidden] { display: none !important; }
+#pr-content .pr-mobile-expand:not(.is-open) { display: none !important; }
+#pr-content .pr-mobile-expand.is-open {
+  display: block !important;
+  height: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+#pr-content .pr-mobile-expand .pr-expand-panel {
+  padding: 0 !important;
+  overflow: visible !important;
+  transform: none !important;
+}
+#pr-content .pr-mobile-list {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 14px !important;
+  max-width: 100% !important;
+}
+@media (min-width: 900px) {
+  #pr-content .pr-mobile-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-items: start !important;
+  }
+}
+#pr-content .pr-mobile-card {
+  margin: 0 !important;
+}
+#pr-content .pr-mobile-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+@media (max-width: 480px) {
+  #pr-content .pr-mobile-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+#pr-content .pr-sort-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+}
+#pr-content .pr-sort-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+#pr-content .pr-sort-select {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'Manrope', sans-serif;
+}
+#pr-content .pr-sort-dir-btn {
+  background: var(--surface2);
+  color: var(--accent2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+#pr-content .pr-sort-dir-btn:hover {
+  border-color: var(--accent2);
+  background: #1a1800;
+}

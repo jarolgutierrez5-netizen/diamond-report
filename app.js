@@ -1678,7 +1678,7 @@ function setLineupOpenState(pid, isOpen) {
   if (expandRow) {
     expandRow.classList.toggle('is-open', !!isOpen);
     expandRow.hidden = !isOpen;
-    expandRow.style.display = isOpen ? (isPRMobileTabletView() ? 'block' : '') : 'none';
+    expandRow.style.display = isOpen ? 'block' : 'none';
   }
   if (card) card.classList.toggle('is-expanded', !!isOpen);
   if (btn) {
@@ -1915,26 +1915,6 @@ function isPRMobileTabletView() {
   return window.matchMedia && window.matchMedia('(max-width: 1024px)').matches;
 }
 
-// Bug fix: renderPRTable() only checked isPRMobileTabletView() at data-load time, so
-// rotating a tablet or resizing a desktop window across the 1024px breakpoint left the
-// Pitcher Report stuck in the stale layout (mobile cards on desktop, or vice versa)
-// until the next full data refresh. Re-render on breakpoint crossings only, so this
-// doesn't cause extra work on every resize pixel.
-let prLastLayoutWasMobile = null;
-let prResizeDebounce = null;
-window.addEventListener('resize', () => {
-  clearTimeout(prResizeDebounce);
-  prResizeDebounce = setTimeout(() => {
-    if (!Array.isArray(prRows) || !prRows.length) return;
-    const nowMobile = isPRMobileTabletView();
-    if (prLastLayoutWasMobile === null) { prLastLayoutWasMobile = nowMobile; return; }
-    if (nowMobile !== prLastLayoutWasMobile) {
-      prLastLayoutWasMobile = nowMobile;
-      renderPRTable();
-    }
-  }, 200);
-}, { passive: true });
-
 function getSortedPRRowsForCurrentSort() {
   return [...prRows].sort((a,b) => {
     if (!prSortCol) return 0;
@@ -1970,25 +1950,52 @@ function rehydrateExpandedPitcherRows() {
   });
 }
 
-function renderPRMobileCards() {
+function pill(val, dispFn, goodBelow, badAbove) {
+  if (val==null) return `<span class="stat-pill pill-neu">–</span>`;
+  const cls = val<=goodBelow ? 'pill-green' : val>=badAbove ? 'pill-red' : 'pill-neu';
+  return `<span class="stat-pill ${cls}">${dispFn(val)}</span>`;
+}
+
+// Card-based layout at every screen size (previously desktop got a dense 15-column
+// table and only mobile/tablet got cards — this replaced both with the one polished
+// card treatment, in a grid that's 1-up on narrow screens and 2-up on wide ones).
+const PR_SORT_FIELDS = [
+  {key:'gameTime', label:'Time'},
+  {key:'kprop',    label:'Live K'},
+  {key:'ip',       label:'IP'},
+  {key:'bf',       label:'BF'},
+  {key:'fip',      label:'FIP'},
+  {key:'avg',      label:'AVG'},
+  {key:'woba',     label:'wOBA'},
+  {key:'whip',     label:'WHIP'},
+  {key:'iso',      label:'ISO'},
+  {key:'slg',      label:'SLG'},
+  {key:'hr9',      label:'HR/9'},
+  {key:'tb',       label:'TB'},
+  {key:'kpg',      label:'K/GM'},
+];
+
+function renderPRTable() {
   const el = document.getElementById('pr-content');
   if (!el) return;
   const sorted = getSortedPRRowsForCurrentSort();
   const hs = id => `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_46,q_auto:best/v1/people/${id}/headshot/67/current`;
+  const stat = (label, value, tip) => `<div class="pr-mobile-stat"${tip?` data-tip="${tip}"`:''}><span class="pr-mobile-stat-label">${label}</span><span class="pr-mobile-stat-value">${value}</span></div>`;
 
   const cards = sorted.map(r => {
     const p = r.pitcher;
     const pid = normalizePitcherId(p.id);
     const isExpanded = expandedRows.has(pid);
-    const k9 = r.rawK9 || 0;
-    const kpropCls = k9 >= 9.5 ? 'good' : k9 <= 6.0 ? 'low' : 'mid';
+
+    // K prop line — real sportsbook line if available, else model projection rounded to nearest half
     const kpropLine = getKPropLine(p, r);
-    const kpropDir = getKPropDirection(r, kpropLine);
-    const stat = (label, value) => `<div class="pr-mobile-stat"><span class="pr-mobile-stat-label">${label}</span><span class="pr-mobile-stat-value">${value}</span></div>`;
+    if (kpropLine != null) pitcherOULines[p.id] = kpropLine;
+
     let liveK = latestPitcherKData?.[pid] || latestPitcherKData?.[p.id];
     if (!liveK && latestPitcherKData) {
       liveK = Object.values(latestPitcherKData).find(l => l && l.name === p.name && (!l.teamAbbr || l.teamAbbr === p.teamAbbr));
     }
+
     return `<div class="pr-mobile-card${isExpanded ? ' is-expanded' : ''}" id="pr-row-${pid}">
       <div class="pr-mobile-top">
         <div class="pr-mobile-pitcher">
@@ -2004,12 +2011,17 @@ function renderPRMobileCards() {
         ${liveK && (liveK.isLive || liveK.isFinal) ? `<span class="pr-stat-chip pr-live-k-chip">Live K: ${liveK.ks}</span>` : '–'}
       </div>
       <div class="pr-mobile-stats">
-        ${stat('IP', r.ip!=null?r.ip.toFixed(1):'–')}
-        ${stat('BF', r.bf!=null?r.bf:'–')}
-        ${stat('FIP', pill(r.fip, v=>v.toFixed(2), 3.25, 4.50))}
-        ${stat('AVG', pill(r.avg, v=>v.toFixed(3).replace(/^0/,''), .220, .270))}
-        ${stat('WHIP', pill(r.whip, v=>v.toFixed(2), 1.10, 1.40))}
-        ${stat('HR/9', pill(r.hr9, v=>v.toFixed(2), 0.80, 1.50))}
+        ${stat('IP', r.ip!=null?r.ip.toFixed(1):'–', 'Innings Pitched')}
+        ${stat('BF', r.bf!=null?r.bf:'–', 'Batters Faced')}
+        ${stat('FIP', pill(r.fip,  v=>v.toFixed(2), 3.25, 4.50), 'Fielding Independent Pitching')}
+        ${stat('AVG', pill(r.avg,  v=>v.toFixed(3).replace(/^0/,''), .220, .270), 'Batting Average Against')}
+        ${stat('wOBA', pill(r.woba, v=>v.toFixed(3).replace(/^0/,''), .290, .340), 'Weighted On-Base Average')}
+        ${stat('WHIP', pill(r.whip, v=>v.toFixed(2), 1.10, 1.40), 'Walks + Hits per Inning Pitched')}
+        ${stat('ISO', pill(r.iso,  v=>v.toFixed(3).replace(/^0/,''), .150, .200), 'Isolated Power — extra-base power allowed')}
+        ${stat('SLG', pill(r.slg,  v=>v.toFixed(3).replace(/^0/,''), .350, .430), 'Slugging Percentage Against')}
+        ${stat('HR/9', pill(r.hr9,  v=>v.toFixed(2), 0.80, 1.50), 'Home Runs per 9 Innings')}
+        ${stat('TB', r.tb!=null?r.tb:'–', 'Total Bases Allowed')}
+        ${stat('K/GM', `<span style="color:${r.kpg>=7?'var(--green)':r.kpg>=5?'var(--text)':'var(--muted)'}">${r.kpg??'–'}</span>`, 'Average Strikeouts per Game Started')}
       </div>
       <button class="btn-lineup${isExpanded?' active':''}" onclick="toggleLineup('${pid}', '${p.name.replace(/'/g,"\\'")}', ${p.gamePk}, '${p.side}', ${p.oppTeamId}, ${r.rawHr9}, ${r.rawIp})">
         ${isExpanded ? '▲ HIDE' : '▼ BATTING LINEUP & MATCHUPS'}
@@ -2022,162 +2034,26 @@ function renderPRMobileCards() {
     </div>`;
   }).join('');
 
-  el.innerHTML = `<div class="pr-mobile-list">${cards}</div>
-    <div class="pr-legend-note" style="margin-top:12px;font-size:11px">
-      Mobile/tablet card layout active · Tap Batting Lineup &amp; Matchups to expand.
-    </div>`;
-  rehydrateExpandedPitcherRows();
-}
-
-function pill(val, dispFn, goodBelow, badAbove) {
-  if (val==null) return `<span class="stat-pill pill-neu">–</span>`;
-  const cls = val<=goodBelow ? 'pill-green' : val>=badAbove ? 'pill-red' : 'pill-neu';
-  return `<span class="stat-pill ${cls}">${dispFn(val)}</span>`;
-}
-
-function renderPRTable() {
-  prLastLayoutWasMobile = isPRMobileTabletView();
-  if (prLastLayoutWasMobile) { renderPRMobileCards(); return; }
-  const el = document.getElementById('pr-content');
-  const colCount = 15;
-
-  const cols = [
-    {key:'gameTime', label:'TIME',    sortable:true,  tip:'Game start time'},
-    {key:'name',     label:'PITCHER', sortable:false, tip:'Starting pitcher'},
-    {key:'vs',       label:'VS',      sortable:false, tip:'Opposing team'},
-    {key:'kprop',    label:'LIVE K',  sortable:true,  tip:'Live K count during game'},
-    {key:'ip',       label:'IP',      sortable:true,  tip:'Innings Pitched'},
-    {key:'bf',       label:'BF',      sortable:true,  tip:'Batters Faced'},
-    {key:'fip',      label:'FIP',     sortable:true,  tip:'Fielding Independent Pitching — ERA based only on K, BB, HR'},
-    {key:'avg',      label:'AVG',   sortable:true,  tip:'Batting Average Against'},
-    {key:'woba',     label:'wOBA',    sortable:true,  tip:'Weighted On-Base Average (shown as OBP when wOBA unavailable)'},
-    {key:'whip',     label:'WHIP',    sortable:true,  tip:'Walks + Hits per Inning Pitched'},
-    {key:'iso',      label:'ISO',     sortable:true,  tip:'Isolated Power (SLG − AVG) — extra-base power allowed'},
-    {key:'slg',      label:'SLG',     sortable:true,  tip:'Slugging Percentage Against'},
-    {key:'hr9',      label:'HR/9',    sortable:true,  tip:'Home Runs per 9 Innings'},
-    {key:'tb',       label:'TB',      sortable:true,  tip:'Total Bases Allowed'},
-    {key:'kpg',      label:'K/GM',    sortable:true,  tip:'Average Strikeouts per Game Started'},
-  ];
-
-  const sorted = [...prRows].sort((a,b) => {
-    if (!prSortCol) return 0;
-    const av=a[prSortCol], bv=b[prSortCol];
-    if (av==null&&bv==null) return 0;
-    if (av==null) return 1; if (bv==null) return -1;
-    return (av-bv)*prSortDir;
-  });
-
-  const hs = id => `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_38,q_auto:best/v1/people/${id}/headshot/67/current`;
-
-  const rows = sorted.map((r) => {
-    const p = r.pitcher;
-    const rowId = `pr-row-${p.id}`;
-    const expandId = `pr-expand-${p.id}`;
-    const isExpanded = expandedRows.has(normalizePitcherId(p.id));
-
-    // K prop line — real sportsbook line if available, else model projection rounded to nearest half
-    const k9 = r.rawK9 || 0;
-    const kpropCls = k9 >= 9.5 ? 'good' : k9 <= 6.0 ? 'low' : 'mid';
-    const kpropLine = getKPropLine(p, r);
-    const kpropDir = getKPropDirection(r, kpropLine);
-    if (kpropLine != null) pitcherOULines[p.id] = kpropLine;
-
-    const mainRow = `<tr class="pr-main-row" id="${rowId}">
-      <td><span class="pr-time" style="color:${p.timeColor};font-weight:${p.timeLabel.includes('LIVE')?700:400}">${p.timeLabel}</span></td>
-      <td>
-        <div class="pr-pitcher-cell">
-          <img class="pr-headshot" src="${hs(p.id)}" alt="${p.name}" loading="lazy" decoding="async">
-          <div class="pr-pitcher-info">
-            <span class="pr-pitcher-name">${p.name}</span>
-            <div class="pr-pitcher-sub">
-              <span class="pr-wl">${p.teamAbbr} · ${r.wl}</span>
-              <button class="btn-lineup${isExpanded?' active':''}" onclick="toggleLineup('${p.id}', '${p.name.replace(/'/g,"\\'")}', ${p.gamePk}, '${p.side}', ${p.oppTeamId}, ${r.rawHr9}, ${r.rawIp})">
-                ${isExpanded ? '▲ HIDE' : '▼ BATTING LINEUP & MATCHUPS'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </td>
-      <td style="color:var(--muted);font-size:11px">@ ${p.oppAbbr}</td>
-      <td id="kprop-cell-${r.pitcher.id}">
-        <div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:nowrap">
-          ${latestPitcherKData?.[normalizePitcherId(p.id)] ? `<span class="pr-stat-chip pr-live-k-chip">Live K: ${latestPitcherKData[normalizePitcherId(p.id)].ks}</span>` : '–'}
-        </div>
-      </td>
-      <td><span class="pr-plain">${r.ip!=null?r.ip.toFixed(1):'–'}</span></td>
-      <td><span class="pr-plain">${r.bf!=null?r.bf:'–'}</span></td>
-      <td>${pill(r.fip,  v=>v.toFixed(2), 3.25, 4.50)}</td>
-      <td>${pill(r.avg,  v=>v.toFixed(3).replace(/^0/,''), .220, .270)}</td>
-      <td>${pill(r.woba, v=>v.toFixed(3).replace(/^0/,''), .290, .340)}</td>
-      <td>${pill(r.whip, v=>v.toFixed(2), 1.10, 1.40)}</td>
-      <td>${pill(r.iso,  v=>v.toFixed(3).replace(/^0/,''), .150, .200)}</td>
-      <td>${pill(r.slg,  v=>v.toFixed(3).replace(/^0/,''), .350, .430)}</td>
-      <td>${pill(r.hr9,  v=>v.toFixed(2), 0.80, 1.50)}</td>
-      <td><span class="pr-plain">${r.tb!=null?r.tb:'–'}</span></td>
-      <td><span class="pr-plain" style="color:${r.kpg>=7?'var(--green)':r.kpg>=5?'var(--text)':'var(--muted)'}">${r.kpg??'–'}</span></td>
-    </tr>`;
-
-    const expandRow = `<tr class="pr-expand-row" id="${expandId}" style="${isExpanded?'':'display:none'}">
-      <td colspan="${colCount}">
-        <div class="pr-expand-panel" id="panel-${p.id}">
-          <span class="spin"></span> Loading lineup…
-        </div>
-      </td>
-    </tr>`;
-
-    return mainRow + expandRow;
-  }).join('');
-
-  const ths = cols.map(c => {
-    const tip = c.tip ? ` data-tip="${c.tip}"` : '';
-    if (!c.sortable) return `<th${tip}>${c.label}</th>`;
-    const cls = prSortCol===c.key ? (prSortDir===1?'sort-asc':'sort-desc') : '';
-    return `<th class="${cls}"${tip} onclick="sortPR('${c.key}')">${c.label}</th>`;
-  }).join('');
+  const sortOptions = PR_SORT_FIELDS.map(f => `<option value="${f.key}"${prSortCol===f.key?' selected':''}>${f.label}</option>`).join('');
 
   el.innerHTML = `
-    <div class="pr-table-wrap">
-      <table class="pr-table">
-        <thead><tr>${ths}</tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+    <div class="pr-sort-row">
+      <label class="pr-sort-label">Sort by</label>
+      <select class="pr-sort-select" onchange="sortPR(this.value)">${sortOptions}</select>
+      <button type="button" class="pr-sort-dir-btn" onclick="sortPR(prSortCol || 'gameTime')" title="Flip sort direction">${prSortDir===1?'↑ Asc':'↓ Desc'}</button>
     </div>
+    <div class="pr-mobile-list">${cards}</div>
     <div class="pr-legend">
       <span class="pr-legend-chip"><span class="pr-legend-dot good"></span>Elite</span>
       <span class="pr-legend-chip"><span class="pr-legend-dot neu"></span>Average</span>
       <span class="pr-legend-chip"><span class="pr-legend-dot bad"></span>Concerning</span>
-      <span class="pr-legend-sep">·</span>
-      <span class="pr-legend-note">Click column headers to sort</span>
       <span class="pr-legend-sep">·</span>
       <span class="pr-legend-note">HR% = estimated per-AB probability based on batter HR rate × pitcher HR/9</span>
       <span class="pr-legend-sep">·</span>
       <span class="pr-legend-note">2026 season</span>
     </div>`;
 
-  // v6.4: Rehydrate any expanded rows after table refresh/sort/live re-render.
-  // This prevents the mobile panel from flashing content and then returning to a blank/loading state.
-  expandedRows.forEach(rawPid => {
-    const pid = normalizePitcherId(rawPid);
-    const row = prRows.find(r => normalizePitcherId(r.pitcher.id) === pid);
-    if (!row) return;
-    const panel = document.getElementById(`panel-${pid}`);
-    setLineupOpenState(pid, true);
-    if (!panel) return;
-    const cacheKey = `${row.pitcher.gamePk}-${row.pitcher.side}`;
-    lineupMeta[pid] = lineupMeta[pid] || {
-      pitcherName: row.pitcher.name,
-      gamePk: row.pitcher.gamePk,
-      side: row.pitcher.side,
-      oppTeamId: row.pitcher.oppTeamId,
-      pitcherHr9: row.rawHr9,
-      pitcherIp: row.rawIp
-    };
-    if (lineupCache[cacheKey]) {
-      renderLineup(`panel-${pid}`, lineupCache[cacheKey], row.rawHr9, row.rawIp, row.pitcher.oppAbbr, pid, row.pitcher.name);
-    } else if (!lineupLoading.has(pid)) {
-      fetchAndRenderLineup(pid, row.pitcher.name, row.pitcher.gamePk, row.pitcher.side, row.pitcher.oppTeamId, row.rawHr9, row.rawIp).catch(()=>{});
-    }
-  });
+  rehydrateExpandedPitcherRows();
 }
 
 
