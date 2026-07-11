@@ -200,7 +200,10 @@ body.dr-mobile-menu-open{
   .dr1041-pitch-table td{padding:12px;border-bottom:1px solid rgba(43,73,105,.62);color:#fff;font-size:13px;vertical-align:middle}
   .dr1041-pitch-table tr:last-child td{border-bottom:0}
   .dr1041-pitch-table .num{font-family:'JetBrains Mono',monospace;text-align:center;white-space:nowrap}
+  .dr1041-pitch-table .num.gb-good{color:#22e06f;font-weight:900;text-shadow:0 0 12px rgba(34,224,111,.35)}
   .dr1041-pitch-table .usage{text-align:center;font-family:'JetBrains Mono',monospace;font-weight:900;white-space:nowrap}
+  .dr1041-legend-note{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);padding:8px 12px 0}
+  .gb-good-dot{width:8px;height:8px;border-radius:50%;background:#22e06f;box-shadow:0 0 6px rgba(34,224,111,.7);flex:none}
   .dr1041-chip{display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(34,197,94,.72);background:rgba(6,78,59,.52);color:#22e06f;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:900;white-space:nowrap}
   .dr1041-chip.good{border-color:rgba(132,204,22,.7);background:rgba(63,98,18,.42);color:#a3e635}
   .dr1041-chip.neutral{border-color:rgba(148,163,184,.55);background:rgba(30,41,59,.45);color:#cbd5e1}
