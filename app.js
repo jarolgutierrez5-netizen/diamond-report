@@ -10430,10 +10430,37 @@ function showPremiumGate(feature){
     return bits.slice(0, 2);
   }
 
+  var HR_TOP_N_PER_GAME = 3;
+
+  // Home Runs only: ranked per individual game (top 3 qualifiers per game) instead of
+  // pooled across the whole slate like the other markets. A global top-5 pool reshuffled
+  // every time any game's numbers moved, even games with no bearing on a given pick —
+  // scoping HR to each game keeps a pick's presence tied only to its own game's data.
+  function buildHRGameRanked(pool){
+    var byGame = {};
+    pool.forEach(function(r){
+      var gp = r.gamePk;
+      if (gp == null) return;
+      (byGame[gp] = byGame[gp] || []).push(r);
+    });
+    var out = [];
+    Object.keys(byGame).forEach(function(gamePk){
+      byGame[gamePk]
+        .map(function(r){ var sq = scoreAndQuality('hr', r); return { row:r, score:sq.score, quality:sq.quality }; })
+        .filter(function(x){ return x.score > 0 && x.quality >= MIN_QUALITY_SCORE; })
+        .sort(function(a,b){ return b.score - a.score; })
+        .slice(0, HR_TOP_N_PER_GAME)
+        .forEach(function(entry){ out.push(entry); });
+    });
+    out.sort(function(a,b){ return b.score - a.score; });
+    return out;
+  }
+
   function buildRankedLists(){
     var pool = rows().filter(eligible);
     var ranked = {};
     MARKETS.forEach(function(m){
+      if (m.key === 'hr') { ranked[m.key] = buildHRGameRanked(pool); return; }
       ranked[m.key] = pool
         .map(function(r){ var sq = scoreAndQuality(m.key, r); return { row:r, score:sq.score, quality:sq.quality }; })
         .filter(function(x){ return x.score > 0 && x.quality >= MIN_QUALITY_SCORE; })
@@ -10463,9 +10490,12 @@ function showPremiumGate(feature){
     var bestMarket = assignBestMarket(ranked);
     var out = {};
     MARKETS.forEach(function(m){
+      // HR is already capped at 3-per-game by buildHRGameRanked — no additional global
+      // cap, so every game that has a qualifier keeps its own top 3.
+      var cap = m.key === 'hr' ? Infinity : TOP_N;
       var picks = [];
       ranked[m.key].forEach(function(entry){
-        if (picks.length >= TOP_N) return;
+        if (picks.length >= cap) return;
         var pid = entry.row.id;
         if (bestMarket[pid] && bestMarket[pid].market === m.key) picks.push(entry);
       });
