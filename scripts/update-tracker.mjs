@@ -236,10 +236,18 @@ function blendRecentForm(seasonVal, recent, key) {
   return seasonVal * (1 - weight) + recent[key] * weight;
 }
 
+// Populated as a side effect of seasonPitchingStat (below) — pitchHand comes back on
+// the same /people/{id} response the season stat call already makes, so caching it
+// here means the Elite Picks pool's handedness-split lookup costs zero extra pitcher
+// requests, only the one new per-batter split request (see battingSplitVsHand).
+const pitcherHandCache = new Map();
+
 async function seasonPitchingStat(pid, season) {
   try {
     const d = await fetchJSON(`${API}/people/${pid}?hydrate=stats(group=pitching,type=season,season=${season})`);
-    return d?.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || {};
+    const person = d?.people?.[0];
+    if (person?.pitchHand?.code) pitcherHandCache.set(pid, person.pitchHand.code);
+    return person?.stats?.[0]?.splits?.[0]?.stat || {};
   } catch (e) {
     return {};
   }
@@ -599,6 +607,28 @@ async function recentBattingForm(pid, season, games = 10) {
   } catch (e) { return null; }
 }
 
+// Elite Picks pool only (see PARK_FACTORS/pitcherHandCache comments) — vs-LHP/vs-RHP
+// split for this batter against *this specific game's* probable pitcher's hand. One
+// extra request per batter, only paid here (not by the live client page), matching the
+// user's ask to scope handedness data to the backend pool rather than page-load-latency
+// -sensitive live tabs.
+const MIN_SPLIT_AB = 15;
+async function battingSplitVsHand(pid, season, pitcherHand) {
+  const sitCode = pitcherHand === 'L' ? 'vl' : 'vr';
+  try {
+    const d = await fetchJSON(`${API}/people/${pid}/stats?stats=statSplits&group=hitting&sitCodes=${sitCode}&season=${season}`);
+    const stat = d?.stats?.[0]?.splits?.[0]?.stat;
+    const ab = n(stat?.atBats);
+    if (!stat || ab < MIN_SPLIT_AB) return null;
+    return {
+      ab,
+      avg: stat.avg != null ? n(stat.avg) : null,
+      obp: stat.obp != null ? n(stat.obp) : null,
+      slg: stat.slg != null ? n(stat.slg) : null,
+    };
+  } catch (e) { return null; }
+}
+
 async function battersForSide(g, side) {
   try {
     const bd = await fetchJSON(`${API}/game/${g.gamePk}/boxscore`);
@@ -635,6 +665,7 @@ async function buildEliteBatterPool(games, season) {
       const pitcher = g.teams[opp].probablePitcher;
       if (!pitcher) continue;
       const pitcherStat = await seasonPitchingStat(pitcher.id, season);
+      const pitcherHand = pitcherHandCache.get(pitcher.id) || 'R';
       const teamAbbr = g.teams[side].team.abbreviation;
       const oppAbbr = g.teams[opp].team.abbreviation;
       const batters = await battersForSide(g, side);
@@ -643,9 +674,10 @@ async function buildEliteBatterPool(games, season) {
         const pid = b.id;
         const person = b.player?.person;
         if (!pid || !person?.fullName) return null;
-        const [stat, recent] = await Promise.all([
+        const [stat, recent, split] = await Promise.all([
           seasonBattingStat(pid, season),
           recentBattingForm(pid, season),
+          battingSplitVsHand(pid, season, pitcherHand),
         ]);
         const ab = n(stat.atBats);
         const seasonAvg = shrinkToLeague(n(stat.avg), ab, LEAGUE_AVG_AVG, ELITE_MIN_AB);
@@ -656,9 +688,18 @@ async function buildEliteBatterPool(games, season) {
         // above for the isHot signal.
         const RECENT_MAX_AB = 20, RECENT_MAX_WEIGHT = 0.35;
         const recentWeight = recent && recent.ab > 0 ? Math.min(recent.ab, RECENT_MAX_AB) / RECENT_MAX_AB * RECENT_MAX_WEIGHT : 0;
-        const avg = recentWeight > 0 ? seasonAvg * (1 - recentWeight) + recent.avg * recentWeight : seasonAvg;
-        const obp = recentWeight > 0 && recent.obp != null ? seasonObp * (1 - recentWeight) + recent.obp * recentWeight : seasonObp;
-        const slg = recentWeight > 0 && recent.slg != null ? seasonSlg * (1 - recentWeight) + recent.slg * recentWeight : seasonSlg;
+        const recAvg = recentWeight > 0 ? seasonAvg * (1 - recentWeight) + recent.avg * recentWeight : seasonAvg;
+        const recObp = recentWeight > 0 && recent.obp != null ? seasonObp * (1 - recentWeight) + recent.obp * recentWeight : seasonObp;
+        const recSlg = recentWeight > 0 && recent.slg != null ? seasonSlg * (1 - recentWeight) + recent.slg * recentWeight : seasonSlg;
+        // Platoon blend — this batter's actual AVG/OBP/SLG against this specific
+        // game's probable pitcher's throwing hand, applied on top of the recency blend.
+        // Elite Picks pool only (see battingSplitVsHand comment); the live client page
+        // does not pay this extra per-batter request.
+        const SPLIT_MAX_AB = 50, SPLIT_MAX_WEIGHT = 0.30;
+        const splitWeight = split && split.ab > 0 ? Math.min(split.ab, SPLIT_MAX_AB) / SPLIT_MAX_AB * SPLIT_MAX_WEIGHT : 0;
+        const avg = splitWeight > 0 && split.avg != null ? recAvg * (1 - splitWeight) + split.avg * splitWeight : recAvg;
+        const obp = splitWeight > 0 && split.obp != null ? recObp * (1 - splitWeight) + split.obp * splitWeight : recObp;
+        const slg = splitWeight > 0 && split.slg != null ? recSlg * (1 - splitWeight) + split.slg * splitWeight : recSlg;
         const ops = n(stat.ops, avg + obp);
         const iso = Math.max(0, slg - avg);
         const hrSeason = n(stat.homeRuns);
