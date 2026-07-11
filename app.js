@@ -9138,23 +9138,22 @@ function showPremiumGate(feature){
     container.id='gamepick-premium-gate';
     container.className='gamepick-pane active';
     container.innerHTML=`
-      <div class="dr-center-label">🔒 Diamond Report Premium</div>
+      <div class="dr-center-label">🔒 Coming Soon</div>
       <div class="dr-panel dr-panel-large">
         <div class="dr-panel-head">
           <div>
-            <p class="section-title">PREMIUM <span>ACCESS</span></p>
-            <small>Unlock advanced analytics and deeper matchup intelligence.</small>
+            <p class="section-title">COMING <span>SOON</span></p>
+            <small>These sections are still being built.</small>
           </div>
         </div>
         <div class="dr-panel-body" style="text-align:center;padding:32px">
-          <h2>🔒 Premium Feature</h2>
-          <p>This section is available with Diamond Report Premium.</p>
+          <h2>🔒 Coming Soon</h2>
+          <p>This section isn't available yet — check back soon.</p>
           <div style="margin-top:20px;line-height:2">
-            🧾 Parlay Builds<br>
-            🆚 Team Performance<br>
-            🧠 Deep Research
+            🔒 🧾 Parlay Builds<br>
+            🔒 🆚 Team Performance<br>
+            🔒 🧠 Deep Research
           </div>
-          <button class="dr-refresh" style="margin-top:24px">Upgrade to Unlock</button>
         </div>
       </div>`;
     document.querySelector('.gamepick-tabs')?.parentElement?.after(container);
