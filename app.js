@@ -1606,9 +1606,12 @@ async function loadBatterPitchTypeSeason(force=false) {
 // v8.22: keep pitch-type season data fresh in-session too. If the GitHub Action
 // commits a new data file while the page is open, this will pick it up without
 // changing any projection logic. The modal uses the latest loaded store when opened.
+// Gated on batterPitchTypeSeasonLoaded — this file is real data now (~1.6MB), not the
+// harmless 404 it used to be, so a visitor who never opens a Pitcher Matchup modal
+// should never pay this cost every 2 minutes for the life of the tab.
 if (!DR_STATIC_DAILY_DUMP) {
   setInterval(() => {
-    if (document.visibilityState === 'visible') {
+    if (document.visibilityState === 'visible' && batterPitchTypeSeasonLoaded) {
       loadBatterPitchTypeSeason(true).catch(() => {});
     }
   }, 120000);
