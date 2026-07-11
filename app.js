@@ -10337,7 +10337,6 @@ function showPremiumGate(feature){
     { key:'hrrbi', label:'📈 Hits+Runs+RBI' },
   ];
   var TOP_N = 5;
-  var CANDIDATE_DEPTH = 25;
   var MIN_AB = 40; // same real-season-sample floor used elsewhere on this site (HRP_MIN_AB_FOR_RATE)
   var MIN_QUALITY_SCORE = 2; // must clear at least 2 of 4 real corroborating signals below
 
@@ -10431,76 +10430,101 @@ function showPremiumGate(feature){
   }
 
   var HR_TOP_N_PER_GAME = 3;
+  var LOCK_STORAGE_KEY = 'dr_elite_picks_locked_v1';
 
-  // Home Runs only: ranked per individual game (top 3 qualifiers per game) instead of
-  // pooled across the whole slate like the other markets. A global top-5 pool reshuffled
-  // every time any game's numbers moved, even games with no bearing on a given pick —
-  // scoping HR to each game keeps a pick's presence tied only to its own game's data.
-  function buildHRGameRanked(pool){
-    var byGame = {};
-    pool.forEach(function(r){
-      var gp = r.gamePk;
-      if (gp == null) return;
-      (byGame[gp] = byGame[gp] || []).push(r);
-    });
-    var out = [];
-    Object.keys(byGame).forEach(function(gamePk){
-      byGame[gamePk]
-        .map(function(r){ var sq = scoreAndQuality('hr', r); return { row:r, score:sq.score, quality:sq.quality }; })
-        .filter(function(x){ return x.score > 0 && x.quality >= MIN_QUALITY_SCORE; })
-        .sort(function(a,b){ return b.score - a.score; })
-        .slice(0, HR_TOP_N_PER_GAME)
-        .forEach(function(entry){ out.push(entry); });
-    });
-    out.sort(function(a,b){ return b.score - a.score; });
-    return out;
+  // Elite Picks are locked in for the day: once a player is selected into a market's
+  // (or, for HR, a game's) list, later renders never bump them out in favor of someone
+  // who's since scored higher — only genuinely open slots (fewer picks than the target
+  // count) get filled with fresh candidates. Persisted to localStorage keyed by today's
+  // date so the lock survives page reloads, not just in-memory across one page load.
+  function loadLocks(){
+    var empty = { day: todayKey(), hr: {}, hits: [], rbis: [], tb: [], sb: [], hrrbi: [] };
+    try {
+      var raw = localStorage.getItem(LOCK_STORAGE_KEY);
+      if (!raw) return empty;
+      var parsed = JSON.parse(raw);
+      if (!parsed || parsed.day !== todayKey()) return empty;
+      parsed.hr = parsed.hr || {};
+      MARKETS.forEach(function(m){ if (m.key !== 'hr') parsed[m.key] = Array.isArray(parsed[m.key]) ? parsed[m.key] : []; });
+      return parsed;
+    } catch(e) { return empty; }
+  }
+  function saveLocks(locks){
+    try { localStorage.setItem(LOCK_STORAGE_KEY, JSON.stringify(locks)); } catch(e) {}
   }
 
-  function buildRankedLists(){
-    var pool = rows().filter(eligible);
-    var ranked = {};
-    MARKETS.forEach(function(m){
-      if (m.key === 'hr') { ranked[m.key] = buildHRGameRanked(pool); return; }
-      ranked[m.key] = pool
-        .map(function(r){ var sq = scoreAndQuality(m.key, r); return { row:r, score:sq.score, quality:sq.quality }; })
-        .filter(function(x){ return x.score > 0 && x.quality >= MIN_QUALITY_SCORE; })
-        .sort(function(a,b){ return b.score - a.score; })
-        .slice(0, CANDIDATE_DEPTH);
+  // Resolves one market/game's already-locked ids against fresh row + score data (a
+  // locked player stays as long as their row still exists at all today, even if their
+  // score/quality dips below the bar that got them in), then fills any remaining open
+  // slots (up to targetN) from the best unclaimed fresh candidates — which still must
+  // clear the quality bar to get in for the first time.
+  function resolveSlot(marketKey, rowsById, candidates, lockedIds, targetN, usedIds){
+    var candById = {};
+    candidates.forEach(function(c){ candById[c.row.id] = c; });
+    var entries = [];
+    var stillLocked = [];
+    lockedIds.forEach(function(id){
+      var row = rowsById[id];
+      if (!row) return; // player is gone from today's data entirely — drop the lock
+      var existing = candById[id];
+      var sq = existing || scoreAndQuality(marketKey, row);
+      entries.push({ row: row, score: sq.score, quality: sq.quality });
+      usedIds[id] = true;
+      stillLocked.push(id);
     });
-    return ranked;
-  }
+    lockedIds.length = 0;
+    lockedIds.push.apply(lockedIds, stillLocked);
 
-  // Each player is assigned to the single market where they rank highest (lowest index)
-  // in that market's ranked list — not by raw probability, since markets run on very
-  // different scales (Hits odds sit far higher than HR odds for the same player, so
-  // comparing raw numbers across markets would bias every pick toward Hits/TB).
-  function assignBestMarket(ranked){
-    var bestRank = {};
-    MARKETS.forEach(function(m){
-      ranked[m.key].forEach(function(entry, idx){
-        var pid = entry.row.id;
-        if (!bestRank[pid] || idx < bestRank[pid].rank) bestRank[pid] = { market:m.key, rank:idx };
-      });
-    });
-    return bestRank;
+    var need = targetN - entries.length;
+    if (need > 0) {
+      candidates
+        .filter(function(c){ return !usedIds[c.row.id]; })
+        .sort(function(a,b){ return b.score - a.score; })
+        .slice(0, need)
+        .forEach(function(c){ entries.push(c); lockedIds.push(c.row.id); usedIds[c.row.id] = true; });
+    }
+    entries.sort(function(a,b){ return b.score - a.score; });
+    return entries;
   }
 
   function buildEliteLists(){
-    var ranked = buildRankedLists();
-    var bestMarket = assignBestMarket(ranked);
+    var pool = rows().filter(eligible);
+    var rowsById = {};
+    pool.forEach(function(r){ rowsById[r.id] = r; });
+
+    var locks = loadLocks();
+    var usedIds = {};
+    Object.keys(locks.hr).forEach(function(gp){ (locks.hr[gp] || []).forEach(function(id){ usedIds[id] = true; }); });
+    MARKETS.forEach(function(m){ if (m.key !== 'hr') (locks[m.key] || []).forEach(function(id){ usedIds[id] = true; }); });
+
     var out = {};
-    MARKETS.forEach(function(m){
-      // HR is already capped at 3-per-game by buildHRGameRanked — no additional global
-      // cap, so every game that has a qualifier keeps its own top 3.
-      var cap = m.key === 'hr' ? Infinity : TOP_N;
-      var picks = [];
-      ranked[m.key].forEach(function(entry){
-        if (picks.length >= cap) return;
-        var pid = entry.row.id;
-        if (bestMarket[pid] && bestMarket[pid].market === m.key) picks.push(entry);
-      });
-      out[m.key] = picks;
+
+    // Home Runs: scoped per game, top 3 per game, locked in per game.
+    var byGame = {};
+    pool.forEach(function(r){ var gp = r.gamePk; if (gp == null) return; (byGame[gp] = byGame[gp] || []).push(r); });
+    var hrEntries = [];
+    Object.keys(byGame).forEach(function(gamePk){
+      var candidates = byGame[gamePk]
+        .map(function(r){ var sq = scoreAndQuality('hr', r); return { row:r, score:sq.score, quality:sq.quality }; })
+        .filter(function(x){ return x.score > 0 && x.quality >= MIN_QUALITY_SCORE; });
+      locks.hr[gamePk] = locks.hr[gamePk] || [];
+      resolveSlot('hr', rowsById, candidates, locks.hr[gamePk], HR_TOP_N_PER_GAME, usedIds).forEach(function(e){ hrEntries.push(e); });
+      if (!locks.hr[gamePk].length) delete locks.hr[gamePk];
     });
+    hrEntries.sort(function(a,b){ return b.score - a.score; });
+    out.hr = hrEntries;
+
+    // Other markets: pooled across the whole slate, top 5, locked in globally.
+    MARKETS.forEach(function(m){
+      if (m.key === 'hr') return;
+      var candidates = pool
+        .map(function(r){ var sq = scoreAndQuality(m.key, r); return { row:r, score:sq.score, quality:sq.quality }; })
+        .filter(function(x){ return x.score > 0 && x.quality >= MIN_QUALITY_SCORE; });
+      locks[m.key] = locks[m.key] || [];
+      out[m.key] = resolveSlot(m.key, rowsById, candidates, locks[m.key], TOP_N, usedIds);
+    });
+
+    saveLocks(locks);
     return out;
   }
 
