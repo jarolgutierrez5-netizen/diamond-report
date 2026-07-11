@@ -8324,6 +8324,19 @@ if (document.readyState === 'loading') {
         setTimeout(function(){ try { if (typeof window.renderPropIntelligencePanes === 'function') window.renderPropIntelligencePanes(); } catch(e) {} }, 120);
         return;
       }
+      if (pane === 'premium') {
+        // Same shared player pool as the hits/rbis/tb/sb/hrrbi boards above — reuses the
+        // loaded.props flag so a cold boot straight into Premium (e.g. restoring the
+        // saved tab on refresh) still fetches it instead of relying on a manual tab
+        // click through window.showGamePickPane, which boot() doesn't go through.
+        if (!loaded.props) {
+          loaded.props = true;
+          idle(function(){ try { if (typeof window.loadHRPotentialWithRetry === 'function') window.loadHRPotentialWithRetry(); } catch(e) {} });
+        }
+        setTimeout(function(){ try { if (typeof window.renderPremiumPicks === 'function') window.renderPremiumPicks(); } catch(e) {} }, 120);
+        setTimeout(function(){ try { if (typeof window.renderPremiumPicks === 'function') window.renderPremiumPicks(); } catch(e) {} }, 900);
+        return;
+      }
       if (pane === 'deep' && !loaded.deep) {
         loaded.deep = true;
         idle(function(){ try { if (typeof window.renderDeepResearch === 'function') window.renderDeepResearch(); } catch(e) {} });
