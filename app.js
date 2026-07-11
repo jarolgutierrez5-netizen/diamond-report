@@ -5005,6 +5005,28 @@ async function loadHRPotential() {
           const shrunkOps = (batterOPS*hrpSampleWeight) + (LEAGUE_AVG_OPS*(1-hrpSampleWeight));
           const shrunkObp = (rawObp*hrpSampleWeight) + (LEAGUE_AVG_OBP*(1-hrpSampleWeight));
           const shrunkSlg = (rawSlg*hrpSampleWeight) + (LEAGUE_AVG_SLG*(1-hrpSampleWeight));
+          // Recency blend — last 10 games, from the same lastXGames log already fetched
+          // above for last10HR/streakDays (zero extra API calls). Same idea as the
+          // pitcher ERA/WHIP/K9 recent-form blend: a real hot or cold two-week stretch
+          // should move these numbers, capped so a thin recent sample can't outweigh a
+          // full season of AVG/OBP/SLG.
+          const recentLog = (logs || []).slice(0, 10);
+          let recAB=0, recH=0, recBB=0, recHBP=0, recTB=0, recSF=0;
+          recentLog.forEach(g2 => {
+            const st = g2.stat || {};
+            recAB += parseInt(st.atBats) || 0;
+            recH += parseInt(st.hits) || 0;
+            recBB += parseInt(st.baseOnBalls) || 0;
+            recHBP += parseInt(st.hitByPitch) || 0;
+            recTB += parseInt(st.totalBases) || 0;
+            recSF += parseInt(st.sacFlies) || 0;
+          });
+          const RECENT_MAX_AB = 20, RECENT_MAX_WEIGHT = 0.35;
+          const recentWeight = recAB > 0 ? Math.min(recAB, RECENT_MAX_AB) / RECENT_MAX_AB * RECENT_MAX_WEIGHT : 0;
+          const recentObpDenom = recAB + recBB + recHBP + recSF;
+          const finalAvg = recAB > 0 ? shrunkAvg*(1-recentWeight) + (recH/recAB)*recentWeight : shrunkAvg;
+          const finalObp = recentObpDenom > 0 ? shrunkObp*(1-recentWeight) + ((recH+recBB+recHBP)/recentObpDenom)*recentWeight : shrunkObp;
+          const finalSlg = recAB > 0 ? shrunkSlg*(1-recentWeight) + (recTB/recAB)*recentWeight : shrunkSlg;
           const todayBoxStats = (isLive || isFinal) ? (b.player.stats?.batting || {}) : {};
           const todayHits = parseInt(todayBoxStats.hits) || 0;
           const todayRBI = parseInt(todayBoxStats.rbi ?? todayBoxStats.runsBattedIn) || 0;
@@ -5016,7 +5038,7 @@ async function loadHRPotential() {
             teamAbbr, oppAbbr, pitcherName:pitcher.fullName, pitcherId:pitcher.id,
             timeLabel, timeColor, gameTimestamp:dt.getTime(), gamePk:g.gamePk,
             stats:s, todayStats: todayBoxStats, todayHits, todayRBI, todayTB, todaySB, todayRuns, todayHR, last10HR, baseHrProb, hrProb, streakDays, hrVsPitcher,
-            avg:shrunkAvg, hrSeason:hr, ops:shrunkOps, obp:shrunkObp, slg:shrunkSlg,
+            avg:finalAvg, hrSeason:hr, ops:shrunkOps, obp:finalObp, slg:finalSlg,
             battingOrder,
             pitcherAvgAllowed: pitcherAvg, pitcherSlgAllowed: pitcherSlg, pitcherWhipAllowed: pitcherWhip,
             pitcherSbAllowed, pitcherCsAllowed, parkFactor: gameParkFactor,
@@ -5025,10 +5047,10 @@ async function loadHRPotential() {
             // which isn't a real power signal and used to inflate the TB/RBI/H+R+RBI
             // scores (iso*96/iso*72/etc.) to a false 99% for players with almost no
             // MLB sample this season.
-            iso: Math.max(0, shrunkSlg - shrunkAvg), isDrought, isFavorable,
+            iso: Math.max(0, finalSlg - finalAvg), isDrought, isFavorable,
             // "Due" = drought + at least 2 supporting signals: power profile, favorable matchup, decent OPS
             isDue: isDrought && (
-              ((shrunkSlg - shrunkAvg) >= 0.170 ? 1 : 0) +
+              ((finalSlg - finalAvg) >= 0.170 ? 1 : 0) +
               (isFavorable ? 1 : 0) +
               ((parseFloat(s.ops)||0) >= 0.750 ? 1 : 0) +
               ((last10HR === 0 && hr >= 8) ? 1 : 0) // proven HR hitter in deep drought
@@ -8866,14 +8888,36 @@ var analytics='<div class="tp-analytics-grid">'+
     var avg = clamp(n(row.avg, 0.245), 0.120, 0.400);
     var obp = clamp(n(row.obp, avg + 0.065), avg, 0.500);
     var slg = clamp(n(row.slg, avg + 0.155), avg, 0.800);
-    var pHit = avg * AB_PER_PA;
-    var pWalk = Math.max(0, obp - pHit);
+
+    // Opposing pitcher quality — previously only the standalone HR market blended in a
+    // pitcher signal; Hits/RBI/TB/H+R+RBI simulated purely off the batter's own numbers
+    // with zero matchup awareness (a batter facing a Cy Young candidate and the same
+    // batter facing a last-place bullpen arm got identical odds). Blends the pitcher's
+    // real AVG/SLG allowed into the per-PA model, batter weighted higher since it's the
+    // larger, more reliable sample.
+    var PITCHER_WEIGHT = 0.35;
+    var pitcherAvgAllowed = clamp(n(row.pitcherAvgAllowed, avg), 0.180, 0.320);
+    var pitcherSlgAllowed = clamp(n(row.pitcherSlgAllowed, slg), 0.300, 0.550);
+    var bAvg = avg * (1 - PITCHER_WEIGHT) + pitcherAvgAllowed * PITCHER_WEIGHT;
+    var obpGap = Math.max(0, obp - avg); // preserve the batter's own walk-driven OBP lift
+    var bObp = clamp(bAvg + obpGap, bAvg, 0.5);
+    var bSlg = slg * (1 - PITCHER_WEIGHT) + pitcherSlgAllowed * PITCHER_WEIGHT;
+
+    // Park factor — previously only the standalone HR market accounted for this.
+    // Applied to the extra-base portion of the profile (park effects show up far more in
+    // XBH/HR than in raw contact rate), scaled to half the park factor's deviation from
+    // 100 so an extreme park like Coors' 145 doesn't overwhelm the batter's own profile.
+    var parkAdj = 1 + ((n(row.parkFactor, 100) - 100) / 100) * 0.5;
+    var pSlg = clamp(bAvg + (bSlg - bAvg) * parkAdj, bAvg, 0.9);
+
+    var pHit = bAvg * AB_PER_PA;
+    var pWalk = Math.max(0, bObp - pHit);
     var seasonAB = n(s.atBats, 0);
     var seasonHR = n(row.hrSeason, 0);
     var hrRatePerPA = seasonAB > 0 ? (seasonHR / seasonAB) * AB_PER_PA : pHit * 0.11;
-    var pHR = clamp(hrRatePerPA, 0, pHit * 0.55);
+    var pHR = clamp(hrRatePerPA * parkAdj, 0, pHit * 0.55);
     var hitBudget = Math.max(0, pHit - pHR);
-    var extraBaseBudget = Math.max(0, (slg - avg) * AB_PER_PA - pHR * 3);
+    var extraBaseBudget = Math.max(0, (pSlg - bAvg) * AB_PER_PA - pHR * 3);
     var p3B = hitBudget * 0.025;
     var p2B = clamp(extraBaseBudget - p3B * 2, 0, hitBudget - p3B);
     var p1B = Math.max(0, hitBudget - p2B - p3B);

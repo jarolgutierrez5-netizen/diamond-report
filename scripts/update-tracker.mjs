@@ -421,18 +421,33 @@ function estimatePA(battingOrder) {
   return clamp(4.75 - (battingOrder - 1) * 0.11, 3.6, 4.75);
 }
 
+// Mirrors the client-side buildBatterModel exactly (app.js, __DR_MONTE_CARLO__), including
+// the pitcher-quality and park-factor blends — kept in sync so this backend grades the
+// same model the live site actually shows, not a drifted approximation of it.
 function buildBatterModel(row) {
   const avg = clamp(row.avg ?? 0.245, 0.12, 0.4);
   const obp = clamp(row.obp ?? avg + 0.065, avg, 0.5);
   const slg = clamp(row.slg ?? avg + 0.155, avg, 0.8);
-  const pHit = avg * MC_AB_PER_PA;
-  const pWalk = Math.max(0, obp - pHit);
+
+  const PITCHER_WEIGHT = 0.35;
+  const pitcherAvgAllowed = clamp(row.pitcherAvgAllowed ?? avg, 0.18, 0.32);
+  const pitcherSlgAllowed = clamp(row.pitcherSlgAllowed ?? slg, 0.3, 0.55);
+  const bAvg = avg * (1 - PITCHER_WEIGHT) + pitcherAvgAllowed * PITCHER_WEIGHT;
+  const obpGap = Math.max(0, obp - avg);
+  const bObp = clamp(bAvg + obpGap, bAvg, 0.5);
+  const bSlg = slg * (1 - PITCHER_WEIGHT) + pitcherSlgAllowed * PITCHER_WEIGHT;
+
+  const parkAdj = 1 + (((row.parkFactor ?? 100) - 100) / 100) * 0.5;
+  const pSlg = clamp(bAvg + (bSlg - bAvg) * parkAdj, bAvg, 0.9);
+
+  const pHit = bAvg * MC_AB_PER_PA;
+  const pWalk = Math.max(0, bObp - pHit);
   const seasonAB = row.atBats || 0;
   const seasonHR = row.hrSeason || 0;
   const hrRatePerPA = seasonAB > 0 ? (seasonHR / seasonAB) * MC_AB_PER_PA : pHit * 0.11;
-  const pHR = clamp(hrRatePerPA, 0, pHit * 0.55);
+  const pHR = clamp(hrRatePerPA * parkAdj, 0, pHit * 0.55);
   const hitBudget = Math.max(0, pHit - pHR);
-  const extraBaseBudget = Math.max(0, (slg - avg) * MC_AB_PER_PA - pHR * 3);
+  const extraBaseBudget = Math.max(0, (pSlg - bAvg) * MC_AB_PER_PA - pHR * 3);
   const p3B = hitBudget * 0.025;
   const p2B = clamp(extraBaseBudget - p3B * 2, 0, hitBudget - p3B);
   const p1B = Math.max(0, hitBudget - p2B - p3B);
@@ -568,12 +583,19 @@ async function recentBattingForm(pid, season, games = 10) {
     const d = await fetchJSON(`${API}/people/${pid}/stats?stats=lastXGames&group=hitting&season=${season}&limit=${games}&gameType=R`);
     const splits = d?.stats?.[0]?.splits || [];
     if (!splits.length) return null;
-    let ab = 0, h = 0, hr = 0;
+    let ab = 0, h = 0, hr = 0, bb = 0, hbp = 0, tb = 0, sf = 0;
     splits.forEach(s => {
       const st = s.stat || {};
       ab += n(st.atBats); h += n(st.hits); hr += n(st.homeRuns);
+      bb += n(st.baseOnBalls); hbp += n(st.hitByPitch); tb += n(st.totalBases); sf += n(st.sacFlies);
     });
-    return { ab, avg: ab > 0 ? h / ab : null, hr };
+    const obpDenom = ab + bb + hbp + sf;
+    return {
+      ab, hr,
+      avg: ab > 0 ? h / ab : null,
+      obp: obpDenom > 0 ? (h + bb + hbp) / obpDenom : null,
+      slg: ab > 0 ? tb / ab : null,
+    };
   } catch (e) { return null; }
 }
 
@@ -626,9 +648,17 @@ async function buildEliteBatterPool(games, season) {
           recentBattingForm(pid, season),
         ]);
         const ab = n(stat.atBats);
-        const avg = shrinkToLeague(n(stat.avg), ab, LEAGUE_AVG_AVG, ELITE_MIN_AB);
-        const obp = shrinkToLeague(n(stat.obp, avg + 0.065), ab, LEAGUE_AVG_OBP, ELITE_MIN_AB);
-        const slg = shrinkToLeague(n(stat.slg, avg + 0.155), ab, LEAGUE_AVG_SLG, ELITE_MIN_AB);
+        const seasonAvg = shrinkToLeague(n(stat.avg), ab, LEAGUE_AVG_AVG, ELITE_MIN_AB);
+        const seasonObp = shrinkToLeague(n(stat.obp, seasonAvg + 0.065), ab, LEAGUE_AVG_OBP, ELITE_MIN_AB);
+        const seasonSlg = shrinkToLeague(n(stat.slg, seasonAvg + 0.155), ab, LEAGUE_AVG_SLG, ELITE_MIN_AB);
+        // Recency blend — mirrors the client-side loadHRPotential blend exactly (same
+        // 20-AB cap, same 35% max weight), using the lastXGames data already fetched
+        // above for the isHot signal.
+        const RECENT_MAX_AB = 20, RECENT_MAX_WEIGHT = 0.35;
+        const recentWeight = recent && recent.ab > 0 ? Math.min(recent.ab, RECENT_MAX_AB) / RECENT_MAX_AB * RECENT_MAX_WEIGHT : 0;
+        const avg = recentWeight > 0 ? seasonAvg * (1 - recentWeight) + recent.avg * recentWeight : seasonAvg;
+        const obp = recentWeight > 0 && recent.obp != null ? seasonObp * (1 - recentWeight) + recent.obp * recentWeight : seasonObp;
+        const slg = recentWeight > 0 && recent.slg != null ? seasonSlg * (1 - recentWeight) + recent.slg * recentWeight : seasonSlg;
         const ops = n(stat.ops, avg + obp);
         const iso = Math.max(0, slg - avg);
         const hrSeason = n(stat.homeRuns);
@@ -637,16 +667,18 @@ async function buildEliteBatterPool(games, season) {
         const batterOPS = n(stat.ops);
         const pitcherWhip = n(pitcherStat.whip, 1.25);
         const pitcherAvgAllowed = n(pitcherStat.avg, 0.24);
+        const pitcherSlgAllowed = n(pitcherStat.slg, 0.4);
         const isFavorable = batterOPS >= 0.800 && (pitcherWhip >= 1.25 || pitcherAvgAllowed >= 0.260);
         // Real, independently-computable "hot" proxy (no Statcast sync available
         // server-side): recent AVG meaningfully above season AVG, or a HR within the
         // last 10 games.
-        const isHot = !!recent && recent.ab >= 15 && ((recent.avg != null && recent.avg >= avg + 0.030) || recent.hr >= 1);
+        const isHot = !!recent && recent.ab >= 15 && ((recent.avg != null && recent.avg >= seasonAvg + 0.030) || recent.hr >= 1);
         return {
           id: pid, name: person.fullName, teamAbbr, oppAbbr,
           avg, obp, slg, ops, iso, hrSeason, battingOrder,
           atBats: ab, stolenBases: n(stat.stolenBases), caughtStealing: n(stat.caughtStealing),
           pitcherHr9: n(pitcherStat.homeRunsPer9), pitcherSbAllowed: n(pitcherStat.stolenBases), pitcherCsAllowed: n(pitcherStat.caughtStealing),
+          pitcherAvgAllowed, pitcherSlgAllowed, parkFactor: PARK_FACTORS[g.teams.home.team.abbreviation] || 100,
           isFavorable, isHot,
         };
       });
