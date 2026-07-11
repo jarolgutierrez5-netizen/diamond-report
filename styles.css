@@ -220,6 +220,17 @@ body.dr-mobile-menu-open{
   .dr1041-bottom-strip{border:1px solid var(--border);border-radius:10px;background:rgba(7,15,30,.74);padding:13px 18px;display:flex;align-items:center;justify-content:center;gap:28px;flex-wrap:wrap;color:#bfdbfe}
   .dr1041-bottom-item{display:flex;align-items:center;gap:7px;font-size:13px;white-space:nowrap}.dr1041-bottom-item strong{color:#fff;font-weight:900}.dr1041-bottom-split{width:1px;height:28px;background:rgba(148,163,184,.45)}
   .dr1041-usage-chips{display:flex;gap:18px;flex-wrap:wrap;align-items:center}.dr1041-usage-chip{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:900}.dr1041-usage-chip b{color:#dc2626}.dr1041-usage-chip:nth-child(2) b{color:#fbbf24}.dr1041-usage-chip:nth-child(3) b{color:#22c55e}.dr1041-usage-chip:nth-child(4) b{color:#3b82f6}.dr1041-usage-chip:nth-child(5) b{color:#a855f7}
+  .dr1044-odds-panel{border:1px solid var(--border);border-radius:12px;background:rgba(3,8,16,.74);padding:14px 16px;margin-bottom:16px}
+  .dr1044-odds-title{font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:#dc2626}
+  .dr1044-odds-sub{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.5}
+  .dr1044-odds-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:10px;margin-top:12px}
+  .dr1044-odds-chip{border:1px solid var(--border);border-radius:10px;padding:11px 8px;text-align:center;background:rgba(10,18,34,.6)}
+  .dr1044-odds-chip strong{display:block;font-size:21px;font-family:'JetBrains Mono',monospace;line-height:1.1;margin-bottom:3px}
+  .dr1044-odds-chip span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  .dr1044-odds-chip.good{border-color:rgba(34,224,111,.4)}.dr1044-odds-chip.good strong{color:#22e06f}
+  .dr1044-odds-chip.neutral{border-color:rgba(251,191,36,.4)}.dr1044-odds-chip.neutral strong{color:#fbbf24}
+  .dr1044-odds-chip.weak strong{color:#94a3b8}
+  @media(max-width:520px){.dr1044-odds-grid{grid-template-columns:repeat(auto-fit,minmax(92px,1fr))}}
   @media(max-width:900px){.dr1041-pitch-head{flex-direction:column}.dr1041-score-card{width:100%}.dr1041-zone-grid{grid-template-columns:1fr}.dr1041-pitch-table{min-width:760px}.dr1041-table-wrap{overflow-x:auto}.dr1041-bottom-strip{justify-content:flex-start;gap:14px}.dr1041-bottom-split{display:none}}
 
 /* ---- from <style id="prod-v11-css-architecture-cleanup"> ---- */

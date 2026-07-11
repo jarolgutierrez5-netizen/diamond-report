@@ -3669,6 +3669,40 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   const zoneFitPanelHTML = buildZoneFitPanelHTML(pitchMixDashboard.pitches);
   const bottomUsageChips = pitchMixDashboard.usageChips || '';
 
+  // ── Simulated Odds Today — reuses the exact same Monte Carlo engine (and, when the
+  // batter/pitcher are already in today's scanned pool, the exact same cached result) that
+  // powers the Hits/RBI/TB/SB/HR Threats/K Props boards, applied to this one matchup. This
+  // keeps the modal consistent with those boards instead of quoting a second, independently
+  // modeled number for the same player.
+  function simOddsChip(label, pct) {
+    if (pct === null || pct === undefined || Number.isNaN(pct)) return '';
+    const p = Math.round(Number(pct));
+    const cls = p >= 65 ? 'good' : p >= 40 ? 'neutral' : 'weak';
+    return `<div class="dr1044-odds-chip ${cls}"><strong>${p}%</strong><span>${label}</span></div>`;
+  }
+  const propRowPool = (typeof window.getProductionPropRows === 'function') ? window.getProductionPropRows() : [];
+  const matchupRow = propRowPool.find(r => r && String(r.id) === String(batterId)) || null;
+  const kPropsPool = Array.isArray(window.kPropsData) ? window.kPropsData : [];
+  const matchupKRow = kPropsPool.find(r => r && String(r.pitcherId) === String(pitcherId)) || null;
+  let simOddsChips = '';
+  if (matchupRow) {
+    simOddsChips += simOddsChip('Hits (1+)', window.simulatePropOdds ? window.simulatePropOdds('hits', matchupRow) : null);
+    simOddsChips += simOddsChip('Total Bases (2+)', window.simulatePropOdds ? window.simulatePropOdds('tb', matchupRow) : null);
+    simOddsChips += simOddsChip('RBI (1+)', window.simulatePropOdds ? window.simulatePropOdds('rbis', matchupRow) : null);
+    simOddsChips += simOddsChip('Home Run', matchupRow.hrProb != null ? Number(matchupRow.hrProb) : null);
+    simOddsChips += simOddsChip('Stolen Base', window.simulateSBOdds ? window.simulateSBOdds(matchupRow) : null);
+    simOddsChips += simOddsChip('Hits+Runs+RBI (2+)', window.simulatePropOdds ? window.simulatePropOdds('hrrbi', matchupRow) : null);
+  }
+  if (matchupKRow) {
+    simOddsChips += simOddsChip(`${pitcherName.split(' ').pop()} K Over ${matchupKRow.recommendedOverLine}`, matchupKRow.overProb);
+  }
+  const simOddsPanelHTML = simOddsChips ? `<div class="dr1044-odds-panel">
+      <div class="dr1044-odds-head">
+        <div><div class="dr1044-odds-title">🎲 Simulated Odds Today</div><div class="dr1044-odds-sub">Thousands of simulated games built from real season rate stats, run for this exact matchup — same engine as the Hits/RBI/TB/SB/HR Threats/K Props boards.</div></div>
+      </div>
+      <div class="dr1044-odds-grid">${simOddsChips}</div>
+    </div>` : `<div class="dr1044-odds-panel"><div class="dr1044-odds-sub">Simulated odds aren't available yet for this matchup — ${!matchupRow && !matchupKRow ? 'neither player is in today’s scanned lineup pool yet' : !matchupRow ? batterName + ' isn’t in today’s scanned lineup pool yet' : pitcherName + ' isn’t in today’s K Props pool yet'}. Check back once today's props boards have loaded.</div></div>`;
+
   // ── Vulnerability summary bullets ──
   const hrRate = parseInt(bs.homeRuns)||0;
   const isoVal = (bs.slg&&bs.avg) ? parseFloat(bs.slg)-parseFloat(bs.avg) : 0;
@@ -3839,6 +3873,8 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         <div class="h2h-stat"><div class="h2h-val">${h2hOPS}</div><div class="h2h-lbl">OPS</div></div>
       </div>` : `<div style="color:var(--muted);font-size:12px;padding:8px 0">No 2026 H2H data yet — using season stats for analysis.</div>`}
     </div>
+
+    ${simOddsPanelHTML}
 
     <!-- Combined handedness + season matchup -->
     <div class="dr1043-combined-matchup">
