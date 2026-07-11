@@ -1,0 +1,17 @@
+{
+  // Cloudflare Workers "static assets" deployment config. This repo has no build step —
+  // index.html/app.js/styles.css/data/ are served as-is from the repo root. Without this
+  // file, Cloudflare's Git-connected "Workers Builds" integration runs
+  // `npx wrangler versions upload` with no entry-point or assets directory specified and
+  // fails immediately on every commit (see: "Missing entry-point to Worker script or to
+  // assets directory").
+  //
+  // "name" must match the existing Cloudflare Workers project this repo is connected to —
+  // inferred from the failing check's own label ("Workers Builds: diamond-report"). If
+  // this doesn't match the real project name in the Cloudflare dashboard, update it here.
+  "name": "diamond-report",
+  "compatibility_date": "2026-07-11",
+  "assets": {
+    "directory": "."
+  }
+}
