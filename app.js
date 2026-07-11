@@ -10348,10 +10348,34 @@ function showPremiumGate(feature){
     } catch(e) { return []; }
   }
 
-  function scoreFor(marketKey, row){
+  function rawScoreFor(marketKey, row){
     if (marketKey === 'hr') return n(row.hrProb);
     if (marketKey === 'sb') return window.simulateSBOdds ? n(window.simulateSBOdds(row)) : 0;
     return window.simulatePropOdds ? n(window.simulatePropOdds(marketKey, row)) : 0;
+  }
+
+  // Lock a player's Elite Picks score+quality the moment their own game goes live —
+  // not the whole board at a fixed time. Up until first pitch, a player keeps getting
+  // the freshest data (lineups posting, updated form), so picks only get *more*
+  // accurate through the day; once their game starts, re-fetched stats would include
+  // that game's own result, which would leak the outcome into the "prediction" (the
+  // same lookahead-bias risk the Diamond Report Pick/K Props locks exist to prevent).
+  // Snapshot persists on window (not the row object) since hrpRows gets rebuilt with
+  // fresh row instances on every data refresh — the row itself isn't a stable cache key
+  // across refreshes, only player id + market + day is.
+  window.__eliteSnapshot = window.__eliteSnapshot || {};
+  function todayKey(){ return new Date().toLocaleDateString('en-CA', { timeZone:'America/Chicago' }); }
+  function isRowLocked(row){
+    var tl = String(row.timeLabel || '').toUpperCase();
+    return tl.indexOf('LIVE') >= 0 || tl === 'FINAL';
+  }
+  function scoreAndQuality(marketKey, row){
+    var key = todayKey() + '|' + marketKey + '|' + row.id;
+    var snap = window.__eliteSnapshot[key];
+    if (isRowLocked(row) && snap) return snap;
+    var fresh = { score: rawScoreFor(marketKey, row), quality: qualityScore(marketKey, row) };
+    window.__eliteSnapshot[key] = fresh;
+    return fresh;
   }
 
   // Real corroborating signals (0-4), reusing fields already computed elsewhere on the
@@ -10386,7 +10410,7 @@ function showPremiumGate(feature){
     var ranked = {};
     MARKETS.forEach(function(m){
       ranked[m.key] = pool
-        .map(function(r){ return { row:r, score:scoreFor(m.key, r), quality:qualityScore(m.key, r) }; })
+        .map(function(r){ var sq = scoreAndQuality(m.key, r); return { row:r, score:sq.score, quality:sq.quality }; })
         .filter(function(x){ return x.score > 0 && x.quality >= MIN_QUALITY_SCORE; })
         .sort(function(a,b){ return b.score - a.score; })
         .slice(0, CANDIDATE_DEPTH);
@@ -10430,11 +10454,12 @@ function showPremiumGate(feature){
 
   function cardHTML(entry, rank){
     var r = entry.row, p = Math.round(entry.score);
+    var lockBadge = isRowLocked(r) ? '<span class="premium-lock" title="Locked at first pitch — this pick no longer changes">🔒</span>' : '';
     return '<div class="premium-card">' +
       '<div class="premium-rank">#'+(rank+1)+'</div>' +
       '<img class="premium-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt="">' +
       '<div class="premium-info">' +
-        '<div class="premium-name">'+esc(r.name||'–')+'</div>' +
+        '<div class="premium-name">'+esc(r.name||'–')+lockBadge+'</div>' +
         '<div class="premium-meta">'+tl(r.teamAbbr)+esc(r.teamAbbr||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div>' +
         '<div class="premium-quality">'+esc('★'.repeat(Math.max(1,entry.quality)))+'</div>' +
       '</div>' +
