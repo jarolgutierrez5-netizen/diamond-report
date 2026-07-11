@@ -1143,6 +1143,32 @@ function refreshFavoredPills() {
     el.innerHTML = g.status === 'upcoming' ? upcomingCard(g) : gameCard(g);
   });
 }
+
+// Hero "today's record" trust strip — surfaces the real, already-computed today's
+// accuracy tallies (Diamond Report Pick and K Props each compute their own from real
+// final-game results) at the top of the page instead of leaving them buried inside
+// their own tabs. Only shows a market once it has at least one final result today —
+// never a fabricated 0-0 record — and only ever grows through the day as more games
+// go final, so it won't appear then disappear.
+function updateHeroTodayRecordStrip() {
+  const el = document.getElementById('dr-hero-trust-strip');
+  if (!el) return;
+  const items = [];
+  const recordColor = (wins, total) => wins === total ? '#22e06f' : wins > total / 2 ? '#fbbf24' : '#fca5a5';
+  const drp = window.__drTodayRecord;
+  if (drp && drp.total > 0) {
+    const pct = Math.round((drp.wins / drp.total) * 100);
+    items.push(`<div class="dr-trust-item"><strong style="color:${recordColor(drp.wins, drp.total)}">${drp.wins}-${drp.losses}</strong><span>Diamond Report Pick · ${pct}% today</span></div>`);
+  }
+  const kp = window.__kpTodayRecord;
+  if (kp && kp.total > 0) {
+    const pct = Math.round((kp.wins / kp.total) * 100);
+    items.push(`<div class="dr-trust-item"><strong style="color:${recordColor(kp.wins, kp.total)}">${kp.wins}-${kp.losses}</strong><span>K Props · ${pct}% today</span></div>`);
+  }
+  el.innerHTML = items.join('');
+  el.style.display = items.length ? '' : 'none';
+}
+window.updateHeroTodayRecordStrip = updateHeroTodayRecordStrip;
 window.refreshFavoredPills = refreshFavoredPills;
 
 function gameKey(g) { return g.gamePk || `${g.awayAbbr}-${g.homeAbbr}`; }
@@ -2877,6 +2903,8 @@ async function loadGameProps() {
     const correctCount = finalResults.filter(c => c.resultCorrect === true).length;
     const totalFinal   = finalResults.length;
     const totalGames   = gameCards.filter(Boolean).length;
+    window.__drTodayRecord = { wins: correctCount, losses: totalFinal - correctCount, total: totalFinal, totalGames };
+    if (typeof updateHeroTodayRecordStrip === 'function') updateHeroTodayRecordStrip();
 
     const tallyHTML = totalFinal > 0 ? `
       <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px">
@@ -5584,6 +5612,8 @@ function renderKProps() {
     kpFinal++;
     if (correct) kpCorrect++;
   });
+  window.__kpTodayRecord = { wins: kpCorrect, losses: kpFinal - kpCorrect, total: kpFinal, totalToday: kPropsData.length };
+  if (typeof updateHeroTodayRecordStrip === 'function') updateHeroTodayRecordStrip();
 
   const kpTallyHTML = kpFinal > 0 ? `
     <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px">

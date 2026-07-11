@@ -1405,3 +1405,9 @@ body.dr-paused *::after,
   border-color: var(--accent2);
   background: #1a1800;
 }
+
+.dr-hero-trust-strip{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:16px}
+.dr-trust-item{display:flex;align-items:baseline;gap:8px;border:1px solid var(--border);border-radius:999px;background:rgba(7,15,30,.7);padding:7px 16px}
+.dr-trust-item strong{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:900}
+.dr-trust-item span{font-size:11px;color:var(--muted);letter-spacing:.02em}
+@media(max-width:520px){.dr-trust-item{padding:6px 12px}.dr-trust-item strong{font-size:14px}.dr-trust-item span{font-size:10px}}
