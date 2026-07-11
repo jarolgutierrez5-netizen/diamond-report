@@ -3548,12 +3548,17 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         const grade = gradePitchAdvantage(st, p.usage);
         if (grade.score !== null && p.usage > 0) { weighted += grade.score * p.usage; weight += p.usage; }
         const chipCls = grade.score >= 78 ? '' : grade.score >= 64 ? ' good' : grade.score >= 45 ? ' neutral' : ' weak';
-        const rowHr = +(st.homeRuns ?? st.hr ?? st.hrs ?? 0) || 0;
+        // Baseball Savant's pitch-arsenal leaderboard doesn't expose a raw HR-count
+        // column (rate/quality metrics only), so this is genuinely unknown, not zero —
+        // keep it null rather than coercing to 0, which would falsely claim "never
+        // allowed a HR on this pitch."
+        const rowHrRaw = st.homeRuns ?? st.hr ?? st.hrs;
+        const rowHr = rowHrRaw != null ? (+rowHrRaw || 0) : null;
         // "Has hit at least one HR off this pitch" is true for nearly every pitch type
         // a real power hitter sees over a season, so that alone tagged every row. Only
         // flag pitches where the actual HR(s) are backed by a Strong/Excellent composite
         // grade (xSLG, hard-hit%, barrel%, usage) — a genuine standout, not season noise.
-        const hrSpotTag = (rowHr > 0 && grade.score !== null && grade.score >= 64)
+        const hrSpotTag = (rowHr != null && rowHr > 0 && grade.score !== null && grade.score >= 64)
           ? '<span class="dr1041-chip weak" style="font-size:9px;padding:2px 7px;margin-right:4px">🔥 HR Spot</span>' : '';
         const avgRaw = parseDecVal(st.avg ?? st.battingAverage);
         const slgRaw = parseDecVal(st.slg ?? st.slugging);
@@ -3567,7 +3572,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
           <td class="num${gbCls('avg',avgRaw)}">${fmtDec(st.avg ?? st.battingAverage, 3, 'avg')}</td>
           <td class="num${gbCls('slg',slgRaw)}">${fmtDec(st.slg ?? st.slugging, 3, 'slg')}</td>
           <td class="num${gbCls('xslg',xslgRaw)}">${fmtDec(st.xslg ?? st.xSLG ?? st.expectedSlugging, 3, 'xslg')}</td>
-          <td class="num${gbCls('hr',rowHr)}">${rowHr}</td>
+          <td class="num${gbCls('hr',rowHr)}">${rowHr != null ? rowHr : '–'}</td>
           <td class="num${gbCls('hardHit',hardRaw)}">${fmtPctVal(st.hardHitPct ?? st.hardHitRate, 0, 'hardHit')}</td>
           <td class="num${gbCls('barrel',barrelRaw)}">${fmtPctVal(st.barrelPct ?? st.barrelRate, 1, 'barrel')}</td>
           <td class="num${gbCls('whiff',whiffRaw)}">${fmtPctVal(st.whiffPct ?? st.whiffRate, 1, 'whiff')}</td>
