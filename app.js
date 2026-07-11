@@ -4785,7 +4785,17 @@ async function loadHRPotential() {
           const hrpSampleWeight = Math.min(ab, HRP_MIN_AB_FOR_RATE) / HRP_MIN_AB_FOR_RATE;
           const batterRate = (rawBatterRate*hrpSampleWeight) + (HRP_LEAGUE_AVG_HR_RATE*(1-hrpSampleWeight));
           const pitcherRate=pitcherHr9>0?pitcherHr9/27:0.03;
-          const baseHrProb=Math.min(((batterRate*0.6)+(pitcherRate*0.4))*100,25);
+          const hrPerPA = (batterRate*0.6)+(pitcherRate*0.4);
+          // Lineup slot (1-9), computed here (not just below with the display battingOrder)
+          // so it can feed the per-PA count the HR simulation runs — same 3-digit MLB
+          // battingOrder code as the display field derives from.
+          const battingOrderRaw = Number(b.player?.battingOrder ?? b.player?.stats?.batting?.battingOrder ?? NaN);
+          const battingOrder = Number.isFinite(battingOrderRaw) ? Math.max(1, Math.min(9, Math.floor(battingOrderRaw/100))) : null;
+          // Genuine simulated odds: instead of treating the blended per-PA HR rate as if
+          // it were the full-game probability (undercounts — a batter gets ~4 PA, not 1),
+          // simulate a full game of at-bats at this per-PA rate and measure how often at
+          // least one clears, same Monte Carlo approach as the other prop boards.
+          const baseHrProb = window.simulateHRGameOdds ? window.simulateHRGameOdds(hrPerPA, battingOrder) : Math.min(hrPerPA*100,25);
           let hrProb=baseHrProb;
           const hrInLast8=(logs||[]).slice(0,8).some(g2=>parseInt(g2.stat?.homeRuns)>0);
           const isDrought=!hrInLast8&&hr>0;
@@ -4800,12 +4810,6 @@ async function loadHRPotential() {
           const shrunkOps = (batterOPS*hrpSampleWeight) + (LEAGUE_AVG_OPS*(1-hrpSampleWeight));
           const shrunkObp = (rawObp*hrpSampleWeight) + (LEAGUE_AVG_OBP*(1-hrpSampleWeight));
           const shrunkSlg = (rawSlg*hrpSampleWeight) + (LEAGUE_AVG_SLG*(1-hrpSampleWeight));
-          // Lineup slot (1-9). MLB's battingOrder is a 3-digit code where the leading
-          // digit(s) are the lineup spot (100 = batting 1st, 900 = batting 9th) regardless
-          // of starter/substitute suffix — this is the PA-opportunity signal Hits/RBI/
-          // H+R+RBI were missing entirely.
-          const battingOrderRaw = Number(b.player?.battingOrder ?? b.player?.stats?.batting?.battingOrder ?? NaN);
-          const battingOrder = Number.isFinite(battingOrderRaw) ? Math.max(1, Math.min(9, Math.floor(battingOrderRaw/100))) : null;
           const todayBoxStats = (isLive || isFinal) ? (b.player.stats?.batting || {}) : {};
           const todayHits = parseInt(todayBoxStats.hits) || 0;
           const todayRBI = parseInt(todayBoxStats.rbi ?? todayBoxStats.runsBattedIn) || 0;
@@ -5925,7 +5929,11 @@ function scheduleKPropsLoad() {
     try { if (typeof getSportsbookKLine === 'function') sbLine = getSportsbookKLine(pitcher.id, pitcher.fullName); } catch(e){}
     var recommendedOverLine = sbLine != null ? Number(sbLine) : Math.max(0.5, Math.floor(projK) - 0.5);
     var overEdge = projK - recommendedOverLine;
-    var overProb = Math.max(34, Math.min(78, Math.round(50 + (overEdge * 14))));
+    // Genuine simulated odds: run TRIALS games sampling a Poisson-distributed strikeout
+    // count around the real projK projection (built from real K/9, projected IP, and the
+    // real opposing-lineup K rate above) and measure how often it actually clears the
+    // recommended line, instead of a flat linear edge-to-probability heuristic.
+    var overProb = window.simulateKOdds ? window.simulateKOdds(projK, recommendedOverLine) : Math.max(34, Math.min(78, Math.round(50 + (overEdge * 14))));
     var confidenceTier = overProb >= 70 ? 'Elite' : overProb >= 63 ? 'Strong' : overProb >= 56 ? 'Good' : overProb >= 50 ? 'Lean' : 'Low';
     // Field names must match what the MLB Stats API pitching/season stat object actually
     // returns (same endpoint/hydrate as Pitcher Report, which reads these same names
@@ -8745,6 +8753,27 @@ var analytics='<div class="tp-analytics-grid">'+
     var result = Math.max(1, Math.min(99, Math.round((successes / TRIALS) * 100)));
     row.__mcCache.sb = result;
     return result;
+  };
+  window.simulateHRGameOdds = function(pPerPA, battingOrder) {
+    pPerPA = clamp(n(pPerPA, 0.03), 0, 0.5);
+    var pa = estimatePA(battingOrder);
+    var successes = 0;
+    for (var t = 0; t < TRIALS; t++) {
+      var gamePA = Math.max(1, Math.round(pa + (Math.random() - 0.5) * 1.6));
+      var hit = false;
+      for (var i = 0; i < gamePA; i++) { if (Math.random() < pPerPA) { hit = true; break; } }
+      if (hit) successes++;
+    }
+    return Math.min(Math.round((successes / TRIALS) * 100), 25);
+  };
+  window.simulateKOdds = function(projK, line) {
+    var lambda = clamp(n(projK, 4.5), 0.3, 15);
+    var threshold = n(line, Math.floor(lambda));
+    var successes = 0;
+    for (var t = 0; t < TRIALS; t++) {
+      if (poissonSample(lambda) > threshold) successes++;
+    }
+    return Math.max(1, Math.min(99, Math.round((successes / TRIALS) * 100)));
   };
 })();
 
