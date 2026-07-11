@@ -3252,7 +3252,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     zoneVals = [1,2,3,4,5,6,7,8,9].map(z => {
       const cell = zMap[z];
       if (!cell) return null;
-      const val = cell.xwobaContact ?? cell.wobaAgainst;
+      const val = cell.xwobaContact ?? cell.wobaAgainst ?? cell.xwoba ?? cell.woba;
       // Normalise wOBA scale (0–1 readable): league avg wOBA ≈ .320. Scale so .320 = 0.5
       return val != null ? Math.min(val / 0.640, 1.0) : null;
     });
@@ -3671,7 +3671,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     pitchHrList = pitcherProfile.byPitch.map(p => ({ name: p.name, usagePct: p.usagePct }));
     // Real pitch mix from sync script.
     pitchRows = pitcherProfile.byPitch.map(p => {
-      const woba = p.wobaAgainst ?? p.xwobaContact ?? null;
+      const woba = p.woba ?? p.wobaAgainst ?? p.xwoba ?? p.xwobaContact ?? null;
       const avg = p.avg ?? p.avgAgainst ?? null;
       const slg = p.slg ?? p.slgAgainst ?? null;
       const hr = p.homeRuns ?? p.hr ?? null;
