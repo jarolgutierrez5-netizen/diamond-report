@@ -1531,6 +1531,10 @@ let kPropsAllGames = [];
 // Once locked (game goes live/final), the projection never changes.
 // This prevents ERA/WHIP updates during the season from shifting the line mid-game.
 const _kPropsSnapshot = {};
+// Same lock pattern for the Diamond Report Pick (Game Props win-probability model) —
+// keyed by gamePk. Refreshed every pre-game cycle so it always reflects the latest
+// pre-game state, then frozen the moment the game goes live/final.
+const _gamePropsSnapshot = {};
 let sportsbookKLinesByPitcher = {};
 let sportsbookKLinesLoadedForDate = null;
 
@@ -2621,128 +2625,145 @@ async function loadGameProps() {
       const isLive = state==='Live'||g.status.detailedState==='In Progress';
       const isFinal = state==='Final';
 
-      // Fetch both pitcher stats
-      const [awayStats, homeStats] = await Promise.all([
-        awayP ? fetchJSON(`https://diamondreport.app/api/v1/people/${awayP.id}?hydrate=stats(group=pitching,type=season,season=2026)`).then(d=>d.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||{}).catch(()=>({})) : Promise.resolve({}),
-        homeP ? fetchJSON(`https://diamondreport.app/api/v1/people/${homeP.id}?hydrate=stats(group=pitching,type=season,season=2026)`).then(d=>d.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||{}).catch(()=>({})) : Promise.resolve({}),
-      ]);
+      // Diamond Report Pick lock: once a game goes live/final, reuse whatever the model
+      // last computed pre-game instead of re-fetching pitcher stats/weather every cycle.
+      // Season ERA/WHIP includes the pitcher's current outing, so recomputing mid-game
+      // could otherwise shift (or flip) the pick after first pitch — same lock behavior
+      // as K Props.
+      let model = (isLive || isFinal) ? _gamePropsSnapshot[g.gamePk] : null;
 
-      // Weather (Open-Meteo, free, no key)
-      const stadium = stadiumCoords[homeAbbr] || stadiumCoords[awayAbbr];
-      let weather = null;
-      if (stadium && !stadium.dome) {
-        try {
-          const wd = await fetchJSON(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,windspeed_10m,winddirection_10m,precipitation,weathercode&temperature_unit=fahrenheit&windspeed_unit=mph`);
-          const c = wd.current;
-          weather = {
-            temp: Math.round(c.temperature_2m),
-            wind: Math.round(c.windspeed_10m),
-            windDir: c.winddirection_10m,
-            precip: c.precipitation,
-            code: c.weathercode,
-          };
-        } catch {}
-      }
+      if (!model) {
+        // Fetch both pitcher stats
+        const [awayStats, homeStats] = await Promise.all([
+          awayP ? fetchJSON(`https://diamondreport.app/api/v1/people/${awayP.id}?hydrate=stats(group=pitching,type=season,season=2026)`).then(d=>d.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||{}).catch(()=>({})) : Promise.resolve({}),
+          homeP ? fetchJSON(`https://diamondreport.app/api/v1/people/${homeP.id}?hydrate=stats(group=pitching,type=season,season=2026)`).then(d=>d.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||{}).catch(()=>({})) : Promise.resolve({}),
+        ]);
 
-      // Scoring model — each factor adds/subtracts from home team edge
-      let awayScore = 50, homeScore = 50;
-      const factors = [];
-      const sideAbbr = (side) => side === 'away' ? awayAbbr : side === 'home' ? homeAbbr : '';
-      const sidePitcher = (side) => side === 'away' ? awayP : side === 'home' ? homeP : null;
-      const pitcherLastName = (side) => sidePitcher(side)?.fullName?.split(' ').pop() || (side === 'away' ? 'Away P' : 'Home P');
-      const factorLabel = (side, text) => `${sideAbbr(side)}: ${text}`;
-
-      // Pitcher ERA comparison
-      const awayERA = parseFloat(awayStats.era)||4.5;
-      const homeERA = parseFloat(homeStats.era)||4.5;
-      const eraDiff = awayERA - homeERA;
-      if (Math.abs(eraDiff) > 0.3) {
-        if (eraDiff > 0) { homeScore += Math.min(eraDiff*3, 8); factors.push({team:'home', label:factorLabel('home', `${pitcherLastName('home')} ERA adv (${homeERA.toFixed(2)})`), type:'pos'}); }
-        else { awayScore += Math.min(Math.abs(eraDiff)*3, 8); factors.push({team:'away', label:factorLabel('away', `${pitcherLastName('away')} ERA adv (${awayERA.toFixed(2)})`), type:'pos'}); }
-      }
-
-      // WHIP comparison
-      const awayWHIP = parseFloat(awayStats.whip)||1.3;
-      const homeWHIP = parseFloat(homeStats.whip)||1.3;
-      if (Math.abs(awayWHIP-homeWHIP) > 0.1) {
-        if (awayWHIP > homeWHIP) { homeScore += 4; factors.push({team:'home', label:factorLabel('home', `${pitcherLastName('home')} WHIP edge (${homeWHIP.toFixed(2)})`), type:'pos'}); }
-        else { awayScore += 4; factors.push({team:'away', label:factorLabel('away', `${pitcherLastName('away')} WHIP edge (${awayWHIP.toFixed(2)})`), type:'pos'}); }
-      }
-
-      // K/9 — high K pitcher favored
-      const awayK9 = parseFloat(awayStats.strikeoutsPer9Inn)||8;
-      const homeK9 = parseFloat(homeStats.strikeoutsPer9Inn)||8;
-      if (homeK9 > awayK9 + 1) { homeScore += 3; factors.push({team:'home', label:factorLabel('home', `${pitcherLastName('home')} K/9 edge (${homeK9.toFixed(1)})`), type:'pos'}); }
-      else if (awayK9 > homeK9 + 1) { awayScore += 3; factors.push({team:'away', label:factorLabel('away', `${pitcherLastName('away')} K/9 edge (${awayK9.toFixed(1)})`), type:'pos'}); }
-
-      // Team record — previously this model had no team-strength input at all, only
-      // pitcher-matchup and venue factors, so a last-place team could out-project a
-      // first-place team on the back of one ERA edge. leagueRecord already comes back on
-      // every schedule game object (same schedule call this function already makes), so
-      // no extra fetch is needed. Skipped in the first ~10 games of the season, when the
-      // record itself is too small a sample to mean much.
-      const awayRecord = g.teams.away.leagueRecord || {};
-      const homeRecord = g.teams.home.leagueRecord || {};
-      const awayW = parseInt(awayRecord.wins) || 0, awayL = parseInt(awayRecord.losses) || 0;
-      const homeW = parseInt(homeRecord.wins) || 0, homeL = parseInt(homeRecord.losses) || 0;
-      if ((awayW + awayL) >= 10 && (homeW + homeL) >= 10) {
-        const awayWinPct = awayW / (awayW + awayL);
-        const homeWinPct = homeW / (homeW + homeL);
-        const recordDiff = awayWinPct - homeWinPct; // positive = away has the better record
-        const recordPts = Math.max(-18, Math.min(18, recordDiff * 60));
-        if (recordPts >= 1) { awayScore += recordPts; factors.push({team:'away', label:factorLabel('away', `${awayAbbr} record edge (${awayW}-${awayL})`), type:'pos'}); }
-        else if (recordPts <= -1) { homeScore += Math.abs(recordPts); factors.push({team:'home', label:factorLabel('home', `${homeAbbr} record edge (${homeW}-${homeL})`), type:'pos'}); }
-      }
-
-      // Time of day factor — day games (before 5pm CDT) slightly favor home team; night games more even
-      const gameHourCDT = new Date(g.gameDate).toLocaleString('en-US',{hour:'numeric',hour12:false,timeZone:'America/Chicago'});
-      const isDayGame = parseInt(gameHourCDT) < 17;
-      if (isDayGame) {
-        homeScore += 2;
-        factors.push({team:'home', label:factorLabel('home', 'Day game home crowd edge'), type:'pos'});
-      }
-
-      // Home field advantage
-      homeScore += 3;
-      factors.push({team:'home', label:factorLabel('home', 'Home field edge'), type:'pos'});
-
-      // Park factor — doesn't favor either team (both play in the same park), so this
-      // can't reasonably swing win probability toward one side. It used to be computed
-      // and shown as a "factor" chip while never actually touching awayScore/homeScore at
-      // all, which looked like it was informing the pick when it silently wasn't. Applying
-      // it symmetrically (same pattern already used for wind) at least makes the displayed
-      // chip reflect a real, if small and neutral, contribution instead of a decorative one.
-      const pf = parkFactors[homeAbbr] || 100;
-      if (pf > 107) { awayScore += 2; homeScore += 2; factors.push({team:'neutral', label:`${stadiumCoords[homeAbbr]?.name||homeAbbr}: HR-friendly park (${pf})`, type:'neu'}); }
-      else if (pf < 93) { awayScore -= 1; homeScore -= 1; factors.push({team:'neutral', label:`${stadiumCoords[homeAbbr]?.name||homeAbbr}: Pitcher-friendly park (${pf})`, type:'neu'}); }
-
-      // Weather impact
-      if (weather) {
-        const windImpact = windEffect(weather.windDir, homeAbbr);
-        if (weather.wind > 15) {
-          if (windImpact === 'out') { awayScore += 3; homeScore += 3; factors.push({team:'neutral', label:`Wind blowing out ${weather.wind}mph — HR boost`, type:'pos'}); }
-          else if (windImpact === 'in') { factors.push({team:'neutral', label:`Wind blowing in ${weather.wind}mph — pitcher boost`, type:'neg'}); awayScore -= 2; homeScore -= 2; }
-          else { factors.push({team:'neutral', label:`Wind ${weather.wind}mph crosswind`, type:'neu'}); }
+        // Weather (Open-Meteo, free, no key)
+        const stadium = stadiumCoords[homeAbbr] || stadiumCoords[awayAbbr];
+        let weather = null;
+        if (stadium && !stadium.dome) {
+          try {
+            const wd = await fetchJSON(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,windspeed_10m,winddirection_10m,precipitation,weathercode&temperature_unit=fahrenheit&windspeed_unit=mph`);
+            const c = wd.current;
+            weather = {
+              temp: Math.round(c.temperature_2m),
+              wind: Math.round(c.windspeed_10m),
+              windDir: c.winddirection_10m,
+              precip: c.precipitation,
+              code: c.weathercode,
+            };
+          } catch {}
         }
-        if (weather.temp < 50) factors.push({team:'neutral', label:`Cold ${weather.temp}°F — suppresses offense`, type:'neg'});
-        else if (weather.temp > 85) factors.push({team:'neutral', label:`Hot ${weather.temp}°F — ball carries well`, type:'pos'});
-        if (weather.precip > 0.1) factors.push({team:'neutral', label:`Precipitation: ${weather.precip}mm — delay risk`, type:'neg'});
-      } else if (stadium?.dome) {
-        factors.push({team:'neutral', label:`${stadium.name} — retractable/dome, weather neutral`, type:'neu'});
+
+        // Scoring model — each factor adds/subtracts from home team edge
+        let awayScore = 50, homeScore = 50;
+        const factors = [];
+        const sideAbbr = (side) => side === 'away' ? awayAbbr : side === 'home' ? homeAbbr : '';
+        const sidePitcher = (side) => side === 'away' ? awayP : side === 'home' ? homeP : null;
+        const pitcherLastName = (side) => sidePitcher(side)?.fullName?.split(' ').pop() || (side === 'away' ? 'Away P' : 'Home P');
+        const factorLabel = (side, text) => `${sideAbbr(side)}: ${text}`;
+
+        // Pitcher ERA comparison
+        const awayERA = parseFloat(awayStats.era)||4.5;
+        const homeERA = parseFloat(homeStats.era)||4.5;
+        const eraDiff = awayERA - homeERA;
+        if (Math.abs(eraDiff) > 0.3) {
+          if (eraDiff > 0) { homeScore += Math.min(eraDiff*3, 8); factors.push({team:'home', label:factorLabel('home', `${pitcherLastName('home')} ERA adv (${homeERA.toFixed(2)})`), type:'pos'}); }
+          else { awayScore += Math.min(Math.abs(eraDiff)*3, 8); factors.push({team:'away', label:factorLabel('away', `${pitcherLastName('away')} ERA adv (${awayERA.toFixed(2)})`), type:'pos'}); }
+        }
+
+        // WHIP comparison
+        const awayWHIP = parseFloat(awayStats.whip)||1.3;
+        const homeWHIP = parseFloat(homeStats.whip)||1.3;
+        if (Math.abs(awayWHIP-homeWHIP) > 0.1) {
+          if (awayWHIP > homeWHIP) { homeScore += 4; factors.push({team:'home', label:factorLabel('home', `${pitcherLastName('home')} WHIP edge (${homeWHIP.toFixed(2)})`), type:'pos'}); }
+          else { awayScore += 4; factors.push({team:'away', label:factorLabel('away', `${pitcherLastName('away')} WHIP edge (${awayWHIP.toFixed(2)})`), type:'pos'}); }
+        }
+
+        // K/9 — high K pitcher favored
+        const awayK9 = parseFloat(awayStats.strikeoutsPer9Inn)||8;
+        const homeK9 = parseFloat(homeStats.strikeoutsPer9Inn)||8;
+        if (homeK9 > awayK9 + 1) { homeScore += 3; factors.push({team:'home', label:factorLabel('home', `${pitcherLastName('home')} K/9 edge (${homeK9.toFixed(1)})`), type:'pos'}); }
+        else if (awayK9 > homeK9 + 1) { awayScore += 3; factors.push({team:'away', label:factorLabel('away', `${pitcherLastName('away')} K/9 edge (${awayK9.toFixed(1)})`), type:'pos'}); }
+
+        // Team record — previously this model had no team-strength input at all, only
+        // pitcher-matchup and venue factors, so a last-place team could out-project a
+        // first-place team on the back of one ERA edge. leagueRecord already comes back on
+        // every schedule game object (same schedule call this function already makes), so
+        // no extra fetch is needed. Skipped in the first ~10 games of the season, when the
+        // record itself is too small a sample to mean much.
+        const awayRecord = g.teams.away.leagueRecord || {};
+        const homeRecord = g.teams.home.leagueRecord || {};
+        const awayW = parseInt(awayRecord.wins) || 0, awayL = parseInt(awayRecord.losses) || 0;
+        const homeW = parseInt(homeRecord.wins) || 0, homeL = parseInt(homeRecord.losses) || 0;
+        if ((awayW + awayL) >= 10 && (homeW + homeL) >= 10) {
+          const awayWinPct = awayW / (awayW + awayL);
+          const homeWinPct = homeW / (homeW + homeL);
+          const recordDiff = awayWinPct - homeWinPct; // positive = away has the better record
+          const recordPts = Math.max(-18, Math.min(18, recordDiff * 60));
+          if (recordPts >= 1) { awayScore += recordPts; factors.push({team:'away', label:factorLabel('away', `${awayAbbr} record edge (${awayW}-${awayL})`), type:'pos'}); }
+          else if (recordPts <= -1) { homeScore += Math.abs(recordPts); factors.push({team:'home', label:factorLabel('home', `${homeAbbr} record edge (${homeW}-${homeL})`), type:'pos'}); }
+        }
+
+        // Time of day factor — day games (before 5pm CDT) slightly favor home team; night games more even
+        const gameHourCDT = new Date(g.gameDate).toLocaleString('en-US',{hour:'numeric',hour12:false,timeZone:'America/Chicago'});
+        const isDayGame = parseInt(gameHourCDT) < 17;
+        if (isDayGame) {
+          homeScore += 2;
+          factors.push({team:'home', label:factorLabel('home', 'Day game home crowd edge'), type:'pos'});
+        }
+
+        // Home field advantage
+        homeScore += 3;
+        factors.push({team:'home', label:factorLabel('home', 'Home field edge'), type:'pos'});
+
+        // Park factor — doesn't favor either team (both play in the same park), so this
+        // can't reasonably swing win probability toward one side. It used to be computed
+        // and shown as a "factor" chip while never actually touching awayScore/homeScore at
+        // all, which looked like it was informing the pick when it silently wasn't. Applying
+        // it symmetrically (same pattern already used for wind) at least makes the displayed
+        // chip reflect a real, if small and neutral, contribution instead of a decorative one.
+        const pf = parkFactors[homeAbbr] || 100;
+        if (pf > 107) { awayScore += 2; homeScore += 2; factors.push({team:'neutral', label:`${stadiumCoords[homeAbbr]?.name||homeAbbr}: HR-friendly park (${pf})`, type:'neu'}); }
+        else if (pf < 93) { awayScore -= 1; homeScore -= 1; factors.push({team:'neutral', label:`${stadiumCoords[homeAbbr]?.name||homeAbbr}: Pitcher-friendly park (${pf})`, type:'neu'}); }
+
+        // Weather impact
+        if (weather) {
+          const windImpact = windEffect(weather.windDir, homeAbbr);
+          if (weather.wind > 15) {
+            if (windImpact === 'out') { awayScore += 3; homeScore += 3; factors.push({team:'neutral', label:`Wind blowing out ${weather.wind}mph — HR boost`, type:'pos'}); }
+            else if (windImpact === 'in') { factors.push({team:'neutral', label:`Wind blowing in ${weather.wind}mph — pitcher boost`, type:'neg'}); awayScore -= 2; homeScore -= 2; }
+            else { factors.push({team:'neutral', label:`Wind ${weather.wind}mph crosswind`, type:'neu'}); }
+          }
+          if (weather.temp < 50) factors.push({team:'neutral', label:`Cold ${weather.temp}°F — suppresses offense`, type:'neg'});
+          else if (weather.temp > 85) factors.push({team:'neutral', label:`Hot ${weather.temp}°F — ball carries well`, type:'pos'});
+          if (weather.precip > 0.1) factors.push({team:'neutral', label:`Precipitation: ${weather.precip}mm — delay risk`, type:'neg'});
+        } else if (stadium?.dome) {
+          factors.push({team:'neutral', label:`${stadium.name} — retractable/dome, weather neutral`, type:'neu'});
+        }
+
+        // Determine winner
+        const total = awayScore + homeScore;
+        const awayPct = Math.round((awayScore/total)*100);
+        const homePct = 100 - awayPct;
+        const diff = Math.abs(awayPct - homePct);
+        const confidence = diff < 6 ? 'TOSS-UP' : diff < 12 ? 'LEAN' : diff < 20 ? 'LIKELY' : 'STRONG';
+        const confColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : diff < 20 ? '#2ecc71' : '#00ff88';
+        const winner = awayPct > homePct ? 'away' : 'home';
+        const winnerAbbr = winner==='away' ? awayAbbr : homeAbbr;
+        const winnerPct = winner==='away' ? awayPct : homePct;
+        const loserAbbr  = winner==='away' ? homeAbbr : awayAbbr;
+        const loserPct   = winner==='away' ? homePct : awayPct;
+
+        model = { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors };
+        // Always keep the snapshot fresh — pre-game cycles overwrite it so that whenever
+        // the game does go live, the lock captures the most recent pre-game state rather
+        // than a stale first-load snapshot from hours earlier.
+        _gamePropsSnapshot[g.gamePk] = model;
       }
 
-      // Determine winner
-      const total = awayScore + homeScore;
-      const awayPct = Math.round((awayScore/total)*100);
-      const homePct = 100 - awayPct;
-      const diff = Math.abs(awayPct - homePct);
-      const confidence = diff < 6 ? 'TOSS-UP' : diff < 12 ? 'LEAN' : diff < 20 ? 'LIKELY' : 'STRONG';
-      const confColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : diff < 20 ? '#2ecc71' : '#00ff88';
-      const winner = awayPct > homePct ? 'away' : 'home';
-      const winnerAbbr = winner==='away' ? awayAbbr : homeAbbr;
-      const winnerPct = winner==='away' ? awayPct : homePct;
-      const loserAbbr  = winner==='away' ? homeAbbr : awayAbbr;
-      const loserPct   = winner==='away' ? homePct : awayPct;
+      const { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors } = model;
 
       window.drWinProbStore[g.gamePk] = { awayAbbr, homeAbbr, awayPct, homePct, winnerAbbr, winnerPct, confidence };
       _favoredCache[g.gamePk] = { abbr: winnerAbbr, pct: winnerPct, source: 'model' };
@@ -5967,7 +5988,7 @@ function scheduleKPropsLoad() {
       decisionTag: 'OVER '+lineFmt(recommendedOverLine)+' · '+overProb+'%',
       summary: (pitcher.fullName || 'Pitcher')+' projects for '+projK.toFixed(1)+' Ks against an Over '+lineFmt(recommendedOverLine)+' line.'
     };
-    return {
+    var propRow = {
       pitcherName: pitcher.fullName, pitcherId: pitcher.id,
       teamAbbr: g.teams[side].team.abbreviation,
       oppAbbr: g.teams[opp].team.abbreviation,
@@ -5988,6 +6009,11 @@ function scheduleKPropsLoad() {
       projK: projK.toFixed(1), pred: 'OVER', pushLean: null, reasoning: reason,
       timeStr: timeStr, gameTimestamp: dt.getTime(), gamePk: g.gamePk
     };
+    // Keep the snapshot fresh on every pre-game call so it always reflects the latest
+    // pre-game state; the caller stops calling buildRow at all once the game is live/final
+    // and a snapshot already exists, which is what actually freezes the projection.
+    _kPropsSnapshot[pitcher.id] = propRow;
+    return propRow;
   }
   async function mapLimit(items, limit, fn){
     var out = new Array(items.length), i = 0;
@@ -6023,6 +6049,13 @@ function scheduleKPropsLoad() {
           return [];
         }
         var rows = await mapLimit(starters, 4, async function(item){
+          // Locked once the game is live/final — reuse the last pre-game snapshot instead
+          // of re-fetching season pitching stats (which include the pitcher's current
+          // outing and would otherwise shift the K projection mid-game).
+          var pState = item.g && item.g.status && item.g.status.abstractGameState;
+          var pIsLive = pState === 'Live' || (item.g && item.g.status && item.g.status.detailedState === 'In Progress');
+          var pIsFinal = pState === 'Final';
+          if ((pIsLive || pIsFinal) && _kPropsSnapshot[item.p.id]) return _kPropsSnapshot[item.p.id];
           var stat = await seasonPitching(item.p.id);
           return await buildRow(item.g, item.side, stat);
         });
