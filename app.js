@@ -1283,7 +1283,6 @@ async function loadScores() {
     if (typeof window.DiamondRefreshLockedGameProjectionScores === 'function') {
       window.DiamondRefreshLockedGameProjectionScores();
     }
-    updatePropsLiveBanner(live);
     window._lastLiveGames = live; // cache for Props tab re-activation
     // v8.71 performance: do not load HR/K sidebar data during the default page reload.
     // Those datasets are now hydrated only when the HR or Strikeout pane is opened.
@@ -1337,10 +1336,6 @@ let matchupLoaded = false;
 // ── ALL GLOBAL STATE — declared early to prevent temporal dead zone errors ──
 const bannerHRs = {};           // batterId -> { id, name, teamAbbr, oppAbbr, count }
 const bannerKs  = {};           // pitcherId -> { name, teamAbbr, oppAbbr, ks, ouLine }
-const prevBannerHRCounts = {};  // batterId -> previous HR count
-let breakingHRActive = false;
-let breakingHRTimeout = null;
-let breakingHRNames = [];
 let hrpRows = [], hrpSortCol = 'hrProb', hrpSortDir = -1, hrpFilter = 'all';
 let statcastHotHitters = {};
 
@@ -3089,93 +3084,6 @@ function windEffect(deg, homeAbbr) {
 setInterval(() => { if (document.visibilityState === 'visible' && gamePropsLoaded) loadGameProps({ force: true }); }, 2 * 60 * 1000);
 
 
-// ── SCHEDULE (multi-day) ─────────────────────────────────────────────
-let scheduleLoaded = false;
-
-async function loadSchedule() {
-  const content = document.getElementById('schedule-content');
-  const loading = document.getElementById('schedule-loading');
-  if (!content) return;
-
-  try {
-    const today = new Date();
-    const dates = [];
-    for (let i = 1; i <= 5; i++) {
-      const d = new Date(today);
-      d.setDate(d.getDate() + i);
-      dates.push(d.toLocaleDateString('en-CA', {timeZone:'America/Chicago'}));
-    }
-
-    const allDays = await Promise.all(dates.map(async date => {
-      const data = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&date=${date}&hydrate=team,probablePitcher&language=en`);
-      const entry = data.dates?.find(d => d.date === date) || data.dates?.[0];
-      return { date, games: entry?.games || [] };
-    }));
-
-    if (loading) loading.style.display = 'none';
-    const sl = buildStandingsLookup();
-
-    content.innerHTML = allDays.map(({ date, games }) => {
-      if (!games.length) return '';
-      const dt = new Date(date + 'T12:00:00');
-      const dayLabel = dt.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}).toUpperCase();
-      const isToday = false;
-
-      const cards = games.map(g => {
-        const away = g.teams.away, home = g.teams.home;
-        const awayAbbr = away.team.abbreviation, homeAbbr = home.team.abbreviation;
-        const dt2 = new Date(g.gameDate);
-        const timeStr = dt2.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'}) + ' CDT';
-        const awayP = g.teams.away.probablePitcher?.fullName || 'TBD';
-        const homeP = g.teams.home.probablePitcher?.fullName || 'TBD';
-        const state = g.status.abstractGameState;
-        const isLive = state==='Live'||g.status.detailedState==='In Progress';
-        const isFinal = state==='Final';
-        const statusLabel = isLive
-          ? `<span style="color:var(--live);font-weight:700;font-size:10px">● LIVE</span>`
-          : isFinal ? `<span style="color:var(--muted);font-size:10px">FINAL</span>`
-          : `<span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text)">${timeStr}</span>`;
-
-        function tblock(abbr, pName) {
-          const id = teamIds[abbr];
-          const logo = id ? `<img src="https://www.mlbstatic.com/team-logos/${id}.svg" style="width:34px;height:34px;object-fit:contain" alt="" loading="lazy" decoding="async">` : '';
-          const st = sl[abbr];
-          return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:0">
-            ${logo}
-            <span style="font-family:'Manrope',sans-serif;font-size:19px;letter-spacing:1px">${abbr}</span>
-            <span style="font-size:9px;color:var(--muted);text-align:center;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pName}</span>
-            ${st?`<span style="font-size:8px;color:var(--muted);font-family:'JetBrains Mono',monospace">${st.wl} · #${st.rank}</span>`:''}
-          </div>`;
-        }
-
-        return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 10px">
-          <div style="text-align:center;margin-bottom:8px">${statusLabel}</div>
-          <div style="display:flex;align-items:center;gap:6px">
-            ${tblock(awayAbbr, awayP)}
-            <span style="font-size:14px;color:var(--muted);font-weight:700;flex-shrink:0">@</span>
-            ${tblock(homeAbbr, homeP)}
-          </div>
-        </div>`;
-      }).join('');
-
-      return `<div style="margin-bottom:24px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <span style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:${isToday?'var(--accent)':'var(--accent2)'};white-space:nowrap">${isToday?'TODAY · ':''}${dayLabel}</span>
-          <div style="flex:1;height:1px;background:var(--border)"></div>
-          <span style="font-size:10px;color:var(--muted);white-space:nowrap">${games.length} game${games.length!==1?'s':''}</span>
-        </div>
-        <div class="games-grid">${cards}</div>
-      </div>`;
-    }).join('') || '<div class="mu-empty">No upcoming games found.</div>';
-
-    scheduleLoaded = true;
-  } catch(e) {
-    if (content) content.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
-    if (loading) loading.style.display = 'none';
-  }
-}
-
-
 
 
 
@@ -4477,7 +4385,6 @@ async function loadKsToday() {
         };
       }
     });
-    updateLiveBanner();
 
     const hs = id => id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_32,q_auto:best/v1/people/${id}/headshot/67/current` : '';
 
@@ -4733,137 +4640,6 @@ function isActiveForHRThreat(row) {
   }
   return true;
 }
-
-// ── PROPS LIVE BANNER ────────────────────────────────────────────────
-function updatePropsLiveBanner(liveGames) {
-  const banner    = document.getElementById('props-live-banner');
-  const container = document.getElementById('props-live-games');
-  if (!banner || !container) return;
-
-  if (!liveGames.length) {
-    banner.style.display = 'none';
-    return;
-  }
-
-  function chip(g) {
-    const awayW = g.awayScore > g.homeScore;
-    const homeW = g.homeScore > g.awayScore;
-    const tl = abbr => { const id = teamIds[abbr]; return id ? `<img src="https://www.mlbstatic.com/team-logos/${id}.svg" style="width:18px;height:18px;object-fit:contain;vertical-align:middle" alt="" loading="lazy" decoding="async">` : ''; };
-    return `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid #1e3a5f;border-radius:6px;padding:5px 12px;white-space:nowrap;font-size:12px">
-      ${tl(g.awayAbbr)}
-      <span style="font-family:'Manrope',sans-serif;font-size:15px;letter-spacing:.5px;color:${awayW?'var(--green)':'var(--muted)'}">${g.awayAbbr}</span>
-      <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:${awayW?'var(--green)':'var(--muted)'}">${g.awayScore??0}</span>
-      <span style="color:var(--border);font-size:12px">–</span>
-      <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:${homeW?'var(--green)':'var(--muted)'}">${g.homeScore??0}</span>
-      <span style="font-family:'Manrope',sans-serif;font-size:15px;letter-spacing:.5px;color:${homeW?'var(--green)':'var(--muted)'}">${g.homeAbbr}</span>
-      ${tl(g.homeAbbr)}
-      <span style="font-size:9px;color:var(--live);font-family:'JetBrains Mono',monospace;font-weight:700;margin-left:2px">${g.inning||'LIVE'}</span>
-    </span>`;
-  }
-
-  const content = liveGames.map(chip).join('<span style="color:#334155;padding:0 8px;font-size:16px">·</span>');
-  const shouldScroll = liveGames.length >= 4;
-  const looped = shouldScroll
-    ? content + '<span style="padding:0 24px;color:#334155">·</span>' + content
-    : content;
-  const duration = Math.max(15, liveGames.length * 6);
-
-  container.innerHTML = looped;
-  container.style.animation = shouldScroll ? `marquee ${duration}s linear infinite` : 'none';
-  container.style.justifyContent = shouldScroll ? 'flex-start' : 'center';
-  container.style.flexWrap = shouldScroll ? 'nowrap' : 'wrap';
-  container.style.width = shouldScroll ? 'max-content' : '100%';
-  banner.style.display = 'block';
-}
-
-
-
-function triggerBreakingHR(newHitters) {
-  // Show BREAKING banner for 2 minutes then revert
-  breakingHRNames = newHitters;
-  breakingHRActive = true;
-  renderBanner();
-  if (breakingHRTimeout) clearTimeout(breakingHRTimeout);
-  breakingHRTimeout = setTimeout(() => {
-    breakingHRActive = false;
-    breakingHRNames = [];
-    renderBanner();
-  }, 2 * 60 * 1000);
-}
-
-function renderBanner() {
-  const scoresBanner = document.getElementById('scores-alert-banner');
-  const scoresTrack  = document.getElementById('scores-alert-track');
-  if (!scoresBanner || !scoresTrack) return;
-
-  if (breakingHRActive && breakingHRNames.length) {
-    const breakingHTML = breakingHRNames.map(n =>
-      `<span style="display:inline-flex;align-items:center;gap:10px;padding:0 20px">
-        <span style="font-family:'Manrope',sans-serif;font-size:18px;letter-spacing:3px;color:#ffffff;animation:pulse 0.6s infinite">🚨 BREAKING</span>
-        <span style="font-family:'Manrope',sans-serif;font-size:22px;letter-spacing:2px;color:#f97316;text-shadow:0 0 12px #f97316">${n} HIT A HOME RUN!</span>
-        <span style="font-size:20px">💥</span>
-      </span>`
-    ).join('<span style="color:#334155;padding:0 10px;font-size:20px">·</span>');
-    scoresTrack.innerHTML = breakingHTML;
-    scoresTrack.style.cssText = 'display:inline-flex;align-items:center;padding:8px 20px;animation:none;justify-content:center;flex-wrap:wrap;width:100%';
-    scoresBanner.style.background = 'linear-gradient(90deg,#1a0000,#2a0500,#1a0000)';
-    scoresBanner.style.borderColor = '#f97316';
-    const liveBadge = scoresBanner.querySelector('div > div:first-child');
-    if (liveBadge) liveBadge.style.background = 'linear-gradient(135deg,#f97316,#dc2626)';
-    // Banner is inside #scores so always set display block — section visibility handles the rest
-    scoresBanner.style.display = 'block';
-    return;
-  }
-
-  // Reset banner style
-  scoresBanner.style.background = 'linear-gradient(90deg,#0a0e1a 0%,#0f172a 40%,#0a0e1a 100%)';
-  scoresBanner.style.borderColor = '#1e3a5f';
-  const liveBadge2 = scoresBanner.querySelector('div > div:first-child');
-  if (liveBadge2) liveBadge2.style.background = 'linear-gradient(135deg,#dc2626,#991b1b)';
-
-  const chips = [];
-  Object.values(bannerHRs).forEach(h => {
-    if (h.count > 0) chips.push(`<span class="alert-chip alert-hr">💥 ${h.name}${h.count > 1 ? ' ×'+h.count : ''} HR vs ${h.oppAbbr||''}</span>`);
-  });
-  Object.values(bannerKs).forEach(k => {
-    if (k.ks > 0 && k.ouLine && k.ks > k.ouLine) {
-      chips.push(`<span class="alert-chip alert-k">⚡ ${k.name} ${k.ks}K vs ${k.oppAbbr||''}</span>`);
-    }
-  });
-
-  if (!chips.length) { scoresBanner.style.display = 'none'; return; }
-
-  const content = chips.join('<span class="alert-sep">·</span>');
-  const shouldScroll = chips.length >= 3;
-  const looped = shouldScroll ? content + '<span class="alert-sep" style="padding:0 30px">·</span>' + content : content;
-  const duration = Math.max(15, chips.length * 5);
-
-  scoresTrack.innerHTML = looped;
-  scoresTrack.style.animation = shouldScroll ? `marquee ${duration}s linear infinite` : 'none';
-  scoresTrack.style.justifyContent = shouldScroll ? 'flex-start' : 'center';
-  scoresTrack.style.flexWrap = shouldScroll ? 'nowrap' : 'wrap';
-  scoresTrack.style.width = shouldScroll ? 'max-content' : '100%';
-
-  // Always show the banner — visibility is controlled by the section being active
-  // The banner sits INSIDE #scores so it's naturally hidden when scores is hidden
-  scoresBanner.style.display = 'block';
-}
-
-function updateLiveBanner() {
-  // Detect new HRs since last check
-  const newHitters = [];
-  Object.values(bannerHRs).forEach(h => {
-    const prev = prevBannerHRCounts[h.id] || 0;
-    if (h.count > prev) newHitters.push(h.name);
-    prevBannerHRCounts[h.id] = h.count;
-  });
-  if (newHitters.length && !breakingHRActive) {
-    triggerBreakingHR(newHitters);
-  } else {
-    renderBanner();
-  }
-}
-
 
 let propsLoaded = false;
 
@@ -5480,7 +5256,6 @@ async function loadHRsToday() {
       if (countEl) countEl.style.display = 'none';
       const projEl = document.getElementById('proj-hits-content');
       if (projEl) projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">No HR's Completed from Projections Yet</div>`;
-      updateLiveBanner();
       return;
     }
 
@@ -5567,8 +5342,6 @@ async function loadHRsToday() {
         }).join('');
       }
     }
-
-    updateLiveBanner();
   } catch(e) {
     const el2=document.getElementById('hrs-today-content');
     if(el2) el2.innerHTML=`<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
@@ -6397,7 +6170,6 @@ function initPropsTab() {
   if (propsInitDone) return;
   propsInitDone = true;
   // v8.70 performance: do not warm every model on first open. Load only the active inner tab.
-  if (window._lastLiveGames?.length) updatePropsLiveBanner(window._lastLiveGames);
   const activePane = document.querySelector('#props .gamepick-pane.active')?.getAttribute('data-gamepick-pane') || 'game';
   if (typeof window.__drLoadGamePickPaneData === 'function') window.__drLoadGamePickPaneData(activePane);
   else if (activePane === 'game') loadGameProps().then(() => { if (window.syncDiamondTracker) window.syncDiamondTracker(); });
@@ -8212,21 +7984,6 @@ function showTab(id, el) {
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
-})();
-
-
-(function(){
-  function hideLiveScoresBanner(){
-    const banner = document.getElementById('scores-alert-banner');
-    if(!banner) return;
-    banner.hidden = true;
-    banner.style.display = 'none';
-    const track = document.getElementById('scores-alert-track');
-    if(track) track.innerHTML = '';
-  }
-  window.hideLiveScoresBanner = hideLiveScoresBanner;
-  hideLiveScoresBanner();
-  setTimeout(hideLiveScoresBanner, 3000); // v7.8 one-shot
 })();
 
 
