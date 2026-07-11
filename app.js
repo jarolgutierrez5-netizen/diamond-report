@@ -1242,6 +1242,10 @@ async function loadAllTimeTrackerRecord() {
     const data = await res.json();
     if (data?.allTime?.drp?.total > 0) window.__drAllTimeRecord = data.allTime.drp;
     if (data?.allTime?.kprop?.total > 0) window.__kpAllTimeRecord = data.allTime.kprop;
+    if (data?.allTime?.premium?.total > 0) {
+      window.__premiumAllTimeRecord = data.allTime.premium;
+      if (typeof window.renderPremiumPicks === 'function') window.renderPremiumPicks();
+    }
     updateHeroTodayRecordStrip();
   } catch (e) {}
 }
@@ -10462,6 +10466,28 @@ function showPremiumGate(feature){
     return ab >= MIN_AB;
   }
 
+  var ORDINALS = { 1:'1st', 2:'2nd', 3:'3rd', 4:'4th', 5:'5th' };
+  // Short "why" chips for the card — mirrors qualityScore's signals exactly (nothing
+  // new computed here) so the displayed reasons always match what actually cleared the
+  // quality gate, capped at 2 to keep cards compact.
+  function reasonsFor(marketKey, row){
+    var bits = [];
+    if (row.isFavorable) bits.push('Favorable matchup');
+    var onFire = row.isOnFire || n(row.onFireScore) >= 60 || n(row.hotBoostPct) >= 3;
+    if (onFire) bits.push('🔥 Hot streak');
+    var slot = Number(row.battingOrder);
+    if (Number.isFinite(slot) && slot >= 1 && slot <= 5) bits.push('Hits ' + (ORDINALS[slot] || slot + 'th') + ' in order');
+    if (marketKey === 'sb') {
+      var s = row.stats || {};
+      if ((n(s.stolenBases) + n(s.caughtStealing)) >= 5) bits.push('Speed threat');
+    } else if (marketKey === 'hr') {
+      if (n(row.iso) >= 0.180 || n(row.hrSeason) >= 15) bits.push('Elite power');
+    } else {
+      if (n(row.ops) >= 0.780 || n(row.iso) >= 0.180) bits.push('Elite bat');
+    }
+    return bits.slice(0, 2);
+  }
+
   function buildRankedLists(){
     var pool = rows().filter(eligible);
     var ranked = {};
@@ -10509,15 +10535,18 @@ function showPremiumGate(feature){
   function hs(id){ return id ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_72,q_auto:best/v1/people/'+id+'/headshot/67/current' : ''; }
   function tl(abbr){ var id = (window.teamIds||{})[abbr]; return id ? '<img class="premium-team-logo" src="https://www.mlbstatic.com/team-logos/'+id+'.svg" alt="" loading="lazy" decoding="async">' : ''; }
 
-  function cardHTML(entry, rank){
+  function cardHTML(entry, rank, marketKey){
     var r = entry.row, p = Math.round(entry.score);
     var lockBadge = isRowLocked(r) ? '<span class="premium-lock" title="Locked at first pitch — this pick no longer changes">🔒</span>' : '';
+    var reasons = reasonsFor(marketKey, r);
+    var reasonHTML = reasons.length ? '<div class="premium-reason">'+esc(reasons.join(' · '))+'</div>' : '';
     return '<div class="premium-card">' +
       '<div class="premium-rank">#'+(rank+1)+'</div>' +
       '<img class="premium-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt="">' +
       '<div class="premium-info">' +
         '<div class="premium-name">'+esc(r.name||'–')+lockBadge+'</div>' +
         '<div class="premium-meta">'+tl(r.teamAbbr)+esc(r.teamAbbr||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div>' +
+        reasonHTML +
         '<div class="premium-quality">'+esc('★'.repeat(Math.max(1,entry.quality)))+'</div>' +
       '</div>' +
       '<div class="premium-score">'+p+'%</div>' +
@@ -10525,7 +10554,7 @@ function showPremiumGate(feature){
   }
 
   function sectionHTML(m, picks){
-    var cards = picks.length ? picks.map(cardHTML).join('') :
+    var cards = picks.length ? picks.map(function(entry, rank){ return cardHTML(entry, rank, m.key); }).join('') :
       '<div class="mu-empty" style="padding:16px">No elite picks clear the bar for this market yet today — check back once boards have loaded.</div>';
     return '<div class="premium-section">' +
       '<div class="premium-section-head">'+esc(m.label)+'</div>' +
@@ -10533,11 +10562,23 @@ function showPremiumGate(feature){
     '</div>';
   }
 
+  // Elite Picks' own all-time record, sourced from data/tracker.json the same way the
+  // hero trust strip is (see loadAllTimeTrackerRecord in app.js) — real, persisted,
+  // independently-graded history. No-ops until the backend has actually graded at least
+  // one Elite Pick (window.__premiumAllTimeRecord stays unset until then).
+  function trackRecordHTML(){
+    var rec = window.__premiumAllTimeRecord;
+    if (!rec || !rec.total) return '';
+    var pct = Math.round((rec.wins / rec.total) * 100);
+    var color = rec.wins === rec.total ? '#22e06f' : rec.wins > rec.total / 2 ? '#fbbf24' : '#fca5a5';
+    return '<div class="premium-track-record"><strong style="color:'+color+'">'+rec.wins+'-'+rec.losses+'</strong><span>Elite Picks · '+pct+'% all-time ('+rec.total+' graded)</span></div>';
+  }
+
   function render(){
     var el = document.getElementById('premium-content');
     if (!el) return;
     var lists = buildEliteLists();
-    el.innerHTML = MARKETS.map(function(m){ return sectionHTML(m, lists[m.key] || []); }).join('');
+    el.innerHTML = trackRecordHTML() + MARKETS.map(function(m){ return sectionHTML(m, lists[m.key] || []); }).join('');
   }
   window.renderPremiumPicks = render;
 
