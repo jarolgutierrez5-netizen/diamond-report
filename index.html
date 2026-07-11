@@ -149,6 +149,7 @@
     <button type="button" data-tab="tb" class="dr-menu-item">💎 Total Bases</button>
     <button type="button" data-tab="sb" class="dr-menu-item">🏃 Stolen Bases</button>
     <button type="button" data-tab="hrrbi" class="dr-menu-item">📈 Hits+Runs+RBI</button>
+    <button type="button" data-tab="premium" class="dr-menu-item">🌟 Premium</button>
     <button type="button" data-tab="parlay" class="dr-menu-item locked">🔒 🧾 Parlay Builds</button>
     <button type="button" data-tab="team-performance" class="dr-menu-item locked">🔒 🆚 Team Performance</button>
     <button type="button" data-tab="deep" class="dr-menu-item locked">🔒 🧠 Deep Research</button>
@@ -210,6 +211,7 @@
     <button class="gamepick-tab" id="gamepick-tab-tb" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-tb" data-gamepick-pane="tb" onclick="showGamePickPane('tb')">💎 Total Bases</button>
     <button class="gamepick-tab" id="gamepick-tab-sb" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-sb" data-gamepick-pane="sb" onclick="showGamePickPane('sb')">🏃 Stolen Bases</button>
     <button class="gamepick-tab" id="gamepick-tab-hrrbi" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-hrrbi" data-gamepick-pane="hrrbi" onclick="showGamePickPane('hrrbi')">📈 Hits+Runs+RBI</button>
+    <button class="gamepick-tab" id="gamepick-tab-premium" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-premium" data-gamepick-pane="premium" onclick="showGamePickPane('premium')">🌟 Premium</button>
     <button class="gamepick-tab" id="gamepick-tab-parlay" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-parlay" data-gamepick-pane="parlay" onclick="showPremiumGate('parlay')">🔒 🧾 Parlay Builds</button>
     <button class="gamepick-tab" id="gamepick-tab-team-performance" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-team-performance" data-gamepick-pane="team-performance" onclick="showPremiumGate('team-performance')">🔒 🆚 Team Performance</button>
     <button class="gamepick-tab" id="gamepick-tab-deep" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-deep" data-gamepick-pane="deep" onclick="showPremiumGate('deep')">🔒 🧠 Deep Research</button>
@@ -313,6 +315,10 @@
 <div class="gamepick-pane" id="gamepick-pane-hrrbi" role="tabpanel" aria-labelledby="gamepick-tab-hrrbi" data-gamepick-pane="hrrbi" hidden>
   <div class="dr-center-label">📈 Hits+Runs+RBI</div>
   <div class="dr-panel dr-panel-large dr-prop-center-panel"><div class="dr-panel-head"><div><p class="section-title">HITS + RUNS + RBIs <span>PROJECTIONS</span></p><small>Combined production opportunities ranked by on-base skill, power, run environment, and lineup position.</small></div></div><div id="hrrbi-props-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading Hits+Runs+RBI board…</div></div></div>
+</div>
+<div class="gamepick-pane" id="gamepick-pane-premium" role="tabpanel" aria-labelledby="gamepick-tab-premium" data-gamepick-pane="premium" hidden>
+  <div class="dr-center-label">🌟 Premium</div>
+  <div class="dr-panel dr-panel-large dr-prop-center-panel"><div class="dr-panel-head"><div><p class="section-title">ELITE <span>PICKS</span></p><small>The single strongest play in each market today — ranked by real simulated odds, with every player limited to their one best category so the same name can't crowd out the board.</small></div></div><div id="premium-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Building today's elite picks…</div></div></div>
 </div>
 
 <div class="gamepick-pane" id="gamepick-pane-pr" role="tabpanel" aria-labelledby="gamepick-tab-pr" data-gamepick-pane="pr" hidden>

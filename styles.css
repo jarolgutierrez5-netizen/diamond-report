@@ -1411,3 +1411,18 @@ body.dr-paused *::after,
 .dr-trust-item strong{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:900}
 .dr-trust-item span{font-size:11px;color:var(--muted);letter-spacing:.02em}
 @media(max-width:520px){.dr-trust-item{padding:6px 12px}.dr-trust-item strong{font-size:14px}.dr-trust-item span{font-size:10px}}
+
+.premium-section{margin-bottom:22px}
+.premium-section:last-child{margin-bottom:0}
+.premium-section-head{font-size:13px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#fbbf24;padding:0 0 10px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.premium-card-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.premium-card{display:flex;align-items:center;gap:10px;border:1px solid rgba(251,191,36,.3);border-radius:12px;background:rgba(10,18,34,.7);padding:10px 12px;position:relative}
+.premium-rank{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:900;color:#fbbf24;min-width:22px}
+.premium-photo{width:42px;height:42px;border-radius:50%;object-fit:cover;background:var(--bg);flex:none;border:1px solid var(--border)}
+.premium-info{flex:1;min-width:0}
+.premium-name{font-weight:900;font-size:13px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.premium-meta{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.premium-team-logo{width:14px;height:14px;object-fit:contain;vertical-align:middle}
+.premium-quality{font-size:10px;color:#fbbf24;letter-spacing:1px;margin-top:2px}
+.premium-score{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:900;color:#22e06f;flex:none}
+@media(max-width:520px){.premium-card-list{grid-template-columns:1fr}}

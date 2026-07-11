@@ -8309,7 +8309,7 @@ if (document.readyState === 'loading') {
 // PROD v8.44 — Game Picks inner tab controller with persistent state
 (function(){
   var STORAGE_KEY = 'dr_gamepick_active_pane';
-  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, parlay: true, 'team-performance': true, deep: true };
+  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, premium: true, parlay: true, 'team-performance': true, deep: true };
 
   function getRequestedPane(){
     try {
@@ -9259,7 +9259,7 @@ function showPremiumGate(feature){
   if (window.__DR_V1129_NAV_CONTROLLER__) return;
   window.__DR_V1129_NAV_CONTROLLER__ = true;
 
-  var FREE_PANES = new Set(['game','pr','hr','k','hits','rbis','tb','sb','hrrbi']);
+  var FREE_PANES = new Set(['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','premium']);
   var PREMIUM_PANES = new Set(['parlay','team-performance','team','deep']);
   var NORMALIZE = { team:'team-performance', teamPerformance:'team-performance' };
 
@@ -10287,4 +10287,150 @@ function showPremiumGate(feature){
   setInterval(function(){
     if (document.visibilityState === 'visible') observeAnimatedElements();
   }, 5000);
+})();
+
+/* ---- Premium: Elite Picks (cross-market curated top 5s) ---- */
+(function(){
+  if (window.__DR_PREMIUM_ELITE__) return; window.__DR_PREMIUM_ELITE__ = true;
+
+  var MARKETS = [
+    { key:'hr',    label:'🔥 Home Runs' },
+    { key:'hits',  label:'⚾ Hits' },
+    { key:'rbis',  label:'💰 RBIs' },
+    { key:'tb',    label:'💎 Total Bases' },
+    { key:'sb',    label:'🏃 Stolen Bases' },
+    { key:'hrrbi', label:'📈 Hits+Runs+RBI' },
+  ];
+  var TOP_N = 5;
+  var CANDIDATE_DEPTH = 25;
+  var MIN_AB = 40; // same real-season-sample floor used elsewhere on this site (HRP_MIN_AB_FOR_RATE)
+  var MIN_QUALITY_SCORE = 2; // must clear at least 2 of 4 real corroborating signals below
+
+  function n(v){ v = parseFloat(v); return Number.isFinite(v) ? v : 0; }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+  function rows(){
+    try {
+      var src = (typeof window.getProductionPropRows === 'function') ? window.getProductionPropRows() : (window.hrpRows || []);
+      return (src || []).filter(function(r){ return r && r.name && r.id != null && (!window.isActiveForHRThreat || window.isActiveForHRThreat(r)); });
+    } catch(e) { return []; }
+  }
+
+  function scoreFor(marketKey, row){
+    if (marketKey === 'hr') return n(row.hrProb);
+    if (marketKey === 'sb') return window.simulateSBOdds ? n(window.simulateSBOdds(row)) : 0;
+    return window.simulatePropOdds ? n(window.simulatePropOdds(marketKey, row)) : 0;
+  }
+
+  // Real corroborating signals (0-4), reusing fields already computed elsewhere on the
+  // site — nothing invented here. A candidate needs a genuine simulated edge AND real
+  // supporting context (matchup, form, lineup spot, market-specific quality) to clear the
+  // Elite bar, not just the highest raw number in a thin field.
+  function qualityScore(marketKey, row){
+    var score = 0;
+    if (row.isFavorable) score++;
+    var onFire = row.isOnFire || n(row.onFireScore) >= 60 || n(row.hotBoostPct) >= 3;
+    if (onFire) score++;
+    var slot = Number(row.battingOrder);
+    if (Number.isFinite(slot) && slot >= 1 && slot <= 5) score++;
+    if (marketKey === 'sb') {
+      var s = row.stats || {};
+      if ((n(s.stolenBases) + n(s.caughtStealing)) >= 5) score++;
+    } else if (marketKey === 'hr') {
+      if (n(row.iso) >= 0.180 || n(row.hrSeason) >= 15) score++;
+    } else {
+      if (n(row.ops) >= 0.780 || n(row.iso) >= 0.180) score++;
+    }
+    return score;
+  }
+
+  function eligible(row){
+    var ab = n((row.stats || {}).atBats);
+    return ab >= MIN_AB;
+  }
+
+  function buildRankedLists(){
+    var pool = rows().filter(eligible);
+    var ranked = {};
+    MARKETS.forEach(function(m){
+      ranked[m.key] = pool
+        .map(function(r){ return { row:r, score:scoreFor(m.key, r), quality:qualityScore(m.key, r) }; })
+        .filter(function(x){ return x.score > 0 && x.quality >= MIN_QUALITY_SCORE; })
+        .sort(function(a,b){ return b.score - a.score; })
+        .slice(0, CANDIDATE_DEPTH);
+    });
+    return ranked;
+  }
+
+  // Each player is assigned to the single market where they rank highest (lowest index)
+  // in that market's ranked list — not by raw probability, since markets run on very
+  // different scales (Hits odds sit far higher than HR odds for the same player, so
+  // comparing raw numbers across markets would bias every pick toward Hits/TB).
+  function assignBestMarket(ranked){
+    var bestRank = {};
+    MARKETS.forEach(function(m){
+      ranked[m.key].forEach(function(entry, idx){
+        var pid = entry.row.id;
+        if (!bestRank[pid] || idx < bestRank[pid].rank) bestRank[pid] = { market:m.key, rank:idx };
+      });
+    });
+    return bestRank;
+  }
+
+  function buildEliteLists(){
+    var ranked = buildRankedLists();
+    var bestMarket = assignBestMarket(ranked);
+    var out = {};
+    MARKETS.forEach(function(m){
+      var picks = [];
+      ranked[m.key].forEach(function(entry){
+        if (picks.length >= TOP_N) return;
+        var pid = entry.row.id;
+        if (bestMarket[pid] && bestMarket[pid].market === m.key) picks.push(entry);
+      });
+      out[m.key] = picks;
+    });
+    return out;
+  }
+
+  function hs(id){ return id ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_72,q_auto:best/v1/people/'+id+'/headshot/67/current' : ''; }
+  function tl(abbr){ var id = (window.teamIds||{})[abbr]; return id ? '<img class="premium-team-logo" src="https://www.mlbstatic.com/team-logos/'+id+'.svg" alt="" loading="lazy" decoding="async">' : ''; }
+
+  function cardHTML(entry, rank){
+    var r = entry.row, p = Math.round(entry.score);
+    return '<div class="premium-card">' +
+      '<div class="premium-rank">#'+(rank+1)+'</div>' +
+      '<img class="premium-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt="">' +
+      '<div class="premium-info">' +
+        '<div class="premium-name">'+esc(r.name||'–')+'</div>' +
+        '<div class="premium-meta">'+tl(r.teamAbbr)+esc(r.teamAbbr||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div>' +
+        '<div class="premium-quality">'+esc('★'.repeat(Math.max(1,entry.quality)))+'</div>' +
+      '</div>' +
+      '<div class="premium-score">'+p+'%</div>' +
+    '</div>';
+  }
+
+  function sectionHTML(m, picks){
+    var cards = picks.length ? picks.map(cardHTML).join('') :
+      '<div class="mu-empty" style="padding:16px">No elite picks clear the bar for this market yet today — check back once boards have loaded.</div>';
+    return '<div class="premium-section">' +
+      '<div class="premium-section-head">'+esc(m.label)+'</div>' +
+      '<div class="premium-card-list">'+cards+'</div>' +
+    '</div>';
+  }
+
+  function render(){
+    var el = document.getElementById('premium-content');
+    if (!el) return;
+    var lists = buildEliteLists();
+    el.innerHTML = MARKETS.map(function(m){ return sectionHTML(m, lists[m.key] || []); }).join('');
+  }
+  window.renderPremiumPicks = render;
+
+  var oldPane = window.showGamePickPane;
+  if (typeof oldPane === 'function' && !oldPane.__drPremium) {
+    var wrap = function(p){ var out = oldPane.apply(this, arguments); if (p === 'premium') { setTimeout(render, 80); setTimeout(render, 800); } return out; };
+    wrap.__drPremium = true;
+    window.showGamePickPane = wrap;
+  }
 })();
