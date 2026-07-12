@@ -1621,3 +1621,62 @@ h1, #premium .dr-premium-hero h1, .dr-prediction-hero h1, .section-title,
   color: #f4a261 !important;
   margin-top: 10px !important;
 }
+
+/* ── Per-stat neon identity colors for stat chips ─────────────────────────────
+   .dr109-chip (K Props, Hits/RBI/TB/SB/HRRBI boards) and .dr1027-chip (HR
+   Threats) share this scheme via app.js's chip()/hrChip() fallback: a chip
+   only gets an identity color when no real semantic class (good/warn/green/
+   gold/red) was passed in, so a genuinely notable number still shows its
+   meaningful color instead of being overridden. Same stat name -> same hue
+   everywhere it appears (AVG is always lime, ISO always indigo, etc.), kept
+   to a fixed neon palette that avoids the hues already carrying meaning
+   elsewhere (green=good, gold=notable, red=bad, magenta=reserved for LIVE). */
+.dr109-chip.stat-k-9, .dr109-chip.stat-season-hr, .dr109-chip.stat-team-stack { border-color: rgba(167,139,250,.55) !important; }
+.dr109-chip.stat-k-9 strong, .dr109-chip.stat-season-hr strong, .dr109-chip.stat-team-stack strong { color: #a78bfa !important; }
+.dr109-chip.stat-era, .dr109-chip.stat-lineup { border-color: rgba(56,189,248,.55) !important; }
+.dr109-chip.stat-era strong, .dr109-chip.stat-lineup strong { color: #38bdf8 !important; }
+.dr109-chip.stat-whip, .dr109-chip.stat-ops { border-color: rgba(45,212,191,.55) !important; }
+.dr109-chip.stat-whip strong, .dr109-chip.stat-ops strong { color: #2dd4bf !important; }
+.dr109-chip.stat-hr-9, .dr109-chip.stat-last-10-hr { border-color: rgba(251,146,60,.55) !important; }
+.dr109-chip.stat-hr-9 strong, .dr109-chip.stat-last-10-hr strong { color: #fb923c !important; }
+.dr109-chip.stat-avg, .dr109-chip.stat-hits { border-color: rgba(163,230,53,.55) !important; }
+.dr109-chip.stat-avg strong, .dr109-chip.stat-hits strong { color: #a3e635 !important; }
+.dr109-chip.stat-woba, .dr109-chip.stat-runs { border-color: rgba(244,114,182,.55) !important; }
+.dr109-chip.stat-woba strong, .dr109-chip.stat-runs strong { color: #f472b6 !important; }
+.dr109-chip.stat-iso, .dr109-chip.stat-rbi { border-color: rgba(129,140,248,.55) !important; }
+.dr109-chip.stat-iso strong, .dr109-chip.stat-rbi strong { color: #818cf8 !important; }
+.dr109-chip.stat-slg, .dr109-chip.stat-obp { border-color: rgba(251,113,133,.55) !important; }
+.dr109-chip.stat-slg strong, .dr109-chip.stat-obp strong { color: #fb7185 !important; }
+.dr109-chip.stat-fip, .dr109-chip.stat-pa-est, .dr109-chip.stat-hr-prob { border-color: rgba(103,232,249,.55) !important; }
+.dr109-chip.stat-fip strong, .dr109-chip.stat-pa-est strong, .dr109-chip.stat-hr-prob strong { color: #67e8f9 !important; }
+.dr109-chip.stat-k-gm { border-color: rgba(192,132,252,.55) !important; }
+.dr109-chip.stat-k-gm strong { color: #c084fc !important; }
+.dr109-chip.stat-cushion { border-color: rgba(96,165,250,.55) !important; }
+.dr109-chip.stat-cushion strong { color: #60a5fa !important; }
+.dr109-chip.stat-hot-boost { border-color: rgba(251,191,36,.55) !important; }
+.dr109-chip.stat-hot-boost strong { color: #fbbf24 !important; }
+
+.dr1027-chip.stat-k-9, .dr1027-chip.stat-season-hr, .dr1027-chip.stat-team-stack { border-color: rgba(167,139,250,.55) !important; background: rgba(48,32,90,.28) !important; }
+.dr1027-chip.stat-k-9 b, .dr1027-chip.stat-season-hr b, .dr1027-chip.stat-team-stack b { color: #a78bfa !important; }
+.dr1027-chip.stat-era, .dr1027-chip.stat-lineup { border-color: rgba(56,189,248,.55) !important; background: rgba(12,45,68,.32) !important; }
+.dr1027-chip.stat-era b, .dr1027-chip.stat-lineup b { color: #38bdf8 !important; }
+.dr1027-chip.stat-whip, .dr1027-chip.stat-ops { border-color: rgba(45,212,191,.55) !important; background: rgba(10,50,46,.32) !important; }
+.dr1027-chip.stat-whip b, .dr1027-chip.stat-ops b { color: #2dd4bf !important; }
+.dr1027-chip.stat-hr-9, .dr1027-chip.stat-last-10-hr { border-color: rgba(251,146,60,.55) !important; background: rgba(66,36,10,.32) !important; }
+.dr1027-chip.stat-hr-9 b, .dr1027-chip.stat-last-10-hr b { color: #fb923c !important; }
+.dr1027-chip.stat-avg, .dr1027-chip.stat-hits { border-color: rgba(163,230,53,.55) !important; background: rgba(38,54,10,.32) !important; }
+.dr1027-chip.stat-avg b, .dr1027-chip.stat-hits b { color: #a3e635 !important; }
+.dr1027-chip.stat-woba, .dr1027-chip.stat-runs { border-color: rgba(244,114,182,.55) !important; background: rgba(62,20,44,.32) !important; }
+.dr1027-chip.stat-woba b, .dr1027-chip.stat-runs b { color: #f472b6 !important; }
+.dr1027-chip.stat-iso, .dr1027-chip.stat-rbi { border-color: rgba(129,140,248,.55) !important; background: rgba(30,32,74,.32) !important; }
+.dr1027-chip.stat-iso b, .dr1027-chip.stat-rbi b { color: #818cf8 !important; }
+.dr1027-chip.stat-slg, .dr1027-chip.stat-obp { border-color: rgba(251,113,133,.55) !important; background: rgba(62,18,26,.32) !important; }
+.dr1027-chip.stat-slg b, .dr1027-chip.stat-obp b { color: #fb7185 !important; }
+.dr1027-chip.stat-fip, .dr1027-chip.stat-pa-est, .dr1027-chip.stat-hr-prob { border-color: rgba(103,232,249,.55) !important; background: rgba(8,48,54,.32) !important; }
+.dr1027-chip.stat-fip b, .dr1027-chip.stat-pa-est b, .dr1027-chip.stat-hr-prob b { color: #67e8f9 !important; }
+.dr1027-chip.stat-k-gm { border-color: rgba(192,132,252,.55) !important; background: rgba(48,20,66,.32) !important; }
+.dr1027-chip.stat-k-gm b { color: #c084fc !important; }
+.dr1027-chip.stat-cushion { border-color: rgba(96,165,250,.55) !important; background: rgba(12,32,64,.32) !important; }
+.dr1027-chip.stat-cushion b { color: #60a5fa !important; }
+.dr1027-chip.stat-hot-boost { border-color: rgba(251,191,36,.55) !important; background: rgba(58,42,6,.32) !important; }
+.dr1027-chip.stat-hot-boost b { color: #fbbf24 !important; }

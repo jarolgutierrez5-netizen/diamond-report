@@ -5893,17 +5893,17 @@ function renderKProps() {
         <div class="dr109-chiprow">
           ${alreadyHit ? `<span class="dr109-chip hit-check"><span>✓ HIT:</span><strong>${kHitCount} / ${kTarget}</strong></span>` : hasLiveK ? `<span class="dr109-chip"><span>${missedK ? 'Final' : 'Live'}:</span><strong>${kHitCount} / ${kTarget}</strong></span>` : ''}
           <span class="dr109-chip good"><span>Line:</span><strong>${strikeoutLineText}</strong></span>
-          <span class="dr109-chip"><span>K/9:</span><strong>${p.k9 ?? '–'}</strong></span>
-          <span class="dr109-chip"><span>ERA:</span><strong>${p.era ?? '–'}</strong></span>
-          <span class="dr109-chip"><span>WHIP:</span><strong>${p.whip ?? '–'}</strong></span>
-          <span class="dr109-chip"><span>HR/9:</span><strong>${p.hr9 ?? '–'}</strong></span>
-          <span class="dr109-chip"><span>AVG:</span><strong>${p.avg ?? '–'}</strong></span>
-          <span class="dr109-chip"><span>WOBA:</span><strong>${p.woba ?? '–'}</strong></span>
-          <span class="dr109-chip"><span>ISO:</span><strong>${p.iso ?? '–'}</strong></span>
-          <span class="dr109-chip"><span>SLG:</span><strong>${p.slg ?? '–'}</strong></span>
-          <span class="dr109-chip"><span>FIP:</span><strong>${p.fip ?? '–'}</strong></span>
-          <span class="dr109-chip"><span>K/GM:</span><strong>${p.kPerGm ?? '–'}</strong></span>
-          <span class="dr109-chip ${strikeoutCushion >= 1 ? 'good' : strikeoutCushion >= 0 ? 'warn' : ''}"><span>Cushion:</span><strong>${strikeoutCushionText}</strong></span>
+          <span class="dr109-chip stat-k-9"><span>K/9:</span><strong>${p.k9 ?? '–'}</strong></span>
+          <span class="dr109-chip stat-era"><span>ERA:</span><strong>${p.era ?? '–'}</strong></span>
+          <span class="dr109-chip stat-whip"><span>WHIP:</span><strong>${p.whip ?? '–'}</strong></span>
+          <span class="dr109-chip stat-hr-9"><span>HR/9:</span><strong>${p.hr9 ?? '–'}</strong></span>
+          <span class="dr109-chip stat-avg"><span>AVG:</span><strong>${p.avg ?? '–'}</strong></span>
+          <span class="dr109-chip stat-woba"><span>WOBA:</span><strong>${p.woba ?? '–'}</strong></span>
+          <span class="dr109-chip stat-iso"><span>ISO:</span><strong>${p.iso ?? '–'}</strong></span>
+          <span class="dr109-chip stat-slg"><span>SLG:</span><strong>${p.slg ?? '–'}</strong></span>
+          <span class="dr109-chip stat-fip"><span>FIP:</span><strong>${p.fip ?? '–'}</strong></span>
+          <span class="dr109-chip stat-k-gm"><span>K/GM:</span><strong>${p.kPerGm ?? '–'}</strong></span>
+          <span class="dr109-chip ${strikeoutCushion >= 1 ? 'good' : strikeoutCushion >= 0 ? 'warn' : 'stat-cushion'}"><span>Cushion:</span><strong>${strikeoutCushionText}</strong></span>
         </div>
         <div class="dr109-reason"><strong>Why it supports the line:</strong> ${p.pitcherName} grades at ${chance}% for ${strikeoutLineText} because the model combines ${p.k9 ?? '–'} K/9, ${p.era ?? '–'} ERA/${p.whip ?? '–'} WHIP command profile, projected workload, and opponent contact tendency. Opponent context: ${p.oppAbbr}.</div>
         <div class="kprop-lineup-section dr1016-k-lineup">
@@ -9076,7 +9076,11 @@ var analytics='<div class="tp-analytics-grid">'+
     }
     return 50;
   }
-  function chip(k,v,cls){ return '<span class="dr109-chip '+(cls||'')+'"><span>'+esc(k)+':</span><strong>'+esc(v)+'</strong></span>'; }
+  // Falls back to a fixed per-stat neon identity color (by stat name) when no real
+  // good/notable semantic class applies, instead of plain gray. An explicit class
+  // (e.g. "good") always wins when one is passed in.
+  function statSlug(k){ return String(k).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+  function chip(k,v,cls){ var c=cls||('stat-'+statSlug(k)); return '<span class="dr109-chip '+c+'"><span>'+esc(k)+':</span><strong>'+esc(v)+'</strong></span>'; }
   function chipSet(type,r){ var s=stats(r),avg=n(r.avg||s.avg),ops=n(r.ops||s.ops),iso=n(r.iso||s.iso),obp=n(r.obp||s.obp),slg=n(r.slg||s.slg),hr=n(r.hrSeason||s.homeRuns),prob=n(r.hrProb),sb=n(s.stolenBases),rbi=n(s.rbi||s.runsBattedIn),runs=n(s.runs),hits=n(s.hits),a=[]; if(hit(type,r)) a.push(['✓ HIT', actual(type,r)+' / '+target(type), 'hit-check']); else if(hasLive(r)) a.push(['Live', actual(type,r)+' / '+target(type), '']);
     if(type==='hits')a=a.concat([['Line',line(type),'good'],['AVG',f(avg),''],['xBA proxy',f(avg+(r.isFavorable?.012:0)),'good'],['OBP',f(obp),''],['Contact',pct(66+avg*80)+'%','good'],['PA Est',(window.estimateGamePA?window.estimateGamePA(r.battingOrder):4.2).toFixed(1),'']]);
     if(type==='rbis')a=a.concat([['Line',line(type),'good'],['RBI',rbi||'–',''],['RISP proxy',pct(42+ops*20)+'%','good'],['Run Env',r.isFavorable?'Plus':'Neutral',r.isFavorable?'good':''],['OPS',f(ops),''],['ISO',f(iso),'warn'],['Team Stack','Supported',''],['Lineup','Middle/Power','']]);
@@ -9173,7 +9177,12 @@ var analytics='<div class="tp-analytics-grid">'+
   // where the league-average player sat around 3-4% instead of the ~12-14% a genuine
   // game simulation produces.
   function grade(p){ p=n(p); return p>=24?'A+':p>=20?'A':p>=17?'B+':'B'; }
-  function hrChip(k,v,cls){ return '<span class="dr1027-chip '+(cls||'')+'"><b>'+esc(k)+'</b> '+esc(v)+'</span>'; }
+  // A stat with no real good/notable signal (cls empty) still gets its own fixed neon
+  // identity color (by stat name, so "ISO" is always the same hue everywhere it shows
+  // up) instead of falling back to plain gray — an explicit semantic class (green/gold/
+  // red) always wins when one applies, this is purely the "otherwise" case.
+  function statSlug(k){ return String(k).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+  function hrChip(k,v,cls){ var c=cls||('stat-'+statSlug(k)); return '<span class="dr1027-chip '+c+'"><b>'+esc(k)+'</b> '+esc(v)+'</span>'; }
   function labelChip(k,v,cls){ return '<span class="dr1027-chip '+(cls||'')+'"><b>'+esc(k)+'</b> '+esc(v)+'</span>'; }
   // Inclusion floor rescaled for the Monte Carlo-simulated hrProb. Switching HR Threats
   // to a genuine full-game simulation (real ~4-5 PA, not one PA) roughly quadrupled the
