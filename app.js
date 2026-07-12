@@ -6266,7 +6266,15 @@ function initPropsTab() {
   if (propsInitDone) return;
   propsInitDone = true;
   // v8.70 performance: do not warm every model on first open. Load only the active inner tab.
-  const activePane = document.querySelector('#props .gamepick-pane.active')?.getAttribute('data-gamepick-pane') || 'game';
+  // This can run before the gamepick tab controller's own hash-based boot() has corrected
+  // the DOM's default 'active' class (Games Today, in the static HTML) — reading the DOM
+  // alone here meant a URL like #gamepick=premium still always warmed Game Center data on
+  // first paint. Check the same #gamepick=<pane> hash the tab controller itself reads,
+  // before falling back to whatever the DOM currently shows.
+  const GAMEPICK_PANES = ['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','premium','parlay','team-performance','deep'];
+  const hashMatch = /^#?gamepick=([\w-]+)/.exec(window.location.hash || '');
+  const fromHash = hashMatch && GAMEPICK_PANES.includes(hashMatch[1]) ? hashMatch[1] : null;
+  const activePane = fromHash || document.querySelector('#props .gamepick-pane.active')?.getAttribute('data-gamepick-pane') || 'game';
   if (typeof window.__drLoadGamePickPaneData === 'function') window.__drLoadGamePickPaneData(activePane);
   else if (activePane === 'game') loadGameProps().then(() => { if (window.syncDiamondTracker) window.syncDiamondTracker(); });
 }
