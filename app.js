@@ -671,7 +671,13 @@ document.addEventListener('DOMContentLoaded',()=>{
 })();
 
 /* ---- from <script id="anonymous"> ---- */
-(adsbygoogle = window.adsbygoogle || []).push({});
+// This is unguarded, synchronous, top-level code running near the start of the
+// whole script file — if adsbygoogle.push() throws (a routine AdSense failure
+// mode, e.g. the ad container briefly having zero width before layout settles),
+// the exception was silently killing execution of EVERYTHING after it in the
+// file, including showGamePickPane and every other app function. Wrapped so a
+// flaky ad slot can never again take down the entire site.
+try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}
        // Expand container once ad loads
        window.addEventListener('load', function() {
          setTimeout(function() {
