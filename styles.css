@@ -1450,3 +1450,13 @@ h1, #premium .dr-premium-hero h1, .dr-prediction-hero h1, .section-title,
 .dr-prediction-hero h1, #premium .dr-premium-hero h1 {
   text-shadow: 0 0 24px rgba(0,229,255,.35) !important;
 }
+
+/* Elite Picks (#premium-content) shares the .dr-scroll-tall utility class with every
+   other board panel (HR Potential, Hits/RBI/TB/SB projections, Pitcher Report, Parlay
+   Builds, Team Performance), which caps panel height and scrolls internally. Elite Picks
+   specifically should grow with the page instead of getting its own inner scrollbar —
+   scoped by ID so the other panels keep their existing scroll behavior. */
+#premium-content.dr-scroll-tall {
+  max-height: none !important;
+  overflow: visible !important;
+}
