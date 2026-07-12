@@ -573,7 +573,12 @@ function simulateHRGameOdds(pPerPA, battingOrder) {
     for (let i = 0; i < gamePA; i++) { if (Math.random() < pPerPA) { hit = true; break; } }
     if (hit) { successes++; }
   }
-  return Math.min(Math.round((successes / MC_TRIALS) * 100), 25);
+  // Was hard-capped at 25 with no floor, unlike every other market's 1-99 range —
+  // real per-game HR probability for a genuinely elite matchup can exceed 25%, so
+  // the old cap flattened great and mediocre matchups into the same narrow band
+  // and made ranking/selection nearly meaningless. Matches the same fix in app.js
+  // (window.simulateHRGameOdds and the Pitcher Matchup modal's hrProb()).
+  return Math.max(1, Math.min(99, Math.round((successes / MC_TRIALS) * 100)));
 }
 
 function scoreForMarket(marketKey, row) {

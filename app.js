@@ -2587,7 +2587,11 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
     const hr = parseInt(s.homeRuns) || 0;
     const batterRate = ab > 0 ? hr / ab : 0;
     const pitcherRate = pitcherHr9 > 0 ? pitcherHr9 / 27 : 0.03;
-    return Math.min(((batterRate * 0.6) + (pitcherRate * 0.4)) * 100, 25);
+    // Was hard-capped at 25 with no floor, unlike every other market's 1-99 range —
+    // real per-game HR probability for a genuinely elite matchup can exceed 25%, so
+    // the old cap flattened great and mediocre matchups into the same narrow band
+    // and made ranking/selection nearly meaningless. See Elite Picks HR record audit.
+    return Math.max(1, Math.min(((batterRate * 0.6) + (pitcherRate * 0.4)) * 100, 99));
   }
 
   const withProbs = applyHotHitterBoosts(lineup.map(b => ({ ...b, todayHR: (data?.gameHasStarted ? (b.todayHR || 0) : 0), hrProb: hrProb(b.stats), baseHrProb: hrProb(b.stats) })));
@@ -9070,7 +9074,11 @@ var analytics='<div class="tp-analytics-grid">'+
       for (var i = 0; i < gamePA; i++) { if (Math.random() < pPerPA) { hit = true; break; } }
       if (hit) successes++;
     }
-    return Math.min(Math.round((successes / TRIALS) * 100), 25);
+    // Was hard-capped at 25 with no floor, unlike every other market's 1-99 range —
+    // real per-game HR probability for a genuinely elite matchup can exceed 25%, so
+    // the old cap flattened great and mediocre matchups into the same narrow band
+    // and made ranking/selection nearly meaningless. See Elite Picks HR record audit.
+    return Math.max(1, Math.min(99, Math.round((successes / TRIALS) * 100)));
   };
   window.simulateKOdds = function(projK, line) {
     var lambda = clamp(n(projK, 4.5), 0.3, 15);
