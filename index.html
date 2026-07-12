@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=20260712z1900">
+<link rel="stylesheet" href="styles.min.css?v=20260713b0200">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -242,6 +242,16 @@
   <div class="dr-prediction-hero-copy">
     <div class="dr-eyebrow">Diamond Report Intelligence Engine</div>
     <h1>Prediction Center</h1>
+    <!-- New-visitor orientation: brief explainer + trust pillars. Uses
+         fresh class names (not the existing .dr-prediction-hero p/h1
+         selectors) since those already have many conflicting per-breakpoint
+         overrides accumulated, including one that sets p{display:none}. -->
+    <div class="dr-hero-subtitle">Model-driven MLB picks across Home Runs, Strikeouts, Hits, and more — built from live season stats and matchup data, with every pick graded in the open.</div>
+    <div class="dr-hero-pillars">
+      <div class="dr-hero-pillar"><span class="dr-hero-pillar-icon">📊</span><span class="dr-hero-pillar-title">Real Season Data</span><span class="dr-hero-pillar-sub">Every pick is model-driven from live MLB stats — not gut calls.</span></div>
+      <div class="dr-hero-pillar"><span class="dr-hero-pillar-icon">✅</span><span class="dr-hero-pillar-title">Graded in the Open</span><span class="dr-hero-pillar-sub">We track every pick's result, win or loss, publicly.</span></div>
+      <div class="dr-hero-pillar"><span class="dr-hero-pillar-icon">⚡</span><span class="dr-hero-pillar-title">Updated Live</span><span class="dr-hero-pillar-sub">Odds and matchups refresh through the day as lineups post.</span></div>
+    </div>
     <div class="dr-hero-trust-strip" id="dr-hero-trust-strip" style="display:none"></div>
   </div>
 </div>

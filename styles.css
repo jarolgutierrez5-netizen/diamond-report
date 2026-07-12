@@ -1858,3 +1858,57 @@ h1, #premium .dr-premium-hero h1, .dr-prediction-hero h1, .section-title,
 #dr-sidebar-nav.collapsed .dr-sidebar-soon {
   display: none;
 }
+
+/* ── Hero: new-visitor explainer + trust pillars ──────────────────────────
+   Fresh class names, not the existing .dr-prediction-hero p/h1 selectors —
+   those already carry many conflicting per-breakpoint !important overrides,
+   including one that sets p{display:none}. */
+.dr-hero-subtitle {
+  color: #aebbd4;
+  font-size: 14px;
+  line-height: 1.55;
+  max-width: 620px;
+  margin: 10px auto 0;
+  text-align: center;
+}
+.dr-hero-pillars {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 720px;
+  width: 100%;
+  margin: 18px auto 0;
+}
+.dr-hero-pillar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(17, 24, 39, .55);
+  border: 1px solid rgba(0, 229, 255, .18);
+  border-radius: 14px;
+  padding: 14px 10px;
+  text-align: center;
+}
+.dr-hero-pillar-icon {
+  font-size: 20px;
+  margin-bottom: 6px;
+}
+.dr-hero-pillar-title {
+  font-weight: 900;
+  font-size: 12.5px;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.dr-hero-pillar-sub {
+  font-size: 10.5px;
+  color: #8fa3c8;
+  line-height: 1.4;
+}
+@media (max-width: 767px) {
+  .dr-hero-pillars {
+    grid-template-columns: 1fr;
+  }
+  .dr-hero-subtitle {
+    font-size: 12px;
+  }
+}
