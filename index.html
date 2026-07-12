@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=20260712z1800">
+<link rel="stylesheet" href="styles.min.css?v=20260712z1900">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -172,7 +172,40 @@
   </div>
 </div>
 
-
+<!-- Desktop collapsible sidebar nav (wide viewports only — mobile keeps the
+     hamburger drawer above, untouched). Reuses the existing showGamePickPane/
+     showPremiumGate routing via window.DiamondNavigateToPane, so clicking a
+     sidebar item behaves identically to the horizontal gamepick-tabs. Shares
+     the .gamepick-tab class for CSS purposes, but active-state highlighting
+     for these specific buttons is handled by a small dedicated script (see
+     the end of app.js) since this sidebar lives outside #props, which is
+     what the existing tab-sync logic scopes its queries to. -->
+<aside id="dr-sidebar-nav" class="dr-sidebar-nav" aria-label="Site navigation">
+  <button type="button" id="dr-sidebar-toggle" class="dr-sidebar-toggle" aria-label="Collapse sidebar" title="Collapse sidebar">☰</button>
+  <div class="dr-sidebar-group">
+    <div class="dr-sidebar-group-head"><span class="dr-sidebar-icon">⚾</span><span class="dr-sidebar-label">Baseball</span></div>
+    <button type="button" data-gamepick-pane="game" class="gamepick-tab dr-sidebar-tab active"><span class="dr-sidebar-icon">📊</span><span class="dr-sidebar-label">Games Today</span></button>
+    <button type="button" data-gamepick-pane="pr" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">📋</span><span class="dr-sidebar-label">Pitcher Report</span></button>
+    <button type="button" data-gamepick-pane="hr" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">🔥</span><span class="dr-sidebar-label">Home Runs</span></button>
+    <button type="button" data-gamepick-pane="k" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">🎯</span><span class="dr-sidebar-label">Strikeouts</span></button>
+    <button type="button" data-gamepick-pane="hits" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">⚾</span><span class="dr-sidebar-label">Hits</span></button>
+    <button type="button" data-gamepick-pane="rbis" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">💰</span><span class="dr-sidebar-label">RBIs</span></button>
+    <button type="button" data-gamepick-pane="tb" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">💎</span><span class="dr-sidebar-label">Total Bases</span></button>
+    <button type="button" data-gamepick-pane="sb" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">🏃</span><span class="dr-sidebar-label">Stolen Bases</span></button>
+    <button type="button" data-gamepick-pane="hrrbi" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">📈</span><span class="dr-sidebar-label">Hits+Runs+RBI</span></button>
+    <button type="button" data-gamepick-pane="premium" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">🌟</span><span class="dr-sidebar-label">Premium</span></button>
+    <button type="button" data-gamepick-pane="parlay" class="gamepick-tab dr-sidebar-tab dr-sidebar-locked"><span class="dr-sidebar-icon">🔒</span><span class="dr-sidebar-label">Parlay Builds</span></button>
+    <button type="button" data-gamepick-pane="team-performance" class="gamepick-tab dr-sidebar-tab dr-sidebar-locked"><span class="dr-sidebar-icon">🔒</span><span class="dr-sidebar-label">Team Performance</span></button>
+    <button type="button" data-gamepick-pane="deep" class="gamepick-tab dr-sidebar-tab dr-sidebar-locked"><span class="dr-sidebar-icon">🔒</span><span class="dr-sidebar-label">Deep Research</span></button>
+  </div>
+  <div class="dr-sidebar-divider"></div>
+  <div class="dr-sidebar-group dr-sidebar-future">
+    <div class="dr-sidebar-group-head"><span class="dr-sidebar-icon">🏈</span><span class="dr-sidebar-label">Football</span><span class="dr-sidebar-soon">Soon</span></div>
+  </div>
+  <div class="dr-sidebar-group dr-sidebar-future">
+    <div class="dr-sidebar-group-head"><span class="dr-sidebar-icon">🏀</span><span class="dr-sidebar-label">Basketball</span><span class="dr-sidebar-soon">Soon</span></div>
+  </div>
+</aside>
 
 <!-- Horizontal Ad -->
 
@@ -628,7 +661,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=20260712z1700" defer></script>
+<script src="app.min.js?v=20260712z1900" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
