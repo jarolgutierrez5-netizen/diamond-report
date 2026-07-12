@@ -1672,3 +1672,19 @@ h1, #premium .dr-premium-hero h1, .dr-prediction-hero h1, .section-title,
   color: #fff !important;
   white-space: nowrap !important;
 }
+/* High-risk tier for the K Props Risk chip — .dr109-chip only had .good/.warn
+   modifiers defined, no danger tier, so a High risk chip rendered uncolored. */
+.dr109-chip.bad {
+  border-color: rgba(255, 77, 109, .45) !important;
+  color: #ffb0bf !important;
+}
+/* Strikeout cards share a CSS-grid row with align-items:stretch, so a card next
+   to a taller neighbor (longer "why" text, hit badge, etc.) gets stretched to
+   match. .dr109-card is flex column + justify-content:flex-start, so all of
+   that extra height piled up as one dead gap above the lineup button instead
+   of the button sitting flush at the bottom. Pinning the button to the bottom
+   with margin-top:auto keeps the chip-row-to-reason-text spacing identical
+   across every card in a row regardless of content length. */
+#kprops-content .dr109-card .kprop-lineup-section {
+  margin-top: auto !important;
+}
