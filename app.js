@@ -2020,11 +2020,21 @@ async function loadPitcherReport() {
       // Baseline K prop: K/9 × projected IP (avg 5.5) / 9, rounded to nearest .5
       const projIP = 5.5;
       const projK = Math.round((k9 * projIP / 9) * 2) / 2;
+      // MLB Stats API's pitching stat object has no `fip` field — FIP is a sabermetric
+      // stat the API doesn't compute, so reading s.fip directly always returned
+      // undefined and this column silently rendered "–" for every pitcher. Computed
+      // here from the standard formula instead (using the commonly-cited ~3.10
+      // constant since a real per-season league constant isn't available from this
+      // endpoint).
+      const rawIpForFip = parseFloat(s.inningsPitched) || 0;
+      const fipCalc = rawIpForFip > 0
+        ? ((13*(parseInt(s.homeRuns)||0) + 3*((parseInt(s.baseOnBalls)||0)+(parseInt(s.hitBatsmen)||0)) - 2*totalK) / rawIpForFip) + 3.10
+        : null;
       return {
         pitcher: p,
         gameTime: p.gameTimestamp,
         ip: f(s.inningsPitched,1), bf: fI(s.battersFaced),
-        fip: f(s.fip), avg: f(s.avg,3), woba: f(s.obp,3),
+        fip: f(fipCalc), avg: f(s.avg,3), woba: f(s.obp,3),
         whip: f(s.whip), iso, slg: f(s.slg,3),
         hr9: f(s.homeRunsPer9), tb: fI(s.totalBases),
         kpg, kprop: projK,
@@ -5932,6 +5942,7 @@ function renderKProps() {
           <span class="dr109-chip stat-fip"><span>FIP:</span><strong>${p.fip ?? '–'}</strong></span>
           <span class="dr109-chip stat-k-gm"><span>K/GM:</span><strong>${p.kPerGm ?? '–'}</strong></span>
           <span class="dr109-chip ${strikeoutCushion >= 1 ? 'good' : strikeoutCushion >= 0 ? 'warn' : 'stat-cushion'}"><span>Cushion:</span><strong>${strikeoutCushionText}</strong></span>
+          <span class="dr109-chip ${risk === 'Low' ? 'good' : risk === 'Medium' ? 'warn' : 'bad'}"><span>Risk:</span><strong>${risk}</strong></span>
         </div>
         <div class="dr109-reason"><strong>Why it supports the line:</strong> ${p.pitcherName} grades at ${chance}% for ${strikeoutLineText} because the model combines ${p.k9 ?? '–'} K/9, ${p.era ?? '–'} ERA/${p.whip ?? '–'} WHIP command profile, projected workload, and opponent contact tendency. Opponent context: ${p.oppAbbr}.</div>
         <div class="kprop-lineup-section dr1016-k-lineup">
@@ -6164,17 +6175,24 @@ function scheduleKPropsLoad() {
     var overProb = window.simulateKOdds ? window.simulateKOdds(projK, recommendedOverLine) : Math.max(34, Math.min(78, Math.round(50 + (overEdge * 14))));
     var confidenceTier = overProb >= 70 ? 'Elite' : overProb >= 63 ? 'Strong' : overProb >= 56 ? 'Good' : overProb >= 50 ? 'Lean' : 'Low';
     // Field names must match what the MLB Stats API pitching/season stat object actually
-    // returns (same endpoint/hydrate as Pitcher Report, which reads these same names
-    // successfully) — stat.fielding/fieldingIndependentPitching/homeRunsPer9Inn/woba don't
-    // exist on that object, so those columns always rendered blank.
-    var fip = n(stat.fip, NaN);
+    // returns (same endpoint/hydrate as Pitcher Report) — stat.fielding/
+    // fieldingIndependentPitching/homeRunsPer9Inn/woba don't exist on that object, so
+    // those columns always rendered blank. FIP specifically has no field at all (it's
+    // a sabermetric stat the API doesn't compute) — reading stat.fip directly always
+    // returned undefined, so this column silently rendered "–" for every pitcher.
+    // Computed here from the standard formula instead (using the commonly-cited ~3.10
+    // constant since a real per-season league constant isn't available from this
+    // endpoint).
+    var homeRunsAllowed = n(stat.homeRuns, NaN);
+    var fip = ip > 0
+      ? ((13*(Number.isFinite(homeRunsAllowed)?homeRunsAllowed:0) + 3*(n(stat.baseOnBalls,0)+n(stat.hitBatsmen,0)) - 2*n(stat.strikeOuts,0)) / ip) + 3.10
+      : NaN;
     var avg = n(stat.avg, NaN);
     var slg = n(stat.slg, NaN);
     var obp = n(stat.obp, NaN);
     var iso = Number.isFinite(slg) && Number.isFinite(avg) ? Math.round((slg-avg)*1000)/1000 : null;
     // Derived from raw HR-allowed count / innings pitched rather than trusting a
     // precomputed "per 9" field name, which is unreliable across MLB Stats API responses.
-    var homeRunsAllowed = n(stat.homeRuns, NaN);
     var hr9Val = (ip > 0 && Number.isFinite(homeRunsAllowed)) ? (homeRunsAllowed / ip) * 9 : NaN;
     var _qaCtx = 'K Props: ' + (pitcher.fullName || pitcher.id);
     drCheckStat(_qaCtx, 'ERA', era, 'era');
