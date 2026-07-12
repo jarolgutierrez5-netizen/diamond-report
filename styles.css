@@ -1680,3 +1680,40 @@ h1, #premium .dr-premium-hero h1, .dr-prediction-hero h1, .section-title,
 .dr1027-chip.stat-cushion b { color: #60a5fa !important; }
 .dr1027-chip.stat-hot-boost { border-color: rgba(251,191,36,.55) !important; background: rgba(58,42,6,.32) !important; }
 .dr1027-chip.stat-hot-boost b { color: #fbbf24 !important; }
+
+/* ── Pitcher Report: stat row instead of a box grid ──────────────────────────
+   .pr-mobile-stats/.pr-mobile-stat previously rendered as a 3-column grid of
+   bordered boxes (label stacked above value). Switched to a single wrapping
+   row of inline pills instead, at the user's request — same real red/green/
+   neutral "elite vs concerning" coloring on the value (.stat-pill/.pill-*,
+   untouched here) is preserved, this only changes the layout shell. */
+.pr-mobile-stats {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  grid-template-columns: none !important;
+  margin: 10px 0 !important;
+}
+.pr-mobile-stat {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  background: #0b1424 !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 999px !important;
+  padding: 4px 9px !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+}
+.pr-mobile-stat-label {
+  display: inline !important;
+  font-size: 10px !important;
+  color: var(--muted) !important;
+  letter-spacing: .3px !important;
+  margin-bottom: 0 !important;
+  font-weight: 800 !important;
+}
+.pr-mobile-stat-value {
+  display: inline !important;
+  font-size: 12px !important;
+}

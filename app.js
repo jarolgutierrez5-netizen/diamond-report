@@ -2133,7 +2133,7 @@ function renderPRTable() {
   if (!el) return;
   const sorted = getSortedPRRowsForCurrentSort();
   const hs = id => `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_46,q_auto:best/v1/people/${id}/headshot/67/current`;
-  const stat = (label, value, tip) => `<div class="pr-mobile-stat"${tip?` data-tip="${tip}"`:''}><span class="pr-mobile-stat-label">${label}</span><span class="pr-mobile-stat-value">${value}</span></div>`;
+  const stat = (label, value, tip) => `<span class="pr-mobile-stat"${tip?` data-tip="${tip}"`:''}><span class="pr-mobile-stat-label">${label}:</span><span class="pr-mobile-stat-value">${value}</span></span>`;
 
   const cards = sorted.map(r => {
     const p = r.pitcher;
