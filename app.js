@@ -10646,7 +10646,10 @@ function showPremiumGate(feature){
       });
     }
     try {
-      if (localStorage.getItem(STORAGE_KEY) === '1') {
+      // Collapsed by default — only stays expanded if the visitor explicitly
+      // expanded it before (an explicit '0' saved). No saved value (first
+      // visit) or a saved '1' both collapse.
+      if (localStorage.getItem(STORAGE_KEY) !== '0') {
         sidebar.classList.add('collapsed');
         document.body.classList.add('dr-sidebar-collapsed');
       }
