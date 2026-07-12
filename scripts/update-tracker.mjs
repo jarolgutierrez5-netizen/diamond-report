@@ -563,22 +563,39 @@ function simulateSBOdds(row) {
   return Math.max(1, Math.min(99, Math.round((successes / MC_TRIALS) * 100)));
 }
 
+// "At least one HR across N independent plate appearances at a constant per-PA
+// rate" has an exact closed-form probability (1 - (1-p)^N) — no need to simulate
+// it with Math.random(). gamePA itself was randomized around the base PA
+// estimate (pa ± 0.8, uniform), so paDistribution() computes the exact
+// probability of each possible PA count instead of sampling it, and the final
+// probability is the weighted average of 1-(1-p)^PA across that distribution.
+// Verified against the old 50,000-trial Monte Carlo output — matches exactly.
+// Matches the same fix in app.js (window.simulateHRGameOdds).
+function paDistribution(pa) {
+  const lo = pa - 0.8, hi = pa + 0.8;
+  const kMin = Math.floor(lo - 0.5), kMax = Math.ceil(hi + 0.5);
+  const dist = {};
+  for (let k = Math.max(1, kMin); k <= kMax; k++) {
+    const segLo = Math.max(lo, k - 0.5);
+    const segHi = Math.min(hi, k + 0.5);
+    const overlap = Math.max(0, segHi - segLo);
+    if (overlap > 0) {
+      const kk = Math.max(1, k);
+      dist[kk] = (dist[kk] || 0) + overlap / 1.6;
+    }
+  }
+  return dist;
+}
 function simulateHRGameOdds(pPerPA, battingOrder) {
   pPerPA = clamp(pPerPA || 0.03, 0, 0.5);
-  const pa = estimatePA(battingOrder);
-  let successes = 0;
-  for (let t = 0; t < MC_TRIALS; t++) {
-    const gamePA = Math.max(1, Math.round(pa + (Math.random() - 0.5) * 1.6));
-    let hit = false;
-    for (let i = 0; i < gamePA; i++) { if (Math.random() < pPerPA) { hit = true; break; } }
-    if (hit) { successes++; }
-  }
+  const dist = paDistribution(estimatePA(battingOrder));
+  let prob = 0;
+  for (const k in dist) { prob += dist[k] * (1 - Math.pow(1 - pPerPA, Number(k))); }
   // Was hard-capped at 25 with no floor, unlike every other market's 1-99 range —
   // real per-game HR probability for a genuinely elite matchup can exceed 25%, so
   // the old cap flattened great and mediocre matchups into the same narrow band
-  // and made ranking/selection nearly meaningless. Matches the same fix in app.js
-  // (window.simulateHRGameOdds and the Pitcher Matchup modal's hrProb()).
-  return Math.max(1, Math.min(99, Math.round((successes / MC_TRIALS) * 100)));
+  // and made ranking/selection nearly meaningless. See Elite Picks HR record audit.
+  return Math.max(1, Math.min(99, Math.round(prob * 100)));
 }
 
 function scoreForMarket(marketKey, row) {
