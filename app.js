@@ -2205,13 +2205,17 @@ function renderPRTable() {
     </div>`;
   }).join('');
 
-  const sortOptions = PR_SORT_FIELDS.map(f => `<option value="${f.key}"${prSortCol===f.key?' selected':''}>${f.label}</option>`).join('');
+  const prSortBtns = PR_SORT_FIELDS.map(({key,label}) => {
+    const active = prSortCol === key;
+    const arrow = active ? (prSortDir === 1 ? ' ↑' : ' ↓') : '';
+    return `<button onclick="sortPR('${key}')" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${active?'var(--accent2)':'var(--border)'};background:${active?'rgba(244,162,97,.12)':'var(--surface2)'};color:${active?'var(--accent2)':'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">${label}${arrow}</button>`;
+  }).join('');
 
   el.innerHTML = `
-    <div class="pr-sort-row">
-      <label class="pr-sort-label">Sort by</label>
-      <select class="pr-sort-select" onchange="sortPR(this.value)">${sortOptions}</select>
-      <button type="button" class="pr-sort-dir-btn" onclick="sortPR(prSortCol || 'gameTime')" title="Flip sort direction">${prSortDir===1?'↑ Asc':'↓ Desc'}</button>
+    <div class="kprops-sticky-sort" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">
+      <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">SORT:</span>
+      ${prSortBtns}
+      <button onclick="resetPRSort()" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:3px 8px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0">RESET</button>
     </div>
     <div class="pr-mobile-list">${cards}</div>
     <div class="pr-legend">
@@ -2709,6 +2713,12 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
 function sortPR(col) {
   if (prSortCol===col) prSortDir*=-1;
   else { prSortCol=col; prSortDir=1; }
+  renderPRTable();
+}
+
+function resetPRSort() {
+  prSortCol = 'gameTime';
+  prSortDir = 1;
   renderPRTable();
 }
 
