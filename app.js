@@ -814,6 +814,22 @@ const _fetchInFlight = new Map();
 const CACHE_TTL_LIVE = 0;        // v9.2: scores/linescore must always bypass cache
 const CACHE_TTL_STATIC = 300_000; // player season stats, game logs
 
+// fetch() has no built-in timeout — a single stalled request (dead connection, proxy
+// gone quiet mid-response) hangs its await forever with no error and no rejection.
+// Inside fetchJSON that's fatal beyond just that one call: the 8-slot concurrency
+// limiter below never gets its slot back, so every *other* panel's fetchJSON calls
+// queue behind it silently — "everything is stuck loading, no console errors" is
+// exactly what that looks like from the UI. Bounding every request lets the existing
+// fallback/retry logic actually run instead of never getting a turn.
+const FETCH_TIMEOUT_MS = 15000;
+function _fetchWithTimeout(url, opts) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  return fetch(url, Object.assign({}, opts, { signal: controller.signal }))
+    .catch(e => { throw (e && e.name === 'AbortError') ? new Error('Request timed out') : e; })
+    .finally(() => clearTimeout(timer));
+}
+
 function _cacheTTL(url) {
   if (/linescore|schedule.*hydrate.*linescore|status/.test(url)) return CACHE_TTL_LIVE;
   return CACHE_TTL_STATIC;
@@ -847,7 +863,7 @@ async function fetchJSON(url) {
     let lastError = null;
     for (const requestUrl of attempts) {
       try {
-        const res = await fetch(drLiveURL(requestUrl), { cache:'no-store' });
+        const res = await _fetchWithTimeout(drLiveURL(requestUrl), { cache:'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const text = await res.text();
         if (!text || text.trim() === '') throw new Error('Empty response from API');
@@ -899,7 +915,7 @@ async function fetchJSON(url) {
         try {
           // Live score/schedule URLs must bypass cache so in-game/final scores refresh.
           const live = drIsLiveScoreURL(requestUrl);
-          const res = await fetch(live ? drLiveURL(requestUrl) : requestUrl, { cache: live ? 'no-store' : 'default' });
+          const res = await _fetchWithTimeout(live ? drLiveURL(requestUrl) : requestUrl, { cache: live ? 'no-store' : 'default' });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const text = await res.text();
           if (!text || text.trim() === '') throw new Error('Empty response from API');
