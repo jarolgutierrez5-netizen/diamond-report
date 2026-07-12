@@ -197,6 +197,7 @@ body.dr-mobile-menu-open{
   .dr1041-table-wrap{border:1px solid var(--border);border-radius:11px;overflow:hidden;background:rgba(3,8,16,.74)}
   .dr1041-pitch-table{width:100%;border-collapse:collapse;table-layout:auto}
   .dr1041-pitch-table th{color:#9fc4ff;font-size:10px;text-transform:uppercase;letter-spacing:.08em;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-weight:900}
+.dr1041-pitch-table th:not(:first-child):not(:last-child){text-align:center}
   .dr1041-pitch-table td{padding:12px;border-bottom:1px solid rgba(43,73,105,.62);color:#fff;font-size:13px;vertical-align:middle}
   .dr1041-pitch-table tr:last-child td{border-bottom:0}
   .dr1041-pitch-table .num{font-family:'JetBrains Mono',monospace;text-align:center;white-space:nowrap}
