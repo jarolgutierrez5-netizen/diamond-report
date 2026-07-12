@@ -968,12 +968,18 @@ body.dr-mobile-menu-open{
 #sb-props-content .dr109-card,
 #hrrbi-props-content .dr109-card{
   min-height:var(--dr-prop-card-min-h) !important;
-  height:100% !important;
+  /* Was height:100% + overflow:hidden — a hard, fixed height that clipped
+     (or, once overflow was made visible, let overflow spill out and get
+     covered by the lineup button) any card whose real content needed more
+     room than the nominal min-height. min-height alone is a floor: grid
+     align-items:stretch already equalizes every card in a row to the
+     tallest card's own real content height, so this never needs to force
+     an exact height or hide/overlap anything. */
   display:flex !important;
   flex-direction:column !important;
   justify-content:flex-start !important;
   box-sizing:border-box !important;
-  overflow:hidden !important;
+  overflow:visible !important;
 }
 #kprops-content .dr109-card{
   --dr-prop-card-min-h: 334px;
@@ -1047,19 +1053,25 @@ body.dr-mobile-menu-open{
   white-space:nowrap !important;
 }
 
-/* Reason text is still present, but capped so cards remain aligned. */
+/* Was clamped to 3 lines with overflow:hidden "so cards remain aligned" —
+   that silently truncated genuinely longer reasoning text mid-sentence with
+   no way to read the rest. The lineup button (.kprop-lineup-section, see the
+   margin-top:auto rule elsewhere) is what keeps cards visually aligned at
+   the bottom of a row now; the reason text itself always shows in full. */
 #kprops-content .dr109-reason,
 #hits-props-content .dr109-reason,
 #rbis-props-content .dr109-reason,
 #tb-props-content .dr109-reason,
 #sb-props-content .dr109-reason,
 #hrrbi-props-content .dr109-reason{
-  display:-webkit-box !important;
-  -webkit-line-clamp:3 !important;
-  -webkit-box-orient:vertical !important;
-  overflow:hidden !important;
   min-height:64px !important;
-  margin-top:auto !important;
+  /* Without this, the flex column (.dr109-card) reports a fixed min-height
+     to the CSS grid's row-sizing pass without accounting for real content
+     need, so the grid row never grows for a longer reason text — instead
+     this element (the only flex child that could shrink) got compressed
+     down to its 64px floor, silently cutting text off. flex-shrink:0 forces
+     the whole card (and thus the grid row) to grow to fit real content. */
+  flex-shrink:0 !important;
 }
 #kprops-content .kprop-lineup-section{
   margin-top:10px !important;
