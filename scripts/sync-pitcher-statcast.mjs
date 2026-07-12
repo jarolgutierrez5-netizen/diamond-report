@@ -41,6 +41,20 @@ const SEASON = new Date().getFullYear();
 const BASE = 'https://baseballsavant.mlb.com/leaderboard/pitch-arsenal-stats';
 const PITCH_BREAKDOWN_BASE = 'https://baseballsavant.mlb.com/player-services/statcast-pitches-breakdown';
 const SAVANT_HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; DiamondReportBot/1.0; +https://diamondreport.app)' };
+// The 2026-07-12 run enriched 0/721 pitchers and 0/594 batters — every single request to
+// PITCH_BREAKDOWN_BASE failed, while the CSV leaderboard fetch (same SAVANT_HEADERS)
+// succeeded for all of them. That points at this specific endpoint rejecting requests
+// that don't look like they came from a real page load — it's an internal AJAX endpoint
+// a browser only calls after already loading a player page, unlike the public CSV
+// leaderboard export. Adding the headers a real browser would send for that AJAX call
+// (Referer of the actual player page, Accept/X-Requested-With matching jQuery's default
+// AJAX headers, which Savant's own front-end uses) as an untested hypothesis — paired
+// with the failure logging below so the next run's logs confirm whether this was the
+// actual cause or something else (rate limiting, schema change, etc).
+const PITCH_BREAKDOWN_HEADERS = Object.assign({}, SAVANT_HEADERS, {
+  'Accept': 'application/json, text/javascript, */*; q=0.01',
+  'X-Requested-With': 'XMLHttpRequest',
+});
 
 async function fetchCSV(url, attempts = 3) {
   let lastErr;
@@ -57,11 +71,11 @@ async function fetchCSV(url, attempts = 3) {
   throw lastErr;
 }
 
-async function fetchJSON(url, attempts = 2) {
+async function fetchJSON(url, attempts = 2, headers = SAVANT_HEADERS) {
   let lastErr;
   for (let i = 0; i < attempts; i++) {
     try {
-      const res = await fetch(url, { headers: SAVANT_HEADERS });
+      const res = await fetch(url, { headers });
       if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
       return await res.json();
     } catch (e) {
@@ -220,10 +234,12 @@ async function enrichHRAndBarrel(entities, { position, arrayKey, label }) {
   const ids = Object.keys(entities);
   if (!ids.length) return;
   let enriched = 0, failed = 0;
+  const sampleErrors = [];
   await mapLimit(ids, 8, async (id) => {
     try {
       const url = `${PITCH_BREAKDOWN_BASE}?playerId=${id}&position=${position}&hand=&pitchBreakdown=pitches&timeFrame=yearly&season=&pitchType=&count=&gameType=&updatePitches=true`;
-      const data = await fetchJSON(url);
+      const headers = Object.assign({}, PITCH_BREAKDOWN_HEADERS, { 'Referer': `https://baseballsavant.mlb.com/savant-player/${id}` });
+      const data = await fetchJSON(url, 2, headers);
       const breakdown = Array.isArray(data) ? data : (data?.pitchDetails || data?.data || []);
       const thisSeason = breakdown.filter(row => String(row.year) === String(SEASON));
       if (!thisSeason.length) return;
@@ -244,8 +260,13 @@ async function enrichHRAndBarrel(entities, { position, arrayKey, label }) {
       if (touched) enriched++;
     } catch (e) {
       failed++;
+      // Every one of these was previously swallowed silently — the 2026-07-12 run
+      // reported "0/721 enriched (721 failed)" with zero clue why. Keep a few real
+      // error messages so the next run's logs actually say what's wrong.
+      if (sampleErrors.length < 5) sampleErrors.push(`${id}: ${e.message}`);
     }
   });
+  if (sampleErrors.length) console.log(`HR/Barrel% enrichment (${label}) sample failures:\n  ${sampleErrors.join('\n  ')}`);
   console.log(`HR/Barrel% enrichment (${label}): ${enriched}/${ids.length} enriched (${failed} failed).`);
 }
 
