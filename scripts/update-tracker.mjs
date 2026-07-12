@@ -171,11 +171,15 @@ function emptyTracker() {
   return {
     version: 1,
     generatedAt: null,
-    market: { drp: [], kprop: [], premium: [] },
+    market: { drp: [], kprop: [], premium: [], hrThreat: [] },
     allTime: {
       drp: { wins: 0, losses: 0, pushes: 0, total: 0 },
       kprop: { wins: 0, losses: 0, pushes: 0, total: 0 },
       premium: { wins: 0, losses: 0, pushes: 0, total: 0 },
+      // wins/losses here mean "hit a HR / didn't" — reusing the same result vocabulary as
+      // every other market for recomputeAllTime, even though HR Threat entries aren't
+      // picks. hits/total is the meaningful figure (the day's actual hit rate).
+      hrThreat: { wins: 0, losses: 0, pushes: 0, total: 0 },
     },
   };
 }
@@ -189,10 +193,12 @@ async function loadTracker() {
     parsed.market.drp ||= [];
     parsed.market.kprop ||= [];
     parsed.market.premium ||= [];
+    parsed.market.hrThreat ||= [];
     parsed.allTime ||= {};
     parsed.allTime.drp ||= { ...empty.allTime.drp };
     parsed.allTime.kprop ||= { ...empty.allTime.kprop };
     parsed.allTime.premium ||= { ...empty.allTime.premium };
+    parsed.allTime.hrThreat ||= { ...empty.allTime.hrThreat };
     return parsed;
   } catch (e) {
     return emptyTracker();
@@ -206,7 +212,7 @@ async function saveTracker(store) {
 }
 
 function recomputeAllTime(store) {
-  for (const marketKey of ['drp', 'kprop', 'premium']) {
+  for (const marketKey of ['drp', 'kprop', 'premium', 'hrThreat']) {
     const rows = (store.market[marketKey] || []).filter(r => r.result === 'win' || r.result === 'loss' || r.result === 'push');
     store.allTime[marketKey] = {
       wins: rows.filter(r => r.result === 'win').length,
@@ -413,6 +419,14 @@ const ELITE_MIN_QUALITY = 2;
 const ELITE_TOP_N = 5;
 const ELITE_HR_TOP_N_PER_GAME = 3;
 const LEAGUE_AVG_AVG = 0.245, LEAGUE_AVG_OBP = 0.315, LEAGUE_AVG_SLG = 0.400, LEAGUE_AVG_HR_RATE = 0.031;
+// HR Threats board hit-rate tracker: the live client-side board (app.js, getHRRows) gates
+// its "scanned" pool at hrProb>=18, except the single top-scoring batter per game which
+// gets a lower 14% bar. This backend job uses one uniform 18% cutoff across the whole
+// pool — a known, deliberate simplification (skips the tiny per-game 14% carve-out) so
+// the daily scanned/hit counts are simple to reason about and don't require re-deriving
+// per-game rankings. Same buildEliteBatterPool/scoreForMarket('hr', ...) model as Elite
+// Picks, just applied to every qualifying batter instead of the top 3 per game.
+const HR_THREAT_MIN_SCORE = 18;
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function shrinkToLeague(raw, ab, leagueAvg, minAB = 40) {
@@ -785,10 +799,9 @@ function buildEliteFills(pool, usedIds, alreadyLockedCounts) {
 // which is expected, not a bug.
 const ELITE_TO_ODDS_MARKET = { hr: 'home_runs', hits: 'hits', rbis: 'rbis', tb: 'total_bases', sb: 'stolen_bases' };
 
-async function captureEliteToday(store, previewGames, season, oddsLookup) {
+async function captureEliteToday(store, pool, oddsLookup) {
   store.market.premium ||= [];
-  if (!previewGames.length) return 0;
-  const pool = await buildEliteBatterPool(previewGames, season);
+  if (!pool.length) return 0;
   const today = cdtDateString(new Date());
 
   // What's already locked in today, across every slot — the cross-slot dedup set and
@@ -891,6 +904,75 @@ async function gradeElitePending(store) {
   return graded;
 }
 
+// HR Threats board hit-rate tracker — same shared batter pool as Elite Picks, but instead
+// of taking only the top 3 per game, captures every batter who clears HR_THREAT_MIN_SCORE
+// (see that constant's comment for how this differs from the live client-side gate).
+// Picks lock in the moment they're first captured, same as everywhere else in this file —
+// a later same-day pass only adds newly-qualifying batters, never recomputes or drops one
+// already captured.
+async function captureHRThreatToday(store, pool) {
+  store.market.hrThreat ||= [];
+  if (!pool.length) return 0;
+  const today = cdtDateString(new Date());
+  const already = new Set(store.market.hrThreat.filter(r => r.date === today).map(r => r.playerId));
+  let added = 0;
+  pool.filter(r => r.atBats >= ELITE_MIN_AB && !already.has(r.id)).forEach(r => {
+    const score = scoreForMarket('hr', r);
+    if (score < HR_THREAT_MIN_SCORE) return;
+    const key = `${today}|HRTHREAT|${r.id}`;
+    if (store.market.hrThreat.some(x => x.key === key)) return;
+    store.market.hrThreat.push({
+      key, date: today, playerId: r.id, playerName: r.name, team: r.teamAbbr, opp: r.oppAbbr,
+      gamePk: r.gamePk, score, result: 'pending', actual: null,
+    });
+    already.add(r.id);
+    added++;
+  });
+  return added;
+}
+
+async function gradeHRThreatPending(store) {
+  store.market.hrThreat ||= [];
+  const today = cdtDateString(new Date());
+  const pending = store.market.hrThreat.filter(r => r.result === 'pending' && r.date < today);
+  if (!pending.length) return 0;
+
+  const byGame = {};
+  pending.forEach(r => { (byGame[r.gamePk] ||= []).push(r); });
+  let graded = 0;
+
+  for (const [gamePk, recs] of Object.entries(byGame)) {
+    if (gamePk === 'null') continue;
+    let box;
+    try {
+      box = await fetchJSON(`${API}/game/${gamePk}/boxscore`);
+    } catch (e) {
+      console.warn(`HR Threat grading: boxscore fetch failed for gamePk ${gamePk}:`, e.message);
+      continue;
+    }
+    // Only grade once the game is actually final — a boxscore can exist mid-game too.
+    let isFinal = false;
+    try {
+      const liveGame = await fetchJSON(`${API}/schedule?sportId=1&date=${recs[0].date}&hydrate=team`);
+      const g = (liveGame?.dates?.[0]?.games || []).find(x => String(x.gamePk) === String(gamePk));
+      isFinal = g?.status?.abstractGameState === 'Final';
+    } catch (e) {}
+    if (!isFinal) continue;
+
+    const allPlayers = { ...(box?.teams?.away?.players || {}), ...(box?.teams?.home?.players || {}) };
+    for (const rec of recs) {
+      const p = allPlayers['ID' + rec.playerId];
+      const bat = p?.stats?.batting;
+      if (!bat) continue;
+      const homeRuns = n(bat.homeRuns);
+      rec.actual = homeRuns;
+      rec.result = homeRuns >= 1 ? 'win' : 'loss';
+      graded++;
+    }
+  }
+  return graded;
+}
+
 async function captureToday(store) {
   const today = cdtDateString(new Date());
   const sched = await fetchJSON(`${API}/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher,linescore`);
@@ -942,8 +1024,16 @@ async function captureToday(store) {
   }
   console.log(`Captured ${added} new pending DRP/K Props pick(s) for ${today}.`);
 
-  const eliteAdded = await captureEliteToday(store, previewGames, season, oddsLookup);
+  // Built once and shared — Elite Picks and the HR Threats hit-rate tracker both need
+  // the same full batter pool (season stats, recent form, platoon splits per batter),
+  // which is the single most expensive part of this script (per-batter API calls).
+  const pool = previewGames.length ? await buildEliteBatterPool(previewGames, season) : [];
+
+  const eliteAdded = await captureEliteToday(store, pool, oddsLookup);
   console.log(`Captured ${eliteAdded} new pending Elite Pick(s) for ${today}.`);
+
+  const hrThreatAdded = await captureHRThreatToday(store, pool);
+  console.log(`Captured ${hrThreatAdded} new pending HR Threat pool entry(ies) for ${today}.`);
 }
 
 async function gradePending(store) {
@@ -1005,6 +1095,9 @@ async function gradePending(store) {
 
   const eliteGraded = await gradeElitePending(store);
   console.log(`Graded ${eliteGraded} Elite Pick(s).`);
+
+  const hrThreatGraded = await gradeHRThreatPending(store);
+  console.log(`Graded ${hrThreatGraded} HR Threat pool entry(ies).`);
 }
 
 async function main() {
@@ -1032,6 +1125,7 @@ export {
   seasonPitchingStat, computeDRPick, computeKProp, captureToday, gradePending, main,
   cdtDateString, emptyTracker,
   buildEliteBatterPool, buildEliteFills, captureEliteToday, gradeElitePending,
+  captureHRThreatToday, gradeHRThreatPending,
   simulatePropOdds, simulateSBOdds, simulateHRGameOdds, scoreForMarket, eliteQualityScore,
   eliteHit, fetchOddsLookup, normalizeName,
 };
