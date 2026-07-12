@@ -8373,9 +8373,12 @@ if (document.readyState === 'loading') {
 /* ---- from <script id="anonymous"> ---- */
 // PROD v8.44 — Game Picks inner tab controller with persistent state
 (function(){
-  var STORAGE_KEY = 'dr_gamepick_active_pane';
   var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, premium: true, parlay: true, 'team-performance': true, deep: true };
 
+  // Only the URL hash decides the pane on load (e.g. a shared #gamepick=premium
+  // link). No localStorage fallback — a plain refresh/revisit with no hash
+  // always lands on Games Today rather than silently reopening whatever tab
+  // was last clicked.
   function getRequestedPane(){
     try {
       var hash = (window.location.hash || '').replace('#','');
@@ -8383,8 +8386,6 @@ if (document.readyState === 'loading') {
         var fromHash = hash.split('=')[1];
         if (VALID[fromHash]) return fromHash;
       }
-      var saved = localStorage.getItem(STORAGE_KEY);
-      if (VALID[saved]) return saved;
     } catch(e) {}
     return 'game';
   }
@@ -8429,8 +8430,6 @@ if (document.readyState === 'loading') {
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-selected', active ? 'true' : 'false');
     });
-
-    try { localStorage.setItem(STORAGE_KEY, pane); } catch(e) {}
 
     // Keep refresh/back-forward behavior grounded without forcing a scroll jump.
     if (!opts.silentHash) {
