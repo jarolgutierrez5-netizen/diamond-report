@@ -5002,7 +5002,19 @@ async function loadHRPotential() {
           // it were the full-game probability (undercounts — a batter gets ~4 PA, not 1),
           // simulate a full game of at-bats at this per-PA rate and measure how often at
           // least one clears, same Monte Carlo approach as the other prop boards.
-          const baseHrProb = window.simulateHRGameOdds ? window.simulateHRGameOdds(hrPerPA, battingOrder) : Math.min(hrPerPA*100,25);
+          //
+          // This runs fresh Math.random() trials every time it's called, and this whole
+          // function reruns on every periodic background refresh — so the same batter
+          // could show a visibly different HR% every few minutes with no real change in
+          // their stats. Locked per batter for the page session: computed once, then
+          // reused for every refresh until a full page reload starts a new session. The
+          // Pitcher Matchup modal's HR chip reads this same cached value (it looks up
+          // matchupRow.hrProb from this same row pool rather than recomputing), so this
+          // one cache covers both surfaces.
+          window.__hrOddsSessionCache = window.__hrOddsSessionCache || {};
+          const baseHrProb = window.__hrOddsSessionCache[pid] != null
+            ? window.__hrOddsSessionCache[pid]
+            : (window.__hrOddsSessionCache[pid] = window.simulateHRGameOdds ? window.simulateHRGameOdds(hrPerPA, battingOrder) : Math.min(hrPerPA*100,25));
           let hrProb=baseHrProb;
           const hrInLast8=(logs||[]).slice(0,8).some(g2=>parseInt(g2.stat?.homeRuns)>0);
           const isDrought=!hrInLast8&&hr>0;
