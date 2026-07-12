@@ -4,8 +4,10 @@
 // site's Tracker system was always meant to have (see the code comment in
 // app.js: "Tracker linkage will stay on the developer side later").
 //
-// Runs before first pitch, and again in the afternoon once lineups are mostly posted
-// (see update-tracker.yml), and does two things in one pass:
+// Runs three times a day — before first pitch, again in the afternoon once most
+// lineups are posted, and once more in the early evening for the latest-posting
+// (mainly west-coast) lineups (see update-tracker.yml) — and does two things in one
+// pass each run:
 //
 //   1. CAPTURE — for TODAY's games, independently derives the Diamond Report Pick
 //      (game winner) and K Props (strikeout over/under), and *selects and locks in*

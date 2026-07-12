@@ -17,6 +17,14 @@ on:
     # (see the check-before-compute guard in captureToday), so this only adds newly
     # lineup-qualified Elite Picks — it never re-touches an already-locked pick.
     - cron: '13 20 * * *'
+    # 00:19 UTC = ~7:19pm CDT (previous calendar day) — a third pass to catch the
+    # latest-posting lineups, mainly west-coast games (first pitch often ~8:40-9:10pm
+    # CDT, lineups sometimes not up until 5-6pm CDT — after the 3pm pass already ran).
+    # Same fill-only-open-slots behavior as the second pass; captureEliteToday's
+    # already-locked-stays-locked logic means this is always safe to add, never
+    # disruptive. Chosen to land comfortably before the earliest evening games are
+    # still Preview but the latest ones haven't gone Live yet.
+    - cron: '19 0 * * *'
   workflow_dispatch: {}
 
 permissions:
