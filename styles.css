@@ -1427,8 +1427,16 @@ h1, #premium .dr-premium-hero h1, .dr-prediction-hero h1, .section-title,
    other board panel (HR Potential, Hits/RBI/TB/SB projections, Pitcher Report, Parlay
    Builds, Team Performance), which caps panel height and scrolls internally. Elite Picks
    specifically should grow with the page instead of getting its own inner scrollbar —
-   scoped by ID so the other panels keep their existing scroll behavior. */
-#premium-content.dr-scroll-tall {
+   scoped by ID so the other panels keep their existing scroll behavior.
+
+   This override was silently losing to a pre-existing, more specific rule —
+   "#props .dr-prop-center-panel .dr-panel-body{max-height:min(72vh,760px);
+   overflow-y:auto!important}" — since #premium-content's own parent .dr-panel
+   also carries the .dr-prop-center-panel class, and that rule's 3-compound-
+   selector specificity beat this one's 2. Matching that same selector shape
+   (with #premium-content added) so this override actually wins. */
+#premium-content.dr-scroll-tall,
+#props .dr-prop-center-panel #premium-content.dr-panel-body {
   max-height: none !important;
   overflow: visible !important;
 }
