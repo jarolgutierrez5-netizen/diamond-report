@@ -1858,6 +1858,10 @@ h1, #premium .dr-premium-hero h1, .dr-prediction-hero h1, .section-title,
 #dr-sidebar-nav.collapsed .dr-sidebar-soon {
   display: none;
 }
+#dr-sidebar-nav.collapsed .dr-sidebar-tab,
+#dr-sidebar-nav.collapsed .dr-sidebar-group-head {
+  justify-content: center;
+}
 
 /* ── Hero: new-visitor explainer + trust pillars ──────────────────────────
    Fresh class names, not the existing .dr-prediction-hero p/h1 selectors —
