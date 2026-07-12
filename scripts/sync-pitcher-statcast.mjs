@@ -21,12 +21,14 @@
 // missing, rather than silently writing wrong data — treat the first scheduled run as
 // unverified until its output is manually checked.
 //
-// HR-allowed and Barrel% per pitch type: the bulk pitch-arsenal leaderboard above does
-// NOT have these (confirmed by inspecting its real CSV output — no hr/barrel columns
-// exist in that endpoint at all). They *do* exist on Baseball Savant's own per-player
-// pages, via a separate endpoint (player-services/statcast-pitches-breakdown) — this
-// one confirmed real and verified via an actual captured browser response (a real
-// pitcher's page), unlike the leaderboard endpoint above. See enrichPitcherHRAndBarrel.
+// HR(-allowed/hit) and Barrel% per pitch type: the bulk pitch-arsenal leaderboard above
+// does NOT have these for either pitchers or batters (confirmed by inspecting its real
+// CSV output, and by inspecting the equivalent static "Pitch Arsenal Stats" table on a
+// real batter's Savant page — no hr/barrel columns in either). They *do* exist on
+// Baseball Savant's own per-player pages, via a separate endpoint
+// (player-services/statcast-pitches-breakdown) — confirmed real and verified via actual
+// captured browser responses for both a real pitcher's page and a real batter's page,
+// unlike the leaderboard endpoint above. See enrichHRAndBarrel.
 // ─────────────────────────────────────────────────────────────────────────
 
 import { writeFile, mkdir } from 'node:fs/promises';
@@ -194,29 +196,33 @@ async function buildPitcherStatcast() {
   // Strict enhancement over the CSV data above — never let a bug or outage here take
   // down a sync that otherwise succeeded.
   try {
-    await enrichPitcherHRAndBarrel(pitchers);
+    await enrichHRAndBarrel(pitchers, { position: 1, arrayKey: 'byPitch', label: 'pitchers' });
   } catch (e) {
     console.error('HR/Barrel% enrichment failed entirely, continuing without it:', e.message);
   }
   return pitchers;
 }
 
-// Fills in real HR-allowed and Barrel% per pitch type — genuinely absent from the bulk
-// leaderboard CSV above, but present on Baseball Savant's own per-player pages via this
-// endpoint (confirmed real: verified this session against an actual captured browser
-// response, not inferred). One request per pitcher, since it's keyed by numeric player
-// ID rather than a name-based URL slug (which would be fragile for accented/suffixed
-// names) — bounded concurrency to stay reasonable across ~700+ pitchers without
-// hammering Savant. Failures are per-pitcher and non-fatal: a pitcher who can't be
-// enriched just keeps the CSV-only data (HR/barrel stay null), exactly like before this
-// existed — this is a strict enhancement, never a reason to fail the whole sync.
-async function enrichPitcherHRAndBarrel(pitchers) {
-  const ids = Object.keys(pitchers);
+// Fills in real HR-allowed/hit and Barrel% per pitch type — genuinely absent from the
+// bulk leaderboard CSV above, but present on Baseball Savant's own per-player pages via
+// this endpoint (confirmed real: verified this session against actual captured browser
+// responses for both a pitcher and a batter page, not inferred). `position` is the fixed
+// sentinel Savant's own front-end sends for each role — 1 for "as pitcher", 3 for
+// "as batter" — not a real fielding position (confirmed for batters via a second,
+// unrelated widget on Shohei Ohtani's page using the same position=3 for his batting
+// context despite his actual position being DH). One request per player, keyed by
+// numeric player ID rather than a name-based URL slug (which would be fragile for
+// accented/suffixed names) — bounded concurrency to stay reasonable across hundreds of
+// players without hammering Savant. Failures are per-player and non-fatal: a player who
+// can't be enriched just keeps the CSV-only data (HR/barrel stay null), exactly like
+// before this existed — this is a strict enhancement, never a reason to fail the sync.
+async function enrichHRAndBarrel(entities, { position, arrayKey, label }) {
+  const ids = Object.keys(entities);
   if (!ids.length) return;
   let enriched = 0, failed = 0;
   await mapLimit(ids, 8, async (id) => {
     try {
-      const url = `${PITCH_BREAKDOWN_BASE}?playerId=${id}&position=1&hand=&pitchBreakdown=pitches&timeFrame=yearly&season=&pitchType=&count=&gameType=&updatePitches=true`;
+      const url = `${PITCH_BREAKDOWN_BASE}?playerId=${id}&position=${position}&hand=&pitchBreakdown=pitches&timeFrame=yearly&season=&pitchType=&count=&gameType=&updatePitches=true`;
       const data = await fetchJSON(url);
       const breakdown = Array.isArray(data) ? data : (data?.pitchDetails || data?.data || []);
       const thisSeason = breakdown.filter(row => String(row.year) === String(SEASON));
@@ -228,7 +234,7 @@ async function enrichPitcherHRAndBarrel(pitchers) {
         byCode[code] = { hr: num(row.hr), barrelPct: num(row.brl_percent) };
       });
       let touched = false;
-      pitchers[id].byPitch.forEach(stat => {
+      entities[id][arrayKey].forEach(stat => {
         const hit = byCode[stat.pitchTypeCode];
         if (!hit) return;
         stat.homeRuns = hit.hr;
@@ -240,7 +246,7 @@ async function enrichPitcherHRAndBarrel(pitchers) {
       failed++;
     }
   });
-  console.log(`HR/Barrel% enrichment: ${enriched}/${ids.length} pitchers enriched (${failed} failed).`);
+  console.log(`HR/Barrel% enrichment (${label}): ${enriched}/${ids.length} enriched (${failed} failed).`);
 }
 
 async function buildBatterPitchSeason() {
@@ -257,6 +263,14 @@ async function buildBatterPitchSeason() {
     players[id].seasonPitchTypeStats.push(stat);
   }
   Object.values(players).forEach(p => p.seasonPitchTypeStats.sort((a, b) => (b.usagePct || 0) - (a.usagePct || 0)));
+  // Strict enhancement over the CSV data above — never let a bug or outage here take
+  // down a sync that otherwise succeeded. See enrichHRAndBarrel's comment for why
+  // position=3 is correct here.
+  try {
+    await enrichHRAndBarrel(players, { position: 3, arrayKey: 'seasonPitchTypeStats', label: 'batters' });
+  } catch (e) {
+    console.error('HR/Barrel% enrichment failed entirely, continuing without it:', e.message);
+  }
   return players;
 }
 
@@ -300,4 +314,4 @@ if (isMain) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { parseCSV, rowToPitchStat, assertSchema, buildPitcherStatcast, buildBatterPitchSeason, enrichPitcherHRAndBarrel, main };
+export { parseCSV, rowToPitchStat, assertSchema, buildPitcherStatcast, buildBatterPitchSeason, enrichHRAndBarrel, main };
