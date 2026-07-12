@@ -8386,6 +8386,7 @@ if (document.readyState === 'loading') {
   }
 
   function activateGamePickPane(pane, opts){
+    console.log('[DR-DIAG] activateGamePickPane called. requestedPane=', pane, 'resolvedValid=', !!VALID[pane], 'opts=', opts, (new Error('[DR-DIAG] call stack')).stack);
     pane = VALID[pane] ? pane : 'game';
     opts = opts || {};
     var root = document.getElementById('props') || document;
@@ -8454,8 +8455,12 @@ if (document.readyState === 'loading') {
   };
 
   function boot(){
-    activateGamePickPane(getRequestedPane(), { silentHash: true });
+    var requested = getRequestedPane();
+    console.log('[DR-DIAG] boot() running. readyState=', document.readyState, 'hash=', JSON.stringify(window.location.hash), 'getRequestedPane()=', requested);
+    activateGamePickPane(requested, { silentHash: true });
+    console.log('[DR-DIAG] boot() done. activeTab now=', document.querySelector('#props .gamepick-tab.active')?.dataset.gamepickPane);
   }
+  console.log('[DR-DIAG] tab controller IIFE evaluating. readyState=', document.readyState);
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot, { once:true });
