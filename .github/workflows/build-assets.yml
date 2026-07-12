@@ -1,0 +1,56 @@
+name: Build minified assets
+
+# This repo has no build step at deploy time (Cloudflare Workers/Netlify both serve
+# the repo root as-is — see wrangler.jsonc). Instead, whenever app.js or styles.css
+# change, this regenerates app.min.js/styles.min.css — the files index.html actually
+# loads — and commits them back to the same branch, so PR previews and production
+# both always serve an up-to-date minified build without needing a real build step
+# on either hosting platform.
+#
+# Minification here is intentionally conservative: comments and whitespace only,
+# no identifier mangling and no structural/compressor optimizations. That keeps
+# app.min.js/styles.min.css behaviorally identical to app.js/styles.css — this is
+# a transfer-size optimization, not a code transform.
+
+on:
+  push:
+    paths:
+      - 'app.js'
+      - 'styles.css'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-assets-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Minify app.js (comments/whitespace only — no mangle, no compress)
+        run: npx --yes terser@5.49.0 app.js --comments false -o app.min.js
+
+      - name: Minify styles.css (safe token-level minification, no restructuring)
+        run: npx --yes csso-cli@4.0.2 styles.css --no-restructure --comments none -o styles.min.css
+
+      - name: Commit and push if changed
+        run: |
+          if git diff --quiet -- app.min.js styles.min.css; then
+            echo "No changes to app.min.js/styles.min.css — nothing to commit."
+            exit 0
+          fi
+          git config user.name "diamond-report-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add app.min.js styles.min.css
+          git commit -m "Rebuild app.min.js/styles.min.css from source"
+          git push
