@@ -20,6 +20,13 @@
 // to confirm). The schema sanity check below fails loudly if the expected columns are
 // missing, rather than silently writing wrong data — treat the first scheduled run as
 // unverified until its output is manually checked.
+//
+// HR-allowed and Barrel% per pitch type: the bulk pitch-arsenal leaderboard above does
+// NOT have these (confirmed by inspecting its real CSV output — no hr/barrel columns
+// exist in that endpoint at all). They *do* exist on Baseball Savant's own per-player
+// pages, via a separate endpoint (player-services/statcast-pitches-breakdown) — this
+// one confirmed real and verified via an actual captured browser response (a real
+// pitcher's page), unlike the leaderboard endpoint above. See enrichPitcherHRAndBarrel.
 // ─────────────────────────────────────────────────────────────────────────
 
 import { writeFile, mkdir } from 'node:fs/promises';
@@ -30,12 +37,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const SEASON = new Date().getFullYear();
 const BASE = 'https://baseballsavant.mlb.com/leaderboard/pitch-arsenal-stats';
+const PITCH_BREAKDOWN_BASE = 'https://baseballsavant.mlb.com/player-services/statcast-pitches-breakdown';
+const SAVANT_HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; DiamondReportBot/1.0; +https://diamondreport.app)' };
 
 async function fetchCSV(url, attempts = 3) {
   let lastErr;
   for (let i = 0; i < attempts; i++) {
     try {
-      const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DiamondReportBot/1.0; +https://diamondreport.app)' } });
+      const res = await fetch(url, { headers: SAVANT_HEADERS });
       if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
       return await res.text();
     } catch (e) {
@@ -44,6 +53,37 @@ async function fetchCSV(url, attempts = 3) {
     }
   }
   throw lastErr;
+}
+
+async function fetchJSON(url, attempts = 2) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(url, { headers: SAVANT_HEADERS });
+      if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+      return await res.json();
+    } catch (e) {
+      lastErr = e;
+      if (i < attempts - 1) await new Promise(r => setTimeout(r, 500 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+
+// Bounded-concurrency map — same shape as the one in update-tracker.mjs. Keeps this
+// script's zero-dependency, self-contained style while being polite to Savant's
+// servers across ~700+ individual per-pitcher requests.
+async function mapLimit(items, limit, fn) {
+  const out = new Array(items.length);
+  let i = 0;
+  async function worker() {
+    while (i < items.length) {
+      const idx = i++;
+      out[idx] = await fn(items[idx], idx);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
 }
 
 // Minimal RFC4180-ish CSV parser — handles quoted fields with embedded commas/quotes
@@ -101,6 +141,9 @@ function rowToPitchStat(r) {
   const name = pitchNameRaw || PITCH_NAME_MAP[pitchType] || pitchType || 'Unknown';
   return {
     name,
+    // Kept around (not shown in the UI) purely to key the HR/barrel enrichment pass
+    // below against Baseball Savant's own api_pitch_type codes (FF/CH/ST/SI/...).
+    pitchTypeCode: pitchType,
     usagePct: num(pick(r, ['pitch_usage'])),
     pitches: num(pick(r, ['pitches'])),
     avg: num(pick(r, ['ba'])),
@@ -111,7 +154,12 @@ function rowToPitchStat(r) {
     xwoba: num(pick(r, ['est_woba', 'xwoba'])),
     whiffPct: num(pick(r, ['whiff_percent'])),
     hardHitPct: num(pick(r, ['hard_hit_percent'])),
+    // Always null from this leaderboard row alone — the pitch-arsenal-stats endpoint
+    // has no HR/barrel columns. Populated for real by enrichPitcherHRAndBarrel, which
+    // fetches each pitcher's actual per-pitch breakdown from a different, confirmed
+    // endpoint (see the file header comment).
     homeRuns: num(pick(r, ['home_run', 'home_runs', 'hr'])),
+    barrelPct: null,
   };
 }
 
@@ -143,7 +191,56 @@ async function buildPitcherStatcast() {
   }
   // Primary pitch leads each pitcher's table.
   Object.values(pitchers).forEach(p => p.byPitch.sort((a, b) => (b.usagePct || 0) - (a.usagePct || 0)));
+  // Strict enhancement over the CSV data above — never let a bug or outage here take
+  // down a sync that otherwise succeeded.
+  try {
+    await enrichPitcherHRAndBarrel(pitchers);
+  } catch (e) {
+    console.error('HR/Barrel% enrichment failed entirely, continuing without it:', e.message);
+  }
   return pitchers;
+}
+
+// Fills in real HR-allowed and Barrel% per pitch type — genuinely absent from the bulk
+// leaderboard CSV above, but present on Baseball Savant's own per-player pages via this
+// endpoint (confirmed real: verified this session against an actual captured browser
+// response, not inferred). One request per pitcher, since it's keyed by numeric player
+// ID rather than a name-based URL slug (which would be fragile for accented/suffixed
+// names) — bounded concurrency to stay reasonable across ~700+ pitchers without
+// hammering Savant. Failures are per-pitcher and non-fatal: a pitcher who can't be
+// enriched just keeps the CSV-only data (HR/barrel stay null), exactly like before this
+// existed — this is a strict enhancement, never a reason to fail the whole sync.
+async function enrichPitcherHRAndBarrel(pitchers) {
+  const ids = Object.keys(pitchers);
+  if (!ids.length) return;
+  let enriched = 0, failed = 0;
+  await mapLimit(ids, 8, async (id) => {
+    try {
+      const url = `${PITCH_BREAKDOWN_BASE}?playerId=${id}&position=1&hand=&pitchBreakdown=pitches&timeFrame=yearly&season=&pitchType=&count=&gameType=&updatePitches=true`;
+      const data = await fetchJSON(url);
+      const breakdown = Array.isArray(data) ? data : (data?.pitchDetails || data?.data || []);
+      const thisSeason = breakdown.filter(row => String(row.year) === String(SEASON));
+      if (!thisSeason.length) return;
+      const byCode = {};
+      thisSeason.forEach(row => {
+        const code = row.api_pitch_type;
+        if (!code) return;
+        byCode[code] = { hr: num(row.hr), barrelPct: num(row.brl_percent) };
+      });
+      let touched = false;
+      pitchers[id].byPitch.forEach(stat => {
+        const hit = byCode[stat.pitchTypeCode];
+        if (!hit) return;
+        stat.homeRuns = hit.hr;
+        stat.barrelPct = hit.barrelPct;
+        touched = true;
+      });
+      if (touched) enriched++;
+    } catch (e) {
+      failed++;
+    }
+  });
+  console.log(`HR/Barrel% enrichment: ${enriched}/${ids.length} pitchers enriched (${failed} failed).`);
 }
 
 async function buildBatterPitchSeason() {
@@ -203,4 +300,4 @@ if (isMain) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { parseCSV, rowToPitchStat, assertSchema, buildPitcherStatcast, buildBatterPitchSeason, main };
+export { parseCSV, rowToPitchStat, assertSchema, buildPitcherStatcast, buildBatterPitchSeason, enrichPitcherHRAndBarrel, main };
