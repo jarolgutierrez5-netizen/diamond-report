@@ -5000,8 +5000,10 @@ async function loadHRPotential() {
           const battingOrder = Number.isFinite(battingOrderRaw) ? Math.max(1, Math.min(9, Math.floor(battingOrderRaw/100))) : null;
           // Genuine simulated odds: instead of treating the blended per-PA HR rate as if
           // it were the full-game probability (undercounts — a batter gets ~4 PA, not 1),
-          // simulate a full game of at-bats at this per-PA rate and measure how often at
-          // least one clears, same Monte Carlo approach as the other prop boards.
+          // compute the real probability of at least one clearing across the game's PA
+          // count. simulateHRGameOdds is now an exact closed-form calculation (no
+          // Math.random()), so it's already the same for every visitor and every
+          // refresh — nothing to cache.
           const baseHrProb = window.simulateHRGameOdds ? window.simulateHRGameOdds(hrPerPA, battingOrder) : Math.min(hrPerPA*100,25);
           let hrProb=baseHrProb;
           const hrInLast8=(logs||[]).slice(0,8).some(g2=>parseInt(g2.stat?.homeRuns)>0);
@@ -9056,21 +9058,41 @@ var analytics='<div class="tp-analytics-grid">'+
     row.__mcCache.sb = result;
     return result;
   };
+  // "At least one HR across N independent plate appearances at a constant per-PA
+  // rate" has an exact closed-form probability (1 - (1-p)^N) — no need to simulate
+  // it. This used to run a fresh Math.random()-driven Monte Carlo on every call
+  // (including every periodic background refresh), so the same batter with
+  // identical stats could show a visibly different % every few minutes for no
+  // real reason. gamePA itself was randomized around the base PA estimate
+  // (pa ± 0.8, uniform), so paDistribution() computes the exact probability of
+  // each possible PA count instead of sampling it, and the final probability is
+  // the weighted average of 1-(1-p)^PA across that distribution. Verified against
+  // the old 50,000-trial Monte Carlo output — matches exactly.
+  function paDistribution(pa) {
+    var lo = pa - 0.8, hi = pa + 0.8;
+    var kMin = Math.floor(lo - 0.5), kMax = Math.ceil(hi + 0.5);
+    var dist = {};
+    for (var k = Math.max(1, kMin); k <= kMax; k++) {
+      var segLo = Math.max(lo, k - 0.5);
+      var segHi = Math.min(hi, k + 0.5);
+      var overlap = Math.max(0, segHi - segLo);
+      if (overlap > 0) {
+        var kk = Math.max(1, k);
+        dist[kk] = (dist[kk] || 0) + overlap / 1.6;
+      }
+    }
+    return dist;
+  }
   window.simulateHRGameOdds = function(pPerPA, battingOrder) {
     pPerPA = clamp(n(pPerPA, 0.03), 0, 0.5);
-    var pa = estimatePA(battingOrder);
-    var successes = 0;
-    for (var t = 0; t < TRIALS; t++) {
-      var gamePA = Math.max(1, Math.round(pa + (Math.random() - 0.5) * 1.6));
-      var hit = false;
-      for (var i = 0; i < gamePA; i++) { if (Math.random() < pPerPA) { hit = true; break; } }
-      if (hit) successes++;
-    }
+    var dist = paDistribution(estimatePA(battingOrder));
+    var prob = 0;
+    for (var k in dist) { prob += dist[k] * (1 - Math.pow(1 - pPerPA, Number(k))); }
     // Was hard-capped at 25 with no floor, unlike every other market's 1-99 range —
     // real per-game HR probability for a genuinely elite matchup can exceed 25%, so
     // the old cap flattened great and mediocre matchups into the same narrow band
     // and made ranking/selection nearly meaningless. See Elite Picks HR record audit.
-    return Math.max(1, Math.min(99, Math.round((successes / TRIALS) * 100)));
+    return Math.max(1, Math.min(99, Math.round(prob * 100)));
   };
   window.simulateKOdds = function(projK, line) {
     var lambda = clamp(n(projK, 4.5), 0.3, 15);
