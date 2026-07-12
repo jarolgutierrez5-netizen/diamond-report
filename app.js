@@ -10614,3 +10614,64 @@ function showPremiumGate(feature){
     window.showGamePickPane = wrap;
   }
 })();
+
+// Desktop collapsible sidebar nav — separate element from the mobile hamburger
+// drawer (#dr-mobile-drawer), so this never touches that drawer's open/close
+// behavior. Clicking a sidebar item routes through the same
+// window.DiamondNavigateToPane the mobile drawer already uses.
+//
+// Active-state highlighting is handled manually here rather than relying on
+// the existing .gamepick-tab sync (activateGamePickPane/setDesktopTabState):
+// both of those scope their tab query to root = document.getElementById('props'),
+// and this sidebar lives outside #props (it needs to be a sibling of <main>,
+// not nested inside a scrollable section, to render as a fixed full-height
+// sidebar) — so it would never get found by that scoped query.
+(function(){
+  var STORAGE_KEY = 'dr_sidebar_collapsed';
+  function syncActive(sidebar, pane){
+    sidebar.querySelectorAll('.dr-sidebar-tab[data-gamepick-pane]').forEach(function(btn){
+      btn.classList.toggle('active', btn.getAttribute('data-gamepick-pane') === pane);
+    });
+  }
+  function bind(){
+    var sidebar = document.getElementById('dr-sidebar-nav');
+    if (!sidebar) return;
+    var toggle = document.getElementById('dr-sidebar-toggle');
+    if (toggle && !toggle.dataset.drSidebarReady) {
+      toggle.dataset.drSidebarReady = '1';
+      toggle.addEventListener('click', function(){
+        var collapsed = sidebar.classList.toggle('collapsed');
+        document.body.classList.toggle('dr-sidebar-collapsed', collapsed);
+        try { localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0'); } catch(e) {}
+      });
+    }
+    try {
+      if (localStorage.getItem(STORAGE_KEY) === '1') {
+        sidebar.classList.add('collapsed');
+        document.body.classList.add('dr-sidebar-collapsed');
+      }
+    } catch(e) {}
+    sidebar.querySelectorAll('.dr-sidebar-tab[data-gamepick-pane]').forEach(function(btn){
+      if (btn.dataset.drSidebarReady) return;
+      btn.dataset.drSidebarReady = '1';
+      btn.addEventListener('click', function(){
+        var pane = btn.getAttribute('data-gamepick-pane');
+        syncActive(sidebar, pane);
+        if (typeof window.DiamondNavigateToPane === 'function') window.DiamondNavigateToPane(pane);
+      });
+    });
+    // Initial state: match whatever pane the page booted into (hash-restored
+    // or default), read from the already-rendered #props panes.
+    var activePane = document.querySelector('#props .gamepick-pane.active');
+    if (activePane) syncActive(sidebar, activePane.getAttribute('data-gamepick-pane'));
+    window.addEventListener('hashchange', function(){
+      setTimeout(function(){
+        var p = document.querySelector('#props .gamepick-pane.active');
+        if (p) syncActive(sidebar, p.getAttribute('data-gamepick-pane'));
+      }, 30);
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind, { once:true });
+  else bind();
+  window.addEventListener('load', bind, { once:true });
+})();

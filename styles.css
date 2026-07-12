@@ -1708,3 +1708,153 @@ h1, #premium .dr-premium-hero h1, .dr-prediction-hero h1, .section-title,
 #kprops-content .dr109-card .kprop-lineup-section {
   margin-top: auto !important;
 }
+
+/* ── Desktop collapsible sidebar nav ──────────────────────────────────────
+   Hidden by default (mobile/tablet keep the existing hamburger drawer,
+   completely untouched). Shown only at wide viewports, matching the site's
+   existing desktop breakpoint. main gets a matching margin-left so content
+   doesn't sit under the fixed sidebar. */
+#dr-sidebar-nav {
+  display: none;
+}
+@media (min-width: 1180px) {
+  /* The horizontal gamepick-tabs row is redundant once the sidebar takes
+     over navigation at this width — without this, both show at once.
+     Matches the highest-specificity selector shape already used elsewhere
+     for this element (#props + class + [aria-label] attribute) since a
+     plain .gamepick-tabs-wrap{display:none} loses to those. */
+  .gamepick-tabs-wrap,
+  #props .gamepick-tabs-wrap,
+  #props > .gamepick-tabs-wrap,
+  #props .gamepick-tabs-wrap[aria-label="Game Picks section navigation"],
+  .gamepick-tabs-wrap[aria-label="Game Picks section navigation"] {
+    display: none !important;
+  }
+  #dr-sidebar-nav {
+    display: flex !important;
+    flex-direction: column !important;
+    position: fixed !important;
+    left: 0;
+    top: 76px;
+    bottom: 0;
+    width: 250px;
+    z-index: 90;
+    padding: 18px 12px;
+    box-sizing: border-box;
+    gap: 2px;
+    overflow-y: auto;
+    background: linear-gradient(180deg, rgba(6,10,18,.97), rgba(8,13,23,.95));
+    border-right: 1px solid rgba(0,229,255,.28);
+    box-shadow: 18px 0 38px rgba(0,0,0,.24);
+    transition: width .18s ease;
+  }
+  #dr-sidebar-nav.collapsed {
+    width: 64px;
+    padding: 18px 8px;
+  }
+  /* Matches the specificity of an existing "body > main, main" rule elsewhere
+     in this file, which otherwise wins over a plain main{} selector
+     regardless of source order. */
+  body > main, main {
+    margin-left: 250px !important;
+    transition: margin-left .18s ease;
+  }
+  body.dr-sidebar-collapsed > main, body.dr-sidebar-collapsed main {
+    margin-left: 64px !important;
+  }
+}
+.dr-sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(0,229,255,.35);
+  background: rgba(0,229,255,.08);
+  color: #00e5ff;
+  cursor: pointer;
+  font-size: 16px;
+  margin-bottom: 14px;
+}
+.dr-sidebar-toggle:hover {
+  background: rgba(0,229,255,.16);
+}
+.dr-sidebar-group {
+  margin-bottom: 4px;
+}
+.dr-sidebar-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  color: #8fa3c8;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.dr-sidebar-tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #d6def2;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 800;
+  font-size: 12.5px;
+  letter-spacing: .3px;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+.dr-sidebar-tab:hover {
+  background: rgba(0,229,255,.08);
+}
+.dr-sidebar-tab.active {
+  background: linear-gradient(90deg, rgba(0,229,255,.34), rgba(0,229,255,.08)) !important;
+  border-color: rgba(0,229,255,.65) !important;
+  color: #fff !important;
+  box-shadow: 0 0 22px rgba(0,229,255,.18) inset;
+}
+.dr-sidebar-tab.dr-sidebar-locked {
+  color: #7c8aa8;
+}
+.dr-sidebar-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+  width: 18px;
+  text-align: center;
+}
+.dr-sidebar-divider {
+  height: 1px;
+  background: rgba(255,255,255,.08);
+  margin: 10px 4px;
+}
+.dr-sidebar-group.dr-sidebar-future {
+  opacity: .45;
+}
+.dr-sidebar-soon {
+  margin-left: auto;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  background: rgba(255,255,255,.08);
+  padding: 2px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+#dr-sidebar-nav.collapsed .dr-sidebar-label,
+#dr-sidebar-nav.collapsed .dr-sidebar-soon {
+  display: none;
+}
