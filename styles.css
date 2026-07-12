@@ -1680,3 +1680,36 @@ h1, #premium .dr-premium-hero h1, .dr-prediction-hero h1, .section-title,
 .dr1027-chip.stat-cushion b { color: #60a5fa !important; }
 .dr1027-chip.stat-hot-boost { border-color: rgba(251,191,36,.55) !important; background: rgba(58,42,6,.32) !important; }
 .dr1027-chip.stat-hot-boost b { color: #fbbf24 !important; }
+
+/* ── Pitcher Report: stats as a heat-mapped table row ─────────────────────────
+   .pr-mobile-stats box grid, then a pill row, is now a single-row table per
+   pitcher with a real header (IP/BF/FIP/AVG/...) and continuously heat-mapped
+   cell backgrounds (green→neutral→red) computed in app.js's heatBG(), reusing
+   the same goodBelow/badAbove thresholds the old .stat-pill badges used. */
+.pr-stats-table-wrap {
+  margin: 10px 0 !important;
+}
+.pr-stats-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  min-width: 560px !important;
+}
+.pr-stats-table th {
+  color: var(--muted) !important;
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: .06em !important;
+  text-align: center !important;
+  padding: 6px 8px !important;
+  border-bottom: 1px solid var(--border) !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+.pr-stats-table td {
+  text-align: center !important;
+  padding: 7px 8px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+  white-space: nowrap !important;
+}

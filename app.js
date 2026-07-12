@@ -2103,12 +2103,6 @@ function rehydrateExpandedPitcherRows() {
   });
 }
 
-function pill(val, dispFn, goodBelow, badAbove) {
-  if (val==null) return `<span class="stat-pill pill-neu">–</span>`;
-  const cls = val<=goodBelow ? 'pill-green' : val>=badAbove ? 'pill-red' : 'pill-neu';
-  return `<span class="stat-pill ${cls}">${dispFn(val)}</span>`;
-}
-
 // Card-based layout at every screen size (previously desktop got a dense 15-column
 // table and only mobile/tablet got cards — this replaced both with the one polished
 // card treatment, in a grid that's 1-up on narrow screens and 2-up on wide ones).
@@ -2128,12 +2122,33 @@ const PR_SORT_FIELDS = [
   {key:'kpg',      label:'K/GM'},
 ];
 
+// Heat-map background for a stat cell: green at/below goodBelow, red at/above
+// badAbove, continuously blended in between — reuses the exact same thresholds
+// the old pill() badges used, just expressed as a gradient instead of 3 buckets.
+function heatBG(val, goodBelow, badAbove) {
+  if (val == null) return 'transparent';
+  const mid = (goodBelow + badAbove) / 2;
+  const half = (badAbove - goodBelow) / 2 || 1;
+  let t = 1 + (val - mid) / half; // 0 = green, 1 = neutral, 2 = red
+  t = Math.max(0, Math.min(2, t));
+  const green = [26,58,42], neu = [11,20,36], red = [58,26,26];
+  const [a, b] = t <= 1 ? [green, neu] : [neu, red];
+  const localT = t <= 1 ? t : t - 1;
+  const rgb = a.map((c, i) => Math.round(c + (b[i] - c) * localT));
+  return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+}
+
 function renderPRTable() {
   const el = document.getElementById('pr-content');
   if (!el) return;
   const sorted = getSortedPRRowsForCurrentSort();
   const hs = id => `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_46,q_auto:best/v1/people/${id}/headshot/67/current`;
-  const stat = (label, value, tip) => `<div class="pr-mobile-stat"${tip?` data-tip="${tip}"`:''}><span class="pr-mobile-stat-label">${label}</span><span class="pr-mobile-stat-value">${value}</span></div>`;
+  const heatCell = (val, dispFn, goodBelow, badAbove, tip) => {
+    const bg = heatBG(val, goodBelow, badAbove);
+    const txt = val == null ? '<span style="color:var(--muted)">–</span>' : dispFn(val);
+    return `<td style="background:${bg}"${tip?` data-tip="${tip}"`:''}>${txt}</td>`;
+  };
+  const plainCell = (value, tip) => `<td${tip?` data-tip="${tip}"`:''}>${value}</td>`;
 
   const cards = sorted.map(r => {
     const p = r.pitcher;
@@ -2163,19 +2178,22 @@ function renderPRTable() {
       <div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:nowrap;overflow-x:auto">
         ${liveK && (liveK.isLive || liveK.isFinal) ? `<span class="pr-stat-chip pr-live-k-chip">Live K: ${liveK.ks}</span>` : '–'}
       </div>
-      <div class="pr-mobile-stats">
-        ${stat('IP', r.ip!=null?r.ip.toFixed(1):'–', 'Innings Pitched')}
-        ${stat('BF', r.bf!=null?r.bf:'–', 'Batters Faced')}
-        ${stat('FIP', pill(r.fip,  v=>v.toFixed(2), 3.25, 4.50), 'Fielding Independent Pitching')}
-        ${stat('AVG', pill(r.avg,  v=>v.toFixed(3).replace(/^0/,''), .220, .270), 'Batting Average Against')}
-        ${stat('wOBA', pill(r.woba, v=>v.toFixed(3).replace(/^0/,''), .290, .340), 'Weighted On-Base Average')}
-        ${stat('WHIP', pill(r.whip, v=>v.toFixed(2), 1.10, 1.40), 'Walks + Hits per Inning Pitched')}
-        ${stat('ISO', pill(r.iso,  v=>v.toFixed(3).replace(/^0/,''), .150, .200), 'Isolated Power — extra-base power allowed')}
-        ${stat('SLG', pill(r.slg,  v=>v.toFixed(3).replace(/^0/,''), .350, .430), 'Slugging Percentage Against')}
-        ${stat('HR/9', pill(r.hr9,  v=>v.toFixed(2), 0.80, 1.50), 'Home Runs per 9 Innings')}
-        ${stat('TB', r.tb!=null?r.tb:'–', 'Total Bases Allowed')}
-        ${stat('K/GM', `<span style="color:${r.kpg>=7?'var(--green)':r.kpg>=5?'var(--text)':'var(--muted)'}">${r.kpg??'–'}</span>`, 'Average Strikeouts per Game Started')}
-      </div>
+      <div class="dr1041-table-wrap pr-stats-table-wrap"><table class="pr-stats-table">
+        <thead><tr><th>IP</th><th>BF</th><th>FIP</th><th>AVG</th><th>wOBA</th><th>WHIP</th><th>ISO</th><th>SLG</th><th>HR/9</th><th>TB</th><th>K/GM</th></tr></thead>
+        <tbody><tr>
+          ${plainCell(r.ip!=null?r.ip.toFixed(1):'–', 'Innings Pitched')}
+          ${plainCell(r.bf!=null?r.bf:'–', 'Batters Faced')}
+          ${heatCell(r.fip,  v=>v.toFixed(2), 3.25, 4.50, 'Fielding Independent Pitching')}
+          ${heatCell(r.avg,  v=>v.toFixed(3).replace(/^0/,''), .220, .270, 'Batting Average Against')}
+          ${heatCell(r.woba, v=>v.toFixed(3).replace(/^0/,''), .290, .340, 'Weighted On-Base Average')}
+          ${heatCell(r.whip, v=>v.toFixed(2), 1.10, 1.40, 'Walks + Hits per Inning Pitched')}
+          ${heatCell(r.iso,  v=>v.toFixed(3).replace(/^0/,''), .150, .200, 'Isolated Power — extra-base power allowed')}
+          ${heatCell(r.slg,  v=>v.toFixed(3).replace(/^0/,''), .350, .430, 'Slugging Percentage Against')}
+          ${heatCell(r.hr9,  v=>v.toFixed(2), 0.80, 1.50, 'Home Runs per 9 Innings')}
+          ${plainCell(r.tb!=null?r.tb:'–', 'Total Bases Allowed')}
+          ${plainCell(`<span style="color:${r.kpg>=7?'var(--green)':r.kpg>=5?'var(--text)':'var(--muted)'}">${r.kpg??'–'}</span>`, 'Average Strikeouts per Game Started')}
+        </tr></tbody>
+      </table></div>
       <button class="btn-lineup${isExpanded?' active':''}" onclick="toggleLineup('${pid}', '${p.name.replace(/'/g,"\\'")}', ${p.gamePk}, '${p.side}', ${p.oppTeamId}, ${r.rawHr9}, ${r.rawIp})">
         ${isExpanded ? '▲ HIDE' : '▼ BATTING LINEUP & MATCHUPS'}
       </button>
