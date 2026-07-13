@@ -10695,6 +10695,7 @@ function showPremiumGate(feature){
   var newsArticles = [];
   var hrLoaded = false;
   var gameContentCache = {};
+  var gameFeedCache = {};
 
   function hashIsGamepick(){
     return /^#?gamepick=/.test(window.location.hash || '');
@@ -10838,6 +10839,48 @@ function showPremiumGate(feature){
     return { videoUrl: null, webUrl: null };
   }
 
+  // The live play-by-play feed (feed/live) is the standard, well-established
+  // MLB Stats API endpoint for pitch-level detail — same family as the
+  // boxscore endpoint already used throughout this file, unlike the
+  // less-certain content/highlights feed above.
+  function fetchGameFeed(gamePk){
+    if (gameFeedCache[gamePk]) return gameFeedCache[gamePk];
+    var p = fetch('https://diamondreport.app/api/v1.1/game/' + gamePk + '/feed/live')
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(data){
+        return (data && data.liveData && data.liveData.plays && data.liveData.plays.allPlays) || [];
+      })
+      .catch(function(){ return []; });
+    gameFeedCache[gamePk] = p;
+    return p;
+  }
+
+  // Finds the pitch that was put in play for a given batter's home run.
+  // Matches by batter id (more reliable than name matching) — if a batter
+  // has multiple HRs in the same game, this returns the first one found,
+  // a known simplification since loadHRsToday's data is one aggregated
+  // entry per batter per game, not one per individual home run.
+  function findHRPitchInfo(allPlays, batterId){
+    if (!allPlays || !allPlays.length || !batterId) return null;
+    for (var i = 0; i < allPlays.length; i++) {
+      var play = allPlays[i] || {};
+      if (!play.result || play.result.event !== 'Home Run') continue;
+      if (!play.matchup || !play.matchup.batter || play.matchup.batter.id !== batterId) continue;
+      var events = play.playEvents || [];
+      var pitch = null;
+      for (var j = events.length - 1; j >= 0; j--) {
+        if (events[j] && events[j].isPitch) { pitch = events[j]; break; }
+      }
+      if (!pitch) return null;
+      var pitchType = pitch.details && pitch.details.type && pitch.details.type.description;
+      var velocity = pitch.pitchData && pitch.pitchData.startSpeed;
+      var pitcherName = play.matchup.pitcher && play.matchup.pitcher.fullName;
+      if (!pitchType && !velocity) return null;
+      return { pitchType: pitchType || null, velocity: velocity ? Math.round(velocity) : null, pitcherName: pitcherName || null };
+    }
+    return null;
+  }
+
   function openHRVideoModal(title, meta, videoUrl){
     var modal = document.getElementById('dr-hub-hr-modal');
     var video = document.getElementById('dr-hub-hr-modal-video');
@@ -10906,6 +10949,23 @@ function showPremiumGate(feature){
         if (!card) return;
         if (found.videoUrl) card.dataset.videoUrl = found.videoUrl;
         if (found.webUrl) card.dataset.webUrl = found.webUrl;
+      });
+    });
+
+    // Second, independent progressive enhancement — append the actual pitch
+    // (velocity + type, e.g. "95 mph Slider") to the card's subtitle once
+    // found. The video modal reads this same subtitle text at click time,
+    // so it picks up the enrichment automatically without any extra wiring.
+    recent.forEach(function(h, i){
+      if (!h.gamePk || !h.id) return;
+      fetchGameFeed(h.gamePk).then(function(allPlays){
+        var pitch = findHRPitchInfo(allPlays, h.id);
+        if (!pitch || (!pitch.pitchType && !pitch.velocity)) return;
+        var card = container.querySelector('[data-hr-idx="' + i + '"]');
+        var subEl = card && card.querySelector('.dr-hub-hr-sub');
+        if (!subEl) return;
+        var pitchLabel = [pitch.velocity ? pitch.velocity + ' mph' : null, pitch.pitchType].filter(Boolean).join(' ');
+        if (pitchLabel) subEl.textContent += ' · ' + pitchLabel;
       });
     });
   }
