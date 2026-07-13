@@ -1,0 +1,42 @@
+name: Sync NFL Schedule (groundwork)
+
+# Manual trigger only for now — nothing in app.js reads data/nfl-*.json yet,
+# so there's no reason to run this on a schedule until the football section
+# is actually being built. Switch to a `schedule:` cron (mirroring
+# update-tracker.yml) once that work starts, closer to kickoff.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-nfl-schedule
+  cancel-in-progress: false
+
+jobs:
+  sync-nfl-schedule:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run NFL schedule sync
+        run: node scripts/sync-nfl-schedule.mjs
+
+      - name: Commit and push if changed
+        run: |
+          if git diff --quiet -- data/nfl-teams.json data/nfl-schedule.json; then
+            echo "No changes — nothing to commit."
+            exit 0
+          fi
+          git config user.name "diamond-report-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/nfl-teams.json data/nfl-schedule.json
+          git commit -m "Sync NFL teams/schedule (groundwork)"
+          git push
