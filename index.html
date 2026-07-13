@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=20260713c0900">
+<link rel="stylesheet" href="styles.min.css?v=20260713c1000">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -248,8 +248,37 @@
       <div class="dr-hub-section-head"><span class="dr-hub-section-icon">⚾</span><h2>MLB Headlines</h2><span class="dr-hub-section-line"></span></div>
       <div class="dr-hub-news-grid" id="dr-hub-news-grid"></div>
     </div>
+
+    <div class="dr-hub-hr">
+      <div class="dr-hub-section-head"><span class="dr-hub-section-icon">🔥</span><h2>Home Run Highlights</h2><span class="dr-hub-section-line"></span></div>
+      <a class="dr-hub-hr-card" href="https://www.mlb.com/video/topic/statcast-home-runs" target="_blank" rel="noopener noreferrer">
+        <span class="dr-hub-hr-play">▶</span>
+        <span class="dr-hub-hr-text">
+          <span class="dr-hub-hr-title">Watch Today's Home Run Highlights</span>
+          <span class="dr-hub-hr-sub">Every long ball from around MLB, via MLB.com</span>
+        </span>
+      </a>
+    </div>
   </div>
 </section>
+
+<!-- News summary popup — keeps readers on-site for the headline + short
+     summary ESPN's free API gives us; links out only for the full story
+     (their API doesn't expose full article bodies). Populated/opened by
+     the hub IIFE at the end of app.js. -->
+<div id="dr-hub-news-modal" class="dr-hub-news-modal" aria-hidden="true">
+  <div class="dr-hub-news-modal-overlay" id="dr-hub-news-modal-overlay"></div>
+  <div class="dr-hub-news-modal-panel" role="dialog" aria-modal="true" aria-labelledby="dr-hub-news-modal-title">
+    <button type="button" class="dr-hub-news-modal-close" id="dr-hub-news-modal-close" aria-label="Close">✕</button>
+    <img id="dr-hub-news-modal-img" class="dr-hub-news-modal-img" alt="" style="display:none">
+    <div class="dr-hub-news-modal-body">
+      <div class="dr-hub-news-modal-meta" id="dr-hub-news-modal-meta"></div>
+      <h3 id="dr-hub-news-modal-title" class="dr-hub-news-modal-title"></h3>
+      <p id="dr-hub-news-modal-desc" class="dr-hub-news-modal-desc"></p>
+      <a id="dr-hub-news-modal-link" class="dr-hub-news-modal-link" href="#" target="_blank" rel="noopener noreferrer">Read full story on ESPN →</a>
+    </div>
+  </div>
+</div>
 
 <main>
 <section class="section" id="scores">
@@ -701,7 +730,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=20260713c0900" defer></script>
+<script src="app.min.js?v=20260713c1000" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
