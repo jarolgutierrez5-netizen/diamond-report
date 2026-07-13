@@ -2080,7 +2080,7 @@ html body.dr-hub-active main {
 }
 .dr-hub-news-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
 }
 .dr-hub-news-card {

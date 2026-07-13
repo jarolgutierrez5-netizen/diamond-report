@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=20260713c0800">
+<link rel="stylesheet" href="styles.min.css?v=20260713c0900">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -120,33 +120,19 @@
 <body>
 <header class="header">
 <button id="dr-mobile-menu-btn" type="button" aria-label="Open menu" class="dr-mobile-menu-btn">☰</button>
-<div class="logo" style="padding:0;background:none;border:none;display:flex;align-items:center">
-<svg aria-label="Diamond Report" height="46" role="img" style="width:auto;display:block" viewbox="0 0 680 340">
-<rect fill="#06060f" height="340" width="680"></rect>
-<polygon fill="#0d0d1e" points="0,0 420,0 320,340 0,340"></polygon>
-<polygon fill="#0d0d1e" points="640,0 680,0 680,340 580,340"></polygon>
-<polygon fill="#00e5ff" opacity="0.9" points="580,0 620,0 510,340 470,340"></polygon>
-<polygon fill="#ffffff" opacity="0.07" points="625,0 638,0 528,340 515,340"></polygon>
-<g transform="translate(140,170)">
-<polygon fill="#00e5ff" opacity="0.15" points="0,-88 88,0 0,88 -88,0"></polygon>
-<polygon fill="none" points="0,-82 82,0 0,82 -82,0" stroke="#00e5ff" stroke-width="4"></polygon>
-<rect fill="#00e5ff" height="14" rx="2" width="14" x="-7" y="-89"></rect>
-<rect fill="#00e5ff" height="14" rx="2" width="14" x="75" y="-7"></rect>
-<rect fill="#ffffff" height="14" opacity="0.8" rx="2" width="14" x="-7" y="75"></rect>
-<rect fill="#00e5ff" height="14" rx="2" width="14" x="-89" y="-7"></rect>
-<circle cx="0" cy="0" fill="#00e5ff" r="8"></circle>
-<circle cx="0" cy="0" fill="#ffffff" r="4"></circle>
+<div class="logo" id="dr-header-logo" style="padding:0;background:none;border:none;display:flex;align-items:center;cursor:pointer" role="button" tabindex="0" aria-label="Back to News Central">
+<svg aria-label="Diamond Report" height="46" role="img" style="width:auto;display:block;filter:drop-shadow(0 4px 14px rgba(0,229,255,.25))" viewbox="0 0 520 200">
+<g transform="translate(60,100)">
+<polygon fill="#00e5ff" opacity="0.15" points="0,-52 52,0 0,52 -52,0"></polygon>
+<polygon fill="none" points="0,-48 48,0 0,48 -48,0" stroke="#00e5ff" stroke-width="4"></polygon>
+<rect fill="#00e5ff" height="10" rx="2" width="10" x="-5" y="-53"></rect>
+<rect fill="#00e5ff" height="10" rx="2" width="10" x="43" y="-5"></rect>
+<rect fill="#ffffff" height="10" opacity="0.85" rx="2" width="10" x="-5" y="43"></rect>
+<rect fill="#00e5ff" height="10" rx="2" width="10" x="-53" y="-5"></rect>
+<circle cx="0" cy="0" fill="#00e5ff" r="5"></circle>
 </g>
-<g transform="skewX(-4)">
-<text fill="#ffffff" font-family="Bebas Neue,Impact,Arial Black,sans-serif" font-size="70" font-weight="900" letter-spacing="-1" x="278" y="178">DIAMOND</text>
-</g>
-<g transform="skewX(-4)">
-<text fill="#06060f" font-family="Bebas Neue,Impact,Arial Black,sans-serif" font-size="62" font-weight="900" letter-spacing="16" opacity="0.6" x="284" y="247">REPORT</text>
-<text fill="#00e5ff" font-family="Bebas Neue,Impact,Arial Black,sans-serif" font-size="62" font-weight="900" letter-spacing="16" x="282" y="244">REPORT</text>
-</g>
-<rect fill="#00e5ff" height="26" rx="3" width="355" x="278" y="256"></rect>
-<text fill="#ffffff" font-family="Arial,sans-serif" font-size="12" font-weight="700" letter-spacing="5" text-anchor="middle" x="455" y="273">MLB ANALYTICS</text>
-<line stroke="#00e5ff" stroke-width="2.5" x1="0" x2="680" y1="336" y2="336"></line>
+<text fill="#ffffff" font-family="Manrope,Arial,sans-serif" font-size="46" font-weight="900" letter-spacing="-0.5" x="130" y="92">DIAMOND</text>
+<text fill="#00e5ff" font-family="Manrope,Arial,sans-serif" font-size="46" font-weight="900" letter-spacing="4" x="130" y="145">REPORT</text>
 </svg>
 </div>
 <div class="date-badge" id="header-date"></div>
@@ -715,7 +701,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=20260713c0600" defer></script>
+<script src="app.min.js?v=20260713c0900" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->

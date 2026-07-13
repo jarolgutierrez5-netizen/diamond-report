@@ -10723,7 +10723,7 @@ function showPremiumGate(feature){
     var section = document.getElementById('dr-hub-news');
     var grid = document.getElementById('dr-hub-news-grid');
     if (!section || !grid || !articles || !articles.length) return;
-    grid.innerHTML = articles.slice(0, 3).map(function(a, i){
+    grid.innerHTML = articles.slice(0, 6).map(function(a, i){
       var img = a && a.images && a.images[0] && a.images[0].url;
       var href = a && a.links && a.links.web && a.links.web.href;
       var when = timeAgo(a && a.published);
@@ -10743,7 +10743,7 @@ function showPremiumGate(feature){
   function loadHubNews(){
     if (newsLoaded) return;
     newsLoaded = true;
-    fetch('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=6')
+    fetch('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=10')
       .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function(data){ renderHubNews(data && data.articles); })
       .catch(function(){ /* leave the news section hidden on failure */ });
@@ -10762,6 +10762,19 @@ function showPremiumGate(feature){
           try { window.location.hash = 'gamepick=game'; } catch(e) {}
         }
         if (typeof window.showGamePickPane === 'function') window.showGamePickPane('game');
+      });
+    }
+
+    var logo = document.getElementById('dr-header-logo');
+    if (logo && !logo.dataset.drHubReady) {
+      logo.dataset.drHubReady = '1';
+      var goToHub = function(){
+        try { window.location.hash = ''; } catch(e) {}
+        showHub();
+      };
+      logo.addEventListener('click', goToHub);
+      logo.addEventListener('keydown', function(e){
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToHub(); }
       });
     }
 
