@@ -10694,6 +10694,7 @@ function showPremiumGate(feature){
   var newsLoaded = false;
   var newsArticles = [];
   var hrLoaded = false;
+  var gameContentCache = {};
 
   function hashIsGamepick(){
     return /^#?gamepick=/.test(window.location.hash || '');
@@ -10797,17 +10798,53 @@ function showPremiumGate(feature){
     return id ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/' + id + '/headshot/67/current' : '';
   }
 
+  // Best-effort lookup of the actual home run clip via the game's content/
+  // highlights feed, rather than just linking to the whole game's Gameday
+  // page. This endpoint's exact shape can't be verified from this dev
+  // environment (no external network access here), so every step is
+  // defensive — if a game has no matching highlight, or the fetch/shape
+  // doesn't match what's expected, findHRClipUrl just returns null and the
+  // caller leaves the existing Gameday link in place. Never worse than
+  // today, upgrades in place when it works.
+  function fetchGameContent(gamePk){
+    if (gameContentCache[gamePk]) return gameContentCache[gamePk];
+    var p = fetch('https://diamondreport.app/api/v1/game/' + gamePk + '/content')
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(data){
+        return (data && data.highlights && data.highlights.highlights && data.highlights.highlights.items) || [];
+      })
+      .catch(function(){ return []; });
+    gameContentCache[gamePk] = p;
+    return p;
+  }
+
+  function findHRClipUrl(items, playerName){
+    if (!items || !items.length || !playerName) return null;
+    var lastName = String(playerName).trim().split(/\s+/).pop().toLowerCase();
+    if (!lastName) return null;
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i] || {};
+      var text = [it.title, it.headline, it.blurb, it.description].filter(Boolean).join(' ').toLowerCase();
+      if (text.indexOf(lastName) === -1) continue;
+      if (!/home run|homers|homered/.test(text)) continue;
+      if (it.slug) return 'https://www.mlb.com/video/' + it.slug;
+      var playback = (it.playbacks || []).find(function(pb){ return pb && pb.url; });
+      if (playback) return playback.url;
+    }
+    return null;
+  }
+
   function renderHubHRs(list){
     var container = document.getElementById('dr-hub-hr-list');
     if (!container || !list || !list.length) return;
     // Most recent first — allHRs is sorted oldest-game-first for the Props pane.
     var recent = list.slice().reverse().slice(0, 6);
-    container.innerHTML = recent.map(function(h){
+    container.innerHTML = recent.map(function(h, i){
       var link = h.gamePk ? 'https://www.mlb.com/gameday/' + h.gamePk : 'https://www.mlb.com/video';
       var title = escapeHtml(h.name) + ' — ' + h.hrs + ' HR' + (h.hrs !== 1 ? 's' : '') + ' today';
       var sub = escapeHtml(h.teamAbbr || '') + (h.gameLabel ? ' · ' + escapeHtml(h.gameLabel) : '') + (h.timeStr ? ' · ' + escapeHtml(h.timeStr) : '');
       return (
-        '<a class="dr-hub-hr-card" href="' + escapeHtml(link) + '" target="_blank" rel="noopener noreferrer">' +
+        '<a class="dr-hub-hr-card" href="' + escapeHtml(link) + '" target="_blank" rel="noopener noreferrer" data-hr-idx="' + i + '">' +
           (h.id ? '<img class="dr-hub-hr-photo" src="' + escapeHtml(hs(h.id)) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '<span class="dr-hub-hr-play">▶</span>') +
           '<span class="dr-hub-hr-text">' +
             '<span class="dr-hub-hr-title">' + title + '</span>' +
@@ -10816,6 +10853,19 @@ function showPremiumGate(feature){
         '</a>'
       );
     }).join('');
+
+    // Progressive enhancement — upgrade each card's href to the actual clip
+    // in place once/if found, after the Gameday-link version above is
+    // already visible and clickable.
+    recent.forEach(function(h, i){
+      if (!h.gamePk) return;
+      fetchGameContent(h.gamePk).then(function(items){
+        var url = findHRClipUrl(items, h.name);
+        if (!url) return;
+        var card = container.querySelector('[data-hr-idx="' + i + '"]');
+        if (card) card.href = url;
+      });
+    });
   }
 
   function loadHubHRs(){

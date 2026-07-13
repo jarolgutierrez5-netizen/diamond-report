@@ -2171,6 +2171,45 @@ html body.dr-hub-active main {
   }
 }
 
+/* Tablet range (iPad portrait/landscape and similar): the base rule's 3
+   fixed columns, each with a full-width 16:9 image, made every card feel
+   oversized for what's meant to be a compact headlines list — even 2
+   columns still meant ~300px-tall images. Switching to a single-column
+   list with a small fixed-size thumbnail beside the text (rather than
+   stacked above it) reads as an actual list instead. Only wide
+   desktop/laptop widths (>=1280px) get the image-forward grid card. */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .dr-hub-news-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .dr-hub-news-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .dr-hub-news-card img {
+    width: 110px;
+    height: 72px;
+    aspect-ratio: auto;
+    flex-shrink: 0;
+    border-radius: 10px;
+  }
+  .dr-hub-news-body {
+    padding: 10px 14px 10px 0;
+  }
+  .dr-hub-news-headline {
+    font-size: 13px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .dr-hub-news-card.lead .dr-hub-news-headline {
+    font-size: 13px;
+  }
+}
+
 /* The header renders as a fixed, 70px-tall overlay across every breakpoint
    tested (mobile through wide desktop) — main's own top padding was only
    ever a decorative inner spacing value, never actually sized to clear it,
@@ -2366,4 +2405,15 @@ footer.dr-footer .dr-footer-meta {
   line-height: 1.6;
   max-width: 640px;
   margin: 0 auto;
+}
+
+/* The Prediction Center hero (title/subtitle/trust pillars/record pills) is
+   Games Today-specific marketing content — hide it on every other inner
+   tab. :has() reacts correctly to every existing pane-switch entry point
+   (desktop tabs, mobile drawer, sidebar) without touching any of that JS. */
+.dr-prediction-hero {
+  display: none !important;
+}
+#props:has(.gamepick-pane[data-gamepick-pane="game"].active) .dr-prediction-hero {
+  display: block !important;
 }
