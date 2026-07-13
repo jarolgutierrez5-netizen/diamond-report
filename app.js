@@ -10689,6 +10689,7 @@ function showPremiumGate(feature){
 // window.showGamePickPane wraps above).
 (function(){
   var newsLoaded = false;
+  var newsArticles = [];
 
   function hashIsGamepick(){
     return /^#?gamepick=/.test(window.location.hash || '');
@@ -10723,27 +10724,65 @@ function showPremiumGate(feature){
     var section = document.getElementById('dr-hub-news');
     var grid = document.getElementById('dr-hub-news-grid');
     if (!section || !grid || !articles || !articles.length) return;
-    grid.innerHTML = articles.slice(0, 3).map(function(a, i){
+    newsArticles = articles.slice(0, 6);
+    grid.innerHTML = newsArticles.map(function(a, i){
       var img = a && a.images && a.images[0] && a.images[0].url;
-      var href = a && a.links && a.links.web && a.links.web.href;
       var when = timeAgo(a && a.published);
       return (
-        '<a class="dr-hub-news-card' + (i === 0 ? ' lead' : '') + '" href="' + escapeHtml(href || '#') + '" target="_blank" rel="noopener noreferrer">' +
+        '<button type="button" class="dr-hub-news-card' + (i === 0 ? ' lead' : '') + '" data-news-idx="' + i + '">' +
           (img ? '<img src="' + escapeHtml(img) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '') +
           '<div class="dr-hub-news-body">' +
             '<div class="dr-hub-news-headline">' + escapeHtml(a && a.headline) + '</div>' +
             '<div class="dr-hub-news-meta">ESPN' + (when ? ' · ' + when : '') + '</div>' +
           '</div>' +
-        '</a>'
+        '</button>'
       );
     }).join('');
     section.style.display = '';
+
+    grid.querySelectorAll('.dr-hub-news-card').forEach(function(card){
+      card.addEventListener('click', function(){
+        var idx = Number(card.getAttribute('data-news-idx'));
+        openNewsModal(newsArticles[idx]);
+      });
+    });
+  }
+
+  function openNewsModal(a){
+    var modal = document.getElementById('dr-hub-news-modal');
+    if (!modal || !a) return;
+    var img = a.images && a.images[0] && a.images[0].url;
+    var href = a.links && a.links.web && a.links.web.href;
+    var when = timeAgo(a.published);
+
+    var imgEl = document.getElementById('dr-hub-news-modal-img');
+    if (img) { imgEl.src = img; imgEl.style.display = ''; imgEl.onerror = function(){ imgEl.style.display = 'none'; }; }
+    else { imgEl.style.display = 'none'; }
+
+    document.getElementById('dr-hub-news-modal-meta').textContent = 'ESPN' + (when ? ' · ' + when : '');
+    document.getElementById('dr-hub-news-modal-title').textContent = a.headline || '';
+    var descEl = document.getElementById('dr-hub-news-modal-desc');
+    if (a.description) { descEl.textContent = a.description; descEl.style.display = ''; }
+    else { descEl.style.display = 'none'; }
+    var linkEl = document.getElementById('dr-hub-news-modal-link');
+    if (href) { linkEl.href = href; linkEl.style.display = ''; }
+    else { linkEl.style.display = 'none'; }
+
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeNewsModal(){
+    var modal = document.getElementById('dr-hub-news-modal');
+    if (!modal) return;
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
   }
 
   function loadHubNews(){
     if (newsLoaded) return;
     newsLoaded = true;
-    fetch('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=6')
+    fetch('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=10')
       .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function(data){ renderHubNews(data && data.articles); })
       .catch(function(){ /* leave the news section hidden on failure */ });
@@ -10752,6 +10791,20 @@ function showPremiumGate(feature){
   function bind(){
     var hub = document.getElementById('dr-landing-hub');
     if (!hub) return;
+
+    var modalClose = document.getElementById('dr-hub-news-modal-close');
+    var modalOverlay = document.getElementById('dr-hub-news-modal-overlay');
+    if (modalClose && !modalClose.dataset.drHubReady) {
+      modalClose.dataset.drHubReady = '1';
+      modalClose.addEventListener('click', closeNewsModal);
+    }
+    if (modalOverlay && !modalOverlay.dataset.drHubReady) {
+      modalOverlay.dataset.drHubReady = '1';
+      modalOverlay.addEventListener('click', closeNewsModal);
+    }
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape') closeNewsModal();
+    });
 
     var baseballCard = document.getElementById('dr-hub-baseball-card');
     if (baseballCard && !baseballCard.dataset.drHubReady) {
@@ -10762,6 +10815,19 @@ function showPremiumGate(feature){
           try { window.location.hash = 'gamepick=game'; } catch(e) {}
         }
         if (typeof window.showGamePickPane === 'function') window.showGamePickPane('game');
+      });
+    }
+
+    var logo = document.getElementById('dr-header-logo');
+    if (logo && !logo.dataset.drHubReady) {
+      logo.dataset.drHubReady = '1';
+      var goToHub = function(){
+        try { window.location.hash = ''; } catch(e) {}
+        showHub();
+      };
+      logo.addEventListener('click', goToHub);
+      logo.addEventListener('keydown', function(e){
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToHub(); }
       });
     }
 

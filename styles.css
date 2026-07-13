@@ -2080,7 +2080,7 @@ html body.dr-hub-active main {
 }
 .dr-hub-news-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
 }
 .dr-hub-news-card {
@@ -2093,6 +2093,11 @@ html body.dr-hub-active main {
   display: block;
   text-decoration: none;
   color: inherit;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  appearance: none;
 }
 .dr-hub-news-card:hover {
   border-color: rgba(0,229,255,.4);
@@ -2161,5 +2166,156 @@ html body.dr-hub-active main {
   }
   .dr-hub-news-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* The header renders as a fixed, 70px-tall overlay across every breakpoint
+   tested (mobile through wide desktop) — main's own top padding was only
+   ever a decorative inner spacing value, never actually sized to clear it,
+   so the hero eyebrow/hub eyebrow text could render partly underneath the
+   header. Most visible on iPad width, where that decorative padding
+   happens to be at its smallest. Forcing enough top padding to clear the
+   header height everywhere fixes both main and the landing hub in one
+   place; matches "body > main, main"'s specificity so it reliably wins by
+   source order regardless of which breakpoint rule set the padding. */
+body > main, main,
+#dr-landing-hub {
+  padding-top: 88px !important;
+}
+
+/* Home run highlights card — single external link since there's no free API
+   for structured HR clip data; matches the section-head/card styling used
+   by the news grid above it. */
+.dr-hub-hr {
+  margin-top: 30px;
+}
+.dr-hub-hr-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(17,24,39,.55);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  padding: 16px 18px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color .15s ease;
+}
+.dr-hub-hr-card:hover {
+  border-color: rgba(244,162,97,.5);
+}
+.dr-hub-hr-play {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(244,162,97,.15);
+  border: 1px solid rgba(244,162,97,.5);
+  color: #f4a261;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+}
+.dr-hub-hr-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.dr-hub-hr-title {
+  font-weight: 800;
+  font-size: 14px;
+  color: #fff;
+}
+.dr-hub-hr-sub {
+  font-size: 11.5px;
+  color: #8fa3c8;
+}
+
+/* News summary modal — keeps readers on-site for the headline + short
+   summary; the "Read full story" link is the only thing that leaves. */
+.dr-hub-news-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+}
+.dr-hub-news-modal.open {
+  display: block;
+}
+.dr-hub-news-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(4,6,12,.78);
+  backdrop-filter: blur(4px);
+}
+.dr-hub-news-modal-panel {
+  position: relative;
+  max-width: 560px;
+  width: calc(100% - 32px);
+  margin: 8vh auto 0;
+  max-height: 82vh;
+  overflow-y: auto;
+  background: #0d0d1e;
+  border: 1px solid rgba(0,229,255,.3);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.5);
+}
+.dr-hub-news-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.2);
+  background: rgba(5,9,20,.7);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 1;
+}
+.dr-hub-news-modal-img {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  display: block;
+  border-radius: 16px 16px 0 0;
+}
+.dr-hub-news-modal-body {
+  padding: 20px 22px 22px;
+}
+.dr-hub-news-modal-meta {
+  font-size: 11px;
+  color: #8fa3c8;
+  margin-bottom: 8px;
+}
+.dr-hub-news-modal-title {
+  font-size: 19px;
+  font-weight: 900;
+  color: #fff;
+  margin: 0 0 12px;
+  line-height: 1.3;
+}
+.dr-hub-news-modal-desc {
+  font-size: 14px;
+  color: #c3cee4;
+  line-height: 1.6;
+  margin: 0 0 18px;
+}
+.dr-hub-news-modal-link {
+  display: inline-block;
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 13px;
+  text-decoration: none;
+}
+.dr-hub-news-modal-link:hover {
+  text-decoration: underline;
+}
+@media (max-width: 767px) {
+  .dr-hub-news-modal-panel {
+    margin-top: 4vh;
+    max-height: 90vh;
   }
 }
