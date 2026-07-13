@@ -10695,6 +10695,7 @@ function showPremiumGate(feature){
   var newsArticles = [];
   var hrLoaded = false;
   var gameContentCache = {};
+  var gameFeedCache = {};
 
   function hashIsGamepick(){
     return /^#?gamepick=/.test(window.location.hash || '');
@@ -10838,6 +10839,48 @@ function showPremiumGate(feature){
     return { videoUrl: null, webUrl: null };
   }
 
+  // The live play-by-play feed (feed/live) is the standard, well-established
+  // MLB Stats API endpoint for pitch-level detail — same family as the
+  // boxscore endpoint already used throughout this file, unlike the
+  // less-certain content/highlights feed above.
+  function fetchGameFeed(gamePk){
+    if (gameFeedCache[gamePk]) return gameFeedCache[gamePk];
+    var p = fetch('https://diamondreport.app/api/v1.1/game/' + gamePk + '/feed/live')
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(data){
+        return (data && data.liveData && data.liveData.plays && data.liveData.plays.allPlays) || [];
+      })
+      .catch(function(){ return []; });
+    gameFeedCache[gamePk] = p;
+    return p;
+  }
+
+  // Finds the pitch that was put in play for a given batter's home run.
+  // Matches by batter id (more reliable than name matching) — if a batter
+  // has multiple HRs in the same game, this returns the first one found,
+  // a known simplification since loadHRsToday's data is one aggregated
+  // entry per batter per game, not one per individual home run.
+  function findHRPitchInfo(allPlays, batterId){
+    if (!allPlays || !allPlays.length || !batterId) return null;
+    for (var i = 0; i < allPlays.length; i++) {
+      var play = allPlays[i] || {};
+      if (!play.result || play.result.event !== 'Home Run') continue;
+      if (!play.matchup || !play.matchup.batter || play.matchup.batter.id !== batterId) continue;
+      var events = play.playEvents || [];
+      var pitch = null;
+      for (var j = events.length - 1; j >= 0; j--) {
+        if (events[j] && events[j].isPitch) { pitch = events[j]; break; }
+      }
+      if (!pitch) return null;
+      var pitchType = pitch.details && pitch.details.type && pitch.details.type.description;
+      var velocity = pitch.pitchData && pitch.pitchData.startSpeed;
+      var pitcherName = play.matchup.pitcher && play.matchup.pitcher.fullName;
+      if (!pitchType && !velocity) return null;
+      return { pitchType: pitchType || null, velocity: velocity ? Math.round(velocity) : null, pitcherName: pitcherName || null };
+    }
+    return null;
+  }
+
   function openHRVideoModal(title, meta, videoUrl){
     var modal = document.getElementById('dr-hub-hr-modal');
     var video = document.getElementById('dr-hub-hr-modal-video');
@@ -10859,14 +10902,15 @@ function showPremiumGate(feature){
     if (video) { video.pause(); video.removeAttribute('src'); video.load(); }
   }
 
-  function renderHubHRs(list){
+  function renderHubHRs(list, dayLabel){
     var container = document.getElementById('dr-hub-hr-list');
     if (!container || !list || !list.length) return;
+    dayLabel = dayLabel || 'today';
     // Most recent first — allHRs is sorted oldest-game-first for the Props pane.
     var recent = list.slice().reverse().slice(0, 6);
     container.innerHTML = recent.map(function(h, i){
       var fallback = h.gamePk ? 'https://www.mlb.com/gameday/' + h.gamePk : 'https://www.mlb.com/video';
-      var title = escapeHtml(h.name) + ' — ' + h.hrs + ' HR' + (h.hrs !== 1 ? 's' : '') + ' today';
+      var title = escapeHtml(h.name) + ' — ' + h.hrs + ' HR' + (h.hrs !== 1 ? 's' : '') + ' ' + dayLabel;
       var sub = escapeHtml(h.teamAbbr || '') + (h.gameLabel ? ' · ' + escapeHtml(h.gameLabel) : '') + (h.timeStr ? ' · ' + escapeHtml(h.timeStr) : '');
       return (
         '<button type="button" class="dr-hub-hr-card" data-hr-idx="' + i + '" data-fallback="' + escapeHtml(fallback) + '">' +
@@ -10908,6 +10952,94 @@ function showPremiumGate(feature){
         if (found.webUrl) card.dataset.webUrl = found.webUrl;
       });
     });
+
+    // Second, independent progressive enhancement — append the actual pitch
+    // (velocity + type, e.g. "95 mph Slider") to the card's subtitle once
+    // found. The video modal reads this same subtitle text at click time,
+    // so it picks up the enrichment automatically without any extra wiring.
+    recent.forEach(function(h, i){
+      if (!h.gamePk || !h.id) return;
+      fetchGameFeed(h.gamePk).then(function(allPlays){
+        var pitch = findHRPitchInfo(allPlays, h.id);
+        if (!pitch || (!pitch.pitchType && !pitch.velocity)) return;
+        var card = container.querySelector('[data-hr-idx="' + i + '"]');
+        var subEl = card && card.querySelector('.dr-hub-hr-sub');
+        if (!subEl) return;
+        var pitchLabel = [pitch.velocity ? pitch.velocity + ' mph' : null, pitch.pitchType].filter(Boolean).join(' ');
+        if (pitchLabel) subEl.textContent += ' · ' + pitchLabel;
+      });
+    });
+  }
+
+  // Whether any of today's games has actually started yet (Live or Final).
+  // Defaults to true (i.e. "yes, started") on any fetch failure — if we
+  // can't tell, it's safer to fall back to the plain empty-state link than
+  // to risk showing yesterday's home runs as if they were today's.
+  function hasAnyGameStartedToday(){
+    var todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+    return fetch('https://diamondreport.app/api/v1/schedule?sportId=1&date=' + todayStr + '&hydrate=status&language=en')
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(data){
+        var entry = (data.dates || []).find(function(d){ return d.date === todayStr; }) || (data.dates && data.dates[0]);
+        var games = (entry && entry.games) || [];
+        return games.some(function(g){
+          var st = g.status && g.status.abstractGameState;
+          return st === 'Live' || st === 'Final';
+        });
+      })
+      .catch(function(){ return true; });
+  }
+
+  // Self-contained variant of loadHRsToday's boxscore-scanning logic for an
+  // arbitrary date, used only to fetch yesterday's home runs for the hub
+  // fallback below. Deliberately doesn't touch bannerHRs, #hrs-today-content,
+  // or any other global state loadHRsToday manages — this is read-only, for
+  // display here only.
+  function fetchHRsForDate(dateStr){
+    return fetch('https://diamondreport.app/api/v1/schedule?sportId=1&date=' + dateStr + '&hydrate=team&language=en')
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(data){
+        var entry = (data.dates || []).find(function(d){ return d.date === dateStr; }) || (data.dates && data.dates[0]);
+        var games = (entry && entry.games) || [];
+        return Promise.all(games.map(function(g){
+          return fetch('https://diamondreport.app/api/v1/game/' + g.gamePk + '/boxscore')
+            .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(function(bd){ return bd.teams; })
+            .catch(function(){ return null; });
+        })).then(function(boxscores){
+          var allHRs = [];
+          games.forEach(function(g, gi){
+            var box = boxscores[gi];
+            if (!box || !g.teams) return;
+            var dt = new Date(g.gameDate);
+            var timeStr = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago' });
+            var awayAbbr = g.teams.away && g.teams.away.team && g.teams.away.team.abbreviation;
+            var homeAbbr = g.teams.home && g.teams.home.team && g.teams.home.team.abbreviation;
+            ['away', 'home'].forEach(function(side){
+              var team = box[side];
+              if (!team) return;
+              var abbr = side === 'away' ? awayAbbr : homeAbbr;
+              (team.batters || []).forEach(function(id){
+                var p = team.players && team.players['ID' + id];
+                var hrs = parseInt(p && p.stats && p.stats.batting && p.stats.batting.homeRuns) || 0;
+                if (hrs > 0) allHRs.push({
+                  name: (p.person && p.person.fullName) || '–',
+                  id: p.person && p.person.id,
+                  teamAbbr: abbr,
+                  hrs: hrs,
+                  gameLabel: awayAbbr + ' @ ' + homeAbbr,
+                  timeStr: timeStr,
+                  gameTimestamp: dt.getTime(),
+                  gamePk: g.gamePk
+                });
+              });
+            });
+          });
+          allHRs.sort(function(a, b){ return a.gameTimestamp - b.gameTimestamp || b.hrs - a.hrs; });
+          return allHRs;
+        });
+      })
+      .catch(function(){ return []; });
   }
 
   function loadHubHRs(){
@@ -10916,7 +11048,27 @@ function showPremiumGate(feature){
     try {
       var maybePromise = typeof window.loadHRsToday === 'function' ? window.loadHRsToday() : null;
       Promise.resolve(maybePromise).then(function(){
-        renderHubHRs(window.__drHRsToday);
+        var todaysHRs = window.__drHRsToday || [];
+        if (todaysHRs.length) {
+          renderHubHRs(todaysHRs);
+          return;
+        }
+        // Nothing today yet — if that's because the first game of the day
+        // hasn't started, keep showing yesterday's home runs instead of
+        // reverting to the plain "watch highlights" link for however many
+        // hours it is until first pitch.
+        hasAnyGameStartedToday().then(function(started){
+          if (started) return;
+          var yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          var yStr = yesterday.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+          fetchHRsForDate(yStr).then(function(list){
+            if (!list.length) return;
+            var heading = document.getElementById('dr-hub-hr-heading');
+            if (heading) heading.textContent = "Yesterday's Home Run Highlights";
+            renderHubHRs(list, 'yesterday');
+          });
+        });
       }).catch(function(){ /* leave the generic fallback link in place */ });
     } catch(e) { /* leave the generic fallback link in place */ }
   }
