@@ -2191,6 +2191,11 @@ body > main, main,
 .dr-hub-hr {
   margin-top: 30px;
 }
+.dr-hub-hr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 .dr-hub-hr-card {
   display: flex;
   align-items: center;
@@ -2218,6 +2223,15 @@ body > main, main,
   align-items: center;
   justify-content: center;
   font-size: 15px;
+}
+.dr-hub-hr-photo {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(244,162,97,.12);
+  border: 1px solid rgba(244,162,97,.5);
+  object-fit: cover;
 }
 .dr-hub-hr-text {
   display: flex;
