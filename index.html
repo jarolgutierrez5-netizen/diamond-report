@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=20260713c0500">
+<link rel="stylesheet" href="styles.min.css?v=20260713c0600">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -221,6 +221,44 @@
 </div>
 <!-- ============== END ADSENSE AD UNIT — DO NOT REMOVE ============== -->
 <!-- PROD v8.48: Top-level Game Picks tab removed; Game Picks is the default page. -->
+
+<!-- Landing hub ("The Sports Desk") — default view for a fresh visit with no
+     #gamepick= hash. Hidden/shown by the IIFE at the end of app.js; existing
+     deep links straight into a prediction pane are unaffected. -->
+<section id="dr-landing-hub" class="dr-landing-hub" aria-label="Sports hub">
+  <div class="dr-hub-wrap">
+    <div class="dr-hub-eyebrow">Diamond Report</div>
+    <h1 class="dr-hub-title">The Sports Desk</h1>
+    <div class="dr-hub-sub">Headlines across the sports we cover, plus model-driven predictions graded in the open. Pick a sport to dive in.</div>
+
+    <div class="dr-hub-sports">
+      <button type="button" class="dr-hub-sport-card live" id="dr-hub-baseball-card">
+        <span class="dr-hub-sport-icon">⚾</span>
+        <span class="dr-hub-sport-title">Baseball</span>
+        <span class="dr-hub-sport-desc">Live MLB predictions across 10 markets, updated daily.</span>
+        <span class="dr-hub-sport-badge">● LIVE — ENTER PREDICTIONS</span>
+      </button>
+      <div class="dr-hub-sport-card soon" aria-disabled="true">
+        <span class="dr-hub-sport-icon">🏈</span>
+        <span class="dr-hub-sport-title">Football</span>
+        <span class="dr-hub-sport-desc">NFL predictions launching for the 2026 season.</span>
+        <span class="dr-hub-sport-badge">COMING SEPTEMBER</span>
+      </div>
+      <div class="dr-hub-sport-card soon" aria-disabled="true">
+        <span class="dr-hub-sport-icon">🏀</span>
+        <span class="dr-hub-sport-title">Basketball</span>
+        <span class="dr-hub-sport-desc">NBA predictions in the works.</span>
+        <span class="dr-hub-sport-badge">COMING SOON</span>
+      </div>
+    </div>
+
+    <div class="dr-hub-news" id="dr-hub-news" style="display:none">
+      <div class="dr-hub-section-head"><span class="dr-hub-section-icon">⚾</span><h2>MLB Headlines</h2><span class="dr-hub-section-line"></span></div>
+      <div class="dr-hub-news-grid" id="dr-hub-news-grid"></div>
+    </div>
+  </div>
+</section>
+
 <main>
 <section class="section" id="scores">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
@@ -671,7 +709,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=20260713c0300" defer></script>
+<script src="app.min.js?v=20260713c0600" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->

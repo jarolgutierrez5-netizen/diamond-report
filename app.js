@@ -10678,3 +10678,114 @@ function showPremiumGate(feature){
   else bind();
   window.addEventListener('load', bind, { once:true });
 })();
+
+// Landing hub ("The Sports Desk") — default view for a fresh visit with no
+// #gamepick= hash; hidden once a sport is entered. Every route into a pane
+// (the static desktop tabs' onclick, the mobile drawer, the desktop sidebar,
+// and the premium gate) ultimately calls window.showGamePickPane or
+// window.showPremiumGate, so wrapping those two is enough to hide the hub
+// from any entry point without touching either nav's own code — same
+// non-invasive wrap pattern already used elsewhere in this file (see
+// window.showGamePickPane wraps above).
+(function(){
+  var newsLoaded = false;
+
+  function hashIsGamepick(){
+    return /^#?gamepick=/.test(window.location.hash || '');
+  }
+
+  function showHub(){
+    document.body.classList.add('dr-hub-active');
+    loadHubNews();
+  }
+
+  function hideHub(){
+    document.body.classList.remove('dr-hub-active');
+  }
+
+  function escapeHtml(s){
+    return String(s || '').replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+
+  function timeAgo(iso){
+    var t = new Date(iso).getTime();
+    if (!t || isNaN(t)) return '';
+    var minutes = Math.max(1, Math.round((Date.now() - t) / 60000));
+    if (minutes < 60) return minutes + 'm ago';
+    var hours = Math.round(minutes / 60);
+    if (hours < 24) return hours + 'h ago';
+    return Math.round(hours / 24) + 'd ago';
+  }
+
+  function renderHubNews(articles){
+    var section = document.getElementById('dr-hub-news');
+    var grid = document.getElementById('dr-hub-news-grid');
+    if (!section || !grid || !articles || !articles.length) return;
+    grid.innerHTML = articles.slice(0, 3).map(function(a, i){
+      var img = a && a.images && a.images[0] && a.images[0].url;
+      var href = a && a.links && a.links.web && a.links.web.href;
+      var when = timeAgo(a && a.published);
+      return (
+        '<a class="dr-hub-news-card' + (i === 0 ? ' lead' : '') + '" href="' + escapeHtml(href || '#') + '" target="_blank" rel="noopener noreferrer">' +
+          (img ? '<img src="' + escapeHtml(img) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '') +
+          '<div class="dr-hub-news-body">' +
+            '<div class="dr-hub-news-headline">' + escapeHtml(a && a.headline) + '</div>' +
+            '<div class="dr-hub-news-meta">ESPN' + (when ? ' · ' + when : '') + '</div>' +
+          '</div>' +
+        '</a>'
+      );
+    }).join('');
+    section.style.display = '';
+  }
+
+  function loadHubNews(){
+    if (newsLoaded) return;
+    newsLoaded = true;
+    fetch('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=6')
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(data){ renderHubNews(data && data.articles); })
+      .catch(function(){ /* leave the news section hidden on failure */ });
+  }
+
+  function bind(){
+    var hub = document.getElementById('dr-landing-hub');
+    if (!hub) return;
+
+    var baseballCard = document.getElementById('dr-hub-baseball-card');
+    if (baseballCard && !baseballCard.dataset.drHubReady) {
+      baseballCard.dataset.drHubReady = '1';
+      baseballCard.addEventListener('click', function(){
+        hideHub();
+        if (!hashIsGamepick()) {
+          try { window.location.hash = 'gamepick=game'; } catch(e) {}
+        }
+        if (typeof window.showGamePickPane === 'function') window.showGamePickPane('game');
+      });
+    }
+
+    if (hashIsGamepick()) hideHub(); else showHub();
+
+    var oldShowPane = window.showGamePickPane;
+    if (typeof oldShowPane === 'function' && !oldShowPane.__drHub) {
+      var wrapShowPane = function(p){ hideHub(); return oldShowPane.apply(this, arguments); };
+      wrapShowPane.__drHub = true;
+      window.showGamePickPane = wrapShowPane;
+    }
+
+    var oldShowGate = window.showPremiumGate;
+    if (typeof oldShowGate === 'function' && !oldShowGate.__drHub) {
+      var wrapShowGate = function(f){ hideHub(); return oldShowGate.apply(this, arguments); };
+      wrapShowGate.__drHub = true;
+      window.showPremiumGate = wrapShowGate;
+    }
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind, { once:true });
+  else bind();
+
+  window.addEventListener('hashchange', function(){
+    if (hashIsGamepick()) hideHub(); else showHub();
+  });
+})();
