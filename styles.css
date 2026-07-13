@@ -1710,14 +1710,16 @@ h1, #premium .dr-premium-hero h1, .dr-prediction-hero h1, .section-title,
 }
 
 /* ── Desktop collapsible sidebar nav ──────────────────────────────────────
-   Hidden by default (mobile/tablet keep the existing hamburger drawer,
-   completely untouched). Shown only at wide viewports, matching the site's
-   existing desktop breakpoint. main gets a matching margin-left so content
-   doesn't sit under the fixed sidebar. */
+   Hidden by default (phones keep the existing hamburger drawer below
+   768px, completely untouched). Shown from 900px up — wide enough for a
+   collapsed 64px sidebar plus content, and low enough to cover common
+   half-screen/split-window widths instead of only full-width desktops.
+   main gets a matching margin-left so content doesn't sit under the fixed
+   sidebar. */
 #dr-sidebar-nav {
   display: none;
 }
-@media (min-width: 1180px) {
+@media (min-width: 900px) {
   /* The horizontal gamepick-tabs row is redundant once the sidebar takes
      over navigation at this width — without this, both show at once.
      Matches the highest-specificity selector shape already used elsewhere
