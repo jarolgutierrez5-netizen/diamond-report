@@ -2137,6 +2137,23 @@ html body.dr-hub-active main {
   font-size: 10.5px;
   color: #8fa3c8;
 }
+.dr-hub-news-more {
+  display: block;
+  margin: 16px auto 0;
+  padding: 10px 24px;
+  background: rgba(244,162,97,.1);
+  border: 1px solid rgba(244,162,97,.4);
+  border-radius: 999px;
+  color: #f4a261;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+.dr-hub-news-more:hover {
+  background: rgba(244,162,97,.18);
+  border-color: rgba(244,162,97,.65);
+}
 @media (max-width: 767px) {
   #dr-landing-hub {
     padding: 22px 16px 16px;

@@ -10693,6 +10693,7 @@ function showPremiumGate(feature){
 (function(){
   var newsLoaded = false;
   var newsArticles = [];
+  var newsVisibleCount = 10;
   var hrLoaded = false;
   var gameContentCache = {};
   var gameFeedCache = {};
@@ -10731,8 +10732,26 @@ function showPremiumGate(feature){
     var section = document.getElementById('dr-hub-news');
     var grid = document.getElementById('dr-hub-news-grid');
     if (!section || !grid || !articles || !articles.length) return;
-    newsArticles = articles.slice(0, 9);
-    grid.innerHTML = newsArticles.map(function(a, i){
+    newsArticles = articles;
+    newsVisibleCount = Math.min(10, newsArticles.length);
+    renderNewsGrid();
+    section.style.display = '';
+
+    var moreBtn = document.getElementById('dr-hub-news-more');
+    if (moreBtn && !moreBtn.dataset.drBound) {
+      moreBtn.dataset.drBound = '1';
+      moreBtn.addEventListener('click', function(){
+        newsVisibleCount = Math.min(newsVisibleCount + 10, newsArticles.length);
+        renderNewsGrid();
+      });
+    }
+  }
+
+  function renderNewsGrid(){
+    var grid = document.getElementById('dr-hub-news-grid');
+    if (!grid) return;
+    var visible = newsArticles.slice(0, newsVisibleCount);
+    grid.innerHTML = visible.map(function(a, i){
       var img = a && a.images && a.images[0] && a.images[0].url;
       var when = timeAgo(a && a.published);
       return (
@@ -10745,14 +10764,16 @@ function showPremiumGate(feature){
         '</button>'
       );
     }).join('');
-    section.style.display = '';
 
     grid.querySelectorAll('.dr-hub-news-card').forEach(function(card){
       card.addEventListener('click', function(){
         var idx = Number(card.getAttribute('data-news-idx'));
-        openNewsModal(newsArticles[idx]);
+        openNewsModal(visible[idx]);
       });
     });
+
+    var moreBtn = document.getElementById('dr-hub-news-more');
+    if (moreBtn) moreBtn.style.display = newsVisibleCount < newsArticles.length ? '' : 'none';
   }
 
   function openNewsModal(a){
@@ -10801,8 +10822,8 @@ function showPremiumGate(feature){
     if (newsLoaded) return;
     newsLoaded = true;
     Promise.all([
-      fetchLeagueNews('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=14', 'MLB'),
-      fetchLeagueNews('https://site.api.espn.com/apis/site/v2/sports/football/nfl/news?limit=8', 'NFL')
+      fetchLeagueNews('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=50', 'MLB'),
+      fetchLeagueNews('https://site.api.espn.com/apis/site/v2/sports/football/nfl/news?limit=30', 'NFL')
     ]).then(function(results){
       var merged = results[0].concat(results[1]).sort(function(a, b){
         return new Date(b.published) - new Date(a.published);
