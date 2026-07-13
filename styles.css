@@ -1754,9 +1754,17 @@ h1, #premium .dr-premium-hero h1, .dr-prediction-hero h1, .section-title,
   }
   /* Matches the specificity of an existing "body > main, main" rule elsewhere
      in this file, which otherwise wins over a plain main{} selector
-     regardless of source order. */
+     regardless of source order. That rule sizes main from 100vw with an
+     auto margin-right — once margin-left is pinned to the sidebar width
+     here, all the leftover space collapses into one big empty gap on the
+     right instead of main filling the space actually next to the sidebar.
+     Overriding width/max-width/margin-right too makes main fill exactly
+     the space beside the sidebar. */
   body > main, main {
     margin-left: 250px !important;
+    width: auto !important;
+    max-width: none !important;
+    margin-right: var(--dr-v11-page-pad) !important;
     transition: margin-left .18s ease;
   }
   body.dr-sidebar-collapsed > main, body.dr-sidebar-collapsed main {
