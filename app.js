@@ -5343,7 +5343,7 @@ async function loadHRsToday() {
           if (hrs > 0) allHRs.push({
             name: p.person?.fullName||'–', id: p.person?.id,
             teamAbbr: abbr, hrs, gameLabel:`${awayAbbr} @ ${homeAbbr}`,
-            timeStr, gameTimestamp: dt.getTime()
+            timeStr, gameTimestamp: dt.getTime(), gamePk: g.gamePk
           });
           // Feed live HRs to banner
           if (isGameLive && hrs > 0 && p?.person?.id) {
@@ -5360,6 +5360,9 @@ async function loadHRsToday() {
     });
 
     allHRs.sort((a,b) => a.gameTimestamp-b.gameTimestamp || b.hrs-a.hrs);
+    // Exposed so News Central's Home Run Highlights section can reuse this
+    // already-computed list instead of re-fetching/re-deriving it.
+    window.__drHRsToday = allHRs;
 
     if (!allHRs.length) {
       if (el) el.innerHTML=`<div class="mu-empty">No HRs at this time.</div>`;
@@ -10690,6 +10693,7 @@ function showPremiumGate(feature){
 (function(){
   var newsLoaded = false;
   var newsArticles = [];
+  var hrLoaded = false;
 
   function hashIsGamepick(){
     return /^#?gamepick=/.test(window.location.hash || '');
@@ -10698,6 +10702,7 @@ function showPremiumGate(feature){
   function showHub(){
     document.body.classList.add('dr-hub-active');
     loadHubNews();
+    loadHubHRs();
   }
 
   function hideHub(){
@@ -10724,7 +10729,7 @@ function showPremiumGate(feature){
     var section = document.getElementById('dr-hub-news');
     var grid = document.getElementById('dr-hub-news-grid');
     if (!section || !grid || !articles || !articles.length) return;
-    newsArticles = articles.slice(0, 6);
+    newsArticles = articles.slice(0, 9);
     grid.innerHTML = newsArticles.map(function(a, i){
       var img = a && a.images && a.images[0] && a.images[0].url;
       var when = timeAgo(a && a.published);
@@ -10782,10 +10787,46 @@ function showPremiumGate(feature){
   function loadHubNews(){
     if (newsLoaded) return;
     newsLoaded = true;
-    fetch('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=10')
+    fetch('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=14')
       .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function(data){ renderHubNews(data && data.articles); })
       .catch(function(){ /* leave the news section hidden on failure */ });
+  }
+
+  function hs(id){
+    return id ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/' + id + '/headshot/67/current' : '';
+  }
+
+  function renderHubHRs(list){
+    var container = document.getElementById('dr-hub-hr-list');
+    if (!container || !list || !list.length) return;
+    // Most recent first — allHRs is sorted oldest-game-first for the Props pane.
+    var recent = list.slice().reverse().slice(0, 6);
+    container.innerHTML = recent.map(function(h){
+      var link = h.gamePk ? 'https://www.mlb.com/gameday/' + h.gamePk : 'https://www.mlb.com/video';
+      var title = escapeHtml(h.name) + ' — ' + h.hrs + ' HR' + (h.hrs !== 1 ? 's' : '') + ' today';
+      var sub = escapeHtml(h.teamAbbr || '') + (h.gameLabel ? ' · ' + escapeHtml(h.gameLabel) : '') + (h.timeStr ? ' · ' + escapeHtml(h.timeStr) : '');
+      return (
+        '<a class="dr-hub-hr-card" href="' + escapeHtml(link) + '" target="_blank" rel="noopener noreferrer">' +
+          (h.id ? '<img class="dr-hub-hr-photo" src="' + escapeHtml(hs(h.id)) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '<span class="dr-hub-hr-play">▶</span>') +
+          '<span class="dr-hub-hr-text">' +
+            '<span class="dr-hub-hr-title">' + title + '</span>' +
+            '<span class="dr-hub-hr-sub">' + sub + '</span>' +
+          '</span>' +
+        '</a>'
+      );
+    }).join('');
+  }
+
+  function loadHubHRs(){
+    if (hrLoaded) return;
+    hrLoaded = true;
+    try {
+      var maybePromise = typeof window.loadHRsToday === 'function' ? window.loadHRsToday() : null;
+      Promise.resolve(maybePromise).then(function(){
+        renderHubHRs(window.__drHRsToday);
+      }).catch(function(){ /* leave the generic fallback link in place */ });
+    } catch(e) { /* leave the generic fallback link in place */ }
   }
 
   function bind(){
