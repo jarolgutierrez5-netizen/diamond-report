@@ -2163,3 +2163,17 @@ html body.dr-hub-active main {
     grid-template-columns: 1fr;
   }
 }
+
+/* The header renders as a fixed, 70px-tall overlay across every breakpoint
+   tested (mobile through wide desktop) — main's own top padding was only
+   ever a decorative inner spacing value, never actually sized to clear it,
+   so the hero eyebrow/hub eyebrow text could render partly underneath the
+   header. Most visible on iPad width, where that decorative padding
+   happens to be at its smallest. Forcing enough top padding to clear the
+   header height everywhere fixes both main and the landing hub in one
+   place; matches "body > main, main"'s specificity so it reliably wins by
+   source order regardless of which breakpoint rule set the padding. */
+body > main, main,
+#dr-landing-hub {
+  padding-top: 88px !important;
+}
