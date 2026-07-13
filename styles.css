@@ -1763,7 +1763,8 @@ h1, #premium .dr-premium-hero h1, .dr-prediction-hero h1, .section-title,
      Overriding width/max-width/margin-right too makes main fill exactly
      the space beside the sidebar. */
   body > main, main,
-  #dr-landing-hub {
+  #dr-landing-hub,
+  footer.dr-footer {
     margin-left: 250px !important;
     width: auto !important;
     max-width: none !important;
@@ -1771,7 +1772,8 @@ h1, #premium .dr-premium-hero h1, .dr-prediction-hero h1, .section-title,
     transition: margin-left .18s ease;
   }
   body.dr-sidebar-collapsed > main, body.dr-sidebar-collapsed main,
-  body.dr-sidebar-collapsed #dr-landing-hub {
+  body.dr-sidebar-collapsed #dr-landing-hub,
+  body.dr-sidebar-collapsed footer.dr-footer {
     margin-left: 64px !important;
   }
 }
@@ -2318,4 +2320,36 @@ body > main, main,
     margin-top: 4vh;
     max-height: 90vh;
   }
+}
+
+/* Sitewide footer — links to the policy/trust pages (About, Contact, Privacy,
+   Terms) required for things like Google AdSense review. */
+footer.dr-footer {
+  border-top: 1px solid var(--border);
+  padding: 26px 24px 32px;
+  text-align: center;
+  background: var(--bg2);
+}
+footer.dr-footer .dr-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+footer.dr-footer .dr-footer-links a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+}
+footer.dr-footer .dr-footer-links a:hover {
+  color: var(--accent);
+}
+footer.dr-footer .dr-footer-meta {
+  color: #5f7086;
+  font-size: 11.5px;
+  line-height: 1.6;
+  max-width: 640px;
+  margin: 0 auto;
 }
