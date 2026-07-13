@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=20260713c1600">
+<link rel="stylesheet" href="styles.min.css?v=20260713c1700">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -278,6 +278,22 @@
       <h3 id="dr-hub-news-modal-title" class="dr-hub-news-modal-title"></h3>
       <p id="dr-hub-news-modal-desc" class="dr-hub-news-modal-desc"></p>
       <a id="dr-hub-news-modal-link" class="dr-hub-news-modal-link" href="#" target="_blank" rel="noopener noreferrer">Read full story on ESPN →</a>
+    </div>
+  </div>
+</div>
+
+<!-- Home run clip popup — plays the direct video in place when the game's
+     content feed returns a playable clip URL; the card itself falls back to
+     linking out (mlb.com/video or the Gameday page) when it doesn't.
+     Populated/opened by the hub IIFE at the end of app.js. -->
+<div id="dr-hub-hr-modal" class="dr-hub-news-modal" aria-hidden="true">
+  <div class="dr-hub-news-modal-overlay" id="dr-hub-hr-modal-overlay"></div>
+  <div class="dr-hub-news-modal-panel dr-hub-hr-modal-panel" role="dialog" aria-modal="true" aria-labelledby="dr-hub-hr-modal-title">
+    <button type="button" class="dr-hub-news-modal-close" id="dr-hub-hr-modal-close" aria-label="Close">✕</button>
+    <video id="dr-hub-hr-modal-video" class="dr-hub-hr-modal-video" controls playsinline></video>
+    <div class="dr-hub-news-modal-body">
+      <div class="dr-hub-news-modal-meta" id="dr-hub-hr-modal-meta"></div>
+      <h3 id="dr-hub-hr-modal-title" class="dr-hub-news-modal-title"></h3>
     </div>
   </div>
 </div>
@@ -743,7 +759,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=20260713c1500" defer></script>
+<script src="app.min.js?v=20260713c1700" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
