@@ -10848,6 +10848,11 @@ function showPremiumGate(feature){
       var text = [it.title, it.headline, it.blurb, it.description].filter(Boolean).join(' ').toLowerCase();
       if (text.indexOf(lastName) === -1) continue;
       if (!/home run|homers|homered/.test(text)) continue;
+      // Skip multi-player compilation reels ("Top 10 Home Runs of the
+      // Week", "Plays of the Night", etc.) that happen to name-check this
+      // player alongside others — those aren't the player's specific clip
+      // and linking to one is worse than the Gameday-page fallback.
+      if (/top\s*\d+|recap|best of|plays of the|highlights of the/.test(text)) continue;
       var webUrl = it.slug ? 'https://www.mlb.com/video/' + it.slug : null;
       var playback = (it.playbacks || []).find(function(pb){ return pb && pb.url; });
       return { videoUrl: playback ? playback.url : null, webUrl: webUrl };
