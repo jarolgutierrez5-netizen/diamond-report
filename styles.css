@@ -2337,6 +2337,16 @@ body > main, main,
   display: block;
   border-radius: 16px 16px 0 0;
 }
+.dr-hub-hr-modal-panel {
+  max-width: 720px;
+}
+.dr-hub-hr-modal-video {
+  width: 100%;
+  aspect-ratio: 16/9;
+  display: block;
+  background: #000;
+  border-radius: 16px 16px 0 0;
+}
 .dr-hub-news-modal-body {
   padding: 20px 22px 22px;
 }

@@ -10818,20 +10818,45 @@ function showPremiumGate(feature){
     return p;
   }
 
+  // Returns { videoUrl, webUrl } — videoUrl is a direct playable clip (used
+  // to play the video in place, in-site), webUrl is the clip's mlb.com/video
+  // page (used as a new-tab fallback when there's no direct playback url).
+  // Either or both may be null if no highlight matched this player.
   function findHRClipUrl(items, playerName){
-    if (!items || !items.length || !playerName) return null;
+    if (!items || !items.length || !playerName) return { videoUrl: null, webUrl: null };
     var lastName = String(playerName).trim().split(/\s+/).pop().toLowerCase();
-    if (!lastName) return null;
+    if (!lastName) return { videoUrl: null, webUrl: null };
     for (var i = 0; i < items.length; i++) {
       var it = items[i] || {};
       var text = [it.title, it.headline, it.blurb, it.description].filter(Boolean).join(' ').toLowerCase();
       if (text.indexOf(lastName) === -1) continue;
       if (!/home run|homers|homered/.test(text)) continue;
-      if (it.slug) return 'https://www.mlb.com/video/' + it.slug;
+      var webUrl = it.slug ? 'https://www.mlb.com/video/' + it.slug : null;
       var playback = (it.playbacks || []).find(function(pb){ return pb && pb.url; });
-      if (playback) return playback.url;
+      return { videoUrl: playback ? playback.url : null, webUrl: webUrl };
     }
-    return null;
+    return { videoUrl: null, webUrl: null };
+  }
+
+  function openHRVideoModal(title, meta, videoUrl){
+    var modal = document.getElementById('dr-hub-hr-modal');
+    var video = document.getElementById('dr-hub-hr-modal-video');
+    if (!modal || !video) return;
+    document.getElementById('dr-hub-hr-modal-title').textContent = title || '';
+    document.getElementById('dr-hub-hr-modal-meta').textContent = meta || '';
+    video.src = videoUrl;
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    video.play().catch(function(){});
+  }
+
+  function closeHRVideoModal(){
+    var modal = document.getElementById('dr-hub-hr-modal');
+    var video = document.getElementById('dr-hub-hr-modal-video');
+    if (!modal) return;
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    if (video) { video.pause(); video.removeAttribute('src'); video.load(); }
   }
 
   function renderHubHRs(list){
@@ -10840,30 +10865,47 @@ function showPremiumGate(feature){
     // Most recent first — allHRs is sorted oldest-game-first for the Props pane.
     var recent = list.slice().reverse().slice(0, 6);
     container.innerHTML = recent.map(function(h, i){
-      var link = h.gamePk ? 'https://www.mlb.com/gameday/' + h.gamePk : 'https://www.mlb.com/video';
+      var fallback = h.gamePk ? 'https://www.mlb.com/gameday/' + h.gamePk : 'https://www.mlb.com/video';
       var title = escapeHtml(h.name) + ' — ' + h.hrs + ' HR' + (h.hrs !== 1 ? 's' : '') + ' today';
       var sub = escapeHtml(h.teamAbbr || '') + (h.gameLabel ? ' · ' + escapeHtml(h.gameLabel) : '') + (h.timeStr ? ' · ' + escapeHtml(h.timeStr) : '');
       return (
-        '<a class="dr-hub-hr-card" href="' + escapeHtml(link) + '" target="_blank" rel="noopener noreferrer" data-hr-idx="' + i + '">' +
+        '<button type="button" class="dr-hub-hr-card" data-hr-idx="' + i + '" data-fallback="' + escapeHtml(fallback) + '">' +
           (h.id ? '<img class="dr-hub-hr-photo" src="' + escapeHtml(hs(h.id)) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '<span class="dr-hub-hr-play">▶</span>') +
           '<span class="dr-hub-hr-text">' +
             '<span class="dr-hub-hr-title">' + title + '</span>' +
             '<span class="dr-hub-hr-sub">' + sub + '</span>' +
           '</span>' +
-        '</a>'
+        '</button>'
       );
     }).join('');
 
-    // Progressive enhancement — upgrade each card's href to the actual clip
-    // in place once/if found, after the Gameday-link version above is
-    // already visible and clickable.
+    container.querySelectorAll('.dr-hub-hr-card').forEach(function(card){
+      card.addEventListener('click', function(){
+        var videoUrl = card.dataset.videoUrl;
+        var webUrl = card.dataset.webUrl;
+        if (videoUrl) {
+          var titleEl = card.querySelector('.dr-hub-hr-title');
+          var subEl = card.querySelector('.dr-hub-hr-sub');
+          openHRVideoModal(titleEl ? titleEl.textContent : '', subEl ? subEl.textContent : '', videoUrl);
+        } else {
+          window.open(webUrl || card.dataset.fallback, '_blank', 'noopener,noreferrer');
+        }
+      });
+    });
+
+    // Progressive enhancement — once/if a matching highlight is found for a
+    // player, stash its direct video url (plays in-site) and/or web page
+    // url (new-tab fallback) on the card as data attributes, read by the
+    // click handler above. Until/unless that resolves, clicking just opens
+    // the Gameday page fallback already wired in — never worse than before.
     recent.forEach(function(h, i){
       if (!h.gamePk) return;
       fetchGameContent(h.gamePk).then(function(items){
-        var url = findHRClipUrl(items, h.name);
-        if (!url) return;
+        var found = findHRClipUrl(items, h.name);
         var card = container.querySelector('[data-hr-idx="' + i + '"]');
-        if (card) card.href = url;
+        if (!card) return;
+        if (found.videoUrl) card.dataset.videoUrl = found.videoUrl;
+        if (found.webUrl) card.dataset.webUrl = found.webUrl;
       });
     });
   }
@@ -10893,8 +10935,20 @@ function showPremiumGate(feature){
       modalOverlay.dataset.drHubReady = '1';
       modalOverlay.addEventListener('click', closeNewsModal);
     }
+
+    var hrModalClose = document.getElementById('dr-hub-hr-modal-close');
+    var hrModalOverlay = document.getElementById('dr-hub-hr-modal-overlay');
+    if (hrModalClose && !hrModalClose.dataset.drHubReady) {
+      hrModalClose.dataset.drHubReady = '1';
+      hrModalClose.addEventListener('click', closeHRVideoModal);
+    }
+    if (hrModalOverlay && !hrModalOverlay.dataset.drHubReady) {
+      hrModalOverlay.dataset.drHubReady = '1';
+      hrModalOverlay.addEventListener('click', closeHRVideoModal);
+    }
+
     document.addEventListener('keydown', function(e){
-      if (e.key === 'Escape') closeNewsModal();
+      if (e.key === 'Escape') { closeNewsModal(); closeHRVideoModal(); }
     });
 
     var baseballCard = document.getElementById('dr-hub-baseball-card');
