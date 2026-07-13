@@ -10823,9 +10823,10 @@ function showPremiumGate(feature){
     newsLoaded = true;
     Promise.all([
       fetchLeagueNews('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=50', 'MLB'),
-      fetchLeagueNews('https://site.api.espn.com/apis/site/v2/sports/football/nfl/news?limit=30', 'NFL')
+      fetchLeagueNews('https://site.api.espn.com/apis/site/v2/sports/football/nfl/news?limit=30', 'NFL'),
+      fetchLeagueNews('https://site.api.espn.com/apis/site/v2/sports/basketball/nba/news?limit=30', 'NBA')
     ]).then(function(results){
-      var merged = results[0].concat(results[1]).sort(function(a, b){
+      var merged = results[0].concat(results[1]).concat(results[2]).sort(function(a, b){
         return new Date(b.published) - new Date(a.published);
       });
       renderHubNews(merged);
