@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-14T23:27:07.403Z",
+  "generatedAt": "2026-07-15T07:31:21.170Z",
   "market": {
     "drp": [
       {
@@ -330,8 +330,8 @@
         "homeTeam": "NL",
         "pick": "AL",
         "pickPct": 54,
-        "result": "pending",
-        "actualWinner": null
+        "result": "win",
+        "actualWinner": "AL"
       }
     ],
     "kprop": [
@@ -1340,8 +1340,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "loss",
+        "finalK": 3
       },
       {
         "key": "2026-07-14|KPROP|cristopher sánchez",
@@ -1356,8 +1356,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "loss",
+        "finalK": 2
       }
     ],
     "premium": [
@@ -4088,8 +4088,15 @@
         "score": 27,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 1,
+          "totalBases": 1,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 1,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-14|PREMIUM|hr|656941",
@@ -4104,8 +4111,15 @@
         "score": 26,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-14|PREMIUM|hr|691406",
@@ -4120,8 +4134,15 @@
         "score": 24,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-14|PREMIUM|hits|545361",
@@ -4136,8 +4157,15 @@
         "score": 71,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-14|PREMIUM|hits|677951",
@@ -4152,8 +4180,15 @@
         "score": 71,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 1,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-14|PREMIUM|hits|700250",
@@ -4168,8 +4203,15 @@
         "score": 69,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": {
+          "hits": 1,
+          "totalBases": 1,
+          "homeRuns": 0,
+          "rbi": 1,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-14|PREMIUM|hits|518692",
@@ -4184,8 +4226,15 @@
         "score": 69,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-14|PREMIUM|hits|669127",
@@ -4200,8 +4249,15 @@
         "score": 68,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": {
+          "hits": 1,
+          "totalBases": 1,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 1,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-14|PREMIUM|rbis|682928",
@@ -4216,8 +4272,15 @@
         "score": 70,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-14|PREMIUM|rbis|665742",
@@ -4232,8 +4295,15 @@
         "score": 57,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 1,
+          "totalBases": 1,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-14|PREMIUM|rbis|571970",
@@ -4248,8 +4318,15 @@
         "score": 57,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-14|PREMIUM|rbis|682985",
@@ -4264,8 +4341,15 @@
         "score": 36,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-14|PREMIUM|rbis|681624",
@@ -4280,8 +4364,15 @@
         "score": 35,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-14|PREMIUM|tb|686948",
@@ -4296,8 +4387,15 @@
         "score": 26,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       }
     ],
     "hrThreat": [
@@ -5510,8 +5608,8 @@
         "opp": "NL",
         "gamePk": 823443,
         "score": 22,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-14|HRTHREAT|670541",
@@ -5522,8 +5620,8 @@
         "opp": "NL",
         "gamePk": 823443,
         "score": 27,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-14|HRTHREAT|669127",
@@ -5534,8 +5632,8 @@
         "opp": "NL",
         "gamePk": 823443,
         "score": 20,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-14|HRTHREAT|691406",
@@ -5546,8 +5644,8 @@
         "opp": "NL",
         "gamePk": 823443,
         "score": 24,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-14|HRTHREAT|700250",
@@ -5558,8 +5656,8 @@
         "opp": "NL",
         "gamePk": 823443,
         "score": 24,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-14|HRTHREAT|656941",
@@ -5570,8 +5668,8 @@
         "opp": "AL",
         "gamePk": 823443,
         "score": 26,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-14|HRTHREAT|665742",
@@ -5582,36 +5680,36 @@
         "opp": "AL",
         "gamePk": 823443,
         "score": 22,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       }
     ]
   },
   "allTime": {
     "drp": {
-      "wins": 17,
+      "wins": 18,
       "losses": 12,
       "pushes": 0,
-      "total": 29
+      "total": 30
     },
     "kprop": {
       "wins": 35,
-      "losses": 27,
+      "losses": 29,
       "pushes": 0,
-      "total": 62
+      "total": 64
     },
     "premium": {
-      "wins": 25,
-      "losses": 93,
+      "wins": 27,
+      "losses": 105,
       "pushes": 0,
-      "total": 118
+      "total": 132
     },
     "hrThreat": {
       "wins": 8,
-      "losses": 92,
+      "losses": 99,
       "pushes": 0,
-      "total": 100
+      "total": 107
     }
   },
-  "oddsLastFetchedDate": "2026-07-14"
+  "oddsLastFetchedDate": "2026-07-15"
 }
