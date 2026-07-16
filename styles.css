@@ -2703,3 +2703,36 @@ footer.dr-footer .dr-footer-meta {
   border-style: solid;
   color: #c6dcff;
 }
+
+/* The chips size to their own content (icon + label), so FAVORABLE (the
+   longest label) ends up visibly wider than ALL or DUE. Give them a shared
+   min-width — sized to comfortably fit FAVORABLE at each breakpoint's font
+   size — so the row reads as a uniform set of pills instead of mismatched
+   widths. text-align keeps the label centered in the extra space. */
+.hrp-filter-btn {
+  /* !important needed: #props, #props * resets min-width:0 on every
+     descendant at ID-level specificity, which otherwise beats this
+     class-only rule regardless of source order. */
+  min-width: 112px !important;
+  text-align: center;
+  box-sizing: border-box;
+}
+@media (max-width: 768px) {
+  .hrp-filter-btn {
+    min-width: 90px !important;
+  }
+}
+
+/* whyHR() wraps its "Why it supports the pick:" lead-in in <strong>, meant
+   to read as a bold inline label at the same size as the sentence that
+   follows it — but a much broader "#hr-potential-content strong{font-size:
+   18px}" rule elsewhere in this file (meant for other, genuinely large
+   stat callouts in this same container) was bleeding onto it too, making
+   the label look like an oversized heading. Higher specificity here (ID +
+   class + element vs. the broad rule's ID + element) scopes the fix to
+   just this label without touching the other strong elements it was
+   correctly sized for. */
+#hr-potential-content .dr1027-why strong {
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
