@@ -1611,6 +1611,8 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
    row directly below via .pr-expand-tr. */
 .pr-starters-table {
   min-width: 900px !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
 }
 .pr-starters-table td, .pr-starters-table th {
   white-space: nowrap !important;
@@ -1630,6 +1632,56 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
 }
 .pr-row-tr.is-expanded {
   background: rgba(244,162,97,.06);
+}
+
+/* Pin the pitcher-info column while the rest of the row scrolls horizontally,
+   so which pitcher you're looking at stays visible on narrow screens instead
+   of scrolling off with the name. */
+.pr-starters-table thead th:first-child,
+.pr-starters-table tbody td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--surface) !important;
+}
+.pr-starters-table thead th:first-child {
+  z-index: 3;
+}
+.pr-row-tr.is-expanded td:first-child {
+  background: linear-gradient(rgba(244,162,97,.06), rgba(244,162,97,.06)), var(--surface);
+}
+
+.pr-lineup-btn-short {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .pr-starters-table th,
+  .pr-starters-table td {
+    padding: 5px 6px !important;
+    font-size: 11px !important;
+  }
+  .pr-lineup-batter-cell {
+    padding: 6px !important;
+    gap: 6px !important;
+  }
+  .pr-starters-table .pr-mobile-name {
+    font-size: 13px !important;
+  }
+  .pr-starters-table .pr-mobile-sub,
+  .pr-starters-table .pr-mobile-time {
+    font-size: 9px !important;
+  }
+  .pr-starters-table .btn-lineup {
+    font-size: 9px !important;
+    padding: 5px 6px !important;
+  }
+  .pr-lineup-btn-full {
+    display: none;
+  }
+  .pr-lineup-btn-short {
+    display: inline;
+  }
 }
 
 /* High-risk tier for the K Props Risk chip — .dr109-chip only had .good/.warn

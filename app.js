@@ -1841,7 +1841,7 @@ function setLineupOpenState(pid, isOpen) {
   }
   if (card) card.classList.toggle('is-expanded', !!isOpen);
   if (btn) {
-    btn.textContent = isOpen ? '▲ HIDE' : '▼ BATTING LINEUP & MATCHUPS';
+    btn.innerHTML = `<span class="pr-lineup-btn-full">${isOpen ? '▲ HIDE' : '▼ BATTING LINEUP & MATCHUPS'}</span><span class="pr-lineup-btn-short">${isOpen ? '▲' : '▼ LINEUP'}</span>`;
     btn.classList.toggle('active', !!isOpen);
   }
 }
@@ -2197,7 +2197,8 @@ function renderPRTable() {
         ${plainCell(`<span style="color:${r.kpg>=7?'var(--green)':r.kpg>=5?'var(--text)':'var(--muted)'}">${r.kpg??'–'}</span>`, 'Average Strikeouts per Game Started')}
         <td>
           <button class="btn-lineup${isExpanded?' active':''}" onclick="toggleLineup('${pid}', '${p.name.replace(/'/g,"\\'")}', ${p.gamePk}, '${p.side}', ${p.oppTeamId}, ${r.rawHr9}, ${r.rawIp})">
-            ${isExpanded ? '▲ HIDE' : '▼ BATTING LINEUP & MATCHUPS'}
+            <span class="pr-lineup-btn-full">${isExpanded ? '▲ HIDE' : '▼ BATTING LINEUP & MATCHUPS'}</span>
+            <span class="pr-lineup-btn-short">${isExpanded ? '▲' : '▼ LINEUP'}</span>
           </button>
         </td>
       </tr>
@@ -2324,7 +2325,7 @@ async function toggleLineup(pitcherId, pitcherName, gamePk, side, oppTeamId, pit
     // A background/previous request is already feeding this exact panel.
     // Keep it visibly open instead of stacking duplicate requests.
     if (btn) {
-      btn.textContent = '▲ HIDE';
+      btn.innerHTML = '<span class="pr-lineup-btn-full">▲ HIDE</span><span class="pr-lineup-btn-short">▲</span>';
       btn.classList.add('active');
     }
     return;
