@@ -10665,6 +10665,7 @@ function showPremiumGate(feature){
   var hrLoaded = false;
   var leadersLoaded = false;
   var projectionsLoaded = false;
+  var yesterdayScoresLoaded = false;
   var scoreboardTimer = null;
   var gameContentCache = {};
   var gameFeedCache = {};
@@ -10680,6 +10681,7 @@ function showPremiumGate(feature){
     loadHubLeaders();
     loadHubProjections();
     loadHubScoreboard();
+    loadHubYesterdayScores();
     if (!scoreboardTimer) scoreboardTimer = setInterval(loadHubScoreboard, 120000);
   }
 
@@ -10995,21 +10997,22 @@ function showPremiumGate(feature){
   // turning a News Central side section into a full stats page. Category keys
   // match MLB Stats API's leaderCategories values exactly.
   var LEADER_HITTING_CATS = ['homeRuns', 'battingAverage', 'onBasePlusSlugging', 'runsBattedIn'];
-  var LEADER_PITCHING_CATS = ['earnedRunAverage', 'strikeouts', 'wins', 'walksAndHitsPerInningPitched'];
+  // ERA, Wins, and WHIP were dropped from the widget per request — Strikeouts is the
+  // only pitching category shown now.
+  var LEADER_PITCHING_CATS = ['strikeouts'];
   var LEADER_CATEGORY_LABELS = {
     homeRuns: 'Home Runs', battingAverage: 'Batting Avg', onBasePlusSlugging: 'OPS', runsBattedIn: 'RBI',
-    earnedRunAverage: 'ERA', strikeouts: 'Strikeouts', wins: 'Wins', walksAndHitsPerInningPitched: 'WHIP'
+    strikeouts: 'Strikeouts'
   };
   function leaderCategoryLabel(cat){ return LEADER_CATEGORY_LABELS[cat] || cat; }
 
-  // Batting average/OPS display as ".312"-style (no leading zero); ERA/WHIP as
-  // a fixed 2-decimal rate stat; everything else (HR/RBI/strikeouts/wins) as a
-  // plain whole-number count — matches how each stat is conventionally shown.
+  // Batting average/OPS display as ".312"-style (no leading zero); everything else
+  // (HR/RBI/strikeouts) as a plain whole-number count — matches how each stat is
+  // conventionally shown.
   function formatLeaderValue(cat, value){
     var num = parseFloat(value);
     if (!Number.isFinite(num)) return String(value == null ? '–' : value);
     if (cat === 'battingAverage' || cat === 'onBasePlusSlugging') return num.toFixed(3).replace(/^0\./, '.');
-    if (cat === 'earnedRunAverage' || cat === 'walksAndHitsPerInningPitched') return num.toFixed(2);
     return String(Math.round(num));
   }
 
@@ -11039,11 +11042,18 @@ function showPremiumGate(feature){
     var groups = categories.map(function(c){
       var leaders = (c && c.leaders || []).slice(0, LEADER_ROWS_PER_CATEGORY);
       if (!leaders.length) return '';
+      // Bar width reads as "share of the #1 leader's value" — every remaining category
+      // (HR/AVG/OPS/RBI/Strikeouts) is a higher-is-better stat, so the group's own top
+      // value is a clean 100% reference point. Reuses the exact Season Projections bar
+      // classes so both widgets render the identical bar style, per request.
+      var topValue = leaders.length ? (parseFloat(leaders[0].value) || 0) : 0;
       var rows = leaders.map(function(leader){
         var person = leader.person || {};
         var team = leader.team || {};
         var teamAbbr = team.abbreviation || teamAbbrFromId(team.id) || '';
         var value = formatLeaderValue(c.leaderCategory, leader.value);
+        var rawValue = parseFloat(leader.value) || 0;
+        var barPct = topValue > 0 ? Math.max(4, Math.min(100, (rawValue / topValue) * 100)) : 0;
         var idx = leaderEntries.push({
           category: c.leaderCategory,
           rank: leader.rank,
@@ -11058,6 +11068,7 @@ function showPremiumGate(feature){
             (person.id ? '<img class="dr-hub-leader-row-photo" src="' + escapeHtml(hs(person.id)) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '') +
             '<span class="dr-hub-leader-row-name">' + escapeHtml(person.fullName || '–') + '</span>' +
             '<span class="dr-hub-leader-row-team">' + escapeHtml(teamAbbr) + '</span>' +
+            '<span class="dr-hub-projections-row-bar"><span class="dr-hub-projections-row-bar-fill" style="width:' + barPct + '%"></span></span>' +
             '<span class="dr-hub-leader-row-value">' + escapeHtml(value) + '</span>' +
           '</button>'
         );
@@ -11381,6 +11392,55 @@ function showPremiumGate(feature){
       mapped.sort(function(a, b){ return order[a.status] - order[b.status]; });
       renderHubScoreboard(mapped);
     }).catch(function(){});
+  }
+
+  // Yesterday's Scores — sidebar section, same chip pattern as Today's Games but for
+  // the previous Chicago-time calendar day. Fetched once per page load (yesterday's
+  // slate is done and cached hard by the API, no reason to poll it like today's).
+  function renderHubYesterdayScores(games){
+    var section = document.getElementById('dr-hub-yesterday');
+    var strip = document.getElementById('dr-hub-yesterday-strip');
+    if (!section || !strip || !games.length) return;
+    strip.innerHTML = games.map(hubScoreboardChip).join('');
+    if (!strip.dataset.drHubBound) {
+      strip.dataset.drHubBound = '1';
+      strip.addEventListener('click', function(e){
+        if (e.target.closest('[data-dr-hub-open-baseball]')) {
+          var card = document.getElementById('dr-hub-baseball-card');
+          if (card) card.click();
+        }
+      });
+    }
+    section.style.display = '';
+  }
+
+  function loadHubYesterdayScores(){
+    if (yesterdayScoresLoaded) return;
+    yesterdayScoresLoaded = true;
+    var yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    var yStr = yesterday.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+    fetchJSON('https://diamondreport.app/api/v1/schedule?sportId=1&date=' + yStr + '&hydrate=linescore,team&language=en')
+      .then(function(data){
+        var entry = (data.dates || []).find(function(d){ return d.date === yStr; }) || data.dates && data.dates[0];
+        var games = (entry && entry.games) || [];
+        var mapped = games.map(function(g){
+          var away = g.teams.away, home = g.teams.home;
+          var state = g.status.abstractGameState;
+          var detailedState = g.status.detailedState;
+          var isFinal = state === 'Final' || detailedState === 'Final' || detailedState === 'Game Over';
+          return {
+            awayAbbr: away.team.abbreviation,
+            homeAbbr: home.team.abbreviation,
+            awayScore: away.score != null ? away.score : null,
+            homeScore: home.score != null ? home.score : null,
+            inning: null,
+            time: '',
+            status: isFinal ? 'final' : 'upcoming'
+          };
+        }).filter(function(g){ return g.status === 'final'; });
+        if (mapped.length) renderHubYesterdayScores(mapped);
+      }).catch(function(){});
   }
 
   function bind(){

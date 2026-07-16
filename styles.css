@@ -3216,3 +3216,18 @@ select:focus-visible {
     grid-template-columns: 1fr 1fr !important;
   }
 }
+
+/* Home Run Highlights moved from the main column into the sidebar, ahead of
+   Season Projections/League Leaders (now with a new Yesterday's Scores section
+   between them). It's the first thing in the sidebar now, so the 30px top margin
+   that used to separate it from Top Headlines above it would just misalign the
+   sidebar's start against the main column's Top Headlines heading. */
+.dr-hub-side .dr-hub-hr {
+  margin-top: 0;
+}
+.dr-hub-yesterday {
+  margin-top: 24px;
+}
+.dr-hub-side .dr-hub-side-toggle {
+  margin-top: 24px;
+}
