@@ -11218,7 +11218,7 @@ function showPremiumGate(feature){
     if (!toggle || !content) return;
     var expanded = content.classList.toggle('expanded');
     toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-    if (label) label.textContent = expanded ? 'Hide League Leaders & Season Projections' : 'Show League Leaders & Season Projections';
+    if (label) label.textContent = expanded ? 'Hide Season Projections & League Leaders' : 'Show Season Projections & League Leaders';
   }
 
   function openLeaderModal(entry){
