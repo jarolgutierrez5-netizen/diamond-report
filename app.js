@@ -2499,6 +2499,24 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
   }
 }
 
+function buildBatterStatsLine(b) {
+  const s = b.stats;
+  function fmtS(v) {
+    if (!_statHasRealBattingData(s)) return '–';
+    if (!v||v==='---') return '–';
+    const n=parseFloat(v); return isNaN(n)?'–':n.toFixed(3).replace(/^0/,'');
+  }
+  const last10HR = b.last10HR;
+  const last10Display = last10HR === null
+    ? '<span style="color:var(--muted);font-size:10px">–</span>'
+    : `<span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:${last10HR>=3?'var(--accent2)':last10HR>=1?'#90ee60':'var(--muted)'}">${last10HR}</span><span style="font-size:9px;color:var(--muted)"> HR</span>`;
+  return `<span>AVG <strong style="color:var(--text)">${fmtS(s.avg)}</strong></span>
+    <span>HR <strong style="color:${parseInt(s.homeRuns)>=10?'var(--accent2)':'var(--text)'}">${_statHasRealBattingData(s) ? (s.homeRuns??'–') : '–'}</strong></span>
+    <span>OPS <strong style="color:var(--text)">${fmtS(s.ops)}</strong></span>
+    <span style="display:flex;align-items:center;gap:4px">L10 ${last10Display}</span>`;
+}
+
+
 function renderLineupPending(panelId, teamAbbr = '') {
   const panel = document.getElementById(panelId);
   if (!panel) return;
@@ -2523,7 +2541,7 @@ function renderLineupPending(panelId, teamAbbr = '') {
     </div>`;
 }
 
-function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, pitcherName) {
+function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, pitcherName, asTable = true) {
   const panel = document.getElementById(panelId);
   if (!panel) return;
   const { lineup, teamAbbr } = data || {};
@@ -2642,6 +2660,73 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
     return { cls: 'pr-rate-mild', label: '~ MILD' };
   }
 
+  // Matchup label — the K Props embedded lineup panel keeps the original
+  // stacked-card look (asTable=false); only the Pitcher Report tab uses the
+  // new heat-mapped table.
+  function matchupLabel(s) {
+    const kpct = (s.strikeOuts && s.plateAppearances) ? s.strikeOuts/s.plateAppearances : 0.22;
+    const ops  = parseFloat(s.ops) || 0.700;
+    const pk9  = pitcherHr9 * 9 || 8.0; // proxy from hr9
+    let score = 0;
+    if (kpct < 0.18) score += 2; else if (kpct > 0.28) score -= 2;
+    if (ops > 0.820) score += 2; else if (ops < 0.680) score -= 1;
+    if (pk9 > 10.0) score -= 2; else if (pk9 < 7.0) score += 1;
+    if (score >= 2) return `<span class="matchup-label ml-good">✓ TOUGH FOR PITCHER</span>`;
+    if (score <= -2) return `<span class="matchup-label ml-bad">✗ TOUGH FOR BATTER</span>`;
+    return `<span class="matchup-label ml-neutral">~ NEUTRAL MATCHUP</span>`;
+  }
+
+  const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+
+  if (!asTable) {
+    const cards = withProbs.map((b, i) => {
+      const s = b.stats;
+      const isTop = i === topIdx; // persists regardless of todayHR
+      const homerToday = b.todayHR > 0;
+      const pName = (pitcherName||'').replace(/'/g,"\\'");
+      const bName = b.name.replace(/'/g,"\\'");
+
+      return `<div data-batter-id="${b.id}" class="lineup-batter-card${homerToday?' hr-today':''}">
+        <div class="lineup-batter-main">
+          <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-width:14px">${i+1}</span>
+          <div class="lineup-batter-details">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span class="batter-name-span" style="font-size:13px;font-weight:700;color:${homerToday?'var(--accent2)':'var(--text)'}">${b.name}</span>
+              <span class="batter-pos">${b.pos}</span>
+              ${homerToday ? `<span class="hr-today-badge" style="background:#2a1500;color:#f4a261;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166">💥 HR TODAY${b.todayHR>1?' x'+b.todayHR:''}</span>` : ''}
+              ${isTop ? `<span class="top-hr-badge">⚡ TOP HR THREAT</span>` : ''}
+            </div>
+            <div style="margin-top:3px">${matchupLabel(s)}</div>
+            <div class="batter-stats-line" style="display:flex;gap:12px;margin-top:4px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);flex-wrap:wrap">
+              ${buildBatterStatsLine(b)}
+            </div>
+          </div>
+        </div>
+        <div class="lineup-matchup-action">
+          <button class="btn-matchup" onclick="openMatchup(${b.id},'${bName}',${pitcherId},'${pName}')" title="Batter vs Pitcher analysis">
+            ⚔ Pitcher Matchup
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+
+    panel.innerHTML = `
+      <div style="padding:4px 0 10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
+        <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent)">
+          ${teamAbbr || oppAbbr || ''} BATTING LINEUP ${lineupBadge}
+        </span>
+        <div style="display:flex;gap:10px;align-items:center;font-size:10px;color:var(--muted);flex-wrap:wrap">
+          <span><span style="color:var(--accent2)">💥 HR TODAY</span> = homered this game</span>
+          <span><span style="color:#90ee60">L10</span> = HRs in last 10 games</span>
+          <span>⚔ for matchup</span>
+          <span class="lineup-timestamp" style="font-family:'JetBrains Mono',monospace;color:var(--border)">Auto-checking official lineup${data.source ? ` • ${data.source}` : ''}${data.confirmedAt ? ` • confirmed ${new Date(data.confirmedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}` : ''}</span>
+        </div>
+      </div>
+      ${lineupNotice}
+      ${cards}`;
+    return;
+  }
+
   const rateCell = (v, goodBelow, badAbove, fmt) => {
     const bg = v == null || isNaN(v) ? 'transparent' : heatBG(v, goodBelow, badAbove);
     const txt = v == null || isNaN(v) ? '<span style="color:var(--muted)">–</span>' : fmt(v);
@@ -2693,7 +2778,6 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
     </tr>`;
   }).join('');
 
-  const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
   panel.innerHTML = `
     <div style="padding:4px 0 10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
       <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent)">
@@ -6013,7 +6097,7 @@ async function toggleKPropLineup(btn, pitcherId, pitcherName, teamAbbr, oppAbbr)
     await loadRepoLineups();
     const repo = getRepoLineupForGame(game.gamePk, oppSide);
     if (repo?.confirmed === true && repo?.lineup?.length) {
-      renderLineup(panelId, { lineup: repo.lineup, teamAbbr: oppTeamAbbr, confirmed: true, source: repo.source, confirmedAt: repo.confirmedAt }, null, null, oppTeamAbbr, pitcherId, pitcherName);
+      renderLineup(panelId, { lineup: repo.lineup, teamAbbr: oppTeamAbbr, confirmed: true, source: repo.source, confirmedAt: repo.confirmedAt }, null, null, oppTeamAbbr, pitcherId, pitcherName, false);
       outerPanel.style.cssText += ';width:100%!important;min-width:0!important;box-sizing:border-box!important;overflow-x:auto!important;';
       return;
     }
@@ -6052,7 +6136,7 @@ async function toggleKPropLineup(btn, pitcherId, pitcherName, teamAbbr, oppAbbr)
       };
     }).filter(b => b.name !== '–');
 
-    renderLineup(panelId, { lineup, teamAbbr: oppTeamAbbr, confirmed: true }, null, null, oppTeamAbbr, pitcherId, pitcherName);
+    renderLineup(panelId, { lineup, teamAbbr: oppTeamAbbr, confirmed: true }, null, null, oppTeamAbbr, pitcherId, pitcherName, false);
     // Force full width after render — the panel can get squeezed by flex layout
     outerPanel.style.cssText += ';width:100%!important;min-width:0!important;box-sizing:border-box!important;overflow-x:auto!important;';
   } catch(e) {
