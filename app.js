@@ -1263,6 +1263,29 @@ function updateHeroTodayRecordStrip() {
 }
 window.updateHeroTodayRecordStrip = updateHeroTodayRecordStrip;
 
+// News Central hub trust callout — combined win/loss across every graded market
+// (Diamond Report Pick, K Props, Premium, HR Threat) for yesterday specifically,
+// not all-time, since "here's how we did yesterday" is a much more concrete,
+// checkable trust signal for a first-time hub visitor than a big all-time number.
+function updateHubTrustStrip() {
+  const el = document.getElementById('dr-hub-trust-strip');
+  if (!el) return;
+  const y = window.__yesterdayRecord;
+  if (!y || y.total <= 0) { el.style.display = 'none'; return; }
+  const pct = Math.round((y.wins / y.total) * 100);
+  const color = y.wins === y.total ? '#22e06f' : y.wins > y.total / 2 ? '#5b9dff' : '#fca5a5';
+  el.innerHTML = `<span style="color:${color}">✓ ${y.wins}-${y.losses}</span> (${pct}%) picks graded yesterday, across every market — <button type="button" class="dr-hub-trust-strip-link" id="dr-hub-trust-strip-link">see today's picks</button>`;
+  el.style.display = '';
+  const link = document.getElementById('dr-hub-trust-strip-link');
+  if (link && !link.dataset.drHubBound) {
+    link.dataset.drHubBound = '1';
+    link.addEventListener('click', () => {
+      const card = document.getElementById('dr-hub-baseball-card');
+      if (card) card.click();
+    });
+  }
+}
+
 // Fetches the nightly-graded all-time record once on load. Gracefully no-ops until the
 // first scheduled run of scripts/update-tracker.mjs actually produces data/tracker.json —
 // no fabricated record shown before real history exists.
@@ -1283,6 +1306,21 @@ async function loadAllTimeTrackerRecord() {
     window.__premiumTodayPicksRaw = (data?.market?.premium || []).filter(r => r.date === todayCT);
     if (typeof window.renderPremiumPicks === 'function') window.renderPremiumPicks();
     updateHeroTodayRecordStrip();
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayCT = yesterday.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+    let yWins = 0, yLosses = 0, yPushes = 0;
+    ['drp', 'kprop', 'premium', 'hrThreat'].forEach(market => {
+      (data?.market?.[market] || []).forEach(pick => {
+        if (pick.date !== yesterdayCT) return;
+        if (pick.result === 'win') yWins++;
+        else if (pick.result === 'loss') yLosses++;
+        else if (pick.result === 'push') yPushes++;
+      });
+    });
+    window.__yesterdayRecord = { wins: yWins, losses: yLosses, pushes: yPushes, total: yWins + yLosses + yPushes };
+    updateHubTrustStrip();
   } catch (e) {}
 }
 if (document.readyState === 'loading') {
@@ -10698,6 +10736,7 @@ function showPremiumGate(feature){
   var hrLoaded = false;
   var leadersLoaded = false;
   var projectionsLoaded = false;
+  var scoreboardTimer = null;
   var gameContentCache = {};
   var gameFeedCache = {};
 
@@ -10711,10 +10750,13 @@ function showPremiumGate(feature){
     loadHubHRs();
     loadHubLeaders();
     loadHubProjections();
+    loadHubScoreboard();
+    if (!scoreboardTimer) scoreboardTimer = setInterval(loadHubScoreboard, 120000);
   }
 
   function hideHub(){
     document.body.classList.remove('dr-hub-active');
+    if (scoreboardTimer) { clearInterval(scoreboardTimer); scoreboardTimer = null; }
   }
 
   function escapeHtml(s){
@@ -11327,6 +11369,89 @@ function showPremiumGate(feature){
         });
       }).catch(function(){ /* leave the generic fallback link in place */ });
     } catch(e) { /* leave the generic fallback link in place */ }
+  }
+
+  // Today's Games strip — quick-glance scoreboard so a hub visitor can see
+  // what's happening today without clicking into Baseball first. Reuses the
+  // same shared getTodaySchedule cache loadScores() draws from (no extra
+  // network cost if the Prediction Center has already loaded), with its own
+  // lightweight per-game transform since this only needs team/score/status,
+  // not the full win-probability/standings-badge treatment gameCard() builds.
+  function hubScoreboardChip(g){
+    var isLive = g.status === 'live';
+    var isFinal = g.status === 'final';
+    var statusHtml = isLive
+      ? '<span class="dr-hub-score-status live">' + (g.inning || 'LIVE') + '</span>'
+      : isFinal
+        ? '<span class="dr-hub-score-status final">FINAL</span>'
+        : '<span class="dr-hub-score-status upcoming">' + escapeHtml(g.time) + '</span>';
+    var scoreHtml = (g.awayScore != null && g.homeScore != null)
+      ? '<span class="dr-hub-score-line">' +
+          '<span class="' + (g.awayScore > g.homeScore ? 'dr-hub-score-win' : '') + '">' + g.awayScore + '</span>' +
+          '<span class="dr-hub-score-sep">–</span>' +
+          '<span class="' + (g.homeScore > g.awayScore ? 'dr-hub-score-win' : '') + '">' + g.homeScore + '</span>' +
+        '</span>'
+      : '<span class="dr-hub-score-line dr-hub-score-vs">vs</span>';
+    return (
+      '<button type="button" class="dr-hub-score-chip ' + g.status + '" data-dr-hub-open-baseball="1">' +
+        statusHtml +
+        '<span class="dr-hub-score-teams">' +
+          '<span class="dr-hub-score-team">' + teamLogo(g.awayAbbr) + '<span>' + escapeHtml(g.awayAbbr) + '</span></span>' +
+          scoreHtml +
+          '<span class="dr-hub-score-team">' + teamLogo(g.homeAbbr) + '<span>' + escapeHtml(g.homeAbbr) + '</span></span>' +
+        '</span>' +
+      '</button>'
+    );
+  }
+
+  function renderHubScoreboard(games){
+    var section = document.getElementById('dr-hub-scoreboard');
+    var strip = document.getElementById('dr-hub-scoreboard-strip');
+    if (!section || !strip || !games.length) return;
+    strip.innerHTML = games.map(hubScoreboardChip).join('');
+    if (!strip.dataset.drHubBound) {
+      strip.dataset.drHubBound = '1';
+      strip.addEventListener('click', function(e){
+        if (e.target.closest('[data-dr-hub-open-baseball]')) {
+          var card = document.getElementById('dr-hub-baseball-card');
+          if (card) card.click();
+        }
+      });
+    }
+    section.style.display = '';
+  }
+
+  function loadHubScoreboard(){
+    getTodaySchedule('linescore,team').then(function(games){
+      var mapped = games.map(function(g){
+        var away = g.teams.away, home = g.teams.home;
+        var state = g.status.abstractGameState;
+        var detailedState = g.status.detailedState;
+        var trulyInProgress = detailedState === 'In Progress';
+        var linescore = g.linescore || {};
+        var inningStr = (trulyInProgress && linescore.currentInning)
+          ? (linescore.inningHalf === 'Bottom' ? '▼' : '▲') + ' ' + linescore.currentInning
+          : (trulyInProgress ? 'LIVE' : null);
+        var isLive = state === 'Live' || trulyInProgress;
+        var isFinal = state === 'Final' || detailedState === 'Final' || detailedState === 'Game Over';
+        var dt = new Date(g.gameDate);
+        return {
+          awayAbbr: away.team.abbreviation,
+          homeAbbr: home.team.abbreviation,
+          awayScore: away.score != null ? away.score : null,
+          homeScore: home.score != null ? home.score : null,
+          inning: inningStr,
+          time: dt.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', timeZone:'America/Chicago'}),
+          status: isLive ? 'live' : isFinal ? 'final' : 'upcoming'
+        };
+      });
+      // Live and upcoming first (what a visitor most wants to see at a glance),
+      // finals last; stable within each group since the API already returns
+      // games in a sensible order.
+      var order = { live: 0, upcoming: 1, final: 2 };
+      mapped.sort(function(a, b){ return order[a.status] - order[b.status]; });
+      renderHubScoreboard(mapped);
+    }).catch(function(){});
   }
 
   function bind(){
