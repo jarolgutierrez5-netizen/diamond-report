@@ -419,6 +419,68 @@ const ELITE_MIN_QUALITY = 2;
 const ELITE_TOP_N = 5;
 const ELITE_HR_TOP_N_PER_GAME = 3;
 const LEAGUE_AVG_AVG = 0.245, LEAGUE_AVG_OBP = 0.315, LEAGUE_AVG_SLG = 0.400, LEAGUE_AVG_HR_RATE = 0.031;
+
+// ── Statcast batted-ball power (data/batter-pitch-type-season.json) ──
+// Synced by sync-statcast.yml ~1hr before this job's morning run, so it's reliably
+// fresh by the time buildEliteBatterPool() runs. This was previously synced but never
+// actually read by this file (see the "no Statcast hot-hitter sync data available
+// server-side" comment on ELITE_MIN_QUALITY above, which was true for the *recent-form*
+// signal specifically, but this season-long power data was sitting unused too).
+// xSLG/hard-hit% measure the quality of contact directly (exit velocity, launch angle)
+// instead of relying on AVG/SLG outcomes, which are tangled up with luck, defense, and
+// ballpark sequencing -- a real, independent power signal box-score rates can't see.
+const STATCAST_PATH = path.join(__dirname, '..', 'data', 'batter-pitch-type-season.json');
+const LEAGUE_AVG_XSLG = 0.400; // same scale as LEAGUE_AVG_SLG; MLB-wide xSLG runs close to actual SLG
+const LEAGUE_AVG_HARD_HIT_PCT = 36; // percent; roughly MLB seasonal average hard-hit rate
+const STATCAST_MIN_PITCHES = 100; // below this, a batter's aggregate is too thin a sample to trust
+let statcastPowerCache = null;
+
+async function loadStatcastPowerIndex() {
+  if (statcastPowerCache) return statcastPowerCache;
+  statcastPowerCache = new Map();
+  try {
+    const raw = await readFile(STATCAST_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    for (const [id, player] of Object.entries(data?.players || {})) {
+      const rows = player?.seasonPitchTypeStats;
+      if (!Array.isArray(rows) || !rows.length) continue;
+      let pitches = 0, xslgSum = 0, xslgWeight = 0, hardHitSum = 0, hardHitWeight = 0;
+      rows.forEach(r => {
+        const w = n(r.pitches);
+        pitches += w;
+        if (r.xslg != null) { xslgSum += r.xslg * w; xslgWeight += w; }
+        if (r.hardHitPct != null) { hardHitSum += r.hardHitPct * w; hardHitWeight += w; }
+      });
+      if (pitches < STATCAST_MIN_PITCHES) continue;
+      statcastPowerCache.set(String(id), {
+        xslg: xslgWeight > 0 ? xslgSum / xslgWeight : null,
+        hardHitPct: hardHitWeight > 0 ? hardHitSum / hardHitWeight : null,
+        pitches,
+      });
+    }
+  } catch (e) {
+    console.warn('Statcast power index: failed to load, HR scoring will use box-score rates only:', e.message);
+  }
+  return statcastPowerCache;
+}
+
+// Converts a batter's aggregate xSLG/hard-hit% into a bounded multiplier on their
+// box-score HR rate -- >1 means Statcast reads them as hitting the ball harder than
+// their AVG/SLG outcomes alone would suggest (and vice versa). Clamped to keep a small
+// sample or one outlier metric from swinging the rate too far in either direction; box
+// score AVG/SLG/HR still carries the majority (0.6) weight in scoreForMarket.
+function battedBallPowerIndex(statcast) {
+  // loadStatcastPowerIndex already excludes thin samples from its cache, but check
+  // independently here too so this function is correct for any caller, not just one
+  // that's pre-filtered its input.
+  if (!statcast || !(statcast.pitches >= STATCAST_MIN_PITCHES)) return 1;
+  const ratios = [];
+  if (statcast.xslg != null) ratios.push(statcast.xslg / LEAGUE_AVG_XSLG);
+  if (statcast.hardHitPct != null) ratios.push(statcast.hardHitPct / LEAGUE_AVG_HARD_HIT_PCT);
+  if (!ratios.length) return 1;
+  const avgRatio = ratios.reduce((a, b) => a + b, 0) / ratios.length;
+  return clamp(avgRatio, 0.7, 1.5);
+}
 // HR Threats board hit-rate tracker: the live client-side board (app.js, getHRRows) gates
 // its "scanned" pool at hrProb>=18, except the single top-scoring batter per game which
 // gets a lower 14% bar. This backend job uses one uniform 18% cutoff across the whole
@@ -613,7 +675,12 @@ function scoreForMarket(marketKey, row) {
     // below, which all treat their input as a per-PA rate. Left unconverted this
     // overstated the batter's true per-PA HR odds by about 13% (AB is a smaller
     // denominator than PA, since PA also includes walks/HBP/sac flies).
-    const batterRate = row.atBats > 0 ? (row.hrSeason / row.atBats) * MC_AB_PER_PA : LEAGUE_AVG_HR_RATE;
+    const boxScoreBatterRate = row.atBats > 0 ? (row.hrSeason / row.atBats) * MC_AB_PER_PA : LEAGUE_AVG_HR_RATE;
+    // Corrects the box-score rate using real quality-of-contact data (xSLG, hard-hit%)
+    // when a large enough Statcast sample exists for this batter -- see
+    // battedBallPowerIndex/loadStatcastPowerIndex above. Neutral (1x, no change) when
+    // there isn't one, so this never makes the model worse for an uncovered player.
+    const batterRate = boxScoreBatterRate * battedBallPowerIndex(row.statcast);
     const pitcherRate = row.pitcherHr9 > 0 ? row.pitcherHr9 / BATTERS_FACED_PER_9 : 0.03;
     const hrPerPA = batterRate * 0.6 + pitcherRate * 0.4;
     return simulateHRGameOdds(hrPerPA, row.battingOrder);
@@ -717,6 +784,7 @@ async function battersForSide(g, side) {
 }
 
 async function buildEliteBatterPool(games, season) {
+  const statcastIndex = await loadStatcastPowerIndex();
   const rows = [];
   for (const g of games) {
     for (const [side, opp] of [['away', 'home'], ['home', 'away']]) {
@@ -778,7 +846,7 @@ async function buildEliteBatterPool(games, season) {
           atBats: ab, stolenBases: n(stat.stolenBases), caughtStealing: n(stat.caughtStealing),
           pitcherHr9: n(pitcherStat.homeRunsPer9), pitcherSbAllowed: n(pitcherStat.stolenBases), pitcherCsAllowed: n(pitcherStat.caughtStealing),
           pitcherAvgAllowed, pitcherSlgAllowed, parkFactor: PARK_FACTORS[g.teams.home.team.abbreviation] || 100,
-          isFavorable, isHot,
+          isFavorable, isHot, statcast: statcastIndex.get(String(pid)) || null,
         };
       });
       sideRows.filter(Boolean).forEach(r => rows.push(r));
@@ -1163,4 +1231,5 @@ export {
   captureHRThreatToday, gradeHRThreatPending,
   simulatePropOdds, simulateSBOdds, simulateHRGameOdds, scoreForMarket, eliteQualityScore,
   eliteHit, fetchOddsLookup, normalizeName,
+  loadStatcastPowerIndex, battedBallPowerIndex,
 };
