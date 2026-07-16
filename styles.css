@@ -2262,7 +2262,7 @@ body > main, main,
 }
 
 /* Two-column hub layout: main (news + HR highlights) and a side rail
-   (League Leaders + Season Odds). Side-by-side only once there's genuinely
+   (League Leaders + Season Projections). Side-by-side only once there's genuinely
    enough width for a real sidebar (desktop, iPad landscape ~1024px+); a
    narrower viewport (phones, iPad portrait) stacks the side rail below the
    main column instead, same as before this layout existed. */
@@ -2282,7 +2282,7 @@ body > main, main,
   .dr-hub-side { margin-top: 0; }
 }
 
-/* Below the side-rail breakpoint, League Leaders + Season Odds are a lot of
+/* Below the side-rail breakpoint, League Leaders + Season Projections are a lot of
    extra scrolling on a phone — collapsed behind a toggle by default there
    instead of always-expanded like the desktop side rail. */
 .dr-hub-side-toggle {
@@ -2402,25 +2402,25 @@ body > main, main,
   font-weight: 700;
 }
 
-.dr-hub-odds { margin-top: 30px; }
-.dr-hub-odds-note {
+.dr-hub-projections { margin-top: 30px; }
+.dr-hub-projections-note {
   margin: -2px 0 14px;
   font-size: 12px;
   color: #8fa3c8;
 }
-.dr-hub-odds-cols {
+.dr-hub-projections-cols {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
-.dr-hub-odds-col {
+.dr-hub-projections-col {
   background: rgba(17,24,39,.55);
   border: 1px solid rgba(255,255,255,.08);
   border-radius: 14px;
   padding: 14px 16px;
   min-width: 0;
 }
-.dr-hub-odds-col-title {
+.dr-hub-projections-col-title {
   margin: 0 0 10px;
   font-size: 12px;
   font-weight: 800;
@@ -2428,21 +2428,21 @@ body > main, main,
   text-transform: uppercase;
   color: #f4a261;
 }
-.dr-hub-odds-list { display: flex; flex-direction: column; gap: 9px; }
-.dr-hub-odds-row {
+.dr-hub-projections-list { display: flex; flex-direction: column; gap: 9px; }
+.dr-hub-projections-row {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
 }
-.dr-hub-odds-row-photo {
+.dr-hub-projections-row-photo {
   flex-shrink: 0;
   width: 22px;
   height: 22px;
   border-radius: 50%;
   object-fit: cover;
 }
-.dr-hub-odds-row-name {
+.dr-hub-projections-row-name {
   flex-shrink: 1;
   min-width: 0;
   font-size: 12px;
@@ -2452,12 +2452,12 @@ body > main, main,
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.dr-hub-odds-row-team {
+.dr-hub-projections-row-team {
   flex-shrink: 0;
   font-size: 10px;
   color: #8fa3c8;
 }
-.dr-hub-odds-row-bar {
+.dr-hub-projections-row-bar {
   flex: 1 1 30px;
   min-width: 16px;
   height: 6px;
@@ -2465,13 +2465,13 @@ body > main, main,
   background: rgba(255,255,255,.08);
   overflow: hidden;
 }
-.dr-hub-odds-row-bar-fill {
+.dr-hub-projections-row-bar-fill {
   display: block;
   height: 100%;
   border-radius: 3px;
   background: linear-gradient(90deg, #f4a261, #e76f51);
 }
-.dr-hub-odds-row-pct {
+.dr-hub-projections-row-pct {
   flex-shrink: 0;
   width: 38px;
   text-align: right;
@@ -2480,7 +2480,7 @@ body > main, main,
   color: #f4a261;
 }
 
-/* Below the side-rail breakpoint, League Leaders and Season Odds run
+/* Below the side-rail breakpoint, League Leaders and Season Projections run
    full-width instead of squeezed into a 360px column — give the rows more
    breathing room instead of keeping the same cramped, side-rail-sized text
    and spacing on a phone or portrait iPad screen. */
@@ -2493,13 +2493,13 @@ body > main, main,
   .dr-hub-leader-row-team { font-size: 12px; }
   .dr-hub-leader-row-value { font-size: 14px; min-width: 46px; }
 
-  .dr-hub-odds-col { padding: 16px 18px; }
-  .dr-hub-odds-row { gap: 10px; }
-  .dr-hub-odds-row-photo { width: 28px; height: 28px; }
-  .dr-hub-odds-row-name { font-size: 14px; }
-  .dr-hub-odds-row-team { font-size: 12px; }
-  .dr-hub-odds-row-bar { height: 8px; }
-  .dr-hub-odds-row-pct { font-size: 13px; width: 48px; }
+  .dr-hub-projections-col { padding: 16px 18px; }
+  .dr-hub-projections-row { gap: 10px; }
+  .dr-hub-projections-row-photo { width: 28px; height: 28px; }
+  .dr-hub-projections-row-name { font-size: 14px; }
+  .dr-hub-projections-row-team { font-size: 12px; }
+  .dr-hub-projections-row-bar { height: 8px; }
+  .dr-hub-projections-row-pct { font-size: 13px; width: 48px; }
 }
 
 /* News summary modal — keeps readers on-site for the headline + short

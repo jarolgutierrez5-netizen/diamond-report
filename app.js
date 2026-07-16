@@ -10709,7 +10709,7 @@ function showPremiumGate(feature){
   var newsVisibleCount = 10;
   var hrLoaded = false;
   var leadersLoaded = false;
-  var oddsLoaded = false;
+  var projectionsLoaded = false;
   var gameContentCache = {};
   var gameFeedCache = {};
 
@@ -10722,7 +10722,7 @@ function showPremiumGate(feature){
     loadHubNews();
     loadHubHRs();
     loadHubLeaders();
-    loadHubOdds();
+    loadHubProjections();
   }
 
   function hideHub(){
@@ -11122,7 +11122,7 @@ function showPremiumGate(feature){
     showSideToggleIfNeeded();
   }
 
-  // Below the side-rail breakpoint, League Leaders/Season Odds are collapsed
+  // Below the side-rail breakpoint, League Leaders/Season Projections are collapsed
   // behind a toggle by default (too much extra scrolling on a phone to show
   // both expanded). Only reveal the toggle once there's actually something
   // behind it — no point showing "Show League Leaders" if both fetches failed.
@@ -11130,8 +11130,8 @@ function showPremiumGate(feature){
     var toggle = document.getElementById('dr-hub-side-toggle');
     if (!toggle || toggle.dataset.drHubShown) return;
     var leaders = document.getElementById('dr-hub-leaders');
-    var odds = document.getElementById('dr-hub-odds');
-    var hasContent = (leaders && leaders.style.display !== 'none') || (odds && odds.style.display !== 'none');
+    var projections = document.getElementById('dr-hub-projections');
+    var hasContent = (leaders && leaders.style.display !== 'none') || (projections && projections.style.display !== 'none');
     if (!hasContent) return;
     toggle.dataset.drHubShown = '1';
     toggle.style.display = 'flex';
@@ -11144,7 +11144,7 @@ function showPremiumGate(feature){
     if (!toggle || !content) return;
     var expanded = content.classList.toggle('expanded');
     toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-    if (label) label.textContent = expanded ? 'Hide League Leaders & Season Odds' : 'Show League Leaders & Season Odds';
+    if (label) label.textContent = expanded ? 'Hide League Leaders & Season Projections' : 'Show League Leaders & Season Projections';
   }
 
   function openLeaderModal(entry){
@@ -11185,32 +11185,32 @@ function showPremiumGate(feature){
     }).catch(function(){});
   }
 
-  // World Series / MVP odds — from data/season-projections.json, a repo-synced daily
+  // World Series / MVP projections — from data/season-projections.json, a repo-synced daily
   // file (Monte Carlo playoff bracket sim + a composite-score MVP model; see
   // scripts/generate-season-projections.mjs for methodology), same fetch pattern as
   // the Statcast files (drFetchDailyJSON, not a live per-request MLB API call).
   function wsTeamLogo(teamId){
-    return teamId ? '<img class="dr-hub-odds-row-photo" src="https://www.mlbstatic.com/team-logos/' + teamId + '.svg" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '';
+    return teamId ? '<img class="dr-hub-projections-row-photo" src="https://www.mlbstatic.com/team-logos/' + teamId + '.svg" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '';
   }
 
-  function oddsRowHtml(photoHtml, name, team, pct){
+  function projectionsRowHtml(photoHtml, name, team, pct){
     var width = Math.max(0, Math.min(100, pct));
     return (
-      '<div class="dr-hub-odds-row">' +
+      '<div class="dr-hub-projections-row">' +
         photoHtml +
-        '<span class="dr-hub-odds-row-name">' + escapeHtml(name) + '</span>' +
-        '<span class="dr-hub-odds-row-team">' + escapeHtml(team || '') + '</span>' +
-        '<span class="dr-hub-odds-row-bar"><span class="dr-hub-odds-row-bar-fill" style="width:' + width + '%"></span></span>' +
-        '<span class="dr-hub-odds-row-pct">' + pct.toFixed(1) + '%</span>' +
+        '<span class="dr-hub-projections-row-name">' + escapeHtml(name) + '</span>' +
+        '<span class="dr-hub-projections-row-team">' + escapeHtml(team || '') + '</span>' +
+        '<span class="dr-hub-projections-row-bar"><span class="dr-hub-projections-row-bar-fill" style="width:' + width + '%"></span></span>' +
+        '<span class="dr-hub-projections-row-pct">' + pct.toFixed(1) + '%</span>' +
       '</div>'
     );
   }
 
-  function renderHubOdds(data){
-    var section = document.getElementById('dr-hub-odds');
-    var wsEl = document.getElementById('dr-hub-ws-odds');
-    var mvpAlEl = document.getElementById('dr-hub-mvp-al-odds');
-    var mvpNlEl = document.getElementById('dr-hub-mvp-nl-odds');
+  function renderHubProjections(data){
+    var section = document.getElementById('dr-hub-projections');
+    var wsEl = document.getElementById('dr-hub-ws-projections');
+    var mvpAlEl = document.getElementById('dr-hub-mvp-al-projections');
+    var mvpNlEl = document.getElementById('dr-hub-mvp-nl-projections');
     if (!section || !data) return;
 
     var ws = Array.isArray(data.worldSeries) ? data.worldSeries.slice(0, 8) : [];
@@ -11219,23 +11219,23 @@ function showPremiumGate(feature){
     if (!ws.length && !mvpAl.length && !mvpNl.length) return;
 
     if (wsEl) wsEl.innerHTML = ws.map(function(t){
-      return oddsRowHtml(wsTeamLogo(t.teamId), t.name || t.abbr || '–', t.abbr, t.pct);
+      return projectionsRowHtml(wsTeamLogo(t.teamId), t.name || t.abbr || '–', t.abbr, t.pct);
     }).join('');
     if (mvpAlEl) mvpAlEl.innerHTML = mvpAl.map(function(c){
-      return oddsRowHtml(c.id ? '<img class="dr-hub-odds-row-photo" src="' + escapeHtml(hs(c.id)) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '', c.name || '–', c.teamAbbr, c.pct);
+      return projectionsRowHtml(c.id ? '<img class="dr-hub-projections-row-photo" src="' + escapeHtml(hs(c.id)) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '', c.name || '–', c.teamAbbr, c.pct);
     }).join('');
     if (mvpNlEl) mvpNlEl.innerHTML = mvpNl.map(function(c){
-      return oddsRowHtml(c.id ? '<img class="dr-hub-odds-row-photo" src="' + escapeHtml(hs(c.id)) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '', c.name || '–', c.teamAbbr, c.pct);
+      return projectionsRowHtml(c.id ? '<img class="dr-hub-projections-row-photo" src="' + escapeHtml(hs(c.id)) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '', c.name || '–', c.teamAbbr, c.pct);
     }).join('');
     section.style.display = '';
     showSideToggleIfNeeded();
   }
 
-  function loadHubOdds(){
-    if (oddsLoaded) return;
-    oddsLoaded = true;
+  function loadHubProjections(){
+    if (projectionsLoaded) return;
+    projectionsLoaded = true;
     drFetchDailyJSON('data/season-projections.json').then(function(data){
-      renderHubOdds(data);
+      renderHubProjections(data);
     }).catch(function(){});
   }
 
