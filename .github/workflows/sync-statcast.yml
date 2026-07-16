@@ -4,10 +4,23 @@ on:
   schedule:
     # 13:04 UTC = ~8am CDT — before the update-tracker.yml morning run (14:07 UTC), so
     # today's Elite Picks/matchup pages have fresh pitch-arsenal data before first pitch.
-    # Offset off the top of the hour on purpose — see the comment in update-tracker.yml;
-    # every run of this workflow so far has been a manual workflow_dispatch, never an
-    # actual `schedule` trigger.
+    # Offset off the top of the hour on purpose — see the comment in update-tracker.yml.
+    # This is the only trigger that runs the full sync (pitch-arsenal + hot-hitters +
+    # zone/HR) — those two leaderboard pulls are whole-season aggregates that don't
+    # meaningfully change hour to hour, so there's no reason to repeat them below.
     - cron: '4 13 * * *'
+    # MLB's own probablePitcher field on the schedule API doesn't populate all at once
+    # in the morning — it fills in through the day as rotations get confirmed, so a
+    # pitcher starting a later game can be missing from the 13:04 run entirely (see the
+    # Christian Scott case this caught). These five re-run just the zone/HR step — a
+    # bounded ~15-30 requests against today's probable starters, not the two heavy
+    # whole-league leaderboard pulls — to pick up newly-confirmed starters without
+    # hammering Baseball Savant's public endpoint five extra times a day.
+    - cron: '9 15 * * *'
+    - cron: '9 17 * * *'
+    - cron: '9 19 * * *'
+    - cron: '9 21 * * *'
+    - cron: '9 23 * * *'
   workflow_dispatch: {}
 
 permissions:
@@ -29,18 +42,24 @@ jobs:
         with:
           node-version: '22'
 
+      # Only the 13:04 UTC morning run (or a manual workflow_dispatch) does the full
+      # sync — the four intraday reruns skip straight to the zone/HR step below, since
+      # data/pitcher-statcast.json from the morning run already exists for them to
+      # merge into.
       - name: Run Statcast pitch-arsenal sync
+        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-pitcher-statcast.mjs
 
       - name: Run Statcast hot-hitters sync (batter Barrel% / Hard-Hit% / xwOBA)
+        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-statcast-hot-hitters.mjs
 
       - name: Run per-pitch-type HR + Strike Zone sync for today's probable starters
-        # Depends on data/pitcher-statcast.json already existing from the step above —
-        # it merges real HR-by-pitch-type and zone-location wOBA into that same file
-        # rather than writing a separate one. A failure here shouldn't block the two
-        # steps above from being committed, so it's allowed to fail without red-Xing
-        # the whole run (see the commit step below, which stages whatever exists).
+        # Depends on data/pitcher-statcast.json already existing (either from the step
+        # above on the morning run, or from a prior run earlier the same day). A failure
+        # here shouldn't block the two steps above from being committed on the morning
+        # run, so it's allowed to fail without red-Xing the whole run (see the commit
+        # step below, which stages whatever exists).
         run: node scripts/sync-pitcher-zone-hr.mjs
         continue-on-error: true
 
