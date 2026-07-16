@@ -2166,7 +2166,7 @@ function renderPRTable() {
   };
   const plainCell = (value, tip) => `<td${tip?` data-tip="${tip}"`:''}>${value}</td>`;
 
-  const cards = sorted.map(r => {
+  const rows = sorted.map(r => {
     const p = r.pitcher;
     const pid = normalizePitcherId(p.id);
     const isExpanded = expandedRows.has(pid);
@@ -2175,42 +2175,41 @@ function renderPRTable() {
     const kpropLine = getKPropLine(p, r);
     if (kpropLine != null) pitcherOULines[p.id] = kpropLine;
 
-    return `<div class="pr-mobile-card${isExpanded ? ' is-expanded' : ''}" id="pr-row-${pid}">
-      <div class="pr-mobile-top">
-        <div class="pr-mobile-pitcher">
+    return `<tr class="pr-row-tr${isExpanded ? ' is-expanded' : ''}" id="pr-row-${pid}">
+        <td class="pr-lineup-batter-cell">
           <img class="pr-headshot" src="${hs(p.id)}" alt="${p.name}" loading="lazy" decoding="async">
           <div style="min-width:0">
             <div class="pr-mobile-name">${p.name}</div>
             <div class="pr-mobile-sub">${p.teamAbbr} · ${r.wl} · vs ${p.oppAbbr}</div>
+            <div class="pr-mobile-time" style="color:${p.timeColor};font-weight:${p.timeLabel.includes('LIVE')?700:400}">${p.timeLabel}</div>
           </div>
-        </div>
-        <div class="pr-mobile-time" style="color:${p.timeColor};font-weight:${p.timeLabel.includes('LIVE')?700:400}">${p.timeLabel}</div>
-      </div>
-      <div class="dr1041-table-wrap pr-stats-table-wrap"><table class="pr-stats-table">
-        <thead><tr><th>IP</th><th>BF</th><th>FIP</th><th>AVG</th><th>wOBA</th><th>WHIP</th><th>ISO</th><th>SLG</th><th>HR/9</th><th>TB</th><th>K/GM</th></tr></thead>
-        <tbody><tr>
-          ${plainCell(r.ip!=null?r.ip.toFixed(1):'–', 'Innings Pitched')}
-          ${plainCell(r.bf!=null?r.bf:'–', 'Batters Faced')}
-          ${heatCell(r.fip,  v=>v.toFixed(2), 3.25, 4.50, 'Fielding Independent Pitching')}
-          ${heatCell(r.avg,  v=>v.toFixed(3).replace(/^0/,''), .220, .270, 'Batting Average Against')}
-          ${heatCell(r.woba, v=>v.toFixed(3).replace(/^0/,''), .290, .340, 'Weighted On-Base Average')}
-          ${heatCell(r.whip, v=>v.toFixed(2), 1.10, 1.40, 'Walks + Hits per Inning Pitched')}
-          ${heatCell(r.iso,  v=>v.toFixed(3).replace(/^0/,''), .150, .200, 'Isolated Power — extra-base power allowed')}
-          ${heatCell(r.slg,  v=>v.toFixed(3).replace(/^0/,''), .350, .430, 'Slugging Percentage Against')}
-          ${heatCell(r.hr9,  v=>v.toFixed(2), 0.80, 1.50, 'Home Runs per 9 Innings')}
-          ${plainCell(r.tb!=null?r.tb:'–', 'Total Bases Allowed')}
-          ${plainCell(`<span style="color:${r.kpg>=7?'var(--green)':r.kpg>=5?'var(--text)':'var(--muted)'}">${r.kpg??'–'}</span>`, 'Average Strikeouts per Game Started')}
-        </tr></tbody>
-      </table></div>
-      <button class="btn-lineup${isExpanded?' active':''}" onclick="toggleLineup('${pid}', '${p.name.replace(/'/g,"\\'")}', ${p.gamePk}, '${p.side}', ${p.oppTeamId}, ${r.rawHr9}, ${r.rawIp})">
-        ${isExpanded ? '▲ HIDE' : '▼ BATTING LINEUP & MATCHUPS'}
-      </button>
-      <div class="pr-mobile-expand${isExpanded ? ' is-open' : ''}" id="pr-expand-${pid}" ${isExpanded ? '' : 'hidden'} style="${isExpanded?'display:block':'display:none'}">
-        <div class="pr-expand-panel" id="panel-${pid}">
-          <span class="spin"></span> Loading lineup…
-        </div>
-      </div>
-    </div>`;
+        </td>
+        ${plainCell(r.ip!=null?r.ip.toFixed(1):'–', 'Innings Pitched')}
+        ${plainCell(r.bf!=null?r.bf:'–', 'Batters Faced')}
+        ${heatCell(r.fip,  v=>v.toFixed(2), 3.25, 4.50, 'Fielding Independent Pitching')}
+        ${heatCell(r.avg,  v=>v.toFixed(3).replace(/^0/,''), .220, .270, 'Batting Average Against')}
+        ${heatCell(r.woba, v=>v.toFixed(3).replace(/^0/,''), .290, .340, 'Weighted On-Base Average')}
+        ${heatCell(r.whip, v=>v.toFixed(2), 1.10, 1.40, 'Walks + Hits per Inning Pitched')}
+        ${heatCell(r.iso,  v=>v.toFixed(3).replace(/^0/,''), .150, .200, 'Isolated Power — extra-base power allowed')}
+        ${heatCell(r.slg,  v=>v.toFixed(3).replace(/^0/,''), .350, .430, 'Slugging Percentage Against')}
+        ${heatCell(r.hr9,  v=>v.toFixed(2), 0.80, 1.50, 'Home Runs per 9 Innings')}
+        ${plainCell(r.tb!=null?r.tb:'–', 'Total Bases Allowed')}
+        ${plainCell(`<span style="color:${r.kpg>=7?'var(--green)':r.kpg>=5?'var(--text)':'var(--muted)'}">${r.kpg??'–'}</span>`, 'Average Strikeouts per Game Started')}
+        <td>
+          <button class="btn-lineup${isExpanded?' active':''}" onclick="toggleLineup('${pid}', '${p.name.replace(/'/g,"\\'")}', ${p.gamePk}, '${p.side}', ${p.oppTeamId}, ${r.rawHr9}, ${r.rawIp})">
+            ${isExpanded ? '▲ HIDE' : '▼ BATTING LINEUP & MATCHUPS'}
+          </button>
+        </td>
+      </tr>
+      <tr class="pr-expand-tr">
+        <td colspan="13" style="padding:0;border-bottom:1px solid var(--border)">
+          <div class="pr-mobile-expand${isExpanded ? ' is-open' : ''}" id="pr-expand-${pid}" ${isExpanded ? '' : 'hidden'} style="${isExpanded?'display:block':'display:none'}">
+            <div class="pr-expand-panel" id="panel-${pid}">
+              <span class="spin"></span> Loading lineup…
+            </div>
+          </div>
+        </td>
+      </tr>`;
   }).join('');
 
   const prSortBtns = PR_SORT_FIELDS.map(({key,label}) => {
@@ -2225,7 +2224,14 @@ function renderPRTable() {
       ${prSortBtns}
       <button onclick="resetPRSort()" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:3px 8px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0">RESET</button>
     </div>
-    <div class="pr-mobile-list">${cards}</div>
+    <div class="dr1041-table-wrap pr-starters-table-wrap"><table class="pr-stats-table pr-starters-table">
+      <thead><tr>
+        <th style="text-align:left">Pitcher</th>
+        <th>IP</th><th>BF</th><th>FIP</th><th>AVG</th><th>wOBA</th><th>WHIP</th><th>ISO</th><th>SLG</th><th>HR/9</th><th>TB</th><th>K/GM</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
     <div class="pr-legend">
       <span class="pr-legend-chip"><span class="pr-legend-dot good"></span>Elite</span>
       <span class="pr-legend-chip"><span class="pr-legend-dot neu"></span>Average</span>
@@ -2541,7 +2547,7 @@ function renderLineupPending(panelId, teamAbbr = '') {
     </div>`;
 }
 
-function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, pitcherName, asTable = true) {
+function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, pitcherName) {
   const panel = document.getElementById(panelId);
   if (!panel) return;
   const { lineup, teamAbbr } = data || {};
@@ -2644,25 +2650,7 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
     return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0/,'');
   }
 
-  // Rating tier — based on batter K% vs pitcher K/9 and batter OPS. Framed from
-  // the pitcher's side (WEAK batter = pitcher advantage, DANGER ZONE = batter
-  // advantage) to match the Rating column in the lineup matchup table.
-  function ratingTier(s) {
-    const kpct = (s.strikeOuts && s.plateAppearances) ? s.strikeOuts/s.plateAppearances : 0.22;
-    const ops  = parseFloat(s.ops) || 0.700;
-    const pk9  = pitcherHr9 * 9 || 8.0; // proxy from hr9
-    let score = 0;
-    if (kpct < 0.18) score += 2; else if (kpct > 0.28) score -= 2;
-    if (ops > 0.820) score += 2; else if (ops < 0.680) score -= 1;
-    if (pk9 > 10.0) score -= 2; else if (pk9 < 7.0) score += 1;
-    if (score >= 2) return { cls: 'pr-rate-danger', label: '⚠ DANGER ZONE' };
-    if (score <= -2) return { cls: 'pr-rate-weak', label: '🎯 WEAK' };
-    return { cls: 'pr-rate-mild', label: '~ MILD' };
-  }
-
-  // Matchup label — the K Props embedded lineup panel keeps the original
-  // stacked-card look (asTable=false); only the Pitcher Report tab uses the
-  // new heat-mapped table.
+  // Matchup label — based on batter K% vs pitcher K/9 and batter OPS
   function matchupLabel(s) {
     const kpct = (s.strikeOuts && s.plateAppearances) ? s.strikeOuts/s.plateAppearances : 0.22;
     const ops  = parseFloat(s.ops) || 0.700;
@@ -2676,130 +2664,55 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
     return `<span class="matchup-label ml-neutral">~ NEUTRAL MATCHUP</span>`;
   }
 
-  const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-
-  if (!asTable) {
-    const cards = withProbs.map((b, i) => {
-      const s = b.stats;
-      const isTop = i === topIdx; // persists regardless of todayHR
-      const homerToday = b.todayHR > 0;
-      const pName = (pitcherName||'').replace(/'/g,"\\'");
-      const bName = b.name.replace(/'/g,"\\'");
-
-      return `<div data-batter-id="${b.id}" class="lineup-batter-card${homerToday?' hr-today':''}">
-        <div class="lineup-batter-main">
-          <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-width:14px">${i+1}</span>
-          <div class="lineup-batter-details">
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-              <span class="batter-name-span" style="font-size:13px;font-weight:700;color:${homerToday?'var(--accent2)':'var(--text)'}">${b.name}</span>
-              <span class="batter-pos">${b.pos}</span>
-              ${homerToday ? `<span class="hr-today-badge" style="background:#2a1500;color:#f4a261;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166">💥 HR TODAY${b.todayHR>1?' x'+b.todayHR:''}</span>` : ''}
-              ${isTop ? `<span class="top-hr-badge">⚡ TOP HR THREAT</span>` : ''}
-            </div>
-            <div style="margin-top:3px">${matchupLabel(s)}</div>
-            <div class="batter-stats-line" style="display:flex;gap:12px;margin-top:4px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);flex-wrap:wrap">
-              ${buildBatterStatsLine(b)}
-            </div>
-          </div>
-        </div>
-        <div class="lineup-matchup-action">
-          <button class="btn-matchup" onclick="openMatchup(${b.id},'${bName}',${pitcherId},'${pName}')" title="Batter vs Pitcher analysis">
-            ⚔ Pitcher Matchup
-          </button>
-        </div>
-      </div>`;
-    }).join('');
-
-    panel.innerHTML = `
-      <div style="padding:4px 0 10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
-        <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent)">
-          ${teamAbbr || oppAbbr || ''} BATTING LINEUP ${lineupBadge}
-        </span>
-        <div style="display:flex;gap:10px;align-items:center;font-size:10px;color:var(--muted);flex-wrap:wrap">
-          <span><span style="color:var(--accent2)">💥 HR TODAY</span> = homered this game</span>
-          <span><span style="color:#90ee60">L10</span> = HRs in last 10 games</span>
-          <span>⚔ for matchup</span>
-          <span class="lineup-timestamp" style="font-family:'JetBrains Mono',monospace;color:var(--border)">Auto-checking official lineup${data.source ? ` • ${data.source}` : ''}${data.confirmedAt ? ` • confirmed ${new Date(data.confirmedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}` : ''}</span>
-        </div>
-      </div>
-      ${lineupNotice}
-      ${cards}`;
-    return;
-  }
-
-  const rateCell = (v, goodBelow, badAbove, fmt) => {
-    const bg = v == null || isNaN(v) ? 'transparent' : heatBG(v, goodBelow, badAbove);
-    const txt = v == null || isNaN(v) ? '<span style="color:var(--muted)">–</span>' : fmt(v);
-    return `<td style="background:${bg}">${txt}</td>`;
-  };
-  const fmt3 = v => v.toFixed(3).replace(/^0/, '');
-  const intCell = v => `<td>${v == null || v === '' ? '<span style="color:var(--muted)">–</span>' : v}</td>`;
-
-  const rows = withProbs.map((b, i) => {
-    const s = b.stats || {};
+  const cards = withProbs.map((b, i) => {
+    const s = b.stats;
     const isTop = i === topIdx; // persists regardless of todayHR
     const homerToday = b.todayHR > 0;
+    const barPct = maxProb > 0 ? (b.hrProb / maxProb) * 100 : 0;
+    const barColor = homerToday ? '#f4a261' : isTop ? '#f4a261' : b.hrProb > maxProb * 0.7 ? '#dc2626' : '#2ecc71';
     const pName = (pitcherName||'').replace(/'/g,"\\'");
     const bName = b.name.replace(/'/g,"\\'");
-    const hasData = _statHasRealBattingData(s);
-    const avg = hasData ? parseFloat(s.avg) : NaN;
-    const obp = hasData ? parseFloat(s.obp) : NaN;
-    const slg = hasData ? parseFloat(s.slg) : NaN;
-    const ops = hasData ? parseFloat(s.ops) : NaN;
-    const iso = !isNaN(slg) && !isNaN(avg) ? slg - avg : NaN;
-    const kpct = hasData && s.strikeOuts != null && s.plateAppearances ? (parseInt(s.strikeOuts) / parseInt(s.plateAppearances)) * 100 : NaN;
-    const rating = ratingTier(s);
+    const rowBg = homerToday ? 'background:linear-gradient(90deg,#2a1a00 0%,#1a1200 100%);border-left:3px solid var(--accent2);' : '';
 
-    return `<tr data-batter-id="${b.id}"${homerToday ? ' class="pr-lineup-row-hr"' : ''}>
-      <td class="pr-lineup-batter-cell">
-        <span class="pr-lineup-order">${i+1}</span>
-        <span class="batter-name-span" style="font-weight:700;color:${homerToday?'var(--accent2)':'var(--text)'}">${b.name}</span>
-        <span class="batter-pos">${b.pos}</span>
-        ${homerToday ? `<span class="hr-today-badge" style="background:#2a1500;color:#f4a261;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:.4px;border:1px solid #f4a26166">💥 HR${b.todayHR>1?' x'+b.todayHR:''}</span>` : ''}
-        ${isTop ? `<span class="top-hr-badge">⚡ TOP HR THREAT</span>` : ''}
-      </td>
-      ${intCell(hasData ? s.atBats : null)}
-      ${intCell(hasData ? s.hits : null)}
-      ${intCell(hasData ? s.doubles : null)}
-      ${intCell(hasData ? s.triples : null)}
-      ${intCell(hasData ? s.homeRuns : null)}
-      ${intCell(hasData ? (s.rbi ?? s.runsBattedIn) : null)}
-      ${intCell(hasData ? s.baseOnBalls : null)}
-      ${rateCell(kpct, 28, 18, v => v.toFixed(1)+'%')}
-      ${rateCell(avg, .230, .280, fmt3)}
-      ${rateCell(obp, .300, .350, fmt3)}
-      ${rateCell(slg, .370, .450, fmt3)}
-      ${rateCell(ops, .670, .800, fmt3)}
-      ${rateCell(iso, .130, .200, fmt3)}
-      <td>
-        <span class="pr-rating-pill ${rating.cls}">${rating.label}</span>
-        <button class="btn-matchup pr-lineup-matchup-btn" onclick="openMatchup(${b.id},'${bName}',${pitcherId},'${pName}')" title="Batter vs Pitcher analysis">⚔</button>
-      </td>
-    </tr>`;
+    return `<div data-batter-id="${b.id}" class="lineup-batter-card${homerToday?' hr-today':''}">
+      <div class="lineup-batter-main">
+        <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-width:14px">${i+1}</span>
+        <div class="lineup-batter-details">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span class="batter-name-span" style="font-size:13px;font-weight:700;color:${homerToday?'var(--accent2)':'var(--text)'}">${b.name}</span>
+            <span class="batter-pos">${b.pos}</span>
+            ${homerToday ? `<span class="hr-today-badge" style="background:#2a1500;color:#f4a261;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166">💥 HR TODAY${b.todayHR>1?' x'+b.todayHR:''}</span>` : ''}
+            ${isTop ? `<span class="top-hr-badge">⚡ TOP HR THREAT</span>` : ''}
+          </div>
+          <div style="margin-top:3px">${matchupLabel(s)}</div>
+          <div class="batter-stats-line" style="display:flex;gap:12px;margin-top:4px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);flex-wrap:wrap">
+            ${buildBatterStatsLine(b)}
+          </div>
+        </div>
+      </div>
+      <div class="lineup-matchup-action">
+        <button class="btn-matchup" onclick="openMatchup(${b.id},'${bName}',${pitcherId},'${pName}')" title="Batter vs Pitcher analysis">
+          ⚔ Pitcher Matchup
+        </button>
+      </div>
+    </div>`;
   }).join('');
 
+  const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
   panel.innerHTML = `
     <div style="padding:4px 0 10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
       <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent)">
         ${teamAbbr || oppAbbr || ''} BATTING LINEUP ${lineupBadge}
       </span>
       <div style="display:flex;gap:10px;align-items:center;font-size:10px;color:var(--muted);flex-wrap:wrap">
-        <span><span style="color:var(--accent2)">💥 HR</span> = homered this game</span>
-        <span><span class="pr-rating-pill pr-rate-weak" style="padding:1px 5px">WEAK</span> pitcher favored</span>
-        <span><span class="pr-rating-pill pr-rate-danger" style="padding:1px 5px">DANGER ZONE</span> batter favored</span>
+        <span><span style="color:var(--accent2)">💥 HR TODAY</span> = homered this game</span>
+        <span><span style="color:#90ee60">L10</span> = HRs in last 10 games</span>
         <span>⚔ for matchup</span>
         <span class="lineup-timestamp" style="font-family:'JetBrains Mono',monospace;color:var(--border)">Auto-checking official lineup${data.source ? ` • ${data.source}` : ''}${data.confirmedAt ? ` • confirmed ${new Date(data.confirmedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}` : ''}</span>
       </div>
     </div>
     ${lineupNotice}
-    <div class="dr1041-table-wrap pr-lineup-table-wrap"><table class="pr-stats-table pr-lineup-table">
-      <thead><tr>
-        <th style="text-align:left">Batter</th>
-        <th>AB</th><th>H</th><th>2B</th><th>3B</th><th>HR</th><th>RBI</th><th>BB</th><th>K%</th>
-        <th>AVG</th><th>OBP</th><th>SLG</th><th>OPS</th><th>ISO</th><th>Rating</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table></div>`;
+    ${cards}`;
 }
 
 function sortPR(col) {
@@ -6097,7 +6010,7 @@ async function toggleKPropLineup(btn, pitcherId, pitcherName, teamAbbr, oppAbbr)
     await loadRepoLineups();
     const repo = getRepoLineupForGame(game.gamePk, oppSide);
     if (repo?.confirmed === true && repo?.lineup?.length) {
-      renderLineup(panelId, { lineup: repo.lineup, teamAbbr: oppTeamAbbr, confirmed: true, source: repo.source, confirmedAt: repo.confirmedAt }, null, null, oppTeamAbbr, pitcherId, pitcherName, false);
+      renderLineup(panelId, { lineup: repo.lineup, teamAbbr: oppTeamAbbr, confirmed: true, source: repo.source, confirmedAt: repo.confirmedAt }, null, null, oppTeamAbbr, pitcherId, pitcherName);
       outerPanel.style.cssText += ';width:100%!important;min-width:0!important;box-sizing:border-box!important;overflow-x:auto!important;';
       return;
     }
@@ -6136,7 +6049,7 @@ async function toggleKPropLineup(btn, pitcherId, pitcherName, teamAbbr, oppAbbr)
       };
     }).filter(b => b.name !== '–');
 
-    renderLineup(panelId, { lineup, teamAbbr: oppTeamAbbr, confirmed: true }, null, null, oppTeamAbbr, pitcherId, pitcherName, false);
+    renderLineup(panelId, { lineup, teamAbbr: oppTeamAbbr, confirmed: true }, null, null, oppTeamAbbr, pitcherId, pitcherName);
     // Force full width after render — the panel can get squeezed by flex layout
     outerPanel.style.cssText += ';width:100%!important;min-width:0!important;box-sizing:border-box!important;overflow-x:auto!important;';
   } catch(e) {
