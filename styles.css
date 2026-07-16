@@ -3168,3 +3168,51 @@ select:focus-visible {
   border-left: 2px solid rgba(251,191,36,.4);
   padding-left: 8px;
 }
+
+/* The Expanded Strikeouts Data banner reuses HR Threats' .dr1027-* classes for visual
+   parity, but HR Threats' actual box styling (border/background/radius/grid layout) is
+   scoped to #hr-potential-content only — it never applies inside #kprops-content, so
+   without this the banner fell back to plain stacked rows with no card boxes at all.
+   Mirrors the #hr-potential-content rules exactly so both boards render identically. */
+#kprops-content .dr1027-hr-summary {
+  border: 1px solid rgba(64,170,255,.32);
+  background: linear-gradient(145deg, rgba(13,31,52,.94), rgba(5,12,24,.98));
+  border-radius: 16px;
+  padding: 12px;
+  margin: 0 0 12px;
+}
+#kprops-content .dr1027-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 8px;
+}
+#kprops-content .dr1027-summary-metric {
+  border: 1px solid rgba(44,108,190,.55);
+  border-radius: 10px;
+  background: rgba(7,15,30,.72);
+  padding: 9px 10px;
+  min-width: 0;
+}
+#kprops-content .dr1027-summary-metric b {
+  display: block;
+  color: #f8fafc;
+  font-size: 16px;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#kprops-content .dr1027-summary-metric span {
+  display: block;
+  color: #94a3bd;
+  font-size: 8px;
+  text-transform: uppercase;
+  font-weight: 900;
+  letter-spacing: .05em;
+  margin-top: 4px;
+}
+@media (max-width: 700px) {
+  #kprops-content .dr1027-summary-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
