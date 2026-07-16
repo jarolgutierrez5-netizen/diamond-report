@@ -430,11 +430,35 @@ const LEAGUE_AVG_AVG = 0.245, LEAGUE_AVG_OBP = 0.315, LEAGUE_AVG_SLG = 0.400, LE
 // instead of relying on AVG/SLG outcomes, which are tangled up with luck, defense, and
 // ballpark sequencing -- a real, independent power signal box-score rates can't see.
 const STATCAST_PATH = path.join(__dirname, '..', 'data', 'batter-pitch-type-season.json');
+// Pitcher-side counterpart: same xSLG/hard-hit% ALLOWED, broken down per pitch type
+// *thrown* instead of per pitch type *seen*. Same sync script, same "collected but
+// never actually read here" gap as the batter file.
+const PITCHER_STATCAST_PATH = path.join(__dirname, '..', 'data', 'pitcher-statcast.json');
 const LEAGUE_AVG_XSLG = 0.400; // same scale as LEAGUE_AVG_SLG; MLB-wide xSLG runs close to actual SLG
 const LEAGUE_AVG_HARD_HIT_PCT = 36; // percent; roughly MLB seasonal average hard-hit rate
-const STATCAST_MIN_PITCHES = 100; // below this, a batter's aggregate is too thin a sample to trust
-let statcastPowerCache = null;
+const STATCAST_MIN_PITCHES = 100; // below this, a player's aggregate is too thin a sample to trust
 
+// Both files store xSLG/hard-hit% per pitch-type row (batter: seasonPitchTypeStats,
+// pitcher: byPitch) -- this aggregates either one into a single pitches-weighted
+// {xslg, hardHitPct, pitches} per player, shared by both loaders below.
+function aggregateStatcastRows(rows) {
+  if (!Array.isArray(rows) || !rows.length) return null;
+  let pitches = 0, xslgSum = 0, xslgWeight = 0, hardHitSum = 0, hardHitWeight = 0;
+  rows.forEach(r => {
+    const w = n(r.pitches);
+    pitches += w;
+    if (r.xslg != null) { xslgSum += r.xslg * w; xslgWeight += w; }
+    if (r.hardHitPct != null) { hardHitSum += r.hardHitPct * w; hardHitWeight += w; }
+  });
+  if (pitches < STATCAST_MIN_PITCHES) return null;
+  return {
+    xslg: xslgWeight > 0 ? xslgSum / xslgWeight : null,
+    hardHitPct: hardHitWeight > 0 ? hardHitSum / hardHitWeight : null,
+    pitches,
+  };
+}
+
+let statcastPowerCache = null;
 async function loadStatcastPowerIndex() {
   if (statcastPowerCache) return statcastPowerCache;
   statcastPowerCache = new Map();
@@ -442,21 +466,8 @@ async function loadStatcastPowerIndex() {
     const raw = await readFile(STATCAST_PATH, 'utf8');
     const data = JSON.parse(raw);
     for (const [id, player] of Object.entries(data?.players || {})) {
-      const rows = player?.seasonPitchTypeStats;
-      if (!Array.isArray(rows) || !rows.length) continue;
-      let pitches = 0, xslgSum = 0, xslgWeight = 0, hardHitSum = 0, hardHitWeight = 0;
-      rows.forEach(r => {
-        const w = n(r.pitches);
-        pitches += w;
-        if (r.xslg != null) { xslgSum += r.xslg * w; xslgWeight += w; }
-        if (r.hardHitPct != null) { hardHitSum += r.hardHitPct * w; hardHitWeight += w; }
-      });
-      if (pitches < STATCAST_MIN_PITCHES) continue;
-      statcastPowerCache.set(String(id), {
-        xslg: xslgWeight > 0 ? xslgSum / xslgWeight : null,
-        hardHitPct: hardHitWeight > 0 ? hardHitSum / hardHitWeight : null,
-        pitches,
-      });
+      const agg = aggregateStatcastRows(player?.seasonPitchTypeStats);
+      if (agg) statcastPowerCache.set(String(id), agg);
     }
   } catch (e) {
     console.warn('Statcast power index: failed to load, HR scoring will use box-score rates only:', e.message);
@@ -464,15 +475,35 @@ async function loadStatcastPowerIndex() {
   return statcastPowerCache;
 }
 
-// Converts a batter's aggregate xSLG/hard-hit% into a bounded multiplier on their
-// box-score HR rate -- >1 means Statcast reads them as hitting the ball harder than
-// their AVG/SLG outcomes alone would suggest (and vice versa). Clamped to keep a small
-// sample or one outlier metric from swinging the rate too far in either direction; box
-// score AVG/SLG/HR still carries the majority (0.6) weight in scoreForMarket.
+let pitcherStatcastPowerCache = null;
+async function loadPitcherStatcastPowerIndex() {
+  if (pitcherStatcastPowerCache) return pitcherStatcastPowerCache;
+  pitcherStatcastPowerCache = new Map();
+  try {
+    const raw = await readFile(PITCHER_STATCAST_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    for (const [id, pitcher] of Object.entries(data?.pitchers || {})) {
+      const agg = aggregateStatcastRows(pitcher?.byPitch);
+      if (agg) pitcherStatcastPowerCache.set(String(id), agg);
+    }
+  } catch (e) {
+    console.warn('Pitcher Statcast power index: failed to load, HR scoring will use box-score rates only:', e.message);
+  }
+  return pitcherStatcastPowerCache;
+}
+
+// Converts an aggregate xSLG/hard-hit% into a bounded multiplier on the corresponding
+// box-score HR rate -- generic over both sides of the matchup: for a batter, >1 means
+// Statcast reads them as hitting the ball harder than their AVG/SLG outcomes alone
+// would suggest; for a pitcher (statcast = contact ALLOWED), >1 means they're
+// surrendering harder contact than their AVG/SLG-allowed suggests. Clamped to keep a
+// small sample or one outlier metric from swinging the rate too far in either
+// direction; box score AVG/SLG/HR still carries the majority (0.6/0.4 split) weight
+// in scoreForMarket.
 function battedBallPowerIndex(statcast) {
-  // loadStatcastPowerIndex already excludes thin samples from its cache, but check
-  // independently here too so this function is correct for any caller, not just one
-  // that's pre-filtered its input.
+  // loadStatcastPowerIndex/loadPitcherStatcastPowerIndex already exclude thin samples
+  // from their caches, but check independently here too so this function is correct
+  // for any caller, not just one that's pre-filtered its input.
   if (!statcast || !(statcast.pitches >= STATCAST_MIN_PITCHES)) return 1;
   const ratios = [];
   if (statcast.xslg != null) ratios.push(statcast.xslg / LEAGUE_AVG_XSLG);
@@ -821,7 +852,12 @@ function scoreForMarket(marketKey, row) {
     // Prefer this specific pitcher's own real batters-faced-per-9 (pitcherBFper9) when
     // their season stat line has enough innings to trust it; fall back to the league-
     // average constant otherwise.
-    const pitcherRate = row.pitcherHr9 > 0 ? row.pitcherHr9 / (row.pitcherBFper9 || BATTERS_FACED_PER_9) : 0.03;
+    const boxScorePitcherRate = row.pitcherHr9 > 0 ? row.pitcherHr9 / (row.pitcherBFper9 || BATTERS_FACED_PER_9) : 0.03;
+    // Corrects the box-score-allowed rate using real contact-quality-allowed data
+    // (xSLG/hard-hit% allowed), the pitcher-side mirror of the batter correction above
+    // -- battedBallPowerIndex is generic over both. Neutral (1x) with no Statcast
+    // coverage or too thin a sample, same as the batter side.
+    const pitcherRate = boxScorePitcherRate * battedBallPowerIndex(row.pitcherStatcast);
     // Wind (windFactor, see windPowerFactor above) affects the whole park/game
     // environment equally regardless of who's hitting or pitching, so it's applied
     // once to the combined rate rather than to the batter/pitcher components
@@ -929,12 +965,14 @@ async function battersForSide(g, side) {
 
 async function buildEliteBatterPool(games, season) {
   const statcastIndex = await loadStatcastPowerIndex();
+  const pitcherStatcastIndex = await loadPitcherStatcastPowerIndex();
   const rows = [];
   for (const g of games) {
     for (const [side, opp] of [['away', 'home'], ['home', 'away']]) {
       const pitcher = g.teams[opp].probablePitcher;
       if (!pitcher) continue;
       const pitcherStat = await seasonPitchingStat(pitcher.id, season);
+      const pitcherStatcast = pitcherStatcastIndex.get(String(pitcher.id)) || null;
       const pitcherHand = pitcherHandCache.get(pitcher.id) || 'R';
       const teamAbbr = g.teams[side].team.abbreviation;
       const oppAbbr = g.teams[opp].team.abbreviation;
@@ -996,6 +1034,7 @@ async function buildEliteBatterPool(games, season) {
           pitcherAvgAllowed, pitcherSlgAllowed, parkFactor: PARK_FACTORS[g.teams.home.team.abbreviation] || 100,
           isFavorable, isHot, statcast: statcastIndex.get(String(pid)) || null,
           windFactor: windPowerFactor(g.weather), fatigueFactor: battingTeamFatigue,
+          pitcherStatcast,
         };
       });
       sideRows.filter(Boolean).forEach(r => rows.push(r));
@@ -1380,6 +1419,7 @@ export {
   captureHRThreatToday, gradeHRThreatPending,
   simulatePropOdds, simulateSBOdds, simulateHRGameOdds, scoreForMarket, eliteQualityScore,
   eliteHit, fetchOddsLookup, normalizeName,
-  loadStatcastPowerIndex, battedBallPowerIndex, parseInningsPitched, pitcherBattersFacedPer9,
+  loadStatcastPowerIndex, loadPitcherStatcastPowerIndex, battedBallPowerIndex,
+  parseInningsPitched, pitcherBattersFacedPer9,
   windPowerFactor, isDayGameCT, doubleheaderFatigueFactor, teamRestFatigueFactor,
 };
