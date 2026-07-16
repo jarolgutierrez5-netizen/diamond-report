@@ -598,10 +598,23 @@ function simulateHRGameOdds(pPerPA, battingOrder) {
   return Math.max(1, Math.min(99, Math.round(prob * 100)));
 }
 
+// A pitcher's box-score HR/9 is allowed-per-9-innings, i.e. per 27 outs -- but a
+// pitcher actually faces more batters than that per 9 innings, since everyone who
+// reaches base (hit/walk/HBP) adds a batter faced without adding an out. ~38 is a
+// realistic MLB-average batters-faced-per-9 (27 outs + ~11 baserunners allowed per
+// WHIP). Dividing by 27 instead of ~38 overstated the pitcher's true HR-per-batter
+// rate by about 40%.
+const BATTERS_FACED_PER_9 = 38;
+
 function scoreForMarket(marketKey, row) {
   if (marketKey === 'hr') {
-    const batterRate = row.atBats > 0 ? row.hrSeason / row.atBats : LEAGUE_AVG_HR_RATE;
-    const pitcherRate = row.pitcherHr9 > 0 ? row.pitcherHr9 / 27 : 0.03;
+    // hrSeason/atBats is HR-per-AT-BAT; MC_AB_PER_PA converts it to HR-per-PLATE-
+    // APPEARANCE so it's on the same footing as pitcherRate and simulateHRGameOdds
+    // below, which all treat their input as a per-PA rate. Left unconverted this
+    // overstated the batter's true per-PA HR odds by about 13% (AB is a smaller
+    // denominator than PA, since PA also includes walks/HBP/sac flies).
+    const batterRate = row.atBats > 0 ? (row.hrSeason / row.atBats) * MC_AB_PER_PA : LEAGUE_AVG_HR_RATE;
+    const pitcherRate = row.pitcherHr9 > 0 ? row.pitcherHr9 / BATTERS_FACED_PER_9 : 0.03;
     const hrPerPA = batterRate * 0.6 + pitcherRate * 0.4;
     return simulateHRGameOdds(hrPerPA, row.battingOrder);
   }
