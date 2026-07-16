@@ -2535,7 +2535,7 @@ body > main, main,
   object-fit: cover;
 }
 .dr-hub-projections-row-name {
-  flex-shrink: 1;
+  flex: 1 1 auto;
   min-width: 0;
   font-size: 12px;
   font-weight: 700;
@@ -2549,9 +2549,13 @@ body > main, main,
   font-size: 10px;
   color: #8fa3c8;
 }
+/* Fixed width, not flex-grow — it used to expand to fill whatever space was left
+   over after the name/team text, so it rendered a different length on every row
+   depending on how long that row's name happened to be. The name (above) now
+   absorbs the flexible leftover space instead, via its own ellipsis truncation. */
 .dr-hub-projections-row-bar {
-  flex: 1 1 30px;
-  min-width: 16px;
+  flex: 0 0 60px;
+  width: 60px;
   height: 6px;
   border-radius: 3px;
   background: rgba(255,255,255,.08);
