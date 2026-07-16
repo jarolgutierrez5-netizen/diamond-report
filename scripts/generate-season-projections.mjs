@@ -240,11 +240,16 @@ async function buildMvpOdds(teamMeta, teamWinPct) {
       const id = leader.person && leader.person.id;
       if (!id) continue;
       if (!candidates.has(id)) {
+        const teamId = leader.team && leader.team.id;
+        // The leaders endpoint's team object only reliably carries an id — no
+        // abbreviation (confirmed against a live response: every candidate came
+        // back with team.abbreviation undefined). Resolve the real abbreviation
+        // from teamMeta instead, which was built from the /teams endpoint.
         candidates.set(id, {
           id,
           name: leader.person.fullName,
-          teamId: leader.team && leader.team.id,
-          teamAbbr: (leader.team && leader.team.abbreviation) || '',
+          teamId,
+          teamAbbr: (teamMeta[teamId] && teamMeta[teamId].abbreviation) || (leader.team && leader.team.abbreviation) || '',
           ranks: {},
         });
       }

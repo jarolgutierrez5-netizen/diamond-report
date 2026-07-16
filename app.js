@@ -11056,6 +11056,20 @@ function showPremiumGate(feature){
 
   var LEADER_ROWS_PER_CATEGORY = 3;
   var leaderEntries = [];
+  var teamIdToAbbr = null;
+
+  // /stats/leaders' team object only reliably carries an id, not an
+  // abbreviation (confirmed against a live response — every leader came back
+  // with team.abbreviation undefined). Resolve it from the existing
+  // abbr->id map (window.teamIds, built at the top of app.js) instead.
+  function teamAbbrFromId(id){
+    if (!teamIdToAbbr) {
+      teamIdToAbbr = {};
+      var ids = window.teamIds || {};
+      for (var abbr in ids) { teamIdToAbbr[ids[abbr]] = abbr; }
+    }
+    return teamIdToAbbr[id] || '';
+  }
 
   function renderHubLeaders(categories){
     var container = document.getElementById('dr-hub-leaders-list');
@@ -11069,13 +11083,14 @@ function showPremiumGate(feature){
       var rows = leaders.map(function(leader){
         var person = leader.person || {};
         var team = leader.team || {};
+        var teamAbbr = team.abbreviation || teamAbbrFromId(team.id) || '';
         var value = formatLeaderValue(c.leaderCategory, leader.value);
         var idx = leaderEntries.push({
           category: c.leaderCategory,
           rank: leader.rank,
           value: value,
           name: person.fullName || '–',
-          teamAbbr: team.abbreviation || '',
+          teamAbbr: teamAbbr,
           personId: person.id || null,
         }) - 1;
         return (
@@ -11083,7 +11098,7 @@ function showPremiumGate(feature){
             '<span class="dr-hub-leader-row-rank">#' + escapeHtml(String(leader.rank || '')) + '</span>' +
             (person.id ? '<img class="dr-hub-leader-row-photo" src="' + escapeHtml(hs(person.id)) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '') +
             '<span class="dr-hub-leader-row-name">' + escapeHtml(person.fullName || '–') + '</span>' +
-            '<span class="dr-hub-leader-row-team">' + escapeHtml(team.abbreviation || '') + '</span>' +
+            '<span class="dr-hub-leader-row-team">' + escapeHtml(teamAbbr) + '</span>' +
             '<span class="dr-hub-leader-row-value">' + escapeHtml(value) + '</span>' +
           '</button>'
         );

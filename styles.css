@@ -2443,6 +2443,29 @@ body > main, main,
   font-weight: 700;
   color: #f4a261;
 }
+
+/* Below the side-rail breakpoint, League Leaders and Season Odds run
+   full-width instead of squeezed into a 360px column — give the rows more
+   breathing room instead of keeping the same cramped, side-rail-sized text
+   and spacing on a phone or portrait iPad screen. */
+@media (max-width: 999px) {
+  .dr-hub-leader-group { padding: 16px 18px; }
+  .dr-hub-leader-row { padding: 11px 0; gap: 12px; }
+  .dr-hub-leader-row-rank { width: 24px; font-size: 13px; }
+  .dr-hub-leader-row-photo { width: 36px; height: 36px; }
+  .dr-hub-leader-row-name { font-size: 15px; }
+  .dr-hub-leader-row-team { font-size: 12px; }
+  .dr-hub-leader-row-value { font-size: 14px; min-width: 46px; }
+
+  .dr-hub-odds-col { padding: 16px 18px; }
+  .dr-hub-odds-row { gap: 10px; }
+  .dr-hub-odds-row-photo { width: 28px; height: 28px; }
+  .dr-hub-odds-row-name { font-size: 14px; }
+  .dr-hub-odds-row-team { font-size: 12px; }
+  .dr-hub-odds-row-bar { height: 8px; }
+  .dr-hub-odds-row-pct { font-size: 13px; width: 48px; }
+}
+
 /* News summary modal — keeps readers on-site for the headline + short
    summary; the "Read full story" link is the only thing that leaves. */
 .dr-hub-news-modal {
