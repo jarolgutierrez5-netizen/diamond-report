@@ -543,6 +543,30 @@ function windPowerFactor(weather) {
     : 1 - strength * (1 - WIND_MAX_SUPPRESS);
 }
 
+// Warmer air is less dense, so a batted ball carries further -- a real, well-documented
+// (if smaller than wind's) per-game HR factor. Reuses the exact same hydrate=weather
+// fetch already added for wind (weather.temp, alongside weather.wind), so this is free
+// -- no extra API call. Same sandbox caveat as wind: no live network access here to
+// verify the exact field shape, so this is defensive and falls back to neutral for
+// anything unparseable.
+const TEMP_REFERENCE_F = 70; // roughly neutral game-time temperature
+const TEMP_EFFECT_PER_10F = 0.03; // +/-3% per 10 degrees F away from reference
+const TEMP_MAX_DELTA_F = 30; // clamps the degree difference before applying, so one
+                              // extreme/bad reading can't blow past a sane range
+function temperaturePowerFactor(weather) {
+  const raw = weather?.temp;
+  if (raw == null || raw === '') return 1;
+  // Require an actual digit before parsing -- Number('') is 0 (not NaN), so a
+  // non-numeric string like "roof closed" (dome/indoor games) would otherwise silently
+  // parse as 0 degrees instead of correctly falling back to neutral.
+  const match = String(raw).match(/-?\d+(?:\.\d+)?/);
+  if (!match) return 1;
+  const temp = Number(match[0]);
+  if (!Number.isFinite(temp)) return 1;
+  const delta = clamp(temp - TEMP_REFERENCE_F, -TEMP_MAX_DELTA_F, TEMP_MAX_DELTA_F);
+  return 1 + (delta / 10) * TEMP_EFFECT_PER_10F;
+}
+
 // ── Rest/fatigue ──
 // Real, measurable proxies for physical fatigue -- deliberately NOT an attempt at
 // modeling "clutch"/mental toughness/motivation, which sabermetric research has
@@ -844,11 +868,13 @@ function scoreForMarket(marketKey, row) {
     // when a large enough Statcast sample exists for this batter -- see
     // battedBallPowerIndex/loadStatcastPowerIndex above. Neutral (1x, no change) when
     // there isn't one, so this never makes the model worse for an uncovered player.
-    // fatigueFactor (see teamRestFatigueFactor/doubleheaderFatigueFactor above) is a
-    // batter-side effect (bat speed/timing), applied here rather than to the combined
-    // rate the way windFactor is, since it's specific to the batting team, not the
-    // whole park/game environment.
-    const batterRate = boxScoreBatterRate * battedBallPowerIndex(row.statcast) * (row.fatigueFactor || 1);
+    // fatigueFactor (see teamRestFatigueFactor/doubleheaderFatigueFactor above) and
+    // homeRoadFactor (see homeRoadPowerFactor above) are both batter-side effects,
+    // applied here rather than to the combined rate the way windFactor/temperatureFactor
+    // are, since they're specific to this batter/team, not the whole park/game
+    // environment.
+    const batterRate = boxScoreBatterRate * battedBallPowerIndex(row.statcast)
+      * (row.fatigueFactor || 1) * (row.homeRoadFactor || 1);
     // Prefer this specific pitcher's own real batters-faced-per-9 (pitcherBFper9) when
     // their season stat line has enough innings to trust it; fall back to the league-
     // average constant otherwise.
@@ -858,11 +884,12 @@ function scoreForMarket(marketKey, row) {
     // -- battedBallPowerIndex is generic over both. Neutral (1x) with no Statcast
     // coverage or too thin a sample, same as the batter side.
     const pitcherRate = boxScorePitcherRate * battedBallPowerIndex(row.pitcherStatcast);
-    // Wind (windFactor, see windPowerFactor above) affects the whole park/game
-    // environment equally regardless of who's hitting or pitching, so it's applied
-    // once to the combined rate rather than to the batter/pitcher components
-    // separately -- applying it twice would double-count the same physical effect.
-    const hrPerPA = (batterRate * 0.6 + pitcherRate * 0.4) * (row.windFactor || 1);
+    // Wind and temperature (see windPowerFactor/temperaturePowerFactor above) both
+    // affect the whole park/game environment equally regardless of who's hitting or
+    // pitching, so they're applied once to the combined rate rather than to the
+    // batter/pitcher components separately -- applying either twice would double-count
+    // the same physical effect.
+    const hrPerPA = (batterRate * 0.6 + pitcherRate * 0.4) * (row.windFactor || 1) * (row.temperatureFactor || 1);
     return simulateHRGameOdds(hrPerPA, row.battingOrder);
   }
   if (marketKey === 'sb') return simulateSBOdds(row);
@@ -934,6 +961,40 @@ async function battingSplitVsHand(pid, season, pitcherHand) {
   } catch (e) { return null; }
 }
 
+// Same statSplits endpoint/pattern as battingSplitVsHand, sitCodes 'h'/'a' for
+// home/road instead of 'vl'/'vr' for pitcher hand -- some batters have a real, sizable
+// power difference between their home park and the road, separate from the generic
+// team-level PARK_FACTORS table (which only captures the park itself, not whether this
+// specific batter actually hits better or worse away from it). NOTE: same sandbox
+// caveat as elsewhere in this file -- no live network access here to confirm 'h'/'a'
+// are exactly the right sitCodes, though they match the documented pattern used for
+// every other split already fetched in this file. A wrong guess here fails the fetch
+// and falls back to null (no adjustment), same graceful-degradation posture as
+// everywhere else.
+const HOME_ROAD_MIN_AB = 30; // meaningfully higher than MIN_SPLIT_AB -- a home-only or
+                              // away-only split is a much smaller slice of a season
+                              // than a platoon split, and noisier as a result
+async function battingSplitHomeAway(pid, season, isHome) {
+  const sitCode = isHome ? 'h' : 'a';
+  try {
+    const d = await fetchJSON(`${API}/people/${pid}/stats?stats=statSplits&group=hitting&sitCodes=${sitCode}&season=${season}`);
+    const stat = d?.stats?.[0]?.splits?.[0]?.stat;
+    const ab = n(stat?.atBats);
+    if (!stat || ab < HOME_ROAD_MIN_AB) return null;
+    return { ab, slg: stat.slg != null ? n(stat.slg) : null };
+  } catch (e) { return null; }
+}
+
+// Converts a batter's home-or-road SLG into a bounded multiplier on their own
+// box-score HR rate, relative to their OWN season SLG (not a league constant --
+// this is "how does this batter do here vs. their own baseline", not "vs. league").
+// Tighter bounds than the Statcast/pitcher corrections since this compares a smaller,
+// noisier sample against another sample rather than a fixed reference.
+function homeRoadPowerFactor(splitStat, seasonSlg) {
+  if (!splitStat || splitStat.slg == null || !(seasonSlg > 0)) return 1;
+  return clamp(splitStat.slg / seasonSlg, 0.85, 1.20);
+}
+
 async function battersForSide(g, side) {
   try {
     const bd = await fetchJSON(`${API}/game/${g.gamePk}/boxscore`);
@@ -985,15 +1046,17 @@ async function buildEliteBatterPool(games, season) {
         const pid = b.id;
         const person = b.player?.person;
         if (!pid || !person?.fullName) return null;
-        const [stat, recent, split] = await Promise.all([
+        const [stat, recent, split, homeAwaySplit] = await Promise.all([
           seasonBattingStat(pid, season),
           recentBattingForm(pid, season),
           battingSplitVsHand(pid, season, pitcherHand),
+          battingSplitHomeAway(pid, season, side === 'home'),
         ]);
         const ab = n(stat.atBats);
         const seasonAvg = shrinkToLeague(n(stat.avg), ab, LEAGUE_AVG_AVG, ELITE_MIN_AB);
         const seasonObp = shrinkToLeague(n(stat.obp, seasonAvg + 0.065), ab, LEAGUE_AVG_OBP, ELITE_MIN_AB);
         const seasonSlg = shrinkToLeague(n(stat.slg, seasonAvg + 0.155), ab, LEAGUE_AVG_SLG, ELITE_MIN_AB);
+        const homeRoadFactor = homeRoadPowerFactor(homeAwaySplit, seasonSlg);
         // Recency blend — mirrors the client-side loadHRPotential blend exactly (same
         // 20-AB cap, same 35% max weight), using the lastXGames data already fetched
         // above for the isHot signal.
@@ -1033,8 +1096,9 @@ async function buildEliteBatterPool(games, season) {
           pitcherBFper9: pitcherBattersFacedPer9(pitcherStat),
           pitcherAvgAllowed, pitcherSlgAllowed, parkFactor: PARK_FACTORS[g.teams.home.team.abbreviation] || 100,
           isFavorable, isHot, statcast: statcastIndex.get(String(pid)) || null,
-          windFactor: windPowerFactor(g.weather), fatigueFactor: battingTeamFatigue,
-          pitcherStatcast,
+          windFactor: windPowerFactor(g.weather), temperatureFactor: temperaturePowerFactor(g.weather),
+          fatigueFactor: battingTeamFatigue,
+          pitcherStatcast, homeRoadFactor,
         };
       });
       sideRows.filter(Boolean).forEach(r => rows.push(r));
@@ -1421,5 +1485,6 @@ export {
   eliteHit, fetchOddsLookup, normalizeName,
   loadStatcastPowerIndex, loadPitcherStatcastPowerIndex, battedBallPowerIndex,
   parseInningsPitched, pitcherBattersFacedPer9,
-  windPowerFactor, isDayGameCT, doubleheaderFatigueFactor, teamRestFatigueFactor,
+  windPowerFactor, temperaturePowerFactor, isDayGameCT, doubleheaderFatigueFactor, teamRestFatigueFactor,
+  battingSplitHomeAway, homeRoadPowerFactor,
 };
