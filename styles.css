@@ -1009,7 +1009,16 @@ body.dr-mobile-menu-open{
   text-overflow:ellipsis !important;
 }
 
-/* Preserve all labels while controlling uneven badge wrapping. */
+/* Was max-height:96px + overflow:hidden "to control uneven badge wrapping" —
+   a hard clip that silently cut off whichever chips wrapped past ~3 rows
+   (K Props cards commonly carry 13 stat chips), with no visual indication
+   anything was missing — the clipped chip's box just stopped rendering
+   where the next element started, reading as an overlap. A @media
+   (max-width:720px) rule elsewhere already un-clips this on narrow mobile,
+   which is why it wasn't caught by mobile-width testing — it only shows on
+   whatever renders above that breakpoint. Same fix as the .dr109-reason
+   rule below: keep the min-height for row alignment, drop the hard clip so
+   content that needs more room actually gets it. */
 #kprops-content .dr109-chiprow,
 #hits-props-content .dr109-chiprow,
 #rbis-props-content .dr109-chiprow,
@@ -1018,8 +1027,6 @@ body.dr-mobile-menu-open{
 #hrrbi-props-content .dr109-chiprow{
   align-content:flex-start !important;
   min-height:78px !important;
-  max-height:96px !important;
-  overflow:hidden !important;
 }
 #kprops-content .dr109-chip,
 #hits-props-content .dr109-chip,
