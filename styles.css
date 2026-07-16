@@ -1822,6 +1822,49 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   white-space: nowrap;
   overflow: hidden;
 }
+/* The Baseball group head is a <button> (its siblings, Football/Basketball,
+   stay plain <div>s — they have no items to expand), so it needs its own
+   reset since buttons don't inherit block-level text/layout defaults the
+   way a div does. */
+.dr-sidebar-group-toggle {
+  width: 100%;
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+.dr-sidebar-group-chevron {
+  margin-left: auto;
+  font-size: 10px;
+  color: #5a6b8c;
+  transition: transform .15s ease;
+  flex-shrink: 0;
+}
+.dr-sidebar-group-toggle[aria-expanded="true"] .dr-sidebar-group-chevron {
+  transform: rotate(180deg);
+}
+/* Collapsed by default (see the bind() logic in app.js) — hides the 10
+   Baseball sub-tabs behind the group head until expanded, so the sidebar
+   isn't dominated by one sport's full tab list before a visitor even
+   asks for it. */
+.dr-sidebar-group-items {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+}
+.dr-sidebar-group-items.expanded {
+  display: flex;
+}
+/* Icon-only sidebar mode has no room for a group head label to click, so
+   always show every tab's icon there regardless of the group's own
+   expand/collapse state — same reasoning .dr-sidebar-label/.dr-sidebar-soon
+   already get hidden instead of trying to nest one collapse inside another. */
+#dr-sidebar-nav.collapsed .dr-sidebar-group-items {
+  display: flex !important;
+}
+#dr-sidebar-nav.collapsed .dr-sidebar-group-chevron {
+  display: none;
+}
 .dr-sidebar-tab {
   display: flex;
   align-items: center;
