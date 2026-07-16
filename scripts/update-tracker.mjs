@@ -481,6 +481,37 @@ function battedBallPowerIndex(statcast) {
   const avgRatio = ratios.reduce((a, b) => a + b, 0) / ratios.length;
   return clamp(avgRatio, 0.7, 1.5);
 }
+
+// Wind is one of the single biggest real per-game HR factors -- a strong wind blowing
+// out can matter more than any other adjustment in this file. MLB's schedule endpoint
+// returns it (when hydrate=weather is requested) as a free-text field, typically
+// something like "10 mph, Out To CF" or "5 mph, In From LF". NOTE: this sandbox has no
+// live network access to MLB's API, so the exact field name/wording couldn't be
+// verified against a real response here -- parsed defensively (case-insensitive,
+// tolerant of "Varies"/"Calm"/missing data) so anything unrecognized safely falls back
+// to neutral (1x) instead of throwing or silently corrupting a score. Validate the
+// parsed values look sane against real games once this runs live (e.g. temporarily log
+// weather.wind alongside the computed factor) before trusting it fully.
+const WIND_MAX_BOOST = 1.25; // ceiling: +25% for a strong wind blowing out
+const WIND_MAX_SUPPRESS = 0.80; // floor: -20% for a strong wind blowing in
+const WIND_REFERENCE_SPEED = 20; // mph -- effect scales linearly up to this, then caps
+function windPowerFactor(weather) {
+  const windStr = String(weather?.wind || '').trim();
+  if (!windStr) return 1;
+  const speedMatch = windStr.match(/(\d+(?:\.\d+)?)\s*mph/i);
+  const speed = speedMatch ? Number(speedMatch[1]) : 0;
+  if (!speed) return 1; // "Calm", "Varies", or a shape this doesn't recognize
+  const lower = windStr.toLowerCase();
+  let direction = 0; // -1 = blowing in (suppresses), 0 = crosswind/unclear, 1 = out (boosts)
+  if (/\bout\b/.test(lower)) direction = 1;
+  else if (/\bin\b/.test(lower)) direction = -1;
+  if (direction === 0) return 1;
+  const strength = Math.min(speed, WIND_REFERENCE_SPEED) / WIND_REFERENCE_SPEED;
+  return direction > 0
+    ? 1 + strength * (WIND_MAX_BOOST - 1)
+    : 1 - strength * (1 - WIND_MAX_SUPPRESS);
+}
+
 // HR Threats board hit-rate tracker: the live client-side board (app.js, getHRRows) gates
 // its "scanned" pool at hrProb>=18, except the single top-scoring batter per game which
 // gets a lower 14% bar. This backend job uses one uniform 18% cutoff across the whole
@@ -664,9 +695,43 @@ function simulateHRGameOdds(pPerPA, battingOrder) {
 // pitcher actually faces more batters than that per 9 innings, since everyone who
 // reaches base (hit/walk/HBP) adds a batter faced without adding an out. ~38 is a
 // realistic MLB-average batters-faced-per-9 (27 outs + ~11 baserunners allowed per
-// WHIP). Dividing by 27 instead of ~38 overstated the pitcher's true HR-per-batter
-// rate by about 40%.
+// WHIP), used as a fallback when a specific pitcher's own real batters-faced-per-9
+// (see pitcherBattersFacedPer9 below) isn't available. Dividing by 27 instead of a
+// realistic per-batter denominator overstated the pitcher's true HR-per-batter rate
+// by about 40%.
 const BATTERS_FACED_PER_9 = 38;
+// Sanity bounds for a pitcher's own computed batters-faced-per-9 -- guards against a
+// single bad/incomplete API response (e.g. a partial-season stat line) producing a
+// wildly unrealistic denominator that would swing pitcherRate too far in either
+// direction. Real MLB starters/relievers essentially always fall within this range.
+const BF_PER_9_MIN = 30, BF_PER_9_MAX = 46;
+
+// MLB's inningsPitched is a string like "63.2" where the digit after the decimal is
+// THIRDS of an inning (.0/.1/.2), not a decimal fraction -- "63.2" means 63 and 2/3
+// innings, not 63.2 innings. Parsing it as a plain float (as elsewhere in this
+// codebase, e.g. the DRP model's team-IP totals) is a common, easy-to-miss mistake.
+function parseInningsPitched(ip) {
+  const s = String(ip ?? '').trim();
+  if (!s) return 0;
+  const [wholeStr, thirdStr] = s.split('.');
+  const whole = Number(wholeStr) || 0;
+  const third = Number(thirdStr || 0);
+  return whole + (third === 1 ? 1 / 3 : third === 2 ? 2 / 3 : 0);
+}
+
+// A specific pitcher's own real batters-faced-per-9, when the season stat line has
+// enough innings to trust it -- more accurate than the league-average
+// BATTERS_FACED_PER_9 fallback, since a control pitcher who rarely walks anyone faces
+// meaningfully fewer batters per 9 innings than a wild one who's constantly working
+// out of traffic.
+const PITCHER_BF_MIN_IP = 10;
+function pitcherBattersFacedPer9(pitcherStat) {
+  const bf = n(pitcherStat?.battersFaced);
+  const ip = parseInningsPitched(pitcherStat?.inningsPitched);
+  if (bf <= 0 || ip < PITCHER_BF_MIN_IP) return null;
+  const rate = (bf / ip) * 9;
+  return (rate >= BF_PER_9_MIN && rate <= BF_PER_9_MAX) ? rate : null;
+}
 
 function scoreForMarket(marketKey, row) {
   if (marketKey === 'hr') {
@@ -681,8 +746,15 @@ function scoreForMarket(marketKey, row) {
     // battedBallPowerIndex/loadStatcastPowerIndex above. Neutral (1x, no change) when
     // there isn't one, so this never makes the model worse for an uncovered player.
     const batterRate = boxScoreBatterRate * battedBallPowerIndex(row.statcast);
-    const pitcherRate = row.pitcherHr9 > 0 ? row.pitcherHr9 / BATTERS_FACED_PER_9 : 0.03;
-    const hrPerPA = batterRate * 0.6 + pitcherRate * 0.4;
+    // Prefer this specific pitcher's own real batters-faced-per-9 (pitcherBFper9) when
+    // their season stat line has enough innings to trust it; fall back to the league-
+    // average constant otherwise.
+    const pitcherRate = row.pitcherHr9 > 0 ? row.pitcherHr9 / (row.pitcherBFper9 || BATTERS_FACED_PER_9) : 0.03;
+    // Wind (windFactor, see windPowerFactor above) affects the whole park/game
+    // environment equally regardless of who's hitting or pitching, so it's applied
+    // once to the combined rate rather than to the batter/pitcher components
+    // separately -- applying it twice would double-count the same physical effect.
+    const hrPerPA = (batterRate * 0.6 + pitcherRate * 0.4) * (row.windFactor || 1);
     return simulateHRGameOdds(hrPerPA, row.battingOrder);
   }
   if (marketKey === 'sb') return simulateSBOdds(row);
@@ -845,8 +917,10 @@ async function buildEliteBatterPool(games, season) {
           avg, obp, slg, ops, iso, hrSeason, battingOrder,
           atBats: ab, stolenBases: n(stat.stolenBases), caughtStealing: n(stat.caughtStealing),
           pitcherHr9: n(pitcherStat.homeRunsPer9), pitcherSbAllowed: n(pitcherStat.stolenBases), pitcherCsAllowed: n(pitcherStat.caughtStealing),
+          pitcherBFper9: pitcherBattersFacedPer9(pitcherStat),
           pitcherAvgAllowed, pitcherSlgAllowed, parkFactor: PARK_FACTORS[g.teams.home.team.abbreviation] || 100,
           isFavorable, isHot, statcast: statcastIndex.get(String(pid)) || null,
+          windFactor: windPowerFactor(g.weather),
         };
       });
       sideRows.filter(Boolean).forEach(r => rows.push(r));
@@ -1078,7 +1152,7 @@ async function gradeHRThreatPending(store) {
 
 async function captureToday(store) {
   const today = cdtDateString(new Date());
-  const sched = await fetchJSON(`${API}/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher,linescore`);
+  const sched = await fetchJSON(`${API}/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher,linescore,weather`);
   const games = sched?.dates?.find(d => d.date === today)?.games || [];
   const season = today.slice(0, 4);
   const previewGames = games.filter(g => g.status?.abstractGameState === 'Preview');
@@ -1231,5 +1305,6 @@ export {
   captureHRThreatToday, gradeHRThreatPending,
   simulatePropOdds, simulateSBOdds, simulateHRGameOdds, scoreForMarket, eliteQualityScore,
   eliteHit, fetchOddsLookup, normalizeName,
-  loadStatcastPowerIndex, battedBallPowerIndex,
+  loadStatcastPowerIndex, battedBallPowerIndex, parseInningsPitched, pitcherBattersFacedPer9,
+  windPowerFactor,
 };
