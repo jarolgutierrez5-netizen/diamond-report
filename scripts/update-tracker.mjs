@@ -419,6 +419,198 @@ const ELITE_MIN_QUALITY = 2;
 const ELITE_TOP_N = 5;
 const ELITE_HR_TOP_N_PER_GAME = 3;
 const LEAGUE_AVG_AVG = 0.245, LEAGUE_AVG_OBP = 0.315, LEAGUE_AVG_SLG = 0.400, LEAGUE_AVG_HR_RATE = 0.031;
+
+// ── Statcast batted-ball power (data/batter-pitch-type-season.json) ──
+// Synced by sync-statcast.yml ~1hr before this job's morning run, so it's reliably
+// fresh by the time buildEliteBatterPool() runs. This was previously synced but never
+// actually read by this file (see the "no Statcast hot-hitter sync data available
+// server-side" comment on ELITE_MIN_QUALITY above, which was true for the *recent-form*
+// signal specifically, but this season-long power data was sitting unused too).
+// xSLG/hard-hit% measure the quality of contact directly (exit velocity, launch angle)
+// instead of relying on AVG/SLG outcomes, which are tangled up with luck, defense, and
+// ballpark sequencing -- a real, independent power signal box-score rates can't see.
+const STATCAST_PATH = path.join(__dirname, '..', 'data', 'batter-pitch-type-season.json');
+// Pitcher-side counterpart: same xSLG/hard-hit% ALLOWED, broken down per pitch type
+// *thrown* instead of per pitch type *seen*. Same sync script, same "collected but
+// never actually read here" gap as the batter file.
+const PITCHER_STATCAST_PATH = path.join(__dirname, '..', 'data', 'pitcher-statcast.json');
+const LEAGUE_AVG_XSLG = 0.400; // same scale as LEAGUE_AVG_SLG; MLB-wide xSLG runs close to actual SLG
+const LEAGUE_AVG_HARD_HIT_PCT = 36; // percent; roughly MLB seasonal average hard-hit rate
+const STATCAST_MIN_PITCHES = 100; // below this, a player's aggregate is too thin a sample to trust
+
+// Both files store xSLG/hard-hit% per pitch-type row (batter: seasonPitchTypeStats,
+// pitcher: byPitch) -- this aggregates either one into a single pitches-weighted
+// {xslg, hardHitPct, pitches} per player, shared by both loaders below.
+function aggregateStatcastRows(rows) {
+  if (!Array.isArray(rows) || !rows.length) return null;
+  let pitches = 0, xslgSum = 0, xslgWeight = 0, hardHitSum = 0, hardHitWeight = 0;
+  rows.forEach(r => {
+    const w = n(r.pitches);
+    pitches += w;
+    if (r.xslg != null) { xslgSum += r.xslg * w; xslgWeight += w; }
+    if (r.hardHitPct != null) { hardHitSum += r.hardHitPct * w; hardHitWeight += w; }
+  });
+  if (pitches < STATCAST_MIN_PITCHES) return null;
+  return {
+    xslg: xslgWeight > 0 ? xslgSum / xslgWeight : null,
+    hardHitPct: hardHitWeight > 0 ? hardHitSum / hardHitWeight : null,
+    pitches,
+  };
+}
+
+let statcastPowerCache = null;
+async function loadStatcastPowerIndex() {
+  if (statcastPowerCache) return statcastPowerCache;
+  statcastPowerCache = new Map();
+  try {
+    const raw = await readFile(STATCAST_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    for (const [id, player] of Object.entries(data?.players || {})) {
+      const agg = aggregateStatcastRows(player?.seasonPitchTypeStats);
+      if (agg) statcastPowerCache.set(String(id), agg);
+    }
+  } catch (e) {
+    console.warn('Statcast power index: failed to load, HR scoring will use box-score rates only:', e.message);
+  }
+  return statcastPowerCache;
+}
+
+let pitcherStatcastPowerCache = null;
+async function loadPitcherStatcastPowerIndex() {
+  if (pitcherStatcastPowerCache) return pitcherStatcastPowerCache;
+  pitcherStatcastPowerCache = new Map();
+  try {
+    const raw = await readFile(PITCHER_STATCAST_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    for (const [id, pitcher] of Object.entries(data?.pitchers || {})) {
+      const agg = aggregateStatcastRows(pitcher?.byPitch);
+      if (agg) pitcherStatcastPowerCache.set(String(id), agg);
+    }
+  } catch (e) {
+    console.warn('Pitcher Statcast power index: failed to load, HR scoring will use box-score rates only:', e.message);
+  }
+  return pitcherStatcastPowerCache;
+}
+
+// Converts an aggregate xSLG/hard-hit% into a bounded multiplier on the corresponding
+// box-score HR rate -- generic over both sides of the matchup: for a batter, >1 means
+// Statcast reads them as hitting the ball harder than their AVG/SLG outcomes alone
+// would suggest; for a pitcher (statcast = contact ALLOWED), >1 means they're
+// surrendering harder contact than their AVG/SLG-allowed suggests. Clamped to keep a
+// small sample or one outlier metric from swinging the rate too far in either
+// direction; box score AVG/SLG/HR still carries the majority (0.6/0.4 split) weight
+// in scoreForMarket.
+function battedBallPowerIndex(statcast) {
+  // loadStatcastPowerIndex/loadPitcherStatcastPowerIndex already exclude thin samples
+  // from their caches, but check independently here too so this function is correct
+  // for any caller, not just one that's pre-filtered its input.
+  if (!statcast || !(statcast.pitches >= STATCAST_MIN_PITCHES)) return 1;
+  const ratios = [];
+  if (statcast.xslg != null) ratios.push(statcast.xslg / LEAGUE_AVG_XSLG);
+  if (statcast.hardHitPct != null) ratios.push(statcast.hardHitPct / LEAGUE_AVG_HARD_HIT_PCT);
+  if (!ratios.length) return 1;
+  const avgRatio = ratios.reduce((a, b) => a + b, 0) / ratios.length;
+  return clamp(avgRatio, 0.7, 1.5);
+}
+
+// Wind is one of the single biggest real per-game HR factors -- a strong wind blowing
+// out can matter more than any other adjustment in this file. MLB's schedule endpoint
+// returns it (when hydrate=weather is requested) as a free-text field, typically
+// something like "10 mph, Out To CF" or "5 mph, In From LF". NOTE: this sandbox has no
+// live network access to MLB's API, so the exact field name/wording couldn't be
+// verified against a real response here -- parsed defensively (case-insensitive,
+// tolerant of "Varies"/"Calm"/missing data) so anything unrecognized safely falls back
+// to neutral (1x) instead of throwing or silently corrupting a score. Validate the
+// parsed values look sane against real games once this runs live (e.g. temporarily log
+// weather.wind alongside the computed factor) before trusting it fully.
+const WIND_MAX_BOOST = 1.25; // ceiling: +25% for a strong wind blowing out
+const WIND_MAX_SUPPRESS = 0.80; // floor: -20% for a strong wind blowing in
+const WIND_REFERENCE_SPEED = 20; // mph -- effect scales linearly up to this, then caps
+function windPowerFactor(weather) {
+  const windStr = String(weather?.wind || '').trim();
+  if (!windStr) return 1;
+  const speedMatch = windStr.match(/(\d+(?:\.\d+)?)\s*mph/i);
+  const speed = speedMatch ? Number(speedMatch[1]) : 0;
+  if (!speed) return 1; // "Calm", "Varies", or a shape this doesn't recognize
+  const lower = windStr.toLowerCase();
+  let direction = 0; // -1 = blowing in (suppresses), 0 = crosswind/unclear, 1 = out (boosts)
+  if (/\bout\b/.test(lower)) direction = 1;
+  else if (/\bin\b/.test(lower)) direction = -1;
+  if (direction === 0) return 1;
+  const strength = Math.min(speed, WIND_REFERENCE_SPEED) / WIND_REFERENCE_SPEED;
+  return direction > 0
+    ? 1 + strength * (WIND_MAX_BOOST - 1)
+    : 1 - strength * (1 - WIND_MAX_SUPPRESS);
+}
+
+// ── Rest/fatigue ──
+// Real, measurable proxies for physical fatigue -- deliberately NOT an attempt at
+// modeling "clutch"/mental toughness/motivation, which sabermetric research has
+// consistently found mostly doesn't hold up as a repeatable individual skill separate
+// from overall talent (it looks real in small samples and vanishes in larger ones).
+// This only scores what's actually observable from the schedule: extended stretches
+// without a day off, a day game immediately after a night game ("getaway day"), and
+// the second game of a doubleheader all measurably degrade bat speed/timing.
+const FATIGUE_LOOKBACK_DAYS = 10;
+const FATIGUE_NO_REST_STREAK_MIN = 7; // consecutive played days before it counts as real fatigue
+const FATIGUE_STREAK_FACTOR = 0.95; // -5% for an extended no-rest streak
+const FATIGUE_GETAWAY_FACTOR = 0.97; // -3% for a day game right after a night game
+const FATIGUE_DOUBLEHEADER_G2_FACTOR = 0.94; // -6% for game 2 of a doubleheader
+const DAY_GAME_HOUR_CT = 17; // matches the existing day/night cutoff used in computeDRPick
+
+function isDayGameCT(gameDateIso) {
+  const hour = Number(new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone: 'America/Chicago' }).format(new Date(gameDateIso)));
+  return hour < DAY_GAME_HOUR_CT;
+}
+
+// Doubleheader game 2 is free to detect -- it's right on today's own game object, no
+// extra fetch needed. The no-rest-streak and getaway-day checks need the team's recent
+// schedule, so they're fetched (and cached) once per team per day in
+// teamRestFatigueFactor below, not once per batter.
+function doubleheaderFatigueFactor(g) {
+  const isG2 = g?.doubleHeader && g.doubleHeader !== 'N' && Number(g.gameNumber) === 2;
+  return isG2 ? FATIGUE_DOUBLEHEADER_G2_FACTOR : 1;
+}
+
+const teamRestFatigueCache = new Map();
+async function teamRestFatigueFactor(teamId, todayGameDateIso) {
+  const today = cdtDateString(new Date(todayGameDateIso));
+  const cacheKey = `${teamId}|${today}`;
+  if (teamRestFatigueCache.has(cacheKey)) return teamRestFatigueCache.get(cacheKey);
+
+  let factor = 1;
+  try {
+    const start = cdtDateString(new Date(new Date(todayGameDateIso).getTime() - FATIGUE_LOOKBACK_DAYS * 86400000));
+    const sched = await fetchJSON(`${API}/schedule?sportId=1&teamId=${teamId}&startDate=${start}&endDate=${today}`);
+    const gamesByDate = new Map();
+    (sched?.dates || []).forEach(d => {
+      const played = (d.games || []).filter(g => g.status?.abstractGameState !== 'Cancelled' && g.status?.abstractGameState !== 'Postponed');
+      if (played.length) gamesByDate.set(d.date, played);
+    });
+
+    // Walk backward from the day before today, counting consecutive played days.
+    let streak = 0;
+    let cursor = new Date(new Date(todayGameDateIso).getTime() - 86400000);
+    for (let i = 0; i < FATIGUE_LOOKBACK_DAYS; i++) {
+      const key = cdtDateString(cursor);
+      if (!gamesByDate.has(key)) break;
+      streak++;
+      cursor = new Date(cursor.getTime() - 86400000);
+    }
+    if (streak >= FATIGUE_NO_REST_STREAK_MIN) factor *= FATIGUE_STREAK_FACTOR;
+
+    const yesterdayKey = cdtDateString(new Date(new Date(todayGameDateIso).getTime() - 86400000));
+    const yesterdayGames = gamesByDate.get(yesterdayKey) || [];
+    const yesterdayWasNight = yesterdayGames.some(g => !isDayGameCT(g.gameDate));
+    if (yesterdayWasNight && isDayGameCT(todayGameDateIso)) factor *= FATIGUE_GETAWAY_FACTOR;
+  } catch (e) {
+    // Leave factor neutral (1) on any fetch/parse failure -- never block scoring on this.
+  }
+
+  teamRestFatigueCache.set(cacheKey, factor);
+  return factor;
+}
+
 // HR Threats board hit-rate tracker: the live client-side board (app.js, getHRRows) gates
 // its "scanned" pool at hrProb>=18, except the single top-scoring batter per game which
 // gets a lower 14% bar. This backend job uses one uniform 18% cutoff across the whole
@@ -598,11 +790,79 @@ function simulateHRGameOdds(pPerPA, battingOrder) {
   return Math.max(1, Math.min(99, Math.round(prob * 100)));
 }
 
+// A pitcher's box-score HR/9 is allowed-per-9-innings, i.e. per 27 outs -- but a
+// pitcher actually faces more batters than that per 9 innings, since everyone who
+// reaches base (hit/walk/HBP) adds a batter faced without adding an out. ~38 is a
+// realistic MLB-average batters-faced-per-9 (27 outs + ~11 baserunners allowed per
+// WHIP), used as a fallback when a specific pitcher's own real batters-faced-per-9
+// (see pitcherBattersFacedPer9 below) isn't available. Dividing by 27 instead of a
+// realistic per-batter denominator overstated the pitcher's true HR-per-batter rate
+// by about 40%.
+const BATTERS_FACED_PER_9 = 38;
+// Sanity bounds for a pitcher's own computed batters-faced-per-9 -- guards against a
+// single bad/incomplete API response (e.g. a partial-season stat line) producing a
+// wildly unrealistic denominator that would swing pitcherRate too far in either
+// direction. Real MLB starters/relievers essentially always fall within this range.
+const BF_PER_9_MIN = 30, BF_PER_9_MAX = 46;
+
+// MLB's inningsPitched is a string like "63.2" where the digit after the decimal is
+// THIRDS of an inning (.0/.1/.2), not a decimal fraction -- "63.2" means 63 and 2/3
+// innings, not 63.2 innings. Parsing it as a plain float (as elsewhere in this
+// codebase, e.g. the DRP model's team-IP totals) is a common, easy-to-miss mistake.
+function parseInningsPitched(ip) {
+  const s = String(ip ?? '').trim();
+  if (!s) return 0;
+  const [wholeStr, thirdStr] = s.split('.');
+  const whole = Number(wholeStr) || 0;
+  const third = Number(thirdStr || 0);
+  return whole + (third === 1 ? 1 / 3 : third === 2 ? 2 / 3 : 0);
+}
+
+// A specific pitcher's own real batters-faced-per-9, when the season stat line has
+// enough innings to trust it -- more accurate than the league-average
+// BATTERS_FACED_PER_9 fallback, since a control pitcher who rarely walks anyone faces
+// meaningfully fewer batters per 9 innings than a wild one who's constantly working
+// out of traffic.
+const PITCHER_BF_MIN_IP = 10;
+function pitcherBattersFacedPer9(pitcherStat) {
+  const bf = n(pitcherStat?.battersFaced);
+  const ip = parseInningsPitched(pitcherStat?.inningsPitched);
+  if (bf <= 0 || ip < PITCHER_BF_MIN_IP) return null;
+  const rate = (bf / ip) * 9;
+  return (rate >= BF_PER_9_MIN && rate <= BF_PER_9_MAX) ? rate : null;
+}
+
 function scoreForMarket(marketKey, row) {
   if (marketKey === 'hr') {
-    const batterRate = row.atBats > 0 ? row.hrSeason / row.atBats : LEAGUE_AVG_HR_RATE;
-    const pitcherRate = row.pitcherHr9 > 0 ? row.pitcherHr9 / 27 : 0.03;
-    const hrPerPA = batterRate * 0.6 + pitcherRate * 0.4;
+    // hrSeason/atBats is HR-per-AT-BAT; MC_AB_PER_PA converts it to HR-per-PLATE-
+    // APPEARANCE so it's on the same footing as pitcherRate and simulateHRGameOdds
+    // below, which all treat their input as a per-PA rate. Left unconverted this
+    // overstated the batter's true per-PA HR odds by about 13% (AB is a smaller
+    // denominator than PA, since PA also includes walks/HBP/sac flies).
+    const boxScoreBatterRate = row.atBats > 0 ? (row.hrSeason / row.atBats) * MC_AB_PER_PA : LEAGUE_AVG_HR_RATE;
+    // Corrects the box-score rate using real quality-of-contact data (xSLG, hard-hit%)
+    // when a large enough Statcast sample exists for this batter -- see
+    // battedBallPowerIndex/loadStatcastPowerIndex above. Neutral (1x, no change) when
+    // there isn't one, so this never makes the model worse for an uncovered player.
+    // fatigueFactor (see teamRestFatigueFactor/doubleheaderFatigueFactor above) is a
+    // batter-side effect (bat speed/timing), applied here rather than to the combined
+    // rate the way windFactor is, since it's specific to the batting team, not the
+    // whole park/game environment.
+    const batterRate = boxScoreBatterRate * battedBallPowerIndex(row.statcast) * (row.fatigueFactor || 1);
+    // Prefer this specific pitcher's own real batters-faced-per-9 (pitcherBFper9) when
+    // their season stat line has enough innings to trust it; fall back to the league-
+    // average constant otherwise.
+    const boxScorePitcherRate = row.pitcherHr9 > 0 ? row.pitcherHr9 / (row.pitcherBFper9 || BATTERS_FACED_PER_9) : 0.03;
+    // Corrects the box-score-allowed rate using real contact-quality-allowed data
+    // (xSLG/hard-hit% allowed), the pitcher-side mirror of the batter correction above
+    // -- battedBallPowerIndex is generic over both. Neutral (1x) with no Statcast
+    // coverage or too thin a sample, same as the batter side.
+    const pitcherRate = boxScorePitcherRate * battedBallPowerIndex(row.pitcherStatcast);
+    // Wind (windFactor, see windPowerFactor above) affects the whole park/game
+    // environment equally regardless of who's hitting or pitching, so it's applied
+    // once to the combined rate rather than to the batter/pitcher components
+    // separately -- applying it twice would double-count the same physical effect.
+    const hrPerPA = (batterRate * 0.6 + pitcherRate * 0.4) * (row.windFactor || 1);
     return simulateHRGameOdds(hrPerPA, row.battingOrder);
   }
   if (marketKey === 'sb') return simulateSBOdds(row);
@@ -704,16 +964,22 @@ async function battersForSide(g, side) {
 }
 
 async function buildEliteBatterPool(games, season) {
+  const statcastIndex = await loadStatcastPowerIndex();
+  const pitcherStatcastIndex = await loadPitcherStatcastPowerIndex();
   const rows = [];
   for (const g of games) {
     for (const [side, opp] of [['away', 'home'], ['home', 'away']]) {
       const pitcher = g.teams[opp].probablePitcher;
       if (!pitcher) continue;
       const pitcherStat = await seasonPitchingStat(pitcher.id, season);
+      const pitcherStatcast = pitcherStatcastIndex.get(String(pitcher.id)) || null;
       const pitcherHand = pitcherHandCache.get(pitcher.id) || 'R';
       const teamAbbr = g.teams[side].team.abbreviation;
       const oppAbbr = g.teams[opp].team.abbreviation;
       const batters = await battersForSide(g, side);
+      // Computed once per team here (cached), not once per batter -- every batter on
+      // this side shares the same team schedule / doubleheader status.
+      const battingTeamFatigue = await teamRestFatigueFactor(g.teams[side].team.id, g.gameDate) * doubleheaderFatigueFactor(g);
 
       const sideRows = await mapLimit(batters, 6, async (b) => {
         const pid = b.id;
@@ -764,8 +1030,11 @@ async function buildEliteBatterPool(games, season) {
           avg, obp, slg, ops, iso, hrSeason, battingOrder,
           atBats: ab, stolenBases: n(stat.stolenBases), caughtStealing: n(stat.caughtStealing),
           pitcherHr9: n(pitcherStat.homeRunsPer9), pitcherSbAllowed: n(pitcherStat.stolenBases), pitcherCsAllowed: n(pitcherStat.caughtStealing),
+          pitcherBFper9: pitcherBattersFacedPer9(pitcherStat),
           pitcherAvgAllowed, pitcherSlgAllowed, parkFactor: PARK_FACTORS[g.teams.home.team.abbreviation] || 100,
-          isFavorable, isHot,
+          isFavorable, isHot, statcast: statcastIndex.get(String(pid)) || null,
+          windFactor: windPowerFactor(g.weather), fatigueFactor: battingTeamFatigue,
+          pitcherStatcast,
         };
       });
       sideRows.filter(Boolean).forEach(r => rows.push(r));
@@ -997,7 +1266,7 @@ async function gradeHRThreatPending(store) {
 
 async function captureToday(store) {
   const today = cdtDateString(new Date());
-  const sched = await fetchJSON(`${API}/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher,linescore`);
+  const sched = await fetchJSON(`${API}/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher,linescore,weather`);
   const games = sched?.dates?.find(d => d.date === today)?.games || [];
   const season = today.slice(0, 4);
   const previewGames = games.filter(g => g.status?.abstractGameState === 'Preview');
@@ -1150,4 +1419,7 @@ export {
   captureHRThreatToday, gradeHRThreatPending,
   simulatePropOdds, simulateSBOdds, simulateHRGameOdds, scoreForMarket, eliteQualityScore,
   eliteHit, fetchOddsLookup, normalizeName,
+  loadStatcastPowerIndex, loadPitcherStatcastPowerIndex, battedBallPowerIndex,
+  parseInningsPitched, pitcherBattersFacedPer9,
+  windPowerFactor, isDayGameCT, doubleheaderFatigueFactor, teamRestFatigueFactor,
 };

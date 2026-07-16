@@ -2577,8 +2577,14 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
   function hrProb(s) {
     const ab = parseInt(s.atBats) || 0;
     const hr = parseInt(s.homeRuns) || 0;
-    const batterRate = ab > 0 ? hr / ab : 0;
-    const pitcherRate = pitcherHr9 > 0 ? pitcherHr9 / 27 : 0.03;
+    // hr/ab is HR-per-AT-BAT; the 0.88 factor converts it to HR-per-PLATE-APPEARANCE
+    // (PA also includes walks/HBP/sac flies, so AB understates the true denominator),
+    // matching the per-PA rate pitcherRate and the 0.6/0.4 blend below assume.
+    const batterRate = ab > 0 ? (hr / ab) * 0.88 : 0;
+    // homeRunsPer9 is allowed-per-9-innings (27 outs); a pitcher actually faces ~38
+    // batters per 9 innings once baserunners allowed are counted, so dividing by 27
+    // overstated the pitcher's true HR-per-batter rate.
+    const pitcherRate = pitcherHr9 > 0 ? pitcherHr9 / 38 : 0.03;
     // Was hard-capped at 25 with no floor, unlike every other market's 1-99 range —
     // real per-game HR probability for a genuinely elite matchup can exceed 25%, so
     // the old cap flattened great and mediocre matchups into the same narrow band
@@ -4990,8 +4996,15 @@ async function loadHRPotential() {
           const HRP_LEAGUE_AVG_HR_RATE = 0.031; // ~1 HR per 32 AB, roughly MLB seasonal average
           const rawBatterRate = ab>0?hr/ab:0;
           const hrpSampleWeight = Math.min(ab, HRP_MIN_AB_FOR_RATE) / HRP_MIN_AB_FOR_RATE;
-          const batterRate = (rawBatterRate*hrpSampleWeight) + (HRP_LEAGUE_AVG_HR_RATE*(1-hrpSampleWeight));
-          const pitcherRate=pitcherHr9>0?pitcherHr9/27:0.03;
+          // rawBatterRate and HRP_LEAGUE_AVG_HR_RATE are both HR-per-AT-BAT, so their
+          // blend is too; the 0.88 factor converts the blended result to HR-per-PLATE-
+          // APPEARANCE (PA also includes walks/HBP/sac flies) to match what pitcherRate
+          // and hrPerPA below assume.
+          const batterRate = ((rawBatterRate*hrpSampleWeight) + (HRP_LEAGUE_AVG_HR_RATE*(1-hrpSampleWeight))) * 0.88;
+          // homeRunsPer9 is allowed-per-9-innings (27 outs); a pitcher actually faces
+          // ~38 batters per 9 innings once baserunners allowed are counted, so dividing
+          // by 27 overstated the pitcher's true HR-per-batter rate.
+          const pitcherRate=pitcherHr9>0?pitcherHr9/38:0.03;
           const hrPerPA = (batterRate*0.6)+(pitcherRate*0.4);
           // Lineup slot (1-9), computed here (not just below with the display battingOrder)
           // so it can feed the per-PA count the HR simulation runs — same 3-digit MLB
