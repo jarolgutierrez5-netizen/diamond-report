@@ -2469,36 +2469,17 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
         }
       }
     } else {
-      // Diff — only update batter rows that changed
-      let anyChanged = false;
-      lineup.forEach((b, i) => {
+      // A live HR (or season-stat count) can move several columns in a single
+      // table row (AB/H/HR/RBI/BB/AVG/OBP/SLG/OPS/ISO/Rating all derive from
+      // the same season stat object), so patch the whole table rather than
+      // trying to diff individual cells — cheap for a 9-row table.
+      const anyChanged = lineup.some((b, i) => {
         const prev = prevLineup[i];
-        const rowEl = document.querySelector(`[data-batter-id="${b.id}"]`);
-        if (!rowEl) { anyChanged = true; return; }
-        const todayChanged  = prev?.todayHR  !== b.todayHR;
-        const last10Changed = prev?.last10HR !== b.last10HR;
-        if (todayChanged || last10Changed) {
-          anyChanged = true;
-          // Patch just the stats sub-line and highlight
-          const statsEl = rowEl.querySelector('.batter-stats-line');
-          const nameEl  = rowEl.querySelector('.batter-name-span');
-          const badgeEl = rowEl.querySelector('.hr-today-badge');
-          if (statsEl) statsEl.innerHTML = buildBatterStatsLine(b);
-          if (nameEl)  nameEl.style.color = b.todayHR > 0 ? 'var(--accent2)' : 'var(--text)';
-          if (b.todayHR > 0 && !badgeEl) {
-            const badge = document.createElement('span');
-            badge.className = 'hr-today-badge';
-            badge.style.cssText = 'background:#2a1500;color:#f4a261;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166';
-            badge.textContent = `💥 HR TODAY${b.todayHR > 1 ? ' x'+b.todayHR : ''}`;
-            nameEl?.parentElement?.appendChild(badge);
-          } else if (b.todayHR === 0 && badgeEl) {
-            badgeEl.remove();
-          }
-          // Update row background
-          rowEl.style.background = b.todayHR > 0 ? 'linear-gradient(90deg,#2a1a00 0%,#1a1200 100%)' : '';
-          rowEl.style.borderLeft  = b.todayHR > 0 ? '3px solid var(--accent2)' : '';
-        }
+        return !prev || prev.todayHR !== b.todayHR || prev.last10HR !== b.last10HR;
       });
+      if (anyChanged) {
+        renderLineup(`panel-${pid}`, lineupCache[cacheKey], pitcherHr9, pitcherIp, null, pid, pitcherName);
+      }
 
       // Update timestamp
       const tsEl = panel.querySelector('.lineup-timestamp');
@@ -2517,24 +2498,6 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
     }
   }
 }
-
-function buildBatterStatsLine(b) {
-  const s = b.stats;
-  function fmtS(v) {
-    if (!_statHasRealBattingData(s)) return '–';
-    if (!v||v==='---') return '–';
-    const n=parseFloat(v); return isNaN(n)?'–':n.toFixed(3).replace(/^0/,'');
-  }
-  const last10HR = b.last10HR;
-  const last10Display = last10HR === null
-    ? '<span style="color:var(--muted);font-size:10px">–</span>'
-    : `<span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:${last10HR>=3?'var(--accent2)':last10HR>=1?'#90ee60':'var(--muted)'}">${last10HR}</span><span style="font-size:9px;color:var(--muted)"> HR</span>`;
-  return `<span>AVG <strong style="color:var(--text)">${fmtS(s.avg)}</strong></span>
-    <span>HR <strong style="color:${parseInt(s.homeRuns)>=10?'var(--accent2)':'var(--text)'}">${_statHasRealBattingData(s) ? (s.homeRuns??'–') : '–'}</strong></span>
-    <span>OPS <strong style="color:var(--text)">${fmtS(s.ops)}</strong></span>
-    <span style="display:flex;align-items:center;gap:4px">L10 ${last10Display}</span>`;
-}
-
 
 function renderLineupPending(panelId, teamAbbr = '') {
   const panel = document.getElementById(panelId);
@@ -2663,8 +2626,10 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
     return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0/,'');
   }
 
-  // Matchup label — based on batter K% vs pitcher K/9 and batter OPS
-  function matchupLabel(s) {
+  // Rating tier — based on batter K% vs pitcher K/9 and batter OPS. Framed from
+  // the pitcher's side (WEAK batter = pitcher advantage, DANGER ZONE = batter
+  // advantage) to match the Rating column in the lineup matchup table.
+  function ratingTier(s) {
     const kpct = (s.strikeOuts && s.plateAppearances) ? s.strikeOuts/s.plateAppearances : 0.22;
     const ops  = parseFloat(s.ops) || 0.700;
     const pk9  = pitcherHr9 * 9 || 8.0; // proxy from hr9
@@ -2672,43 +2637,60 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
     if (kpct < 0.18) score += 2; else if (kpct > 0.28) score -= 2;
     if (ops > 0.820) score += 2; else if (ops < 0.680) score -= 1;
     if (pk9 > 10.0) score -= 2; else if (pk9 < 7.0) score += 1;
-    if (score >= 2) return `<span class="matchup-label ml-good">✓ TOUGH FOR PITCHER</span>`;
-    if (score <= -2) return `<span class="matchup-label ml-bad">✗ TOUGH FOR BATTER</span>`;
-    return `<span class="matchup-label ml-neutral">~ NEUTRAL MATCHUP</span>`;
+    if (score >= 2) return { cls: 'pr-rate-danger', label: '⚠ DANGER ZONE' };
+    if (score <= -2) return { cls: 'pr-rate-weak', label: '🎯 WEAK' };
+    return { cls: 'pr-rate-mild', label: '~ MILD' };
   }
 
-  const cards = withProbs.map((b, i) => {
-    const s = b.stats;
+  const rateCell = (v, goodBelow, badAbove, fmt) => {
+    const bg = v == null || isNaN(v) ? 'transparent' : heatBG(v, goodBelow, badAbove);
+    const txt = v == null || isNaN(v) ? '<span style="color:var(--muted)">–</span>' : fmt(v);
+    return `<td style="background:${bg}">${txt}</td>`;
+  };
+  const fmt3 = v => v.toFixed(3).replace(/^0/, '');
+  const intCell = v => `<td>${v == null || v === '' ? '<span style="color:var(--muted)">–</span>' : v}</td>`;
+
+  const rows = withProbs.map((b, i) => {
+    const s = b.stats || {};
     const isTop = i === topIdx; // persists regardless of todayHR
     const homerToday = b.todayHR > 0;
-    const barPct = maxProb > 0 ? (b.hrProb / maxProb) * 100 : 0;
-    const barColor = homerToday ? '#f4a261' : isTop ? '#f4a261' : b.hrProb > maxProb * 0.7 ? '#dc2626' : '#2ecc71';
     const pName = (pitcherName||'').replace(/'/g,"\\'");
     const bName = b.name.replace(/'/g,"\\'");
-    const rowBg = homerToday ? 'background:linear-gradient(90deg,#2a1a00 0%,#1a1200 100%);border-left:3px solid var(--accent2);' : '';
+    const hasData = _statHasRealBattingData(s);
+    const avg = hasData ? parseFloat(s.avg) : NaN;
+    const obp = hasData ? parseFloat(s.obp) : NaN;
+    const slg = hasData ? parseFloat(s.slg) : NaN;
+    const ops = hasData ? parseFloat(s.ops) : NaN;
+    const iso = !isNaN(slg) && !isNaN(avg) ? slg - avg : NaN;
+    const kpct = hasData && s.strikeOuts != null && s.plateAppearances ? (parseInt(s.strikeOuts) / parseInt(s.plateAppearances)) * 100 : NaN;
+    const rating = ratingTier(s);
 
-    return `<div data-batter-id="${b.id}" class="lineup-batter-card${homerToday?' hr-today':''}">
-      <div class="lineup-batter-main">
-        <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-width:14px">${i+1}</span>
-        <div class="lineup-batter-details">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            <span class="batter-name-span" style="font-size:13px;font-weight:700;color:${homerToday?'var(--accent2)':'var(--text)'}">${b.name}</span>
-            <span class="batter-pos">${b.pos}</span>
-            ${homerToday ? `<span class="hr-today-badge" style="background:#2a1500;color:#f4a261;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166">💥 HR TODAY${b.todayHR>1?' x'+b.todayHR:''}</span>` : ''}
-            ${isTop ? `<span class="top-hr-badge">⚡ TOP HR THREAT</span>` : ''}
-          </div>
-          <div style="margin-top:3px">${matchupLabel(s)}</div>
-          <div class="batter-stats-line" style="display:flex;gap:12px;margin-top:4px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);flex-wrap:wrap">
-            ${buildBatterStatsLine(b)}
-          </div>
-        </div>
-      </div>
-      <div class="lineup-matchup-action">
-        <button class="btn-matchup" onclick="openMatchup(${b.id},'${bName}',${pitcherId},'${pName}')" title="Batter vs Pitcher analysis">
-          ⚔ Pitcher Matchup
-        </button>
-      </div>
-    </div>`;
+    return `<tr data-batter-id="${b.id}"${homerToday ? ' class="pr-lineup-row-hr"' : ''}>
+      <td class="pr-lineup-batter-cell">
+        <span class="pr-lineup-order">${i+1}</span>
+        <span class="batter-name-span" style="font-weight:700;color:${homerToday?'var(--accent2)':'var(--text)'}">${b.name}</span>
+        <span class="batter-pos">${b.pos}</span>
+        ${homerToday ? `<span class="hr-today-badge" style="background:#2a1500;color:#f4a261;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:.4px;border:1px solid #f4a26166">💥 HR${b.todayHR>1?' x'+b.todayHR:''}</span>` : ''}
+        ${isTop ? `<span class="top-hr-badge">⚡ TOP HR THREAT</span>` : ''}
+      </td>
+      ${intCell(hasData ? s.atBats : null)}
+      ${intCell(hasData ? s.hits : null)}
+      ${intCell(hasData ? s.doubles : null)}
+      ${intCell(hasData ? s.triples : null)}
+      ${intCell(hasData ? s.homeRuns : null)}
+      ${intCell(hasData ? (s.rbi ?? s.runsBattedIn) : null)}
+      ${intCell(hasData ? s.baseOnBalls : null)}
+      ${rateCell(kpct, 28, 18, v => v.toFixed(1)+'%')}
+      ${rateCell(avg, .230, .280, fmt3)}
+      ${rateCell(obp, .300, .350, fmt3)}
+      ${rateCell(slg, .370, .450, fmt3)}
+      ${rateCell(ops, .670, .800, fmt3)}
+      ${rateCell(iso, .130, .200, fmt3)}
+      <td>
+        <span class="pr-rating-pill ${rating.cls}">${rating.label}</span>
+        <button class="btn-matchup pr-lineup-matchup-btn" onclick="openMatchup(${b.id},'${bName}',${pitcherId},'${pName}')" title="Batter vs Pitcher analysis">⚔</button>
+      </td>
+    </tr>`;
   }).join('');
 
   const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
@@ -2718,14 +2700,22 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
         ${teamAbbr || oppAbbr || ''} BATTING LINEUP ${lineupBadge}
       </span>
       <div style="display:flex;gap:10px;align-items:center;font-size:10px;color:var(--muted);flex-wrap:wrap">
-        <span><span style="color:var(--accent2)">💥 HR TODAY</span> = homered this game</span>
-        <span><span style="color:#90ee60">L10</span> = HRs in last 10 games</span>
+        <span><span style="color:var(--accent2)">💥 HR</span> = homered this game</span>
+        <span><span class="pr-rating-pill pr-rate-weak" style="padding:1px 5px">WEAK</span> pitcher favored</span>
+        <span><span class="pr-rating-pill pr-rate-danger" style="padding:1px 5px">DANGER ZONE</span> batter favored</span>
         <span>⚔ for matchup</span>
         <span class="lineup-timestamp" style="font-family:'JetBrains Mono',monospace;color:var(--border)">Auto-checking official lineup${data.source ? ` • ${data.source}` : ''}${data.confirmedAt ? ` • confirmed ${new Date(data.confirmedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}` : ''}</span>
       </div>
     </div>
     ${lineupNotice}
-    ${cards}`;
+    <div class="dr1041-table-wrap pr-lineup-table-wrap"><table class="pr-stats-table pr-lineup-table">
+      <thead><tr>
+        <th style="text-align:left">Batter</th>
+        <th>AB</th><th>H</th><th>2B</th><th>3B</th><th>HR</th><th>RBI</th><th>BB</th><th>K%</th>
+        <th>AVG</th><th>OBP</th><th>SLG</th><th>OPS</th><th>ISO</th><th>Rating</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
 }
 
 function sortPR(col) {
