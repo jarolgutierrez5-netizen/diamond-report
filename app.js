@@ -11054,31 +11054,78 @@ function showPremiumGate(feature){
     return String(Math.round(num));
   }
 
+  var LEADER_ROWS_PER_CATEGORY = 3;
+  var leaderEntries = [];
+
   function renderHubLeaders(categories){
-    var container = document.getElementById('dr-hub-leaders-grid');
+    var container = document.getElementById('dr-hub-leaders-list');
     var section = document.getElementById('dr-hub-leaders');
     if (!container || !categories || !categories.length) return;
-    var cards = categories.map(function(c){
-      var leader = c && c.leaders && c.leaders[0];
-      if (!leader) return '';
-      var person = leader.person || {};
-      var team = leader.team || {};
-      var value = formatLeaderValue(c.leaderCategory, leader.value);
-      var meta = escapeHtml(value) + (team.abbreviation ? ' · ' + escapeHtml(team.abbreviation) : '');
+    leaderEntries = [];
+
+    var groups = categories.map(function(c){
+      var leaders = (c && c.leaders || []).slice(0, LEADER_ROWS_PER_CATEGORY);
+      if (!leaders.length) return '';
+      var rows = leaders.map(function(leader){
+        var person = leader.person || {};
+        var team = leader.team || {};
+        var value = formatLeaderValue(c.leaderCategory, leader.value);
+        var idx = leaderEntries.push({
+          category: c.leaderCategory,
+          rank: leader.rank,
+          value: value,
+          name: person.fullName || '–',
+          teamAbbr: team.abbreviation || '',
+          personId: person.id || null,
+        }) - 1;
+        return (
+          '<button type="button" class="dr-hub-leader-row" data-leader-idx="' + idx + '">' +
+            '<span class="dr-hub-leader-row-rank">#' + escapeHtml(String(leader.rank || '')) + '</span>' +
+            (person.id ? '<img class="dr-hub-leader-row-photo" src="' + escapeHtml(hs(person.id)) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '') +
+            '<span class="dr-hub-leader-row-name">' + escapeHtml(person.fullName || '–') + '</span>' +
+            '<span class="dr-hub-leader-row-team">' + escapeHtml(team.abbreviation || '') + '</span>' +
+            '<span class="dr-hub-leader-row-value">' + escapeHtml(value) + '</span>' +
+          '</button>'
+        );
+      }).join('');
       return (
-        '<a class="dr-hub-leader-card" href="https://www.mlb.com/stats/' + encodeURIComponent(c.leaderCategory) + '" target="_blank" rel="noopener noreferrer">' +
-          (person.id ? '<img class="dr-hub-leader-photo" src="' + escapeHtml(hs(person.id)) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '') +
-          '<span class="dr-hub-leader-text">' +
-            '<span class="dr-hub-leader-cat">' + escapeHtml(leaderCategoryLabel(c.leaderCategory)) + '</span>' +
-            '<span class="dr-hub-leader-name">' + escapeHtml(person.fullName || '–') + '</span>' +
-            '<span class="dr-hub-leader-value">' + meta + '</span>' +
-          '</span>' +
-        '</a>'
+        '<div class="dr-hub-leader-group">' +
+          '<h4 class="dr-hub-leader-group-title">' + escapeHtml(leaderCategoryLabel(c.leaderCategory)) + '</h4>' +
+          rows +
+        '</div>'
       );
     }).filter(Boolean);
-    if (!cards.length) return;
-    container.innerHTML = cards.join('');
+    if (!groups.length) return;
+    container.innerHTML = groups.join('');
+    container.querySelectorAll('.dr-hub-leader-row').forEach(function(row){
+      row.addEventListener('click', function(){
+        var idx = Number(row.getAttribute('data-leader-idx'));
+        openLeaderModal(leaderEntries[idx]);
+      });
+    });
     if (section) section.style.display = '';
+  }
+
+  function openLeaderModal(entry){
+    var modal = document.getElementById('dr-hub-leader-modal');
+    if (!modal || !entry) return;
+    var photoEl = document.getElementById('dr-hub-leader-modal-photo');
+    if (entry.personId) { photoEl.src = hs(entry.personId); photoEl.style.display = ''; photoEl.onerror = function(){ photoEl.style.display = 'none'; }; }
+    else { photoEl.style.display = 'none'; }
+    document.getElementById('dr-hub-leader-modal-meta').textContent = entry.teamAbbr ? entry.teamAbbr + ' · ' + new Date().getFullYear() + ' Season' : String(new Date().getFullYear()) + ' Season';
+    document.getElementById('dr-hub-leader-modal-title').textContent = entry.name || '';
+    document.getElementById('dr-hub-leader-modal-value').textContent = entry.value || '';
+    document.getElementById('dr-hub-leader-modal-cat').textContent = leaderCategoryLabel(entry.category);
+    document.getElementById('dr-hub-leader-modal-rank').textContent = entry.rank ? ('Ranked #' + entry.rank + ' in MLB') : '';
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeLeaderModal(){
+    var modal = document.getElementById('dr-hub-leader-modal');
+    if (!modal) return;
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
   }
 
   function loadHubLeaders(){
@@ -11086,8 +11133,8 @@ function showPremiumGate(feature){
     leadersLoaded = true;
     var season = new Date().getFullYear();
     Promise.all([
-      fetchJSON('https://diamondreport.app/api/v1/stats/leaders?leaderCategories=' + LEADER_HITTING_CATS.join(',') + '&season=' + season + '&sportId=1&statGroup=hitting&limit=1').catch(function(){ return null; }),
-      fetchJSON('https://diamondreport.app/api/v1/stats/leaders?leaderCategories=' + LEADER_PITCHING_CATS.join(',') + '&season=' + season + '&sportId=1&statGroup=pitching&limit=1').catch(function(){ return null; })
+      fetchJSON('https://diamondreport.app/api/v1/stats/leaders?leaderCategories=' + LEADER_HITTING_CATS.join(',') + '&season=' + season + '&sportId=1&statGroup=hitting&limit=' + LEADER_ROWS_PER_CATEGORY).catch(function(){ return null; }),
+      fetchJSON('https://diamondreport.app/api/v1/stats/leaders?leaderCategories=' + LEADER_PITCHING_CATS.join(',') + '&season=' + season + '&sportId=1&statGroup=pitching&limit=' + LEADER_ROWS_PER_CATEGORY).catch(function(){ return null; })
     ]).then(function(results){
       var all = [];
       results.forEach(function(d){
@@ -11126,8 +11173,8 @@ function showPremiumGate(feature){
     if (!section || !data) return;
 
     var ws = Array.isArray(data.worldSeries) ? data.worldSeries.slice(0, 8) : [];
-    var mvpAl = (data.mvp && Array.isArray(data.mvp.AL)) ? data.mvp.AL.slice(0, 5) : [];
-    var mvpNl = (data.mvp && Array.isArray(data.mvp.NL)) ? data.mvp.NL.slice(0, 5) : [];
+    var mvpAl = (data.mvp && Array.isArray(data.mvp.AL)) ? data.mvp.AL.slice(0, 3) : [];
+    var mvpNl = (data.mvp && Array.isArray(data.mvp.NL)) ? data.mvp.NL.slice(0, 3) : [];
     if (!ws.length && !mvpAl.length && !mvpNl.length) return;
 
     if (wsEl) wsEl.innerHTML = ws.map(function(t){
@@ -11278,8 +11325,19 @@ function showPremiumGate(feature){
       hrModalOverlay.addEventListener('click', closeHRVideoModal);
     }
 
+    var leaderModalClose = document.getElementById('dr-hub-leader-modal-close');
+    var leaderModalOverlay = document.getElementById('dr-hub-leader-modal-overlay');
+    if (leaderModalClose && !leaderModalClose.dataset.drHubReady) {
+      leaderModalClose.dataset.drHubReady = '1';
+      leaderModalClose.addEventListener('click', closeLeaderModal);
+    }
+    if (leaderModalOverlay && !leaderModalOverlay.dataset.drHubReady) {
+      leaderModalOverlay.dataset.drHubReady = '1';
+      leaderModalOverlay.addEventListener('click', closeLeaderModal);
+    }
+
     document.addEventListener('keydown', function(e){
-      if (e.key === 'Escape') { closeNewsModal(); closeHRVideoModal(); }
+      if (e.key === 'Escape') { closeNewsModal(); closeHRVideoModal(); closeLeaderModal(); }
     });
 
     var baseballCard = document.getElementById('dr-hub-baseball-card');
