@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=20260716c1200">
+<link rel="stylesheet" href="styles.min.css?v=20260716d1400">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -257,6 +257,25 @@
     <div class="dr-hub-leaders" id="dr-hub-leaders" style="display:none">
       <div class="dr-hub-section-head"><span class="dr-hub-section-icon">🏆</span><h2>League Leaders</h2><span class="dr-hub-section-line"></span></div>
       <div class="dr-hub-leaders-grid" id="dr-hub-leaders-grid"></div>
+    </div>
+
+    <div class="dr-hub-odds" id="dr-hub-odds" style="display:none">
+      <div class="dr-hub-section-head"><span class="dr-hub-section-icon">🔮</span><h2>Season Odds</h2><span class="dr-hub-section-line"></span></div>
+      <p class="dr-hub-odds-note">Model-simulated projections based on current standings and stats — not betting advice.</p>
+      <div class="dr-hub-odds-cols">
+        <div class="dr-hub-odds-col">
+          <h3 class="dr-hub-odds-col-title">World Series Winner</h3>
+          <div class="dr-hub-odds-list" id="dr-hub-ws-odds"></div>
+        </div>
+        <div class="dr-hub-odds-col">
+          <h3 class="dr-hub-odds-col-title">AL MVP</h3>
+          <div class="dr-hub-odds-list" id="dr-hub-mvp-al-odds"></div>
+        </div>
+        <div class="dr-hub-odds-col">
+          <h3 class="dr-hub-odds-col-title">NL MVP</h3>
+          <div class="dr-hub-odds-list" id="dr-hub-mvp-nl-odds"></div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -754,7 +773,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=20260716c1200" defer></script>
+<script src="app.min.js?v=20260716d1400" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->

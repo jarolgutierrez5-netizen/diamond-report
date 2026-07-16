@@ -2334,6 +2334,88 @@ body > main, main,
   }
 }
 
+.dr-hub-odds { margin-top: 30px; }
+.dr-hub-odds-note {
+  margin: -2px 0 14px;
+  font-size: 12px;
+  color: #8fa3c8;
+}
+.dr-hub-odds-cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.dr-hub-odds-col {
+  background: rgba(17,24,39,.55);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+  min-width: 0;
+}
+.dr-hub-odds-col-title {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: #f4a261;
+}
+.dr-hub-odds-list { display: flex; flex-direction: column; gap: 9px; }
+.dr-hub-odds-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.dr-hub-odds-row-photo {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.dr-hub-odds-row-name {
+  flex-shrink: 1;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dr-hub-odds-row-team {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: #8fa3c8;
+}
+.dr-hub-odds-row-bar {
+  flex: 1 1 30px;
+  min-width: 16px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,.08);
+  overflow: hidden;
+}
+.dr-hub-odds-row-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #f4a261, #e76f51);
+}
+.dr-hub-odds-row-pct {
+  flex-shrink: 0;
+  width: 38px;
+  text-align: right;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #f4a261;
+}
+@media (max-width: 767px) {
+  .dr-hub-odds-cols {
+    grid-template-columns: 1fr;
+  }
+}
 /* News summary modal — keeps readers on-site for the headline + short
    summary; the "Read full story" link is the only thing that leaves. */
 .dr-hub-news-modal {

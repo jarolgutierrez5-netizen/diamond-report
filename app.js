@@ -10709,6 +10709,7 @@ function showPremiumGate(feature){
   var newsVisibleCount = 10;
   var hrLoaded = false;
   var leadersLoaded = false;
+  var oddsLoaded = false;
   var gameContentCache = {};
   var gameFeedCache = {};
 
@@ -10721,6 +10722,7 @@ function showPremiumGate(feature){
     loadHubNews();
     loadHubHRs();
     loadHubLeaders();
+    loadHubOdds();
   }
 
   function hideHub(){
@@ -11092,6 +11094,59 @@ function showPremiumGate(feature){
         if (d && Array.isArray(d.leagueLeaders)) all = all.concat(d.leagueLeaders);
       });
       if (all.length) renderHubLeaders(all);
+    }).catch(function(){});
+  }
+
+  // World Series / MVP odds — from data/season-projections.json, a repo-synced daily
+  // file (Monte Carlo playoff bracket sim + a composite-score MVP model; see
+  // scripts/generate-season-projections.mjs for methodology), same fetch pattern as
+  // the Statcast files (drFetchDailyJSON, not a live per-request MLB API call).
+  function wsTeamLogo(teamId){
+    return teamId ? '<img class="dr-hub-odds-row-photo" src="https://www.mlbstatic.com/team-logos/' + teamId + '.svg" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '';
+  }
+
+  function oddsRowHtml(photoHtml, name, team, pct){
+    var width = Math.max(0, Math.min(100, pct));
+    return (
+      '<div class="dr-hub-odds-row">' +
+        photoHtml +
+        '<span class="dr-hub-odds-row-name">' + escapeHtml(name) + '</span>' +
+        '<span class="dr-hub-odds-row-team">' + escapeHtml(team || '') + '</span>' +
+        '<span class="dr-hub-odds-row-bar"><span class="dr-hub-odds-row-bar-fill" style="width:' + width + '%"></span></span>' +
+        '<span class="dr-hub-odds-row-pct">' + pct.toFixed(1) + '%</span>' +
+      '</div>'
+    );
+  }
+
+  function renderHubOdds(data){
+    var section = document.getElementById('dr-hub-odds');
+    var wsEl = document.getElementById('dr-hub-ws-odds');
+    var mvpAlEl = document.getElementById('dr-hub-mvp-al-odds');
+    var mvpNlEl = document.getElementById('dr-hub-mvp-nl-odds');
+    if (!section || !data) return;
+
+    var ws = Array.isArray(data.worldSeries) ? data.worldSeries.slice(0, 8) : [];
+    var mvpAl = (data.mvp && Array.isArray(data.mvp.AL)) ? data.mvp.AL.slice(0, 5) : [];
+    var mvpNl = (data.mvp && Array.isArray(data.mvp.NL)) ? data.mvp.NL.slice(0, 5) : [];
+    if (!ws.length && !mvpAl.length && !mvpNl.length) return;
+
+    if (wsEl) wsEl.innerHTML = ws.map(function(t){
+      return oddsRowHtml(wsTeamLogo(t.teamId), t.name || t.abbr || '–', t.abbr, t.pct);
+    }).join('');
+    if (mvpAlEl) mvpAlEl.innerHTML = mvpAl.map(function(c){
+      return oddsRowHtml(c.id ? '<img class="dr-hub-odds-row-photo" src="' + escapeHtml(hs(c.id)) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '', c.name || '–', c.teamAbbr, c.pct);
+    }).join('');
+    if (mvpNlEl) mvpNlEl.innerHTML = mvpNl.map(function(c){
+      return oddsRowHtml(c.id ? '<img class="dr-hub-odds-row-photo" src="' + escapeHtml(hs(c.id)) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '', c.name || '–', c.teamAbbr, c.pct);
+    }).join('');
+    section.style.display = '';
+  }
+
+  function loadHubOdds(){
+    if (oddsLoaded) return;
+    oddsLoaded = true;
+    drFetchDailyJSON('data/season-projections.json').then(function(data){
+      renderHubOdds(data);
     }).catch(function(){});
   }
 
