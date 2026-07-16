@@ -10705,6 +10705,27 @@ function showPremiumGate(feature){
         if (typeof window.DiamondNavigateToPane === 'function') window.DiamondNavigateToPane(pane);
       });
     });
+    // Baseball group's own sub-tab list — collapsed by default (only stays
+    // expanded across visits if explicitly opened before), independent of
+    // the whole-sidebar icon-only toggle above.
+    var baseballToggle = document.getElementById('dr-sidebar-baseball-toggle');
+    var baseballItems = document.getElementById('dr-sidebar-baseball-items');
+    if (baseballToggle && baseballItems && !baseballToggle.dataset.drSidebarReady) {
+      baseballToggle.dataset.drSidebarReady = '1';
+      var GROUP_KEY = 'dr_sidebar_baseball_expanded';
+      var setBaseballExpanded = function(expanded){
+        baseballItems.classList.toggle('expanded', expanded);
+        baseballToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      };
+      var startExpanded = false;
+      try { startExpanded = localStorage.getItem(GROUP_KEY) === '1'; } catch(e) {}
+      setBaseballExpanded(startExpanded);
+      baseballToggle.addEventListener('click', function(){
+        var expanded = !baseballItems.classList.contains('expanded');
+        setBaseballExpanded(expanded);
+        try { localStorage.setItem(GROUP_KEY, expanded ? '1' : '0'); } catch(e) {}
+      });
+    }
     // Initial state: match whatever pane the page booted into (hash-restored
     // or default), read from the already-rendered #props panes.
     var activePane = document.querySelector('#props .gamepick-pane.active');
