@@ -512,6 +512,74 @@ function windPowerFactor(weather) {
     : 1 - strength * (1 - WIND_MAX_SUPPRESS);
 }
 
+// ── Rest/fatigue ──
+// Real, measurable proxies for physical fatigue -- deliberately NOT an attempt at
+// modeling "clutch"/mental toughness/motivation, which sabermetric research has
+// consistently found mostly doesn't hold up as a repeatable individual skill separate
+// from overall talent (it looks real in small samples and vanishes in larger ones).
+// This only scores what's actually observable from the schedule: extended stretches
+// without a day off, a day game immediately after a night game ("getaway day"), and
+// the second game of a doubleheader all measurably degrade bat speed/timing.
+const FATIGUE_LOOKBACK_DAYS = 10;
+const FATIGUE_NO_REST_STREAK_MIN = 7; // consecutive played days before it counts as real fatigue
+const FATIGUE_STREAK_FACTOR = 0.95; // -5% for an extended no-rest streak
+const FATIGUE_GETAWAY_FACTOR = 0.97; // -3% for a day game right after a night game
+const FATIGUE_DOUBLEHEADER_G2_FACTOR = 0.94; // -6% for game 2 of a doubleheader
+const DAY_GAME_HOUR_CT = 17; // matches the existing day/night cutoff used in computeDRPick
+
+function isDayGameCT(gameDateIso) {
+  const hour = Number(new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone: 'America/Chicago' }).format(new Date(gameDateIso)));
+  return hour < DAY_GAME_HOUR_CT;
+}
+
+// Doubleheader game 2 is free to detect -- it's right on today's own game object, no
+// extra fetch needed. The no-rest-streak and getaway-day checks need the team's recent
+// schedule, so they're fetched (and cached) once per team per day in
+// teamRestFatigueFactor below, not once per batter.
+function doubleheaderFatigueFactor(g) {
+  const isG2 = g?.doubleHeader && g.doubleHeader !== 'N' && Number(g.gameNumber) === 2;
+  return isG2 ? FATIGUE_DOUBLEHEADER_G2_FACTOR : 1;
+}
+
+const teamRestFatigueCache = new Map();
+async function teamRestFatigueFactor(teamId, todayGameDateIso) {
+  const today = cdtDateString(new Date(todayGameDateIso));
+  const cacheKey = `${teamId}|${today}`;
+  if (teamRestFatigueCache.has(cacheKey)) return teamRestFatigueCache.get(cacheKey);
+
+  let factor = 1;
+  try {
+    const start = cdtDateString(new Date(new Date(todayGameDateIso).getTime() - FATIGUE_LOOKBACK_DAYS * 86400000));
+    const sched = await fetchJSON(`${API}/schedule?sportId=1&teamId=${teamId}&startDate=${start}&endDate=${today}`);
+    const gamesByDate = new Map();
+    (sched?.dates || []).forEach(d => {
+      const played = (d.games || []).filter(g => g.status?.abstractGameState !== 'Cancelled' && g.status?.abstractGameState !== 'Postponed');
+      if (played.length) gamesByDate.set(d.date, played);
+    });
+
+    // Walk backward from the day before today, counting consecutive played days.
+    let streak = 0;
+    let cursor = new Date(new Date(todayGameDateIso).getTime() - 86400000);
+    for (let i = 0; i < FATIGUE_LOOKBACK_DAYS; i++) {
+      const key = cdtDateString(cursor);
+      if (!gamesByDate.has(key)) break;
+      streak++;
+      cursor = new Date(cursor.getTime() - 86400000);
+    }
+    if (streak >= FATIGUE_NO_REST_STREAK_MIN) factor *= FATIGUE_STREAK_FACTOR;
+
+    const yesterdayKey = cdtDateString(new Date(new Date(todayGameDateIso).getTime() - 86400000));
+    const yesterdayGames = gamesByDate.get(yesterdayKey) || [];
+    const yesterdayWasNight = yesterdayGames.some(g => !isDayGameCT(g.gameDate));
+    if (yesterdayWasNight && isDayGameCT(todayGameDateIso)) factor *= FATIGUE_GETAWAY_FACTOR;
+  } catch (e) {
+    // Leave factor neutral (1) on any fetch/parse failure -- never block scoring on this.
+  }
+
+  teamRestFatigueCache.set(cacheKey, factor);
+  return factor;
+}
+
 // HR Threats board hit-rate tracker: the live client-side board (app.js, getHRRows) gates
 // its "scanned" pool at hrProb>=18, except the single top-scoring batter per game which
 // gets a lower 14% bar. This backend job uses one uniform 18% cutoff across the whole
@@ -745,7 +813,11 @@ function scoreForMarket(marketKey, row) {
     // when a large enough Statcast sample exists for this batter -- see
     // battedBallPowerIndex/loadStatcastPowerIndex above. Neutral (1x, no change) when
     // there isn't one, so this never makes the model worse for an uncovered player.
-    const batterRate = boxScoreBatterRate * battedBallPowerIndex(row.statcast);
+    // fatigueFactor (see teamRestFatigueFactor/doubleheaderFatigueFactor above) is a
+    // batter-side effect (bat speed/timing), applied here rather than to the combined
+    // rate the way windFactor is, since it's specific to the batting team, not the
+    // whole park/game environment.
+    const batterRate = boxScoreBatterRate * battedBallPowerIndex(row.statcast) * (row.fatigueFactor || 1);
     // Prefer this specific pitcher's own real batters-faced-per-9 (pitcherBFper9) when
     // their season stat line has enough innings to trust it; fall back to the league-
     // average constant otherwise.
@@ -867,6 +939,9 @@ async function buildEliteBatterPool(games, season) {
       const teamAbbr = g.teams[side].team.abbreviation;
       const oppAbbr = g.teams[opp].team.abbreviation;
       const batters = await battersForSide(g, side);
+      // Computed once per team here (cached), not once per batter -- every batter on
+      // this side shares the same team schedule / doubleheader status.
+      const battingTeamFatigue = await teamRestFatigueFactor(g.teams[side].team.id, g.gameDate) * doubleheaderFatigueFactor(g);
 
       const sideRows = await mapLimit(batters, 6, async (b) => {
         const pid = b.id;
@@ -920,7 +995,7 @@ async function buildEliteBatterPool(games, season) {
           pitcherBFper9: pitcherBattersFacedPer9(pitcherStat),
           pitcherAvgAllowed, pitcherSlgAllowed, parkFactor: PARK_FACTORS[g.teams.home.team.abbreviation] || 100,
           isFavorable, isHot, statcast: statcastIndex.get(String(pid)) || null,
-          windFactor: windPowerFactor(g.weather),
+          windFactor: windPowerFactor(g.weather), fatigueFactor: battingTeamFatigue,
         };
       });
       sideRows.filter(Boolean).forEach(r => rows.push(r));
@@ -1306,5 +1381,5 @@ export {
   simulatePropOdds, simulateSBOdds, simulateHRGameOdds, scoreForMarket, eliteQualityScore,
   eliteHit, fetchOddsLookup, normalizeName,
   loadStatcastPowerIndex, battedBallPowerIndex, parseInningsPitched, pitcherBattersFacedPer9,
-  windPowerFactor,
+  windPowerFactor, isDayGameCT, doubleheaderFatigueFactor, teamRestFatigueFactor,
 };
