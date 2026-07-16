@@ -3060,3 +3060,111 @@ select:focus-visible {
     border-radius: 16px;
   }
 }
+
+/* Projection Center's h1 was sized with an unbounded clamp() that grew well past
+   News Central's fixed 34px title on wide screens. Match them exactly. */
+.dr-prediction-hero h1 {
+  font-size: 34px !important;
+}
+@media (max-width: 767px) {
+  .dr-prediction-hero h1 {
+    font-size: 26px !important;
+  }
+}
+
+/* Scouting Report moved to the top of the Pitcher Matchup modal — it used to be the
+   last section, relying on the modal body's own padding for spacing below it. */
+.vuln-box {
+  margin-bottom: 16px;
+}
+
+/* Batting lineup cards (Pitcher Report's Batting Lineup & Matchups panel) were a flat
+   list of rows separated by a 1px bottom border only — no card surface, no depth.
+   Give each batter its own glass card, matching the Phase 3 treatment already used
+   for .dr109-card / .gp-card elsewhere on the site. */
+.lineup-batter-card {
+  background: linear-gradient(180deg, rgba(17,26,45,.78), rgba(14,23,40,.82)) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 14px !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  margin-bottom: 8px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.lineup-batter-card:last-child {
+  margin-bottom: 0 !important;
+}
+.lineup-batter-card:hover {
+  border-color: rgba(47,107,255,.55) !important;
+  box-shadow: 0 0 0 1px rgba(47,107,255,.18), 0 0 28px rgba(47,107,255,.14), 0 10px 24px rgba(0,0,0,.28) !important;
+}
+.lineup-batter-card.hr-today {
+  border-color: rgba(47,107,255,.5) !important;
+  background: linear-gradient(180deg, rgba(26,18,0,.85), rgba(20,14,0,.88)) !important;
+}
+.batter-pos {
+  border-radius: 999px !important;
+}
+
+/* Premium (Elite Picks) revamp — the section used flat rows with a thin amber border
+   and no depth at all, the blandest surface on the site. Elite Picks' gold identity is
+   intentional (it's the "premium tier" signal) and stays; this adds the glass/glow
+   language the rest of the site already has, built around that gold instead of blue. */
+.premium-card {
+  background: linear-gradient(180deg, rgba(28,21,4,.75), rgba(16,13,4,.85)) !important;
+  border: 1px solid rgba(251,191,36,.28) !important;
+  border-radius: 14px !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.premium-card:hover {
+  border-color: rgba(251,191,36,.6) !important;
+  box-shadow: 0 0 0 1px rgba(251,191,36,.18), 0 0 28px rgba(251,191,36,.16), 0 10px 24px rgba(0,0,0,.28);
+  transform: translateY(-1px);
+}
+.premium-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(251,191,36,.12);
+  border: 1px solid rgba(251,191,36,.3);
+}
+.premium-photo {
+  border: 2px solid rgba(251,191,36,.4) !important;
+  box-shadow: 0 0 12px rgba(251,191,36,.15);
+}
+.premium-score {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(34,224,111,.12);
+  border: 1px solid rgba(34,224,111,.35);
+}
+.premium-section-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.premium-section-head::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(251,191,36,.4), transparent);
+  margin-left: 4px;
+}
+.premium-track-record {
+  background: linear-gradient(180deg, rgba(28,21,4,.75), rgba(16,13,4,.85)) !important;
+  border-color: rgba(251,191,36,.3) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.premium-game-head {
+  border-left: 2px solid rgba(251,191,36,.4);
+  padding-left: 8px;
+}

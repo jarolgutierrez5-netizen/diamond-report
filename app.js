@@ -231,7 +231,8 @@
       { prefix: 'dr-static-dump:', today: todayChicago },
       { prefix: 'DR_DEEP_RESEARCH_STATIC_SNAPSHOT_', today: todayLocal },
       { prefix: 'dr-official-lineup-game-projections:', today: todayChicago },
-      { prefix: 'dr-lineup-watch-state:', today: todayChicago }
+      { prefix: 'dr-lineup-watch-state:', today: todayChicago },
+      { prefix: 'dr-official-game-projections-by-game:', today: todayChicago }
     ];
     var removed = 0;
     Object.keys(localStorage).forEach(function(key){
@@ -3037,7 +3038,7 @@ async function loadGameProps() {
       const confBarW = Math.min(winnerPct, 100);
       const confBarColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : '#2ecc71';
 
-      return { html: `<div class="gp-card" data-game-pk="${g.gamePk}" data-away="${awayAbbr}" data-home="${homeAbbr}" data-winner="${winnerAbbr}">
+      return { html: `<div class="gp-card" data-game-pk="${g.gamePk}" data-away="${awayAbbr}" data-home="${homeAbbr}" data-winner="${winnerAbbr}" data-game-time="${dt.getTime()}">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <!-- Teams -->
           <div class="gp-matchup" style="flex:1;min-width:180px">
@@ -3747,7 +3748,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     : `${pitcherName.split(' ').pop()}'S PITCHES · NO REAL DATA YET`;
 
   function pitchEffTag(label, cls) { return `<span class="dr1041-chip ${cls}" style="font-size:9px;padding:2px 7px;margin-right:4px">${label}</span>`; }
-  function pitchEffRow(name, usage, avg, woba, slg, hr, whiffPct, veloTxt) {
+  function pitchEffRow(name, usage, avg, woba, slg, hr, barrelPct, whiffPct, veloTxt) {
     const tags = [];
     if (whiffPct != null && whiffPct >= 28) tags.push(pitchEffTag('🎯 Putaway','good'));
     if ((avg != null && avg >= .260) || (slg != null && slg >= .430)) tags.push(pitchEffTag('⚠ Vulnerable','weak'));
@@ -3758,6 +3759,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <td class="num${gbCls('woba',woba)}">${fmtDec(woba,3)}</td>
       <td class="num${gbCls('slg',slg)}">${fmtDec(slg,3)}</td>
       <td class="num${gbCls('hr',hr)}">${hr!=null?hr:'–'}</td>
+      <td class="num${gbCls('barrel',barrelPct)}">${barrelPct!=null?Number(barrelPct).toFixed(1)+'%':'–'}</td>
       <td class="num${gbCls('whiff',whiffPct)}">${whiffPct!=null?Number(whiffPct).toFixed(0)+'%':'–'}</td>
       <td>${tags.join('') || '<span style="color:var(--muted);font-size:11px">–</span>'}</td>
     </tr>`;
@@ -3773,9 +3775,10 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       const avg = p.avg ?? p.avgAgainst ?? null;
       const slg = p.slg ?? p.slgAgainst ?? null;
       const hr = p.homeRuns ?? p.hr ?? null;
+      const barrelPct = p.barrelPct ?? p.barrelRate ?? null;
       const whiffPct = p.whiffPct ?? p.whiffRate ?? null;
       const veloTxt = p.avgVelo ? ` · ${p.avgVelo} mph` : '';
-      return pitchEffRow(p.name, p.usagePct, avg, woba, slg, hr, whiffPct, veloTxt);
+      return pitchEffRow(p.name, p.usagePct, avg, woba, slg, hr, barrelPct, whiffPct, veloTxt);
     }).join('');
   }
 
@@ -3783,7 +3786,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     <div class="dr1041-pitch-head">
       <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">Real synced pitch-level data for ${pitcherName}.</div></div>
     </div>
-    <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage</th><th>AVG</th><th>wOBA</th><th>SLG</th><th>HR</th><th>Whiff%</th><th>Notes</th></tr></thead><tbody>${pitchRows}</tbody></table></div>
+    <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage</th><th>AVG</th><th>wOBA</th><th>SLG</th><th>HR</th><th>Barrel</th><th>Whiff%</th><th>Notes</th></tr></thead><tbody>${pitchRows}</tbody></table></div>
     ${gbLegendHTML}
   </div>` : `<div class="dr1041-pitch-mix" style="margin-top:14px">
     <div class="dr1041-pitch-head">
@@ -4014,6 +4017,12 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     </div>`;
 
   body.innerHTML = `
+    <!-- Scouting Report -->
+    <div class="vuln-box">
+      <div class="vuln-title">⚡ SCOUTING REPORT — HOW TO HIT A HOME RUN</div>
+      ${vulnHTML}
+    </div>
+
     <!-- H2H Career Stats -->
     <div style="margin-bottom:16px">
       <div class="zone-title" style="margin-bottom:8px">HEAD-TO-HEAD · 2026 SEASON</div>
@@ -4124,12 +4133,6 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         <span class="dr1041-bottom-item">Pitch Mix Usage:</span>
         <span class="dr1041-usage-chips">${bottomUsageChips}</span>
       </div>
-    </div>
-
-    <!-- Vulnerability summary -->
-    <div class="vuln-box">
-      <div class="vuln-title">⚡ SCOUTING REPORT — HOW TO HIT A HOME RUN</div>
-      ${vulnHTML}
     </div>`;
 }
 
@@ -5735,13 +5738,15 @@ function drKRealisticOverChance(p){
 function drKGrade(score){ return score>=82?'A+':score>=76?'A':score>=70?'B+':score>=64?'B':score>=58?'C+':score>=52?'C':'PASS'; }
 function drKChip(label,value,cls='') { return `<span class="dr112-chip ${cls}"><b>${label}</b>${value}</span>`; }
 function drKSummaryHTML(list){
+  // Styled to match the "EXPANDED ... DATA" summary banner already used on the HR
+  // Threats board (dr1027-hr-summary), so both boards read as one consistent system.
   const arr=(list||[]).slice().sort((a,b)=>drKConfidenceScore(b)-drKConfidenceScore(a));
   if(!arr.length) return '';
   const top=arr[0];
-  const avg=Math.round(arr.slice(0,6).reduce((a,p)=>a+drKConfidenceScore(p),0)/Math.min(6,arr.length));
+  const sample=arr.slice(0,Math.min(8,arr.length));
+  const avg=Math.round(sample.reduce((a,p)=>a+drKConfidenceScore(p),0)/sample.length);
   const line=drKNum(top.recommendedOverLine ?? top.ouLine ?? top.compareLine,0);
-  const cushion=drKNum(top.projK,line)-line;
-  return `<div class="dr112-engine dr113-k-engine" data-dr113="k-summary"><div class="dr112-engine-head"><div><div class="dr112-title">🎯 Pitcher Strikeouts <span>Confidence Engine</span></div><div class="dr112-copy">Keeps the existing strikeout filters, labels, Line / K Count / Cushion boxes, and Pitcher Matchup button while adding realistic over probability, Diamond grade, risk, and why-this-play data.</div></div><div class="dr112-score">${avg}%<small>Top Board Grade</small></div></div><div class="dr112-grid"><div class="dr112-metric good"><b>${top.pitcherName||'–'}</b><span>Top K Read</span></div><div class="dr112-metric"><b>Over ${formatKLine(line)} K</b><span>Active Line</span></div><div class="dr112-metric ${cushion>=1?'good':'warn'}"><b>${cushion>=0?'+':''}${cushion.toFixed(1)}</b><span>Cushion</span></div><div class="dr112-metric"><b>${Math.round(drKRealisticOverChance(top)*100)}%</b><span>Realistic Over Chance</span></div></div><div class="dr112-ai"><b>Why this board matters:</b> Pitcher strikeouts are scored from projection vs line, K/9, ERA/WHIP command profile, projected workload, opponent contact tendency, live K Count, and matchup context. This keeps the original Strikeouts layout while giving each play a real support profile.</div></div>`;
+  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">📊 EXPANDED <span>STRIKEOUTS DATA</span></div><p class="dr1027-summary-copy">Every pitcher on the board carries a Diamond grade, realistic over probability, and risk read built from projection vs line, K/9, ERA/WHIP command, workload, and opponent contact tendency — on top of the existing Line / K Count / Cushion columns, filters, and sorting.</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${top.pitcherName||'–'}</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>${avg}%</b><span>Board Avg Confidence</span></div><div class="dr1027-summary-metric"><b>${arr.length}</b><span>Pitchers Scanned</span></div><div class="dr1027-summary-metric warn"><b>Over ${formatKLine(line)} K</b><span>Primary Signal</span></div></div></div>`;
 }
 function drKRowAnalyticsHTML(p, live, cushion, line){
   const conf=drKConfidenceScore(p), chance=Math.round(drKRealisticOverChance(p)*100), grade=drKGrade(conf);
@@ -5878,6 +5883,7 @@ function renderKProps() {
   }).join('');
 
   el.innerHTML = `${kpTallyHTML}
+  ${drKSummaryHTML(gameFilteredProps)}
   <div class="kprops-sticky-sort" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">
     <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">GAME:</span>
     <select onchange="kPropsSetGameFilter(this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;flex-shrink:0">${kpGameOptsHTML}</select>
@@ -9590,176 +9596,84 @@ function showPremiumGate(feature){
   if (window.__DR_LINEUP_GAME_PROJECTION_LOCK__) return;
   window.__DR_LINEUP_GAME_PROJECTION_LOCK__ = true;
 
-  var VERSION = 'v9.5';
-  var LOCK_PREFIX = 'dr-official-lineup-game-projections:' + VERSION + ':';
-  var WATCH_PREFIX = 'dr-lineup-watch-state:' + VERSION + ':';
-  var readinessCache = { at: 0, ready: false, detail: '' };
-  var READINESS_TTL = 2 * 60 * 1000;
+  // v10.0: this used to freeze the ENTIRE day's board the moment any one team posted
+  // an official lineup — often hours before first pitch, and before every other game
+  // on the slate even had a lineup. Locking is now per game, at that game's own
+  // scheduled start time, mirroring how the underlying win-probability model already
+  // behaves (loadGameProps reuses _gamePropsSnapshot instead of recomputing once a
+  // game goes live/final). This layer just persists each game's frozen card HTML to
+  // localStorage so a reload/tab-switch doesn't lose the freeze; games that haven't
+  // started yet are left alone and keep recomputing live on every render.
+  var VERSION = 'v10.0';
+  var LOCK_PREFIX = 'dr-official-game-projections-by-game:' + VERSION + ':';
 
   function centralDateKey(){
     try { return new Date().toLocaleDateString('en-CA', { timeZone:'America/Chicago' }); }
     catch(e){ return new Date().toISOString().slice(0,10); }
   }
   function lockKey(){ return LOCK_PREFIX + centralDateKey(); }
-  function watchKey(){ return WATCH_PREFIX + centralDateKey(); }
-  function formatCT(iso){
-    var d = iso ? new Date(iso) : new Date();
-    try { return d.toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit', timeZone:'America/Chicago' }) + ' CT'; }
-    catch(e){ return d.toLocaleString(); }
+  function lockBannerHTML(count){
+    return '<div class="dr-daily-lock-banner" data-dr-lock-banner="1"><span>🔒 '+count+' Game'+(count===1?'':'s')+' Locked At First Pitch</span><span>Games that haven\'t started yet keep updating live</span></div>';
   }
-  function lockBannerHTML(saved){
-    var detail = saved && saved.lineupDetail ? saved.lineupDetail : 'Official lineup confirmed';
-    var time = formatCT(saved && saved.lockedAt);
-    return '<div class="dr-daily-lock-banner" data-dr-lock-banner="1"><span>🔒 Official Lineup Update Locked</span><span>'+detail+' • '+time+'</span></div>';
-  }
-  function watchBannerHTML(detail){
-    return '<div class="dr-daily-lock-banner watch" data-dr-lock-banner="1"><span>🟡 Lineup Watch Active</span><span>'+(detail || 'Projections freeze after official lineup confirmation')+'</span></div>';
-  }
-  function normalizeHTML(html){
-    return String(html || '').replace(/<div class="dr-daily-lock-banner[\s\S]*?<\/div>\s*/g,'');
-  }
-  function readLock(){
+  function readStore(){
     try {
       var raw = localStorage.getItem(lockKey());
-      if (!raw) return null;
+      if (!raw) return { date: centralDateKey(), games: {} };
       var saved = JSON.parse(raw);
-      if (!saved || saved.date !== centralDateKey() || !saved.html) return null;
+      if (!saved || saved.date !== centralDateKey() || !saved.games) return { date: centralDateKey(), games: {} };
       return saved;
-    } catch(e){ return null; }
+    } catch(e){ return { date: centralDateKey(), games: {} }; }
   }
-  function paintLock(saved){
+  function writeStore(store){
+    try { localStorage.setItem(lockKey(), JSON.stringify(store)); } catch(e){}
+  }
+
+  // Runs after every fresh render. Any card whose game has started and isn't frozen
+  // yet gets snapshotted as-is (this is the freeze moment); any card that was already
+  // frozen gets its freshly-rendered HTML replaced with the stored snapshot, so a pick
+  // can't silently change after first pitch. Cards for games that haven't started are
+  // left completely alone. Returns how many cards are currently locked.
+  function applyPerGameLocks(){
     var el = document.getElementById('gameprops-content');
-    if (!el || !saved || !saved.html) return false;
-    el.innerHTML = lockBannerHTML(saved) + saved.html;
-    clearProjectionResultZones(el);
-    if (saved.drWinProbStore) window.drWinProbStore = saved.drWinProbStore;
-    var refreshEl = document.getElementById('gameprops-refresh');
-    if (refreshEl) refreshEl.textContent = 'Official lineup projections locked';
-    if (window.refreshFavoredPills) { try { window.refreshFavoredPills(); } catch(e){} }
-    // v9.4: the locked projection HTML is allowed to stay locked, but live/final score
-    // badges are NOT locked. Any restore/repaint must immediately re-apply the newest
-    // live scoreboard state so cached official-lineup HTML cannot overwrite results.
-    setTimeout(function(){
-      if (typeof refreshLockedGameProjectionScores === 'function') {
-        try { refreshLockedGameProjectionScores(); } catch(e){}
-      }
-    }, 0);
-    return true;
-  }
-  function paintWatch(detail){
-    var el = document.getElementById('gameprops-content');
-    if (!el || !el.querySelector('.gp-card')) return false;
-    var html = normalizeHTML(el.innerHTML);
-    el.innerHTML = watchBannerHTML(detail) + html;
-    var refreshEl = document.getElementById('gameprops-refresh');
-    if (refreshEl) refreshEl.textContent = 'Lineup watch active';
-    return true;
-  }
-  function restoreLock(){
-    var saved = readLock();
-    if (!saved) return false;
-    return paintLock(saved);
-  }
-  function writeLock(reason){
-    try {
-      var el = document.getElementById('gameprops-content');
-      if (!el || !el.querySelector('.gp-card')) return false;
-      var html = normalizeHTML(el.innerHTML);
-      if (!html || /Loading Game Center|still loading|Error:/i.test(html)) return false;
-      var saved = {
-        version: VERSION,
-        date: centralDateKey(),
-        generatedAt: new Date().toISOString(),
-        lockedAt: new Date().toISOString(),
-        lockType: 'official-lineup-confirmed',
-        lineupDetail: reason || 'Official lineup confirmed',
-        html: html,
-        drWinProbStore: window.drWinProbStore || null
-      };
-      localStorage.setItem(lockKey(), JSON.stringify(saved));
-      localStorage.setItem(watchKey(), JSON.stringify({ lockedAt: saved.lockedAt, reason: saved.lineupDetail }));
-      paintLock(saved);
-      return true;
-    } catch(e){ return false; }
-  }
-  function teamHasConfirmedLineup(team){
-    return !!(team && team.confirmed === true && Array.isArray(team.lineup) && team.lineup.length >= 8);
-  }
-  async function fetchJSONSafe(url){
-    try {
-      if (typeof drFetchDailyJSON === 'function') return await drFetchDailyJSON(url);
-      var r = await fetch(url, { cache: 'no-store' });
-      if (!r.ok) throw new Error(String(r.status));
-      return await r.json();
-    } catch(e){ return null; }
-  }
-  function repoLineupReady(data){
-    var games = data && data.games ? Object.values(data.games) : [];
-    if (!games.length) return null;
-    var confirmedGames = 0, confirmedTeams = 0;
-    games.forEach(function(game){
-      var teams = game && game.teams ? game.teams : {};
-      var vals = Object.values(teams);
-      var count = vals.filter(teamHasConfirmedLineup).length;
-      confirmedTeams += count;
-      if (count >= 2) confirmedGames++;
-    });
-    if (confirmedGames > 0) return { ready:true, detail: confirmedGames + ' game' + (confirmedGames === 1 ? '' : 's') + ' with confirmed lineups' };
-    if (confirmedTeams > 0) return { ready:true, detail: confirmedTeams + ' confirmed team lineup' + (confirmedTeams === 1 ? '' : 's') };
-    return null;
-  }
-  async function mlbBoxscoreReady(){
-    if (typeof getTodaySchedule !== 'function' || typeof fetchJSON !== 'function') return null;
-    try {
-      var games = await getTodaySchedule('team,probablePitcher,linescore');
-      if (!Array.isArray(games) || !games.length) return null;
-      var checks = games.slice(0, 15).map(async function(g){
-        try {
-          var box = await fetchJSON('https://diamondreport.app/api/v1/game/' + g.gamePk + '/boxscore');
-          var away = box && box.teams && box.teams.away;
-          var home = box && box.teams && box.teams.home;
-          function hasOrder(team){
-            var batters = (team && team.batters || []).map(function(id){ return team.players && team.players['ID'+id]; }).filter(Boolean);
-            return batters.some(function(b){ return b && (b.battingOrder || (b.stats && b.stats.batting && b.stats.batting.battingOrder)); });
-          }
-          return hasOrder(away) || hasOrder(home);
-        } catch(e){ return false; }
-      });
-      var results = await Promise.all(checks);
-      var count = results.filter(Boolean).length;
-      if (count > 0) return { ready:true, detail: count + ' MLB official lineup' + (count === 1 ? '' : 's') + ' detected' };
-    } catch(e){}
-    return null;
-  }
-  async function lineupReady(){
+    if (!el) return 0;
+    var cards = el.querySelectorAll('.gp-card[data-game-pk]');
+    if (!cards.length) return 0;
+    var store = readStore();
     var now = Date.now();
-    if ((now - readinessCache.at) < READINESS_TTL) return readinessCache.ready ? readinessCache : null;
-    var ready = null;
-    var repo = await fetchJSONSafe('data/lineups.json');
-    ready = repoLineupReady(repo);
-    if (!ready) ready = await mlbBoxscoreReady();
-    readinessCache = { at: now, ready: !!ready, detail: ready ? ready.detail : 'Waiting for official lineup confirmation' };
-    return ready ? readinessCache : null;
-  }
-  async function maybeLockAfterLineup(){
-    if (readLock()) return true;
-    var ready = await lineupReady();
-    if (ready && ready.ready) return writeLock(ready.detail);
-    paintWatch(ready && ready.detail ? ready.detail : 'Waiting for official lineup confirmation');
-    return false;
+    var changed = false;
+    var lockedCount = 0;
+    cards.forEach(function(card){
+      var pk = card.getAttribute('data-game-pk');
+      var existing = store.games[pk];
+      if (existing) {
+        lockedCount++;
+        if (card.outerHTML !== existing.html) card.outerHTML = existing.html;
+        return;
+      }
+      var gameTime = parseInt(card.getAttribute('data-game-time'), 10);
+      if (Number.isFinite(gameTime) && now >= gameTime) {
+        store.games[pk] = { lockedAt: new Date().toISOString(), html: card.outerHTML };
+        changed = true;
+        lockedCount++;
+      }
+    });
+    if (changed) writeStore(store);
+    var banner = el.querySelector('[data-dr-lock-banner="1"]');
+    if (banner) banner.remove();
+    if (lockedCount > 0) el.insertAdjacentHTML('afterbegin', lockBannerHTML(lockedCount));
+    var refreshEl = document.getElementById('gameprops-refresh');
+    if (refreshEl && lockedCount > 0) refreshEl.textContent = lockedCount + ' game' + (lockedCount===1?'':'s') + ' locked at first pitch';
+    return lockedCount;
   }
 
-  window.DiamondClearLineupGameProjectionLock = function(){
-    try { localStorage.removeItem(lockKey()); return 'Official lineup Game Projection lock cleared for ' + centralDateKey() + '.'; }
-    catch(e){ return 'Unable to clear lineup Game Projection lock: ' + (e.message || e); }
+  window.DiamondClearGameProjectionLock = function(){
+    try { localStorage.removeItem(lockKey()); return 'Game Projection locks cleared for ' + centralDateKey() + '.'; }
+    catch(e){ return 'Unable to clear Game Projection locks: ' + (e.message || e); }
   };
-  window.DiamondSaveLineupGameProjectionLock = function(reason){ return writeLock(reason || 'Manual official lineup lock'); };
-  window.DiamondRestoreLineupGameProjectionLock = restoreLock;
-
-  // Backward-compatible names from v8.73, but now they control the lineup-confirmed lock.
-  window.DiamondClearDailyGameProjectionLock = window.DiamondClearLineupGameProjectionLock;
-  window.DiamondSaveDailyGameProjectionLock = window.DiamondSaveLineupGameProjectionLock;
-  window.DiamondRestoreDailyGameProjectionLock = window.DiamondRestoreLineupGameProjectionLock;
+  // Backward-compatible names — used to control the old lineup-confirmation lock,
+  // now alias the per-game clear since that's the only lock left to clear.
+  window.DiamondClearLineupGameProjectionLock = window.DiamondClearGameProjectionLock;
+  window.DiamondClearDailyGameProjectionLock = window.DiamondClearGameProjectionLock;
 
   function clearProjectionResultZones(root){
     root = root || document;
@@ -9844,7 +9758,8 @@ function showPremiumGate(feature){
     el.__drLiveScoreMutationGuard = true;
     try {
       var mo = new MutationObserver(function(){
-        if (readLock()) scheduleAuthoritativeRefresh();
+        var store = readStore();
+        if (Object.keys(store.games).length > 0) scheduleAuthoritativeRefresh();
       });
       mo.observe(el, { childList:true, subtree:true });
     } catch(e) {}
@@ -9853,34 +9768,27 @@ function showPremiumGate(feature){
   function installWrapper(){
     if (typeof window.loadGameProps !== 'function' || window.loadGameProps.__drLineupLockWrapped) return false;
     var original = window.loadGameProps;
-    async function lineupLockedLoadGameProps(opts){
-      opts = opts || {};
-      var saved = readLock();
-      // Once the official-lineup card exists, never recalculate it during normal reloads,
-      // tab switches, retries, or background intervals. Manual clear is required.
-      if (saved && !opts.forceUnlock) { paintLock(saved); await refreshLockedGameProjectionScores(); return; }
+    async function perGameLockedLoadGameProps(opts){
+      // Always recompute fresh — games that haven't started need live data every time.
+      // Started games get spliced back to their frozen snapshot right after.
       var result = await original.apply(this, arguments);
-      await maybeLockAfterLineup();
+      var lockedCount = applyPerGameLocks();
+      if (lockedCount > 0) await refreshLockedGameProjectionScores();
       return result;
     }
-    lineupLockedLoadGameProps.__drLineupLockWrapped = true;
-    window.loadGameProps = lineupLockedLoadGameProps;
+    perGameLockedLoadGameProps.__drLineupLockWrapped = true;
+    window.loadGameProps = perGameLockedLoadGameProps;
     return true;
   }
 
   function boot(){
     installProjectionMutationGuard();
-    var restoredOnce = restoreLock();
     installWrapper();
     var tries = 0;
     var id = setInterval(function(){
       tries++;
       var wrapped = installWrapper();
-      // v9.4: do not keep repainting saved locked HTML after the live-score badge has
-      // been applied. Repeated restoreLock() calls were causing the section to briefly
-      // show live results and then revert to the stale locked HTML.
-      if (!restoredOnce) restoredOnce = restoreLock();
-      if (wrapped || restoredOnce || tries > 20) clearInterval(id);
+      if (wrapped || tries > 20) clearInterval(id);
     }, 250);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once:true });

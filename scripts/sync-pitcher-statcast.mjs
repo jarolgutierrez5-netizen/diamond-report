@@ -111,6 +111,14 @@ function rowToPitchStat(r) {
     xwoba: num(pick(r, ['est_woba', 'xwoba'])),
     whiffPct: num(pick(r, ['whiff_percent'])),
     hardHitPct: num(pick(r, ['hard_hit_percent'])),
+    // The pitch-arsenal leaderboard may not carry a barrel column at all (barrel% is
+    // more commonly published per-player, not per-pitch-type) — these are best-effort
+    // candidate names; barrelPct stays null if none of them exist in the response,
+    // same graceful-degradation behavior as every other field here.
+    barrelPct: num(pick(r, ['barrel_batted_rate', 'brl_percent', 'barrel_percent', 'barrels_per_bbe_percent'])),
+    // Same caveat as above — genuinely unknown until sync-pitcher-zone-hr.mjs (which
+    // runs after this script) fills in real per-pitch-type HR counts for today's
+    // probable starters from Statcast Search. Left null here on purpose rather than 0.
     homeRuns: num(pick(r, ['home_run', 'home_runs', 'hr'])),
   };
 }
@@ -203,4 +211,4 @@ if (isMain) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { parseCSV, rowToPitchStat, assertSchema, buildPitcherStatcast, buildBatterPitchSeason, main };
+export { parseCSV, rowToPitchStat, assertSchema, buildPitcherStatcast, buildBatterPitchSeason, main, PITCH_NAME_MAP };

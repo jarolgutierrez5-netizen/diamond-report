@@ -32,18 +32,30 @@ jobs:
       - name: Run Statcast pitch-arsenal sync
         run: node scripts/sync-pitcher-statcast.mjs
 
+      - name: Run Statcast hot-hitters sync (batter Barrel% / Hard-Hit% / xwOBA)
+        run: node scripts/sync-statcast-hot-hitters.mjs
+
+      - name: Run per-pitch-type HR + Strike Zone sync for today's probable starters
+        # Depends on data/pitcher-statcast.json already existing from the step above —
+        # it merges real HR-by-pitch-type and zone-location wOBA into that same file
+        # rather than writing a separate one. A failure here shouldn't block the two
+        # steps above from being committed, so it's allowed to fail without red-Xing
+        # the whole run (see the commit step below, which stages whatever exists).
+        run: node scripts/sync-pitcher-zone-hr.mjs
+        continue-on-error: true
+
       - name: Commit and push if changed
         run: |
           # git diff --quiet only detects changes to already-tracked files — it silently
-          # ignores brand-new untracked files, which is exactly what these two files are
+          # ignores brand-new untracked files, which is exactly what these files are
           # on a repo's first-ever run. Stage first, then check the index against HEAD so
           # a genuinely new file is treated as a real change instead of "nothing to commit".
-          git add data/pitcher-statcast.json data/batter-pitch-type-season.json
+          git add data/pitcher-statcast.json data/batter-pitch-type-season.json data/statcast-hot-hitters.json
           if git diff --cached --quiet; then
             echo "No changes to sync — nothing to commit."
             exit 0
           fi
           git config user.name "diamond-report-bot"
           git config user.email "actions@users.noreply.github.com"
-          git commit -m "Sync real pitch-arsenal data from Baseball Savant"
+          git commit -m "Sync real pitch-arsenal, hot-hitter, and zone/HR-by-pitch data from Baseball Savant"
           git push
