@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=20260716c1200">
+<link rel="stylesheet" href="styles.min.css?v=20260716e1600">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -235,28 +235,53 @@
       </div>
     </div>
 
-    <div class="dr-hub-news" id="dr-hub-news" style="display:none">
-      <div class="dr-hub-section-head"><span class="dr-hub-section-icon">📰</span><h2>Top Headlines</h2><span class="dr-hub-section-line"></span></div>
-      <div class="dr-hub-news-grid" id="dr-hub-news-grid"></div>
-      <button type="button" id="dr-hub-news-more" class="dr-hub-news-more" style="display:none">View More</button>
-    </div>
+    <div class="dr-hub-layout">
+      <div class="dr-hub-main">
+        <div class="dr-hub-news" id="dr-hub-news" style="display:none">
+          <div class="dr-hub-section-head"><span class="dr-hub-section-icon">📰</span><h2>Top Headlines</h2><span class="dr-hub-section-line"></span></div>
+          <div class="dr-hub-news-grid" id="dr-hub-news-grid"></div>
+          <button type="button" id="dr-hub-news-more" class="dr-hub-news-more" style="display:none">View More</button>
+        </div>
 
-    <div class="dr-hub-hr">
-      <div class="dr-hub-section-head"><span class="dr-hub-section-icon">🔥</span><h2 id="dr-hub-hr-heading">Home Run Highlights</h2><span class="dr-hub-section-line"></span></div>
-      <div class="dr-hub-hr-list" id="dr-hub-hr-list">
-        <a class="dr-hub-hr-card" href="https://www.mlb.com/video" target="_blank" rel="noopener noreferrer">
-          <span class="dr-hub-hr-play">▶</span>
-          <span class="dr-hub-hr-text">
-            <span class="dr-hub-hr-title">Watch Home Run Highlights</span>
-            <span class="dr-hub-hr-sub">Browse the latest MLB video, via MLB.com</span>
-          </span>
-        </a>
+        <div class="dr-hub-hr">
+          <div class="dr-hub-section-head"><span class="dr-hub-section-icon">🔥</span><h2 id="dr-hub-hr-heading">Home Run Highlights</h2><span class="dr-hub-section-line"></span></div>
+          <div class="dr-hub-hr-list" id="dr-hub-hr-list">
+            <a class="dr-hub-hr-card" href="https://www.mlb.com/video" target="_blank" rel="noopener noreferrer">
+              <span class="dr-hub-hr-play">▶</span>
+              <span class="dr-hub-hr-text">
+                <span class="dr-hub-hr-title">Watch Home Run Highlights</span>
+                <span class="dr-hub-hr-sub">Browse the latest MLB video, via MLB.com</span>
+              </span>
+            </a>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div class="dr-hub-leaders" id="dr-hub-leaders" style="display:none">
-      <div class="dr-hub-section-head"><span class="dr-hub-section-icon">🏆</span><h2>League Leaders</h2><span class="dr-hub-section-line"></span></div>
-      <div class="dr-hub-leaders-grid" id="dr-hub-leaders-grid"></div>
+      <div class="dr-hub-side">
+        <div class="dr-hub-leaders" id="dr-hub-leaders" style="display:none">
+          <div class="dr-hub-section-head"><span class="dr-hub-section-icon">🏆</span><h2>League Leaders</h2><span class="dr-hub-section-line"></span></div>
+          <div class="dr-hub-leaders-list" id="dr-hub-leaders-list"></div>
+        </div>
+
+        <div class="dr-hub-odds" id="dr-hub-odds" style="display:none">
+          <div class="dr-hub-section-head"><span class="dr-hub-section-icon">🔮</span><h2>Season Odds</h2><span class="dr-hub-section-line"></span></div>
+          <p class="dr-hub-odds-note">Model-simulated projections based on current standings and stats — not betting advice.</p>
+          <div class="dr-hub-odds-cols">
+            <div class="dr-hub-odds-col">
+              <h3 class="dr-hub-odds-col-title">World Series Winner</h3>
+              <div class="dr-hub-odds-list" id="dr-hub-ws-odds"></div>
+            </div>
+            <div class="dr-hub-odds-col">
+              <h3 class="dr-hub-odds-col-title">AL MVP</h3>
+              <div class="dr-hub-odds-list" id="dr-hub-mvp-al-odds"></div>
+            </div>
+            <div class="dr-hub-odds-col">
+              <h3 class="dr-hub-odds-col-title">NL MVP</h3>
+              <div class="dr-hub-odds-list" id="dr-hub-mvp-nl-odds"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -291,6 +316,26 @@
     <div class="dr-hub-news-modal-body">
       <div class="dr-hub-news-modal-meta" id="dr-hub-hr-modal-meta"></div>
       <h3 id="dr-hub-hr-modal-title" class="dr-hub-news-modal-title"></h3>
+    </div>
+  </div>
+</div>
+
+<!-- League Leaders player popup — keeps readers on-site instead of sending
+     them to mlb.com/stats when they tap a leaderboard row. Populated/opened
+     by the hub IIFE at the end of app.js. -->
+<div id="dr-hub-leader-modal" class="dr-hub-news-modal" aria-hidden="true">
+  <div class="dr-hub-news-modal-overlay" id="dr-hub-leader-modal-overlay"></div>
+  <div class="dr-hub-news-modal-panel dr-hub-leader-modal-panel" role="dialog" aria-modal="true" aria-labelledby="dr-hub-leader-modal-title">
+    <button type="button" class="dr-hub-news-modal-close" id="dr-hub-leader-modal-close" aria-label="Close">✕</button>
+    <div class="dr-hub-news-modal-body dr-hub-leader-modal-body">
+      <img id="dr-hub-leader-modal-photo" class="dr-hub-leader-modal-photo" alt="" style="display:none">
+      <div class="dr-hub-leader-modal-meta" id="dr-hub-leader-modal-meta"></div>
+      <h3 id="dr-hub-leader-modal-title" class="dr-hub-news-modal-title"></h3>
+      <div class="dr-hub-leader-modal-stat">
+        <span class="dr-hub-leader-modal-stat-value" id="dr-hub-leader-modal-value"></span>
+        <span class="dr-hub-leader-modal-stat-label" id="dr-hub-leader-modal-cat"></span>
+      </div>
+      <div class="dr-hub-leader-modal-rank" id="dr-hub-leader-modal-rank"></div>
     </div>
   </div>
 </div>
@@ -754,7 +799,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=20260716c1200" defer></script>
+<script src="app.min.js?v=20260716e1600" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->

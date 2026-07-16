@@ -1,0 +1,48 @@
+name: Generate Season Projections (World Series & MVP odds)
+
+on:
+  schedule:
+    # 12:11 UTC = ~7am CDT — before both the Statcast sync (13:04 UTC) and the tracker
+    # update (14:07 UTC), so News Central has same-day-fresh standings/leaders-based
+    # odds. Standings and season leaders move slowly (once a day is plenty — unlike
+    # lineups or live scores), so a single daily run is sufficient. Offset off the top
+    # of the hour on purpose — see the comment in update-tracker.yml for why.
+    - cron: '11 12 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: generate-projections
+  cancel-in-progress: false
+
+jobs:
+  generate-projections:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run season projections generator
+        run: node scripts/generate-season-projections.mjs
+
+      - name: Commit and push if changed
+        run: |
+          # Stage first, then diff the index against HEAD — git diff --quiet alone
+          # misses a brand-new untracked file, which is exactly what this file is on
+          # the very first run.
+          git add data/season-projections.json
+          if git diff --cached --quiet; then
+            echo "No changes to season-projections.json — nothing to commit."
+            exit 0
+          fi
+          git config user.name "diamond-report-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -m "Update season projections: World Series and MVP odds"
+          git push
