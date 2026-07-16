@@ -11056,6 +11056,20 @@ function showPremiumGate(feature){
 
   var LEADER_ROWS_PER_CATEGORY = 3;
   var leaderEntries = [];
+  var teamIdToAbbr = null;
+
+  // /stats/leaders' team object only reliably carries an id, not an
+  // abbreviation (confirmed against a live response — every leader came back
+  // with team.abbreviation undefined). Resolve it from the existing
+  // abbr->id map (window.teamIds, built at the top of app.js) instead.
+  function teamAbbrFromId(id){
+    if (!teamIdToAbbr) {
+      teamIdToAbbr = {};
+      var ids = window.teamIds || {};
+      for (var abbr in ids) { teamIdToAbbr[ids[abbr]] = abbr; }
+    }
+    return teamIdToAbbr[id] || '';
+  }
 
   function renderHubLeaders(categories){
     var container = document.getElementById('dr-hub-leaders-list');
@@ -11069,13 +11083,14 @@ function showPremiumGate(feature){
       var rows = leaders.map(function(leader){
         var person = leader.person || {};
         var team = leader.team || {};
+        var teamAbbr = team.abbreviation || teamAbbrFromId(team.id) || '';
         var value = formatLeaderValue(c.leaderCategory, leader.value);
         var idx = leaderEntries.push({
           category: c.leaderCategory,
           rank: leader.rank,
           value: value,
           name: person.fullName || '–',
-          teamAbbr: team.abbreviation || '',
+          teamAbbr: teamAbbr,
           personId: person.id || null,
         }) - 1;
         return (
@@ -11083,7 +11098,7 @@ function showPremiumGate(feature){
             '<span class="dr-hub-leader-row-rank">#' + escapeHtml(String(leader.rank || '')) + '</span>' +
             (person.id ? '<img class="dr-hub-leader-row-photo" src="' + escapeHtml(hs(person.id)) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '') +
             '<span class="dr-hub-leader-row-name">' + escapeHtml(person.fullName || '–') + '</span>' +
-            '<span class="dr-hub-leader-row-team">' + escapeHtml(team.abbreviation || '') + '</span>' +
+            '<span class="dr-hub-leader-row-team">' + escapeHtml(teamAbbr) + '</span>' +
             '<span class="dr-hub-leader-row-value">' + escapeHtml(value) + '</span>' +
           '</button>'
         );
@@ -11104,6 +11119,32 @@ function showPremiumGate(feature){
       });
     });
     if (section) section.style.display = '';
+    showSideToggleIfNeeded();
+  }
+
+  // Below the side-rail breakpoint, League Leaders/Season Odds are collapsed
+  // behind a toggle by default (too much extra scrolling on a phone to show
+  // both expanded). Only reveal the toggle once there's actually something
+  // behind it — no point showing "Show League Leaders" if both fetches failed.
+  function showSideToggleIfNeeded(){
+    var toggle = document.getElementById('dr-hub-side-toggle');
+    if (!toggle || toggle.dataset.drHubShown) return;
+    var leaders = document.getElementById('dr-hub-leaders');
+    var odds = document.getElementById('dr-hub-odds');
+    var hasContent = (leaders && leaders.style.display !== 'none') || (odds && odds.style.display !== 'none');
+    if (!hasContent) return;
+    toggle.dataset.drHubShown = '1';
+    toggle.style.display = 'flex';
+  }
+
+  function toggleSideContent(){
+    var toggle = document.getElementById('dr-hub-side-toggle');
+    var content = document.getElementById('dr-hub-side-content');
+    var label = toggle && toggle.querySelector('.dr-hub-side-toggle-label');
+    if (!toggle || !content) return;
+    var expanded = content.classList.toggle('expanded');
+    toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    if (label) label.textContent = expanded ? 'Hide League Leaders & Season Odds' : 'Show League Leaders & Season Odds';
   }
 
   function openLeaderModal(entry){
@@ -11187,6 +11228,7 @@ function showPremiumGate(feature){
       return oddsRowHtml(c.id ? '<img class="dr-hub-odds-row-photo" src="' + escapeHtml(hs(c.id)) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '', c.name || '–', c.teamAbbr, c.pct);
     }).join('');
     section.style.display = '';
+    showSideToggleIfNeeded();
   }
 
   function loadHubOdds(){
@@ -11334,6 +11376,12 @@ function showPremiumGate(feature){
     if (leaderModalOverlay && !leaderModalOverlay.dataset.drHubReady) {
       leaderModalOverlay.dataset.drHubReady = '1';
       leaderModalOverlay.addEventListener('click', closeLeaderModal);
+    }
+
+    var sideToggle = document.getElementById('dr-hub-side-toggle');
+    if (sideToggle && !sideToggle.dataset.drHubReady) {
+      sideToggle.dataset.drHubReady = '1';
+      sideToggle.addEventListener('click', toggleSideContent);
     }
 
     document.addEventListener('keydown', function(e){
