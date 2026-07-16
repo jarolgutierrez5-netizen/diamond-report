@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-15T23:41:05.677Z",
+  "generatedAt": "2026-07-16T07:48:55.992Z",
   "market": {
     "drp": [
       {
@@ -332,6 +332,17 @@
         "pickPct": 54,
         "result": "win",
         "actualWinner": "AL"
+      },
+      {
+        "key": "2026-07-16|DRP|NYM-PHI",
+        "date": "2026-07-16",
+        "gamePk": 823440,
+        "awayTeam": "NYM",
+        "homeTeam": "PHI",
+        "pick": "PHI",
+        "pickPct": 50,
+        "result": "pending",
+        "actualWinner": null
       }
     ],
     "kprop": [
@@ -1358,6 +1369,38 @@
         "pick": "OVER",
         "result": "loss",
         "finalK": 2
+      },
+      {
+        "key": "2026-07-16|KPROP|christian scott",
+        "date": "2026-07-16",
+        "gamePk": 823440,
+        "pitcherId": 681035,
+        "pitcherName": "Christian Scott",
+        "team": "NYM",
+        "opp": "PHI",
+        "projK": 5.3,
+        "line": 4.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-16|KPROP|aaron nola",
+        "date": "2026-07-16",
+        "gamePk": 823440,
+        "pitcherId": 605400,
+        "pitcherName": "Aaron Nola",
+        "team": "PHI",
+        "opp": "NYM",
+        "projK": 5.7,
+        "line": 4.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
       }
     ],
     "premium": [
@@ -4396,6 +4439,102 @@
           "runs": 0,
           "stolenBases": 0
         }
+      },
+      {
+        "key": "2026-07-16|PREMIUM|hr|656941",
+        "date": "2026-07-16",
+        "market": "hr",
+        "rank": 1,
+        "playerId": 656941,
+        "playerName": "Kyle Schwarber",
+        "team": "PHI",
+        "opp": "NYM",
+        "gamePk": 823440,
+        "score": 33,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-16|PREMIUM|hr|665742",
+        "date": "2026-07-16",
+        "market": "hr",
+        "rank": 2,
+        "playerId": 665742,
+        "playerName": "Juan Soto",
+        "team": "NYM",
+        "opp": "PHI",
+        "gamePk": 823440,
+        "score": 27,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-16|PREMIUM|hr|547180",
+        "date": "2026-07-16",
+        "market": "hr",
+        "rank": 3,
+        "playerId": 547180,
+        "playerName": "Bryce Harper",
+        "team": "PHI",
+        "opp": "NYM",
+        "gamePk": 823440,
+        "score": 22,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-16|PREMIUM|hits|656537",
+        "date": "2026-07-16",
+        "market": "hits",
+        "rank": 1,
+        "playerId": 656537,
+        "playerName": "Derek Hill",
+        "team": "PHI",
+        "opp": "NYM",
+        "gamePk": 823440,
+        "score": 70,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-16|PREMIUM|hits|621438",
+        "date": "2026-07-16",
+        "market": "hits",
+        "rank": 2,
+        "playerId": 621438,
+        "playerName": "Tyrone Taylor",
+        "team": "NYM",
+        "opp": "PHI",
+        "gamePk": 823440,
+        "score": 63,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-16|PREMIUM|sb|607208",
+        "date": "2026-07-16",
+        "market": "sb",
+        "rank": 1,
+        "playerId": 607208,
+        "playerName": "Trea Turner",
+        "team": "PHI",
+        "opp": "NYM",
+        "gamePk": 823440,
+        "score": 13,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
       }
     ],
     "hrThreat": [
@@ -5682,6 +5821,42 @@
         "score": 22,
         "result": "loss",
         "actual": 0
+      },
+      {
+        "key": "2026-07-16|HRTHREAT|665742",
+        "date": "2026-07-16",
+        "playerId": 665742,
+        "playerName": "Juan Soto",
+        "team": "NYM",
+        "opp": "PHI",
+        "gamePk": 823440,
+        "score": 27,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-16|HRTHREAT|547180",
+        "date": "2026-07-16",
+        "playerId": 547180,
+        "playerName": "Bryce Harper",
+        "team": "PHI",
+        "opp": "NYM",
+        "gamePk": 823440,
+        "score": 22,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-16|HRTHREAT|656941",
+        "date": "2026-07-16",
+        "playerId": 656941,
+        "playerName": "Kyle Schwarber",
+        "team": "PHI",
+        "opp": "NYM",
+        "gamePk": 823440,
+        "score": 33,
+        "result": "pending",
+        "actual": null
       }
     ]
   },
@@ -5711,5 +5886,5 @@
       "total": 107
     }
   },
-  "oddsLastFetchedDate": "2026-07-15"
+  "oddsLastFetchedDate": "2026-07-16"
 }
