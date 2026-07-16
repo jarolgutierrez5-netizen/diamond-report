@@ -2690,3 +2690,16 @@ footer.dr-footer .dr-footer-meta {
 #props:has(.gamepick-pane[data-gamepick-pane="game"].active) .dr-prediction-hero {
   display: block !important;
 }
+
+/* HR Threats filter chips (ON FIRE/FAVORABLE/DROUGHT/DUE/ALL) never had a base
+   style — only their .active state is colored — so the resting state fell
+   through to the browser's unstyled button default (light gray, black text,
+   3D outset border), clashing badly with the rest of the dark theme. Lower
+   specificity than the .hrp-filter-*.active rules elsewhere in this file, so
+   this only affects the resting state and never overrides an active chip. */
+.hrp-filter-btn {
+  background: #0c192b;
+  border: 1px solid #244462;
+  border-style: solid;
+  color: #c6dcff;
+}
