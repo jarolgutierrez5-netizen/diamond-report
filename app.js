@@ -11119,6 +11119,32 @@ function showPremiumGate(feature){
       });
     });
     if (section) section.style.display = '';
+    showSideToggleIfNeeded();
+  }
+
+  // Below the side-rail breakpoint, League Leaders/Season Odds are collapsed
+  // behind a toggle by default (too much extra scrolling on a phone to show
+  // both expanded). Only reveal the toggle once there's actually something
+  // behind it — no point showing "Show League Leaders" if both fetches failed.
+  function showSideToggleIfNeeded(){
+    var toggle = document.getElementById('dr-hub-side-toggle');
+    if (!toggle || toggle.dataset.drHubShown) return;
+    var leaders = document.getElementById('dr-hub-leaders');
+    var odds = document.getElementById('dr-hub-odds');
+    var hasContent = (leaders && leaders.style.display !== 'none') || (odds && odds.style.display !== 'none');
+    if (!hasContent) return;
+    toggle.dataset.drHubShown = '1';
+    toggle.style.display = 'flex';
+  }
+
+  function toggleSideContent(){
+    var toggle = document.getElementById('dr-hub-side-toggle');
+    var content = document.getElementById('dr-hub-side-content');
+    var label = toggle && toggle.querySelector('.dr-hub-side-toggle-label');
+    if (!toggle || !content) return;
+    var expanded = content.classList.toggle('expanded');
+    toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    if (label) label.textContent = expanded ? 'Hide League Leaders & Season Odds' : 'Show League Leaders & Season Odds';
   }
 
   function openLeaderModal(entry){
@@ -11202,6 +11228,7 @@ function showPremiumGate(feature){
       return oddsRowHtml(c.id ? '<img class="dr-hub-odds-row-photo" src="' + escapeHtml(hs(c.id)) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '', c.name || '–', c.teamAbbr, c.pct);
     }).join('');
     section.style.display = '';
+    showSideToggleIfNeeded();
   }
 
   function loadHubOdds(){
@@ -11349,6 +11376,12 @@ function showPremiumGate(feature){
     if (leaderModalOverlay && !leaderModalOverlay.dataset.drHubReady) {
       leaderModalOverlay.dataset.drHubReady = '1';
       leaderModalOverlay.addEventListener('click', closeLeaderModal);
+    }
+
+    var sideToggle = document.getElementById('dr-hub-side-toggle');
+    if (sideToggle && !sideToggle.dataset.drHubReady) {
+      sideToggle.dataset.drHubReady = '1';
+      sideToggle.addEventListener('click', toggleSideContent);
     }
 
     document.addEventListener('keydown', function(e){
