@@ -1634,6 +1634,21 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   background: rgba(244,162,97,.06);
 }
 
+/* Desktop: table width:100% + auto layout stretches evenly on wide monitors,
+   spreading short heat-mapped values (.221, 3.45, ...) across huge gaps and
+   ballooning the lineup button column. Capping the wrapper keeps column
+   widths content-driven and dense at any viewport, same as the table already
+   looked at ~1200px. Left-aligned (no auto margin) to keep its edge flush
+   with the sort bar and page content above it, not floating centered. */
+.pr-starters-table-wrap {
+  max-width: 1400px;
+}
+/* box-shadow (not background) so the highlight shows through cells that
+   already carry their own inline heat-map background color. */
+.pr-row-tr:hover td {
+  box-shadow: inset 0 0 0 999px rgba(255,255,255,.04);
+}
+
 /* Pin the pitcher-info column while the rest of the row scrolls horizontally,
    so which pitcher you're looking at stays visible on narrow screens instead
    of scrolling off with the name. */
