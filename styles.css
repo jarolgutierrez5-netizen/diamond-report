@@ -2791,3 +2791,67 @@ footer.dr-footer .dr-footer-meta {
   font-size: inherit !important;
   line-height: inherit !important;
 }
+
+/* ── Remodel Phase 2: pill-shaped nav tabs + solid active fill ──────────
+   .gamepick-tab (the main Pitcher Report/K Props/HR Threats/etc. tab
+   switcher) has accumulated several overlapping border-radius/active-state
+   rules across different breakpoints and specificity levels over time —
+   consolidating into one rule here (reusing the exact selector groups
+   already in use, so specificity matches or exceeds every prior rule,
+   with source order as the final tiebreak) rather than hunting down each
+   one individually, matching how this file already resolves this kind of
+   fragmentation elsewhere (see the "Consolidate ... scattered rules"
+   commits). Moves the tabs from a hard-cornered outlined box to a full
+   pill shape with a solid accent fill on the active tab, matching the
+   reference design's tab style. */
+.gamepick-tab,
+#props .gamepick-tab,
+#props .gamepick-tabs > .gamepick-tab,
+.gamepick-tabs-wrap[aria-label="Game Picks section navigation"] .gamepick-tab,
+[role="tablist"][aria-label="Game Picks Centers"] > button {
+  border-radius: 999px !important;
+}
+.gamepick-tab.active,
+#props .gamepick-tab.active,
+#props .gamepick-tabs > .gamepick-tab.active,
+.gamepick-tabs-wrap[aria-label="Game Picks section navigation"] .gamepick-tab.active,
+[role="tablist"][aria-label="Game Picks Centers"] > button.active {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  box-shadow: none !important;
+  color: #fff !important;
+}
+
+/* ── Remodel Phase 2: consistent rounded-card corners ───────────────────
+   Same fragmentation problem as the tabs above, but for the main content
+   card border-radius (prop boards, pitcher/HR cards, panels) — values
+   ranged from 8px to 16px depending on which historical rule happened to
+   apply. Standardizing on a slightly more generous 16px across the
+   highest-traffic card types matches the reference's rounder card style. */
+.dr109-card,
+.dr1027-hr-card,
+.dr1017-hr-card,
+.game-card,
+.gp-card,
+.dr-panel,
+.dr-panel-large,
+.dr-game-panel {
+  border-radius: 16px !important;
+}
+
+/* ── Remodel Phase 2: sidebar nav active state (desktop, >=900px) ──────
+   .dr-sidebar-tab is the primary nav once the horizontal gamepick-tabs
+   row hands off to the collapsible sidebar at wider viewports — same
+   subtle-gradient active state as the tabs above, replaced with a solid
+   fill for a consistent "active = solid accent block" language across
+   every nav pattern on the site. Kept a moderate (not full-pill) radius
+   since this is a full-width vertical list row, not a compact button. */
+.dr-sidebar-tab {
+  border-radius: 12px !important;
+}
+.dr-sidebar-tab.active {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  box-shadow: none !important;
+  color: #fff !important;
+}
