@@ -2261,6 +2261,79 @@ body > main, main,
   color: #8fa3c8;
 }
 
+/* League leaders — current #1 in a curated set of hitting/pitching categories,
+   fetched live from MLB Stats API. Same section-head/card visual language as
+   the news grid and HR highlights above it. */
+.dr-hub-leaders {
+  margin-top: 30px;
+}
+.dr-hub-leaders-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.dr-hub-leader-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(17,24,39,.55);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color .15s ease;
+  min-width: 0;
+}
+.dr-hub-leader-card:hover {
+  border-color: rgba(244,162,97,.5);
+}
+.dr-hub-leader-photo {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(244,162,97,.12);
+  border: 1px solid rgba(244,162,97,.5);
+  object-fit: cover;
+}
+.dr-hub-leader-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.dr-hub-leader-cat {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: #8fa3c8;
+}
+.dr-hub-leader-name {
+  font-weight: 800;
+  font-size: 13px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dr-hub-leader-value {
+  font-size: 11.5px;
+  color: #f4a261;
+  font-weight: 700;
+}
+@media (max-width: 767px) {
+  .dr-hub-leaders-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 768px) and (max-width: 1279px) {
+  .dr-hub-leaders-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 /* News summary modal — keeps readers on-site for the headline + short
    summary; the "Read full story" link is the only thing that leaves. */
 .dr-hub-news-modal {

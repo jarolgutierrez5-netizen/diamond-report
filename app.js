@@ -10708,6 +10708,7 @@ function showPremiumGate(feature){
   var newsArticles = [];
   var newsVisibleCount = 10;
   var hrLoaded = false;
+  var leadersLoaded = false;
   var gameContentCache = {};
   var gameFeedCache = {};
 
@@ -10719,6 +10720,7 @@ function showPremiumGate(feature){
     document.body.classList.add('dr-hub-active');
     loadHubNews();
     loadHubHRs();
+    loadHubLeaders();
   }
 
   function hideHub(){
@@ -11025,6 +11027,72 @@ function showPremiumGate(feature){
         if (pitchLabel) subEl.textContent += ' · ' + pitchLabel;
       });
     });
+  }
+
+  // Curated set of hitting/pitching categories for the League Leaders widget —
+  // enough to give a real snapshot of "who's having the best season" without
+  // turning a News Central side section into a full stats page. Category keys
+  // match MLB Stats API's leaderCategories values exactly.
+  var LEADER_HITTING_CATS = ['homeRuns', 'battingAverage', 'onBasePlusSlugging', 'runsBattedIn'];
+  var LEADER_PITCHING_CATS = ['earnedRunAverage', 'strikeouts', 'wins', 'walksAndHitsPerInningPitched'];
+  var LEADER_CATEGORY_LABELS = {
+    homeRuns: 'Home Runs', battingAverage: 'Batting Avg', onBasePlusSlugging: 'OPS', runsBattedIn: 'RBI',
+    earnedRunAverage: 'ERA', strikeouts: 'Strikeouts', wins: 'Wins', walksAndHitsPerInningPitched: 'WHIP'
+  };
+  function leaderCategoryLabel(cat){ return LEADER_CATEGORY_LABELS[cat] || cat; }
+
+  // Batting average/OPS display as ".312"-style (no leading zero); ERA/WHIP as
+  // a fixed 2-decimal rate stat; everything else (HR/RBI/strikeouts/wins) as a
+  // plain whole-number count — matches how each stat is conventionally shown.
+  function formatLeaderValue(cat, value){
+    var num = parseFloat(value);
+    if (!Number.isFinite(num)) return String(value == null ? '–' : value);
+    if (cat === 'battingAverage' || cat === 'onBasePlusSlugging') return num.toFixed(3).replace(/^0\./, '.');
+    if (cat === 'earnedRunAverage' || cat === 'walksAndHitsPerInningPitched') return num.toFixed(2);
+    return String(Math.round(num));
+  }
+
+  function renderHubLeaders(categories){
+    var container = document.getElementById('dr-hub-leaders-grid');
+    var section = document.getElementById('dr-hub-leaders');
+    if (!container || !categories || !categories.length) return;
+    var cards = categories.map(function(c){
+      var leader = c && c.leaders && c.leaders[0];
+      if (!leader) return '';
+      var person = leader.person || {};
+      var team = leader.team || {};
+      var value = formatLeaderValue(c.leaderCategory, leader.value);
+      var meta = escapeHtml(value) + (team.abbreviation ? ' · ' + escapeHtml(team.abbreviation) : '');
+      return (
+        '<a class="dr-hub-leader-card" href="https://www.mlb.com/stats/' + encodeURIComponent(c.leaderCategory) + '" target="_blank" rel="noopener noreferrer">' +
+          (person.id ? '<img class="dr-hub-leader-photo" src="' + escapeHtml(hs(person.id)) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '') +
+          '<span class="dr-hub-leader-text">' +
+            '<span class="dr-hub-leader-cat">' + escapeHtml(leaderCategoryLabel(c.leaderCategory)) + '</span>' +
+            '<span class="dr-hub-leader-name">' + escapeHtml(person.fullName || '–') + '</span>' +
+            '<span class="dr-hub-leader-value">' + meta + '</span>' +
+          '</span>' +
+        '</a>'
+      );
+    }).filter(Boolean);
+    if (!cards.length) return;
+    container.innerHTML = cards.join('');
+    if (section) section.style.display = '';
+  }
+
+  function loadHubLeaders(){
+    if (leadersLoaded) return;
+    leadersLoaded = true;
+    var season = new Date().getFullYear();
+    Promise.all([
+      fetchJSON('https://diamondreport.app/api/v1/stats/leaders?leaderCategories=' + LEADER_HITTING_CATS.join(',') + '&season=' + season + '&sportId=1&statGroup=hitting&limit=1').catch(function(){ return null; }),
+      fetchJSON('https://diamondreport.app/api/v1/stats/leaders?leaderCategories=' + LEADER_PITCHING_CATS.join(',') + '&season=' + season + '&sportId=1&statGroup=pitching&limit=1').catch(function(){ return null; })
+    ]).then(function(results){
+      var all = [];
+      results.forEach(function(d){
+        if (d && Array.isArray(d.leagueLeaders)) all = all.concat(d.leagueLeaders);
+      });
+      if (all.length) renderHubLeaders(all);
+    }).catch(function(){});
   }
 
   // Whether any of today's games has actually started yet (Live or Final).
