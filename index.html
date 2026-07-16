@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=20260717b0800">
+<link rel="stylesheet" href="styles.min.css?v=20260717d1000">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -250,7 +250,9 @@
           <div class="dr-hub-news-grid" id="dr-hub-news-grid"></div>
           <button type="button" id="dr-hub-news-more" class="dr-hub-news-more" style="display:none">View More</button>
         </div>
+      </div>
 
+      <div class="dr-hub-side" id="dr-hub-side">
         <div class="dr-hub-hr">
           <div class="dr-hub-section-head"><span class="dr-hub-section-icon">🔥</span><h2 id="dr-hub-hr-heading">Home Run Highlights</h2><span class="dr-hub-section-line"></span></div>
           <div class="dr-hub-hr-list" id="dr-hub-hr-list">
@@ -263,9 +265,12 @@
             </a>
           </div>
         </div>
-      </div>
 
-      <div class="dr-hub-side" id="dr-hub-side">
+        <div class="dr-hub-yesterday" id="dr-hub-yesterday" style="display:none">
+          <div class="dr-hub-section-head"><span class="dr-hub-section-icon">🗓️</span><h2>Yesterday's Scores</h2><span class="dr-hub-section-line"></span></div>
+          <div class="dr-hub-scoreboard-strip dr-hub-yesterday-strip" id="dr-hub-yesterday-strip"></div>
+        </div>
+
         <button type="button" class="dr-hub-side-toggle" id="dr-hub-side-toggle" style="display:none" aria-expanded="false" aria-controls="dr-hub-side-content">
           <span class="dr-hub-side-toggle-label">Show Season Projections &amp; League Leaders</span>
           <span class="dr-hub-side-toggle-icon">▾</span>
@@ -812,7 +817,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=20260717b0800" defer></script>
+<script src="app.min.js?v=20260717d1000" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
