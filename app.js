@@ -2216,7 +2216,7 @@ function renderPRTable() {
   const prSortBtns = PR_SORT_FIELDS.map(({key,label}) => {
     const active = prSortCol === key;
     const arrow = active ? (prSortDir === 1 ? ' ↑' : ' ↓') : '';
-    return `<button onclick="sortPR('${key}')" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${active?'var(--accent2)':'var(--border)'};background:${active?'rgba(244,162,97,.12)':'var(--surface2)'};color:${active?'var(--accent2)':'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">${label}${arrow}</button>`;
+    return `<button onclick="sortPR('${key}')" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${active?'var(--accent2)':'var(--border)'};background:${active?'rgba(47,107,255,.12)':'var(--surface2)'};color:${active?'var(--accent2)':'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">${label}${arrow}</button>`;
   }).join('');
 
   el.innerHTML = `
@@ -2670,7 +2670,7 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
     const isTop = i === topIdx; // persists regardless of todayHR
     const homerToday = b.todayHR > 0;
     const barPct = maxProb > 0 ? (b.hrProb / maxProb) * 100 : 0;
-    const barColor = homerToday ? '#f4a261' : isTop ? '#f4a261' : b.hrProb > maxProb * 0.7 ? '#dc2626' : '#2ecc71';
+    const barColor = homerToday ? '#2f6bff' : isTop ? '#2f6bff' : b.hrProb > maxProb * 0.7 ? '#dc2626' : '#2ecc71';
     const pName = (pitcherName||'').replace(/'/g,"\\'");
     const bName = b.name.replace(/'/g,"\\'");
     const rowBg = homerToday ? 'background:linear-gradient(90deg,#2a1a00 0%,#1a1200 100%);border-left:3px solid var(--accent2);' : '';
@@ -2682,7 +2682,7 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span class="batter-name-span" style="font-size:13px;font-weight:700;color:${homerToday?'var(--accent2)':'var(--text)'}">${b.name}</span>
             <span class="batter-pos">${b.pos}</span>
-            ${homerToday ? `<span class="hr-today-badge" style="background:#2a1500;color:#f4a261;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.5px;border:1px solid #f4a26166">💥 HR TODAY${b.todayHR>1?' x'+b.todayHR:''}</span>` : ''}
+            ${homerToday ? `<span class="hr-today-badge" style="background:#0a1a33;color:#2f6bff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.5px;border:1px solid #2f6bff66">💥 HR TODAY${b.todayHR>1?' x'+b.todayHR:''}</span>` : ''}
             ${isTop ? `<span class="top-hr-badge">⚡ TOP HR THREAT</span>` : ''}
           </div>
           <div style="margin-top:3px">${matchupLabel(s)}</div>
@@ -5298,7 +5298,7 @@ function refreshHRPDiff() {
           const subEl = rowEl.querySelector('.hrp-batter-sub');
           if (subEl) {
             let badge = subEl.querySelector('.hr-today-badge-prop');
-            if (!badge) { badge = document.createElement('span'); badge.className='hr-today-badge-prop'; badge.style.cssText='background:#2a1500;color:#f4a261;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid #f4a26166'; subEl.appendChild(badge); }
+            if (!badge) { badge = document.createElement('span'); badge.className='hr-today-badge-prop'; badge.style.cssText='background:#0a1a33;color:#2f6bff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid #2f6bff66'; subEl.appendChild(badge); }
             badge.textContent = `💥 HR TODAY${r.todayHR>1?' x'+r.todayHR:''}`;
           }
         }
@@ -5836,7 +5836,7 @@ function renderKProps() {
   const sortBtns = kpSortStats.map(({label,key}) => {
     const active = _kPropsSort === key;
     const arrow = active ? (_kPropsSortDir === 1 ? ' ↓' : ' ↑') : '';
-    return `<button onclick="kPropsSortBy('${key}')" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${active?'var(--accent2)':'var(--border)'};background:${active?'rgba(244,162,97,.12)':'var(--surface2)'};color:${active?'var(--accent2)':'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">${label}${arrow}</button>`;
+    return `<button onclick="kPropsSortBy('${key}')" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${active?'var(--accent2)':'var(--border)'};background:${active?'rgba(47,107,255,.12)':'var(--surface2)'};color:${active?'var(--accent2)':'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">${label}${arrow}</button>`;
   }).join('');
 
   el.innerHTML = `${kpTallyHTML}
