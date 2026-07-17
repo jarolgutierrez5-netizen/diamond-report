@@ -2983,6 +2983,49 @@ async function loadGameProps() {
           factors.push({team:'neutral', label:`${stadium.name} — retractable/dome, weather neutral`, type:'neu'});
         }
 
+        // ── Projected Total (DR model) ──────────────────────────────────
+        // No real sportsbook odds feed exists on this site (loadSportsbookKLines
+        // is itself a local-model number, not a live book line — see its own
+        // comments), and there's no team-offense stat fetch wired up anywhere
+        // for this section. Rather than add a new API call, this reuses the
+        // exact ERA/park/weather/record inputs already fetched above for the
+        // win-probability model. Runs are driven by the OPPOSING starter's ERA
+        // — the pitcher that lineup actually faces — not the batting team's own,
+        // so awayRuns scales with homeERA and homeRuns scales with awayERA.
+        const LEAGUE_AVG_ERA = 4.00;
+        const LEAGUE_AVG_TEAM_RUNS = 4.3; // roughly modern-era MLB runs/team/game
+        let awayRuns = LEAGUE_AVG_TEAM_RUNS * (homeERA / LEAGUE_AVG_ERA);
+        let homeRuns = LEAGUE_AVG_TEAM_RUNS * (awayERA / LEAGUE_AVG_ERA);
+
+        // Team record as a rough own-offense proxy — same 10-game-minimum
+        // sample-size floor already used for the win-prob record factor above.
+        if ((awayW + awayL) >= 10 && (homeW + homeL) >= 10) {
+          const awayWinPct = awayW / (awayW + awayL);
+          const homeWinPct = homeW / (homeW + homeL);
+          awayRuns *= 1 + Math.max(-0.15, Math.min(0.15, (awayWinPct - 0.5) * 0.3));
+          homeRuns *= 1 + Math.max(-0.15, Math.min(0.15, (homeWinPct - 0.5) * 0.3));
+        }
+
+        // Park factor affects both teams equally — same 0.5 shrink already used
+        // for the HR-probability model's park adjustment.
+        const totalParkAdj = 1 + ((pf - 100) / 100) * 0.5;
+        awayRuns *= totalParkAdj; homeRuns *= totalParkAdj;
+
+        // Weather — same wind/temp thresholds as the win-prob factors above.
+        if (weather) {
+          if (weather.wind > 15) {
+            const totalWindImpact = windEffect(weather.windDir, homeAbbr);
+            if (totalWindImpact === 'out') { awayRuns *= 1.08; homeRuns *= 1.08; }
+            else if (totalWindImpact === 'in') { awayRuns *= 0.94; homeRuns *= 0.94; }
+          }
+          if (weather.temp < 50) { awayRuns *= 0.95; homeRuns *= 0.95; }
+          else if (weather.temp > 85) { awayRuns *= 1.05; homeRuns *= 1.05; }
+        }
+
+        const projectedTotal = Math.round((awayRuns + homeRuns) * 2) / 2; // nearest 0.5
+        const totalEnv = projectedTotal >= 9.5 ? 'HIGH-SCORING' : projectedTotal <= 7.5 ? 'LOW-SCORING' : 'AVERAGE';
+        const totalEnvColor = projectedTotal >= 9.5 ? '#2ecc71' : projectedTotal <= 7.5 ? 'var(--accent2)' : 'var(--muted)';
+
         // Determine winner
         const total = awayScore + homeScore;
         const awayPct = Math.round((awayScore/total)*100);
@@ -2996,14 +3039,14 @@ async function loadGameProps() {
         const loserAbbr  = winner==='away' ? homeAbbr : awayAbbr;
         const loserPct   = winner==='away' ? homePct : awayPct;
 
-        model = { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors };
+        model = { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor };
         // Always keep the snapshot fresh — pre-game cycles overwrite it so that whenever
         // the game does go live, the lock captures the most recent pre-game state rather
         // than a stale first-load snapshot from hours earlier.
         _gamePropsSnapshot[g.gamePk] = model;
       }
 
-      const { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors } = model;
+      const { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor } = model;
 
       window.drWinProbStore[g.gamePk] = { awayAbbr, homeAbbr, awayPct, homePct, winnerAbbr, winnerPct, confidence };
       _favoredCache[g.gamePk] = { abbr: winnerAbbr, pct: winnerPct, source: 'model' };
@@ -3103,6 +3146,13 @@ async function loadGameProps() {
               </div>
               <span style="font-size:10px;font-family:'JetBrains Mono',monospace;min-width:30px;text-align:right;color:${winner==='home'?'#2ecc71':'var(--muted)'}">${homePct}%</span>
             </div>
+          </div>
+
+          <!-- Projected Total -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:90px" title="DR model estimate from starter ERA, park factor, weather, and team record — not a live sportsbook line">
+            <span style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Projected Total</span>
+            <span style="font-family:'Manrope',sans-serif;font-size:20px;letter-spacing:1px;line-height:1;color:${totalEnvColor}">${projectedTotal.toFixed(1)}</span>
+            <span style="font-size:9px;font-weight:700;color:${totalEnvColor};letter-spacing:.5px">${totalEnv}</span>
           </div>
         </div>
 
@@ -4452,6 +4502,32 @@ function loadHRPotentialWithRetry() {
     hrpRetryTimer = setTimeout(loadHRPotentialWithRetry, 15 * 60 * 1000);
   });
 }
+
+// HR Threat list is otherwise a one-shot-per-day snapshot (see loaded.hr gate in
+// __drLoadGamePickPaneData): once any rows exist, loadHRPotentialWithRetry never runs
+// again for the rest of the day. If that snapshot happened before a game's official
+// lineup posted, loadHRPotential falls back to a guessed active-roster sort instead of
+// the real batting order, and a real starter who doesn't match the guess stays missing
+// even after the actual lineup goes final. Re-running only in the hour before each
+// game's first pitch — the window official lineups typically post in — catches that
+// without polling all day once every game's real lineup is already locked in.
+function anyGameInHRPotentialRefreshWindow(games) {
+  const now = Date.now();
+  const ONE_HOUR_MS = 60 * 60 * 1000;
+  return (games || []).some(g => {
+    const state = g.status?.abstractGameState;
+    if (state === 'Live' || state === 'Final') return false;
+    const msUntilFirstPitch = new Date(g.gameDate).getTime() - now;
+    return msUntilFirstPitch > 0 && msUntilFirstPitch <= ONE_HOUR_MS;
+  });
+}
+setInterval(() => {
+  if (document.visibilityState !== 'visible' || window.__diamondUserInteracting) return;
+  if (!document.getElementById('hr-potential-content')) return;
+  getTodaySchedule('team,probablePitcher').then(games => {
+    if (anyGameInHRPotentialRefreshWindow(games)) loadHRPotentialWithRetry();
+  }).catch(() => {});
+}, 5 * 60_000);
 
 function schedule5amHRRefresh() {
   const cdtNow = new Date(new Date().toLocaleString('en-US', {timeZone:'America/Chicago'}));
