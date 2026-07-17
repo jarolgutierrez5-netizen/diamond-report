@@ -3402,3 +3402,65 @@ select:focus-visible {
   border: 1px solid rgba(220,38,38,.5);
   white-space: nowrap;
 }
+
+/* Deep Research polish — the outer .dr-panel.deep-card wrappers already have the
+   site's glass treatment, but the content living inside them (Matchups/Risk Watch
+   list items, the Top Plays table) was still flat solid-color panels with no hover
+   state, sitting right next to the nicely gradient-styled briefing box above them.
+   Not adding another backdrop-filter layer here (blur-on-blur inside an already
+   blurred panel looks muddy) — just a subtle gradient, rounder corners, and a real
+   hover state to match the interactive feel of every other card list on the site. */
+.deep-list-item {
+  background: linear-gradient(135deg, rgba(47,107,255,.07), rgba(15,23,42,.55));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 13px 15px;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.deep-list-item:hover {
+  border-color: rgba(47,107,255,.5);
+  box-shadow: 0 0 0 1px rgba(47,107,255,.15), 0 8px 20px rgba(0,0,0,.25);
+  transform: translateY(-1px);
+}
+#props .deep-table tbody tr {
+  transition: background .15s ease;
+}
+#props .deep-table tbody tr:hover td {
+  background: rgba(47,107,255,.06);
+}
+#props .deep-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Parlay Builder — window.renderParlayBuilds gets reassigned three times in this
+   file; the version that actually wins at runtime (the last assignment) already
+   uses .dr109-parlay/.dr109-leg, which has a real gradient/border treatment. It's
+   just missing the hover state every other interactive card on the site has. */
+.dr109-parlay {
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.dr109-parlay:hover {
+  border-color: rgba(47,107,255,.6);
+  box-shadow: 0 0 0 1px rgba(47,107,255,.18), 0 0 28px rgba(47,107,255,.14), 0 10px 24px rgba(0,0,0,.28);
+}
+.dr109-leg {
+  transition: border-color .15s ease, background .15s ease;
+}
+.dr109-leg:hover {
+  border-color: rgba(47,107,255,.4);
+  background: #101c33;
+}
+
+/* Team Performance head-to-head stat boxes — the .tp-mini-card matchup tiles right
+   above them already have a gradient + hover lift, but the actual comparison
+   numbers (the core content of this tool) were flat solid boxes with no hover at
+   all, making the panel's main content feel older than its own chrome. */
+.tp-stat {
+  background: linear-gradient(160deg, rgba(47,107,255,.05), rgba(2,6,23,.5));
+  transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+.tp-stat:hover {
+  border-color: rgba(47,107,255,.4);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0,0,0,.25);
+}
