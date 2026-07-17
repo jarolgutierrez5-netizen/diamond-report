@@ -2557,10 +2557,15 @@ function buildBatterStatsLine(b) {
   const hrHot = _statHasRealBattingData(s) && parseInt(s.homeRuns) >= 10;
   const l10Display = last10HR === null ? '–' : `${last10HR} HR`;
   const l10Hot = last10HR >= 3, l10Warm = !l10Hot && last10HR >= 1;
+  const hrProb = Number(b.hrProb);
+  const hrProbChip = Number.isFinite(hrProb)
+    ? `<span class="lbc-stat-chip${hrProb>=15?' hot':hrProb>=8?' warm':''}"><b>HR PROB</b>${hrProb.toFixed(1)}%</span>`
+    : '';
   return `<span class="lbc-stat-chip"><b>AVG</b>${fmtS(s.avg)}</span>
     <span class="lbc-stat-chip${hrHot?' hot':''}"><b>HR</b>${hrVal}</span>
     <span class="lbc-stat-chip"><b>OPS</b>${fmtS(s.ops)}</span>
-    <span class="lbc-stat-chip${l10Hot?' hot':l10Warm?' warm':''}"><b>L10</b>${l10Display}</span>`;
+    <span class="lbc-stat-chip${l10Hot?' hot':l10Warm?' warm':''}"><b>L10</b>${l10Display}</span>
+    ${hrProbChip}`;
 }
 
 
@@ -2722,6 +2727,7 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
         <span class="lbc-pos">${b.pos}</span>
         ${homerToday ? `<span class="hr-today-badge lbc-tag-hrtoday">💥 HR TODAY${b.todayHR>1?' x'+b.todayHR:''}</span>` : ''}
         ${isTop ? `<span class="top-hr-badge lbc-tag-tophr">⚡ TOP HR THREAT</span>` : ''}
+        ${b.isOnFire ? `<span class="lbc-tag-onfire">🔥 ON FIRE</span>` : ''}
         ${matchupLabel(s)}
         <button class="lbc-matchup-btn" onclick="openMatchup(${b.id},'${bName}',${pitcherId},'${pName}')" title="Batter vs Pitcher analysis">⚔ Matchup</button>
       </div>

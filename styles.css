@@ -3391,3 +3391,14 @@ select:focus-visible {
   border-color: rgba(144,238,96,.4);
   color: #90ee60;
 }
+.lbc-tag-onfire {
+  background: rgba(220,38,38,.14);
+  color: #ff6b6b;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: .03em;
+  border: 1px solid rgba(220,38,38,.5);
+  white-space: nowrap;
+}
