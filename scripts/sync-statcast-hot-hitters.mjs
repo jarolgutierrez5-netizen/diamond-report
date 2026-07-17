@@ -146,6 +146,7 @@ async function buildPlateDiscipline() {
     try {
       csv = await fetchCSV(url);
     } catch (e) {
+      console.warn(`Plate-discipline candidate ${url} failed to fetch: ${e.message}`);
       lastErr = e;
       continue;
     }
@@ -167,6 +168,8 @@ async function buildPlateDiscipline() {
         swingStrikePct: num(pick(r, ['swstr_percent', 'whiff_percent'])),
       };
     }
+    const vals = Object.values(out);
+    console.log(`Plate-discipline candidate ${url} matched schema — columns: ${rows[0] ? Object.keys(rows[0]).join(', ') : '(no rows)'}; ${vals.length} players, ${vals.filter(v => v.chasePct != null).length} with chasePct, ${vals.filter(v => v.zoneContactPct != null).length} with zoneContactPct, ${vals.filter(v => v.swingStrikePct != null).length} with swingStrikePct.`);
     return out;
   }
   throw lastErr;
