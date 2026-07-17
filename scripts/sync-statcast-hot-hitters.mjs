@@ -63,6 +63,10 @@ const RECENT_START = isoDate(daysAgo(RECENT_DAYS));
 const RECENT_END = isoDate(new Date());
 const RECENT_BATTED_BALL_URL = battedBallUrl(`startDate=${RECENT_START}&endDate=${RECENT_END}&min=1`);
 const RECENT_EXPECTED_STATS_URL = expectedStatsUrl(`startDate=${RECENT_START}&endDate=${RECENT_END}&min=1`);
+// Plate discipline (chase-rate, zone-contact%) and Sprint Speed are separate
+// leaderboards from the batted-ball one above, each a single whole-league pull.
+const PLATE_DISCIPLINE_URL = `${BASE}/plate-discipline?type=batter&year=${SEASON}&position=&team=&min=q&csv=true`;
+const SPRINT_SPEED_URL = `${BASE}/sprint_speed?year=${SEASON}&position=&team=&min=10&csv=true`;
 
 async function fetchCSV(url, attempts = 3) {
   let lastErr;
@@ -128,6 +132,36 @@ async function buildExpectedStats(url, label) {
   return out;
 }
 
+async function buildPlateDiscipline() {
+  const csv = await fetchCSV(PLATE_DISCIPLINE_URL);
+  const rows = parseCSV(csv);
+  assertSchema(rows, 'Statcast plate-discipline leaderboard', ['o_swing_percent', 'z_contact_percent', 'swing_percent']);
+  const out = {};
+  for (const r of rows) {
+    const id = pick(r, ['player_id', 'batter_id', 'mlbam_id']);
+    if (!id) continue;
+    out[id] = {
+      chasePct: num(pick(r, ['o_swing_percent', 'chase_percent'])),
+      zoneContactPct: num(pick(r, ['z_contact_percent'])),
+      swingStrikePct: num(pick(r, ['swstr_percent', 'whiff_percent'])),
+    };
+  }
+  return out;
+}
+
+async function buildSprintSpeed() {
+  const csv = await fetchCSV(SPRINT_SPEED_URL);
+  const rows = parseCSV(csv);
+  assertSchema(rows, 'Statcast Sprint Speed leaderboard', ['sprint_speed']);
+  const out = {};
+  for (const r of rows) {
+    const id = pick(r, ['player_id', 'batter_id', 'mlbam_id']);
+    if (!id) continue;
+    out[id] = { sprintSpeed: num(pick(r, ['sprint_speed'])) };
+  }
+  return out;
+}
+
 async function main() {
   await mkdir(DATA_DIR, { recursive: true });
 
@@ -159,12 +193,28 @@ async function main() {
     console.warn(`Trend data sync failed (non-fatal, season data still written):`, e.message);
   }
 
+  // Plate discipline and Sprint Speed are independent, non-fatal add-ons — same
+  // reasoning as the recent-window trend pull above.
+  let plateDiscipline = {}, sprintSpeed = {};
+  try {
+    plateDiscipline = await buildPlateDiscipline();
+  } catch (e) {
+    console.warn('Plate-discipline sync failed (non-fatal):', e.message);
+  }
+  try {
+    sprintSpeed = await buildSprintSpeed();
+  } catch (e) {
+    console.warn('Sprint Speed sync failed (non-fatal):', e.message);
+  }
+
   const ids = new Set([...Object.keys(battedBall), ...Object.keys(expected)]);
-  const players = [...ids].map(id => {
+  let rawPlayers = [...ids].map(id => {
     const bb = battedBall[id] || {};
     const ex = expected[id] || {};
     const rbb = recentBattedBall[id] || {};
     const rex = recentExpected[id] || {};
+    const pd = plateDiscipline[id] || {};
+    const ss = sprintSpeed[id] || {};
     const trend = (recentVal, seasonVal) => (recentVal != null && seasonVal != null) ? +(recentVal - seasonVal).toFixed(3) : undefined;
     return {
       playerId: id,
@@ -173,6 +223,10 @@ async function main() {
       hardHitPct: bb.hardHitPct,
       sweetSpotPct: bb.sweetSpotPct,
       xwoba: ex.xwoba,
+      chasePct: pd.chasePct,
+      zoneContactPct: pd.zoneContactPct,
+      swingStrikePct: pd.swingStrikePct,
+      sprintSpeed: ss.sprintSpeed,
       barrelTrend: trend(rbb.barrelPct, bb.barrelPct),
       hardHitTrend: trend(rbb.hardHitPct, bb.hardHitPct),
       sweetSpotTrend: trend(rbb.sweetSpotPct, bb.sweetSpotPct),
@@ -180,10 +234,27 @@ async function main() {
     };
   }).filter(p => p.barrelPct != null || p.hardHitPct != null || p.xwoba != null);
 
+  // Sanity check: if the "recent window" pull is byte-identical to the season pull for
+  // every single player, the startDate/endDate params almost certainly aren't actually
+  // scoping anything on Savant's side (these two leaderboards may only support `year`,
+  // not arbitrary date ranges — unverified from this environment, see file header).
+  // Writing out a field called "Trend" that's silently just season data again would be
+  // worse than the absent-field default this replaced — drop it rather than ship it.
+  const withTrend = rawPlayers.filter(p => p.xwobaTrend !== undefined);
+  const nonZeroTrend = withTrend.filter(p => p.xwobaTrend !== 0 || p.barrelTrend !== 0 || p.hardHitTrend !== 0 || p.sweetSpotTrend !== 0);
+  if (withTrend.length > 20 && nonZeroTrend.length === 0) {
+    console.warn(`All ${withTrend.length} players had exactly zero trend across every metric — the recent-window pull almost certainly returned season data again rather than a real ${RECENT_DAYS}-day window. Dropping trend fields rather than writing fake zeros.`);
+    rawPlayers = rawPlayers.map(p => {
+      const { barrelTrend, hardHitTrend, sweetSpotTrend, xwobaTrend, ...rest } = p;
+      return rest;
+    });
+  }
+  const players = rawPlayers;
+
   const trendCount = players.filter(p => p.xwobaTrend !== undefined).length;
   const out = { generatedAt: new Date().toISOString(), season: SEASON, recentWindowDays: RECENT_DAYS, players };
   await writeFile(path.join(DATA_DIR, 'statcast-hot-hitters.json'), JSON.stringify(out, null, 2) + '\n');
-  console.log(`Synced Statcast batted-ball/expected-stats profile for ${players.length} batters for ${SEASON} (${trendCount} with ${RECENT_DAYS}-day trend data).`);
+  console.log(`Synced Statcast profile for ${players.length} batters for ${SEASON} (${trendCount} with ${RECENT_DAYS}-day trend data, ${players.filter(p=>p.chasePct!=null).length} with plate discipline, ${players.filter(p=>p.sprintSpeed!=null).length} with sprint speed).`);
 }
 
 const isMain = import.meta.url === `file://${process.argv[1]}`;

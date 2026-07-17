@@ -3968,6 +3968,9 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     { label: 'xwOBA (14-day)', value: hh.xwoba != null ? Number(hh.xwoba).toFixed(3).replace(/^0/,'') : null, trend: hh.xwobaTrend, desc: 'The same "is he actually hot?" number as above, but measured over just the past two weeks.' },
     { label: 'Bat Speed', value: hh.batSpeed != null ? `${parseFloat(hh.batSpeed)} mph` : null, trend: hh.batSpeedTrend, desc: 'How fast he\'s swinging. A quicker swing often shows up right before a power surge does.' },
     { label: 'Blast Rate', value: hh.blastRate != null ? `${parseFloat(hh.blastRate)}%` : null, trend: hh.blastTrend, desc: 'How often his swing has both the speed and the angle to leave the yard.' },
+    { label: 'Chase%', value: hh.chasePct != null ? `${parseFloat(hh.chasePct)}%` : null, desc: 'How often he swings at pitches outside the strike zone. Lower is better — a hitter chasing more than usual is a real red flag, not a hot signal.' },
+    { label: 'Zone-Contact%', value: hh.zoneContactPct != null ? `${parseFloat(hh.zoneContactPct)}%` : null, desc: 'How often he actually makes contact when he swings at a pitch in the zone. A locked-in hitter rarely misses these.' },
+    { label: 'Sprint Speed', value: hh.sprintSpeed != null ? `${parseFloat(hh.sprintSpeed)} ft/s` : null, desc: 'Foot speed on competitive plays. Context for stolen-base and extra-base upside, not a hot/cold signal.' },
   ].filter(m => m.value != null);
 
   const seasonFallbackMetrics = [
