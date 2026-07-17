@@ -2780,6 +2780,10 @@ function resetPRSort() {
 
 
 // ── GAME PROPS ────────────────────────────────────────────────────────
+// In-memory-only (never localStorage) short-TTL cache for the Open-Meteo weather
+// lookup below — see the comment at its call site for why this can't reuse
+// fetchJSON's day-long cache.
+const _weatherCache = new Map();
 // Stadium coordinates for weather lookup
 const stadiumCoords = {
   ARI:{lat:33.445,lon:-112.067,name:'Chase Field',dome:true},
@@ -2882,12 +2886,28 @@ async function loadGameProps() {
           teamSeasonPitchingTotals(g.teams.home.team.id),
         ]);
 
-        // Weather (Open-Meteo, free, no key)
+        // Weather (Open-Meteo, free, no key) — deliberately NOT routed through
+        // fetchJSON(). That helper caches any non-live-score URL in localStorage
+        // for the rest of the calendar day (DR_STATIC_DAILY_DUMP), which is right
+        // for daily-batch Statcast files but wrong here: temperature and wind
+        // genuinely change over the course of a day, so a morning fetch (cooler)
+        // was getting locked in and reused all afternoon even on a hot day,
+        // silently keeping the HR Boost badge at 0% long after conditions crossed
+        // the +5%/-5% thresholds. A short in-memory cache keyed to a 15-minute
+        // bucket keeps this fresh without re-fetching on every 2-minute auto-refresh.
         const stadium = stadiumCoords[homeAbbr] || stadiumCoords[awayAbbr];
         let weather = null;
         if (stadium && !stadium.dome) {
           try {
-            const wd = await fetchJSON(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,windspeed_10m,winddirection_10m,precipitation,weathercode&temperature_unit=fahrenheit&windspeed_unit=mph`);
+            const bucket = Math.floor(Date.now() / (15 * 60 * 1000));
+            const wKey = `${homeAbbr}:${bucket}`;
+            let wd = _weatherCache.get(wKey);
+            if (!wd) {
+              const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,windspeed_10m,winddirection_10m,precipitation,weathercode&temperature_unit=fahrenheit&windspeed_unit=mph`);
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              wd = await res.json();
+              _weatherCache.set(wKey, wd);
+            }
             const c = wd.current;
             weather = {
               temp: Math.round(c.temperature_2m),
