@@ -2988,14 +2988,36 @@ async function loadGameProps() {
         // is itself a local-model number, not a live book line — see its own
         // comments), and there's no team-offense stat fetch wired up anywhere
         // for this section. Rather than add a new API call, this reuses the
-        // exact ERA/park/weather/record inputs already fetched above for the
-        // win-probability model. Runs are driven by the OPPOSING starter's ERA
-        // — the pitcher that lineup actually faces — not the batting team's own,
-        // so awayRuns scales with homeERA and homeRuns scales with awayERA.
-        const LEAGUE_AVG_ERA = 4.00;
+        // exact WHIP/K9/park/weather/record inputs already fetched above for
+        // the win-probability model, plus season HR/9 pulled from the same
+        // pitching-stats response (same field loadHRPotential already reads as
+        // pitcherHr9 — no extra fetch). A single ERA ratio was the first pass
+        // here, but ERA folds baserunners, power allowed, and strikeout ability
+        // into one number — this blends the three separately so a low-ERA
+        // pitcher who gets there via limiting hard contact (real signal) isn't
+        // treated the same as one who gets there by stranding runners (luck/
+        // bullpen-dependent, not a stable predictor of next game's runs).
+        // Each ratio is 1.0 at league average by construction, weighted by how
+        // directly it predicts runs allowed: WHIP (baserunners) 50%, HR/9
+        // (extra-base power surrendered) 30%, K/9 (contact suppression) 20%.
+        // Runs are driven by the OPPOSING starter's index — the pitcher that
+        // lineup actually faces — not the batting team's own, so awayRuns
+        // scales with the home pitcher's index and homeRuns with the away
+        // pitcher's.
         const LEAGUE_AVG_TEAM_RUNS = 4.3; // roughly modern-era MLB runs/team/game
-        let awayRuns = LEAGUE_AVG_TEAM_RUNS * (homeERA / LEAGUE_AVG_ERA);
-        let homeRuns = LEAGUE_AVG_TEAM_RUNS * (awayERA / LEAGUE_AVG_ERA);
+        const LEAGUE_AVG_WHIP = 1.30, LEAGUE_AVG_K9 = 8.5, LEAGUE_AVG_HR9 = 1.20;
+        const awayHR9 = parseFloat(awayStats.homeRunsPer9) || LEAGUE_AVG_HR9;
+        const homeHR9 = parseFloat(homeStats.homeRunsPer9) || LEAGUE_AVG_HR9;
+        const pitcherRunIndex = (whip, k9, hr9) => {
+          const whipRatio = whip / LEAGUE_AVG_WHIP;
+          const hr9Ratio = hr9 / LEAGUE_AVG_HR9;
+          const k9Ratio = LEAGUE_AVG_K9 / Math.max(k9, 1); // more Ks than average -> lower ratio -> fewer runs
+          return (whipRatio * 0.5) + (hr9Ratio * 0.3) + (k9Ratio * 0.2);
+        };
+        const awayPitcherIndex = pitcherRunIndex(awayWHIP, awayK9, awayHR9);
+        const homePitcherIndex = pitcherRunIndex(homeWHIP, homeK9, homeHR9);
+        let awayRuns = LEAGUE_AVG_TEAM_RUNS * homePitcherIndex;
+        let homeRuns = LEAGUE_AVG_TEAM_RUNS * awayPitcherIndex;
 
         // Team record as a rough own-offense proxy — same 10-game-minimum
         // sample-size floor already used for the win-prob record factor above.
@@ -3149,7 +3171,7 @@ async function loadGameProps() {
           </div>
 
           <!-- Projected Total -->
-          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:90px" title="DR model estimate from starter ERA, park factor, weather, and team record — not a live sportsbook line">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:90px" title="DR model estimate from starter WHIP/K9/HR9, park factor, weather, and team record — not a live sportsbook line">
             <span style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Projected Total</span>
             <span style="font-family:'Manrope',sans-serif;font-size:20px;letter-spacing:1px;line-height:1;color:${totalEnvColor}">${projectedTotal.toFixed(1)}</span>
             <span style="font-size:9px;font-weight:700;color:${totalEnvColor};letter-spacing:.5px">${totalEnv}</span>
