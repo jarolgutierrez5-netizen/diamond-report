@@ -2815,12 +2815,17 @@ const stadiumCoords = {
   WSH:{lat:38.873,lon:-77.007,name:'Nationals Park',dome:false},
 };
 
-// Park factors (HR index: 100 = average, >100 = hitter friendly)
+// Park factors (HR index: 100 = average, >100 = hitter friendly) — refreshed from
+// the first successful live sync-park-factors.mjs run (2026-07-17, real Statcast
+// index_hr per park) now that its "var data = [...]" HTML-embedded-JSON parsing
+// actually works, in place of the earlier rough approximations. Still serves as
+// the fallback loadParkFactors() mutates in place — see that function above — for
+// any team missing from a future sync response, or if a run fails outright.
 const parkFactors = {
-  COL:145,CIN:112,TEX:108,PHI:107,BOS:106,NYY:105,MIL:104,CWS:103,
-  ATL:102,LAD:101,MIN:101,CHC:100,KC:100,DET:99,SEA:99,STL:98,
-  SD:98,NYM:97,BAL:97,CLE:96,PIT:96,MIA:95,HOU:95,LAA:94,
-  SF:93,WSH:93,OAK:92,TOR:91,TB:91,ARI:90,ATH:92,
+  WSH:133,ATH:126,NYY:125,HOU:122,CIN:121,TB:120,LAD:111,PHI:111,
+  TOR:109,CHC:108,TEX:107,BAL:104,COL:102,SEA:101,KC:99,MIL:98,
+  PIT:97,CWS:94,DET:93,MIN:92,ARI:91,NYM:91,ATL:91,SD:87,
+  CLE:78,BOS:76,SF:75,MIA:74,LAA:73,STL:69,OAK:126,AZ:91,
 };
 
 let gamePropsLoaded = false;
@@ -3129,6 +3134,15 @@ async function loadGameProps() {
         const cls = f.team === 'neutral' ? (f.type || 'neu') : (f.team === winner ? 'pos' : 'opp');
         return `<span class="gp-factor ${cls}">${escapeFactorLabel(f.label)}</span>`;
       }).join('');
+      // HR Boost / Park Factor as compact labels (same .gp-factor chip style as the
+      // factor chips above) instead of full stat-block panels — see the win-prob
+      // model's weather/park sections above for how hrWeatherBoostPct/parkFactorVal
+      // are computed.
+      const hrBoostCls = hrWeatherBoostPct > 0 ? 'pos' : hrWeatherBoostPct < 0 ? 'neg' : 'neu';
+      const hrBoostChip = `<span class="gp-factor ${hrBoostCls}" title="Wind + temperature effect on HR likelihood only — excludes park, pitching, and offense">🌬️ HR Boost: ${hrWeatherBoostPct > 0 ? '+' : ''}${hrWeatherBoostPct}%</span>`;
+      const parkFactorCls = parkFactorVal > 107 ? 'pos' : parkFactorVal < 93 ? 'neg' : 'neu';
+      const parkFactorLabel = parkFactorVal > 107 ? 'HR-Friendly' : parkFactorVal < 93 ? 'Pitcher-Friendly' : 'Neutral';
+      const parkFactorChip = `<span class="gp-factor ${parkFactorCls}" title="Statcast park factor for ${stadiumCoords[homeAbbr]?.name||homeAbbr} — 100 = league average">🏟️ Park Factor: ${parkFactorVal} · ${parkFactorLabel}</span>`;
 
       const confBarW = Math.min(winnerPct, 100);
       const confBarColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : '#2ecc71';
@@ -3192,23 +3206,10 @@ async function loadGameProps() {
             <span style="font-size:9px;font-weight:700;color:${totalEnvColor};letter-spacing:.5px">${totalEnv}</span>
           </div>
 
-          <!-- HR Boost (weather-only: wind + temp effect on fly-ball carry) -->
-          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:80px" title="Wind + temperature effect on HR likelihood only — excludes park factor, pitching, and offense, which the Projected Total above already accounts for">
-            <span style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">HR Boost</span>
-            <span style="font-family:'Manrope',sans-serif;font-size:20px;letter-spacing:1px;line-height:1;color:${hrWeatherBoostPct > 0 ? '#2ecc71' : hrWeatherBoostPct < 0 ? 'var(--accent2)' : 'var(--muted)'}">${hrWeatherBoostPct > 0 ? '+' : ''}${hrWeatherBoostPct}%</span>
-            <span style="font-size:9px;font-weight:700;color:${hrWeatherBoostPct > 0 ? '#2ecc71' : hrWeatherBoostPct < 0 ? 'var(--accent2)' : 'var(--muted)'};letter-spacing:.5px">${hrWeatherBoostPct > 0 ? 'WIND/TEMP BOOST' : hrWeatherBoostPct < 0 ? 'WIND/TEMP DRAG' : 'NEUTRAL'}</span>
-          </div>
-
-          <!-- Park Factor (Statcast index_wOBA-based, 100 = league average) -->
-          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:80px" title="Statcast park factor for ${stadiumCoords[homeAbbr]?.name||homeAbbr} — 100 = league average, higher favors hitters">
-            <span style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Park Factor</span>
-            <span style="font-family:'Manrope',sans-serif;font-size:20px;letter-spacing:1px;line-height:1;color:${parkFactorVal > 107 ? '#2ecc71' : parkFactorVal < 93 ? 'var(--accent2)' : 'var(--muted)'}">${parkFactorVal}</span>
-            <span style="font-size:9px;font-weight:700;color:${parkFactorVal > 107 ? '#2ecc71' : parkFactorVal < 93 ? 'var(--accent2)' : 'var(--muted)'};letter-spacing:.5px">${parkFactorVal > 107 ? 'HR-FRIENDLY' : parkFactorVal < 93 ? 'PITCHER-FRIENDLY' : 'NEUTRAL'}</span>
-          </div>
         </div>
 
-        <!-- Key factors -->
-        <div class="gp-factors">${factorChips}</div>
+        <!-- HR Boost + Park Factor labels, same compact chip style as Key factors below -->
+        <div class="gp-factors">${hrBoostChip}${parkFactorChip}${factorChips}</div>
         <div class="gp-live-result-zone" data-live-score-badge="1" style="margin-top:8px">${resultBadge || ''}</div>
       </div>`, resultCorrect };
     }));

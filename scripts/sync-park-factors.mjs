@@ -7,39 +7,35 @@
 // game played there, and a pitcher-friendly park should lower them, which
 // nothing in this app currently accounts for.
 //
-// One whole-league CSV pull, not one request per team.
+// This leaderboard is one of Baseball Savant's newer React-rendered pages —
+// unlike every other leaderboard this repo scrapes, its `&csv=true` param does
+// NOT trigger a CSV export; it returns the same HTML page regardless (confirmed
+// live: every query-param variation tried still came back as text/html, never
+// text/csv). The real data is embedded inline in that HTML as a plain
+// `var data = [...]` JS array assignment, so this fetches the page itself and
+// parses that array out with a regex + JSON.parse instead of a CSV export.
 //
-// Known limitation, same as every other Savant-based script here: this
-// environment cannot reach baseballsavant.mlb.com to verify this leaderboard's
-// exact columns/park-factor scale live. Park factors are conventionally
-// index-scaled around 100 (100 = league average, 120 = 20% more of that
-// outcome than average, 80 = 20% less) — that convention, not the exact column
-// name, is what the app.js integration leans on, so a schema mismatch here
-// fails loudly (real header always logged) rather than silently writing
-// meaningless numbers into a scoring formula.
+// Confirmed live column names on that embedded array (2026 season, Coors Field
+// and Oracle Park rows): grouping_venue_conditions, key_is_year_rolling,
+// key_num_years_rolling, key_year, key_bat_side, venue_id, venue_name,
+// main_team_id, name_display_club, n_pa, index_runs, index_hardhit,
+// index_woba, index_wobatto, index_wobacon, index_xwobacon, index_xbacon,
+// index_obp, index_so, index_bb, index_bacon, index_hits, index_1b, index_2b,
+// index_3b, index_hr, year_range. team_id lives under main_team_id (not
+// team_id/home_team_id, which is what every earlier attempt here guessed and
+// is why this never worked) and the real per-park HR factor is index_hr.
 // ─────────────────────────────────────────────────────────────────────────
 
 import { writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { parseCSV } from './sync-pitcher-statcast.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const SEASON = new Date().getFullYear();
-const BASE = 'https://baseballsavant.mlb.com/leaderboard';
+const URL = `https://baseballsavant.mlb.com/leaderboard/statcast-park-factors?type=year&year=${SEASON}&batSide=&stat=index_wOBA&condition=All&rolling=1`;
 
-const PARK_FACTORS_URL_CANDIDATES = [
-  `${BASE}/statcast-park-factors?type=year&year=${SEASON}&batSide=&stat=index_wOBA&condition=All&rolling=1&csv=true`,
-  `${BASE}/statcast-park-factors?type=year&year=${SEASON}&csv=true`,
-  // Both statcast-park-factors attempts above returned a plain HTML page (confirmed
-  // live), unlike every other leaderboard slug in this app which reliably returns
-  // CSV from "/leaderboard/{slug}?...&csv=true" — try the plain "park-factors" slug
-  // (no "statcast-" prefix) other Savant leaderboards in this repo follow.
-  `${BASE}/park-factors?type=year&year=${SEASON}&csv=true`,
-];
-
-async function fetchCSV(url, attempts = 3) {
+async function fetchText(url, attempts = 3) {
   let lastErr;
   for (let i = 0; i < attempts; i++) {
     try {
@@ -54,50 +50,41 @@ async function fetchCSV(url, attempts = 3) {
   throw lastErr;
 }
 
-function pick(obj, keys) {
-  for (const k of keys) {
-    if (obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k];
-  }
-  return null;
-}
 function num(v) { const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
 
 async function buildParkFactors() {
-  let lastErr;
-  for (const url of PARK_FACTORS_URL_CANDIDATES) {
-    let csv;
-    try {
-      csv = await fetchCSV(url);
-    } catch (e) {
-      console.warn(`Park-factors candidate ${url} failed to fetch: ${e.message}`);
-      lastErr = e;
-      continue;
-    }
-    const rows = parseCSV(csv);
-    if (!rows.length) { lastErr = new Error('no data rows'); continue; }
-    const sample = rows[0];
-    const hasId = pick(sample, ['team_id', 'venue_id', 'home_team_id']) !== null;
-    const hasAny = ['index_hr', 'index_HR', 'HR', 'index_wOBA', 'index_woba'].some(k => sample[k] !== undefined);
-    if (!hasId || !hasAny) {
-      console.warn(`Park-factors candidate ${url} returned data but not the expected columns: ${Object.keys(sample).join(', ')}`);
-      lastErr = new Error('unexpected columns');
-      continue;
-    }
-    const out = {};
-    for (const r of rows) {
-      const teamId = pick(r, ['team_id', 'home_team_id']);
-      if (!teamId) continue;
-      out[teamId] = {
-        name: pick(r, ['name_display_club', 'venue_name', 'team_name']),
-        hrIndex: num(pick(r, ['index_hr', 'index_HR', 'HR'])),
-        wobaIndex: num(pick(r, ['index_wOBA', 'index_woba'])),
-      };
-    }
-    const vals = Object.values(out);
-    console.log(`Park-factors candidate ${url} matched schema — columns: ${Object.keys(sample).join(', ')}; ${vals.length} teams, ${vals.filter(v => v.hrIndex != null).length} with hrIndex (e.g. ${vals.find(v=>v.hrIndex!=null)?.name}: ${vals.find(v=>v.hrIndex!=null)?.hrIndex}), ${vals.filter(v => v.wobaIndex != null).length} with wobaIndex.`);
-    return out;
+  const html = await fetchText(URL);
+  const m = html.match(/var\s+data\s*=\s*(\[[\s\S]*?\]);/);
+  if (!m) throw new Error('embedded "var data = [...]" array not found in park-factors HTML — Baseball Savant may have changed how this page renders');
+
+  let rows;
+  try {
+    rows = JSON.parse(m[1]);
+  } catch (e) {
+    throw new Error(`embedded park-factors data failed to parse as JSON: ${e.message}`);
   }
-  throw lastErr;
+  if (!rows.length) throw new Error('embedded park-factors array had no rows');
+
+  // Loud schema check, same spirit as every other sync script here — bail rather
+  // than silently writing data built from fields that don't exist.
+  const sample = rows[0];
+  if (!('main_team_id' in sample) || !('index_hr' in sample)) {
+    throw new Error(`unexpected park-factors row shape — got [${Object.keys(sample).join(', ')}]`);
+  }
+
+  const out = {};
+  for (const r of rows) {
+    const teamId = r.main_team_id;
+    if (!teamId) continue;
+    out[teamId] = {
+      name: r.venue_name || r.name_display_club || null,
+      hrIndex: num(r.index_hr),
+      wobaIndex: num(r.index_woba),
+    };
+  }
+  const vals = Object.values(out);
+  console.log(`Park-factors matched — ${vals.length} teams, ${vals.filter(v => v.hrIndex != null).length} with hrIndex (e.g. ${vals.find(v=>v.hrIndex!=null)?.name}: ${vals.find(v=>v.hrIndex!=null)?.hrIndex}), ${vals.filter(v => v.wobaIndex != null).length} with wobaIndex.`);
+  return out;
 }
 
 async function main() {
