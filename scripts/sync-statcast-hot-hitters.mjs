@@ -111,6 +111,13 @@ function pick(obj, keys) {
   return null;
 }
 function num(v) { const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
+// Some Savant columns (e.g. bat-tracking's squared_up_per_swing/blast_per_swing) aren't
+// suffixed "_percent" and come back as a 0-1 rate rather than an already-scaled 0-100
+// percentage, unlike every other percent-style column this script reads. Real squared-up
+// and blast rates for MLB batters are always well above 1 once scaled (roughly 20-45% and
+// 5-20% respectively), so a value <=1.5 is confidently a raw fraction, not a genuine
+// percentage that happens to be tiny.
+function pctScale(v) { const n = num(v); return n == null ? null : (n <= 1.5 ? +(n * 100).toFixed(1) : n); }
 
 function assertSchema(rows, label, requiredAnyOf) {
   if (!rows.length) throw new Error(`${label}: CSV had no data rows`);
@@ -201,25 +208,29 @@ async function buildBatTracking() {
       continue;
     }
     const rows = parseCSV(csv);
-    try {
-      assertSchema(rows, 'Statcast bat-tracking leaderboard', ['avg_bat_speed', 'avg_swing_speed', 'blast_percent']);
-    } catch (e) {
-      console.warn(`Bat-tracking candidate ${url} returned data but not the expected columns: ${rows[0] ? Object.keys(rows[0]).join(', ') : '(no rows)'}`);
-      lastErr = e;
+    if (!rows.length) { lastErr = new Error('Statcast bat-tracking leaderboard: CSV had no data rows'); continue; }
+    const sample = rows[0];
+    // This endpoint's own id column is a bare "id", unlike every other Savant
+    // leaderboard's player_id/batter_id/mlbam_id — confirmed live, not a guess.
+    const hasId = pick(sample, ['player_id', 'batter_id', 'mlbam_id', 'id']) !== null;
+    const hasAny = ['avg_bat_speed', 'avg_swing_speed', 'blast_percent', 'blast_per_swing'].some(k => sample[k] !== undefined);
+    if (!hasId || !hasAny) {
+      console.warn(`Bat-tracking candidate ${url} returned data but not the expected columns: ${Object.keys(sample).join(', ')}`);
+      lastErr = new Error('unexpected columns');
       continue;
     }
     const out = {};
     for (const r of rows) {
-      const id = pick(r, ['player_id', 'batter_id', 'mlbam_id']);
+      const id = pick(r, ['player_id', 'batter_id', 'mlbam_id', 'id']);
       if (!id) continue;
       out[id] = {
         batSpeed: num(pick(r, ['avg_bat_speed', 'avg_swing_speed'])),
-        squaredUpPct: num(pick(r, ['squared_up_per_swing_percent', 'squared_up_percent', 'avg_squared_up_percent'])),
-        blastRate: num(pick(r, ['blast_percent', 'avg_blast_percent', 'blasts_contact_percent'])),
+        squaredUpPct: pctScale(pick(r, ['squared_up_per_swing', 'squared_up_per_swing_percent', 'squared_up_percent'])),
+        blastRate: pctScale(pick(r, ['blast_per_swing', 'blast_percent', 'avg_blast_percent'])),
       };
     }
     const vals = Object.values(out);
-    console.log(`Bat-tracking candidate ${url} matched schema — columns: ${rows[0] ? Object.keys(rows[0]).join(', ') : '(no rows)'}; ${vals.length} players, ${vals.filter(v => v.batSpeed != null).length} with batSpeed, ${vals.filter(v => v.squaredUpPct != null).length} with squaredUpPct, ${vals.filter(v => v.blastRate != null).length} with blastRate.`);
+    console.log(`Bat-tracking candidate ${url} matched schema — columns: ${Object.keys(sample).join(', ')}; ${vals.length} players, ${vals.filter(v => v.batSpeed != null).length} with batSpeed, ${vals.filter(v => v.squaredUpPct != null).length} with squaredUpPct (e.g. ${vals.find(v=>v.squaredUpPct!=null)?.squaredUpPct}), ${vals.filter(v => v.blastRate != null).length} with blastRate (e.g. ${vals.find(v=>v.blastRate!=null)?.blastRate}).`);
     return out;
   }
   throw lastErr;

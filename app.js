@@ -4090,6 +4090,16 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
           ${[['ERA',pERA],['FIP',pFIP],['WHIP',pWHIP],['AVG Allowed',pAVG],['HR/9',pHR9],['K/9',pKper9]].map(([l,v])=>`
           <div class="dr1043-row"><span>${l}</span><strong>${v}</strong></div>`).join('')}
         </div>
+
+        ${(hh.homeAvg != null || hh.awayAvg != null || hh.rispAvg != null) ? `
+        <div class="dr1043-panel" style="grid-column:1/-1">
+          <div class="dr1043-panel-title">Situational splits <span class="dr1043-badge blue">${batterName.split(' ').pop()}</span></div>
+          <div class="dr1043-split-line">
+            ${hh.homeAvg != null ? `<span class="dr1043-badge">Home: ${fv(hh.homeAvg,3)} AVG${hh.homeOps!=null?` / ${fv(hh.homeOps,3)} OPS`:''}</span>` : ''}
+            ${hh.awayAvg != null ? `<span class="dr1043-badge">Away: ${fv(hh.awayAvg,3)} AVG${hh.awayOps!=null?` / ${fv(hh.awayOps,3)} OPS`:''}</span>` : ''}
+            ${hh.rispAvg != null ? `<span class="dr1043-badge">RISP: ${fv(hh.rispAvg,3)} AVG${hh.rispOps!=null?` / ${fv(hh.rispOps,3)} OPS`:''}</span>` : ''}
+          </div>
+        </div>` : ''}
       </div>
 
       <div class="dr1043-callout">

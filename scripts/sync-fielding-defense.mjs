@@ -98,7 +98,12 @@ async function buildArmStrength() {
     if (!rows.length) { lastErr = new Error('no data rows'); continue; }
     const sample = rows[0];
     const hasId = pick(sample, ['player_id', 'entity_id', 'mlbam_id']) !== null;
-    const hasAny = ['arm_strength', 'avg_arm_strength', 'arm_strength_max'].some(k => sample[k] !== undefined);
+    // arm_overall (season-average arm strength across all throw types) and
+    // max_arm_strength (hardest single competitive throw) confirmed live as the real
+    // column names on the direct leaderboard — arm_strength/avg_arm_strength never
+    // actually exist there, only on the custom-leaderboard fallback (which in turn
+    // blanks those exact codes on every row, same issue seen with plate discipline).
+    const hasAny = ['arm_overall', 'max_arm_strength', 'arm_strength', 'avg_arm_strength'].some(k => sample[k] !== undefined);
     if (!hasId || !hasAny) {
       console.warn(`Arm-strength candidate ${url} returned data but not the expected columns: ${Object.keys(sample).join(', ')}`);
       lastErr = new Error('unexpected columns');
@@ -108,7 +113,7 @@ async function buildArmStrength() {
     for (const r of rows) {
       const id = pick(r, ['player_id', 'entity_id', 'mlbam_id']);
       if (!id) continue;
-      out[id] = { armStrength: num(pick(r, ['arm_strength', 'avg_arm_strength', 'arm_strength_max'])) };
+      out[id] = { armStrength: num(pick(r, ['arm_overall', 'max_arm_strength', 'arm_strength', 'avg_arm_strength'])) };
     }
     const vals = Object.values(out);
     console.log(`Arm-strength candidate ${url} matched schema — columns: ${Object.keys(sample).join(', ')}; ${vals.length} players, ${vals.filter(v => v.armStrength != null).length} with armStrength.`);

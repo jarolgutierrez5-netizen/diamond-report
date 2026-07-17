@@ -59,6 +59,11 @@ jobs:
         run: node scripts/sync-fielding-defense.mjs
         continue-on-error: true
 
+      - name: Run situational splits sync (Home/Away, RISP)
+        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
+        run: node scripts/sync-batter-splits.mjs
+        continue-on-error: true
+
       - name: Run per-pitch-type HR + Strike Zone sync for today's probable starters
         # Depends on data/pitcher-statcast.json already existing (either from the step
         # above on the morning run, or from a prior run earlier the same day). A failure
