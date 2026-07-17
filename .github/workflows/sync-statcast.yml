@@ -89,7 +89,16 @@ jobs:
           # ignores brand-new untracked files, which is exactly what these files are
           # on a repo's first-ever run. Stage first, then check the index against HEAD so
           # a genuinely new file is treated as a real change instead of "nothing to commit".
-          git add data/pitcher-statcast.json data/batter-pitch-type-season.json data/statcast-hot-hitters.json data/park-factors.json
+          #
+          # `git add` on a path that doesn't exist on disk is a hard error (exit 128), not
+          # a no-op — data/park-factors.json has never been successfully written yet (its
+          # sync script's Savant endpoint attempts have all 404'd/returned HTML live), so
+          # naming it directly here killed the ENTIRE commit step and silently dropped
+          # every other real, successful update from that run (batted-ball direction,
+          # recent-form trend, etc.). `git add --` on an existing-or-not glob does not
+          # error the way naming a literal missing path does.
+          git add data/pitcher-statcast.json data/batter-pitch-type-season.json data/statcast-hot-hitters.json
+          [ -f data/park-factors.json ] && git add data/park-factors.json
           if git diff --cached --quiet; then
             echo "No changes to sync — nothing to commit."
             exit 0
