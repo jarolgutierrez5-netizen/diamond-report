@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026071806">
+<link rel="stylesheet" href="styles.min.css?v=2026071807">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -418,7 +418,10 @@
         <p class="section-title">DIAMOND REPORT <span>GAME PROJECTIONS</span></p>
         <small>Favored side, confidence, lean/toss-up labels, and matchup factors.</small>
       </div>
-      <div id="gameprops-refresh" class="dr-refresh"></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button type="button" class="dr-track-record-btn" onclick="openTrackRecordModal()" title="Real graded accuracy by market, over time">📊 Track Record</button>
+        <div id="gameprops-refresh" class="dr-refresh"></div>
+      </div>
     </div>
     <div id="gameprops-content" class="dr-panel-body dr-scroll-game"><div class="mu-empty"><span class="spin"></span>Loading game projections…</div></div>
   </div>
@@ -651,6 +654,22 @@
 </div>
 </div>
 
+<!-- Model Track Record Modal -->
+<div class="mu-modal-overlay" id="track-record-modal-overlay" onclick="if(event.target===this)closeTrackRecordModal()" style="display:none">
+<div class="mu-modal">
+<div class="mu-modal-head">
+<div>
+<div class="mu-modal-title">MODEL TRACK RECORD</div>
+<div class="mu-modal-sub">Real graded results by market, straight from the tracker — not a projection.</div>
+</div>
+<button class="mu-close" onclick="closeTrackRecordModal()">✕</button>
+</div>
+<div class="mu-modal-body" id="track-record-modal-body">
+<span class="spin"></span> Loading track record…
+    </div>
+</div>
+</div>
+
 <!-- prod removed: v5-1-die-api-guard-stats debug widget targeted elements (die-api-network, die-api-cache, etc.) that no longer exist in the page; it was polling every 2s for nothing. -->
 
 
@@ -816,7 +835,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026071806" defer></script>
+<script src="app.min.js?v=2026071807" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
