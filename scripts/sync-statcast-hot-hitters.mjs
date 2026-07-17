@@ -267,7 +267,10 @@ async function buildBattedBallDirection() {
     if (!rows.length) { lastErr = new Error('no data rows'); continue; }
     const sample = rows[0];
     const hasId = pick(sample, ['player_id', 'batter_id', 'mlbam_id', 'id']) !== null;
-    const hasAny = ['pull_percent', 'pulled_percent', 'oppo_percent', 'opposite_percent'].some(k => sample[k] !== undefined);
+    // pull_rate/straight_rate/oppo_rate confirmed live as the real direct-endpoint
+    // column names (not the "_percent" guesses) — kept as fallbacks in case the
+    // custom-leaderboard candidate (which does use "_percent") is what actually matches.
+    const hasAny = ['pull_rate', 'pull_percent', 'pulled_percent', 'oppo_percent', 'opposite_percent'].some(k => sample[k] !== undefined);
     if (!hasId || !hasAny) {
       console.warn(`Batted-ball-direction candidate ${url} returned data but not the expected columns: ${Object.keys(sample).join(', ')}`);
       lastErr = new Error('unexpected columns');
@@ -278,9 +281,9 @@ async function buildBattedBallDirection() {
       const id = pick(r, ['player_id', 'batter_id', 'mlbam_id', 'id']);
       if (!id) continue;
       out[id] = {
-        pullPct: pctScale(pick(r, ['pull_percent', 'pulled_percent'])),
-        oppoPct: pctScale(pick(r, ['oppo_percent', 'opposite_percent'])),
-        centerPct: pctScale(pick(r, ['straightaway_percent', 'center_percent'])),
+        pullPct: pctScale(pick(r, ['pull_rate', 'pull_percent', 'pulled_percent'])),
+        oppoPct: pctScale(pick(r, ['oppo_rate', 'oppo_percent', 'opposite_percent'])),
+        centerPct: pctScale(pick(r, ['straight_rate', 'straightaway_percent', 'center_percent'])),
       };
     }
     const vals = Object.values(out);
@@ -305,7 +308,12 @@ async function buildBaserunningValue() {
     if (!rows.length) { lastErr = new Error('no data rows'); continue; }
     const sample = rows[0];
     const hasId = pick(sample, ['player_id', 'batter_id', 'mlbam_id', 'id']) !== null;
-    const hasAny = ['extra_bases_taken_percent', 'takes_extra_base_percent', 'baserunning_runs', 'bsr'].some(k => sample[k] !== undefined);
+    // runner_runs_tot/runner_runs_XB confirmed live as the real column names on
+    // Savant's baserunning-run-value leaderboard — a run-value metric (runs above
+    // average from baserunning), not the percentage this was originally guessed to
+    // be. Kept the "_percent" guesses as fallbacks for the custom-leaderboard
+    // candidate, which uses different naming.
+    const hasAny = ['runner_runs_tot', 'runner_runs_XB', 'extra_bases_taken_percent', 'takes_extra_base_percent', 'baserunning_runs', 'bsr'].some(k => sample[k] !== undefined);
     if (!hasId || !hasAny) {
       console.warn(`Baserunning-value candidate ${url} returned data but not the expected columns: ${Object.keys(sample).join(', ')}`);
       lastErr = new Error('unexpected columns');
@@ -317,7 +325,7 @@ async function buildBaserunningValue() {
       if (!id) continue;
       out[id] = {
         extraBasesTakenPct: pctScale(pick(r, ['extra_bases_taken_percent', 'takes_extra_base_percent'])),
-        baserunningRuns: num(pick(r, ['baserunning_runs', 'bsr'])),
+        baserunningRuns: num(pick(r, ['runner_runs_tot', 'baserunning_runs', 'bsr'])),
       };
     }
     const vals = Object.values(out);

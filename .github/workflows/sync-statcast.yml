@@ -81,6 +81,7 @@ jobs:
         # step below, which stages whatever exists).
         run: node scripts/sync-pitcher-zone-hr.mjs
         continue-on-error: true
+        timeout-minutes: 8
 
       - name: Commit and push if changed
         run: |

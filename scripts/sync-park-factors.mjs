@@ -32,6 +32,11 @@ const BASE = 'https://baseballsavant.mlb.com/leaderboard';
 const PARK_FACTORS_URL_CANDIDATES = [
   `${BASE}/statcast-park-factors?type=year&year=${SEASON}&batSide=&stat=index_wOBA&condition=All&rolling=1&csv=true`,
   `${BASE}/statcast-park-factors?type=year&year=${SEASON}&csv=true`,
+  // Both statcast-park-factors attempts above returned a plain HTML page (confirmed
+  // live), unlike every other leaderboard slug in this app which reliably returns
+  // CSV from "/leaderboard/{slug}?...&csv=true" — try the plain "park-factors" slug
+  // (no "statcast-" prefix) other Savant leaderboards in this repo follow.
+  `${BASE}/park-factors?type=year&year=${SEASON}&csv=true`,
 ];
 
 async function fetchCSV(url, attempts = 3) {

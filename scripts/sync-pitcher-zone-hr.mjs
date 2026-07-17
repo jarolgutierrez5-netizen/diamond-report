@@ -38,16 +38,25 @@ function cdtDateString(d) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 }
 
+// fetch() has no built-in timeout — a bad/slow response could otherwise stall this
+// loop indefinitely (probable-starter count varies through the day, up to 25-30+,
+// so one hanging request has real potential to block everything after it). Same
+// safeguard added to sync-batter-splits.mjs's fetchJSON after a related incident.
+const FETCH_TIMEOUT_MS = 15000;
 async function fetchText(url, attempts = 3) {
   let lastErr;
   for (let i = 0; i < attempts; i++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     try {
-      const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DiamondReportBot/1.0; +https://diamondreport.app)' } });
+      const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DiamondReportBot/1.0; +https://diamondreport.app)' }, signal: controller.signal });
       if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
       return await res.text();
     } catch (e) {
-      lastErr = e;
+      lastErr = e.name === 'AbortError' ? new Error(`Timed out after ${FETCH_TIMEOUT_MS}ms for ${url}`) : e;
       if (i < attempts - 1) await new Promise(r => setTimeout(r, 1500 * (i + 1)));
+    } finally {
+      clearTimeout(timer);
     }
   }
   throw lastErr;
