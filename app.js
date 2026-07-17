@@ -9930,6 +9930,10 @@ function showPremiumGate(feature){
   // started yet are left alone and keep recomputing live on every render.
   var VERSION = 'v10.0';
   var LOCK_PREFIX = 'dr-official-game-projections-by-game:' + VERSION + ':';
+  // Shared with installProjectionMutationGuard/refreshLockedGameProjectionScores
+  // below — see the disconnect/reconnect guard there for why this needs to be
+  // reachable from both.
+  var mo = null;
 
   function centralDateKey(){
     try { return new Date().toLocaleDateString('en-CA', { timeZone:'America/Chicago' }); }
@@ -10025,6 +10029,17 @@ function showPremiumGate(feature){
       var data = await r.json();
       var entry = data.dates && (data.dates.find(function(d){ return d.date === today; }) || data.dates[0]);
       var games = (entry && entry.games) || [];
+      // This function's own DOM writes below (clearProjectionResultZones, zone.innerHTML)
+      // are childList/subtree mutations on the exact node installProjectionMutationGuard
+      // watches. Without disconnecting first, every call here re-fires that observer,
+      // which reschedules another call via scheduleAuthoritativeRefresh — even when the
+      // score badge content is byte-identical — which mutates again and re-triggers the
+      // observer again. That self-sustaining ~80ms loop (running continuously any time a
+      // game has started today, since store.games is never empty then) was the real cause
+      // behind the Game Projections panel flickering during live games — same class of bug
+      // already fixed in prod-v9-4-game-projection-live-authority's applyGames(), just not
+      // applied here too. Mirrors that function's disconnect/reconnect pattern.
+      if (mo) mo.disconnect();
       games.forEach(function(g){
         var card = el.querySelector('.gp-card[data-game-pk="' + g.gamePk + '"]');
         if (!card) return;
@@ -10068,6 +10083,7 @@ function showPremiumGate(feature){
       if (refreshEl) refreshEl.textContent = 'Scores updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
       return true;
     } catch(e){ return false; }
+    finally { if (mo && el) mo.observe(el, { childList:true, subtree:true }); }
   }
   window.DiamondRefreshLockedGameProjectionScores = refreshLockedGameProjectionScores;
 
@@ -10081,7 +10097,7 @@ function showPremiumGate(feature){
     if (!el || el.__drLiveScoreMutationGuard) return;
     el.__drLiveScoreMutationGuard = true;
     try {
-      var mo = new MutationObserver(function(){
+      mo = new MutationObserver(function(){
         var store = readStore();
         if (Object.keys(store.games).length > 0) scheduleAuthoritativeRefresh();
       });
