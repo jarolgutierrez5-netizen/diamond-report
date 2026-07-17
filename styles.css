@@ -2944,6 +2944,88 @@ select:focus-visible {
   box-shadow: 0 0 0 1px rgba(47,107,255,.18), 0 0 28px rgba(47,107,255,.14), 0 10px 24px rgba(0,0,0,.28) !important;
 }
 
+/* Thin home-team-color edge on each Game Projections card, from the
+   --team-accent custom property set per card — purely a faster-scan visual
+   cue, no effect on any stat or the blue accent-glow hover state above. */
+.gp-card {
+  border-left: 3px solid color-mix(in srgb, var(--team-accent, var(--accent)) 65%, transparent) !important;
+}
+
+/* Small fill-bar under the HR Boost / Park Factor chip values. Track and fill
+   both mix from currentColor via background-color (not the opacity property,
+   which would dim the fill along with the track since it's a child) so the
+   track reads as a dim rail and the fill reads fully saturated, always
+   matching whichever pos/neg/neu color the chip is already using. */
+.gp-factor-bar {
+  display: block;
+  width: 26px;
+  height: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, currentColor 22%, transparent);
+  margin-top: 3px;
+  overflow: hidden;
+}
+.gp-factor-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+/* Every "Loading X…" state across the site uses the same <div class="mu-empty">
+   <span class="spin">…text pattern — rather than editing each of the ~14 call
+   sites individually, add the same shimmer language as .dr-v9-skeleton above
+   to all of them at once via :has(), so "loading" reads consistently as a
+   shimmer bar everywhere instead of plain spinner+text in most places and a
+   full skeleton only in a couple. */
+@keyframes drLoadingShimmerSweep {
+  0%   { background-position: -150% 0; }
+  100% { background-position: 250% 0; }
+}
+.mu-empty:has(> .spin) {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.mu-empty:has(> .spin)::after {
+  content: '';
+  display: block;
+  height: 8px;
+  width: min(220px, 60%);
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(255,255,255,.05) 25%, rgba(255,255,255,.12) 37%, rgba(255,255,255,.05) 63%);
+  background-size: 400% 100%;
+  animation: drLoadingShimmerSweep 1.25s ease-in-out infinite;
+}
+
+/* Radial confidence gauge on Game Projections cards. The ring is a masked-out
+   conic-gradient (transparent center) rather than a flat-color inner circle,
+   so it reads correctly against .gp-card's translucent glass background
+   instead of covering it with a mismatched solid patch. */
+.gp-conf-gauge-wrap {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+}
+.gp-conf-gauge-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  -webkit-mask-image: radial-gradient(circle, transparent 11px, #000 11.5px);
+  mask-image: radial-gradient(circle, transparent 11px, #000 11.5px);
+}
+.gp-conf-gauge-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+}
+
 /* Monospace "readout" treatment for the primary numeric grade/edge value
    on prop and pitcher cards, so the headline number reads like a HUD
    display rather than body text. */

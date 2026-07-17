@@ -2819,6 +2819,18 @@ const stadiumCoords = {
   WSH:{lat:38.873,lon:-77.007,name:'Nationals Park',dome:false},
 };
 
+// Team primary brand colors — purely cosmetic (a thin accent edge on each Game
+// Projections card so the list reads faster at a glance), not tied to any stat.
+const teamColors = {
+  ARI:'#A71930',ATL:'#CE1141',BAL:'#DF4601',BOS:'#BD3039',CHC:'#0E3386',
+  CWS:'#27251F',CIN:'#C6011F',CLE:'#00385D',COL:'#33006F',DET:'#0C2340',
+  HOU:'#EB6E1F',KC:'#004687',LAA:'#BA0021',LAD:'#005A9C',MIA:'#00A3E0',
+  MIL:'#12284B',MIN:'#002B5C',NYM:'#002D72',NYY:'#003087',ATH:'#003831',
+  OAK:'#003831',PHI:'#E81828',PIT:'#FDB827',SD:'#2F241D',SF:'#FD5A1E',
+  SEA:'#0C2C56',STL:'#C41E3A',TB:'#092C5C',TEX:'#003278',TOR:'#134A8E',
+  WSH:'#AB0003',AZ:'#A71930',
+};
+
 // Park factors (HR index: 100 = average, >100 = hitter friendly) — refreshed from
 // the first successful live sync-park-factors.mjs run (2026-07-17, real Statcast
 // index_hr per park) now that its "var data = [...]" HTML-embedded-JSON parsing
@@ -3158,16 +3170,33 @@ async function loadGameProps() {
       // factor chips above) instead of full stat-block panels — see the win-prob
       // model's weather/park sections above for how hrWeatherBoostPct/parkFactorVal
       // are computed.
+      // Purely cosmetic fill bar under each chip's value, scaled to how extreme the
+      // number is within its realistic range — reinforces the pos/neg color coding
+      // without changing what the number means. ~13% is roughly the max combined
+      // wind+temp swing weatherHRMult can produce; ~33 is roughly the max deviation
+      // from 100 seen across the real park-factor table above.
+      const gpFactorBar = (pct, cls) => `<span class="gp-factor-bar"><span class="gp-factor-bar-fill ${cls}" style="width:${Math.round(Math.max(0, Math.min(1, pct)) * 100)}%"></span></span>`;
       const hrBoostCls = hrWeatherBoostPct > 0 ? 'pos' : hrWeatherBoostPct < 0 ? 'neg' : 'neu';
-      const hrBoostChip = `<span class="gp-factor ${hrBoostCls}" title="Wind + temperature effect on HR likelihood only — excludes park, pitching, and offense">🌬️ HR Boost: ${hrWeatherBoostPct > 0 ? '+' : ''}${hrWeatherBoostPct}%</span>`;
+      const hrBoostChip = `<span class="gp-factor ${hrBoostCls}" title="Wind + temperature effect on HR likelihood only — excludes park, pitching, and offense">🌬️ HR Boost: ${hrWeatherBoostPct > 0 ? '+' : ''}${hrWeatherBoostPct}%${gpFactorBar(Math.abs(hrWeatherBoostPct) / 13, hrBoostCls)}</span>`;
       const parkFactorCls = parkFactorVal > 107 ? 'pos' : parkFactorVal < 93 ? 'neg' : 'neu';
       const parkFactorLabel = parkFactorVal > 107 ? 'HR-Friendly' : parkFactorVal < 93 ? 'Pitcher-Friendly' : 'Neutral';
-      const parkFactorChip = `<span class="gp-factor ${parkFactorCls}" title="Statcast park factor for ${stadiumCoords[homeAbbr]?.name||homeAbbr} — 100 = league average">🏟️ Park Factor: ${parkFactorVal} · ${parkFactorLabel}</span>`;
+      const parkFactorChip = `<span class="gp-factor ${parkFactorCls}" title="Statcast park factor for ${stadiumCoords[homeAbbr]?.name||homeAbbr} — 100 = league average">🏟️ Park Factor: ${parkFactorVal} · ${parkFactorLabel}${gpFactorBar(Math.abs(parkFactorVal - 100) / 33, parkFactorCls)}</span>`;
 
       const confBarW = Math.min(winnerPct, 100);
       const confBarColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : '#2ecc71';
+      // Radial confidence gauge — same win% and confColor already computed above,
+      // just visualized as an arc instead of the plain TOSS-UP/LEAN/LIKELY/STRONG
+      // text alone. The ring is cut out with a mask (not a flat-color inner div)
+      // so it reads correctly against .gp-card's translucent glass background
+      // instead of covering it with a mismatched solid patch.
+      const confGaugeDeg = Math.round(confBarW * 3.6);
+      const confGaugeHTML = `<div class="gp-conf-gauge-wrap" title="${confidence} confidence — ${winnerPct}% model win probability">
+        <div class="gp-conf-gauge-ring" style="background:conic-gradient(${confColor} ${confGaugeDeg}deg, rgba(255,255,255,.12) 0)"></div>
+        <div class="gp-conf-gauge-label" style="color:${confColor}">${winnerPct}%</div>
+      </div>`;
 
-      return { html: `<div class="gp-card" data-game-pk="${g.gamePk}" data-away="${awayAbbr}" data-home="${homeAbbr}" data-winner="${winnerAbbr}" data-game-time="${dt.getTime()}">
+      const teamAccent = teamColors[homeAbbr] || teamColors[awayAbbr] || 'var(--accent)';
+      return { html: `<div class="gp-card" data-game-pk="${g.gamePk}" data-away="${awayAbbr}" data-home="${homeAbbr}" data-winner="${winnerAbbr}" data-game-time="${dt.getTime()}" style="--team-accent:${teamAccent}">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <!-- Teams -->
           <div class="gp-matchup" style="flex:1;min-width:180px">
@@ -3198,7 +3227,10 @@ async function loadGameProps() {
                 <span style="font-size:9px;color:#2ecc71;opacity:.8;font-family:'JetBrains Mono',monospace">${winnerPct}% WIN</span>
               </div>
             </div>
-            <span style="font-size:10px;font-weight:700;color:${confColor};letter-spacing:.5px">${confidence}</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              ${confGaugeHTML}
+              <span style="font-size:10px;font-weight:700;color:${confColor};letter-spacing:.5px">${confidence}</span>
+            </div>
           </div>
 
           <!-- Win % bars -->
@@ -3873,6 +3905,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         const avgRaw = parseDecVal(st.avg ?? st.battingAverage);
         const slgRaw = parseDecVal(st.slg ?? st.slugging);
         const xslgRaw = parseDecVal(st.xslg ?? st.xSLG ?? st.expectedSlugging);
+        const wobaRaw = parseDecVal(st.woba ?? st.wOBA);
         const hardRaw = parsePctVal(st.hardHitPct ?? st.hardHitRate);
         const whiffRaw = parsePctVal(st.whiffPct ?? st.whiffRate);
         return `<tr>
@@ -3881,6 +3914,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
           <td class="num${gbCls('avg',avgRaw)}">${fmtDec(st.avg ?? st.battingAverage, 3, 'avg')}</td>
           <td class="num${gbCls('slg',slgRaw)}">${fmtDec(st.slg ?? st.slugging, 3, 'slg')}</td>
           <td class="num${gbCls('xslg',xslgRaw)}">${fmtDec(st.xslg ?? st.xSLG ?? st.expectedSlugging, 3, 'xslg')}</td>
+          <td class="num${gbCls('woba',wobaRaw)}">${fmtDec(st.woba ?? st.wOBA, 3, 'woba')}</td>
           <td class="num${gbCls('hr',rowHr)}">${rowHr != null ? rowHr : '–'}</td>
           <td class="num${gbCls('hardHit',hardRaw)}">${fmtPctVal(st.hardHitPct ?? st.hardHitRate, 0, 'hardHit')}</td>
           <td class="num${gbCls('whiff',whiffRaw)}">${fmtPctVal(st.whiffPct ?? st.whiffRate, 1, 'whiff')}</td>
@@ -3926,7 +3960,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
           <div class="dr1042-split-note" data-note>${notes.auto}</div>
         </div>
       </div>
-      <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Pitcher Usage</th><th>AVG</th><th>SLG</th><th>xSLG</th><th>HR</th><th>Hard Hit</th><th>Whiff</th><th>Advantage</th></tr></thead>${bodies}</table></div>
+      <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Pitcher Usage</th><th>AVG</th><th>SLG</th><th>xSLG</th><th>wOBA</th><th>HR</th><th>Hard Hit</th><th>Whiff</th><th>Advantage</th></tr></thead>${bodies}</table></div>
       ${gbLegendHTML}
       <div class="dr1041-ai-read"><strong style="color:#fff">AI Read:</strong> <span data-ai-read>${auto.summary}</span></div>
       <script type="application/json" data-pmix-state>${JSON.stringify({ scores:{auto:auto.score,R:built.R.score,L:built.L.score}, notes, reads:{auto:auto.summary,R:built.R.summary,L:built.L.summary} }).replace(/</g,'\\u003c')}<\/script>
