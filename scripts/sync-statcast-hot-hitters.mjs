@@ -65,7 +65,14 @@ const RECENT_BATTED_BALL_URL = battedBallUrl(`startDate=${RECENT_START}&endDate=
 const RECENT_EXPECTED_STATS_URL = expectedStatsUrl(`startDate=${RECENT_START}&endDate=${RECENT_END}&min=1`);
 // Plate discipline (chase-rate, zone-contact%) and Sprint Speed are separate
 // leaderboards from the batted-ball one above, each a single whole-league pull.
-const PLATE_DISCIPLINE_URL = `${BASE}/plate-discipline?type=batter&year=${SEASON}&position=&team=&min=q&csv=true`;
+// Savant has no dedicated "/leaderboard/plate-discipline" page (confirmed 404 live) —
+// these metrics live in the "Custom Leaderboards" builder instead, so try that as a
+// fallback. Kept as a list rather than a single guessed URL since the exact `selections`
+// column codes for that endpoint aren't verifiable from this sandbox either.
+const PLATE_DISCIPLINE_URL_CANDIDATES = [
+  `${BASE}/plate-discipline?type=batter&year=${SEASON}&position=&team=&min=q&csv=true`,
+  `${BASE}/custom?year=${SEASON}&type=batter&filter=&min=q&selections=o_swing_percent,z_swing_percent,swing_percent,z_contact_percent,contact_percent,whiff_percent&chart=false&x=o_swing_percent&y=z_contact_percent&r=no&chartType=beeswarm&sort=xwoba&sortDir=desc&csv=true`,
+];
 const SPRINT_SPEED_URL = `${BASE}/sprint_speed?year=${SEASON}&position=&team=&min=10&csv=true`;
 
 async function fetchCSV(url, attempts = 3) {
@@ -133,20 +140,36 @@ async function buildExpectedStats(url, label) {
 }
 
 async function buildPlateDiscipline() {
-  const csv = await fetchCSV(PLATE_DISCIPLINE_URL);
-  const rows = parseCSV(csv);
-  assertSchema(rows, 'Statcast plate-discipline leaderboard', ['o_swing_percent', 'z_contact_percent', 'swing_percent']);
-  const out = {};
-  for (const r of rows) {
-    const id = pick(r, ['player_id', 'batter_id', 'mlbam_id']);
-    if (!id) continue;
-    out[id] = {
-      chasePct: num(pick(r, ['o_swing_percent', 'chase_percent'])),
-      zoneContactPct: num(pick(r, ['z_contact_percent'])),
-      swingStrikePct: num(pick(r, ['swstr_percent', 'whiff_percent'])),
-    };
+  let lastErr;
+  for (const url of PLATE_DISCIPLINE_URL_CANDIDATES) {
+    let csv;
+    try {
+      csv = await fetchCSV(url);
+    } catch (e) {
+      lastErr = e;
+      continue;
+    }
+    const rows = parseCSV(csv);
+    try {
+      assertSchema(rows, 'Statcast plate-discipline leaderboard', ['o_swing_percent', 'z_contact_percent', 'swing_percent']);
+    } catch (e) {
+      console.warn(`Plate-discipline candidate ${url} returned data but not the expected columns: ${rows[0] ? Object.keys(rows[0]).join(', ') : '(no rows)'}`);
+      lastErr = e;
+      continue;
+    }
+    const out = {};
+    for (const r of rows) {
+      const id = pick(r, ['player_id', 'batter_id', 'mlbam_id']);
+      if (!id) continue;
+      out[id] = {
+        chasePct: num(pick(r, ['o_swing_percent', 'chase_percent'])),
+        zoneContactPct: num(pick(r, ['z_contact_percent'])),
+        swingStrikePct: num(pick(r, ['swstr_percent', 'whiff_percent'])),
+      };
+    }
+    return out;
   }
-  return out;
+  throw lastErr;
 }
 
 async function buildSprintSpeed() {
