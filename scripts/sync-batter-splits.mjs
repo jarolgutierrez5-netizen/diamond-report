@@ -30,6 +30,18 @@
 // today's starting lineup (day off vs platoon vs demotion all look identical from
 // this API), so that distinct ask isn't implemented here; a false "resting" label
 // on a benched or demoted player would be worse than no label at all.
+//
+// Also computes a REAL rolling-form trend (recent 14-day AVG/OPS vs season AVG/OPS)
+// via the same hydrate call, adding a `type=[byDateRange]` and `type=[season]` stats
+// block alongside statSplits — still one request per team, no extra round trips.
+// This replaces the Statcast-based trend attempt in sync-statcast-hot-hitters.mjs,
+// which was confirmed live to not work (Savant ignores its startDate/endDate params
+// on those leaderboards). The MLB Stats API's byDateRange stat type is the same
+// hydrate mechanism already proven working elsewhere in this app (see app.js's many
+// `hydrate=stats(group=hitting,type=season,...)` calls), just with a date range
+// instead of season-long — a reliable source for the general "is he hot right now"
+// signal that HR count over the last 10 games (last10HR, computed live client-side
+// from game logs) doesn't fully capture on its own.
 // ─────────────────────────────────────────────────────────────────────────
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
@@ -41,6 +53,11 @@ const DATA_DIR = path.join(__dirname, '..', 'data');
 const HOT_HITTERS_PATH = path.join(DATA_DIR, 'statcast-hot-hitters.json');
 const SEASON = new Date().getFullYear();
 const MLB_API = 'https://statsapi.mlb.com/api/v1';
+const RECENT_DAYS = 14;
+function isoDate(d) { return d.toISOString().slice(0, 10); }
+function daysAgo(n) { const d = new Date(); d.setDate(d.getDate() - n); return d; }
+const RECENT_START = isoDate(daysAgo(RECENT_DAYS));
+const RECENT_END = isoDate(new Date());
 
 async function fetchJSON(url, attempts = 3) {
   let lastErr;
@@ -100,14 +117,48 @@ function extractSplits(person) {
 // inventing a new one keeps "injured/IL" meaning the same thing everywhere in the app.
 const INACTIVE_STATUS_RE = /injured|\bil\b|restricted|suspended|bereavement|paternity|inactive|minor/;
 
+let loggedRecentFormSample = false;
+
+// byDateRange/season stat groups (unlike statSplits) carry one stat block, not an
+// array keyed by sitCode — same {stat:{...}} shape the app's own hydrate calls
+// already parse elsewhere (see app.js: `d.people[0].stats[0].splits[0].stat`).
+function extractStatGroup(person, matchType) {
+  const statGroups = person?.stats || [];
+  const group = statGroups.find(g => g.type?.type === matchType || g.type?.displayName === matchType);
+  return group?.splits?.[0]?.stat || null;
+}
+
+function extractRecentForm(person) {
+  const recent = extractStatGroup(person, 'byDateRange');
+  const season = extractStatGroup(person, 'season');
+  if (!loggedRecentFormSample && recent) {
+    console.log(`Sample byDateRange shape for ${person.fullName || person.id}: ${JSON.stringify(recent).slice(0, 500)}`);
+    loggedRecentFormSample = true;
+  }
+  if (!recent) return {};
+  const recentPA = num(recent.plateAppearances) || 0;
+  // Too few plate appearances in a 14-day window (injury, part-time role, recent
+  // callup) makes AVG/OPS noise, not signal — same reasoning as the min=1 floor
+  // sync-statcast-hot-hitters.mjs used for its (broken) Statcast trend attempt.
+  if (recentPA < 10) return {};
+  const out = { recentAvg: num(recent.avg), recentOps: num(recent.ops) };
+  if (season) {
+    const seasonAvg = num(season.avg), seasonOps = num(season.ops);
+    if (out.recentOps != null && seasonOps != null) out.recentOpsTrend = +(out.recentOps - seasonOps).toFixed(3);
+    if (out.recentAvg != null && seasonAvg != null) out.recentAvgTrend = +(out.recentAvg - seasonAvg).toFixed(3);
+  }
+  return out;
+}
+
 async function buildSplitsForTeam(teamId) {
-  const url = `${MLB_API}/teams/${teamId}/roster?rosterType=active&hydrate=person(stats(group=[hitting],type=[statSplits],sitCodes=[h,a,risp],season=${SEASON}))`;
+  const url = `${MLB_API}/teams/${teamId}/roster?rosterType=active&hydrate=person(stats(group=[hitting],type=[statSplits],sitCodes=[h,a,risp],season=${SEASON}),stats(group=[hitting],type=[byDateRange],startDate=${RECENT_START},endDate=${RECENT_END}),stats(group=[hitting],type=[season],season=${SEASON}))`;
   const d = await fetchJSON(url);
   const out = {};
   for (const entry of d.roster || []) {
     const person = entry.person;
     if (!person?.id) continue;
     const splits = extractSplits(person);
+    Object.assign(splits, extractRecentForm(person));
     const statusText = String(entry.status?.description || entry.status?.code || '');
     if (statusText && INACTIVE_STATUS_RE.test(statusText.toLowerCase())) {
       splits.rosterStatus = statusText;
@@ -159,7 +210,8 @@ async function main() {
 
   const totalWithSplits = Object.keys(allSplits).length;
   const totalInactive = Object.values(allSplits).filter(s => s.rosterStatus).length;
-  console.log(`Fetched splits for ${totalWithSplits} players across ${teamIds.length - teamFailures}/${teamIds.length} teams (${totalInactive} flagged injured/inactive).`);
+  const totalWithRecentForm = Object.values(allSplits).filter(s => s.recentOps != null).length;
+  console.log(`Fetched splits for ${totalWithSplits} players across ${teamIds.length - teamFailures}/${teamIds.length} teams (${totalInactive} flagged injured/inactive, ${totalWithRecentForm} with recent-form trend).`);
 
   let merged = 0;
   for (const p of hotHitters.players) {

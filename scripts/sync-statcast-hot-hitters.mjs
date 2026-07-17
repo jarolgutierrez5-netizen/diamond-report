@@ -81,12 +81,28 @@ const PLATE_DISCIPLINE_URL_CANDIDATES = [
   `${BASE}/custom?year=${SEASON}&type=batter&filter=&min=q&selections=oz_swing_percent,out_zone_swing_percent,iz_contact_percent,in_zone_contact_percent,zone_contact_percent,o_swing_percent,z_contact_percent,swing_percent,contact_percent,whiff_percent&chart=false&x=oz_swing_percent&y=iz_contact_percent&r=no&chartType=beeswarm&sort=xwoba&sortDir=desc&csv=true`,
 ];
 const SPRINT_SPEED_URL = `${BASE}/sprint_speed?year=${SEASON}&position=&team=&min=10&csv=true`;
+// Baserunning value beyond raw Sprint Speed (e.g. extra-bases-taken rate). Real slug
+// unconfirmed from this sandbox — SB success% (a reliable, always-available signal)
+// is computed separately in app.js directly from stolenBases/caughtStealing, already
+// present on every hitting-stats API response this app fetches, so this leaderboard
+// attempt is a pure bonus on top rather than the only baserunning signal.
+const BASERUNNING_URL_CANDIDATES = [
+  `${BASE}/baserunning-run-value?type=Batter&year=${SEASON}&team=&min=1&csv=true`,
+  `${BASE}/custom?year=${SEASON}&type=batter&filter=&min=1&selections=extra_bases_taken_percent,takes_extra_base_percent,baserunning_runs,bsr&chart=false&x=extra_bases_taken_percent&y=extra_bases_taken_percent&r=no&chartType=beeswarm&sort=extra_bases_taken_percent&sortDir=desc&csv=true`,
+];
 // Bat Tracking (swing speed, squared-up%, blast%) — same "no dedicated page, verify live"
 // situation as plate discipline. Try the dedicated bat-tracking leaderboard first, then
 // the custom-leaderboard builder as a fallback with several plausible column-code guesses.
 const BAT_TRACKING_URL_CANDIDATES = [
   `${BASE}/bat-tracking?type=batter&year=${SEASON}&min=q&csv=true`,
   `${BASE}/custom?year=${SEASON}&type=batter&filter=&min=q&selections=avg_bat_speed,avg_swing_speed,squared_up_per_swing_percent,squared_up_percent,avg_squared_up_percent,blast_percent,avg_blast_percent,blasts_contact_percent,avg_swing_length&chart=false&x=avg_bat_speed&y=blast_percent&r=no&chartType=beeswarm&sort=avg_bat_speed&sortDir=desc&csv=true`,
+];
+// Batted-ball direction (pull%/oppo%/center%) — pulled contact correlates strongly
+// with home-run power (most HRs are pulled), so this is a real projection input, not
+// just display. Same "verify live, log real columns" situation as everything else.
+const BATTED_BALL_DIRECTION_URL_CANDIDATES = [
+  `${BASE}/batted-ball?type=batter&year=${SEASON}&min=q&csv=true`,
+  `${BASE}/custom?year=${SEASON}&type=batter&filter=&min=q&selections=pull_percent,oppo_percent,straightaway_percent,pulled_percent,opposite_percent,center_percent&chart=false&x=pull_percent&y=oppo_percent&r=no&chartType=beeswarm&sort=pull_percent&sortDir=desc&csv=true`,
 ];
 
 async function fetchCSV(url, attempts = 3) {
@@ -236,6 +252,81 @@ async function buildBatTracking() {
   throw lastErr;
 }
 
+async function buildBattedBallDirection() {
+  let lastErr;
+  for (const url of BATTED_BALL_DIRECTION_URL_CANDIDATES) {
+    let csv;
+    try {
+      csv = await fetchCSV(url);
+    } catch (e) {
+      console.warn(`Batted-ball-direction candidate ${url} failed to fetch: ${e.message}`);
+      lastErr = e;
+      continue;
+    }
+    const rows = parseCSV(csv);
+    if (!rows.length) { lastErr = new Error('no data rows'); continue; }
+    const sample = rows[0];
+    const hasId = pick(sample, ['player_id', 'batter_id', 'mlbam_id', 'id']) !== null;
+    const hasAny = ['pull_percent', 'pulled_percent', 'oppo_percent', 'opposite_percent'].some(k => sample[k] !== undefined);
+    if (!hasId || !hasAny) {
+      console.warn(`Batted-ball-direction candidate ${url} returned data but not the expected columns: ${Object.keys(sample).join(', ')}`);
+      lastErr = new Error('unexpected columns');
+      continue;
+    }
+    const out = {};
+    for (const r of rows) {
+      const id = pick(r, ['player_id', 'batter_id', 'mlbam_id', 'id']);
+      if (!id) continue;
+      out[id] = {
+        pullPct: pctScale(pick(r, ['pull_percent', 'pulled_percent'])),
+        oppoPct: pctScale(pick(r, ['oppo_percent', 'opposite_percent'])),
+        centerPct: pctScale(pick(r, ['straightaway_percent', 'center_percent'])),
+      };
+    }
+    const vals = Object.values(out);
+    console.log(`Batted-ball-direction candidate ${url} matched schema — columns: ${Object.keys(sample).join(', ')}; ${vals.length} players, ${vals.filter(v => v.pullPct != null).length} with pullPct (e.g. ${vals.find(v=>v.pullPct!=null)?.pullPct}), ${vals.filter(v => v.oppoPct != null).length} with oppoPct.`);
+    return out;
+  }
+  throw lastErr;
+}
+
+async function buildBaserunningValue() {
+  let lastErr;
+  for (const url of BASERUNNING_URL_CANDIDATES) {
+    let csv;
+    try {
+      csv = await fetchCSV(url);
+    } catch (e) {
+      console.warn(`Baserunning-value candidate ${url} failed to fetch: ${e.message}`);
+      lastErr = e;
+      continue;
+    }
+    const rows = parseCSV(csv);
+    if (!rows.length) { lastErr = new Error('no data rows'); continue; }
+    const sample = rows[0];
+    const hasId = pick(sample, ['player_id', 'batter_id', 'mlbam_id', 'id']) !== null;
+    const hasAny = ['extra_bases_taken_percent', 'takes_extra_base_percent', 'baserunning_runs', 'bsr'].some(k => sample[k] !== undefined);
+    if (!hasId || !hasAny) {
+      console.warn(`Baserunning-value candidate ${url} returned data but not the expected columns: ${Object.keys(sample).join(', ')}`);
+      lastErr = new Error('unexpected columns');
+      continue;
+    }
+    const out = {};
+    for (const r of rows) {
+      const id = pick(r, ['player_id', 'batter_id', 'mlbam_id', 'id']);
+      if (!id) continue;
+      out[id] = {
+        extraBasesTakenPct: pctScale(pick(r, ['extra_bases_taken_percent', 'takes_extra_base_percent'])),
+        baserunningRuns: num(pick(r, ['baserunning_runs', 'bsr'])),
+      };
+    }
+    const vals = Object.values(out);
+    console.log(`Baserunning-value candidate ${url} matched schema — columns: ${Object.keys(sample).join(', ')}; ${vals.length} players, ${vals.filter(v => v.extraBasesTakenPct != null).length} with extraBasesTakenPct, ${vals.filter(v => v.baserunningRuns != null).length} with baserunningRuns.`);
+    return out;
+  }
+  throw lastErr;
+}
+
 async function buildSprintSpeed() {
   const csv = await fetchCSV(SPRINT_SPEED_URL);
   const rows = parseCSV(csv);
@@ -280,9 +371,10 @@ async function main() {
     console.warn(`Trend data sync failed (non-fatal, season data still written):`, e.message);
   }
 
-  // Plate discipline, Sprint Speed, and Bat Tracking are independent, non-fatal
-  // add-ons — same reasoning as the recent-window trend pull above.
-  let plateDiscipline = {}, sprintSpeed = {}, batTracking = {};
+  // Plate discipline, Sprint Speed, Bat Tracking, and Batted-Ball Direction are
+  // independent, non-fatal add-ons — same reasoning as the recent-window trend
+  // pull above.
+  let plateDiscipline = {}, sprintSpeed = {}, batTracking = {}, battedBallDirection = {}, baserunningValue = {};
   try {
     plateDiscipline = await buildPlateDiscipline();
   } catch (e) {
@@ -298,6 +390,16 @@ async function main() {
   } catch (e) {
     console.warn('Bat-tracking sync failed (non-fatal):', e.message);
   }
+  try {
+    battedBallDirection = await buildBattedBallDirection();
+  } catch (e) {
+    console.warn('Batted-ball-direction sync failed (non-fatal):', e.message);
+  }
+  try {
+    baserunningValue = await buildBaserunningValue();
+  } catch (e) {
+    console.warn('Baserunning-value sync failed (non-fatal):', e.message);
+  }
 
   const ids = new Set([...Object.keys(battedBall), ...Object.keys(expected)]);
   let rawPlayers = [...ids].map(id => {
@@ -308,6 +410,8 @@ async function main() {
     const pd = plateDiscipline[id] || {};
     const ss = sprintSpeed[id] || {};
     const bt = batTracking[id] || {};
+    const bbd = battedBallDirection[id] || {};
+    const brv = baserunningValue[id] || {};
     const trend = (recentVal, seasonVal) => (recentVal != null && seasonVal != null) ? +(recentVal - seasonVal).toFixed(3) : undefined;
     return {
       playerId: id,
@@ -323,6 +427,11 @@ async function main() {
       batSpeed: bt.batSpeed,
       squaredUpPct: bt.squaredUpPct,
       blastRate: bt.blastRate,
+      pullPct: bbd.pullPct,
+      oppoPct: bbd.oppoPct,
+      centerPct: bbd.centerPct,
+      extraBasesTakenPct: brv.extraBasesTakenPct,
+      baserunningRuns: brv.baserunningRuns,
       barrelTrend: trend(rbb.barrelPct, bb.barrelPct),
       hardHitTrend: trend(rbb.hardHitPct, bb.hardHitPct),
       sweetSpotTrend: trend(rbb.sweetSpotPct, bb.sweetSpotPct),
@@ -350,7 +459,7 @@ async function main() {
   const trendCount = players.filter(p => p.xwobaTrend !== undefined).length;
   const out = { generatedAt: new Date().toISOString(), season: SEASON, recentWindowDays: RECENT_DAYS, players };
   await writeFile(path.join(DATA_DIR, 'statcast-hot-hitters.json'), JSON.stringify(out, null, 2) + '\n');
-  console.log(`Synced Statcast profile for ${players.length} batters for ${SEASON} (${trendCount} with ${RECENT_DAYS}-day trend data, ${players.filter(p=>p.chasePct!=null).length} with plate discipline, ${players.filter(p=>p.sprintSpeed!=null).length} with sprint speed, ${players.filter(p=>p.batSpeed!=null).length} with bat tracking).`);
+  console.log(`Synced Statcast profile for ${players.length} batters for ${SEASON} (${trendCount} with ${RECENT_DAYS}-day trend data, ${players.filter(p=>p.chasePct!=null).length} with plate discipline, ${players.filter(p=>p.sprintSpeed!=null).length} with sprint speed, ${players.filter(p=>p.batSpeed!=null).length} with bat tracking, ${players.filter(p=>p.pullPct!=null).length} with batted-ball direction, ${players.filter(p=>p.extraBasesTakenPct!=null).length} with baserunning value).`);
 }
 
 const isMain = import.meta.url === `file://${process.argv[1]}`;

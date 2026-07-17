@@ -1001,6 +1001,13 @@ const teamIds = {
   SEA:136,STL:138,TB:139,TEX:140,TOR:141,WSH:120,ATH:133,AZ:109
 };
 window.teamIds = Object.assign(window.teamIds || {}, teamIds);
+// Reverse of teamIds (id -> abbr), for matching numeric MLB team_id fields on
+// repo-synced data (e.g. park-factors.json) back to the abbreviation strings used
+// everywhere else in this file. AZ/ATH collide with ARI/OAK's id on purpose in
+// teamIds (alternate abbreviations for the same franchise) — first assignment
+// below wins, which is fine since either abbreviation resolves to the same park.
+const teamIdToAbbr = {};
+Object.keys(teamIds).forEach(abbr => { const id = String(teamIds[abbr]); if (!teamIdToAbbr[id]) teamIdToAbbr[id] = abbr; });
 function teamLogo(abbr) {
   const id = teamIds[abbr] || teamIds[String(abbr || '').toUpperCase() === 'AZ' ? 'ARI' : abbr];
   if (!id) return '';
@@ -2018,6 +2025,7 @@ async function loadPitcherReport() {
   try {
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
     await loadStatcastHotHitters();
+    await loadParkFactors().catch(() => {});
     const games = await getTodaySchedule('team,probablePitcher');
     if (!games.length) { el.innerHTML = '<div class="mu-empty">No games scheduled today.</div>'; return; }
 
@@ -2834,6 +2842,7 @@ async function loadGameProps() {
   try {
     const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
     await loadSportsbookKLines(today);
+    await loadParkFactors().catch(() => {});
     const games = await getTodaySchedule('team,probablePitcher,linescore', { force: true });
 
     if (!games.length) {
@@ -3321,6 +3330,10 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   // fetches — just never extracted or shown anywhere in this panel.
   const bRBI  = fi(bs.rbi ?? bs.runsBattedIn);
   const bSB   = fi(bs.stolenBases);
+  // SB success% needs no new data source — caughtStealing is on the exact same
+  // hitting-stats response stolenBases already comes from, just never paired with it.
+  const bSbAttempts = (Number(bs.stolenBases) || 0) + (Number(bs.caughtStealing) || 0);
+  const bSbPct = bSbAttempts > 0 ? `${((Number(bs.stolenBases) || 0) / bSbAttempts * 100).toFixed(0)}%` : '–';
 
   const pERA  = fv(ps.era,2); const pFIP = fv(ps.fip,2); const pWHIP = fv(ps.whip,2);
   const pHR9  = fv(ps.homeRunsPer9,2); const pKper9 = fv(ps.strikeoutsPer9Inn,1);
@@ -3975,6 +3988,9 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     { label: 'Sprint Speed', value: hh.sprintSpeed != null ? `${parseFloat(hh.sprintSpeed)} ft/s` : null, desc: 'Foot speed on competitive plays. Context for stolen-base and extra-base upside, not a hot/cold signal.' },
     { label: 'Outs Above Average', value: hh.oaa != null ? `${hh.oaa > 0 ? '+' : ''}${parseFloat(hh.oaa)}` : null, desc: 'Season defensive value — how many extra outs he\'s made versus an average fielder at his position. Context, not a hot/cold signal.' },
     { label: 'Arm Strength', value: hh.armStrength != null ? `${parseFloat(hh.armStrength)} mph` : null, desc: 'Average throwing velocity on competitive plays. Context for baserunner deterrence, not a hot/cold signal.' },
+    { label: 'Last 14 Days OPS', value: hh.recentOps != null ? Number(hh.recentOps).toFixed(3).replace(/^0/,'') : null, trend: hh.recentOpsTrend, desc: 'Real OPS from MLB\'s own game log over the last 14 days, versus his season OPS. The most reliable "is he actually hot right now" signal this app has.' },
+    { label: 'Pull%', value: hh.pullPct != null ? `${parseFloat(hh.pullPct)}%` : null, desc: 'How often he pulls the ball. The large majority of home runs are pulled, so an elevated pull rate is real power-upside context.' },
+    { label: 'Extra Bases Taken%', value: hh.extraBasesTakenPct != null ? `${parseFloat(hh.extraBasesTakenPct)}%` : null, desc: 'How often he takes an extra base on a hit when he had the chance (e.g. first to third on a single). Baserunning aggressiveness, not a power signal.' },
   ].filter(m => m.value != null);
 
   const seasonFallbackMetrics = [
@@ -4087,7 +4103,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
 
         <div class="dr1043-panel">
           <div class="dr1043-panel-title">Batter season <span class="dr1043-badge blue">${batterName.split(' ').pop()}</span></div>
-          ${[['AVG',bAVG],['HR',bHR],['RBI',bRBI],['SB',bSB],['OPS',bOPS],['ISO',bISO],['K%',bKpct],['BB%',bBBpct]].map(([l,v])=>`
+          ${[['AVG',bAVG],['HR',bHR],['RBI',bRBI],['SB',bSB],['SB%',bSbPct],['OPS',bOPS],['ISO',bISO],['K%',bKpct],['BB%',bBBpct]].map(([l,v])=>`
           <div class="dr1043-row"><span>${l}</span><strong>${v}</strong></div>`).join('')}
         </div>
 
@@ -4237,6 +4253,32 @@ async function loadStatcastHotHitters(force=false) {
   })();
   return statcastHotHittersPromise;
 }
+// Overwrites the hardcoded park-factor estimates (declared above, near the venue
+// list) with real, auto-updating Baseball Savant HR-index values once synced —
+// same repo-fed-JSON-with-hardcoded-fallback pattern as loadStatcastHotHitters().
+// Mutates parkFactors in place (not reassigned) so every existing closure that
+// already reads from it — Game Props' win-probability model, the HR Potential
+// engine — picks up real data automatically with no other code changes.
+let parkFactorsLoaded = false;
+let parkFactorsPromise = null;
+async function loadParkFactors(force = false) {
+  if (parkFactorsLoaded && !force) return parkFactors;
+  if (parkFactorsPromise && !force) return parkFactorsPromise;
+  parkFactorsPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/park-factors.json`);
+      const teams = data.teams || {};
+      Object.keys(teams).forEach(teamId => {
+        const abbr = teamIdToAbbr[teamId];
+        const hrIndex = teams[teamId]?.hrIndex;
+        if (abbr && Number.isFinite(hrIndex)) parkFactors[abbr] = hrIndex;
+      });
+    } catch (e) {}
+    parkFactorsLoaded = true;
+    return parkFactors;
+  })();
+  return parkFactorsPromise;
+}
 function clampNum(n, min, max) { n = Number(n); if (!Number.isFinite(n)) return min; return Math.max(min, Math.min(max, n)); }
 function pctNum(v) { if (v === null || v === undefined || v === '') return null; const n = Number(String(v).replace('%','')); return Number.isFinite(n) ? n : null; }
 function buildFallbackHotHitterProfile(row) {
@@ -4276,6 +4318,17 @@ function getStatcastHotHitterProfile(row) {
   const barrel = pctNum(fromRepo.barrelPct) ?? 0;
   const batSpeed = Number(fromRepo.batSpeed || 0);
   const blastRate = pctNum(fromRepo.blastRate) ?? 0;
+  // Real rolling-form trend (14-day OPS vs season OPS, from MLB's own byDateRange
+  // stats via sync-batter-splits.mjs) — a reliable replacement for the Statcast
+  // xwobaTrend/hardHitTrend/etc-style bonuses above, which stay in the formula for
+  // players who have them but silently contribute 0 for everyone else since Savant's
+  // date-range params don't actually scope those leaderboards (see that script's
+  // header comment). This is the trend signal that's actually populated in practice.
+  const recentOpsTrend = Number(fromRepo.recentOpsTrend || 0);
+  // Pull rate isn't a hot/cold signal by itself, but pulled contact is where the
+  // overwhelming majority of home runs come from — a real, if modest, power-upside
+  // input distinct from the trend/quality-of-contact signals above.
+  const pullPct = pctNum(fromRepo.pullPct) ?? 0;
   const score = clampNum(
     (xwoba >= .420 ? 18 : xwoba >= .370 ? 13 : xwoba >= .330 ? 7 : 0) +
     (xwobaTrend >= .060 ? 15 : xwobaTrend >= .030 ? 10 : xwobaTrend >= .015 ? 5 : 0) +
@@ -4288,7 +4341,9 @@ function getStatcastHotHitterProfile(row) {
     (batSpeed >= 75 ? 5 : batSpeed >= 72 ? 3 : 0) +
     (batSpeedTrend >= 1.5 ? 5 : batSpeedTrend >= .7 ? 3 : 0) +
     (blastRate >= 18 ? 5 : blastRate >= 12 ? 3 : 0) +
-    (blastTrend >= 5 ? 5 : blastTrend >= 2 ? 3 : 0), 0, 100
+    (blastTrend >= 5 ? 5 : blastTrend >= 2 ? 3 : 0) +
+    (recentOpsTrend >= .150 ? 15 : recentOpsTrend >= .080 ? 10 : recentOpsTrend >= .040 ? 5 : 0) +
+    (pullPct >= 45 ? 6 : pullPct >= 38 ? 3 : 0), 0, 100
   );
   const tags = [];
   if (xwobaTrend >= .015 || xwoba >= .370) tags.push('xwOBA↑');
@@ -4297,6 +4352,9 @@ function getStatcastHotHitterProfile(row) {
   if (barrelTrend >= 2 || barrel >= 10) tags.push('Barrel↑');
   if (batSpeedTrend >= .7 || batSpeed >= 72) tags.push('Bat Speed↑');
   if (blastTrend >= 2 || blastRate >= 12) tags.push('Blasts↑');
+  if (recentOpsTrend >= .040) tags.push('Hot Last 14G');
+  else if (recentOpsTrend <= -.080) tags.push('Cold Last 14G');
+  if (pullPct >= 45) tags.push('Pull Power');
   const boost = clampNum((score / 100) * 7.5, 0, 7.5);
   return { ...fallback, ...fromRepo, source:'statcast-repo', onFireScore:Math.max(score, fallback.onFireScore || 0), hotBoostPct:+Math.max(boost, fallback.hotBoostPct || 0).toFixed(1), tags:[...new Set([...tags, ...(fallback.tags||[])])].slice(0,6) };
 }
@@ -4800,6 +4858,7 @@ async function loadHRPotential() {
   try {
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
     await loadStatcastHotHitters();
+    await loadParkFactors().catch(() => {});
     const games = await getTodaySchedule('team,probablePitcher');
     await loadActivePlayerIdsForGames(games).catch(() => {});
 
@@ -5066,7 +5125,15 @@ async function loadHRPotential() {
           // ~38 batters per 9 innings once baserunners allowed are counted, so dividing
           // by 27 overstated the pitcher's true HR-per-batter rate.
           const pitcherRate=pitcherHr9>0?pitcherHr9/38:0.03;
-          const hrPerPA = (batterRate*0.6)+(pitcherRate*0.4);
+          // gameParkFactor (100=average, Coors~145, Oakland~90) used to be computed and
+          // attached to the row as metadata but never actually multiplied into the rate
+          // that drives hrProb — Coors Field and Oakland Coliseum graded identically once
+          // the sim ran. Same 0.5 shrinkage already used for this exact purpose elsewhere
+          // in this file (see the older parkAdj formula in the K/HR prop-hit-highlight
+          // module) — a real park's effect is real, but PA-level HR rate has enough other
+          // noise that a full raw multiply would overcorrect for it.
+          const parkAdj = 1 + ((gameParkFactor - 100) / 100) * 0.5;
+          const hrPerPA = ((batterRate*0.6)+(pitcherRate*0.4)) * parkAdj;
           // Lineup slot (1-9), computed here (not just below with the display battingOrder)
           // so it can feed the per-PA count the HR simulation runs — same 3-digit MLB
           // battingOrder code as the display field derives from.

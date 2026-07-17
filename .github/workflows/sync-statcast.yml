@@ -59,9 +59,14 @@ jobs:
         run: node scripts/sync-fielding-defense.mjs
         continue-on-error: true
 
-      - name: Run situational splits sync (Home/Away, RISP)
+      - name: Run situational splits sync (Home/Away, RISP, recent-form trend)
         if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-batter-splits.mjs
+        continue-on-error: true
+
+      - name: Run park-factors sync
+        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
+        run: node scripts/sync-park-factors.mjs
         continue-on-error: true
 
       - name: Run per-pitch-type HR + Strike Zone sync for today's probable starters
@@ -79,7 +84,7 @@ jobs:
           # ignores brand-new untracked files, which is exactly what these files are
           # on a repo's first-ever run. Stage first, then check the index against HEAD so
           # a genuinely new file is treated as a real change instead of "nothing to commit".
-          git add data/pitcher-statcast.json data/batter-pitch-type-season.json data/statcast-hot-hitters.json
+          git add data/pitcher-statcast.json data/batter-pitch-type-season.json data/statcast-hot-hitters.json data/park-factors.json
           if git diff --cached --quiet; then
             echo "No changes to sync — nothing to commit."
             exit 0
