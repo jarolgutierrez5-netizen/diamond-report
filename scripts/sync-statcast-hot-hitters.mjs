@@ -81,6 +81,13 @@ const PLATE_DISCIPLINE_URL_CANDIDATES = [
   `${BASE}/custom?year=${SEASON}&type=batter&filter=&min=q&selections=oz_swing_percent,out_zone_swing_percent,iz_contact_percent,in_zone_contact_percent,zone_contact_percent,o_swing_percent,z_contact_percent,swing_percent,contact_percent,whiff_percent&chart=false&x=oz_swing_percent&y=iz_contact_percent&r=no&chartType=beeswarm&sort=xwoba&sortDir=desc&csv=true`,
 ];
 const SPRINT_SPEED_URL = `${BASE}/sprint_speed?year=${SEASON}&position=&team=&min=10&csv=true`;
+// Bat Tracking (swing speed, squared-up%, blast%) — same "no dedicated page, verify live"
+// situation as plate discipline. Try the dedicated bat-tracking leaderboard first, then
+// the custom-leaderboard builder as a fallback with several plausible column-code guesses.
+const BAT_TRACKING_URL_CANDIDATES = [
+  `${BASE}/bat-tracking?type=batter&year=${SEASON}&min=q&csv=true`,
+  `${BASE}/custom?year=${SEASON}&type=batter&filter=&min=q&selections=avg_bat_speed,avg_swing_speed,squared_up_per_swing_percent,squared_up_percent,avg_squared_up_percent,blast_percent,avg_blast_percent,blasts_contact_percent,avg_swing_length&chart=false&x=avg_bat_speed&y=blast_percent&r=no&chartType=beeswarm&sort=avg_bat_speed&sortDir=desc&csv=true`,
+];
 
 async function fetchCSV(url, attempts = 3) {
   let lastErr;
@@ -182,6 +189,42 @@ async function buildPlateDiscipline() {
   throw lastErr;
 }
 
+async function buildBatTracking() {
+  let lastErr;
+  for (const url of BAT_TRACKING_URL_CANDIDATES) {
+    let csv;
+    try {
+      csv = await fetchCSV(url);
+    } catch (e) {
+      console.warn(`Bat-tracking candidate ${url} failed to fetch: ${e.message}`);
+      lastErr = e;
+      continue;
+    }
+    const rows = parseCSV(csv);
+    try {
+      assertSchema(rows, 'Statcast bat-tracking leaderboard', ['avg_bat_speed', 'avg_swing_speed', 'blast_percent']);
+    } catch (e) {
+      console.warn(`Bat-tracking candidate ${url} returned data but not the expected columns: ${rows[0] ? Object.keys(rows[0]).join(', ') : '(no rows)'}`);
+      lastErr = e;
+      continue;
+    }
+    const out = {};
+    for (const r of rows) {
+      const id = pick(r, ['player_id', 'batter_id', 'mlbam_id']);
+      if (!id) continue;
+      out[id] = {
+        batSpeed: num(pick(r, ['avg_bat_speed', 'avg_swing_speed'])),
+        squaredUpPct: num(pick(r, ['squared_up_per_swing_percent', 'squared_up_percent', 'avg_squared_up_percent'])),
+        blastRate: num(pick(r, ['blast_percent', 'avg_blast_percent', 'blasts_contact_percent'])),
+      };
+    }
+    const vals = Object.values(out);
+    console.log(`Bat-tracking candidate ${url} matched schema — columns: ${rows[0] ? Object.keys(rows[0]).join(', ') : '(no rows)'}; ${vals.length} players, ${vals.filter(v => v.batSpeed != null).length} with batSpeed, ${vals.filter(v => v.squaredUpPct != null).length} with squaredUpPct, ${vals.filter(v => v.blastRate != null).length} with blastRate.`);
+    return out;
+  }
+  throw lastErr;
+}
+
 async function buildSprintSpeed() {
   const csv = await fetchCSV(SPRINT_SPEED_URL);
   const rows = parseCSV(csv);
@@ -226,9 +269,9 @@ async function main() {
     console.warn(`Trend data sync failed (non-fatal, season data still written):`, e.message);
   }
 
-  // Plate discipline and Sprint Speed are independent, non-fatal add-ons — same
-  // reasoning as the recent-window trend pull above.
-  let plateDiscipline = {}, sprintSpeed = {};
+  // Plate discipline, Sprint Speed, and Bat Tracking are independent, non-fatal
+  // add-ons — same reasoning as the recent-window trend pull above.
+  let plateDiscipline = {}, sprintSpeed = {}, batTracking = {};
   try {
     plateDiscipline = await buildPlateDiscipline();
   } catch (e) {
@@ -239,6 +282,11 @@ async function main() {
   } catch (e) {
     console.warn('Sprint Speed sync failed (non-fatal):', e.message);
   }
+  try {
+    batTracking = await buildBatTracking();
+  } catch (e) {
+    console.warn('Bat-tracking sync failed (non-fatal):', e.message);
+  }
 
   const ids = new Set([...Object.keys(battedBall), ...Object.keys(expected)]);
   let rawPlayers = [...ids].map(id => {
@@ -248,6 +296,7 @@ async function main() {
     const rex = recentExpected[id] || {};
     const pd = plateDiscipline[id] || {};
     const ss = sprintSpeed[id] || {};
+    const bt = batTracking[id] || {};
     const trend = (recentVal, seasonVal) => (recentVal != null && seasonVal != null) ? +(recentVal - seasonVal).toFixed(3) : undefined;
     return {
       playerId: id,
@@ -260,6 +309,9 @@ async function main() {
       zoneContactPct: pd.zoneContactPct,
       swingStrikePct: pd.swingStrikePct,
       sprintSpeed: ss.sprintSpeed,
+      batSpeed: bt.batSpeed,
+      squaredUpPct: bt.squaredUpPct,
+      blastRate: bt.blastRate,
       barrelTrend: trend(rbb.barrelPct, bb.barrelPct),
       hardHitTrend: trend(rbb.hardHitPct, bb.hardHitPct),
       sweetSpotTrend: trend(rbb.sweetSpotPct, bb.sweetSpotPct),
@@ -287,7 +339,7 @@ async function main() {
   const trendCount = players.filter(p => p.xwobaTrend !== undefined).length;
   const out = { generatedAt: new Date().toISOString(), season: SEASON, recentWindowDays: RECENT_DAYS, players };
   await writeFile(path.join(DATA_DIR, 'statcast-hot-hitters.json'), JSON.stringify(out, null, 2) + '\n');
-  console.log(`Synced Statcast profile for ${players.length} batters for ${SEASON} (${trendCount} with ${RECENT_DAYS}-day trend data, ${players.filter(p=>p.chasePct!=null).length} with plate discipline, ${players.filter(p=>p.sprintSpeed!=null).length} with sprint speed).`);
+  console.log(`Synced Statcast profile for ${players.length} batters for ${SEASON} (${trendCount} with ${RECENT_DAYS}-day trend data, ${players.filter(p=>p.chasePct!=null).length} with plate discipline, ${players.filter(p=>p.sprintSpeed!=null).length} with sprint speed, ${players.filter(p=>p.batSpeed!=null).length} with bat tracking).`);
 }
 
 const isMain = import.meta.url === `file://${process.argv[1]}`;

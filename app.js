@@ -3967,10 +3967,13 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     { label: 'Barrel%', value: hh.barrelPct != null ? `${parseFloat(hh.barrelPct)}%` : null, trend: hh.barrelTrend, desc: 'How often he makes perfect contact — the hardest-hit balls at the best angles. The gold standard of a locked-in swing.' },
     { label: 'xwOBA (14-day)', value: hh.xwoba != null ? Number(hh.xwoba).toFixed(3).replace(/^0/,'') : null, trend: hh.xwobaTrend, desc: 'The same "is he actually hot?" number as above, but measured over just the past two weeks.' },
     { label: 'Bat Speed', value: hh.batSpeed != null ? `${parseFloat(hh.batSpeed)} mph` : null, trend: hh.batSpeedTrend, desc: 'How fast he\'s swinging. A quicker swing often shows up right before a power surge does.' },
+    { label: 'Squared-Up%', value: hh.squaredUpPct != null ? `${parseFloat(hh.squaredUpPct)}%` : null, desc: 'How often he hits the ball with the sweet spot of the bat, transferring the most possible energy regardless of swing speed.' },
     { label: 'Blast Rate', value: hh.blastRate != null ? `${parseFloat(hh.blastRate)}%` : null, trend: hh.blastTrend, desc: 'How often his swing has both the speed and the angle to leave the yard.' },
     { label: 'Chase%', value: hh.chasePct != null ? `${parseFloat(hh.chasePct)}%` : null, desc: 'How often he swings at pitches outside the strike zone. Lower is better — a hitter chasing more than usual is a real red flag, not a hot signal.' },
     { label: 'Zone-Contact%', value: hh.zoneContactPct != null ? `${parseFloat(hh.zoneContactPct)}%` : null, desc: 'How often he actually makes contact when he swings at a pitch in the zone. A locked-in hitter rarely misses these.' },
     { label: 'Sprint Speed', value: hh.sprintSpeed != null ? `${parseFloat(hh.sprintSpeed)} ft/s` : null, desc: 'Foot speed on competitive plays. Context for stolen-base and extra-base upside, not a hot/cold signal.' },
+    { label: 'Outs Above Average', value: hh.oaa != null ? `${hh.oaa > 0 ? '+' : ''}${parseFloat(hh.oaa)}` : null, desc: 'Season defensive value — how many extra outs he\'s made versus an average fielder at his position. Context, not a hot/cold signal.' },
+    { label: 'Arm Strength', value: hh.armStrength != null ? `${parseFloat(hh.armStrength)} mph` : null, desc: 'Average throwing velocity on competitive plays. Context for baserunner deterrence, not a hot/cold signal.' },
   ].filter(m => m.value != null);
 
   const seasonFallbackMetrics = [
