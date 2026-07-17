@@ -1306,29 +1306,6 @@ function updateHeroTodayRecordStrip() {
 }
 window.updateHeroTodayRecordStrip = updateHeroTodayRecordStrip;
 
-// News Central hub trust callout — combined win/loss across every graded market
-// (Diamond Report Pick, K Props, Premium, HR Threat) for yesterday specifically,
-// not all-time, since "here's how we did yesterday" is a much more concrete,
-// checkable trust signal for a first-time hub visitor than a big all-time number.
-function updateHubTrustStrip() {
-  const el = document.getElementById('dr-hub-trust-strip');
-  if (!el) return;
-  const y = window.__yesterdayRecord;
-  if (!y || y.total <= 0) { el.style.display = 'none'; return; }
-  const pct = Math.round((y.wins / y.total) * 100);
-  const color = y.wins === y.total ? '#22e06f' : y.wins > y.total / 2 ? '#5b9dff' : '#fca5a5';
-  el.innerHTML = `<span style="color:${color}">✓ ${y.wins}-${y.losses}</span> (${pct}%) picks graded yesterday, across every market — <button type="button" class="dr-hub-trust-strip-link" id="dr-hub-trust-strip-link">see today's picks</button>`;
-  el.style.display = '';
-  const link = document.getElementById('dr-hub-trust-strip-link');
-  if (link && !link.dataset.drHubBound) {
-    link.dataset.drHubBound = '1';
-    link.addEventListener('click', () => {
-      const card = document.getElementById('dr-hub-baseball-card');
-      if (card) card.click();
-    });
-  }
-}
-
 // Fetches the nightly-graded all-time record once on load. Gracefully no-ops until the
 // first scheduled run of scripts/update-tracker.mjs actually produces data/tracker.json —
 // no fabricated record shown before real history exists.
@@ -1349,21 +1326,6 @@ async function loadAllTimeTrackerRecord() {
     window.__premiumTodayPicksRaw = (data?.market?.premium || []).filter(r => r.date === todayCT);
     if (typeof window.renderPremiumPicks === 'function') window.renderPremiumPicks();
     updateHeroTodayRecordStrip();
-
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayCT = yesterday.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-    let yWins = 0, yLosses = 0, yPushes = 0;
-    ['drp', 'kprop', 'premium', 'hrThreat'].forEach(market => {
-      (data?.market?.[market] || []).forEach(pick => {
-        if (pick.date !== yesterdayCT) return;
-        if (pick.result === 'win') yWins++;
-        else if (pick.result === 'loss') yLosses++;
-        else if (pick.result === 'push') yPushes++;
-      });
-    });
-    window.__yesterdayRecord = { wins: yWins, losses: yLosses, pushes: yPushes, total: yWins + yLosses + yPushes };
-    updateHubTrustStrip();
   } catch (e) {}
 }
 if (document.readyState === 'loading') {
