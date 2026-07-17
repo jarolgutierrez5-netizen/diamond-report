@@ -71,7 +71,14 @@ const RECENT_EXPECTED_STATS_URL = expectedStatsUrl(`startDate=${RECENT_START}&en
 // column codes for that endpoint aren't verifiable from this sandbox either.
 const PLATE_DISCIPLINE_URL_CANDIDATES = [
   `${BASE}/plate-discipline?type=batter&year=${SEASON}&position=&team=&min=q&csv=true`,
-  `${BASE}/custom?year=${SEASON}&type=batter&filter=&min=q&selections=o_swing_percent,z_swing_percent,swing_percent,z_contact_percent,contact_percent,whiff_percent&chart=false&x=o_swing_percent&y=z_contact_percent&r=no&chartType=beeswarm&sort=xwoba&sortDir=desc&csv=true`,
+  // First custom-leaderboard attempt: o_swing_percent/z_contact_percent were present as
+  // column headers but blank on every row (Savant silently blanks unrecognized selection
+  // codes instead of erroring) — swing_percent/contact_percent/whiff_percent did return
+  // real data, so only the zone-specific (in/out-of-zone) codes were wrong. Try Savant's
+  // actual in-zone/out-of-zone naming convention (oz_/iz_) as extra candidate columns
+  // alongside the ones already confirmed working, so whichever real code exists gets
+  // picked up without needing another guess-and-check round.
+  `${BASE}/custom?year=${SEASON}&type=batter&filter=&min=q&selections=oz_swing_percent,out_zone_swing_percent,iz_contact_percent,in_zone_contact_percent,zone_contact_percent,o_swing_percent,z_contact_percent,swing_percent,contact_percent,whiff_percent&chart=false&x=oz_swing_percent&y=iz_contact_percent&r=no&chartType=beeswarm&sort=xwoba&sortDir=desc&csv=true`,
 ];
 const SPRINT_SPEED_URL = `${BASE}/sprint_speed?year=${SEASON}&position=&team=&min=10&csv=true`;
 
@@ -163,8 +170,8 @@ async function buildPlateDiscipline() {
       const id = pick(r, ['player_id', 'batter_id', 'mlbam_id']);
       if (!id) continue;
       out[id] = {
-        chasePct: num(pick(r, ['o_swing_percent', 'chase_percent'])),
-        zoneContactPct: num(pick(r, ['z_contact_percent'])),
+        chasePct: num(pick(r, ['oz_swing_percent', 'out_zone_swing_percent', 'o_swing_percent', 'chase_percent'])),
+        zoneContactPct: num(pick(r, ['iz_contact_percent', 'in_zone_contact_percent', 'zone_contact_percent', 'z_contact_percent'])),
         swingStrikePct: num(pick(r, ['swstr_percent', 'whiff_percent'])),
       };
     }
