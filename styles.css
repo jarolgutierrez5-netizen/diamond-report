@@ -3402,3 +3402,32 @@ select:focus-visible {
   border: 1px solid rgba(220,38,38,.5);
   white-space: nowrap;
 }
+
+/* Deep Research polish — the outer .dr-panel.deep-card wrappers already have the
+   site's glass treatment, but the content living inside them (Matchups/Risk Watch
+   list items, the Top Plays table) was still flat solid-color panels with no hover
+   state, sitting right next to the nicely gradient-styled briefing box above them.
+   Not adding another backdrop-filter layer here (blur-on-blur inside an already
+   blurred panel looks muddy) — just a subtle gradient, rounder corners, and a real
+   hover state to match the interactive feel of every other card list on the site. */
+.deep-list-item {
+  background: linear-gradient(135deg, rgba(47,107,255,.07), rgba(15,23,42,.55));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 13px 15px;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.deep-list-item:hover {
+  border-color: rgba(47,107,255,.5);
+  box-shadow: 0 0 0 1px rgba(47,107,255,.15), 0 8px 20px rgba(0,0,0,.25);
+  transform: translateY(-1px);
+}
+#props .deep-table tbody tr {
+  transition: background .15s ease;
+}
+#props .deep-table tbody tr:hover td {
+  background: rgba(47,107,255,.06);
+}
+#props .deep-table tbody tr:last-child td {
+  border-bottom: none;
+}
