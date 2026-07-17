@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-17T07:36:31.320Z",
+  "generatedAt": "2026-07-17T17:48:04.008Z",
   "market": {
     "drp": [
       {
@@ -484,6 +484,17 @@
         "homeTeam": "SEA",
         "pick": "SEA",
         "pickPct": 58,
+        "result": "pending",
+        "actualWinner": null
+      },
+      {
+        "key": "2026-07-17|DRP|AZ-STL",
+        "date": "2026-07-17",
+        "gamePk": 825060,
+        "awayTeam": "STL",
+        "homeTeam": "AZ",
+        "pick": "STL",
+        "pickPct": 53,
         "result": "pending",
         "actualWinner": null
       }
@@ -1971,6 +1982,22 @@
         "opp": "SF",
         "projK": 7.4,
         "line": 6.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-17|KPROP|michael mcgreevy",
+        "date": "2026-07-17",
+        "gamePk": 825060,
+        "pitcherId": 700241,
+        "pitcherName": "Michael McGreevy",
+        "team": "STL",
+        "opp": "AZ",
+        "projK": 3.5,
+        "line": 2.5,
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
@@ -8211,6 +8238,18 @@
         "team": "SEA",
         "opp": "SF",
         "gamePk": 823115,
+        "score": 19,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-17|HRTHREAT|606466",
+        "date": "2026-07-17",
+        "playerId": 606466,
+        "playerName": "Ketel Marte",
+        "team": "AZ",
+        "opp": "STL",
+        "gamePk": 825060,
         "score": 19,
         "result": "pending",
         "actual": null
