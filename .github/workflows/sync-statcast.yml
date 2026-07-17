@@ -73,6 +73,12 @@ jobs:
         continue-on-error: true
         timeout-minutes: 3
 
+      - name: Run bullpen-fatigue sync (recent reliever pitch counts / back-to-back arms)
+        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
+        run: node scripts/sync-bullpen-fatigue.mjs
+        continue-on-error: true
+        timeout-minutes: 5
+
       - name: Run per-pitch-type HR + Strike Zone sync for today's probable starters
         # Depends on data/pitcher-statcast.json already existing (either from the step
         # above on the morning run, or from a prior run earlier the same day). A failure
@@ -99,6 +105,7 @@ jobs:
           # error the way naming a literal missing path does.
           git add data/pitcher-statcast.json data/batter-pitch-type-season.json data/statcast-hot-hitters.json
           [ -f data/park-factors.json ] && git add data/park-factors.json
+          [ -f data/bullpen-fatigue.json ] && git add data/bullpen-fatigue.json
           if git diff --cached --quiet; then
             echo "No changes to sync — nothing to commit."
             exit 0

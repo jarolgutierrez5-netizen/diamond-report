@@ -2945,6 +2945,7 @@ async function loadGameProps() {
     const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
     await loadSportsbookKLines(today);
     await loadParkFactors().catch(() => {});
+    await loadBullpenFatigue().catch(() => {});
     const games = await getTodaySchedule('team,probablePitcher,linescore', { force: true });
 
     if (!games.length) {
@@ -3266,18 +3267,25 @@ async function loadGameProps() {
       const parkFactorLabel = parkFactorVal > 107 ? 'HR-Friendly' : parkFactorVal < 93 ? 'Pitcher-Friendly' : 'Neutral';
       const parkFactorChip = `<span class="gp-factor ${parkFactorCls}" title="Statcast park factor for ${stadiumCoords[homeAbbr]?.name||homeAbbr} — 100 = league average">🏟️ Park Factor: ${parkFactorVal} · ${parkFactorLabel}${gpFactorBar(Math.abs(parkFactorVal - 100) / 33, parkFactorCls)}</span>`;
 
+      // Bullpen fatigue — only shown when at least one side's 'pen is genuinely
+      // Taxed/Gassed from the last two days' real reliever workload (see
+      // sync-bullpen-fatigue.mjs). Omitted entirely on a normal day rather than
+      // always showing a "Fresh" chip nobody needs to see.
+      let bullpenChip = '';
+      {
+        const fatigueRank = { Fresh: 0, Normal: 1, Taxed: 2, Gassed: 3 };
+        const awayFatigue = bullpenFatigue[awayAbbr];
+        const homeFatigue = bullpenFatigue[homeAbbr];
+        const worseAbbr = (fatigueRank[awayFatigue?.tier] || 0) >= (fatigueRank[homeFatigue?.tier] || 0) ? awayAbbr : homeAbbr;
+        const worse = worseAbbr === awayAbbr ? awayFatigue : homeFatigue;
+        if (worse && (worse.tier === 'Taxed' || worse.tier === 'Gassed')) {
+          const cls = worse.tier === 'Gassed' ? 'neg' : 'neu';
+          bullpenChip = `<span class="gp-factor ${cls}" title="${worse.totalRelieverPitches} reliever pitches and ${worse.backToBackArms} arm(s) used on both of the last two days — real recent workload, not a season average">🧯 ${worseAbbr} Bullpen: ${worse.tier}</span>`;
+        }
+      }
+
       const confBarW = Math.min(winnerPct, 100);
       const confBarColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : '#2ecc71';
-      // Radial confidence gauge — same win% and confColor already computed above,
-      // just visualized as an arc instead of the plain TOSS-UP/LEAN/LIKELY/STRONG
-      // text alone. The ring is cut out with a mask (not a flat-color inner div)
-      // so it reads correctly against .gp-card's translucent glass background
-      // instead of covering it with a mismatched solid patch.
-      const confGaugeDeg = Math.round(confBarW * 3.6);
-      const confGaugeHTML = `<div class="gp-conf-gauge-wrap" title="${confidence} confidence — ${winnerPct}% model win probability">
-        <div class="gp-conf-gauge-ring" style="background:conic-gradient(${confColor} ${confGaugeDeg}deg, rgba(255,255,255,.12) 0)"></div>
-        <div class="gp-conf-gauge-label" style="color:${confColor}">${winnerPct}%</div>
-      </div>`;
 
       const teamAccent = teamColors[homeAbbr] || teamColors[awayAbbr] || 'var(--accent)';
       return { html: `<div class="gp-card" data-game-pk="${g.gamePk}" data-away="${awayAbbr}" data-home="${homeAbbr}" data-winner="${winnerAbbr}" data-game-time="${dt.getTime()}" style="--team-accent:${teamAccent}">
@@ -3311,10 +3319,7 @@ async function loadGameProps() {
                 <span style="font-size:9px;color:#2ecc71;opacity:.8;font-family:'JetBrains Mono',monospace">${winnerPct}% WIN</span>
               </div>
             </div>
-            <div style="display:flex;align-items:center;gap:6px">
-              ${confGaugeHTML}
-              <span style="font-size:10px;font-weight:700;color:${confColor};letter-spacing:.5px">${confidence}</span>
-            </div>
+            <span style="font-size:10px;font-weight:700;color:${confColor};letter-spacing:.5px">${confidence}</span>
           </div>
 
           <!-- Win % bars -->
@@ -3345,7 +3350,7 @@ async function loadGameProps() {
         </div>
 
         <!-- HR Boost + Park Factor labels, same compact chip style as Key factors below -->
-        <div class="gp-factors">${hrBoostChip}${parkFactorChip}${factorChips}</div>
+        <div class="gp-factors">${hrBoostChip}${parkFactorChip}${bullpenChip}${factorChips}</div>
         <div class="gp-live-result-zone" data-live-score-badge="1" style="margin-top:8px">${resultBadge || ''}</div>
       </div>`, resultCorrect };
     }));
@@ -4622,6 +4627,31 @@ async function loadParkFactors(force = false) {
   })();
   return parkFactorsPromise;
 }
+
+// data/bullpen-fatigue.json is keyed by team abbreviation directly (unlike
+// park-factors, which needs a team-id lookup) — see sync-bullpen-fatigue.mjs.
+// No hardcoded fallback here: unlike park factors (a slow-changing physical
+// property of a stadium a rough static table can approximate), bullpen
+// fatigue is only meaningful as of the last day or two, so a stale guess
+// would be actively misleading rather than a reasonable placeholder. If the
+// sync hasn't run or failed, the chip is simply omitted for that game.
+let bullpenFatigue = {};
+let bullpenFatigueLoaded = false;
+let bullpenFatiguePromise = null;
+async function loadBullpenFatigue(force = false) {
+  if (bullpenFatigueLoaded && !force) return bullpenFatigue;
+  if (bullpenFatiguePromise && !force) return bullpenFatiguePromise;
+  bullpenFatiguePromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/bullpen-fatigue.json`);
+      bullpenFatigue = data.teams || {};
+    } catch (e) {}
+    bullpenFatigueLoaded = true;
+    return bullpenFatigue;
+  })();
+  return bullpenFatiguePromise;
+}
+
 function clampNum(n, min, max) { n = Number(n); if (!Number.isFinite(n)) return min; return Math.max(min, Math.min(max, n)); }
 function pctNum(v) { if (v === null || v === undefined || v === '') return null; const n = Number(String(v).replace('%','')); return Number.isFinite(n) ? n : null; }
 function buildFallbackHotHitterProfile(row) {
