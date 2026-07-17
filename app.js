@@ -3976,6 +3976,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
 
   // ── Repo-fed recent-form aggregates (Hard-Hit%, Sweet-Spot%, Barrel%, bat speed, blasts) ──
   const statcastMetrics = [
+    { label: 'Avg Exit Velo', value: hh.avgExitVelo != null ? `${parseFloat(hh.avgExitVelo)} mph` : null, desc: 'Average speed of the ball off the bat on balls in play. The most basic real measure of raw power.' },
     { label: 'Hard-Hit%', value: hh.hardHitPct != null ? `${parseFloat(hh.hardHitPct)}%` : null, trend: hh.hardHitTrend, desc: 'How often he crushes the ball (95+ mph off the bat). Hot hitters hit the ball hard — cold ones bloop it.' },
     { label: 'Sweet-Spot%', value: hh.sweetSpotPct != null ? `${parseFloat(hh.sweetSpotPct)}%` : null, trend: hh.sweetSpotTrend, desc: 'How often he hits line drives and deep fly balls — the kind of contact that turns into doubles and home runs.' },
     { label: 'Barrel%', value: hh.barrelPct != null ? `${parseFloat(hh.barrelPct)}%` : null, trend: hh.barrelTrend, desc: 'How often he makes perfect contact — the hardest-hit balls at the best angles. The gold standard of a locked-in swing.' },
@@ -3990,6 +3991,9 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     { label: 'Arm Strength', value: hh.armStrength != null ? `${parseFloat(hh.armStrength)} mph` : null, desc: 'Average throwing velocity on competitive plays. Context for baserunner deterrence, not a hot/cold signal.' },
     { label: 'Last 14 Days OPS', value: hh.recentOps != null ? Number(hh.recentOps).toFixed(3).replace(/^0/,'') : null, trend: hh.recentOpsTrend, desc: 'Real OPS from MLB\'s own game log over the last 14 days, versus his season OPS. The most reliable "is he actually hot right now" signal this app has.' },
     { label: 'Pull%', value: hh.pullPct != null ? `${parseFloat(hh.pullPct)}%` : null, desc: 'How often he pulls the ball. The large majority of home runs are pulled, so an elevated pull rate is real power-upside context.' },
+    { label: 'Fly-Ball%', value: hh.fbPct != null ? `${parseFloat(hh.fbPct)}%` : null, desc: 'How often contact goes in the air deep enough to leave the yard. A pull-heavy fly-ball hitter has real HR upside a pull-heavy ground-ball hitter doesn\'t.' },
+    { label: 'Line-Drive%', value: hh.ldPct != null ? `${parseFloat(hh.ldPct)}%` : null, desc: 'How often he squares up a line drive. A contact-quality/BABIP signal, not a power one — high line-drive hitters get more hits, not necessarily more homers.' },
+    { label: 'Ground-Ball%', value: hh.gbPct != null ? `${parseFloat(hh.gbPct)}%` : null, desc: 'How often contact stays on the ground. Lower is generally better for power upside — ground balls almost never leave the yard.' },
     { label: 'Extra Bases Taken%', value: hh.extraBasesTakenPct != null ? `${parseFloat(hh.extraBasesTakenPct)}%` : null, desc: 'How often he takes an extra base on a hit when he had the chance (e.g. first to third on a single). Baserunning aggressiveness, not a power signal.' },
   ].filter(m => m.value != null);
 
@@ -4318,6 +4322,7 @@ function getStatcastHotHitterProfile(row) {
   const barrel = pctNum(fromRepo.barrelPct) ?? 0;
   const batSpeed = Number(fromRepo.batSpeed || 0);
   const blastRate = pctNum(fromRepo.blastRate) ?? 0;
+  const avgExitVelo = Number(fromRepo.avgExitVelo || 0);
   // Real rolling-form trend (14-day OPS vs season OPS, from MLB's own byDateRange
   // stats via sync-batter-splits.mjs) — a reliable replacement for the Statcast
   // xwobaTrend/hardHitTrend/etc-style bonuses above, which stay in the formula for
@@ -4327,8 +4332,13 @@ function getStatcastHotHitterProfile(row) {
   const recentOpsTrend = Number(fromRepo.recentOpsTrend || 0);
   // Pull rate isn't a hot/cold signal by itself, but pulled contact is where the
   // overwhelming majority of home runs come from — a real, if modest, power-upside
-  // input distinct from the trend/quality-of-contact signals above.
+  // input distinct from the trend/quality-of-contact signals above. A pull-heavy fly-ball
+  // hitter has real HR upside a pull-heavy ground-ball hitter doesn't, so the combo of
+  // both elevated together is scored higher than either alone. Line-drive rate is a
+  // genuine BABIP/contact-quality signal, not a power one, scored separately and modestly.
   const pullPct = pctNum(fromRepo.pullPct) ?? 0;
+  const fbPct = pctNum(fromRepo.fbPct) ?? 0;
+  const ldPct = pctNum(fromRepo.ldPct) ?? 0;
   const score = clampNum(
     (xwoba >= .420 ? 18 : xwoba >= .370 ? 13 : xwoba >= .330 ? 7 : 0) +
     (xwobaTrend >= .060 ? 15 : xwobaTrend >= .030 ? 10 : xwobaTrend >= .015 ? 5 : 0) +
@@ -4343,7 +4353,9 @@ function getStatcastHotHitterProfile(row) {
     (blastRate >= 18 ? 5 : blastRate >= 12 ? 3 : 0) +
     (blastTrend >= 5 ? 5 : blastTrend >= 2 ? 3 : 0) +
     (recentOpsTrend >= .150 ? 15 : recentOpsTrend >= .080 ? 10 : recentOpsTrend >= .040 ? 5 : 0) +
-    (pullPct >= 45 ? 6 : pullPct >= 38 ? 3 : 0), 0, 100
+    (pullPct >= 40 && fbPct >= 38 ? 8 : pullPct >= 45 ? 6 : pullPct >= 38 ? 3 : 0) +
+    (ldPct >= 25 ? 3 : ldPct >= 21 ? 1 : 0) +
+    (avgExitVelo >= 91 ? 6 : avgExitVelo >= 89 ? 3 : 0), 0, 100
   );
   const tags = [];
   if (xwobaTrend >= .015 || xwoba >= .370) tags.push('xwOBA↑');
@@ -4354,7 +4366,10 @@ function getStatcastHotHitterProfile(row) {
   if (blastTrend >= 2 || blastRate >= 12) tags.push('Blasts↑');
   if (recentOpsTrend >= .040) tags.push('Hot Last 14G');
   else if (recentOpsTrend <= -.080) tags.push('Cold Last 14G');
-  if (pullPct >= 45) tags.push('Pull Power');
+  if (pullPct >= 40 && fbPct >= 38) tags.push('Pull+Fly Power');
+  else if (pullPct >= 45) tags.push('Pull Power');
+  if (ldPct >= 25) tags.push('Line-Drive Bat');
+  if (avgExitVelo >= 91) tags.push('Elite Exit Velo');
   const boost = clampNum((score / 100) * 7.5, 0, 7.5);
   return { ...fallback, ...fromRepo, source:'statcast-repo', onFireScore:Math.max(score, fallback.onFireScore || 0), hotBoostPct:+Math.max(boost, fallback.hotBoostPct || 0).toFixed(1), tags:[...new Set([...tags, ...(fallback.tags||[])])].slice(0,6) };
 }
