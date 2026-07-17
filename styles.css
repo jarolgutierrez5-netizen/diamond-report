@@ -3093,8 +3093,25 @@ select:focus-visible {
   backdrop-filter: blur(14px) !important;
   -webkit-backdrop-filter: blur(14px) !important;
   margin-bottom: 8px !important;
-  padding-left: 12px !important;
-  padding-right: 12px !important;
+  /* All the card's own padding now lives on .lbc-head/.lbc-stats inside it — the many
+     pre-existing "padding:Npx 0" breakpoint rules on this class would otherwise stack
+     with that inner padding and make the card taller than intended at every width. */
+  padding: 0 !important;
+  /* Several older breakpoint rules put this card itself into a 2-column CSS grid
+     (rank column | details column) for the old internal structure. .lbc-head and
+     .lbc-stats are now direct children meant to stack as two full-width rows, not sit
+     side by side in a grid track — force plain block flow so every one of those old
+     grid-template-columns declarations stops applying, regardless of which breakpoint
+     set it. */
+  display: block !important;
+  /* Several older breakpoint rules also forced a 540-600px minimum width on this card
+     (needed for the old table-like internal grid). The new header/stats rows wrap via
+     flexbox and don't need a floor width — forcing one back would just cause
+     horizontal overflow on narrow screens. */
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
   transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
 .lineup-batter-card:last-child {
@@ -3246,4 +3263,131 @@ select:focus-visible {
 }
 .dr-hub-side .dr-hub-side-toggle {
   margin-top: 24px;
+}
+
+/* Batting lineup card rework — the previous layout let the matchup badge float off
+   to the right with a lot of dead space, buried the AVG/HR/OPS/L10 stats in plain
+   gray text, and gave a secondary action (Pitcher Matchup) a full-width button that
+   visually dominated the card. New structure: one wrapping header row (rank, name,
+   position, status badges, matchup read, and a compact matchup button all together),
+   then the stats promoted to their own row as proper chips. Fresh class names
+   throughout (lbc- = "lineup batter card") instead of reusing .lineup-batter-main /
+   .lineup-batter-details / .btn-matchup / .matchup-label — those accumulated 10-25
+   conflicting !important breakpoint overrides each over the site's history, and
+   fighting all of them individually is far riskier than starting clean. */
+.lbc-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 14px 0;
+}
+.lbc-rank {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 14px;
+}
+.lbc-name {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--text);
+}
+.hr-today .lbc-name {
+  color: var(--accent2);
+}
+.lbc-pos {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--surface2);
+  padding: 2px 7px;
+  border-radius: 999px;
+  letter-spacing: .03em;
+}
+.lbc-tag-hrtoday {
+  background: #0a1a33;
+  color: #2f6bff;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+  letter-spacing: .04em;
+  border: 1px solid #2f6bff66;
+  white-space: nowrap;
+}
+.lbc-matchup-tag {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: .03em;
+  white-space: nowrap;
+}
+.lbc-matchup-tag.good {
+  background: rgba(46,230,166,.12);
+  border: 1px solid rgba(46,230,166,.5);
+  color: #2ee6a6;
+}
+.lbc-matchup-tag.bad {
+  background: rgba(220,38,38,.12);
+  border: 1px solid rgba(220,38,38,.5);
+  color: var(--accent);
+}
+.lbc-matchup-tag.neutral {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.lbc-matchup-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #fff;
+  background: rgba(47,107,255,.14);
+  border: 1px solid rgba(47,107,255,.5);
+  border-radius: 999px;
+  padding: 5px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s ease, border-color .15s ease;
+}
+.lbc-matchup-btn:hover {
+  background: rgba(47,107,255,.28);
+  border-color: rgba(47,107,255,.8);
+}
+.lbc-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 14px 12px;
+}
+.lbc-stat-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text);
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 9px;
+}
+.lbc-stat-chip b {
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  color: var(--muted);
+}
+.lbc-stat-chip.hot {
+  border-color: rgba(47,107,255,.5);
+  color: var(--accent2);
+}
+.lbc-stat-chip.warm {
+  border-color: rgba(144,238,96,.4);
+  color: #90ee60;
 }
