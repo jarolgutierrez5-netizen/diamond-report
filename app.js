@@ -4453,6 +4453,32 @@ function loadHRPotentialWithRetry() {
   });
 }
 
+// HR Threat list is otherwise a one-shot-per-day snapshot (see loaded.hr gate in
+// __drLoadGamePickPaneData): once any rows exist, loadHRPotentialWithRetry never runs
+// again for the rest of the day. If that snapshot happened before a game's official
+// lineup posted, loadHRPotential falls back to a guessed active-roster sort instead of
+// the real batting order, and a real starter who doesn't match the guess stays missing
+// even after the actual lineup goes final. Re-running only in the hour before each
+// game's first pitch — the window official lineups typically post in — catches that
+// without polling all day once every game's real lineup is already locked in.
+function anyGameInHRPotentialRefreshWindow(games) {
+  const now = Date.now();
+  const ONE_HOUR_MS = 60 * 60 * 1000;
+  return (games || []).some(g => {
+    const state = g.status?.abstractGameState;
+    if (state === 'Live' || state === 'Final') return false;
+    const msUntilFirstPitch = new Date(g.gameDate).getTime() - now;
+    return msUntilFirstPitch > 0 && msUntilFirstPitch <= ONE_HOUR_MS;
+  });
+}
+setInterval(() => {
+  if (document.visibilityState !== 'visible' || window.__diamondUserInteracting) return;
+  if (!document.getElementById('hr-potential-content')) return;
+  getTodaySchedule('team,probablePitcher').then(games => {
+    if (anyGameInHRPotentialRefreshWindow(games)) loadHRPotentialWithRetry();
+  }).catch(() => {});
+}, 5 * 60_000);
+
 function schedule5amHRRefresh() {
   const cdtNow = new Date(new Date().toLocaleString('en-US', {timeZone:'America/Chicago'}));
   const next5am = new Date(cdtNow);
