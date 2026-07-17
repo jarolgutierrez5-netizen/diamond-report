@@ -3436,6 +3436,24 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
   }
 }
 
+// Animates a headline number counting up from 0 on first paint. Deliberately only
+// used on one-shot content (this modal opens fresh per click, no periodic
+// auto-refresh) — the auto-refreshing Game Projections cards intentionally don't
+// use this, since re-triggering an animation on every 2-minute rebuild would be
+// exactly the kind of distracting repaint the flicker fix above just eliminated.
+function animateCountUp(el, endValue, decimals = 0, duration = 700) {
+  if (!el || !Number.isFinite(endValue)) return;
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = (endValue * eased).toFixed(decimals);
+    if (t < 1) requestAnimationFrame(step);
+    else el.textContent = endValue.toFixed(decimals);
+  }
+  requestAnimationFrame(step);
+}
+
 function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile }) {
   function fv(v, dec=3) {
     if (v==null||v===''||v==='---') return '–';
@@ -4137,6 +4155,22 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       ? `<span style="color:var(--green)">↑ ${mag}</span>`
       : `<span style="color:var(--accent)">↓ ${mag}</span>`;
   }
+  // Two real points only (season baseline -> recent-window value) — the repo-synced
+  // data here (recentOpsTrend etc.) is a single delta, not a real day-by-day game log,
+  // so this deliberately isn't a multi-day curve. Purely a visual pairing for the
+  // trendArrow text already shown, not a new data source.
+  function trendSparkline(v) {
+    const n = Number(v);
+    if (!n) return '';
+    const up = n > 0;
+    const mag = Math.min(Math.abs(n) * (Math.abs(n) < 1 ? 40 : 4), 6);
+    const y1 = (up ? 9 - mag : 9 + mag).toFixed(1);
+    const color = up ? 'var(--green)' : 'var(--accent)';
+    return `<svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true" style="vertical-align:middle;margin-left:3px">
+      <polyline points="2,9 22,${y1}" fill="none" style="stroke:${color}" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="22" cy="${y1}" r="2" style="fill:${color}"></circle>
+    </svg>`;
+  }
 
   // ── LIVE expected stats (xBA/xSLG/xwOBA) from the MLB Stats API ──
   const x3 = v => v != null && !isNaN(parseFloat(v)) ? parseFloat(v).toFixed(3).replace(/^0/,'') : null;
@@ -4221,7 +4255,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <div style="font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">${m.label}</div>
       <div style="display:flex;align-items:baseline;gap:8px;margin-top:2px;flex-wrap:wrap">
         <span style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700">${m.value}</span>
-        ${m.trend !== undefined ? `<span style="font-size:10px;font-family:'JetBrains Mono',monospace">${trendArrow(m.trend)}</span>` : (m.delta || '')}
+        ${m.trend !== undefined ? `<span style="font-size:10px;font-family:'JetBrains Mono',monospace;display:inline-flex;align-items:center">${trendArrow(m.trend)}${trendSparkline(m.trend)}</span>` : (m.delta || '')}
       </div>
     </div>`;
 
@@ -4392,6 +4426,9 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         <span class="dr1041-usage-chips">${bottomUsageChips}</span>
       </div>
     </div>`;
+
+  const scoreEl = body.querySelector('[data-score]');
+  if (scoreEl && pitchMixDashboard.score != null) animateCountUp(scoreEl, pitchMixDashboard.score, 0);
 }
 
 
@@ -10384,6 +10421,49 @@ function showPremiumGate(feature){
   document.addEventListener('DOMContentLoaded', function(){ installObserver(); setTimeout(fetchAndApply, 250); setTimeout(fetchAndApply, 1500); }, { once:true });
   setTimeout(function(){ installObserver(); fetchAndApply(); }, 500);
   setInterval(() => { if (document.visibilityState === 'visible') fetchAndApply(); }, 60 * 1000);
+})();
+
+/* ---- pick-hit micro-celebration ----
+   A brief glow/scale pulse the first time a game's result badge turns into
+   "✓ CORRECT", instead of it just appearing statically. Deliberately built as
+   its own read-mostly observer rather than touching any of the three existing
+   badge-generation code paths above (base loadGameProps's own resultBadge,
+   this file's applyGames(), and refreshLockedGameProjectionScores()) — a
+   classList toggle on the existing badge node isn't a childList mutation, so
+   it can't feed back into any of those observers the way the flicker bug did,
+   and "already celebrated" is tracked per gamePk in localStorage so reopening
+   the tab later doesn't replay it. */
+(function(){
+  if (window.__DR_PICK_CELEBRATION__) return;
+  window.__DR_PICK_CELEBRATION__ = true;
+  var STORE_KEY = 'dr-pick-celebrated-v1';
+  var celebrated = new Set();
+  try { (JSON.parse(localStorage.getItem(STORE_KEY) || '[]')).forEach(function(pk){ celebrated.add(pk); }); } catch(e) {}
+  function persist() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(Array.from(celebrated).slice(-300))); } catch(e) {}
+  }
+  function scan() {
+    var root = document.getElementById('gameprops-content');
+    if (!root) return;
+    root.querySelectorAll('.gp-card[data-game-pk]').forEach(function(card){
+      var pk = card.getAttribute('data-game-pk');
+      if (!pk || celebrated.has(pk)) return;
+      var zone = card.querySelector('.gp-live-result-zone,[data-live-score-badge="1"]');
+      if (!zone || !/✓\s*CORRECT/.test(zone.textContent || '')) return;
+      celebrated.add(pk);
+      persist();
+      zone.classList.add('dr-pick-celebrate');
+      zone.addEventListener('animationend', function(){ zone.classList.remove('dr-pick-celebrate'); }, { once:true });
+    });
+  }
+  function boot() {
+    var root = document.getElementById('gameprops-content');
+    if (!root) { setTimeout(boot, 500); return; }
+    new MutationObserver(scan).observe(root, { childList:true, subtree:true });
+    scan();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once:true });
+  else boot();
 })();
 
 /* ---- from <script id="prod-v9-performance-orchestrator"> ---- */
