@@ -59,16 +59,29 @@ function daysAgo(n) { const d = new Date(); d.setDate(d.getDate() - n); return d
 const RECENT_START = isoDate(daysAgo(RECENT_DAYS));
 const RECENT_END = isoDate(new Date());
 
+// The combined 3-stats-block hydrate URL (statSplits + byDateRange + season) is a
+// much heavier request per team than the single-stat version this started as — a
+// live run hung indefinitely on it with no timeout, well past the ~13s the
+// single-stat version reliably took for all 30 teams. fetch() has no built-in
+// timeout, so one slow/hanging response could stall the entire step (and, since
+// this step isn't the last one, the whole workflow run) forever. AbortController
+// bounds every request so a bad response degrades to "this team failed, move on"
+// instead of a silent hang.
+const FETCH_TIMEOUT_MS = 15000;
 async function fetchJSON(url, attempts = 3) {
   let lastErr;
   for (let i = 0; i < attempts; i++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     try {
-      const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DiamondReportBot/1.0; +https://diamondreport.app)' } });
+      const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DiamondReportBot/1.0; +https://diamondreport.app)' }, signal: controller.signal });
       if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
       return await res.json();
     } catch (e) {
-      lastErr = e;
+      lastErr = e.name === 'AbortError' ? new Error(`Timed out after ${FETCH_TIMEOUT_MS}ms for ${url}`) : e;
       if (i < attempts - 1) await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+    } finally {
+      clearTimeout(timer);
     }
   }
   throw lastErr;

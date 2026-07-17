@@ -53,21 +53,25 @@ jobs:
       - name: Run Statcast hot-hitters sync (batter Barrel% / Hard-Hit% / xwOBA)
         if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-statcast-hot-hitters.mjs
+        timeout-minutes: 5
 
       - name: Run fielding-defense sync (OAA / Arm Strength)
         if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-fielding-defense.mjs
         continue-on-error: true
+        timeout-minutes: 3
 
       - name: Run situational splits sync (Home/Away, RISP, recent-form trend)
         if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-batter-splits.mjs
         continue-on-error: true
+        timeout-minutes: 5
 
       - name: Run park-factors sync
         if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-park-factors.mjs
         continue-on-error: true
+        timeout-minutes: 3
 
       - name: Run per-pitch-type HR + Strike Zone sync for today's probable starters
         # Depends on data/pitcher-statcast.json already existing (either from the step
