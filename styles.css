@@ -3455,3 +3455,15 @@ select:focus-visible {
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(0,0,0,.25);
 }
+
+/* Attack Zone by Pitch toggle (Pitcher Matchup modal) — same pill-toggle pattern as
+   .dr1042-split-toggle/.dr1042-split-btn used for the AUTO/vs RHP/vs LHP switch above
+   it, but .dr1042-mode-body itself can't be reused here: it's hardcoded to
+   display:table-row-group for toggling <tbody> rows, and this toggles a <div>
+   wrapping the 3x3 strike-zone grid instead. */
+.dr-azone-mode-body {
+  display: none;
+}
+.dr-azone-mode-body.active {
+  display: block;
+}

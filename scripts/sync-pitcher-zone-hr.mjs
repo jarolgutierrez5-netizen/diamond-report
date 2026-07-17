@@ -1,14 +1,20 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// Fills in two things the pitch-arsenal leaderboard sync (sync-pitcher-statcast.mjs)
+// Fills in three things the pitch-arsenal leaderboard sync (sync-pitcher-statcast.mjs)
 // can't provide, because that leaderboard is pre-aggregated by pitch type only:
 //   1. Home runs allowed BY PITCH TYPE (the pitch-arsenal leaderboard has no HR-count
 //      column at all, so byPitch[].homeRuns has stayed null for every pitcher).
 //   2. Strike Zone location data (byZone) — real per-location wOBA-against, which the
 //      Pitcher Matchup modal's Strike Zone heatmap has been waiting on since it was
 //      built (see app.js's hasRealZones flag, gated on this exact field never existing).
+//   3. Per-pitch-type attack zones (byPitch[].zones) — the same per-location breakdown
+//      as #2, but scoped to a single pitch type, so "where does his slider actually go"
+//      is answerable instead of only "where does everything he throws end up." usagePct
+//      is the real signal here (what share of THIS pitch's own throws land in each of
+//      the 9 zones — his actual location tendency for that pitch), wobaAgainst rides
+//      along since the same rows already carry it.
 //
-// Both come from Baseball Savant's Statcast Search CSV export, which returns one row
+// All three come from Baseball Savant's Statcast Search CSV export, which returns one row
 // per PITCH (not pre-aggregated), so this only runs it for TODAY's probable starting
 // pitchers — a bounded ~15-30 requests/day — rather than the whole league, to keep the
 // run fast and avoid hammering a public endpoint with hundreds of requests.
@@ -135,15 +141,25 @@ async function buildPitcherZoneHR(pitcherId, name) {
   // zero-HR pitch type is recorded as a confirmed 0, not left looking like unknown data.
   const hrByPitch = {};
   const zoneAgg = {}; // zone -> { wobaSum, denomSum }
+  const pitchZoneAgg = {}; // pitchName -> zone -> { wobaSum, denomSum, count }
+  const pitchTotalCount = {}; // pitchName -> total pitches thrown (usage% denominator)
   for (const raw of rows) {
     const p = extractPitchRow(raw);
     if (!p) continue;
     if (!(p.pitchName in hrByPitch)) hrByPitch[p.pitchName] = 0;
     if (p.isHomeRun) hrByPitch[p.pitchName]++;
+    pitchTotalCount[p.pitchName] = (pitchTotalCount[p.pitchName] || 0) + 1;
     if (p.zone && p.wobaValue != null && p.wobaDenom != null) {
       if (!zoneAgg[p.zone]) zoneAgg[p.zone] = { wobaSum: 0, denomSum: 0 };
       zoneAgg[p.zone].wobaSum += p.wobaValue;
       zoneAgg[p.zone].denomSum += p.wobaDenom;
+    }
+    if (p.zone) {
+      if (!pitchZoneAgg[p.pitchName]) pitchZoneAgg[p.pitchName] = {};
+      if (!pitchZoneAgg[p.pitchName][p.zone]) pitchZoneAgg[p.pitchName][p.zone] = { wobaSum: 0, denomSum: 0, count: 0 };
+      const cell = pitchZoneAgg[p.pitchName][p.zone];
+      cell.count++;
+      if (p.wobaValue != null && p.wobaDenom != null) { cell.wobaSum += p.wobaValue; cell.denomSum += p.wobaDenom; }
     }
   }
 
@@ -153,7 +169,21 @@ async function buildPitcherZoneHR(pitcherId, name) {
     if (denomSum > 0) byZone[z] = { wobaAgainst: +(wobaSum / denomSum).toFixed(3) };
   }
 
-  return { hrByPitch, byZone: Object.keys(byZone).length ? byZone : null };
+  const byPitchZone = {};
+  for (const pitchName of Object.keys(pitchZoneAgg)) {
+    const total = pitchTotalCount[pitchName] || 0;
+    const zones = {};
+    for (const z of Object.keys(pitchZoneAgg[pitchName])) {
+      const cell = pitchZoneAgg[pitchName][z];
+      zones[z] = {
+        usagePct: total > 0 ? +((cell.count / total) * 100).toFixed(1) : null,
+        wobaAgainst: cell.denomSum > 0 ? +(cell.wobaSum / cell.denomSum).toFixed(3) : null,
+      };
+    }
+    if (Object.keys(zones).length) byPitchZone[pitchName] = zones;
+  }
+
+  return { hrByPitch, byZone: Object.keys(byZone).length ? byZone : null, byPitchZone };
 }
 
 async function main() {
@@ -186,6 +216,8 @@ async function main() {
           // it has any pitches at all; one that's simply absent stays unknown, not 0.
           const hr = result.hrByPitch[p.name];
           if (hr != null) p.homeRuns = hr;
+          const zones = result.byPitchZone[p.name];
+          if (zones) p.zones = zones;
         });
       }
       if (result.byZone) {

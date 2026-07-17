@@ -3040,16 +3040,24 @@ async function loadGameProps() {
         const totalParkAdj = 1 + ((pf - 100) / 100) * 0.5;
         awayRuns *= totalParkAdj; homeRuns *= totalParkAdj;
 
-        // Weather — same wind/temp thresholds as the win-prob factors above.
+        // Weather — same wind/temp thresholds as the win-prob factors above. Tracked
+        // as a single combined multiplier (weatherHRMult) so the same wind+temp effect
+        // driving the runs total can also be surfaced on its own as an "HR Boost" read
+        // — wind and temp are the two weather inputs that most directly affect how far
+        // a fly ball carries, i.e. genuine home-run-specific signal, distinct from the
+        // broader runs-total number (which also folds in pitching/park/record).
+        let weatherHRMult = 1;
         if (weather) {
           if (weather.wind > 15) {
             const totalWindImpact = windEffect(weather.windDir, homeAbbr);
-            if (totalWindImpact === 'out') { awayRuns *= 1.08; homeRuns *= 1.08; }
-            else if (totalWindImpact === 'in') { awayRuns *= 0.94; homeRuns *= 0.94; }
+            if (totalWindImpact === 'out') weatherHRMult *= 1.08;
+            else if (totalWindImpact === 'in') weatherHRMult *= 0.94;
           }
-          if (weather.temp < 50) { awayRuns *= 0.95; homeRuns *= 0.95; }
-          else if (weather.temp > 85) { awayRuns *= 1.05; homeRuns *= 1.05; }
+          if (weather.temp < 50) weatherHRMult *= 0.95;
+          else if (weather.temp > 85) weatherHRMult *= 1.05;
+          awayRuns *= weatherHRMult; homeRuns *= weatherHRMult;
         }
+        const hrWeatherBoostPct = Math.round((weatherHRMult - 1) * 100);
 
         const projectedTotal = Math.round((awayRuns + homeRuns) * 2) / 2; // nearest 0.5
         const totalEnv = projectedTotal >= 9.5 ? 'HIGH-SCORING' : projectedTotal <= 7.5 ? 'LOW-SCORING' : 'AVERAGE';
@@ -3068,14 +3076,14 @@ async function loadGameProps() {
         const loserAbbr  = winner==='away' ? homeAbbr : awayAbbr;
         const loserPct   = winner==='away' ? homePct : awayPct;
 
-        model = { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor };
+        model = { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor, hrWeatherBoostPct, parkFactorVal: pf };
         // Always keep the snapshot fresh — pre-game cycles overwrite it so that whenever
         // the game does go live, the lock captures the most recent pre-game state rather
         // than a stale first-load snapshot from hours earlier.
         _gamePropsSnapshot[g.gamePk] = model;
       }
 
-      const { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor } = model;
+      const { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor, hrWeatherBoostPct, parkFactorVal } = model;
 
       window.drWinProbStore[g.gamePk] = { awayAbbr, homeAbbr, awayPct, homePct, winnerAbbr, winnerPct, confidence };
       _favoredCache[g.gamePk] = { abbr: winnerAbbr, pct: winnerPct, source: 'model' };
@@ -3182,6 +3190,20 @@ async function loadGameProps() {
             <span style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Projected Total</span>
             <span style="font-family:'Manrope',sans-serif;font-size:20px;letter-spacing:1px;line-height:1;color:${totalEnvColor}">${projectedTotal.toFixed(1)}</span>
             <span style="font-size:9px;font-weight:700;color:${totalEnvColor};letter-spacing:.5px">${totalEnv}</span>
+          </div>
+
+          <!-- HR Boost (weather-only: wind + temp effect on fly-ball carry) -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:80px" title="Wind + temperature effect on HR likelihood only — excludes park factor, pitching, and offense, which the Projected Total above already accounts for">
+            <span style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">HR Boost</span>
+            <span style="font-family:'Manrope',sans-serif;font-size:20px;letter-spacing:1px;line-height:1;color:${hrWeatherBoostPct > 0 ? '#2ecc71' : hrWeatherBoostPct < 0 ? 'var(--accent2)' : 'var(--muted)'}">${hrWeatherBoostPct > 0 ? '+' : ''}${hrWeatherBoostPct}%</span>
+            <span style="font-size:9px;font-weight:700;color:${hrWeatherBoostPct > 0 ? '#2ecc71' : hrWeatherBoostPct < 0 ? 'var(--accent2)' : 'var(--muted)'};letter-spacing:.5px">${hrWeatherBoostPct > 0 ? 'WIND/TEMP BOOST' : hrWeatherBoostPct < 0 ? 'WIND/TEMP DRAG' : 'NEUTRAL'}</span>
+          </div>
+
+          <!-- Park Factor (Statcast index_wOBA-based, 100 = league average) -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:80px" title="Statcast park factor for ${stadiumCoords[homeAbbr]?.name||homeAbbr} — 100 = league average, higher favors hitters">
+            <span style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Park Factor</span>
+            <span style="font-family:'Manrope',sans-serif;font-size:20px;letter-spacing:1px;line-height:1;color:${parkFactorVal > 107 ? '#2ecc71' : parkFactorVal < 93 ? 'var(--accent2)' : 'var(--muted)'}">${parkFactorVal}</span>
+            <span style="font-size:9px;font-weight:700;color:${parkFactorVal > 107 ? '#2ecc71' : parkFactorVal < 93 ? 'var(--accent2)' : 'var(--muted)'};letter-spacing:.5px">${parkFactorVal > 107 ? 'HR-FRIENDLY' : parkFactorVal < 93 ? 'PITCHER-FRIENDLY' : 'NEUTRAL'}</span>
           </div>
         </div>
 
@@ -3497,6 +3519,60 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     return { score: fitScore, label: fitLabel, tone: fitTone, topNames, read, elevated, middle, pullMatch };
   }
   const zoneFit = buildZoneFit();
+
+  // ── Attack Zone by Pitch (per-pitch-type location breakdown) ────────────
+  // Same real Statcast Search data as the aggregate Strike Zone above (see
+  // sync-pitcher-zone-hr.mjs's byPitchZone, merged onto each byPitch[] entry as
+  // .zones), but scoped to one pitch type at a time. usagePct is the real signal —
+  // what share of THIS pitch's own throws land in each of the 9 zones, i.e. his
+  // actual location tendency for that pitch — not an opportunity/damage score like
+  // the aggregate grid above it.
+  function attackZoneColor(pct) {
+    if (pct == null) return { bg:'#0d1220', text:'var(--muted)' };
+    if (pct >= 20) return { bg:'#4a1010', text:'#ff6b6b' };
+    if (pct >= 14) return { bg:'#3a2010', text:'#f4a261' };
+    if (pct >= 8)  return { bg:'#1a2a10', text:'#90ee60' };
+    return { bg:'#0d1a0d', text:'#3a6a3a' };
+  }
+  const attackZonePitches = (pitcherProfile?.byPitch || []).filter(p => p?.name && p.zones && Object.keys(p.zones).length);
+  let attackZoneHTML = '';
+  if (attackZonePitches.length) {
+    const auid = `azone-${String(pitcherId||'p')}-${Math.random().toString(36).slice(2,8)}`;
+    const tabs = attackZonePitches.map((p, i) => `<button type="button" class="dr1042-split-btn${i===0?' active':''}" data-pitch="${i}">${p.name}</button>`).join('');
+    const bodies = attackZonePitches.map((p, i) => {
+      const cells = [1,2,3,4,5,6,7,8,9].map(z => {
+        const cell = p.zones[z];
+        const pct = cell?.usagePct;
+        if (pct == null) return `<div class="sz-cell" style="background:#0d1220;color:var(--muted)" title="${zoneLabels[z-1]}: no data">–</div>`;
+        const c = attackZoneColor(pct);
+        const wobaTxt = cell.wobaAgainst != null ? `, ${fv(cell.wobaAgainst,3)} wOBA against` : '';
+        return `<div class="sz-cell" style="background:${c.bg};color:${c.text}" title="${zoneLabels[z-1]}: ${pct}% of his ${p.name}s${wobaTxt}">${pct}%</div>`;
+      }).join('');
+      return `<div class="dr-azone-mode-body${i===0?' active':''}" data-pitch="${i}"><div class="strike-zone">${cells}</div></div>`;
+    }).join('');
+    attackZoneHTML = `
+    <div class="zone-section" id="${auid}" data-attack-zone-toggle>
+      <div class="zone-title">ATTACK ZONE BY PITCH · REAL LOCATION DATA</div>
+      <div class="zone-wrap">
+        <div class="zone-grid-outer">
+          <span class="zone-label">OUTSIDE ←&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ INSIDE</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="display:flex;flex-direction:column;gap:2px;font-size:9px;color:var(--muted);text-align:right;padding-right:4px">
+              <div style="height:40px;display:flex;align-items:center">HIGH</div>
+              <div style="height:40px;display:flex;align-items:center">MID</div>
+              <div style="height:40px;display:flex;align-items:center">LOW</div>
+            </div>
+            ${bodies}
+          </div>
+          <span class="zone-label" style="margin-top:4px">% = share of that pitch's own throws landing in each zone</span>
+        </div>
+        <div>
+          <div class="dr1042-split-toggle" role="tablist" aria-label="Attack zone pitch toggle" style="flex-wrap:wrap;height:auto">${tabs}</div>
+          <div class="zone-note" style="margin-top:10px;max-width:220px">Where ${pitcherName.split(' ').pop()} actually locates each individual pitch — his real location tendency pitch by pitch, not just the blended zone profile above.</div>
+        </div>
+      </div>
+    </div>`;
+  }
 
   function normalizePitchLabel(name) { return normalizePitchTypeKey(name); }
   function extractPitchStatValue(obj, keys) {
@@ -4249,6 +4325,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       </div>
       ${zoneFitPanelHTML}
       </div>
+      ${attackZoneHTML}
 
       <div class="dr1041-bottom-strip">
         <span class="dr1041-bottom-item">Pitcher Throws: <strong>${handLabel(pitcherHand,'pitcher')}</strong></span>
@@ -4280,6 +4357,17 @@ document.addEventListener('click', function(e) {
   if (score) score.textContent = state.scores?.[mode] ?? '–';
   if (note) note.textContent = state.notes?.[mode] || '';
   if (read) read.textContent = state.reads?.[mode] || '';
+});
+
+// ── Attack Zone by Pitch toggle ───────────────────────────────────────
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest && e.target.closest('.dr1042-split-btn[data-pitch]');
+  if (!btn) return;
+  const box = btn.closest('[data-attack-zone-toggle]');
+  if (!box) return;
+  const idx = btn.dataset.pitch;
+  box.querySelectorAll('.dr1042-split-btn[data-pitch]').forEach(b => b.classList.toggle('active', b === btn));
+  box.querySelectorAll('.dr-azone-mode-body').forEach(tb => tb.classList.toggle('active', tb.dataset.pitch === idx));
 });
 
 
