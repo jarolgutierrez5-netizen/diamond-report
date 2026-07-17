@@ -164,14 +164,34 @@ function extractRecentForm(person) {
 }
 
 async function buildSplitsForTeam(teamId) {
-  const url = `${MLB_API}/teams/${teamId}/roster?rosterType=active&hydrate=person(stats(group=[hitting],type=[statSplits],sitCodes=[h,a,risp],season=${SEASON}),stats(group=[hitting],type=[byDateRange],startDate=${RECENT_START},endDate=${RECENT_END}),stats(group=[hitting],type=[season],season=${SEASON}))`;
-  const d = await fetchJSON(url);
+  // Three separate single-type hydrate requests, not one combined multi-stats()
+  // call — combining statSplits+byDateRange+season into one hydrate string returned
+  // HTTP 400 on every single team on a live run (confirmed, not a guess). Each
+  // request below matches the exact single-type shape already proven to work, so
+  // this triples the request count (90 total instead of 30) but removes the risk
+  // of a multi-stats() hydrate syntax this app has never actually confirmed live.
+  const splitsUrl = `${MLB_API}/teams/${teamId}/roster?rosterType=active&hydrate=person(stats(group=[hitting],type=[statSplits],sitCodes=[h,a,risp],season=${SEASON}))`;
+  const recentUrl = `${MLB_API}/teams/${teamId}/roster?rosterType=active&hydrate=person(stats(group=[hitting],type=[byDateRange],startDate=${RECENT_START},endDate=${RECENT_END}))`;
+  const seasonUrl = `${MLB_API}/teams/${teamId}/roster?rosterType=active&hydrate=person(stats(group=[hitting],type=[season],season=${SEASON}))`;
+  const [splitsData, recentData, seasonData] = await Promise.all([
+    fetchJSON(splitsUrl),
+    fetchJSON(recentUrl).catch(() => null),
+    fetchJSON(seasonUrl).catch(() => null),
+  ]);
+  const recentByPerson = {}, seasonByPerson = {};
+  (recentData?.roster || []).forEach(e => { if (e.person?.id) recentByPerson[e.person.id] = e.person; });
+  (seasonData?.roster || []).forEach(e => { if (e.person?.id) seasonByPerson[e.person.id] = e.person; });
+
   const out = {};
-  for (const entry of d.roster || []) {
+  for (const entry of splitsData.roster || []) {
     const person = entry.person;
     if (!person?.id) continue;
     const splits = extractSplits(person);
-    Object.assign(splits, extractRecentForm(person));
+    // extractRecentForm reads both byDateRange and season stat groups off a single
+    // `person` — merge the two separately-fetched persons' stats arrays onto one
+    // object first so it can find both without needing a fourth combined request.
+    const mergedPerson = { ...person, stats: [...(recentByPerson[person.id]?.stats || []), ...(seasonByPerson[person.id]?.stats || [])] };
+    Object.assign(splits, extractRecentForm(mergedPerson));
     const statusText = String(entry.status?.description || entry.status?.code || '');
     if (statusText && INACTIVE_STATUS_RE.test(statusText.toLowerCase())) {
       splits.rosterStatus = statusText;
