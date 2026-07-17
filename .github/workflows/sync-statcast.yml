@@ -53,16 +53,25 @@ jobs:
       - name: Run Statcast hot-hitters sync (batter Barrel% / Hard-Hit% / xwOBA)
         if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-statcast-hot-hitters.mjs
+        timeout-minutes: 5
 
       - name: Run fielding-defense sync (OAA / Arm Strength)
         if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-fielding-defense.mjs
         continue-on-error: true
+        timeout-minutes: 3
 
-      - name: Run situational splits sync (Home/Away, RISP)
+      - name: Run situational splits sync (Home/Away, RISP, recent-form trend)
         if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-batter-splits.mjs
         continue-on-error: true
+        timeout-minutes: 5
+
+      - name: Run park-factors sync
+        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
+        run: node scripts/sync-park-factors.mjs
+        continue-on-error: true
+        timeout-minutes: 3
 
       - name: Run per-pitch-type HR + Strike Zone sync for today's probable starters
         # Depends on data/pitcher-statcast.json already existing (either from the step
@@ -72,6 +81,7 @@ jobs:
         # step below, which stages whatever exists).
         run: node scripts/sync-pitcher-zone-hr.mjs
         continue-on-error: true
+        timeout-minutes: 8
 
       - name: Commit and push if changed
         run: |
@@ -79,7 +89,16 @@ jobs:
           # ignores brand-new untracked files, which is exactly what these files are
           # on a repo's first-ever run. Stage first, then check the index against HEAD so
           # a genuinely new file is treated as a real change instead of "nothing to commit".
+          #
+          # `git add` on a path that doesn't exist on disk is a hard error (exit 128), not
+          # a no-op — data/park-factors.json has never been successfully written yet (its
+          # sync script's Savant endpoint attempts have all 404'd/returned HTML live), so
+          # naming it directly here killed the ENTIRE commit step and silently dropped
+          # every other real, successful update from that run (batted-ball direction,
+          # recent-form trend, etc.). `git add --` on an existing-or-not glob does not
+          # error the way naming a literal missing path does.
           git add data/pitcher-statcast.json data/batter-pitch-type-season.json data/statcast-hot-hitters.json
+          [ -f data/park-factors.json ] && git add data/park-factors.json
           if git diff --cached --quiet; then
             echo "No changes to sync — nothing to commit."
             exit 0
