@@ -10625,7 +10625,13 @@ function showPremiumGate(feature){
   }
   function setup(){
     document.body.classList.add('dr-v9-ready');
-    ['props','game','matchups','tracker'].forEach(function(id){ var el=document.getElementById(id); if(el) el.classList.add('dr-v9-soft-hide'); });
+    // 'props' deliberately excluded: content-visibility:auto implies layout
+    // containment on whatever element it's set on, which breaks
+    // position:sticky for any descendant relative to ancestors further up —
+    // #props is the direct ancestor chain for the HR Threats filter bar
+    // (position:sticky), which was silently scrolling off-screen instead of
+    // staying pinned because of this exact mechanism.
+    ['game','matchups','tracker'].forEach(function(id){ var el=document.getElementById(id); if(el) el.classList.add('dr-v9-soft-hide'); });
     softSkeleton('game-props-content','game projections');
     softSkeleton('kprops-content','strikeout projections');
     softSkeleton('hr-potential-content','HR potential');
