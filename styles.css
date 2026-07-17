@@ -2998,34 +2998,6 @@ select:focus-visible {
   animation: drLoadingShimmerSweep 1.25s ease-in-out infinite;
 }
 
-/* Radial confidence gauge on Game Projections cards. The ring is a masked-out
-   conic-gradient (transparent center) rather than a flat-color inner circle,
-   so it reads correctly against .gp-card's translucent glass background
-   instead of covering it with a mismatched solid patch. */
-.gp-conf-gauge-wrap {
-  position: relative;
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-}
-.gp-conf-gauge-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  -webkit-mask-image: radial-gradient(circle, transparent 11px, #000 11.5px);
-  mask-image: radial-gradient(circle, transparent 11px, #000 11.5px);
-}
-.gp-conf-gauge-label {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  font-weight: 700;
-}
-
 /* One-time pick-hit celebration pulse on a game's result badge — see the
    pick-hit micro-celebration script for how "one-time" is tracked. */
 @keyframes drPickCelebrate {

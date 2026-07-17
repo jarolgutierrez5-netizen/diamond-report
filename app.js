@@ -3286,16 +3286,6 @@ async function loadGameProps() {
 
       const confBarW = Math.min(winnerPct, 100);
       const confBarColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : '#2ecc71';
-      // Radial confidence gauge — same win% and confColor already computed above,
-      // just visualized as an arc instead of the plain TOSS-UP/LEAN/LIKELY/STRONG
-      // text alone. The ring is cut out with a mask (not a flat-color inner div)
-      // so it reads correctly against .gp-card's translucent glass background
-      // instead of covering it with a mismatched solid patch.
-      const confGaugeDeg = Math.round(confBarW * 3.6);
-      const confGaugeHTML = `<div class="gp-conf-gauge-wrap" title="${confidence} confidence — ${winnerPct}% model win probability">
-        <div class="gp-conf-gauge-ring" style="background:conic-gradient(${confColor} ${confGaugeDeg}deg, rgba(255,255,255,.12) 0)"></div>
-        <div class="gp-conf-gauge-label" style="color:${confColor}">${winnerPct}%</div>
-      </div>`;
 
       const teamAccent = teamColors[homeAbbr] || teamColors[awayAbbr] || 'var(--accent)';
       return { html: `<div class="gp-card" data-game-pk="${g.gamePk}" data-away="${awayAbbr}" data-home="${homeAbbr}" data-winner="${winnerAbbr}" data-game-time="${dt.getTime()}" style="--team-accent:${teamAccent}">
@@ -3329,10 +3319,7 @@ async function loadGameProps() {
                 <span style="font-size:9px;color:#2ecc71;opacity:.8;font-family:'JetBrains Mono',monospace">${winnerPct}% WIN</span>
               </div>
             </div>
-            <div style="display:flex;align-items:center;gap:6px">
-              ${confGaugeHTML}
-              <span style="font-size:10px;font-weight:700;color:${confColor};letter-spacing:.5px">${confidence}</span>
-            </div>
+            <span style="font-size:10px;font-weight:700;color:${confColor};letter-spacing:.5px">${confidence}</span>
           </div>
 
           <!-- Win % bars -->
