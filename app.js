@@ -1636,11 +1636,17 @@ function ingestBatterPitchTypeSeasonPayload(data) {
       if (!key) return;
       normalized[key] = {
         name: row?.name || row?.pitchName || row?.pitchType || rawKey,
+        usagePct: row?.usagePct ?? row?.usage ?? null,
         pitches: +(row?.pitches ?? row?.pitchCount ?? row?.seen ?? 0) || 0,
         atBats: +(row?.atBats ?? row?.ab ?? 0) || 0,
         hits: +(row?.hits ?? row?.h ?? 0) || 0,
         homeRuns: +(row?.homeRuns ?? row?.hr ?? row?.hrs ?? 0) || 0,
         avg: row?.avg ?? row?.battingAverage ?? null,
+        // xba/woba were dropped here even though every record in
+        // data/batter-pitch-type-season.json carries them (see rowToPitchStat in
+        // sync-pitcher-statcast.mjs) — silently unreachable by any consumer.
+        xba: row?.xba ?? row?.xBA ?? row?.expectedBattingAverage ?? null,
+        woba: row?.woba ?? row?.wOBA ?? null,
         slg: row?.slg ?? row?.slugging ?? null,
         xslg: row?.xslg ?? row?.xSLG ?? row?.expectedSlugging ?? null,
         xwoba: row?.xwoba ?? row?.xwOBA ?? row?.expectedWoba ?? null,
@@ -3310,6 +3316,10 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   const bISO  = (bs.slg&&bs.avg) ? fv((parseFloat(bs.slg)-parseFloat(bs.avg)).toFixed(3)) : '–';
   const bKpct = (bs.strikeOuts&&bs.plateAppearances) ? (bs.strikeOuts/bs.plateAppearances*100).toFixed(1)+'%' : '–';
   const bBBpct= (bs.baseOnBalls&&bs.plateAppearances) ? (bs.baseOnBalls/bs.plateAppearances*100).toFixed(1)+'%' : '–';
+  // RBI/SB were already present on every hitting-stats API response this modal already
+  // fetches — just never extracted or shown anywhere in this panel.
+  const bRBI  = fi(bs.rbi ?? bs.runsBattedIn);
+  const bSB   = fi(bs.stolenBases);
 
   const pERA  = fv(ps.era,2); const pFIP = fv(ps.fip,2); const pWHIP = fv(ps.whip,2);
   const pHR9  = fv(ps.homeRunsPer9,2); const pKper9 = fv(ps.strikeoutsPer9Inn,1);
@@ -4065,7 +4075,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
 
         <div class="dr1043-panel">
           <div class="dr1043-panel-title">Batter season <span class="dr1043-badge blue">${batterName.split(' ').pop()}</span></div>
-          ${[['AVG',bAVG],['HR',bHR],['OPS',bOPS],['ISO',bISO],['K%',bKpct],['BB%',bBBpct]].map(([l,v])=>`
+          ${[['AVG',bAVG],['HR',bHR],['RBI',bRBI],['SB',bSB],['OPS',bOPS],['ISO',bISO],['K%',bKpct],['BB%',bBBpct]].map(([l,v])=>`
           <div class="dr1043-row"><span>${l}</span><strong>${v}</strong></div>`).join('')}
         </div>
 
