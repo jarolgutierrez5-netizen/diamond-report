@@ -2815,12 +2815,17 @@ const stadiumCoords = {
   WSH:{lat:38.873,lon:-77.007,name:'Nationals Park',dome:false},
 };
 
-// Park factors (HR index: 100 = average, >100 = hitter friendly)
+// Park factors (HR index: 100 = average, >100 = hitter friendly) — refreshed from
+// the first successful live sync-park-factors.mjs run (2026-07-17, real Statcast
+// index_hr per park) now that its "var data = [...]" HTML-embedded-JSON parsing
+// actually works, in place of the earlier rough approximations. Still serves as
+// the fallback loadParkFactors() mutates in place — see that function above — for
+// any team missing from a future sync response, or if a run fails outright.
 const parkFactors = {
-  COL:145,CIN:112,TEX:108,PHI:107,BOS:106,NYY:105,MIL:104,CWS:103,
-  ATL:102,LAD:101,MIN:101,CHC:100,KC:100,DET:99,SEA:99,STL:98,
-  SD:98,NYM:97,BAL:97,CLE:96,PIT:96,MIA:95,HOU:95,LAA:94,
-  SF:93,WSH:93,OAK:92,TOR:91,TB:91,ARI:90,ATH:92,
+  WSH:133,ATH:126,NYY:125,HOU:122,CIN:121,TB:120,LAD:111,PHI:111,
+  TOR:109,CHC:108,TEX:107,BAL:104,COL:102,SEA:101,KC:99,MIL:98,
+  PIT:97,CWS:94,DET:93,MIN:92,ARI:91,NYM:91,ATL:91,SD:87,
+  CLE:78,BOS:76,SF:75,MIA:74,LAA:73,STL:69,OAK:126,AZ:91,
 };
 
 let gamePropsLoaded = false;
