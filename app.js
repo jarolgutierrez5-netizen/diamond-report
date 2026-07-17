@@ -2553,13 +2553,19 @@ function buildBatterStatsLine(b) {
     const n=parseFloat(v); return isNaN(n)?'–':n.toFixed(3).replace(/^0/,'');
   }
   const last10HR = b.last10HR;
-  const last10Display = last10HR === null
-    ? '<span style="color:var(--muted);font-size:10px">–</span>'
-    : `<span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:${last10HR>=3?'var(--accent2)':last10HR>=1?'#90ee60':'var(--muted)'}">${last10HR}</span><span style="font-size:9px;color:var(--muted)"> HR</span>`;
-  return `<span>AVG <strong style="color:var(--text)">${fmtS(s.avg)}</strong></span>
-    <span>HR <strong style="color:${parseInt(s.homeRuns)>=10?'var(--accent2)':'var(--text)'}">${_statHasRealBattingData(s) ? (s.homeRuns??'–') : '–'}</strong></span>
-    <span>OPS <strong style="color:var(--text)">${fmtS(s.ops)}</strong></span>
-    <span style="display:flex;align-items:center;gap:4px">L10 ${last10Display}</span>`;
+  const hrVal = _statHasRealBattingData(s) ? (s.homeRuns ?? '–') : '–';
+  const hrHot = _statHasRealBattingData(s) && parseInt(s.homeRuns) >= 10;
+  const l10Display = last10HR === null ? '–' : `${last10HR} HR`;
+  const l10Hot = last10HR >= 3, l10Warm = !l10Hot && last10HR >= 1;
+  const hrProb = Number(b.hrProb);
+  const hrProbChip = Number.isFinite(hrProb)
+    ? `<span class="lbc-stat-chip${hrProb>=15?' hot':hrProb>=8?' warm':''}"><b>HR PROB</b>${hrProb.toFixed(1)}%</span>`
+    : '';
+  return `<span class="lbc-stat-chip"><b>AVG</b>${fmtS(s.avg)}</span>
+    <span class="lbc-stat-chip${hrHot?' hot':''}"><b>HR</b>${hrVal}</span>
+    <span class="lbc-stat-chip"><b>OPS</b>${fmtS(s.ops)}</span>
+    <span class="lbc-stat-chip${l10Hot?' hot':l10Warm?' warm':''}"><b>L10</b>${l10Display}</span>
+    ${hrProbChip}`;
 }
 
 
@@ -2699,9 +2705,9 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
     if (kpct < 0.18) score += 2; else if (kpct > 0.28) score -= 2;
     if (ops > 0.820) score += 2; else if (ops < 0.680) score -= 1;
     if (pk9 > 10.0) score -= 2; else if (pk9 < 7.0) score += 1;
-    if (score >= 2) return `<span class="matchup-label ml-good">✓ TOUGH FOR PITCHER</span>`;
-    if (score <= -2) return `<span class="matchup-label ml-bad">✗ TOUGH FOR BATTER</span>`;
-    return `<span class="matchup-label ml-neutral">~ NEUTRAL MATCHUP</span>`;
+    if (score >= 2) return `<span class="lbc-matchup-tag good">✓ TOUGH FOR PITCHER</span>`;
+    if (score <= -2) return `<span class="lbc-matchup-tag bad">✗ TOUGH FOR BATTER</span>`;
+    return `<span class="lbc-matchup-tag neutral">~ NEUTRAL MATCHUP</span>`;
   }
 
   const cards = withProbs.map((b, i) => {
@@ -2715,25 +2721,18 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
     const rowBg = homerToday ? 'background:linear-gradient(90deg,#2a1a00 0%,#1a1200 100%);border-left:3px solid var(--accent2);' : '';
 
     return `<div data-batter-id="${b.id}" class="lineup-batter-card${homerToday?' hr-today':''}">
-      <div class="lineup-batter-main">
-        <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-width:14px">${i+1}</span>
-        <div class="lineup-batter-details">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            <span class="batter-name-span" style="font-size:13px;font-weight:700;color:${homerToday?'var(--accent2)':'var(--text)'}">${b.name}</span>
-            <span class="batter-pos">${b.pos}</span>
-            ${homerToday ? `<span class="hr-today-badge" style="background:#0a1a33;color:#2f6bff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.5px;border:1px solid #2f6bff66">💥 HR TODAY${b.todayHR>1?' x'+b.todayHR:''}</span>` : ''}
-            ${isTop ? `<span class="top-hr-badge">⚡ TOP HR THREAT</span>` : ''}
-          </div>
-          <div style="margin-top:3px">${matchupLabel(s)}</div>
-          <div class="batter-stats-line" style="display:flex;gap:12px;margin-top:4px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);flex-wrap:wrap">
-            ${buildBatterStatsLine(b)}
-          </div>
-        </div>
+      <div class="lbc-head">
+        <span class="lbc-rank">${i+1}</span>
+        <span class="lbc-name">${b.name}</span>
+        <span class="lbc-pos">${b.pos}</span>
+        ${homerToday ? `<span class="hr-today-badge lbc-tag-hrtoday">💥 HR TODAY${b.todayHR>1?' x'+b.todayHR:''}</span>` : ''}
+        ${isTop ? `<span class="top-hr-badge lbc-tag-tophr">⚡ TOP HR THREAT</span>` : ''}
+        ${b.isOnFire ? `<span class="lbc-tag-onfire">🔥 ON FIRE</span>` : ''}
+        ${matchupLabel(s)}
+        <button class="lbc-matchup-btn" onclick="openMatchup(${b.id},'${bName}',${pitcherId},'${pName}')" title="Batter vs Pitcher analysis">⚔ Matchup</button>
       </div>
-      <div class="lineup-matchup-action">
-        <button class="btn-matchup" onclick="openMatchup(${b.id},'${bName}',${pitcherId},'${pName}')" title="Batter vs Pitcher analysis">
-          ⚔ Pitcher Matchup
-        </button>
+      <div class="lbc-stats">
+        ${buildBatterStatsLine(b)}
       </div>
     </div>`;
   }).join('');
