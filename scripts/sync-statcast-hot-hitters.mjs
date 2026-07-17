@@ -145,10 +145,19 @@ function assertSchema(rows, label, requiredAnyOf) {
   }
 }
 
+let loggedBattedBallColumns = false;
 async function buildBattedBall(url, label) {
   const csv = await fetchCSV(url);
   const rows = parseCSV(csv);
   assertSchema(rows, label, ['brl_percent', 'brl_pa_percent', 'ev95percent']);
+  // Avg exit velocity is a well-known, expected Statcast stat this app has never
+  // surfaced — this same leaderboard likely already carries it (no new request), but
+  // the exact column name isn't confirmed live yet. Log the real header once so a
+  // wrong guess self-corrects in one pass instead of shipping silently-null forever.
+  if (!loggedBattedBallColumns && rows.length) {
+    console.log(`${label} columns: ${Object.keys(rows[0]).join(', ')}`);
+    loggedBattedBallColumns = true;
+  }
   const out = {};
   for (const r of rows) {
     const id = pick(r, ['player_id', 'batter_id', 'mlbam_id']);
@@ -158,6 +167,8 @@ async function buildBattedBall(url, label) {
       barrelPct: num(pick(r, ['brl_percent'])),
       hardHitPct: num(pick(r, ['ev95percent', 'hard_hit_percent'])),
       sweetSpotPct: num(pick(r, ['anglesweetspotpercent', 'sweet_spot_percent'])),
+      avgExitVelo: num(pick(r, ['avg_hit_speed', 'exit_velocity_avg', 'avg_ev', 'avg_exit_velocity'])),
+      maxExitVelo: num(pick(r, ['max_hit_speed', 'exit_velocity_max', 'max_ev', 'max_exit_velocity'])),
     };
   }
   return out;
@@ -284,10 +295,20 @@ async function buildBattedBallDirection() {
         pullPct: pctScale(pick(r, ['pull_rate', 'pull_percent', 'pulled_percent'])),
         oppoPct: pctScale(pick(r, ['oppo_rate', 'oppo_percent', 'opposite_percent'])),
         centerPct: pctScale(pick(r, ['straight_rate', 'straightaway_percent', 'center_percent'])),
+        // gb_rate/fb_rate/ld_rate/pu_rate confirmed live in this same response — were
+        // already being fetched and simply never extracted. Batted-ball type + pull
+        // direction together are a much stronger power signal than either alone (a
+        // pull-heavy fly-ball hitter has real HR upside a pull-heavy ground-ball
+        // hitter doesn't), and line-drive rate is a genuine BABIP/contact-quality
+        // signal distinct from anything else already tracked.
+        gbPct: pctScale(pick(r, ['gb_rate', 'gb_percent', 'ground_ball_percent'])),
+        fbPct: pctScale(pick(r, ['fb_rate', 'fb_percent', 'fly_ball_percent'])),
+        ldPct: pctScale(pick(r, ['ld_rate', 'ld_percent', 'line_drive_percent'])),
+        puPct: pctScale(pick(r, ['pu_rate', 'pu_percent', 'popup_percent'])),
       };
     }
     const vals = Object.values(out);
-    console.log(`Batted-ball-direction candidate ${url} matched schema — columns: ${Object.keys(sample).join(', ')}; ${vals.length} players, ${vals.filter(v => v.pullPct != null).length} with pullPct (e.g. ${vals.find(v=>v.pullPct!=null)?.pullPct}), ${vals.filter(v => v.oppoPct != null).length} with oppoPct.`);
+    console.log(`Batted-ball-direction candidate ${url} matched schema — columns: ${Object.keys(sample).join(', ')}; ${vals.length} players, ${vals.filter(v => v.pullPct != null).length} with pullPct (e.g. ${vals.find(v=>v.pullPct!=null)?.pullPct}), ${vals.filter(v => v.oppoPct != null).length} with oppoPct, ${vals.filter(v => v.fbPct != null).length} with fbPct (e.g. ${vals.find(v=>v.fbPct!=null)?.fbPct}), ${vals.filter(v => v.ldPct != null).length} with ldPct.`);
     return out;
   }
   throw lastErr;
@@ -427,6 +448,8 @@ async function main() {
       barrelPct: bb.barrelPct,
       hardHitPct: bb.hardHitPct,
       sweetSpotPct: bb.sweetSpotPct,
+      avgExitVelo: bb.avgExitVelo,
+      maxExitVelo: bb.maxExitVelo,
       xwoba: ex.xwoba,
       chasePct: pd.chasePct,
       zoneContactPct: pd.zoneContactPct,
@@ -438,6 +461,10 @@ async function main() {
       pullPct: bbd.pullPct,
       oppoPct: bbd.oppoPct,
       centerPct: bbd.centerPct,
+      gbPct: bbd.gbPct,
+      fbPct: bbd.fbPct,
+      ldPct: bbd.ldPct,
+      puPct: bbd.puPct,
       extraBasesTakenPct: brv.extraBasesTakenPct,
       baserunningRuns: brv.baserunningRuns,
       barrelTrend: trend(rbb.barrelPct, bb.barrelPct),
@@ -467,7 +494,7 @@ async function main() {
   const trendCount = players.filter(p => p.xwobaTrend !== undefined).length;
   const out = { generatedAt: new Date().toISOString(), season: SEASON, recentWindowDays: RECENT_DAYS, players };
   await writeFile(path.join(DATA_DIR, 'statcast-hot-hitters.json'), JSON.stringify(out, null, 2) + '\n');
-  console.log(`Synced Statcast profile for ${players.length} batters for ${SEASON} (${trendCount} with ${RECENT_DAYS}-day trend data, ${players.filter(p=>p.chasePct!=null).length} with plate discipline, ${players.filter(p=>p.sprintSpeed!=null).length} with sprint speed, ${players.filter(p=>p.batSpeed!=null).length} with bat tracking, ${players.filter(p=>p.pullPct!=null).length} with batted-ball direction, ${players.filter(p=>p.extraBasesTakenPct!=null).length} with baserunning value).`);
+  console.log(`Synced Statcast profile for ${players.length} batters for ${SEASON} (${trendCount} with ${RECENT_DAYS}-day trend data, ${players.filter(p=>p.chasePct!=null).length} with plate discipline, ${players.filter(p=>p.sprintSpeed!=null).length} with sprint speed, ${players.filter(p=>p.batSpeed!=null).length} with bat tracking, ${players.filter(p=>p.pullPct!=null).length} with batted-ball direction, ${players.filter(p=>p.fbPct!=null).length} with batted-ball type, ${players.filter(p=>p.avgExitVelo!=null).length} with exit velocity, ${players.filter(p=>p.baserunningRuns!=null).length} with baserunning value).`);
 }
 
 const isMain = import.meta.url === `file://${process.argv[1]}`;
