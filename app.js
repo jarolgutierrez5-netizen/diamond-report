@@ -3129,6 +3129,15 @@ async function loadGameProps() {
         const cls = f.team === 'neutral' ? (f.type || 'neu') : (f.team === winner ? 'pos' : 'opp');
         return `<span class="gp-factor ${cls}">${escapeFactorLabel(f.label)}</span>`;
       }).join('');
+      // HR Boost / Park Factor as compact labels (same .gp-factor chip style as the
+      // factor chips above) instead of full stat-block panels — see the win-prob
+      // model's weather/park sections above for how hrWeatherBoostPct/parkFactorVal
+      // are computed.
+      const hrBoostCls = hrWeatherBoostPct > 0 ? 'pos' : hrWeatherBoostPct < 0 ? 'neg' : 'neu';
+      const hrBoostChip = `<span class="gp-factor ${hrBoostCls}" title="Wind + temperature effect on HR likelihood only — excludes park, pitching, and offense">🌬️ HR Boost: ${hrWeatherBoostPct > 0 ? '+' : ''}${hrWeatherBoostPct}%</span>`;
+      const parkFactorCls = parkFactorVal > 107 ? 'pos' : parkFactorVal < 93 ? 'neg' : 'neu';
+      const parkFactorLabel = parkFactorVal > 107 ? 'HR-Friendly' : parkFactorVal < 93 ? 'Pitcher-Friendly' : 'Neutral';
+      const parkFactorChip = `<span class="gp-factor ${parkFactorCls}" title="Statcast park factor for ${stadiumCoords[homeAbbr]?.name||homeAbbr} — 100 = league average">🏟️ Park Factor: ${parkFactorVal} · ${parkFactorLabel}</span>`;
 
       const confBarW = Math.min(winnerPct, 100);
       const confBarColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : '#2ecc71';
@@ -3192,23 +3201,10 @@ async function loadGameProps() {
             <span style="font-size:9px;font-weight:700;color:${totalEnvColor};letter-spacing:.5px">${totalEnv}</span>
           </div>
 
-          <!-- HR Boost (weather-only: wind + temp effect on fly-ball carry) -->
-          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:80px" title="Wind + temperature effect on HR likelihood only — excludes park factor, pitching, and offense, which the Projected Total above already accounts for">
-            <span style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">HR Boost</span>
-            <span style="font-family:'Manrope',sans-serif;font-size:20px;letter-spacing:1px;line-height:1;color:${hrWeatherBoostPct > 0 ? '#2ecc71' : hrWeatherBoostPct < 0 ? 'var(--accent2)' : 'var(--muted)'}">${hrWeatherBoostPct > 0 ? '+' : ''}${hrWeatherBoostPct}%</span>
-            <span style="font-size:9px;font-weight:700;color:${hrWeatherBoostPct > 0 ? '#2ecc71' : hrWeatherBoostPct < 0 ? 'var(--accent2)' : 'var(--muted)'};letter-spacing:.5px">${hrWeatherBoostPct > 0 ? 'WIND/TEMP BOOST' : hrWeatherBoostPct < 0 ? 'WIND/TEMP DRAG' : 'NEUTRAL'}</span>
-          </div>
-
-          <!-- Park Factor (Statcast index_wOBA-based, 100 = league average) -->
-          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:80px" title="Statcast park factor for ${stadiumCoords[homeAbbr]?.name||homeAbbr} — 100 = league average, higher favors hitters">
-            <span style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Park Factor</span>
-            <span style="font-family:'Manrope',sans-serif;font-size:20px;letter-spacing:1px;line-height:1;color:${parkFactorVal > 107 ? '#2ecc71' : parkFactorVal < 93 ? 'var(--accent2)' : 'var(--muted)'}">${parkFactorVal}</span>
-            <span style="font-size:9px;font-weight:700;color:${parkFactorVal > 107 ? '#2ecc71' : parkFactorVal < 93 ? 'var(--accent2)' : 'var(--muted)'};letter-spacing:.5px">${parkFactorVal > 107 ? 'HR-FRIENDLY' : parkFactorVal < 93 ? 'PITCHER-FRIENDLY' : 'NEUTRAL'}</span>
-          </div>
         </div>
 
-        <!-- Key factors -->
-        <div class="gp-factors">${factorChips}</div>
+        <!-- HR Boost + Park Factor labels, same compact chip style as Key factors below -->
+        <div class="gp-factors">${hrBoostChip}${parkFactorChip}${factorChips}</div>
         <div class="gp-live-result-zone" data-live-score-badge="1" style="margin-top:8px">${resultBadge || ''}</div>
       </div>`, resultCorrect };
     }));
