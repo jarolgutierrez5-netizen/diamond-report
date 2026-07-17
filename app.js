@@ -1309,6 +1309,88 @@ window.updateHeroTodayRecordStrip = updateHeroTodayRecordStrip;
 // Fetches the nightly-graded all-time record once on load. Gracefully no-ops until the
 // first scheduled run of scripts/update-tracker.mjs actually produces data/tracker.json —
 // no fabricated record shown before real history exists.
+// Rolling hit-rate per market over the last N days, computed from tracker.json's
+// real per-pick date+result records (the only thing every market's pick actually
+// carries — none of them log which model factor drove the pick, so this is
+// scoped to what's honestly derivable: is the model hot or cold lately, not
+// "which factor is working"). A graded pick is one with result 'win' or 'loss';
+// 'pending'/'push' are excluded from the denominator.
+function computeMarketAccuracyBreakdown(trackerData) {
+  const todayCT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+  const todayMs = new Date(todayCT + 'T00:00:00').getTime();
+  const windows = [7, 14, 30];
+  const out = {};
+  for (const marketKey of ['drp', 'kprop', 'premium', 'hrThreat']) {
+    const picks = (trackerData?.market?.[marketKey] || []).filter(r => r.result === 'win' || r.result === 'loss');
+    const allTime = trackerData?.allTime?.[marketKey] || { wins: 0, losses: 0, pushes: 0, total: 0 };
+    const rolling = {};
+    for (const days of windows) {
+      const cutoffMs = todayMs - days * 86400000;
+      const inWindow = picks.filter(r => new Date(r.date + 'T00:00:00').getTime() >= cutoffMs);
+      const wins = inWindow.filter(r => r.result === 'win').length;
+      const total = inWindow.length;
+      rolling[days] = { wins, losses: total - wins, total, pct: total > 0 ? Math.round((wins / total) * 100) : null };
+    }
+    out[marketKey] = {
+      allTime: { ...allTime, pct: allTime.total > 0 ? Math.round((allTime.wins / allTime.total) * 100) : null },
+      rolling,
+    };
+  }
+  return out;
+}
+
+const TRACK_RECORD_MARKET_LABELS = {
+  drp: 'Moneyline Picks',
+  kprop: 'Strikeout Props',
+  premium: 'Premium Picks',
+  hrThreat: 'HR Threat',
+};
+function trackRecordPctColor(pct) {
+  if (pct == null) return 'var(--muted)';
+  return pct >= 55 ? '#2ecc71' : pct < 45 ? '#dc2626' : 'var(--accent2)';
+}
+window.renderTrackRecordPanel = function renderTrackRecordPanel() {
+  const body = document.getElementById('track-record-modal-body');
+  if (!body) return;
+  const breakdown = window.__drTrackRecordBreakdown;
+  if (!breakdown) {
+    body.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Track record data hasn't loaded yet — try reopening this in a moment.</div>`;
+    return;
+  }
+  const rows = Object.entries(TRACK_RECORD_MARKET_LABELS).map(([key, label]) => {
+    const m = breakdown[key];
+    if (!m || !m.allTime.total) return '';
+    const windowCell = (days) => {
+      const w = m.rolling[days];
+      if (!w || !w.total) return `<div class="trk-window"><span class="trk-window-label">${days}D</span><span class="trk-window-val" style="color:var(--muted)">–</span></div>`;
+      return `<div class="trk-window"><span class="trk-window-label">${days}D</span><span class="trk-window-val" style="color:${trackRecordPctColor(w.pct)}">${w.pct}%</span><span class="trk-window-sub">${w.wins}-${w.losses}</span></div>`;
+    };
+    return `<div class="trk-row">
+      <div class="trk-row-head">
+        <span class="trk-row-label">${label}</span>
+        <span class="trk-row-alltime" style="color:${trackRecordPctColor(m.allTime.pct)}">${m.allTime.pct != null ? m.allTime.pct + '%' : '–'} <span class="trk-row-record">(${m.allTime.wins}-${m.allTime.losses}${m.allTime.pushes ? '-' + m.allTime.pushes : ''} all-time)</span></span>
+      </div>
+      <div class="trk-windows">${windowCell(7)}${windowCell(14)}${windowCell(30)}</div>
+    </div>`;
+  }).filter(Boolean).join('');
+  body.innerHTML = rows
+    ? `<div class="trk-intro">Every graded pick this model has made this season, by market. "All-time" is the full season; 7/14/30-day columns show whether it's running hot or cold lately. Pending and pushed picks aren't counted.</div>${rows}`
+    : `<div class="mu-empty">No graded picks yet this season.</div>`;
+};
+window.openTrackRecordModal = function openTrackRecordModal() {
+  const overlay = document.getElementById('track-record-modal-overlay');
+  if (!overlay) return;
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  if (window.__drTrackRecordBreakdown) renderTrackRecordPanel();
+  else loadAllTimeTrackerRecord();
+};
+window.closeTrackRecordModal = function closeTrackRecordModal() {
+  const overlay = document.getElementById('track-record-modal-overlay');
+  if (overlay) overlay.style.display = 'none';
+  document.body.style.overflow = '';
+};
+
 async function loadAllTimeTrackerRecord() {
   try {
     const res = await fetch('./data/tracker.json', { cache: 'no-store' });
@@ -1317,6 +1399,8 @@ async function loadAllTimeTrackerRecord() {
     if (data?.allTime?.drp?.total > 0) window.__drAllTimeRecord = data.allTime.drp;
     if (data?.allTime?.kprop?.total > 0) window.__kpAllTimeRecord = data.allTime.kprop;
     if (data?.allTime?.premium?.total > 0) window.__premiumAllTimeRecord = data.allTime.premium;
+    window.__drTrackRecordBreakdown = computeMarketAccuracyBreakdown(data);
+    if (typeof window.renderTrackRecordPanel === 'function') window.renderTrackRecordPanel();
     // Today's Elite Picks are selected and locked in server-side (scripts/update-tracker.mjs,
     // captureEliteToday) so every visitor sees the exact same picks with the exact same
     // score — the Premium tab only joins these against live row data for display, it no
@@ -2819,6 +2903,18 @@ const stadiumCoords = {
   WSH:{lat:38.873,lon:-77.007,name:'Nationals Park',dome:false},
 };
 
+// Team primary brand colors — purely cosmetic (a thin accent edge on each Game
+// Projections card so the list reads faster at a glance), not tied to any stat.
+const teamColors = {
+  ARI:'#A71930',ATL:'#CE1141',BAL:'#DF4601',BOS:'#BD3039',CHC:'#0E3386',
+  CWS:'#27251F',CIN:'#C6011F',CLE:'#00385D',COL:'#33006F',DET:'#0C2340',
+  HOU:'#EB6E1F',KC:'#004687',LAA:'#BA0021',LAD:'#005A9C',MIA:'#00A3E0',
+  MIL:'#12284B',MIN:'#002B5C',NYM:'#002D72',NYY:'#003087',ATH:'#003831',
+  OAK:'#003831',PHI:'#E81828',PIT:'#FDB827',SD:'#2F241D',SF:'#FD5A1E',
+  SEA:'#0C2C56',STL:'#C41E3A',TB:'#092C5C',TEX:'#003278',TOR:'#134A8E',
+  WSH:'#AB0003',AZ:'#A71930',
+};
+
 // Park factors (HR index: 100 = average, >100 = hitter friendly) — refreshed from
 // the first successful live sync-park-factors.mjs run (2026-07-17, real Statcast
 // index_hr per park) now that its "var data = [...]" HTML-embedded-JSON parsing
@@ -3158,16 +3254,33 @@ async function loadGameProps() {
       // factor chips above) instead of full stat-block panels — see the win-prob
       // model's weather/park sections above for how hrWeatherBoostPct/parkFactorVal
       // are computed.
+      // Purely cosmetic fill bar under each chip's value, scaled to how extreme the
+      // number is within its realistic range — reinforces the pos/neg color coding
+      // without changing what the number means. ~13% is roughly the max combined
+      // wind+temp swing weatherHRMult can produce; ~33 is roughly the max deviation
+      // from 100 seen across the real park-factor table above.
+      const gpFactorBar = (pct, cls) => `<span class="gp-factor-bar"><span class="gp-factor-bar-fill ${cls}" style="width:${Math.round(Math.max(0, Math.min(1, pct)) * 100)}%"></span></span>`;
       const hrBoostCls = hrWeatherBoostPct > 0 ? 'pos' : hrWeatherBoostPct < 0 ? 'neg' : 'neu';
-      const hrBoostChip = `<span class="gp-factor ${hrBoostCls}" title="Wind + temperature effect on HR likelihood only — excludes park, pitching, and offense">🌬️ HR Boost: ${hrWeatherBoostPct > 0 ? '+' : ''}${hrWeatherBoostPct}%</span>`;
+      const hrBoostChip = `<span class="gp-factor ${hrBoostCls}" title="Wind + temperature effect on HR likelihood only — excludes park, pitching, and offense">🌬️ HR Boost: ${hrWeatherBoostPct > 0 ? '+' : ''}${hrWeatherBoostPct}%${gpFactorBar(Math.abs(hrWeatherBoostPct) / 13, hrBoostCls)}</span>`;
       const parkFactorCls = parkFactorVal > 107 ? 'pos' : parkFactorVal < 93 ? 'neg' : 'neu';
       const parkFactorLabel = parkFactorVal > 107 ? 'HR-Friendly' : parkFactorVal < 93 ? 'Pitcher-Friendly' : 'Neutral';
-      const parkFactorChip = `<span class="gp-factor ${parkFactorCls}" title="Statcast park factor for ${stadiumCoords[homeAbbr]?.name||homeAbbr} — 100 = league average">🏟️ Park Factor: ${parkFactorVal} · ${parkFactorLabel}</span>`;
+      const parkFactorChip = `<span class="gp-factor ${parkFactorCls}" title="Statcast park factor for ${stadiumCoords[homeAbbr]?.name||homeAbbr} — 100 = league average">🏟️ Park Factor: ${parkFactorVal} · ${parkFactorLabel}${gpFactorBar(Math.abs(parkFactorVal - 100) / 33, parkFactorCls)}</span>`;
 
       const confBarW = Math.min(winnerPct, 100);
       const confBarColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : '#2ecc71';
+      // Radial confidence gauge — same win% and confColor already computed above,
+      // just visualized as an arc instead of the plain TOSS-UP/LEAN/LIKELY/STRONG
+      // text alone. The ring is cut out with a mask (not a flat-color inner div)
+      // so it reads correctly against .gp-card's translucent glass background
+      // instead of covering it with a mismatched solid patch.
+      const confGaugeDeg = Math.round(confBarW * 3.6);
+      const confGaugeHTML = `<div class="gp-conf-gauge-wrap" title="${confidence} confidence — ${winnerPct}% model win probability">
+        <div class="gp-conf-gauge-ring" style="background:conic-gradient(${confColor} ${confGaugeDeg}deg, rgba(255,255,255,.12) 0)"></div>
+        <div class="gp-conf-gauge-label" style="color:${confColor}">${winnerPct}%</div>
+      </div>`;
 
-      return { html: `<div class="gp-card" data-game-pk="${g.gamePk}" data-away="${awayAbbr}" data-home="${homeAbbr}" data-winner="${winnerAbbr}" data-game-time="${dt.getTime()}">
+      const teamAccent = teamColors[homeAbbr] || teamColors[awayAbbr] || 'var(--accent)';
+      return { html: `<div class="gp-card" data-game-pk="${g.gamePk}" data-away="${awayAbbr}" data-home="${homeAbbr}" data-winner="${winnerAbbr}" data-game-time="${dt.getTime()}" style="--team-accent:${teamAccent}">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <!-- Teams -->
           <div class="gp-matchup" style="flex:1;min-width:180px">
@@ -3198,7 +3311,10 @@ async function loadGameProps() {
                 <span style="font-size:9px;color:#2ecc71;opacity:.8;font-family:'JetBrains Mono',monospace">${winnerPct}% WIN</span>
               </div>
             </div>
-            <span style="font-size:10px;font-weight:700;color:${confColor};letter-spacing:.5px">${confidence}</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              ${confGaugeHTML}
+              <span style="font-size:10px;font-weight:700;color:${confColor};letter-spacing:.5px">${confidence}</span>
+            </div>
           </div>
 
           <!-- Win % bars -->
@@ -3402,6 +3518,24 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
   } catch(e) {
     body.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
+}
+
+// Animates a headline number counting up from 0 on first paint. Deliberately only
+// used on one-shot content (this modal opens fresh per click, no periodic
+// auto-refresh) — the auto-refreshing Game Projections cards intentionally don't
+// use this, since re-triggering an animation on every 2-minute rebuild would be
+// exactly the kind of distracting repaint the flicker fix above just eliminated.
+function animateCountUp(el, endValue, decimals = 0, duration = 700) {
+  if (!el || !Number.isFinite(endValue)) return;
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = (endValue * eased).toFixed(decimals);
+    if (t < 1) requestAnimationFrame(step);
+    else el.textContent = endValue.toFixed(decimals);
+  }
+  requestAnimationFrame(step);
 }
 
 function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile }) {
@@ -3873,6 +4007,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         const avgRaw = parseDecVal(st.avg ?? st.battingAverage);
         const slgRaw = parseDecVal(st.slg ?? st.slugging);
         const xslgRaw = parseDecVal(st.xslg ?? st.xSLG ?? st.expectedSlugging);
+        const wobaRaw = parseDecVal(st.woba ?? st.wOBA);
         const hardRaw = parsePctVal(st.hardHitPct ?? st.hardHitRate);
         const whiffRaw = parsePctVal(st.whiffPct ?? st.whiffRate);
         return `<tr>
@@ -3881,6 +4016,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
           <td class="num${gbCls('avg',avgRaw)}">${fmtDec(st.avg ?? st.battingAverage, 3, 'avg')}</td>
           <td class="num${gbCls('slg',slgRaw)}">${fmtDec(st.slg ?? st.slugging, 3, 'slg')}</td>
           <td class="num${gbCls('xslg',xslgRaw)}">${fmtDec(st.xslg ?? st.xSLG ?? st.expectedSlugging, 3, 'xslg')}</td>
+          <td class="num${gbCls('woba',wobaRaw)}">${fmtDec(st.woba ?? st.wOBA, 3, 'woba')}</td>
           <td class="num${gbCls('hr',rowHr)}">${rowHr != null ? rowHr : '–'}</td>
           <td class="num${gbCls('hardHit',hardRaw)}">${fmtPctVal(st.hardHitPct ?? st.hardHitRate, 0, 'hardHit')}</td>
           <td class="num${gbCls('whiff',whiffRaw)}">${fmtPctVal(st.whiffPct ?? st.whiffRate, 1, 'whiff')}</td>
@@ -3926,7 +4062,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
           <div class="dr1042-split-note" data-note>${notes.auto}</div>
         </div>
       </div>
-      <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Pitcher Usage</th><th>AVG</th><th>SLG</th><th>xSLG</th><th>HR</th><th>Hard Hit</th><th>Whiff</th><th>Advantage</th></tr></thead>${bodies}</table></div>
+      <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Pitcher Usage</th><th>AVG</th><th>SLG</th><th>xSLG</th><th>wOBA</th><th>HR</th><th>Hard Hit</th><th>Whiff</th><th>Advantage</th></tr></thead>${bodies}</table></div>
       ${gbLegendHTML}
       <div class="dr1041-ai-read"><strong style="color:#fff">AI Read:</strong> <span data-ai-read>${auto.summary}</span></div>
       <script type="application/json" data-pmix-state>${JSON.stringify({ scores:{auto:auto.score,R:built.R.score,L:built.L.score}, notes, reads:{auto:auto.summary,R:built.R.summary,L:built.L.summary} }).replace(/</g,'\\u003c')}<\/script>
@@ -4103,6 +4239,22 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       ? `<span style="color:var(--green)">↑ ${mag}</span>`
       : `<span style="color:var(--accent)">↓ ${mag}</span>`;
   }
+  // Two real points only (season baseline -> recent-window value) — the repo-synced
+  // data here (recentOpsTrend etc.) is a single delta, not a real day-by-day game log,
+  // so this deliberately isn't a multi-day curve. Purely a visual pairing for the
+  // trendArrow text already shown, not a new data source.
+  function trendSparkline(v) {
+    const n = Number(v);
+    if (!n) return '';
+    const up = n > 0;
+    const mag = Math.min(Math.abs(n) * (Math.abs(n) < 1 ? 40 : 4), 6);
+    const y1 = (up ? 9 - mag : 9 + mag).toFixed(1);
+    const color = up ? 'var(--green)' : 'var(--accent)';
+    return `<svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true" style="vertical-align:middle;margin-left:3px">
+      <polyline points="2,9 22,${y1}" fill="none" style="stroke:${color}" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="22" cy="${y1}" r="2" style="fill:${color}"></circle>
+    </svg>`;
+  }
 
   // ── LIVE expected stats (xBA/xSLG/xwOBA) from the MLB Stats API ──
   const x3 = v => v != null && !isNaN(parseFloat(v)) ? parseFloat(v).toFixed(3).replace(/^0/,'') : null;
@@ -4187,7 +4339,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <div style="font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">${m.label}</div>
       <div style="display:flex;align-items:baseline;gap:8px;margin-top:2px;flex-wrap:wrap">
         <span style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700">${m.value}</span>
-        ${m.trend !== undefined ? `<span style="font-size:10px;font-family:'JetBrains Mono',monospace">${trendArrow(m.trend)}</span>` : (m.delta || '')}
+        ${m.trend !== undefined ? `<span style="font-size:10px;font-family:'JetBrains Mono',monospace;display:inline-flex;align-items:center">${trendArrow(m.trend)}${trendSparkline(m.trend)}</span>` : (m.delta || '')}
       </div>
     </div>`;
 
@@ -4358,6 +4510,9 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         <span class="dr1041-usage-chips">${bottomUsageChips}</span>
       </div>
     </div>`;
+
+  const scoreEl = body.querySelector('[data-score]');
+  if (scoreEl && pitchMixDashboard.score != null) animateCountUp(scoreEl, pitchMixDashboard.score, 0);
 }
 
 
@@ -10350,6 +10505,49 @@ function showPremiumGate(feature){
   document.addEventListener('DOMContentLoaded', function(){ installObserver(); setTimeout(fetchAndApply, 250); setTimeout(fetchAndApply, 1500); }, { once:true });
   setTimeout(function(){ installObserver(); fetchAndApply(); }, 500);
   setInterval(() => { if (document.visibilityState === 'visible') fetchAndApply(); }, 60 * 1000);
+})();
+
+/* ---- pick-hit micro-celebration ----
+   A brief glow/scale pulse the first time a game's result badge turns into
+   "✓ CORRECT", instead of it just appearing statically. Deliberately built as
+   its own read-mostly observer rather than touching any of the three existing
+   badge-generation code paths above (base loadGameProps's own resultBadge,
+   this file's applyGames(), and refreshLockedGameProjectionScores()) — a
+   classList toggle on the existing badge node isn't a childList mutation, so
+   it can't feed back into any of those observers the way the flicker bug did,
+   and "already celebrated" is tracked per gamePk in localStorage so reopening
+   the tab later doesn't replay it. */
+(function(){
+  if (window.__DR_PICK_CELEBRATION__) return;
+  window.__DR_PICK_CELEBRATION__ = true;
+  var STORE_KEY = 'dr-pick-celebrated-v1';
+  var celebrated = new Set();
+  try { (JSON.parse(localStorage.getItem(STORE_KEY) || '[]')).forEach(function(pk){ celebrated.add(pk); }); } catch(e) {}
+  function persist() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(Array.from(celebrated).slice(-300))); } catch(e) {}
+  }
+  function scan() {
+    var root = document.getElementById('gameprops-content');
+    if (!root) return;
+    root.querySelectorAll('.gp-card[data-game-pk]').forEach(function(card){
+      var pk = card.getAttribute('data-game-pk');
+      if (!pk || celebrated.has(pk)) return;
+      var zone = card.querySelector('.gp-live-result-zone,[data-live-score-badge="1"]');
+      if (!zone || !/✓\s*CORRECT/.test(zone.textContent || '')) return;
+      celebrated.add(pk);
+      persist();
+      zone.classList.add('dr-pick-celebrate');
+      zone.addEventListener('animationend', function(){ zone.classList.remove('dr-pick-celebrate'); }, { once:true });
+    });
+  }
+  function boot() {
+    var root = document.getElementById('gameprops-content');
+    if (!root) { setTimeout(boot, 500); return; }
+    new MutationObserver(scan).observe(root, { childList:true, subtree:true });
+    scan();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once:true });
+  else boot();
 })();
 
 /* ---- from <script id="prod-v9-performance-orchestrator"> ---- */
