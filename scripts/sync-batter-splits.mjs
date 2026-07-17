@@ -21,6 +21,15 @@
 // response. The raw split-stat shape for the first player found with any splits
 // is always logged (success or not) so a schema mismatch can be fixed from the
 // log in one pass rather than guessed blind repeatedly.
+//
+// Also captures injured/inactive roster status from the same roster response (no
+// extra requests) using the identical detection app.js's rowLooksInactive() /
+// loadActivePlayerIdsForGames() already use against this same endpoint in
+// production. This is real IL/restricted/suspended list status, not a "rest day"
+// signal — MLB doesn't publish a machine-readable reason a healthy player isn't in
+// today's starting lineup (day off vs platoon vs demotion all look identical from
+// this API), so that distinct ask isn't implemented here; a false "resting" label
+// on a benched or demoted player would be worse than no label at all.
 // ─────────────────────────────────────────────────────────────────────────
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
@@ -86,6 +95,11 @@ function extractSplits(person) {
   return out;
 }
 
+// Same detection app.js's rowLooksInactive()/loadActivePlayerIdsForGames() already use
+// in production against this exact roster endpoint — reusing it here rather than
+// inventing a new one keeps "injured/IL" meaning the same thing everywhere in the app.
+const INACTIVE_STATUS_RE = /injured|\bil\b|restricted|suspended|bereavement|paternity|inactive|minor/;
+
 async function buildSplitsForTeam(teamId) {
   const url = `${MLB_API}/teams/${teamId}/roster?rosterType=active&hydrate=person(stats(group=[hitting],type=[statSplits],sitCodes=[h,a,risp],season=${SEASON}))`;
   const d = await fetchJSON(url);
@@ -94,6 +108,10 @@ async function buildSplitsForTeam(teamId) {
     const person = entry.person;
     if (!person?.id) continue;
     const splits = extractSplits(person);
+    const statusText = String(entry.status?.description || entry.status?.code || '');
+    if (statusText && INACTIVE_STATUS_RE.test(statusText.toLowerCase())) {
+      splits.rosterStatus = statusText;
+    }
     if (Object.keys(splits).length) out[String(person.id)] = splits;
   }
   return out;
@@ -140,7 +158,8 @@ async function main() {
   }
 
   const totalWithSplits = Object.keys(allSplits).length;
-  console.log(`Fetched splits for ${totalWithSplits} players across ${teamIds.length - teamFailures}/${teamIds.length} teams.`);
+  const totalInactive = Object.values(allSplits).filter(s => s.rosterStatus).length;
+  console.log(`Fetched splits for ${totalWithSplits} players across ${teamIds.length - teamFailures}/${teamIds.length} teams (${totalInactive} flagged injured/inactive).`);
 
   let merged = 0;
   for (const p of hotHitters.players) {

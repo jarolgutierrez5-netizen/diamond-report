@@ -2734,6 +2734,7 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
         ${homerToday ? `<span class="hr-today-badge lbc-tag-hrtoday">💥 HR TODAY${b.todayHR>1?' x'+b.todayHR:''}</span>` : ''}
         ${isTop ? `<span class="top-hr-badge lbc-tag-tophr">⚡ TOP HR THREAT</span>` : ''}
         ${b.isOnFire ? `<span class="lbc-tag-onfire">🔥 ON FIRE</span>` : ''}
+        ${b.rosterStatus ? `<span class="lbc-tag-injured" title="${b.rosterStatus}">🏥 ${b.rosterStatus}</span>` : ''}
         ${matchupLabel(s)}
         <button class="lbc-matchup-btn" onclick="openMatchup(${b.id},'${bName}',${pitcherId},'${pName}')" title="Batter vs Pitcher analysis">⚔ Matchup</button>
       </div>
@@ -4032,6 +4033,11 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     </div>`;
 
   body.innerHTML = `
+    ${hh.rosterStatus ? `
+    <div class="vuln-box" style="border-color:rgba(239,68,68,.55);background:rgba(127,29,29,.22);margin-bottom:12px">
+      <div class="vuln-title" style="color:#fca5a5">⚠️ ROSTER STATUS</div>
+      <div class="vuln-item"><span class="vuln-icon">🏥</span><span style="color:var(--text)">${batterName} is currently <strong>${hh.rosterStatus}</strong> — stats and projections below still reflect his full season, not just healthy games.</span></div>
+    </div>` : ''}
     <!-- Scouting Report -->
     <div class="vuln-box">
       <div class="vuln-title">⚡ SCOUTING REPORT — HOW TO HIT A HOME RUN</div>
@@ -4311,6 +4317,7 @@ function applyHotHitterBoost(row) {
   row.onFireScore = Number(profile.onFireScore || 0);
   row.hrProb = +clampNum(base + boost, 0, 35).toFixed(1);
   row.isOnFire = row.onFireScore >= 70 || boost >= 4.5;
+  row.rosterStatus = profile.rosterStatus || null;
   return row;
 }
 function applyHotHitterBoosts(rows) {
