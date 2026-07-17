@@ -1212,6 +1212,41 @@ function blendRecentForm(seasonVal, recent, key) {
   return seasonVal * (1 - weight) + recent[key] * weight;
 }
 
+// Team-wide season pitching totals (every pitcher who's thrown for the team combined) —
+// used by the Projected Total model to back out a bullpen-strength signal. There's no
+// documented "relief pitching only" split on this API, so this isn't a true bullpen-only
+// stat: subtracting the day's probable starter's own IP/ER from the team total leaves
+// "how this team's staff performs when someone other than today's starter is on the
+// mound," which mixes true relief appearances with other starters' turns through the
+// season. Still a meaningfully different, real signal from the starter's own line alone.
+// Cached per team since this barely moves within a day (only after that team's own game).
+const _teamPitchingCache = {};
+async function teamSeasonPitchingTotals(teamId) {
+  if (!teamId) return null;
+  const cached = _teamPitchingCache[teamId];
+  if (cached && cached.ts && (Date.now() - cached.ts) < 5 * 60_000) return cached.data;
+  try {
+    const d = await fetchJSON(`https://diamondreport.app/api/v1/teams/${teamId}/stats?stats=season&group=pitching&season=2026`);
+    const s = d.stats?.[0]?.splits?.[0]?.stat || {};
+    const data = { er: parseInt(s.earnedRuns) || 0, ip: parseFloat(s.inningsPitched) || 0 };
+    _teamPitchingCache[teamId] = { data, ts: Date.now() };
+    return data;
+  } catch { return null; }
+}
+// Backs out a bullpen-strength ERA from the team total minus the probable starter's own
+// line (see teamSeasonPitchingTotals above for what that mix actually represents).
+// Requires a real 20+ IP remainder before trusting it — early season, or a team whose
+// probable starter has thrown nearly all their innings, isn't a reliable subtraction.
+function bullpenERAFor(teamPitching, starterStats, leagueAvgBullpenERA) {
+  if (!teamPitching) return leagueAvgBullpenERA;
+  const starterER = parseInt(starterStats.earnedRuns) || 0;
+  const starterIP = parseFloat(starterStats.inningsPitched) || 0;
+  const bullpenIP = teamPitching.ip - starterIP;
+  const bullpenER = teamPitching.er - starterER;
+  if (bullpenIP < 20) return leagueAvgBullpenERA;
+  return Math.max(1.5, (bullpenER * 9) / bullpenIP);
+}
+
 // Keyed game state cache — gamePk -> last known card data
 const prevGames = {};
 
@@ -2871,11 +2906,13 @@ async function loadGameProps() {
 
       if (!model) {
         // Fetch both pitcher stats
-        const [awayStats, homeStats, awayRecentForm, homeRecentForm] = await Promise.all([
+        const [awayStats, homeStats, awayRecentForm, homeRecentForm, awayTeamPitching, homeTeamPitching] = await Promise.all([
           awayP ? fetchJSON(`https://diamondreport.app/api/v1/people/${awayP.id}?hydrate=stats(group=pitching,type=season,season=2026)`).then(d=>d.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||{}).catch(()=>({})) : Promise.resolve({}),
           homeP ? fetchJSON(`https://diamondreport.app/api/v1/people/${homeP.id}?hydrate=stats(group=pitching,type=season,season=2026)`).then(d=>d.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||{}).catch(()=>({})) : Promise.resolve({}),
           awayP ? recentPitchingForm(awayP.id) : Promise.resolve(null),
           homeP ? recentPitchingForm(homeP.id) : Promise.resolve(null),
+          teamSeasonPitchingTotals(g.teams.away.team.id),
+          teamSeasonPitchingTotals(g.teams.home.team.id),
         ]);
 
         // Weather (Open-Meteo, free, no key)
@@ -2986,16 +3023,46 @@ async function loadGameProps() {
         // ── Projected Total (DR model) ──────────────────────────────────
         // No real sportsbook odds feed exists on this site (loadSportsbookKLines
         // is itself a local-model number, not a live book line — see its own
-        // comments), and there's no team-offense stat fetch wired up anywhere
-        // for this section. Rather than add a new API call, this reuses the
-        // exact ERA/park/weather/record inputs already fetched above for the
-        // win-probability model. Runs are driven by the OPPOSING starter's ERA
-        // — the pitcher that lineup actually faces — not the batting team's own,
-        // so awayRuns scales with homeERA and homeRuns scales with awayERA.
-        const LEAGUE_AVG_ERA = 4.00;
+        // comments). Reuses the exact WHIP/K9/park/weather/record inputs already
+        // fetched above for the win-probability model, plus season HR/9 pulled
+        // from the same pitching-stats response (same field loadHRPotential
+        // already reads as pitcherHr9 — no extra fetch) and a team-pitching-
+        // totals fetch (see teamSeasonPitchingTotals) for a bullpen-strength
+        // signal. A single ERA ratio was the first pass here, but ERA folds
+        // baserunners, power allowed, and strikeout ability into one number —
+        // this blends the three separately so a low-ERA pitcher who gets there
+        // via limiting hard contact (real signal) isn't treated the same as one
+        // who gets there by stranding runners (luck/bullpen-dependent, not a
+        // stable predictor of next game's runs). Each ratio is 1.0 at league
+        // average by construction, weighted by how directly it predicts runs
+        // allowed: WHIP (baserunners) 50%, HR/9 (extra-base power surrendered)
+        // 30%, K/9 (contact suppression) 20% — then blended 65/35 with the
+        // bullpen-strength ratio, reflecting roughly how much of a modern game
+        // the starter vs the rest of the staff covers. Runs are driven by the
+        // OPPOSING team's pitching index — the staff that lineup actually
+        // faces — not the batting team's own, so awayRuns scales with the home
+        // pitching index and homeRuns with the away pitching index.
         const LEAGUE_AVG_TEAM_RUNS = 4.3; // roughly modern-era MLB runs/team/game
-        let awayRuns = LEAGUE_AVG_TEAM_RUNS * (homeERA / LEAGUE_AVG_ERA);
-        let homeRuns = LEAGUE_AVG_TEAM_RUNS * (awayERA / LEAGUE_AVG_ERA);
+        const LEAGUE_AVG_WHIP = 1.30, LEAGUE_AVG_K9 = 8.5, LEAGUE_AVG_HR9 = 1.20;
+        const LEAGUE_AVG_BULLPEN_ERA = 4.20; // modern bullpen ERA runs a touch above rotation average
+        const awayHR9 = parseFloat(awayStats.homeRunsPer9) || LEAGUE_AVG_HR9;
+        const homeHR9 = parseFloat(homeStats.homeRunsPer9) || LEAGUE_AVG_HR9;
+        const pitcherRunIndex = (whip, k9, hr9) => {
+          const whipRatio = whip / LEAGUE_AVG_WHIP;
+          const hr9Ratio = hr9 / LEAGUE_AVG_HR9;
+          const k9Ratio = LEAGUE_AVG_K9 / Math.max(k9, 1); // more Ks than average -> lower ratio -> fewer runs
+          return (whipRatio * 0.5) + (hr9Ratio * 0.3) + (k9Ratio * 0.2);
+        };
+        // Bullpen strength, folded in at a weight reflecting a modern starter's average
+        // outing (~5.5-6 of 9 innings) vs the rest of the game the pitching staff covers.
+        const awayBullpenERA = bullpenERAFor(awayTeamPitching, awayStats, LEAGUE_AVG_BULLPEN_ERA);
+        const homeBullpenERA = bullpenERAFor(homeTeamPitching, homeStats, LEAGUE_AVG_BULLPEN_ERA);
+        const awayBullpenRatio = awayBullpenERA / LEAGUE_AVG_BULLPEN_ERA;
+        const homeBullpenRatio = homeBullpenERA / LEAGUE_AVG_BULLPEN_ERA;
+        const awayPitcherIndex = (pitcherRunIndex(awayWHIP, awayK9, awayHR9) * 0.65) + (awayBullpenRatio * 0.35);
+        const homePitcherIndex = (pitcherRunIndex(homeWHIP, homeK9, homeHR9) * 0.65) + (homeBullpenRatio * 0.35);
+        let awayRuns = LEAGUE_AVG_TEAM_RUNS * homePitcherIndex;
+        let homeRuns = LEAGUE_AVG_TEAM_RUNS * awayPitcherIndex;
 
         // Team record as a rough own-offense proxy — same 10-game-minimum
         // sample-size floor already used for the win-prob record factor above.
@@ -3149,7 +3216,7 @@ async function loadGameProps() {
           </div>
 
           <!-- Projected Total -->
-          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:90px" title="DR model estimate from starter ERA, park factor, weather, and team record — not a live sportsbook line">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:90px" title="DR model estimate from starter WHIP/K9/HR9, bullpen strength, park factor, weather, and team record — not a live sportsbook line">
             <span style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Projected Total</span>
             <span style="font-family:'Manrope',sans-serif;font-size:20px;letter-spacing:1px;line-height:1;color:${totalEnvColor}">${projectedTotal.toFixed(1)}</span>
             <span style="font-size:9px;font-weight:700;color:${totalEnvColor};letter-spacing:.5px">${totalEnv}</span>
