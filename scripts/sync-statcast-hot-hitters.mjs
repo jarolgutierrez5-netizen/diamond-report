@@ -494,7 +494,7 @@ async function main() {
   const trendCount = players.filter(p => p.xwobaTrend !== undefined).length;
   const out = { generatedAt: new Date().toISOString(), season: SEASON, recentWindowDays: RECENT_DAYS, players };
   await writeFile(path.join(DATA_DIR, 'statcast-hot-hitters.json'), JSON.stringify(out, null, 2) + '\n');
-  console.log(`Synced Statcast profile for ${players.length} batters for ${SEASON} (${trendCount} with ${RECENT_DAYS}-day trend data, ${players.filter(p=>p.chasePct!=null).length} with plate discipline, ${players.filter(p=>p.sprintSpeed!=null).length} with sprint speed, ${players.filter(p=>p.batSpeed!=null).length} with bat tracking, ${players.filter(p=>p.pullPct!=null).length} with batted-ball direction, ${players.filter(p=>p.fbPct!=null).length} with batted-ball type, ${players.filter(p=>p.avgExitVelo!=null).length} with exit velocity, ${players.filter(p=>p.extraBasesTakenPct!=null).length} with baserunning value).`);
+  console.log(`Synced Statcast profile for ${players.length} batters for ${SEASON} (${trendCount} with ${RECENT_DAYS}-day trend data, ${players.filter(p=>p.chasePct!=null).length} with plate discipline, ${players.filter(p=>p.sprintSpeed!=null).length} with sprint speed, ${players.filter(p=>p.batSpeed!=null).length} with bat tracking, ${players.filter(p=>p.pullPct!=null).length} with batted-ball direction, ${players.filter(p=>p.fbPct!=null).length} with batted-ball type, ${players.filter(p=>p.avgExitVelo!=null).length} with exit velocity, ${players.filter(p=>p.baserunningRuns!=null).length} with baserunning value).`);
 }
 
 const isMain = import.meta.url === `file://${process.argv[1]}`;
