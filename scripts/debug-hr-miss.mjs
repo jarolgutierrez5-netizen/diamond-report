@@ -1,13 +1,15 @@
 #!/usr/bin/env node
-// Temporary diagnostic — NOT meant to stay in the repo. Phase 2: replicate the exact
-// hrProb formula from loadHRPotential()/simulateHRGameOdds() in app.js against real
-// stats for the full starting lineups of the 2026-07-16 NYM @ PHI game (gamePk 823440),
-// to determine whether Trea Turner, Brett Baty, and Francisco Alvarez were excluded from
-// the HR Threat list by the display-filter probability floor (topHrThreat && hrProb>=5,
-// or hrProb>=10 otherwise) rather than by any of the earlier-ruled-out filters.
+// Temporary diagnostic — NOT meant to stay in the repo. Phase 3: phase 2 found that
+// hrProb computed from CURRENT (post-game) season totals puts all three targets above
+// the display floor (Baty 11%, Alvarez 17%, Turner 12%), which doesn't explain the miss.
+// But that calculation includes the very game being investigated in both the batters'
+// AND pitchers' season sample — inflating the estimate versus what the site would have
+// shown PRE-GAME. This phase backs the 2026-07-16 game log out of both sides' season
+// totals to reconstruct the real pre-game hrProb and see if THAT was under the floor.
 
 const API = 'https://statsapi.mlb.com/api/v1';
 const GAME_PK = 823440;
+const GAME_DATE = '2026-07-16';
 const TARGETS = ['Trea Turner', 'Brett Baty', 'Francisco Alvarez'];
 
 async function fetchJSON(url) {
@@ -16,7 +18,6 @@ async function fetchJSON(url) {
   return res.json();
 }
 
-// --- ported from app.js's HR-sim IIFE (verbatim math) ---
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function n(v, fallback) { v = parseFloat(v); return Number.isFinite(v) ? v : (fallback == null ? 0 : fallback); }
 function estimatePA(battingOrder) {
@@ -45,10 +46,8 @@ function simulateHRGameOdds(pPerPA, battingOrder) {
   for (const k in dist) prob += dist[k] * (1 - Math.pow(1 - pPerPA, Number(k)));
   return Math.max(1, Math.min(99, Math.round(prob * 100)));
 }
-
 const HRP_MIN_AB_FOR_RATE = 40;
 const HRP_LEAGUE_AVG_HR_RATE = 0.031;
-
 function batterHrRate(ab, hr) {
   const rawBatterRate = ab > 0 ? hr / ab : 0;
   const hrpSampleWeight = Math.min(ab, HRP_MIN_AB_FOR_RATE) / HRP_MIN_AB_FOR_RATE;
@@ -60,54 +59,67 @@ async function seasonHitting(pid) {
   const s = pd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || {};
   return { ab: parseInt(s.atBats) || 0, hr: parseInt(s.homeRuns) || 0, name: pd.people?.[0]?.fullName };
 }
-
+async function gameLogHitting(pid, date) {
+  const gl = await fetchJSON(`${API}/people/${pid}/stats?stats=gameLog&group=hitting&season=2026`);
+  const splits = gl.stats?.[0]?.splits || [];
+  const g = splits.find(s => s.date === date);
+  if (!g) return { ab: 0, hr: 0 };
+  return { ab: parseInt(g.stat?.atBats) || 0, hr: parseInt(g.stat?.homeRuns) || 0 };
+}
 async function seasonPitching(pid) {
   const pd = await fetchJSON(`${API}/people/${pid}?hydrate=stats(group=pitching,type=season,season=2026)`);
   const s = pd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || {};
-  return { hr9: parseFloat(s.homeRunsPer9) || 0, name: pd.people?.[0]?.fullName };
+  return { hr9: parseFloat(s.homeRunsPer9) || 0, hr: parseInt(s.homeRuns) || 0, ip: parseFloat(s.inningsPitched) || 0, name: pd.people?.[0]?.fullName };
+}
+async function gameLogPitching(pid, date) {
+  const gl = await fetchJSON(`${API}/people/${pid}/stats?stats=gameLog&group=pitching&season=2026`);
+  const splits = gl.stats?.[0]?.splits || [];
+  const g = splits.find(s => s.date === date);
+  if (!g) return { ip: 0, hr: 0 };
+  return { ip: parseFloat(g.stat?.inningsPitched) || 0, hr: parseInt(g.stat?.homeRuns) || 0 };
 }
 
 async function main() {
-  const sched = await fetchJSON(`${API}/schedule?sportId=1&date=2026-07-16&hydrate=team,probablePitcher,linescore`);
+  const sched = await fetchJSON(`${API}/schedule?sportId=1&date=${GAME_DATE}&hydrate=team,probablePitcher,linescore`);
   const game = sched.dates?.[0]?.games?.find(g => g.gamePk === GAME_PK);
   const box = await fetchJSON(`${API}/game/${GAME_PK}/boxscore`);
 
   for (const side of ['away', 'home']) {
     const oppSide = side === 'away' ? 'home' : 'away';
     const pitcher = game.teams[oppSide].probablePitcher;
-    const pitching = await seasonPitching(pitcher.id);
-    const pitcherRate = pitching.hr9 > 0 ? pitching.hr9 / 38 : 0.03;
-    // gameParkFactor defaults to 100 (data/park-factors.json has never successfully
-    // populated), so parkAdj = 1 + ((100-100)/100)*0.5 = 1 exactly.
-    const parkAdj = 1;
-
-    const teamBox = box.teams[side];
-    const abbr = teamBox.team.abbreviation;
-    console.log(`\n=== ${side.toUpperCase()} (${abbr}) batters vs ${pitching.name} (HR/9=${pitching.hr9}, pitcherRate=${pitcherRate.toFixed(4)}) ===`);
+    const pSeason = await seasonPitching(pitcher.id);
+    const pGame = await gameLogPitching(pitcher.id, GAME_DATE);
+    const preIP = pSeason.ip - pGame.ip;
+    const preHR = pSeason.hr - pGame.hr;
+    const preHr9 = preIP > 0 ? (preHR * 9) / preIP : 0;
+    const pitcherRate = preHr9 > 0 ? preHr9 / 38 : 0.03;
+    console.log(`\n=== ${side.toUpperCase()} batters vs ${pSeason.name} — PRE-GAME HR/9=${preHr9.toFixed(2)} (post-game was ${pSeason.hr9}), pitcherRate=${pitcherRate.toFixed(4)} ===`);
 
     const starters = [];
-    for (const [pid, p] of Object.entries(teamBox.players || {})) {
+    for (const [pid, p] of Object.entries(box.teams[side].players || {})) {
       const bo = Number(p.battingOrder ?? p.stats?.batting?.battingOrder ?? NaN);
       if (!Number.isFinite(bo) || bo % 100 !== 0) continue;
-      starters.push({ pid: p.person.id, name: p.person.fullName, boRaw: bo, order: Math.max(1, Math.min(9, Math.floor(bo / 100))) });
+      starters.push({ pid: p.person.id, name: p.person.fullName, order: Math.max(1, Math.min(9, Math.floor(bo / 100))) });
     }
     starters.sort((a, b) => a.order - b.order);
 
     const rows = [];
     for (const st of starters) {
-      const h = await seasonHitting(st.pid);
-      const batterRate = batterHrRate(h.ab, h.hr);
-      const hrPerPA = ((batterRate * 0.6) + (pitcherRate * 0.4)) * parkAdj;
+      const hSeason = await seasonHitting(st.pid);
+      const hGame = await gameLogHitting(st.pid, GAME_DATE);
+      const preAB = hSeason.ab - hGame.ab;
+      const preHR = hSeason.hr - hGame.hr;
+      const batterRate = batterHrRate(preAB, preHR);
+      const hrPerPA = ((batterRate * 0.6) + (pitcherRate * 0.4)) * 1;
       const hrProb = simulateHRGameOdds(hrPerPA, st.order);
-      rows.push({ ...st, ab: h.ab, hr: h.hr, hrProb });
+      rows.push({ ...st, preAB, preHR, hrProb });
     }
-
     const topRow = rows.reduce((best, r) => (r.hrProb > best.hrProb ? r : best), rows[0]);
     rows.forEach(r => {
       const isTop = r.pid === topRow.pid;
       const displayed = (isTop && r.hrProb >= 5) || r.hrProb >= 10;
       const flag = TARGETS.includes(r.name) ? '  <<< TARGET' : '';
-      console.log(`  #${r.order} ${r.name.padEnd(20)} AB=${r.ab} HR=${String(r.hr).padStart(2)} hrProb=${String(r.hrProb).padStart(2)}%  topHrThreat=${isTop}  DISPLAYED=${displayed}${flag}`);
+      console.log(`  #${r.order} ${r.name.padEnd(20)} preAB=${r.preAB} preHR=${r.preHR} hrProb=${String(r.hrProb).padStart(2)}%  topHrThreat=${isTop}  DISPLAYED=${displayed}${flag}`);
     });
   }
 }
