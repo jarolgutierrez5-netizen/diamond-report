@@ -1306,29 +1306,6 @@ function updateHeroTodayRecordStrip() {
 }
 window.updateHeroTodayRecordStrip = updateHeroTodayRecordStrip;
 
-// News Central hub trust callout — combined win/loss across every graded market
-// (Diamond Report Pick, K Props, Premium, HR Threat) for yesterday specifically,
-// not all-time, since "here's how we did yesterday" is a much more concrete,
-// checkable trust signal for a first-time hub visitor than a big all-time number.
-function updateHubTrustStrip() {
-  const el = document.getElementById('dr-hub-trust-strip');
-  if (!el) return;
-  const y = window.__yesterdayRecord;
-  if (!y || y.total <= 0) { el.style.display = 'none'; return; }
-  const pct = Math.round((y.wins / y.total) * 100);
-  const color = y.wins === y.total ? '#22e06f' : y.wins > y.total / 2 ? '#5b9dff' : '#fca5a5';
-  el.innerHTML = `<span style="color:${color}">✓ ${y.wins}-${y.losses}</span> (${pct}%) picks graded yesterday, across every market — <button type="button" class="dr-hub-trust-strip-link" id="dr-hub-trust-strip-link">see today's picks</button>`;
-  el.style.display = '';
-  const link = document.getElementById('dr-hub-trust-strip-link');
-  if (link && !link.dataset.drHubBound) {
-    link.dataset.drHubBound = '1';
-    link.addEventListener('click', () => {
-      const card = document.getElementById('dr-hub-baseball-card');
-      if (card) card.click();
-    });
-  }
-}
-
 // Fetches the nightly-graded all-time record once on load. Gracefully no-ops until the
 // first scheduled run of scripts/update-tracker.mjs actually produces data/tracker.json —
 // no fabricated record shown before real history exists.
@@ -1349,21 +1326,6 @@ async function loadAllTimeTrackerRecord() {
     window.__premiumTodayPicksRaw = (data?.market?.premium || []).filter(r => r.date === todayCT);
     if (typeof window.renderPremiumPicks === 'function') window.renderPremiumPicks();
     updateHeroTodayRecordStrip();
-
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayCT = yesterday.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-    let yWins = 0, yLosses = 0, yPushes = 0;
-    ['drp', 'kprop', 'premium', 'hrThreat'].forEach(market => {
-      (data?.market?.[market] || []).forEach(pick => {
-        if (pick.date !== yesterdayCT) return;
-        if (pick.result === 'win') yWins++;
-        else if (pick.result === 'loss') yLosses++;
-        else if (pick.result === 'push') yPushes++;
-      });
-    });
-    window.__yesterdayRecord = { wins: yWins, losses: yLosses, pushes: yPushes, total: yWins + yLosses + yPushes };
-    updateHubTrustStrip();
   } catch (e) {}
 }
 if (document.readyState === 'loading') {
@@ -3815,7 +3777,6 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         const slgRaw = parseDecVal(st.slg ?? st.slugging);
         const xslgRaw = parseDecVal(st.xslg ?? st.xSLG ?? st.expectedSlugging);
         const hardRaw = parsePctVal(st.hardHitPct ?? st.hardHitRate);
-        const barrelRaw = parsePctVal(st.barrelPct ?? st.barrelRate);
         const whiffRaw = parsePctVal(st.whiffPct ?? st.whiffRate);
         return `<tr>
           <td><strong>${p.name}</strong></td>
@@ -3825,7 +3786,6 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
           <td class="num${gbCls('xslg',xslgRaw)}">${fmtDec(st.xslg ?? st.xSLG ?? st.expectedSlugging, 3, 'xslg')}</td>
           <td class="num${gbCls('hr',rowHr)}">${rowHr != null ? rowHr : '–'}</td>
           <td class="num${gbCls('hardHit',hardRaw)}">${fmtPctVal(st.hardHitPct ?? st.hardHitRate, 0, 'hardHit')}</td>
-          <td class="num${gbCls('barrel',barrelRaw)}">${fmtPctVal(st.barrelPct ?? st.barrelRate, 1, 'barrel')}</td>
           <td class="num${gbCls('whiff',whiffRaw)}">${fmtPctVal(st.whiffPct ?? st.whiffRate, 1, 'whiff')}</td>
           <td>${hrSpotTag}<span class="dr1041-chip${chipCls}">${grade.label}${grade.score!==null?' · '+grade.score:''}</span></td>
         </tr>`;
@@ -3869,7 +3829,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
           <div class="dr1042-split-note" data-note>${notes.auto}</div>
         </div>
       </div>
-      <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Pitcher Usage</th><th>AVG</th><th>SLG</th><th>xSLG</th><th>HR</th><th>Hard Hit</th><th>Barrel</th><th>Whiff</th><th>Advantage</th></tr></thead>${bodies}</table></div>
+      <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Pitcher Usage</th><th>AVG</th><th>SLG</th><th>xSLG</th><th>HR</th><th>Hard Hit</th><th>Whiff</th><th>Advantage</th></tr></thead>${bodies}</table></div>
       ${gbLegendHTML}
       <div class="dr1041-ai-read"><strong style="color:#fff">AI Read:</strong> <span data-ai-read>${auto.summary}</span></div>
       <script type="application/json" data-pmix-state>${JSON.stringify({ scores:{auto:auto.score,R:built.R.score,L:built.L.score}, notes, reads:{auto:auto.summary,R:built.R.summary,L:built.L.summary} }).replace(/</g,'\\u003c')}<\/script>
@@ -3888,7 +3848,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     : `${pitcherName.split(' ').pop()}'S PITCHES · NO REAL DATA YET`;
 
   function pitchEffTag(label, cls) { return `<span class="dr1041-chip ${cls}" style="font-size:9px;padding:2px 7px;margin-right:4px">${label}</span>`; }
-  function pitchEffRow(name, usage, avg, woba, slg, hr, barrelPct, whiffPct, veloTxt) {
+  function pitchEffRow(name, usage, avg, woba, slg, hr, whiffPct, veloTxt) {
     const tags = [];
     if (whiffPct != null && whiffPct >= 28) tags.push(pitchEffTag('🎯 Putaway','good'));
     if ((avg != null && avg >= .260) || (slg != null && slg >= .430)) tags.push(pitchEffTag('⚠ Vulnerable','weak'));
@@ -3899,7 +3859,6 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <td class="num${gbCls('woba',woba)}">${fmtDec(woba,3)}</td>
       <td class="num${gbCls('slg',slg)}">${fmtDec(slg,3)}</td>
       <td class="num${gbCls('hr',hr)}">${hr!=null?hr:'–'}</td>
-      <td class="num${gbCls('barrel',barrelPct)}">${barrelPct!=null?Number(barrelPct).toFixed(1)+'%':'–'}</td>
       <td class="num${gbCls('whiff',whiffPct)}">${whiffPct!=null?Number(whiffPct).toFixed(0)+'%':'–'}</td>
       <td>${tags.join('') || '<span style="color:var(--muted);font-size:11px">–</span>'}</td>
     </tr>`;
@@ -3915,10 +3874,9 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       const avg = p.avg ?? p.avgAgainst ?? null;
       const slg = p.slg ?? p.slgAgainst ?? null;
       const hr = p.homeRuns ?? p.hr ?? null;
-      const barrelPct = p.barrelPct ?? p.barrelRate ?? null;
       const whiffPct = p.whiffPct ?? p.whiffRate ?? null;
       const veloTxt = p.avgVelo ? ` · ${p.avgVelo} mph` : '';
-      return pitchEffRow(p.name, p.usagePct, avg, woba, slg, hr, barrelPct, whiffPct, veloTxt);
+      return pitchEffRow(p.name, p.usagePct, avg, woba, slg, hr, whiffPct, veloTxt);
     }).join('');
   }
 
@@ -3926,7 +3884,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     <div class="dr1041-pitch-head">
       <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">Real synced pitch-level data for ${pitcherName}.</div></div>
     </div>
-    <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage</th><th>AVG</th><th>wOBA</th><th>SLG</th><th>HR</th><th>Barrel</th><th>Whiff%</th><th>Notes</th></tr></thead><tbody>${pitchRows}</tbody></table></div>
+    <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage</th><th>AVG</th><th>wOBA</th><th>SLG</th><th>HR</th><th>Whiff%</th><th>Notes</th></tr></thead><tbody>${pitchRows}</tbody></table></div>
     ${gbLegendHTML}
   </div>` : `<div class="dr1041-pitch-mix" style="margin-top:14px">
     <div class="dr1041-pitch-head">

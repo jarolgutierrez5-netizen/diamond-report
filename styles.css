@@ -2804,12 +2804,24 @@ footer.dr-footer .dr-footer-meta {
    longest label) ends up visibly wider than ALL or DUE. Give them a shared
    min-width — sized to comfortably fit FAVORABLE at each breakpoint's font
    size — so the row reads as a uniform set of pills instead of mismatched
-   widths. text-align keeps the label centered in the extra space. */
+   widths. text-align keeps the label centered in the extra space.
+
+   Desktop had no font-size/padding/min-height of its own, so these chips
+   fell through to the browser's default <button> chrome (13.3px, 34px
+   tall) — noticeably larger than every other control on the page,
+   including the "All Games" select sitting right next to them in the same
+   row. Sized down to match that dropdown's scale instead. */
 .hrp-filter-btn {
-  /* !important needed: #props, #props * resets min-width:0 on every
-     descendant at ID-level specificity, which otherwise beats this
-     class-only rule regardless of source order. */
-  min-width: 112px !important;
+  /* !important needed: #props, #props * resets min-width:0 (and other
+     properties) on every descendant at ID-level specificity, which
+     otherwise beats this class-only rule regardless of source order. */
+  min-width: 100px !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  padding: 6px 12px !important;
+  min-height: 28px !important;
+  border-radius: 14px !important;
+  letter-spacing: .3px;
   text-align: center;
   box-sizing: border-box;
 }
@@ -2939,36 +2951,7 @@ select:focus-visible {
   font-family: var(--font-mono) !important;
 }
 
-/* ── News Central hub: yesterday's-record trust strip + Today's Games ──── */
-.dr-hub-trust-strip {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 14px 0 0;
-  padding: 10px 16px;
-  background: rgba(47,107,255,.08);
-  border: 1px solid rgba(47,107,255,.28);
-  border-radius: 999px;
-  font-size: 13px;
-  color: #d6def2;
-  font-family: var(--font-mono);
-}
-.dr-hub-trust-strip-link {
-  background: none;
-  border: none;
-  color: #5b9dff;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0;
-  font-family: var(--font-body);
-  text-decoration: underline;
-  font-size: 13px;
-}
-.dr-hub-trust-strip-link:hover {
-  color: #fff;
-}
-
+/* ── News Central hub: Today's Games ──── */
 .dr-hub-scoreboard {
   margin: 28px 0;
 }
@@ -3057,12 +3040,6 @@ select:focus-visible {
   font-size: 12px;
   color: var(--muted);
   font-family: var(--font-body);
-}
-
-@media (max-width: 640px) {
-  .dr-hub-trust-strip {
-    border-radius: 16px;
-  }
 }
 
 /* Projection Center's h1 was sized with an unbounded clamp() that grew well past
