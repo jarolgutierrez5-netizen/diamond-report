@@ -2804,12 +2804,24 @@ footer.dr-footer .dr-footer-meta {
    longest label) ends up visibly wider than ALL or DUE. Give them a shared
    min-width — sized to comfortably fit FAVORABLE at each breakpoint's font
    size — so the row reads as a uniform set of pills instead of mismatched
-   widths. text-align keeps the label centered in the extra space. */
+   widths. text-align keeps the label centered in the extra space.
+
+   Desktop had no font-size/padding/min-height of its own, so these chips
+   fell through to the browser's default <button> chrome (13.3px, 34px
+   tall) — noticeably larger than every other control on the page,
+   including the "All Games" select sitting right next to them in the same
+   row. Sized down to match that dropdown's scale instead. */
 .hrp-filter-btn {
-  /* !important needed: #props, #props * resets min-width:0 on every
-     descendant at ID-level specificity, which otherwise beats this
-     class-only rule regardless of source order. */
-  min-width: 112px !important;
+  /* !important needed: #props, #props * resets min-width:0 (and other
+     properties) on every descendant at ID-level specificity, which
+     otherwise beats this class-only rule regardless of source order. */
+  min-width: 100px !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  padding: 6px 12px !important;
+  min-height: 28px !important;
+  border-radius: 14px !important;
+  letter-spacing: .3px;
   text-align: center;
   box-sizing: border-box;
 }
