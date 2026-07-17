@@ -3402,6 +3402,20 @@ select:focus-visible {
   border: 1px solid rgba(220,38,38,.5);
   white-space: nowrap;
 }
+.lbc-tag-injured {
+  background: rgba(127,29,29,.28);
+  color: #fca5a5;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: .03em;
+  border: 1px solid rgba(239,68,68,.55);
+  white-space: nowrap;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* Deep Research polish — the outer .dr-panel.deep-card wrappers already have the
    site's glass treatment, but the content living inside them (Matchups/Risk Watch

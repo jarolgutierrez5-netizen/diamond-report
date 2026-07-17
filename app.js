@@ -1636,11 +1636,17 @@ function ingestBatterPitchTypeSeasonPayload(data) {
       if (!key) return;
       normalized[key] = {
         name: row?.name || row?.pitchName || row?.pitchType || rawKey,
+        usagePct: row?.usagePct ?? row?.usage ?? null,
         pitches: +(row?.pitches ?? row?.pitchCount ?? row?.seen ?? 0) || 0,
         atBats: +(row?.atBats ?? row?.ab ?? 0) || 0,
         hits: +(row?.hits ?? row?.h ?? 0) || 0,
         homeRuns: +(row?.homeRuns ?? row?.hr ?? row?.hrs ?? 0) || 0,
         avg: row?.avg ?? row?.battingAverage ?? null,
+        // xba/woba were dropped here even though every record in
+        // data/batter-pitch-type-season.json carries them (see rowToPitchStat in
+        // sync-pitcher-statcast.mjs) — silently unreachable by any consumer.
+        xba: row?.xba ?? row?.xBA ?? row?.expectedBattingAverage ?? null,
+        woba: row?.woba ?? row?.wOBA ?? null,
         slg: row?.slg ?? row?.slugging ?? null,
         xslg: row?.xslg ?? row?.xSLG ?? row?.expectedSlugging ?? null,
         xwoba: row?.xwoba ?? row?.xwOBA ?? row?.expectedWoba ?? null,
@@ -2728,6 +2734,7 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
         ${homerToday ? `<span class="hr-today-badge lbc-tag-hrtoday">💥 HR TODAY${b.todayHR>1?' x'+b.todayHR:''}</span>` : ''}
         ${isTop ? `<span class="top-hr-badge lbc-tag-tophr">⚡ TOP HR THREAT</span>` : ''}
         ${b.isOnFire ? `<span class="lbc-tag-onfire">🔥 ON FIRE</span>` : ''}
+        ${b.rosterStatus ? `<span class="lbc-tag-injured" title="${b.rosterStatus}">🏥 ${b.rosterStatus}</span>` : ''}
         ${matchupLabel(s)}
         <button class="lbc-matchup-btn" onclick="openMatchup(${b.id},'${bName}',${pitcherId},'${pName}')" title="Batter vs Pitcher analysis">⚔ Matchup</button>
       </div>
@@ -3310,6 +3317,10 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   const bISO  = (bs.slg&&bs.avg) ? fv((parseFloat(bs.slg)-parseFloat(bs.avg)).toFixed(3)) : '–';
   const bKpct = (bs.strikeOuts&&bs.plateAppearances) ? (bs.strikeOuts/bs.plateAppearances*100).toFixed(1)+'%' : '–';
   const bBBpct= (bs.baseOnBalls&&bs.plateAppearances) ? (bs.baseOnBalls/bs.plateAppearances*100).toFixed(1)+'%' : '–';
+  // RBI/SB were already present on every hitting-stats API response this modal already
+  // fetches — just never extracted or shown anywhere in this panel.
+  const bRBI  = fi(bs.rbi ?? bs.runsBattedIn);
+  const bSB   = fi(bs.stolenBases);
 
   const pERA  = fv(ps.era,2); const pFIP = fv(ps.fip,2); const pWHIP = fv(ps.whip,2);
   const pHR9  = fv(ps.homeRunsPer9,2); const pKper9 = fv(ps.strikeoutsPer9Inn,1);
@@ -3957,7 +3968,13 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     { label: 'Barrel%', value: hh.barrelPct != null ? `${parseFloat(hh.barrelPct)}%` : null, trend: hh.barrelTrend, desc: 'How often he makes perfect contact — the hardest-hit balls at the best angles. The gold standard of a locked-in swing.' },
     { label: 'xwOBA (14-day)', value: hh.xwoba != null ? Number(hh.xwoba).toFixed(3).replace(/^0/,'') : null, trend: hh.xwobaTrend, desc: 'The same "is he actually hot?" number as above, but measured over just the past two weeks.' },
     { label: 'Bat Speed', value: hh.batSpeed != null ? `${parseFloat(hh.batSpeed)} mph` : null, trend: hh.batSpeedTrend, desc: 'How fast he\'s swinging. A quicker swing often shows up right before a power surge does.' },
+    { label: 'Squared-Up%', value: hh.squaredUpPct != null ? `${parseFloat(hh.squaredUpPct)}%` : null, desc: 'How often he hits the ball with the sweet spot of the bat, transferring the most possible energy regardless of swing speed.' },
     { label: 'Blast Rate', value: hh.blastRate != null ? `${parseFloat(hh.blastRate)}%` : null, trend: hh.blastTrend, desc: 'How often his swing has both the speed and the angle to leave the yard.' },
+    { label: 'Chase%', value: hh.chasePct != null ? `${parseFloat(hh.chasePct)}%` : null, desc: 'How often he swings at pitches outside the strike zone. Lower is better — a hitter chasing more than usual is a real red flag, not a hot signal.' },
+    { label: 'Zone-Contact%', value: hh.zoneContactPct != null ? `${parseFloat(hh.zoneContactPct)}%` : null, desc: 'How often he actually makes contact when he swings at a pitch in the zone. A locked-in hitter rarely misses these.' },
+    { label: 'Sprint Speed', value: hh.sprintSpeed != null ? `${parseFloat(hh.sprintSpeed)} ft/s` : null, desc: 'Foot speed on competitive plays. Context for stolen-base and extra-base upside, not a hot/cold signal.' },
+    { label: 'Outs Above Average', value: hh.oaa != null ? `${hh.oaa > 0 ? '+' : ''}${parseFloat(hh.oaa)}` : null, desc: 'Season defensive value — how many extra outs he\'s made versus an average fielder at his position. Context, not a hot/cold signal.' },
+    { label: 'Arm Strength', value: hh.armStrength != null ? `${parseFloat(hh.armStrength)} mph` : null, desc: 'Average throwing velocity on competitive plays. Context for baserunner deterrence, not a hot/cold signal.' },
   ].filter(m => m.value != null);
 
   const seasonFallbackMetrics = [
@@ -4016,6 +4033,11 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     </div>`;
 
   body.innerHTML = `
+    ${hh.rosterStatus ? `
+    <div class="vuln-box" style="border-color:rgba(239,68,68,.55);background:rgba(127,29,29,.22);margin-bottom:12px">
+      <div class="vuln-title" style="color:#fca5a5">⚠️ ROSTER STATUS</div>
+      <div class="vuln-item"><span class="vuln-icon">🏥</span><span style="color:var(--text)">${batterName} is currently <strong>${hh.rosterStatus}</strong> — stats and projections below still reflect his full season, not just healthy games.</span></div>
+    </div>` : ''}
     <!-- Scouting Report -->
     <div class="vuln-box">
       <div class="vuln-title">⚡ SCOUTING REPORT — HOW TO HIT A HOME RUN</div>
@@ -4065,7 +4087,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
 
         <div class="dr1043-panel">
           <div class="dr1043-panel-title">Batter season <span class="dr1043-badge blue">${batterName.split(' ').pop()}</span></div>
-          ${[['AVG',bAVG],['HR',bHR],['OPS',bOPS],['ISO',bISO],['K%',bKpct],['BB%',bBBpct]].map(([l,v])=>`
+          ${[['AVG',bAVG],['HR',bHR],['RBI',bRBI],['SB',bSB],['OPS',bOPS],['ISO',bISO],['K%',bKpct],['BB%',bBBpct]].map(([l,v])=>`
           <div class="dr1043-row"><span>${l}</span><strong>${v}</strong></div>`).join('')}
         </div>
 
@@ -4074,6 +4096,16 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
           ${[['ERA',pERA],['FIP',pFIP],['WHIP',pWHIP],['AVG Allowed',pAVG],['HR/9',pHR9],['K/9',pKper9]].map(([l,v])=>`
           <div class="dr1043-row"><span>${l}</span><strong>${v}</strong></div>`).join('')}
         </div>
+
+        ${(hh.homeAvg != null || hh.awayAvg != null || hh.rispAvg != null) ? `
+        <div class="dr1043-panel" style="grid-column:1/-1">
+          <div class="dr1043-panel-title">Situational splits <span class="dr1043-badge blue">${batterName.split(' ').pop()}</span></div>
+          <div class="dr1043-split-line">
+            ${hh.homeAvg != null ? `<span class="dr1043-badge">Home: ${fv(hh.homeAvg,3)} AVG${hh.homeOps!=null?` / ${fv(hh.homeOps,3)} OPS`:''}</span>` : ''}
+            ${hh.awayAvg != null ? `<span class="dr1043-badge">Away: ${fv(hh.awayAvg,3)} AVG${hh.awayOps!=null?` / ${fv(hh.awayOps,3)} OPS`:''}</span>` : ''}
+            ${hh.rispAvg != null ? `<span class="dr1043-badge">RISP: ${fv(hh.rispAvg,3)} AVG${hh.rispOps!=null?` / ${fv(hh.rispOps,3)} OPS`:''}</span>` : ''}
+          </div>
+        </div>` : ''}
       </div>
 
       <div class="dr1043-callout">
@@ -4285,6 +4317,7 @@ function applyHotHitterBoost(row) {
   row.onFireScore = Number(profile.onFireScore || 0);
   row.hrProb = +clampNum(base + boost, 0, 35).toFixed(1);
   row.isOnFire = row.onFireScore >= 70 || boost >= 4.5;
+  row.rosterStatus = profile.rosterStatus || null;
   return row;
 }
 function applyHotHitterBoosts(rows) {
