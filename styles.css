@@ -3636,3 +3636,44 @@ select:focus-visible {
 .dr-azone-mode-body.active {
   display: block;
 }
+
+/* Player watchlist star toggle — sits top-right on HR Threats / Strikeouts /
+   Hits / RBIs / Total Bases / Stolen Bases / Hits+Runs+RBI cards, all of
+   which already carry position:relative + overflow:hidden, so an absolute
+   star anchored a little inside the edge stays clipped-safe. */
+.dr109-card {
+  position: relative;
+}
+.dr-watch-star {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: rgba(5, 9, 18, 0.72);
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.dr-watch-star:hover {
+  border-color: #f5c518;
+  color: #f5c518;
+}
+.dr-watch-star.dr-watch-active {
+  border-color: #f5c518;
+  background: rgba(245, 197, 24, 0.14);
+  color: #f5c518;
+}
+.hrp-filter-watchlist.active {
+  background: rgba(245, 197, 24, 0.14);
+  border-color: #f5c518;
+  color: #f5c518;
+}
