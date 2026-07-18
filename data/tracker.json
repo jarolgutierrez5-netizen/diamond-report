@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-17T23:11:54.469Z",
+  "generatedAt": "2026-07-18T07:12:42.224Z",
   "market": {
     "drp": [
       {
@@ -352,8 +352,8 @@
         "homeTeam": "BOS",
         "pick": "BOS",
         "pickPct": 51,
-        "result": "pending",
-        "actualWinner": null
+        "result": "win",
+        "actualWinner": "BOS"
       },
       {
         "key": "2026-07-17|DRP|LAD-NYY",
@@ -363,8 +363,8 @@
         "homeTeam": "NYY",
         "pick": "NYY",
         "pickPct": 54,
-        "result": "pending",
-        "actualWinner": null
+        "result": "loss",
+        "actualWinner": "LAD"
       },
       {
         "key": "2026-07-17|DRP|CLE-PIT",
@@ -385,8 +385,8 @@
         "homeTeam": "ATL",
         "pick": "ATL",
         "pickPct": 54,
-        "result": "pending",
-        "actualWinner": null
+        "result": "win",
+        "actualWinner": "ATL"
       },
       {
         "key": "2026-07-17|DRP|CWS-TOR",
@@ -396,8 +396,8 @@
         "homeTeam": "TOR",
         "pick": "TOR",
         "pickPct": 55,
-        "result": "pending",
-        "actualWinner": null
+        "result": "loss",
+        "actualWinner": "CWS"
       },
       {
         "key": "2026-07-17|DRP|MIA-MIL",
@@ -407,8 +407,8 @@
         "homeTeam": "MIL",
         "pick": "MIL",
         "pickPct": 57,
-        "result": "pending",
-        "actualWinner": null
+        "result": "win",
+        "actualWinner": "MIL"
       },
       {
         "key": "2026-07-17|DRP|CHC-MIN",
@@ -418,8 +418,8 @@
         "homeTeam": "CHC",
         "pick": "CHC",
         "pickPct": 52,
-        "result": "pending",
-        "actualWinner": null
+        "result": "loss",
+        "actualWinner": "MIN"
       },
       {
         "key": "2026-07-17|DRP|BAL-HOU",
@@ -429,8 +429,8 @@
         "homeTeam": "HOU",
         "pick": "HOU",
         "pickPct": 52,
-        "result": "pending",
-        "actualWinner": null
+        "result": "loss",
+        "actualWinner": "BAL"
       },
       {
         "key": "2026-07-17|DRP|KC-SD",
@@ -440,8 +440,8 @@
         "homeTeam": "KC",
         "pick": "SD",
         "pickPct": 56,
-        "result": "pending",
-        "actualWinner": null
+        "result": "loss",
+        "actualWinner": "KC"
       },
       {
         "key": "2026-07-17|DRP|CIN-COL",
@@ -451,8 +451,8 @@
         "homeTeam": "COL",
         "pick": "COL",
         "pickPct": 53,
-        "result": "pending",
-        "actualWinner": null
+        "result": "loss",
+        "actualWinner": "CIN"
       },
       {
         "key": "2026-07-17|DRP|DET-LAA",
@@ -462,8 +462,8 @@
         "homeTeam": "LAA",
         "pick": "DET",
         "pickPct": 55,
-        "result": "pending",
-        "actualWinner": null
+        "result": "win",
+        "actualWinner": "DET"
       },
       {
         "key": "2026-07-17|DRP|ATH-WSH",
@@ -473,8 +473,8 @@
         "homeTeam": "ATH",
         "pick": "WSH",
         "pickPct": 52,
-        "result": "pending",
-        "actualWinner": null
+        "result": "win",
+        "actualWinner": "WSH"
       },
       {
         "key": "2026-07-17|DRP|SEA-SF",
@@ -484,8 +484,8 @@
         "homeTeam": "SEA",
         "pick": "SEA",
         "pickPct": 58,
-        "result": "pending",
-        "actualWinner": null
+        "result": "loss",
+        "actualWinner": "SF"
       },
       {
         "key": "2026-07-17|DRP|AZ-STL",
@@ -495,6 +495,171 @@
         "homeTeam": "AZ",
         "pick": "STL",
         "pickPct": 53,
+        "result": "win",
+        "actualWinner": "STL"
+      },
+      {
+        "key": "2026-07-18|DRP|CLE-PIT",
+        "date": "2026-07-18",
+        "gamePk": 824414,
+        "awayTeam": "PIT",
+        "homeTeam": "CLE",
+        "pick": "CLE",
+        "pickPct": 51,
+        "result": "pending",
+        "actualWinner": null
+      },
+      {
+        "key": "2026-07-18|DRP|CHC-MIN",
+        "date": "2026-07-18",
+        "gamePk": 824657,
+        "awayTeam": "MIN",
+        "homeTeam": "CHC",
+        "pick": "CHC",
+        "pickPct": 50,
+        "result": "pending",
+        "actualWinner": null
+      },
+      {
+        "key": "2026-07-18|DRP|CWS-TOR",
+        "date": "2026-07-18",
+        "gamePk": 822790,
+        "awayTeam": "CWS",
+        "homeTeam": "TOR",
+        "pick": "CWS",
+        "pickPct": 54,
+        "result": "pending",
+        "actualWinner": null
+      },
+      {
+        "key": "2026-07-18|DRP|CIN-COL",
+        "date": "2026-07-18",
+        "gamePk": 824331,
+        "awayTeam": "CIN",
+        "homeTeam": "COL",
+        "pick": "COL",
+        "pickPct": 50,
+        "result": "pending",
+        "actualWinner": null
+      },
+      {
+        "key": "2026-07-18|DRP|NYM-PHI",
+        "date": "2026-07-18",
+        "gamePk": 823441,
+        "awayTeam": "NYM",
+        "homeTeam": "PHI",
+        "pick": "PHI",
+        "pickPct": 60,
+        "result": "pending",
+        "actualWinner": null
+      },
+      {
+        "key": "2026-07-18|DRP|BAL-HOU",
+        "date": "2026-07-18",
+        "gamePk": 824169,
+        "awayTeam": "BAL",
+        "homeTeam": "HOU",
+        "pick": "BAL",
+        "pickPct": 52,
+        "result": "pending",
+        "actualWinner": null
+      },
+      {
+        "key": "2026-07-18|DRP|KC-SD",
+        "date": "2026-07-18",
+        "gamePk": 824088,
+        "awayTeam": "SD",
+        "homeTeam": "KC",
+        "pick": "KC",
+        "pickPct": 53,
+        "result": "pending",
+        "actualWinner": null
+      },
+      {
+        "key": "2026-07-18|DRP|AZ-STL",
+        "date": "2026-07-18",
+        "gamePk": 825059,
+        "awayTeam": "STL",
+        "homeTeam": "AZ",
+        "pick": "AZ",
+        "pickPct": 52,
+        "result": "pending",
+        "actualWinner": null
+      },
+      {
+        "key": "2026-07-18|DRP|BOS-TB",
+        "date": "2026-07-18",
+        "gamePk": 824738,
+        "awayTeam": "TB",
+        "homeTeam": "BOS",
+        "pick": "BOS",
+        "pickPct": 51,
+        "result": "pending",
+        "actualWinner": null
+      },
+      {
+        "key": "2026-07-18|DRP|ATL-TEX",
+        "date": "2026-07-18",
+        "gamePk": 824899,
+        "awayTeam": "TEX",
+        "homeTeam": "ATL",
+        "pick": "ATL",
+        "pickPct": 59,
+        "result": "pending",
+        "actualWinner": null
+      },
+      {
+        "key": "2026-07-18|DRP|MIA-MIL",
+        "date": "2026-07-18",
+        "gamePk": 823763,
+        "awayTeam": "MIA",
+        "homeTeam": "MIL",
+        "pick": "MIL",
+        "pickPct": 53,
+        "result": "pending",
+        "actualWinner": null
+      },
+      {
+        "key": "2026-07-18|DRP|SEA-SF",
+        "date": "2026-07-18",
+        "gamePk": 823116,
+        "awayTeam": "SF",
+        "homeTeam": "SEA",
+        "pick": "SEA",
+        "pickPct": 53,
+        "result": "pending",
+        "actualWinner": null
+      },
+      {
+        "key": "2026-07-18|DRP|LAD-NYY",
+        "date": "2026-07-18",
+        "gamePk": 823523,
+        "awayTeam": "LAD",
+        "homeTeam": "NYY",
+        "pick": "NYY",
+        "pickPct": 51,
+        "result": "pending",
+        "actualWinner": null
+      },
+      {
+        "key": "2026-07-18|DRP|ATH-WSH",
+        "date": "2026-07-18",
+        "gamePk": 824979,
+        "awayTeam": "WSH",
+        "homeTeam": "ATH",
+        "pick": "WSH",
+        "pickPct": 52,
+        "result": "pending",
+        "actualWinner": null
+      },
+      {
+        "key": "2026-07-18|DRP|DET-LAA",
+        "date": "2026-07-18",
+        "gamePk": 824008,
+        "awayTeam": "DET",
+        "homeTeam": "LAA",
+        "pick": "DET",
+        "pickPct": 57,
         "result": "pending",
         "actualWinner": null
       }
@@ -1569,8 +1734,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "win",
+        "finalK": 6
       },
       {
         "key": "2026-07-17|KPROP|jake bennett",
@@ -1585,8 +1750,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "loss",
+        "finalK": 3
       },
       {
         "key": "2026-07-17|KPROP|roki sasaki",
@@ -1601,8 +1766,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "win",
+        "finalK": 5
       },
       {
         "key": "2026-07-17|KPROP|gerrit cole",
@@ -1617,8 +1782,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "win",
+        "finalK": 8
       },
       {
         "key": "2026-07-17|KPROP|jared jones",
@@ -1665,8 +1830,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "win",
+        "finalK": 3
       },
       {
         "key": "2026-07-17|KPROP|chris sale",
@@ -1681,8 +1846,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "win",
+        "finalK": 6
       },
       {
         "key": "2026-07-17|KPROP|anthony kay",
@@ -1697,8 +1862,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "win",
+        "finalK": 5
       },
       {
         "key": "2026-07-17|KPROP|spencer miles",
@@ -1713,8 +1878,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "loss",
+        "finalK": 4
       },
       {
         "key": "2026-07-17|KPROP|sandy alcantara",
@@ -1729,8 +1894,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "win",
+        "finalK": 7
       },
       {
         "key": "2026-07-17|KPROP|logan henderson",
@@ -1745,8 +1910,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "loss",
+        "finalK": 4
       },
       {
         "key": "2026-07-17|KPROP|bailey ober",
@@ -1761,8 +1926,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "win",
+        "finalK": 7
       },
       {
         "key": "2026-07-17|KPROP|colin rea",
@@ -1777,8 +1942,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "win",
+        "finalK": 6
       },
       {
         "key": "2026-07-17|KPROP|dean kremer",
@@ -1793,8 +1958,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "loss",
+        "finalK": 5
       },
       {
         "key": "2026-07-17|KPROP|peter lambert",
@@ -1809,8 +1974,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "win",
+        "finalK": 10
       },
       {
         "key": "2026-07-17|KPROP|michael king",
@@ -1825,8 +1990,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "win",
+        "finalK": 4
       },
       {
         "key": "2026-07-17|KPROP|seth lugo",
@@ -1841,8 +2006,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "loss",
+        "finalK": 3
       },
       {
         "key": "2026-07-17|KPROP|brady singer",
@@ -1857,8 +2022,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "win",
+        "finalK": 6
       },
       {
         "key": "2026-07-17|KPROP|gabriel hughes",
@@ -1873,8 +2038,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "win",
+        "finalK": 6
       },
       {
         "key": "2026-07-17|KPROP|troy melton",
@@ -1889,8 +2054,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "win",
+        "finalK": 9
       },
       {
         "key": "2026-07-17|KPROP|reid detmers",
@@ -1905,8 +2070,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "win",
+        "finalK": 7
       },
       {
         "key": "2026-07-17|KPROP|cade cavalli",
@@ -1921,8 +2086,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "win",
+        "finalK": 9
       },
       {
         "key": "2026-07-17|KPROP|gage jump",
@@ -1937,8 +2102,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "win",
+        "finalK": 8
       },
       {
         "key": "2026-07-17|KPROP|merrill kelly",
@@ -1953,8 +2118,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "win",
+        "finalK": 3
       },
       {
         "key": "2026-07-17|KPROP|landen roupp",
@@ -1969,8 +2134,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "loss",
+        "finalK": 2
       },
       {
         "key": "2026-07-17|KPROP|bryce miller",
@@ -1985,8 +2150,8 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null
+        "result": "loss",
+        "finalK": 6
       },
       {
         "key": "2026-07-17|KPROP|michael mcgreevy",
@@ -1997,6 +2162,502 @@
         "team": "STL",
         "opp": "AZ",
         "projK": 3.5,
+        "line": 2.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "win",
+        "finalK": 5
+      },
+      {
+        "key": "2026-07-18|KPROP|jared jones",
+        "date": "2026-07-18",
+        "gamePk": 824414,
+        "pitcherId": 683003,
+        "pitcherName": "Jared Jones",
+        "team": "PIT",
+        "opp": "CLE",
+        "projK": 5,
+        "line": 4.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|gavin williams",
+        "date": "2026-07-18",
+        "gamePk": 824414,
+        "pitcherId": 668909,
+        "pitcherName": "Gavin Williams",
+        "team": "CLE",
+        "opp": "PIT",
+        "projK": 7.5,
+        "line": 6.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|logan allen",
+        "date": "2026-07-18",
+        "gamePk": 824412,
+        "pitcherId": 671106,
+        "pitcherName": "Logan Allen",
+        "team": "CLE",
+        "opp": "PIT",
+        "projK": 7,
+        "line": 6.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|taj bradley",
+        "date": "2026-07-18",
+        "gamePk": 824657,
+        "pitcherId": 671737,
+        "pitcherName": "Taj Bradley",
+        "team": "MIN",
+        "opp": "CHC",
+        "projK": 6.7,
+        "line": 5.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|matthew boyd",
+        "date": "2026-07-18",
+        "gamePk": 824657,
+        "pitcherId": 571510,
+        "pitcherName": "Matthew Boyd",
+        "team": "CHC",
+        "opp": "MIN",
+        "projK": 4.5,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|davis martin",
+        "date": "2026-07-18",
+        "gamePk": 822790,
+        "pitcherId": 663436,
+        "pitcherName": "Davis Martin",
+        "team": "CWS",
+        "opp": "TOR",
+        "projK": 4.2,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|shane bieber",
+        "date": "2026-07-18",
+        "gamePk": 822790,
+        "pitcherId": 669456,
+        "pitcherName": "Shane Bieber",
+        "team": "TOR",
+        "opp": "CWS",
+        "projK": 3.2,
+        "line": 2.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|rhett lowder",
+        "date": "2026-07-18",
+        "gamePk": 824331,
+        "pitcherId": 695076,
+        "pitcherName": "Rhett Lowder",
+        "team": "CIN",
+        "opp": "COL",
+        "projK": 4.9,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|tomoyuki sugano",
+        "date": "2026-07-18",
+        "gamePk": 824331,
+        "pitcherId": 608372,
+        "pitcherName": "Tomoyuki Sugano",
+        "team": "COL",
+        "opp": "CIN",
+        "projK": 3.2,
+        "line": 2.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|sean manaea",
+        "date": "2026-07-18",
+        "gamePk": 823441,
+        "pitcherId": 640455,
+        "pitcherName": "Sean Manaea",
+        "team": "NYM",
+        "opp": "PHI",
+        "projK": 6.5,
+        "line": 5.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|jesús luzardo",
+        "date": "2026-07-18",
+        "gamePk": 823441,
+        "pitcherId": 666200,
+        "pitcherName": "Jesús Luzardo",
+        "team": "PHI",
+        "opp": "NYM",
+        "projK": 8,
+        "line": 7.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|trevor rogers",
+        "date": "2026-07-18",
+        "gamePk": 824169,
+        "pitcherId": 669432,
+        "pitcherName": "Trevor Rogers",
+        "team": "BAL",
+        "opp": "HOU",
+        "projK": 4.2,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|spencer arrighetti",
+        "date": "2026-07-18",
+        "gamePk": 824169,
+        "pitcherId": 681293,
+        "pitcherName": "Spencer Arrighetti",
+        "team": "HOU",
+        "opp": "BAL",
+        "projK": 5.8,
+        "line": 4.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|griffin canning",
+        "date": "2026-07-18",
+        "gamePk": 824088,
+        "pitcherId": 656288,
+        "pitcherName": "Griffin Canning",
+        "team": "SD",
+        "opp": "KC",
+        "projK": 5.2,
+        "line": 4.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|randy dobnak",
+        "date": "2026-07-18",
+        "gamePk": 824088,
+        "pitcherId": 677976,
+        "pitcherName": "Randy Dobnak",
+        "team": "KC",
+        "opp": "SD",
+        "projK": 3,
+        "line": 1.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|dustin may",
+        "date": "2026-07-18",
+        "gamePk": 825059,
+        "pitcherId": 669160,
+        "pitcherName": "Dustin May",
+        "team": "STL",
+        "opp": "AZ",
+        "projK": 5.4,
+        "line": 4.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|brandon pfaadt",
+        "date": "2026-07-18",
+        "gamePk": 825059,
+        "pitcherId": 694297,
+        "pitcherName": "Brandon Pfaadt",
+        "team": "AZ",
+        "opp": "STL",
+        "projK": 5.4,
+        "line": 4.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|ian seymour",
+        "date": "2026-07-18",
+        "gamePk": 824738,
+        "pitcherId": 693855,
+        "pitcherName": "Ian Seymour",
+        "team": "TB",
+        "opp": "BOS",
+        "projK": 8.6,
+        "line": 7.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|patrick sandoval",
+        "date": "2026-07-18",
+        "gamePk": 824738,
+        "pitcherId": 663776,
+        "pitcherName": "Patrick Sandoval",
+        "team": "BOS",
+        "opp": "TB",
+        "projK": 4.8,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|mackenzie gore",
+        "date": "2026-07-18",
+        "gamePk": 824899,
+        "pitcherId": 669022,
+        "pitcherName": "MacKenzie Gore",
+        "team": "TEX",
+        "opp": "ATL",
+        "projK": 5.7,
+        "line": 4.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|owen murphy",
+        "date": "2026-07-18",
+        "gamePk": 824899,
+        "pitcherId": 702566,
+        "pitcherName": "Owen Murphy",
+        "team": "ATL",
+        "opp": "TEX",
+        "projK": 4,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|max meyer",
+        "date": "2026-07-18",
+        "gamePk": 823763,
+        "pitcherId": 676974,
+        "pitcherName": "Max Meyer",
+        "team": "MIA",
+        "opp": "MIL",
+        "projK": 6,
+        "line": 4.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|shane drohan",
+        "date": "2026-07-18",
+        "gamePk": 823763,
+        "pitcherId": 675660,
+        "pitcherName": "Shane Drohan",
+        "team": "MIL",
+        "opp": "MIA",
+        "projK": 6.3,
+        "line": 5.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|logan webb",
+        "date": "2026-07-18",
+        "gamePk": 823116,
+        "pitcherId": 657277,
+        "pitcherName": "Logan Webb",
+        "team": "SF",
+        "opp": "SEA",
+        "projK": 4.6,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|bryan woo",
+        "date": "2026-07-18",
+        "gamePk": 823116,
+        "pitcherId": 693433,
+        "pitcherName": "Bryan Woo",
+        "team": "SEA",
+        "opp": "SF",
+        "projK": 5.7,
+        "line": 4.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|emmet sheehan",
+        "date": "2026-07-18",
+        "gamePk": 823523,
+        "pitcherId": 686218,
+        "pitcherName": "Emmet Sheehan",
+        "team": "LAD",
+        "opp": "NYY",
+        "projK": 5.8,
+        "line": 4.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|ryan weathers",
+        "date": "2026-07-18",
+        "gamePk": 823523,
+        "pitcherId": 677960,
+        "pitcherName": "Ryan Weathers",
+        "team": "NYY",
+        "opp": "LAD",
+        "projK": 6.4,
+        "line": 5.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|zack littell",
+        "date": "2026-07-18",
+        "gamePk": 824979,
+        "pitcherId": 641793,
+        "pitcherName": "Zack Littell",
+        "team": "WSH",
+        "opp": "ATH",
+        "projK": 4.8,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|j.t. ginn",
+        "date": "2026-07-18",
+        "gamePk": 824979,
+        "pitcherId": 669372,
+        "pitcherName": "J.T. Ginn",
+        "team": "ATH",
+        "opp": "WSH",
+        "projK": 5.4,
+        "line": 4.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|tarik skubal",
+        "date": "2026-07-18",
+        "gamePk": 824008,
+        "pitcherId": 669373,
+        "pitcherName": "Tarik Skubal",
+        "team": "DET",
+        "opp": "LAA",
+        "projK": 7.7,
+        "line": 6.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null
+      },
+      {
+        "key": "2026-07-18|KPROP|grayson rodriguez",
+        "date": "2026-07-18",
+        "gamePk": 824008,
+        "pitcherId": 680570,
+        "pitcherName": "Grayson Rodriguez",
+        "team": "LAA",
+        "opp": "DET",
+        "projK": 3.3,
         "line": 2.5,
         "lineSource": "model",
         "book": null,
@@ -5193,8 +5854,15 @@
         "score": 21,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|695657",
@@ -5209,8 +5877,15 @@
         "score": 19,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 2,
+          "totalBases": 3,
+          "homeRuns": 0,
+          "rbi": 3,
+          "runs": 2,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|678246",
@@ -5225,8 +5900,15 @@
         "score": 17,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 1,
+          "totalBases": 1,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 1,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|669477",
@@ -5241,8 +5923,15 @@
         "score": 20,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 2,
+          "totalBases": 2,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 1,
+          "stolenBases": 1
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|646240",
@@ -5257,8 +5946,15 @@
         "score": 19,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|642715",
@@ -5273,8 +5969,15 @@
         "score": 15,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": {
+          "hits": 1,
+          "totalBases": 4,
+          "homeRuns": 1,
+          "rbi": 4,
+          "runs": 1,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|660271",
@@ -5289,8 +5992,15 @@
         "score": 25,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|641857",
@@ -5305,8 +6015,15 @@
         "score": 22,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 1,
+          "totalBases": 2,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|642708",
@@ -5321,8 +6038,15 @@
         "score": 22,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|681715",
@@ -5337,8 +6061,15 @@
         "score": 21,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 1,
+          "totalBases": 1,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 1
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|641343",
@@ -5353,8 +6084,15 @@
         "score": 20,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|596142",
@@ -5369,8 +6107,15 @@
         "score": 19,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|545361",
@@ -5385,8 +6130,15 @@
         "score": 21,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 1,
+          "totalBases": 2,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|679529",
@@ -5401,8 +6153,15 @@
         "score": 15,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|682985",
@@ -5417,8 +6176,15 @@
         "score": 15,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 1,
+          "totalBases": 2,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 1,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|592518",
@@ -5433,8 +6199,15 @@
         "score": 19,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|664034",
@@ -5449,8 +6222,15 @@
         "score": 19,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": {
+          "hits": 1,
+          "totalBases": 4,
+          "homeRuns": 1,
+          "rbi": 1,
+          "runs": 2,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|657041",
@@ -5465,8 +6245,15 @@
         "score": 11,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": {
+          "hits": 2,
+          "totalBases": 5,
+          "homeRuns": 1,
+          "rbi": 1,
+          "runs": 2,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|670541",
@@ -5481,8 +6268,15 @@
         "score": 43,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 2,
+          "totalBases": 3,
+          "homeRuns": 0,
+          "rbi": 1,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|572233",
@@ -5497,8 +6291,15 @@
         "score": 28,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|514888",
@@ -5513,8 +6314,15 @@
         "score": 25,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|666160",
@@ -5529,8 +6337,15 @@
         "score": 28,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|668709",
@@ -5545,8 +6360,15 @@
         "score": 17,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 1,
+          "totalBases": 1,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 1,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|664983",
@@ -5561,8 +6383,15 @@
         "score": 16,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 1,
+          "totalBases": 1,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 1
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|664040",
@@ -5577,8 +6406,15 @@
         "score": 23,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|672356",
@@ -5593,8 +6429,15 @@
         "score": 21,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|656811",
@@ -5609,8 +6452,15 @@
         "score": 18,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|624424",
@@ -5625,8 +6475,15 @@
         "score": 21,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 1,
+          "totalBases": 1,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|665019",
@@ -5641,8 +6498,15 @@
         "score": 20,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|673548",
@@ -5657,8 +6521,15 @@
         "score": 19,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 1,
+          "totalBases": 2,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 1,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|655316",
@@ -5673,8 +6544,15 @@
         "score": 14,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|668723",
@@ -5689,8 +6567,15 @@
         "score": 12,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 1,
+          "totalBases": 1,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|621566",
@@ -5705,8 +6590,15 @@
         "score": 22,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": {
+          "hits": 2,
+          "totalBases": 5,
+          "homeRuns": 1,
+          "rbi": 1,
+          "runs": 2,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|592626",
@@ -5721,8 +6613,15 @@
         "score": 19,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|679822",
@@ -5737,8 +6636,15 @@
         "score": 19,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 1,
+          "totalBases": 1,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|671277",
@@ -5753,8 +6659,15 @@
         "score": 23,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|669127",
@@ -5769,8 +6682,15 @@
         "score": 20,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": {
+          "hits": 1,
+          "totalBases": 4,
+          "homeRuns": 1,
+          "rbi": 1,
+          "runs": 1,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|682928",
@@ -5785,8 +6705,15 @@
         "score": 19,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 2,
+          "totalBases": 3,
+          "homeRuns": 0,
+          "rbi": 1,
+          "runs": 1,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|676369",
@@ -5801,8 +6728,15 @@
         "score": 30,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|691023",
@@ -5817,8 +6751,15 @@
         "score": 28,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 1,
+          "totalBases": 1,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hr|676475",
@@ -5833,8 +6774,15 @@
         "score": 23,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 1,
+          "totalBases": 1,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 2,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hits|686475",
@@ -5849,8 +6797,15 @@
         "score": 76,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 1
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hits|681198",
@@ -5865,8 +6820,15 @@
         "score": 74,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": {
+          "hits": 1,
+          "totalBases": 1,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hits|673962",
@@ -5881,8 +6843,15 @@
         "score": 72,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hits|671976",
@@ -5897,8 +6866,15 @@
         "score": 72,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": {
+          "hits": 1,
+          "totalBases": 1,
+          "homeRuns": 0,
+          "rbi": 1,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hits|685133",
@@ -5913,8 +6889,15 @@
         "score": 72,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|rbis|663494",
@@ -5929,8 +6912,15 @@
         "score": 45,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|rbis|663757",
@@ -5945,8 +6935,15 @@
         "score": 43,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|rbis|502671",
@@ -5961,8 +6958,15 @@
         "score": 42,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|rbis|681807",
@@ -5977,8 +6981,15 @@
         "score": 42,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|rbis|678554",
@@ -5993,8 +7004,15 @@
         "score": 42,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": {
+          "hits": 4,
+          "totalBases": 7,
+          "homeRuns": 0,
+          "rbi": 3,
+          "runs": 4,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|tb|672640",
@@ -6009,8 +7027,15 @@
         "score": 48,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": {
+          "hits": 2,
+          "totalBases": 3,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|tb|663616",
@@ -6025,8 +7050,15 @@
         "score": 48,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 1,
+          "totalBases": 1,
+          "homeRuns": 0,
+          "rbi": 1,
+          "runs": 1,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|tb|677588",
@@ -6041,8 +7073,15 @@
         "score": 47,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 1,
+          "totalBases": 1,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 1,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|tb|605137",
@@ -6057,8 +7096,15 @@
         "score": 45,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 1,
+          "totalBases": 1,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|tb|518692",
@@ -6073,8 +7119,15 @@
         "score": 44,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|sb|683083",
@@ -6089,8 +7142,15 @@
         "score": 38,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": {
+          "hits": 3,
+          "totalBases": 3,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 3,
+          "stolenBases": 1
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|sb|682668",
@@ -6105,8 +7165,15 @@
         "score": 30,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|sb|677951",
@@ -6121,8 +7188,15 @@
         "score": 26,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|sb|663968",
@@ -6137,8 +7211,15 @@
         "score": 20,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|sb|642215",
@@ -6153,8 +7234,15 @@
         "score": 20,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hrrbi|668930",
@@ -6169,8 +7257,15 @@
         "score": 64,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hrrbi|668227",
@@ -6185,8 +7280,15 @@
         "score": 64,
         "quality": 3,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hrrbi|668804",
@@ -6201,8 +7303,15 @@
         "score": 63,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hrrbi|669003",
@@ -6217,8 +7326,15 @@
         "score": 63,
         "quality": 2,
         "marketOdds": null,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": {
+          "hits": 2,
+          "totalBases": 2,
+          "homeRuns": 0,
+          "rbi": 1,
+          "runs": 0,
+          "stolenBases": 0
+        }
       },
       {
         "key": "2026-07-17|PREMIUM|hrrbi|622268",
@@ -6232,6 +7348,1181 @@
         "gamePk": 824981,
         "score": 62,
         "quality": 3,
+        "marketOdds": null,
+        "result": "loss",
+        "actual": {
+          "hits": 0,
+          "totalBases": 0,
+          "homeRuns": 0,
+          "rbi": 0,
+          "runs": 0,
+          "stolenBases": 0
+        }
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|695657",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 1,
+        "playerId": 695657,
+        "playerName": "Colson Montgomery",
+        "team": "CWS",
+        "opp": "TOR",
+        "gamePk": 822790,
+        "score": 33,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|678246",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 2,
+        "playerId": 678246,
+        "playerName": "Miguel Vargas",
+        "team": "CWS",
+        "opp": "TOR",
+        "gamePk": 822790,
+        "score": 31,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|671976",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 3,
+        "playerId": 671976,
+        "playerName": "Tristan Peters",
+        "team": "CWS",
+        "opp": "TOR",
+        "gamePk": 822790,
+        "score": 23,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|669477",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 1,
+        "playerId": 669477,
+        "playerName": "Casey Schmitt",
+        "team": "SF",
+        "opp": "SEA",
+        "gamePk": 823116,
+        "score": 19,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|646240",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 2,
+        "playerId": 646240,
+        "playerName": "Rafael Devers",
+        "team": "SF",
+        "opp": "SEA",
+        "gamePk": 823116,
+        "score": 18,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|642715",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 3,
+        "playerId": 642715,
+        "playerName": "Willy Adames",
+        "team": "SF",
+        "opp": "SEA",
+        "gamePk": 823116,
+        "score": 15,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|656941",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 1,
+        "playerId": 656941,
+        "playerName": "Kyle Schwarber",
+        "team": "PHI",
+        "opp": "NYM",
+        "gamePk": 823441,
+        "score": 33,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|665742",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 2,
+        "playerId": 665742,
+        "playerName": "Juan Soto",
+        "team": "NYM",
+        "opp": "PHI",
+        "gamePk": 823441,
+        "score": 22,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|547180",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 3,
+        "playerId": 547180,
+        "playerName": "Bryce Harper",
+        "team": "PHI",
+        "opp": "NYM",
+        "gamePk": 823441,
+        "score": 22,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|660271",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 1,
+        "playerId": 660271,
+        "playerName": "Shohei Ohtani",
+        "team": "LAD",
+        "opp": "NYY",
+        "gamePk": 823523,
+        "score": 25,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|571970",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 2,
+        "playerId": 571970,
+        "playerName": "Max Muncy",
+        "team": "LAD",
+        "opp": "NYY",
+        "gamePk": 823523,
+        "score": 23,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|518692",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 3,
+        "playerId": 518692,
+        "playerName": "Freddie Freeman",
+        "team": "LAD",
+        "opp": "NYY",
+        "gamePk": 823523,
+        "score": 20,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|665052",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 1,
+        "playerId": 665052,
+        "playerName": "Griffin Conine",
+        "team": "MIA",
+        "opp": "MIL",
+        "gamePk": 823763,
+        "score": 20,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|681715",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 2,
+        "playerId": 681715,
+        "playerName": "Heriberto Hernández",
+        "team": "MIA",
+        "opp": "MIL",
+        "gamePk": 823763,
+        "score": 20,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|641343",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 3,
+        "playerId": 641343,
+        "playerName": "Jake Bauers",
+        "team": "MIL",
+        "opp": "MIA",
+        "gamePk": 823763,
+        "score": 20,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|545361",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 1,
+        "playerId": 545361,
+        "playerName": "Mike Trout",
+        "team": "LAA",
+        "opp": "DET",
+        "gamePk": 824008,
+        "score": 20,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|642350",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 2,
+        "playerId": 642350,
+        "playerName": "Jose Siri",
+        "team": "LAA",
+        "opp": "DET",
+        "gamePk": 824008,
+        "score": 18,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|682985",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 3,
+        "playerId": 682985,
+        "playerName": "Riley Greene",
+        "team": "DET",
+        "opp": "LAA",
+        "gamePk": 824008,
+        "score": 17,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|664034",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 1,
+        "playerId": 664034,
+        "playerName": "Ty France",
+        "team": "SD",
+        "opp": "KC",
+        "gamePk": 824088,
+        "score": 17,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|677951",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 2,
+        "playerId": 677951,
+        "playerName": "Bobby Witt Jr.",
+        "team": "KC",
+        "opp": "SD",
+        "gamePk": 824088,
+        "score": 17,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|592518",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 3,
+        "playerId": 592518,
+        "playerName": "Manny Machado",
+        "team": "SD",
+        "opp": "KC",
+        "gamePk": 824088,
+        "score": 16,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|670541",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 1,
+        "playerId": 670541,
+        "playerName": "Yordan Alvarez",
+        "team": "HOU",
+        "opp": "BAL",
+        "gamePk": 824169,
+        "score": 32,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|624413",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 2,
+        "playerId": 624413,
+        "playerName": "Pete Alonso",
+        "team": "BAL",
+        "opp": "HOU",
+        "gamePk": 824169,
+        "score": 21,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|683002",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 3,
+        "playerId": 683002,
+        "playerName": "Gunnar Henderson",
+        "team": "BAL",
+        "opp": "HOU",
+        "gamePk": 824169,
+        "score": 15,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|666160",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 1,
+        "playerId": 666160,
+        "playerName": "Mickey Moniak",
+        "team": "COL",
+        "opp": "CIN",
+        "gamePk": 824331,
+        "score": 24,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|668709",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 2,
+        "playerId": 668709,
+        "playerName": "JJ Bleday",
+        "team": "CIN",
+        "opp": "COL",
+        "gamePk": 824331,
+        "score": 22,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|668715",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 3,
+        "playerId": 668715,
+        "playerName": "Spencer Steer",
+        "team": "CIN",
+        "opp": "COL",
+        "gamePk": 824331,
+        "score": 20,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|664040",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 1,
+        "playerId": 664040,
+        "playerName": "Brandon Lowe",
+        "team": "PIT",
+        "opp": "CLE",
+        "gamePk": 824412,
+        "score": 20,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|656811",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 2,
+        "playerId": 656811,
+        "playerName": "Ryan O'Hearn",
+        "team": "PIT",
+        "opp": "CLE",
+        "gamePk": 824412,
+        "score": 15,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|668804",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 3,
+        "playerId": 668804,
+        "playerName": "Bryan Reynolds",
+        "team": "PIT",
+        "opp": "CLE",
+        "gamePk": 824412,
+        "score": 13,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|672356",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 1,
+        "playerId": 672356,
+        "playerName": "Gabriel Arias",
+        "team": "CLE",
+        "opp": "PIT",
+        "gamePk": 824414,
+        "score": 21,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|680779",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 2,
+        "playerId": 680779,
+        "playerName": "Henry Davis",
+        "team": "PIT",
+        "opp": "CLE",
+        "gamePk": 824414,
+        "score": 16,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|682997",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 3,
+        "playerId": 682997,
+        "playerName": "Tyler Callihan",
+        "team": "PIT",
+        "opp": "CLE",
+        "gamePk": 824414,
+        "score": 13,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|624424",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 1,
+        "playerId": 624424,
+        "playerName": "Michael Conforto",
+        "team": "CHC",
+        "opp": "MIN",
+        "gamePk": 824657,
+        "score": 19,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|673548",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 2,
+        "playerId": 673548,
+        "playerName": "Seiya Suzuki",
+        "team": "CHC",
+        "opp": "MIN",
+        "gamePk": 824657,
+        "score": 18,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|665019",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 3,
+        "playerId": 665019,
+        "playerName": "Kody Clemens",
+        "team": "MIN",
+        "opp": "CHC",
+        "gamePk": 824657,
+        "score": 17,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|575929",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 1,
+        "playerId": 575929,
+        "playerName": "Willson Contreras",
+        "team": "BOS",
+        "opp": "TB",
+        "gamePk": 824738,
+        "score": 23,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|666018",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 2,
+        "playerId": 666018,
+        "playerName": "Jonathan Aranda",
+        "team": "TB",
+        "opp": "BOS",
+        "gamePk": 824738,
+        "score": 14,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|677800",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 3,
+        "playerId": 677800,
+        "playerName": "Wilyer Abreu",
+        "team": "BOS",
+        "opp": "TB",
+        "gamePk": 824738,
+        "score": 14,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|621566",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 1,
+        "playerId": 621566,
+        "playerName": "Matt Olson",
+        "team": "ATL",
+        "opp": "TEX",
+        "gamePk": 824899,
+        "score": 22,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|592626",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 2,
+        "playerId": 592626,
+        "playerName": "Joc Pederson",
+        "team": "TEX",
+        "opp": "ATL",
+        "gamePk": 824899,
+        "score": 21,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|679822",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 3,
+        "playerId": 679822,
+        "playerName": "Justin Foscue",
+        "team": "TEX",
+        "opp": "ATL",
+        "gamePk": 824899,
+        "score": 20,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|669127",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 1,
+        "playerId": 669127,
+        "playerName": "Shea Langeliers",
+        "team": "ATH",
+        "opp": "WSH",
+        "gamePk": 824979,
+        "score": 29,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|691016",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 2,
+        "playerId": 691016,
+        "playerName": "Tyler Soderstrom",
+        "team": "ATH",
+        "opp": "WSH",
+        "gamePk": 824979,
+        "score": 26,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|671277",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 3,
+        "playerId": 671277,
+        "playerName": "Luis García Jr.",
+        "team": "WSH",
+        "opp": "ATH",
+        "gamePk": 824979,
+        "score": 24,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|676369",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 1,
+        "playerId": 676369,
+        "playerName": "Nelson Velázquez",
+        "team": "STL",
+        "opp": "AZ",
+        "gamePk": 825059,
+        "score": 26,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|691023",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 2,
+        "playerId": 691023,
+        "playerName": "Jordan Walker",
+        "team": "STL",
+        "opp": "AZ",
+        "gamePk": 825059,
+        "score": 23,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hr|676475",
+        "date": "2026-07-18",
+        "market": "hr",
+        "rank": 3,
+        "playerId": 676475,
+        "playerName": "Alec Burleson",
+        "team": "STL",
+        "opp": "AZ",
+        "gamePk": 825059,
+        "score": 18,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hits|686475",
+        "date": "2026-07-18",
+        "market": "hits",
+        "rank": 1,
+        "playerId": 686475,
+        "playerName": "Tyler Tolbert",
+        "team": "KC",
+        "opp": "SD",
+        "gamePk": 824088,
+        "score": 79,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hits|672515",
+        "date": "2026-07-18",
+        "market": "hits",
+        "rank": 2,
+        "playerId": 672515,
+        "playerName": "Gabriel Moreno",
+        "team": "AZ",
+        "opp": "STL",
+        "gamePk": 825059,
+        "score": 74,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hits|672640",
+        "date": "2026-07-18",
+        "market": "hits",
+        "rank": 3,
+        "playerId": 672640,
+        "playerName": "Otto Lopez",
+        "team": "MIA",
+        "opp": "MIL",
+        "gamePk": 823763,
+        "score": 74,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hits|685133",
+        "date": "2026-07-18",
+        "market": "hits",
+        "rank": 4,
+        "playerId": 685133,
+        "playerName": "Wade Meckler",
+        "team": "LAA",
+        "opp": "DET",
+        "gamePk": 824008,
+        "score": 72,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hits|665161",
+        "date": "2026-07-18",
+        "market": "hits",
+        "rank": 5,
+        "playerId": 665161,
+        "playerName": "Jeremy Peña",
+        "team": "HOU",
+        "opp": "BAL",
+        "gamePk": 824169,
+        "score": 71,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|rbis|663993",
+        "date": "2026-07-18",
+        "market": "rbis",
+        "rank": 1,
+        "playerId": 663993,
+        "playerName": "Nathaniel Lowe",
+        "team": "CIN",
+        "opp": "COL",
+        "gamePk": 824331,
+        "score": 47,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|rbis|553993",
+        "date": "2026-07-18",
+        "market": "rbis",
+        "rank": 2,
+        "playerId": 553993,
+        "playerName": "Eugenio Suárez",
+        "team": "CIN",
+        "opp": "COL",
+        "gamePk": 824331,
+        "score": 46,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|rbis|664983",
+        "date": "2026-07-18",
+        "market": "rbis",
+        "rank": 3,
+        "playerId": 664983,
+        "playerName": "Jake McCarthy",
+        "team": "COL",
+        "opp": "CIN",
+        "gamePk": 824331,
+        "score": 45,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|rbis|621438",
+        "date": "2026-07-18",
+        "market": "rbis",
+        "rank": 4,
+        "playerId": 621438,
+        "playerName": "Tyrone Taylor",
+        "team": "NYM",
+        "opp": "PHI",
+        "gamePk": 823441,
+        "score": 45,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|rbis|655316",
+        "date": "2026-07-18",
+        "market": "rbis",
+        "rank": 5,
+        "playerId": 655316,
+        "playerName": "Andruw Monasterio",
+        "team": "BOS",
+        "opp": "TB",
+        "gamePk": 824738,
+        "score": 43,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|tb|500743",
+        "date": "2026-07-18",
+        "market": "tb",
+        "rank": 1,
+        "playerId": 500743,
+        "playerName": "Miguel Rojas",
+        "team": "LAD",
+        "opp": "NYY",
+        "gamePk": 823523,
+        "score": 50,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|tb|678882",
+        "date": "2026-07-18",
+        "market": "tb",
+        "rank": 2,
+        "playerId": 678882,
+        "playerName": "Ceddanne Rafaela",
+        "team": "BOS",
+        "opp": "TB",
+        "gamePk": 824738,
+        "score": 49,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|tb|690993",
+        "date": "2026-07-18",
+        "market": "tb",
+        "rank": 3,
+        "playerId": 690993,
+        "playerName": "Colt Keith",
+        "team": "DET",
+        "opp": "LAA",
+        "gamePk": 824008,
+        "score": 48,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|tb|657041",
+        "date": "2026-07-18",
+        "market": "tb",
+        "rank": 4,
+        "playerId": 657041,
+        "playerName": "Lane Thomas",
+        "team": "KC",
+        "opp": "SD",
+        "gamePk": 824088,
+        "score": 46,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|tb|663616",
+        "date": "2026-07-18",
+        "market": "tb",
+        "rank": 5,
+        "playerId": 663616,
+        "playerName": "Trevor Larnach",
+        "team": "MIN",
+        "opp": "CHC",
+        "gamePk": 824657,
+        "score": 44,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|sb|683083",
+        "date": "2026-07-18",
+        "market": "sb",
+        "rank": 1,
+        "playerId": 683083,
+        "playerName": "Nasim Nuñez",
+        "team": "WSH",
+        "opp": "ATH",
+        "gamePk": 824979,
+        "score": 35,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|sb|682668",
+        "date": "2026-07-18",
+        "market": "sb",
+        "rank": 2,
+        "playerId": 682668,
+        "playerName": "Luisangel Acuña",
+        "team": "CWS",
+        "opp": "TOR",
+        "gamePk": 822790,
+        "score": 26,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|sb|665862",
+        "date": "2026-07-18",
+        "market": "sb",
+        "rank": 3,
+        "playerId": 665862,
+        "playerName": "Jazz Chisholm Jr.",
+        "team": "NYY",
+        "opp": "LAD",
+        "gamePk": 823523,
+        "score": 22,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|sb|663968",
+        "date": "2026-07-18",
+        "market": "sb",
+        "rank": 4,
+        "playerId": 663968,
+        "playerName": "Jake Mangum",
+        "team": "PIT",
+        "opp": "CLE",
+        "gamePk": 824414,
+        "score": 20,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|sb|656537",
+        "date": "2026-07-18",
+        "market": "sb",
+        "rank": 5,
+        "playerId": 656537,
+        "playerName": "Derek Hill",
+        "team": "PHI",
+        "opp": "NYM",
+        "gamePk": 823441,
+        "score": 20,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hrrbi|681198",
+        "date": "2026-07-18",
+        "market": "hrrbi",
+        "rank": 1,
+        "playerId": 681198,
+        "playerName": "TJ Rumfield",
+        "team": "COL",
+        "opp": "CIN",
+        "gamePk": 824331,
+        "score": 65,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hrrbi|678554",
+        "date": "2026-07-18",
+        "market": "hrrbi",
+        "rank": 2,
+        "playerId": 678554,
+        "playerName": "Curtis Mead",
+        "team": "WSH",
+        "opp": "ATH",
+        "gamePk": 824979,
+        "score": 64,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hrrbi|622268",
+        "date": "2026-07-18",
+        "market": "hrrbi",
+        "rank": 3,
+        "playerId": 622268,
+        "playerName": "Donovan Walton",
+        "team": "ATH",
+        "opp": "WSH",
+        "gamePk": 824979,
+        "score": 62,
+        "quality": 2,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hrrbi|650490",
+        "date": "2026-07-18",
+        "market": "hrrbi",
+        "rank": 4,
+        "playerId": 650490,
+        "playerName": "Yandy Díaz",
+        "team": "TB",
+        "opp": "BOS",
+        "gamePk": 824738,
+        "score": 61,
+        "quality": 3,
+        "marketOdds": null,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|PREMIUM|hrrbi|669003",
+        "date": "2026-07-18",
+        "market": "hrrbi",
+        "rank": 5,
+        "playerId": 669003,
+        "playerName": "Garrett Mitchell",
+        "team": "MIL",
+        "opp": "MIA",
+        "gamePk": 823763,
+        "score": 61,
+        "quality": 2,
         "marketOdds": null,
         "result": "pending",
         "actual": null
@@ -7567,8 +9858,8 @@
         "opp": "NYY",
         "gamePk": 823524,
         "score": 20,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|571970",
@@ -7579,8 +9870,8 @@
         "opp": "NYY",
         "gamePk": 823524,
         "score": 22,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": 1
       },
       {
         "key": "2026-07-17|HRTHREAT|605141",
@@ -7591,8 +9882,8 @@
         "opp": "NYY",
         "gamePk": 823524,
         "score": 18,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|660271",
@@ -7603,8 +9894,8 @@
         "opp": "NYY",
         "gamePk": 823524,
         "score": 25,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|502671",
@@ -7615,8 +9906,8 @@
         "opp": "LAD",
         "gamePk": 823524,
         "score": 21,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|641355",
@@ -7627,8 +9918,8 @@
         "opp": "LAD",
         "gamePk": 823524,
         "score": 18,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|641857",
@@ -7639,8 +9930,8 @@
         "opp": "LAD",
         "gamePk": 823524,
         "score": 22,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|642708",
@@ -7651,8 +9942,8 @@
         "opp": "LAD",
         "gamePk": 823524,
         "score": 22,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|663757",
@@ -7663,8 +9954,8 @@
         "opp": "LAD",
         "gamePk": 823524,
         "score": 21,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|665862",
@@ -7675,8 +9966,8 @@
         "opp": "LAD",
         "gamePk": 823524,
         "score": 18,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|656811",
@@ -7687,8 +9978,8 @@
         "opp": "CLE",
         "gamePk": 824414,
         "score": 18,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|664040",
@@ -7699,8 +9990,8 @@
         "opp": "CLE",
         "gamePk": 824414,
         "score": 23,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|672356",
@@ -7711,8 +10002,8 @@
         "opp": "PIT",
         "gamePk": 824414,
         "score": 21,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|592626",
@@ -7723,8 +10014,8 @@
         "opp": "ATL",
         "gamePk": 824901,
         "score": 19,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|679822",
@@ -7735,8 +10026,8 @@
         "opp": "ATL",
         "gamePk": 824901,
         "score": 19,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|621566",
@@ -7747,8 +10038,8 @@
         "opp": "TEX",
         "gamePk": 824901,
         "score": 22,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": 1
       },
       {
         "key": "2026-07-17|HRTHREAT|545341",
@@ -7759,8 +10050,8 @@
         "opp": "TOR",
         "gamePk": 822789,
         "score": 21,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|695657",
@@ -7771,8 +10062,8 @@
         "opp": "TOR",
         "gamePk": 822789,
         "score": 19,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|672960",
@@ -7783,8 +10074,8 @@
         "opp": "CWS",
         "gamePk": 822789,
         "score": 21,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|665052",
@@ -7795,8 +10086,8 @@
         "opp": "MIL",
         "gamePk": 823766,
         "score": 18,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": 1
       },
       {
         "key": "2026-07-17|HRTHREAT|681715",
@@ -7807,8 +10098,8 @@
         "opp": "MIL",
         "gamePk": 823766,
         "score": 21,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|596142",
@@ -7819,8 +10110,8 @@
         "opp": "MIA",
         "gamePk": 823766,
         "score": 19,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|641343",
@@ -7831,8 +10122,8 @@
         "opp": "MIA",
         "gamePk": 823766,
         "score": 20,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|665019",
@@ -7843,8 +10134,8 @@
         "opp": "CHC",
         "gamePk": 824655,
         "score": 20,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|621020",
@@ -7855,8 +10146,8 @@
         "opp": "MIN",
         "gamePk": 824655,
         "score": 18,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|624424",
@@ -7867,8 +10158,8 @@
         "opp": "MIN",
         "gamePk": 824655,
         "score": 21,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|664023",
@@ -7879,8 +10170,8 @@
         "opp": "MIN",
         "gamePk": 824655,
         "score": 20,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|673548",
@@ -7891,8 +10182,8 @@
         "opp": "MIN",
         "gamePk": 824655,
         "score": 19,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|624413",
@@ -7903,8 +10194,8 @@
         "opp": "HOU",
         "gamePk": 824170,
         "score": 22,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|514888",
@@ -7915,8 +10206,8 @@
         "opp": "BAL",
         "gamePk": 824170,
         "score": 25,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|543877",
@@ -7927,8 +10218,8 @@
         "opp": "BAL",
         "gamePk": 824170,
         "score": 22,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|572233",
@@ -7939,8 +10230,8 @@
         "opp": "BAL",
         "gamePk": 824170,
         "score": 28,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|665161",
@@ -7951,8 +10242,8 @@
         "opp": "BAL",
         "gamePk": 824170,
         "score": 26,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|666211",
@@ -7963,8 +10254,8 @@
         "opp": "BAL",
         "gamePk": 824170,
         "score": 22,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|669397",
@@ -7975,8 +10266,8 @@
         "opp": "BAL",
         "gamePk": 824170,
         "score": 20,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|670541",
@@ -7987,8 +10278,8 @@
         "opp": "BAL",
         "gamePk": 824170,
         "score": 43,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|670623",
@@ -7999,8 +10290,8 @@
         "opp": "BAL",
         "gamePk": 824170,
         "score": 24,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|592518",
@@ -8011,8 +10302,8 @@
         "opp": "KC",
         "gamePk": 824090,
         "score": 19,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|657757",
@@ -8023,8 +10314,8 @@
         "opp": "KC",
         "gamePk": 824090,
         "score": 20,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|664034",
@@ -8035,8 +10326,8 @@
         "opp": "KC",
         "gamePk": 824090,
         "score": 19,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": 1
       },
       {
         "key": "2026-07-17|HRTHREAT|666160",
@@ -8047,8 +10338,8 @@
         "opp": "CIN",
         "gamePk": 824332,
         "score": 28,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|681481",
@@ -8059,8 +10350,8 @@
         "opp": "LAA",
         "gamePk": 824009,
         "score": 20,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|545361",
@@ -8071,8 +10362,8 @@
         "opp": "DET",
         "gamePk": 824009,
         "score": 21,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|642350",
@@ -8083,8 +10374,8 @@
         "opp": "DET",
         "gamePk": 824009,
         "score": 18,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|671277",
@@ -8095,8 +10386,8 @@
         "opp": "ATH",
         "gamePk": 824981,
         "score": 23,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|678554",
@@ -8107,8 +10398,8 @@
         "opp": "ATH",
         "gamePk": 824981,
         "score": 18,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|682928",
@@ -8119,8 +10410,8 @@
         "opp": "ATH",
         "gamePk": 824981,
         "score": 19,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|669127",
@@ -8131,8 +10422,8 @@
         "opp": "WSH",
         "gamePk": 824981,
         "score": 20,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": 1
       },
       {
         "key": "2026-07-17|HRTHREAT|663457",
@@ -8143,8 +10434,8 @@
         "opp": "AZ",
         "gamePk": 825060,
         "score": 18,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|663494",
@@ -8155,8 +10446,8 @@
         "opp": "AZ",
         "gamePk": 825060,
         "score": 22,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|671056",
@@ -8167,8 +10458,8 @@
         "opp": "AZ",
         "gamePk": 825060,
         "score": 18,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|676369",
@@ -8179,8 +10470,8 @@
         "opp": "AZ",
         "gamePk": 825060,
         "score": 30,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|676475",
@@ -8191,8 +10482,8 @@
         "opp": "AZ",
         "gamePk": 825060,
         "score": 23,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|691023",
@@ -8203,8 +10494,8 @@
         "opp": "AZ",
         "gamePk": 825060,
         "score": 28,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|646240",
@@ -8215,8 +10506,8 @@
         "opp": "SEA",
         "gamePk": 823115,
         "score": 19,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|669477",
@@ -8227,8 +10518,8 @@
         "opp": "SEA",
         "gamePk": 823115,
         "score": 20,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|670042",
@@ -8239,8 +10530,8 @@
         "opp": "SF",
         "gamePk": 823115,
         "score": 19,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|606466",
@@ -8251,8 +10542,8 @@
         "opp": "STL",
         "gamePk": 825060,
         "score": 19,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|669065",
@@ -8263,8 +10554,8 @@
         "opp": "MIL",
         "gamePk": 823766,
         "score": 18,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|694192",
@@ -8275,8 +10566,8 @@
         "opp": "MIA",
         "gamePk": 823766,
         "score": 19,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|680777",
@@ -8287,8 +10578,8 @@
         "opp": "CHC",
         "gamePk": 824655,
         "score": 25,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": 1
       },
       {
         "key": "2026-07-17|HRTHREAT|605137",
@@ -8299,8 +10590,8 @@
         "opp": "CHC",
         "gamePk": 824655,
         "score": 20,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|668904",
@@ -8311,8 +10602,8 @@
         "opp": "CHC",
         "gamePk": 824655,
         "score": 20,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|691718",
@@ -8323,8 +10614,8 @@
         "opp": "MIN",
         "gamePk": 824655,
         "score": 30,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|683737",
@@ -8335,8 +10626,8 @@
         "opp": "MIN",
         "gamePk": 824655,
         "score": 19,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|694212",
@@ -8347,8 +10638,8 @@
         "opp": "HOU",
         "gamePk": 824170,
         "score": 19,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|701358",
@@ -8359,8 +10650,8 @@
         "opp": "BAL",
         "gamePk": 824170,
         "score": 25,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|669134",
@@ -8371,8 +10662,8 @@
         "opp": "KC",
         "gamePk": 824090,
         "score": 21,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|677951",
@@ -8383,8 +10674,8 @@
         "opp": "SD",
         "gamePk": 824090,
         "score": 20,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|695506",
@@ -8395,8 +10686,8 @@
         "opp": "SD",
         "gamePk": 824090,
         "score": 22,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|701398",
@@ -8407,8 +10698,8 @@
         "opp": "COL",
         "gamePk": 824332,
         "score": 18,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|668709",
@@ -8419,8 +10710,8 @@
         "opp": "COL",
         "gamePk": 824332,
         "score": 19,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|664983",
@@ -8431,8 +10722,8 @@
         "opp": "CIN",
         "gamePk": 824332,
         "score": 19,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|696100",
@@ -8443,8 +10734,8 @@
         "opp": "CIN",
         "gamePk": 824332,
         "score": 29,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|681198",
@@ -8455,8 +10746,8 @@
         "opp": "CIN",
         "gamePk": 824332,
         "score": 18,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|691720",
@@ -8467,8 +10758,8 @@
         "opp": "CIN",
         "gamePk": 824332,
         "score": 18,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|693307",
@@ -8479,8 +10770,8 @@
         "opp": "LAA",
         "gamePk": 824009,
         "score": 24,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|682985",
@@ -8491,8 +10782,8 @@
         "opp": "LAA",
         "gamePk": 824009,
         "score": 18,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|687263",
@@ -8503,8 +10794,8 @@
         "opp": "DET",
         "gamePk": 824009,
         "score": 19,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|624585",
@@ -8515,8 +10806,8 @@
         "opp": "DET",
         "gamePk": 824009,
         "score": 18,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|666139",
@@ -8527,8 +10818,8 @@
         "opp": "DET",
         "gamePk": 824009,
         "score": 18,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|695578",
@@ -8539,8 +10830,8 @@
         "opp": "ATH",
         "gamePk": 824981,
         "score": 29,
-        "result": "pending",
-        "actual": null
+        "result": "loss",
+        "actual": 0
       },
       {
         "key": "2026-07-17|HRTHREAT|691016",
@@ -8551,8 +10842,8 @@
         "opp": "WSH",
         "gamePk": 824981,
         "score": 20,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": 1
       },
       {
         "key": "2026-07-17|HRTHREAT|802139",
@@ -8563,8 +10854,8 @@
         "opp": "AZ",
         "gamePk": 825060,
         "score": 22,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": 1
       },
       {
         "key": "2026-07-17|HRTHREAT|682998",
@@ -8575,8 +10866,8 @@
         "opp": "STL",
         "gamePk": 825060,
         "score": 18,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": 1
       },
       {
         "key": "2026-07-17|HRTHREAT|805811",
@@ -8587,8 +10878,8 @@
         "opp": "SEA",
         "gamePk": 823115,
         "score": 19,
-        "result": "pending",
-        "actual": null
+        "result": "win",
+        "actual": 1
       },
       {
         "key": "2026-07-17|HRTHREAT|686527",
@@ -8599,6 +10890,714 @@
         "opp": "SF",
         "gamePk": 823115,
         "score": 26,
+        "result": "loss",
+        "actual": 0
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|664040",
+        "date": "2026-07-18",
+        "playerId": 664040,
+        "playerName": "Brandon Lowe",
+        "team": "PIT",
+        "opp": "CLE",
+        "gamePk": 824414,
+        "score": 23,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|672356",
+        "date": "2026-07-18",
+        "playerId": 672356,
+        "playerName": "Gabriel Arias",
+        "team": "CLE",
+        "opp": "PIT",
+        "gamePk": 824414,
+        "score": 21,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|624424",
+        "date": "2026-07-18",
+        "playerId": 624424,
+        "playerName": "Michael Conforto",
+        "team": "CHC",
+        "opp": "MIN",
+        "gamePk": 824657,
+        "score": 19,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|664023",
+        "date": "2026-07-18",
+        "playerId": 664023,
+        "playerName": "Ian Happ",
+        "team": "CHC",
+        "opp": "MIN",
+        "gamePk": 824657,
+        "score": 19,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|673548",
+        "date": "2026-07-18",
+        "playerId": 673548,
+        "playerName": "Seiya Suzuki",
+        "team": "CHC",
+        "opp": "MIN",
+        "gamePk": 824657,
+        "score": 18,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|545341",
+        "date": "2026-07-18",
+        "playerId": 545341,
+        "playerName": "Randal Grichuk",
+        "team": "CWS",
+        "opp": "TOR",
+        "gamePk": 822790,
+        "score": 34,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|643217",
+        "date": "2026-07-18",
+        "playerId": 643217,
+        "playerName": "Andrew Benintendi",
+        "team": "CWS",
+        "opp": "TOR",
+        "gamePk": 822790,
+        "score": 27,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|671976",
+        "date": "2026-07-18",
+        "playerId": 671976,
+        "playerName": "Tristan Peters",
+        "team": "CWS",
+        "opp": "TOR",
+        "gamePk": 822790,
+        "score": 23,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|678246",
+        "date": "2026-07-18",
+        "playerId": 678246,
+        "playerName": "Miguel Vargas",
+        "team": "CWS",
+        "opp": "TOR",
+        "gamePk": 822790,
+        "score": 31,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|682668",
+        "date": "2026-07-18",
+        "playerId": 682668,
+        "playerName": "Luisangel Acuña",
+        "team": "CWS",
+        "opp": "TOR",
+        "gamePk": 822790,
+        "score": 20,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|691011",
+        "date": "2026-07-18",
+        "playerId": 691011,
+        "playerName": "Drew Romo",
+        "team": "CWS",
+        "opp": "TOR",
+        "gamePk": 822790,
+        "score": 25,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|691019",
+        "date": "2026-07-18",
+        "playerId": 691019,
+        "playerName": "Kyle Teel",
+        "team": "CWS",
+        "opp": "TOR",
+        "gamePk": 822790,
+        "score": 25,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|695657",
+        "date": "2026-07-18",
+        "playerId": 695657,
+        "playerName": "Colson Montgomery",
+        "team": "CWS",
+        "opp": "TOR",
+        "gamePk": 822790,
+        "score": 33,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|672960",
+        "date": "2026-07-18",
+        "playerId": 672960,
+        "playerName": "Kazuma Okamoto",
+        "team": "TOR",
+        "opp": "CWS",
+        "gamePk": 822790,
+        "score": 18,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|663993",
+        "date": "2026-07-18",
+        "playerId": 663993,
+        "playerName": "Nathaniel Lowe",
+        "team": "CIN",
+        "opp": "COL",
+        "gamePk": 824331,
+        "score": 19,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|668709",
+        "date": "2026-07-18",
+        "playerId": 668709,
+        "playerName": "JJ Bleday",
+        "team": "CIN",
+        "opp": "COL",
+        "gamePk": 824331,
+        "score": 22,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|668715",
+        "date": "2026-07-18",
+        "playerId": 668715,
+        "playerName": "Spencer Steer",
+        "team": "CIN",
+        "opp": "COL",
+        "gamePk": 824331,
+        "score": 20,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|666160",
+        "date": "2026-07-18",
+        "playerId": 666160,
+        "playerName": "Mickey Moniak",
+        "team": "COL",
+        "opp": "CIN",
+        "gamePk": 824331,
+        "score": 24,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|665742",
+        "date": "2026-07-18",
+        "playerId": 665742,
+        "playerName": "Juan Soto",
+        "team": "NYM",
+        "opp": "PHI",
+        "gamePk": 823441,
+        "score": 22,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|547180",
+        "date": "2026-07-18",
+        "playerId": 547180,
+        "playerName": "Bryce Harper",
+        "team": "PHI",
+        "opp": "NYM",
+        "gamePk": 823441,
+        "score": 22,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|656941",
+        "date": "2026-07-18",
+        "playerId": 656941,
+        "playerName": "Kyle Schwarber",
+        "team": "PHI",
+        "opp": "NYM",
+        "gamePk": 823441,
+        "score": 33,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|624413",
+        "date": "2026-07-18",
+        "playerId": 624413,
+        "playerName": "Pete Alonso",
+        "team": "BAL",
+        "opp": "HOU",
+        "gamePk": 824169,
+        "score": 21,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|670541",
+        "date": "2026-07-18",
+        "playerId": 670541,
+        "playerName": "Yordan Alvarez",
+        "team": "HOU",
+        "opp": "BAL",
+        "gamePk": 824169,
+        "score": 32,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|676369",
+        "date": "2026-07-18",
+        "playerId": 676369,
+        "playerName": "Nelson Velázquez",
+        "team": "STL",
+        "opp": "AZ",
+        "gamePk": 825059,
+        "score": 26,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|676475",
+        "date": "2026-07-18",
+        "playerId": 676475,
+        "playerName": "Alec Burleson",
+        "team": "STL",
+        "opp": "AZ",
+        "gamePk": 825059,
+        "score": 18,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|691023",
+        "date": "2026-07-18",
+        "playerId": 691023,
+        "playerName": "Jordan Walker",
+        "team": "STL",
+        "opp": "AZ",
+        "gamePk": 825059,
+        "score": 23,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|575929",
+        "date": "2026-07-18",
+        "playerId": 575929,
+        "playerName": "Willson Contreras",
+        "team": "BOS",
+        "opp": "TB",
+        "gamePk": 824738,
+        "score": 23,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|592626",
+        "date": "2026-07-18",
+        "playerId": 592626,
+        "playerName": "Joc Pederson",
+        "team": "TEX",
+        "opp": "ATL",
+        "gamePk": 824899,
+        "score": 21,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|679822",
+        "date": "2026-07-18",
+        "playerId": 679822,
+        "playerName": "Justin Foscue",
+        "team": "TEX",
+        "opp": "ATL",
+        "gamePk": 824899,
+        "score": 20,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|621566",
+        "date": "2026-07-18",
+        "playerId": 621566,
+        "playerName": "Matt Olson",
+        "team": "ATL",
+        "opp": "TEX",
+        "gamePk": 824899,
+        "score": 22,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|665052",
+        "date": "2026-07-18",
+        "playerId": 665052,
+        "playerName": "Griffin Conine",
+        "team": "MIA",
+        "opp": "MIL",
+        "gamePk": 823763,
+        "score": 20,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|681715",
+        "date": "2026-07-18",
+        "playerId": 681715,
+        "playerName": "Heriberto Hernández",
+        "team": "MIA",
+        "opp": "MIL",
+        "gamePk": 823763,
+        "score": 20,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|596142",
+        "date": "2026-07-18",
+        "playerId": 596142,
+        "playerName": "Gary Sánchez",
+        "team": "MIL",
+        "opp": "MIA",
+        "gamePk": 823763,
+        "score": 19,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|641343",
+        "date": "2026-07-18",
+        "playerId": 641343,
+        "playerName": "Jake Bauers",
+        "team": "MIL",
+        "opp": "MIA",
+        "gamePk": 823763,
+        "score": 20,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|646240",
+        "date": "2026-07-18",
+        "playerId": 646240,
+        "playerName": "Rafael Devers",
+        "team": "SF",
+        "opp": "SEA",
+        "gamePk": 823116,
+        "score": 18,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|669477",
+        "date": "2026-07-18",
+        "playerId": 669477,
+        "playerName": "Casey Schmitt",
+        "team": "SF",
+        "opp": "SEA",
+        "gamePk": 823116,
+        "score": 19,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|670042",
+        "date": "2026-07-18",
+        "playerId": 670042,
+        "playerName": "Luke Raley",
+        "team": "SEA",
+        "opp": "SF",
+        "gamePk": 823116,
+        "score": 20,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|518692",
+        "date": "2026-07-18",
+        "playerId": 518692,
+        "playerName": "Freddie Freeman",
+        "team": "LAD",
+        "opp": "NYY",
+        "gamePk": 823523,
+        "score": 20,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|571970",
+        "date": "2026-07-18",
+        "playerId": 571970,
+        "playerName": "Max Muncy",
+        "team": "LAD",
+        "opp": "NYY",
+        "gamePk": 823523,
+        "score": 23,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|605141",
+        "date": "2026-07-18",
+        "playerId": 605141,
+        "playerName": "Mookie Betts",
+        "team": "LAD",
+        "opp": "NYY",
+        "gamePk": 823523,
+        "score": 18,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|660271",
+        "date": "2026-07-18",
+        "playerId": 660271,
+        "playerName": "Shohei Ohtani",
+        "team": "LAD",
+        "opp": "NYY",
+        "gamePk": 823523,
+        "score": 25,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|502671",
+        "date": "2026-07-18",
+        "playerId": 502671,
+        "playerName": "Paul Goldschmidt",
+        "team": "NYY",
+        "opp": "LAD",
+        "gamePk": 823523,
+        "score": 18,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|641857",
+        "date": "2026-07-18",
+        "playerId": 641857,
+        "playerName": "Ryan McMahon",
+        "team": "NYY",
+        "opp": "LAD",
+        "gamePk": 823523,
+        "score": 19,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|642708",
+        "date": "2026-07-18",
+        "playerId": 642708,
+        "playerName": "Amed Rosario",
+        "team": "NYY",
+        "opp": "LAD",
+        "gamePk": 823523,
+        "score": 19,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|663757",
+        "date": "2026-07-18",
+        "playerId": 663757,
+        "playerName": "Trent Grisham",
+        "team": "NYY",
+        "opp": "LAD",
+        "gamePk": 823523,
+        "score": 19,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|665953",
+        "date": "2026-07-18",
+        "playerId": 665953,
+        "playerName": "Andrés Chaparro",
+        "team": "WSH",
+        "opp": "ATH",
+        "gamePk": 824979,
+        "score": 19,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|671277",
+        "date": "2026-07-18",
+        "playerId": 671277,
+        "playerName": "Luis García Jr.",
+        "team": "WSH",
+        "opp": "ATH",
+        "gamePk": 824979,
+        "score": 24,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|678554",
+        "date": "2026-07-18",
+        "playerId": 678554,
+        "playerName": "Curtis Mead",
+        "team": "WSH",
+        "opp": "ATH",
+        "gamePk": 824979,
+        "score": 19,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|682928",
+        "date": "2026-07-18",
+        "playerId": 682928,
+        "playerName": "CJ Abrams",
+        "team": "WSH",
+        "opp": "ATH",
+        "gamePk": 824979,
+        "score": 20,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|622268",
+        "date": "2026-07-18",
+        "playerId": 622268,
+        "playerName": "Donovan Walton",
+        "team": "ATH",
+        "opp": "WSH",
+        "gamePk": 824979,
+        "score": 18,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|641680",
+        "date": "2026-07-18",
+        "playerId": 641680,
+        "playerName": "Jonah Heim",
+        "team": "ATH",
+        "opp": "WSH",
+        "gamePk": 824979,
+        "score": 24,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|666126",
+        "date": "2026-07-18",
+        "playerId": 666126,
+        "playerName": "Carlos Cortes",
+        "team": "ATH",
+        "opp": "WSH",
+        "gamePk": 824979,
+        "score": 18,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|669127",
+        "date": "2026-07-18",
+        "playerId": 669127,
+        "playerName": "Shea Langeliers",
+        "team": "ATH",
+        "opp": "WSH",
+        "gamePk": 824979,
+        "score": 29,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|671732",
+        "date": "2026-07-18",
+        "playerId": 671732,
+        "playerName": "Lawrence Butler",
+        "team": "ATH",
+        "opp": "WSH",
+        "gamePk": 824979,
+        "score": 18,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|687515",
+        "date": "2026-07-18",
+        "playerId": 687515,
+        "playerName": "Colby Thomas",
+        "team": "ATH",
+        "opp": "WSH",
+        "gamePk": 824979,
+        "score": 22,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|691016",
+        "date": "2026-07-18",
+        "playerId": 691016,
+        "playerName": "Tyler Soderstrom",
+        "team": "ATH",
+        "opp": "WSH",
+        "gamePk": 824979,
+        "score": 26,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|681481",
+        "date": "2026-07-18",
+        "playerId": 681481,
+        "playerName": "Kerry Carpenter",
+        "team": "DET",
+        "opp": "LAA",
+        "gamePk": 824008,
+        "score": 21,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|545361",
+        "date": "2026-07-18",
+        "playerId": 545361,
+        "playerName": "Mike Trout",
+        "team": "LAA",
+        "opp": "DET",
+        "gamePk": 824008,
+        "score": 20,
+        "result": "pending",
+        "actual": null
+      },
+      {
+        "key": "2026-07-18|HRTHREAT|642350",
+        "date": "2026-07-18",
+        "playerId": 642350,
+        "playerName": "Jose Siri",
+        "team": "LAA",
+        "opp": "DET",
+        "gamePk": 824008,
+        "score": 18,
         "result": "pending",
         "actual": null
       }
@@ -8606,29 +11605,29 @@
   },
   "allTime": {
     "drp": {
-      "wins": 18,
-      "losses": 13,
+      "wins": 24,
+      "losses": 20,
       "pushes": 0,
-      "total": 31
+      "total": 44
     },
     "kprop": {
-      "wins": 37,
-      "losses": 29,
+      "wins": 56,
+      "losses": 36,
       "pushes": 0,
-      "total": 66
+      "total": 92
     },
     "premium": {
-      "wins": 27,
-      "losses": 111,
+      "wins": 38,
+      "losses": 166,
       "pushes": 0,
-      "total": 138
+      "total": 204
     },
     "hrThreat": {
-      "wins": 8,
-      "losses": 102,
+      "wins": 18,
+      "losses": 179,
       "pushes": 0,
-      "total": 110
+      "total": 197
     }
   },
-  "oddsLastFetchedDate": "2026-07-17"
+  "oddsLastFetchedDate": "2026-07-18"
 }
