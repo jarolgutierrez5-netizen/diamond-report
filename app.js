@@ -3315,7 +3315,8 @@ async function loadGameProps() {
       const hrBoostChip = `<span class="gp-factor ${hrBoostCls}" title="Wind + temperature effect on HR likelihood only — excludes park, pitching, and offense">🌬️ HR Boost: ${hrWeatherBoostPct > 0 ? '+' : ''}${hrWeatherBoostPct}%${gpFactorBar(Math.abs(hrWeatherBoostPct) / 13, hrBoostCls)}</span>`;
       const parkFactorCls = parkFactorVal > 107 ? 'pos' : parkFactorVal < 93 ? 'neg' : 'neu';
       const parkFactorLabel = parkFactorVal > 107 ? 'HR-Friendly' : parkFactorVal < 93 ? 'Pitcher-Friendly' : 'Neutral';
-      const parkFactorChip = `<span class="gp-factor ${parkFactorCls}" title="Statcast park factor for ${stadiumCoords[homeAbbr]?.name||homeAbbr} — 100 = league average">🏟️ Park Factor: ${parkFactorVal} · ${parkFactorLabel}${gpFactorBar(Math.abs(parkFactorVal - 100) / 33, parkFactorCls)}</span>`;
+      const parkFactorPct = parkFactorVal - 100;
+      const parkFactorChip = `<span class="gp-factor ${parkFactorCls}" title="Statcast park factor for ${stadiumCoords[homeAbbr]?.name||homeAbbr} — 100 = league average (0%)">🏟️ Park Factor: ${parkFactorPct > 0 ? '+' : ''}${parkFactorPct}% · ${parkFactorLabel}${gpFactorBar(Math.abs(parkFactorVal - 100) / 33, parkFactorCls)}</span>`;
 
       // Bullpen fatigue — only shown when at least one side's 'pen is genuinely
       // Taxed/Gassed from the last two days' real reliever workload (see
