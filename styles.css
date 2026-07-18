@@ -3681,3 +3681,13 @@ select:focus-visible {
   border-color: #f5c518;
   color: #f5c518;
 }
+/* .dr109-score sits flush against the card's right edge (justify-content:
+   space-between on .dr109-card-head), which is exactly where the absolutely
+   positioned watch star sits too — reserve room so the star doesn't land on
+   top of the percentage. .dr1027-hr-score (HR Threats) already has enough
+   natural clearance and has its own fixed width elsewhere, so adding padding
+   there just forced its label to wrap mid-word instead of helping. */
+.dr109-score {
+  padding-right: 34px;
+  box-sizing: border-box;
+}
