@@ -2991,6 +2991,23 @@ select:focus-visible {
   background: currentColor;
 }
 
+/* Over/Under badge under Projected Total — same pos/neg/neu color language as
+   .gp-factor, sized smaller to sit under the Projected Total number instead of
+   in the wider .gp-factors chip row below the card. */
+.gp-ou-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  letter-spacing: .4px;
+}
+.gp-ou-badge.pos { border-color: #2ee6a666; color: #2ee6a6; }
+.gp-ou-badge.neg { border-color: #ff4d6d66; color: #ff4d6d; }
+.gp-ou-badge.neu { border-color: var(--border); color: var(--muted); }
+
 /* Every "Loading X…" state across the site uses the same <div class="mu-empty">
    <span class="spin">…text pattern — rather than editing each of the ~14 call
    sites individually, add the same shimmer language as .dr-v9-skeleton above
