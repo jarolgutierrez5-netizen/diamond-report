@@ -2915,6 +2915,56 @@ const teamColors = {
   WSH:'#AB0003',AZ:'#A71930',
 };
 
+// Player watchlist — localStorage-backed, no backend. Star a player from any
+// board (HR Threats, Strikeouts, Hits, RBIs, Total Bases, Stolen Bases,
+// Hits+Runs+RBI) and each of those boards can filter down to just your
+// starred players with a "★ Watchlist" toggle in its filter row.
+const DR_WATCHLIST_KEY = 'dr-watchlist-players-v1';
+function drGetWatchlist() {
+  try { return JSON.parse(localStorage.getItem(DR_WATCHLIST_KEY)) || {}; } catch (e) { return {}; }
+}
+function drIsWatchlisted(id) {
+  return !!drGetWatchlist()[String(id)];
+}
+window.drIsWatchlisted = drIsWatchlisted;
+function drToggleWatchlist(id, name) {
+  const wl = drGetWatchlist();
+  const key = String(id);
+  const nowActive = !wl[key];
+  if (nowActive) wl[key] = { name: name || '', addedAt: Date.now() };
+  else delete wl[key];
+  try { localStorage.setItem(DR_WATCHLIST_KEY, JSON.stringify(wl)); } catch (e) {}
+  document.querySelectorAll(`[data-watch-id="${CSS.escape(key)}"]`).forEach(btn => {
+    btn.classList.toggle('dr-watch-active', nowActive);
+    btn.textContent = nowActive ? '★' : '☆';
+    const label = nowActive ? 'Remove from watchlist' : 'Add to watchlist';
+    btn.setAttribute('aria-label', label);
+    btn.setAttribute('title', label);
+  });
+  document.dispatchEvent(new CustomEvent('dr-watchlist-change'));
+  return nowActive;
+}
+window.drToggleWatchlist = drToggleWatchlist;
+// Renders a star toggle button. `id` should be the player's MLB id (or any
+// stable unique key) — pass through whatever the board already uses to key
+// headshots, since that's guaranteed present whenever there's a name to show.
+function drWatchStarHTML(id, name) {
+  if (id == null || id === '') return '';
+  const active = drIsWatchlisted(id);
+  const safeName = String(name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const label = active ? 'Remove from watchlist' : 'Add to watchlist';
+  return `<button type="button" class="dr-watch-star${active ? ' dr-watch-active' : ''}" data-watch-id="${id}" onclick="event.stopPropagation();window.drToggleWatchlist('${id}','${safeName}')" aria-label="${label}" title="${label}">${active ? '★' : '☆'}</button>`;
+}
+window.drWatchStarHTML = drWatchStarHTML;
+// Re-render whichever board is showing a "★ Watchlist"-filtered view so
+// starring/unstarring a player updates the list live instead of needing a
+// manual refresh to see it drop out (or appear) under that filter.
+document.addEventListener('dr-watchlist-change', () => {
+  if (window.__hrpFilterSet && window.__hrpFilterSet.has('watchlist') && typeof window.renderHRPTable === 'function') window.renderHRPTable();
+  if (typeof window.__drPropWatchlistRerender === 'function') window.__drPropWatchlistRerender();
+  if (typeof window.__drKPropsWatchlistRerender === 'function') window.__drKPropsWatchlistRerender();
+});
+
 // Park factors (HR index: 100 = average, >100 = hitter friendly) — refreshed from
 // the first successful live sync-park-factors.mjs run (2026-07-17, real Statcast
 // index_hr per park) now that its "var data = [...]" HTML-embedded-JSON parsing
@@ -6300,10 +6350,11 @@ function renderKProps() {
       <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">${Math.round(kpCorrect/kpFinal*100)}% accuracy</span>
     </div>` : '';
 
-  // Apply optional game filter before sort/render
-  const gameFilteredProps = _kPropsGameFilter
+  // Apply optional game + watchlist filters before sort/render
+  let gameFilteredProps = _kPropsGameFilter
     ? kPropsData.filter(p => String(p.gamePk||'') === _kPropsGameFilter)
     : kPropsData;
+  if (_kPropsWatchlistOnly) gameFilteredProps = gameFilteredProps.filter(p => drIsWatchlisted(p.pitcherId));
 
   // Built from the full day's schedule (not kPropsData) so every game today shows up in
   // the filter, including games that don't have an announced probable pitcher yet —
@@ -6396,6 +6447,7 @@ function renderKProps() {
   <div class="kprops-sticky-sort" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">
     <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">GAME:</span>
     <select onchange="kPropsSetGameFilter(this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;flex-shrink:0">${kpGameOptsHTML}</select>
+    <button onclick="kPropsToggleWatchlist()" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${_kPropsWatchlistOnly?'#f5c518':'var(--border)'};background:${_kPropsWatchlistOnly?'rgba(245,197,24,.14)':'var(--surface2)'};color:${_kPropsWatchlistOnly?'#f5c518':'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">★ WATCHLIST</button>
     <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">SORT:</span>
     ${sortBtns}
     <button onclick="kPropsSortBy(null)" id="kpsort-reset" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:3px 8px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0">RESET</button>
@@ -6479,6 +6531,7 @@ function renderKProps() {
       const missedK = !!(live && live.isFinal && p.pred !== 'PUSH' && !alreadyHit);
 
       return `<div class="dr109-card${alreadyHit ? ' prop-hit' : missedK ? ' prop-miss' : ''}">
+        ${window.drWatchStarHTML(p.pitcherId, p.pitcherName)}
         <div class="dr109-card-head">
           <div class="dr109-player">
             <img loading="lazy" src="${hs(p.pitcherId)}" onerror="this.style.display='none'" alt="">
@@ -6618,6 +6671,12 @@ function kPropsSetGameFilter(pk) {
   _kPropsGameFilter = pk || '';
   renderKProps();
 }
+let _kPropsWatchlistOnly = false;
+function kPropsToggleWatchlist() {
+  _kPropsWatchlistOnly = !_kPropsWatchlistOnly;
+  renderKProps();
+}
+window.__drKPropsWatchlistRerender = () => { if (_kPropsWatchlistOnly) renderKProps(); };
 function kPropsSortBy(key) {
   if (_kPropsSort === key) {
     // Same stat clicked — toggle direction
@@ -9722,6 +9781,9 @@ var analytics='<div class="tp-analytics-grid">'+
   function head(id){ return id?'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_84,q_auto:best/v1/people/'+id+'/headshot/67/current':''; }
   var edgeFilters = {hits:0,rbis:0,tb:0,sb:0,hrrbi:0};
   var gameFilters = {hits:'',rbis:'',tb:'',sb:'',hrrbi:''};
+  var watchlistFilters = {hits:false,rbis:false,tb:false,sb:false,hrrbi:false};
+  window.setPropWatchlistFilter=function(type){ watchlistFilters[type]=!watchlistFilters[type]; render(type,paneMap[type],true); };
+  window.__drPropWatchlistRerender=function(){ Object.keys(watchlistFilters).forEach(function(type){ if(watchlistFilters[type]) render(type,paneMap[type],true); }); };
   var paneMap = {hits:'hits-props-content',rbis:'rbis-props-content',tb:'tb-props-content',sb:'sb-props-content',hrrbi:'hrrbi-props-content'};
   var EDGE_THRESHOLDS = [0,60,70,80,90];
   window.setPropEdgeFilter=function(type,val){ edgeFilters[type]=parseInt(val,10)||0; render(type,paneMap[type],true); };
@@ -9733,9 +9795,10 @@ var analytics='<div class="tp-analytics-grid">'+
     var curG=gameFilters[type]||'';
     var games=gamesList();
     var gameOpts=['<option value=""'+(curG===''?' selected':'')+'>All Games</option>'].concat(games.map(function(g){ return '<option value="'+g.pk+'"'+(curG===g.pk?' selected':'')+'>'+esc(g.label)+'</option>'; })).join('');
-    return '<div class="dr109-filter-row" style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:0 0 12px;padding:0 14px"><div class="dr109-game-filter" style="margin:0"><label style="font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-right:8px">Edge:</label><select onchange="window.setPropEdgeFilter(\''+type+'\',this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700">'+opts+'</select></div><div class="dr109-game-filter" style="margin:0"><label style="font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-right:8px">Game:</label><select onchange="window.setPropGameFilter(\''+type+'\',this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700">'+gameOpts+'</select></div></div>';
+    var wlActive=!!watchlistFilters[type];
+    return '<div class="dr109-filter-row" style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:0 0 12px;padding:0 14px"><div class="dr109-game-filter" style="margin:0"><label style="font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-right:8px">Edge:</label><select onchange="window.setPropEdgeFilter(\''+type+'\',this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700">'+opts+'</select></div><div class="dr109-game-filter" style="margin:0"><label style="font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-right:8px">Game:</label><select onchange="window.setPropGameFilter(\''+type+'\',this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700">'+gameOpts+'</select></div><button onclick="window.setPropWatchlistFilter(\''+type+'\')" style="font-size:11px;font-weight:700;font-family:Manrope,sans-serif;padding:6px 12px;border-radius:8px;border:1px solid '+(wlActive?'#f5c518':'var(--border)')+';background:'+(wlActive?'rgba(245,197,24,.14)':'var(--surface2)')+';color:'+(wlActive?'#f5c518':'var(--muted)')+';cursor:pointer;white-space:nowrap">★ WATCHLIST</button></div>';
   }
-  function render(type,id,force){ var el=document.getElementById(id); if(!el) return; if(!force && document.activeElement && el.contains(document.activeElement) && document.activeElement.tagName==='SELECT') return; var scrollTop=el.scrollTop; var pageY=window.scrollY; var all=rows(); var filtered=edgeFilters[type]?all.filter(function(r){ return score(type,r)>=edgeFilters[type]; }):all; if(gameFilters[type]) filtered=filtered.filter(function(r){ return String(r.gamePk)===gameFilters[type]; }); var arr=filtered.filter(function(r){ return String(r.timeLabel||'').toUpperCase()!=='FINAL'; }).sort(function(a,b){ return score(type,b)-score(type,a); }).slice(0,50); if(!all.length){ el.innerHTML='<div class="mu-empty">Loading '+label(type)+' board from active production data…</div>'; return; } var gf=edgeFilterHTML(type); if(!arr.length){ el.innerHTML=gf+'<div class="mu-empty" style="padding:24px">No players match the selected filters. Choose All Edges / All Games to reset.</div>'; return; } var top=arr[0], avg=Math.round(arr.slice(0,Math.min(6,arr.length)).reduce(function(a,r){return a+score(type,r)},0)/Math.min(6,arr.length)); el.innerHTML='<div class="dr109-summary"><div class="dr109-title">📊 EXPANDED <span>'+esc(label(type).toUpperCase())+' DATA</span></div><p class="dr109-copy">Each player\'s odds come from a Monte Carlo simulation of thousands of games built from their real season rate stats and lineup slot, not a hand-tuned formula. Values are generated from the active production rows so they stay fast and do not add external load time.</p><div class="dr109-grid"><div class="dr109-metric good"><b>'+esc(top.name||'–')+'</b><span>Top Rated</span></div><div class="dr109-metric"><b>'+avg+'%</b><span>Board Avg Odds</span></div><div class="dr109-metric"><b>'+arr.length+'</b><span>Players Scanned</span></div><div class="dr109-metric warn"><b>'+esc(line(type))+'</b><span>Primary Line</span></div></div></div>'+gf+arr.map(function(r){ var sc=score(type,r),isHit=hit(type,r),isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL',isMiss=isFinal&&!isHit; return '<div class="dr109-card '+(isHit?'prop-hit':isMiss?'prop-miss':'')+'"><div class="dr109-card-head"><div class="dr109-player"><img loading="lazy" src="'+head(r.id)+'" onerror="this.style.display=\'none\'" alt=""><div style="min-width:0"><div class="dr109-name">'+esc(r.name||'Player')+(isHit?' <span class="prop-hit-badge">✓ Projection Hit</span>':isMiss?' <span class="prop-miss-badge">✗ Missed</span>':'')+'</div><div class="dr109-meta">'+esc(r.teamAbbr||'')+' · '+esc(r.pos||'')+' · vs '+esc(r.oppAbbr||'')+'</div></div></div><div class="dr109-score">'+sc+'%<small>'+esc(label(type))+' Odds</small></div></div><div class="dr109-chiprow">'+chipSet(type,r)+'</div><div class="dr109-reason"><strong>Simulated odds:</strong> across thousands of simulated games built from '+esc(r.name||'this player')+'\'s real season rate stats and lineup slot, '+sc+'% of them clear '+esc(line(type))+'. Inputs: '+({hits:'contact profile, on-base skill, projected plate appearances, and matchup quality',rbis:'RBI lane, team run environment, power profile, and traffic ahead of the bat',tb:'slugging profile, ISO power, extra-base upside, and pitcher contact quality allowed',sb:'speed profile, on-base path, game script, and stolen-base opportunity',hrrbi:'multi-category production path through hits, runs, RBIs, lineup role, and team run environment'}[type]||'production profile')+'. Opponent context: '+esc(r.oppAbbr||'opponent')+'.</div></div>'; }).join(''); el.scrollTop=scrollTop; window.scrollTo(window.scrollX,pageY); }
+  function render(type,id,force){ var el=document.getElementById(id); if(!el) return; if(!force && document.activeElement && el.contains(document.activeElement) && document.activeElement.tagName==='SELECT') return; var scrollTop=el.scrollTop; var pageY=window.scrollY; var all=rows(); var filtered=edgeFilters[type]?all.filter(function(r){ return score(type,r)>=edgeFilters[type]; }):all; if(gameFilters[type]) filtered=filtered.filter(function(r){ return String(r.gamePk)===gameFilters[type]; }); if(watchlistFilters[type]) filtered=filtered.filter(function(r){ return drIsWatchlisted(r.id); }); var arr=filtered.filter(function(r){ return String(r.timeLabel||'').toUpperCase()!=='FINAL'; }).sort(function(a,b){ return score(type,b)-score(type,a); }).slice(0,50); if(!all.length){ el.innerHTML='<div class="mu-empty">Loading '+label(type)+' board from active production data…</div>'; return; } var gf=edgeFilterHTML(type); if(!arr.length){ el.innerHTML=gf+'<div class="mu-empty" style="padding:24px">No players match the selected filters. Choose All Edges / All Games to reset.</div>'; return; } var top=arr[0], avg=Math.round(arr.slice(0,Math.min(6,arr.length)).reduce(function(a,r){return a+score(type,r)},0)/Math.min(6,arr.length)); el.innerHTML='<div class="dr109-summary"><div class="dr109-title">📊 EXPANDED <span>'+esc(label(type).toUpperCase())+' DATA</span></div><p class="dr109-copy">Each player\'s odds come from a Monte Carlo simulation of thousands of games built from their real season rate stats and lineup slot, not a hand-tuned formula. Values are generated from the active production rows so they stay fast and do not add external load time.</p><div class="dr109-grid"><div class="dr109-metric good"><b>'+esc(top.name||'–')+'</b><span>Top Rated</span></div><div class="dr109-metric"><b>'+avg+'%</b><span>Board Avg Odds</span></div><div class="dr109-metric"><b>'+arr.length+'</b><span>Players Scanned</span></div><div class="dr109-metric warn"><b>'+esc(line(type))+'</b><span>Primary Line</span></div></div></div>'+gf+arr.map(function(r){ var sc=score(type,r),isHit=hit(type,r),isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL',isMiss=isFinal&&!isHit; return '<div class="dr109-card '+(isHit?'prop-hit':isMiss?'prop-miss':'')+'">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr109-card-head"><div class="dr109-player"><img loading="lazy" src="'+head(r.id)+'" onerror="this.style.display=\'none\'" alt=""><div style="min-width:0"><div class="dr109-name">'+esc(r.name||'Player')+(isHit?' <span class="prop-hit-badge">✓ Projection Hit</span>':isMiss?' <span class="prop-miss-badge">✗ Missed</span>':'')+'</div><div class="dr109-meta">'+esc(r.teamAbbr||'')+' · '+esc(r.pos||'')+' · vs '+esc(r.oppAbbr||'')+'</div></div></div><div class="dr109-score">'+sc+'%<small>'+esc(label(type))+' Odds</small></div></div><div class="dr109-chiprow">'+chipSet(type,r)+'</div><div class="dr109-reason"><strong>Simulated odds:</strong> across thousands of simulated games built from '+esc(r.name||'this player')+'\'s real season rate stats and lineup slot, '+sc+'% of them clear '+esc(line(type))+'. Inputs: '+({hits:'contact profile, on-base skill, projected plate appearances, and matchup quality',rbis:'RBI lane, team run environment, power profile, and traffic ahead of the bat',tb:'slugging profile, ISO power, extra-base upside, and pitcher contact quality allowed',sb:'speed profile, on-base path, game script, and stolen-base opportunity',hrrbi:'multi-category production path through hits, runs, RBIs, lineup role, and team run environment'}[type]||'production profile')+'. Opponent context: '+esc(r.oppAbbr||'opponent')+'.</div></div>'; }).join(''); el.scrollTop=scrollTop; window.scrollTo(window.scrollX,pageY); }
   window.renderPropIntelligencePanes=function(){ render('hits','hits-props-content'); render('rbis','rbis-props-content'); render('tb','tb-props-content'); render('sb','sb-props-content'); render('hrrbi','hrrbi-props-content'); if(typeof window.enhanceDeepResearch==='function') try{window.enhanceDeepResearch();}catch(e){} };
   function markHRHits(){ try{ rows().forEach(function(r){ if(actual('hr',r)>=1){ ['#hrp-row-'+r.id].forEach(function(sel){ var el=document.querySelector(sel); if(el){ el.classList.add('hr-hit'); if(!el.querySelector('.hr-hit-badge')){ var chipBox=el.querySelector('.dr1017-hr-chips,.dr1026-chip-row'); if(chipBox) chipBox.insertAdjacentHTML('afterbegin','<span class="hr-hit-badge">✓ HR Projection Hit</span>'); } } }); } }); }catch(e){} }
   var oldHR=window.renderHRPTable; if(typeof oldHR==='function'){ window.renderHRPTable=function(){ var out=oldHR.apply(this,arguments); setTimeout(markHRHits,0); return out; }; }
@@ -9832,8 +9895,8 @@ var analytics='<div class="tp-analytics-grid">'+
     sel.innerHTML='<option value="">All Games</option>'+games.map(function(g){ return '<option value="'+g.pk+'"'+(cur===g.pk?' selected':'')+'>'+esc(g.label)+'</option>'; }).join('');
     sel.value=cur;
   }
-  function applyHRFilters(arr){ var s=getFilters(); var gf=getHRGameFilter(); if(gf) arr=arr.filter(function(r){ return String(r.gamePk)===gf; }); if(!s.size)return arr; return arr.filter(function(r){ if(s.has('onfire')&&!r.isOnFire)return false; if(s.has('top')&&!((r.topHrThreat&&n(r.hrProb)>=14)||n(r.hrProb)>=18))return false; if(s.has('drought')&&!r.isDrought)return false; if(s.has('due')&&!r.isDue)return false; if(s.has('favorable')&&!r.isFavorable)return false; return true; }); }
-  function setButtons(){ var s=getFilters(); ['all','onfire','top','drought','due','favorable'].forEach(function(f){ var b=document.getElementById('filter-'+f+'-btn'); if(!b)return; b.classList.toggle('active', f==='all'?s.size===0:s.has(f)); }); }
+  function applyHRFilters(arr){ var s=getFilters(); var gf=getHRGameFilter(); if(gf) arr=arr.filter(function(r){ return String(r.gamePk)===gf; }); if(!s.size)return arr; return arr.filter(function(r){ if(s.has('onfire')&&!r.isOnFire)return false; if(s.has('top')&&!((r.topHrThreat&&n(r.hrProb)>=14)||n(r.hrProb)>=18))return false; if(s.has('drought')&&!r.isDrought)return false; if(s.has('due')&&!r.isDue)return false; if(s.has('favorable')&&!r.isFavorable)return false; if(s.has('watchlist')&&!window.drIsWatchlisted(r.id))return false; return true; }); }
+  function setButtons(){ var s=getFilters(); ['all','onfire','top','drought','due','favorable','watchlist'].forEach(function(f){ var b=document.getElementById('filter-'+f+'-btn'); if(!b)return; b.classList.toggle('active', f==='all'?s.size===0:s.has(f)); }); }
   function whyHR(r){ return '<strong>Why it supports the pick:</strong> '+esc((r.name||'This player')+' grades at '+n(r.hrProb).toFixed(1)+'% HR probability against '+(r.pitcherName||r.oppAbbr||'today’s opponent')+' because the model combines on-fire recent form, favorable pitcher matchup, ISO power, strong OPS, top HR threat signal, season HR rate, recent trend, and pitcher HR/9 baseline. Opponent context: '+(r.oppAbbr||'opponent')+'.'); }
   function hrSummary(arr){ if(!arr.length)return ''; var top=arr[0], sample=arr.slice(0,Math.min(8,arr.length)), avg=sample.reduce(function(a,r){return a+n(r.hrProb);},0)/Math.max(1,sample.length); return '<div class="dr1027-hr-summary"><div class="dr1027-summary-title">📊 EXPANDED <span>HR THREATS DATA</span></div><p class="dr1027-summary-copy">Players who have homered today are highlighted using live/final box score data while keeping the same HR threat criteria and filters.</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>'+esc(top.name||'–')+'</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>'+Math.round(avg)+'%</b><span>Board Avg Confidence</span></div><div class="dr1027-summary-metric"><b>'+arr.length+'</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>HR Prob '+n(top.hrProb).toFixed(1)+'%</b><span>Primary Signal</span></div></div></div>'; }
   function dr113Last10HRValue(r){
@@ -9843,7 +9906,7 @@ var analytics='<div class="tp-analytics-grid">'+
     if (s.last10HomeRuns != null && s.last10HomeRuns !== '') return s.last10HomeRuns;
     return null;
   }
-  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); populateHRGameSelect(base); if(!base.length){el.innerHTML='<div class="mu-empty">No HR potential data yet — check back once lineups are posted.</div>';return;} var arr=applyHRFilters(base).filter(function(r){return !isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL';}).sort(function(a,b){return n(b.hrProb)-n(a.hrProb);}); if(!arr.length){el.innerHTML='<div class="mu-empty" style="padding:24px">No players match the selected filters. Try fewer filters, or select ALL to reset.</div>';return;} var cards=arr.map(function(r){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); var l10=dr113Last10HRValue(r); var stats=[hrChip('HR Prob',p.toFixed(1)+'%','green'),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1),'gold'):''].filter(Boolean); return '<div class="dr1027-hr-card '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'"><div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-why">'+whyHR(r)+'</div><button class="hrp-matchup-btn dr1027-matchup-btn" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="const d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName)">⚔ PITCHER MATCHUP</button></div>'; }).join(''); el.innerHTML=hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; }
+  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); populateHRGameSelect(base); if(!base.length){el.innerHTML='<div class="mu-empty">No HR potential data yet — check back once lineups are posted.</div>';return;} var arr=applyHRFilters(base).filter(function(r){return !isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL';}).sort(function(a,b){return n(b.hrProb)-n(a.hrProb);}); if(!arr.length){el.innerHTML='<div class="mu-empty" style="padding:24px">No players match the selected filters. Try fewer filters, or select ALL to reset.</div>';return;} var cards=arr.map(function(r){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); var l10=dr113Last10HRValue(r); var stats=[hrChip('HR Prob',p.toFixed(1)+'%','green'),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1),'gold'):''].filter(Boolean); return '<div class="dr1027-hr-card '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-why">'+whyHR(r)+'</div><button class="hrp-matchup-btn dr1027-matchup-btn" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="const d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName)">⚔ PITCHER MATCHUP</button></div>'; }).join(''); el.innerHTML=hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; }
   function setHRFilter(f){ var s=getFilters(); if(f==='all')s.clear(); else { if(s.has(f))s.delete(f); else s.add(f); } renderHRPTableV1032(); }
   window.renderHRPTable=renderHRPTableV1032;
   window.filterHRP=setHRFilter;
