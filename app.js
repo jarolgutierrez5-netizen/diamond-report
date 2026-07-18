@@ -2870,7 +2870,7 @@ function resetPRSort() {
 const _weatherCache = new Map();
 // Stadium coordinates for weather lookup
 const stadiumCoords = {
-  ARI:{lat:33.445,lon:-112.067,name:'Chase Field',dome:true},
+  ARI:{lat:33.445,lon:-112.067,name:'Chase Field',dome:true,retractable:true},
   ATL:{lat:33.891,lon:-84.468,name:'Truist Park',dome:false},
   BAL:{lat:39.284,lon:-76.622,name:'Oriole Park',dome:false},
   BOS:{lat:42.347,lon:-71.097,name:'Fenway Park',dome:false},
@@ -2880,12 +2880,12 @@ const stadiumCoords = {
   CLE:{lat:41.496,lon:-81.685,name:'Progressive Field',dome:false},
   COL:{lat:39.756,lon:-104.994,name:'Coors Field',dome:false},
   DET:{lat:42.339,lon:-83.049,name:'Comerica Park',dome:false},
-  HOU:{lat:29.757,lon:-95.355,name:'Minute Maid Park',dome:true},
+  HOU:{lat:29.757,lon:-95.355,name:'Minute Maid Park',dome:true,retractable:true},
   KC: {lat:39.051,lon:-94.480,name:'Kauffman Stadium',dome:false},
   LAA:{lat:33.800,lon:-117.883,name:'Angel Stadium',dome:false},
   LAD:{lat:34.074,lon:-118.240,name:'Dodger Stadium',dome:false},
-  MIA:{lat:25.778,lon:-80.220,name:'loanDepot Park',dome:true},
-  MIL:{lat:43.029,lon:-87.971,name:'American Family Field',dome:true},
+  MIA:{lat:25.778,lon:-80.220,name:'loanDepot Park',dome:true,retractable:true},
+  MIL:{lat:43.029,lon:-87.971,name:'American Family Field',dome:true,retractable:true},
   MIN:{lat:44.981,lon:-93.278,name:'Target Field',dome:false},
   NYM:{lat:40.757,lon:-73.846,name:'Citi Field',dome:false},
   NYY:{lat:40.829,lon:-73.926,name:'Yankee Stadium',dome:false},
@@ -2895,11 +2895,11 @@ const stadiumCoords = {
   PIT:{lat:40.447,lon:-80.006,name:'PNC Park',dome:false},
   SD: {lat:32.707,lon:-117.157,name:'Petco Park',dome:false},
   SF: {lat:37.778,lon:-122.389,name:'Oracle Park',dome:false},
-  SEA:{lat:47.591,lon:-122.332,name:'T-Mobile Park',dome:true},
+  SEA:{lat:47.591,lon:-122.332,name:'T-Mobile Park',dome:true,retractable:true},
   STL:{lat:38.623,lon:-90.193,name:'Busch Stadium',dome:false},
   TB: {lat:27.768,lon:-82.653,name:'Tropicana Field',dome:true},
-  TEX:{lat:32.751,lon:-97.083,name:'Globe Life Field',dome:true},
-  TOR:{lat:43.641,lon:-79.389,name:'Rogers Centre',dome:true},
+  TEX:{lat:32.751,lon:-97.083,name:'Globe Life Field',dome:true,retractable:true},
+  TOR:{lat:43.641,lon:-79.389,name:'Rogers Centre',dome:true,retractable:true},
   WSH:{lat:38.873,lon:-77.007,name:'Nationals Park',dome:false},
 };
 
@@ -3044,7 +3044,12 @@ async function loadGameProps() {
         // bucket keeps this fresh without re-fetching on every 2-minute auto-refresh.
         const stadium = stadiumCoords[homeAbbr] || stadiumCoords[awayAbbr];
         let weather = null;
-        if (stadium && !stadium.dome) {
+        // Retractable-roof parks (ARI, HOU, MIA, MIL, SEA, TEX, TOR) are frequently
+        // played open-air, so they still get a live weather fetch — only Tropicana
+        // Field (TB) is a genuine fixed dome that's never open. Open-Meteo has no
+        // live roof-open/closed signal, so this fetches outdoor conditions for those
+        // parks regardless of actual roof state; better than always reporting 0%.
+        if (stadium && (!stadium.dome || stadium.retractable)) {
           try {
             const bucket = Math.floor(Date.now() / (15 * 60 * 1000));
             const wKey = `${homeAbbr}:${bucket}`;
@@ -3151,7 +3156,8 @@ async function loadGameProps() {
           else if (weather.temp > 85) factors.push({team:'neutral', label:`Hot ${weather.temp}°F — ball carries well`, type:'pos'});
           if (weather.precip > 0.1) factors.push({team:'neutral', label:`Precipitation: ${weather.precip}mm — delay risk`, type:'neg'});
         } else if (stadium?.dome) {
-          factors.push({team:'neutral', label:`${stadium.name} — retractable/dome, weather neutral`, type:'neu'});
+          const reason = stadium.retractable ? 'weather unavailable' : 'fixed dome, weather neutral';
+          factors.push({team:'neutral', label:`${stadium.name} — ${reason}`, type:'neu'});
         }
 
         // ── Projected Total (DR model) ──────────────────────────────────
@@ -3218,15 +3224,28 @@ async function loadGameProps() {
         // — wind and temp are the two weather inputs that most directly affect how far
         // a fly ball carries, i.e. genuine home-run-specific signal, distinct from the
         // broader runs-total number (which also folds in pitching/park/record).
+        // Wind and temp each used to be a flat on/off jump right at one hard
+        // threshold (e.g. 86F and 105F both produced the exact same +5%), so on
+        // most realistic wind/temp readings the only two possible outputs were
+        // 0% or +/-5%. Scaling both continuously past a neutral band means a
+        // barely-over-the-line reading and an extreme reading no longer render
+        // identically.
         let weatherHRMult = 1;
         if (weather) {
-          if (weather.wind > 15) {
+          if (weather.wind > 8) {
             const totalWindImpact = windEffect(weather.windDir, homeAbbr);
-            if (totalWindImpact === 'out') weatherHRMult *= 1.08;
-            else if (totalWindImpact === 'in') weatherHRMult *= 0.94;
+            // Ramps from 0 at 8mph to the full effect at 30mph+.
+            const windScale = Math.min(1, (weather.wind - 8) / 22);
+            if (totalWindImpact === 'out') weatherHRMult *= 1 + 0.10 * windScale;
+            else if (totalWindImpact === 'in') weatherHRMult *= 1 - 0.09 * windScale;
           }
-          if (weather.temp < 50) weatherHRMult *= 0.95;
-          else if (weather.temp > 85) weatherHRMult *= 1.05;
+          if (weather.temp < 60 || weather.temp > 80) {
+            // Neutral band is 60-80F; ramps from there out to +/-30F past the
+            // band edge (i.e. fully scaled by 30F or 110F).
+            const tempDelta = weather.temp < 60 ? (60 - weather.temp) : (weather.temp - 80);
+            const tempScale = Math.min(1, tempDelta / 30);
+            weatherHRMult *= weather.temp < 60 ? 1 - 0.07 * tempScale : 1 + 0.07 * tempScale;
+          }
           awayRuns *= weatherHRMult; homeRuns *= weatherHRMult;
         }
         const hrWeatherBoostPct = Math.round((weatherHRMult - 1) * 100);
