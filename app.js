@@ -3436,6 +3436,17 @@ async function loadGameProps() {
         marketChip = `<span class="gp-factor ${agreesWithDR ? 'pos' : 'neu'}" title="${market.provider} line via ESPN, captured pre-game — informational only, never used in the DR model or projections">🏦 Market: ${marketFavAbbr} ${marketFavML > 0 ? '+' : ''}${marketFavML} (${marketFavPct}%)${ouText}${agreesWithDR ? '' : ' vs DR'}</span>`;
       }
 
+      // Over/Under read — compares the DR model's own Projected Total against the
+      // market's O/U line fetched above. Purely a label on top of numbers that
+      // already exist (projectedTotal, market.overUnder) — doesn't change either
+      // one, same display-only rule as the Market chip itself.
+      let ouLabel = '', ouCls = '';
+      if (market?.overUnder != null) {
+        if (projectedTotal > market.overUnder) { ouLabel = `OVER ${market.overUnder}`; ouCls = 'pos'; }
+        else if (projectedTotal < market.overUnder) { ouLabel = `UNDER ${market.overUnder}`; ouCls = 'neg'; }
+        else { ouLabel = `PUSH ${market.overUnder}`; ouCls = 'neu'; }
+      }
+
       // Bullpen fatigue — only shown when at least one side's 'pen is genuinely
       // Taxed/Gassed from the last two days' real reliever workload (see
       // sync-bullpen-fatigue.mjs). Omitted entirely on a normal day rather than
@@ -3514,6 +3525,7 @@ async function loadGameProps() {
             <span style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Projected Total</span>
             <span style="font-family:'Manrope',sans-serif;font-size:20px;letter-spacing:1px;line-height:1;color:${totalEnvColor}">${projectedTotal.toFixed(1)}</span>
             <span style="font-size:9px;font-weight:700;color:${totalEnvColor};letter-spacing:.5px">${totalEnv}</span>
+            ${ouLabel ? `<span class="gp-ou-badge ${ouCls}" title="DR's own Projected Total (${projectedTotal.toFixed(1)}) vs. the market's O/U line — informational only, doesn't change projectedTotal">${ouLabel}</span>` : ''}
           </div>
 
         </div>
