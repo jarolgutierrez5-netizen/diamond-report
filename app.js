@@ -2868,6 +2868,80 @@ function resetPRSort() {
 // lookup below — see the comment at its call site for why this can't reuse
 // fetchJSON's day-long cache.
 const _weatherCache = new Map();
+
+// Market odds (display-only comparison, see loadEspnEventIds/model.market below) —
+// same in-memory 15-min-bucket pattern as weather, never persisted to localStorage.
+const _marketCache = new Map();
+let _espnEventIdByAbbrPair = {};
+let _espnEventIdLoadedForDate = null;
+// ESPN's team abbreviations mostly match the MLB Stats API ones this file uses
+// everywhere else, except the White Sox (ESPN: CHW, this file: CWS throughout
+// parkFactors/teamColors/stadiumCoords). Add more pairs here if another mismatch
+// turns up.
+const ESPN_ABBR_TO_DR = { CHW: 'CWS' };
+function normalizeEspnAbbr(abbr) { return ESPN_ABBR_TO_DR[abbr] || abbr; }
+
+// Bulk-fetches today's MLB scoreboard once (free, no key, same ESPN host already
+// used for league news) purely to map each matchup to ESPN's numeric event id —
+// the per-game summary endpoint below is what actually has clean moneylines for
+// both teams. Split into two calls (bulk id lookup + per-game summary) rather than
+// one, since the scoreboard endpoint's own embedded odds only expose the favorite's
+// line as a text string ("PHI -172"), not a clean number for the underdog side.
+async function loadEspnEventIds(todayCDT) {
+  if (_espnEventIdLoadedForDate === todayCDT) return;
+  try {
+    const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const byAbbrPair = {};
+    (data.events || []).forEach(ev => {
+      const competitors = ev.competitions?.[0]?.competitors || [];
+      const away = competitors.find(c => c.homeAway === 'away');
+      const home = competitors.find(c => c.homeAway === 'home');
+      const awayAbbr = normalizeEspnAbbr(away?.team?.abbreviation);
+      const homeAbbr = normalizeEspnAbbr(home?.team?.abbreviation);
+      if (awayAbbr && homeAbbr) byAbbrPair[`${awayAbbr}@${homeAbbr}`] = ev.id;
+    });
+    _espnEventIdByAbbrPair = byAbbrPair;
+    _espnEventIdLoadedForDate = todayCDT;
+  } catch {}
+}
+
+// Real DraftKings-via-ESPN moneylines for a specific matchup, converted to a
+// no-vig (vig-removed) implied win% for a clean apples-to-apples comparison
+// against the DR model's own win%. Display-only — see the call site in
+// loadGameProps for why this never feeds into awayScore/homeScore or any other
+// scoring input.
+async function getMarketOdds(awayAbbr, homeAbbr) {
+  const eventId = _espnEventIdByAbbrPair[`${awayAbbr}@${homeAbbr}`];
+  if (!eventId) return null;
+  try {
+    const bucket = Math.floor(Date.now() / (15 * 60 * 1000));
+    const cacheKey = `${eventId}:${bucket}`;
+    let pc = _marketCache.get(cacheKey);
+    if (pc === undefined) {
+      const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=${eventId}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const summary = await res.json();
+      pc = summary.pickcenter?.[0] || null;
+      _marketCache.set(cacheKey, pc);
+    }
+    const awayML = pc?.awayTeamOdds?.moneyLine;
+    const homeML = pc?.homeTeamOdds?.moneyLine;
+    if (typeof awayML !== 'number' || typeof homeML !== 'number') return null;
+    const impliedProb = (ml) => ml < 0 ? (-ml) / (-ml + 100) : 100 / (ml + 100);
+    const awayImplied = impliedProb(awayML);
+    const homeImplied = impliedProb(homeML);
+    const vigTotal = awayImplied + homeImplied; // >1 due to vig — normalize it out
+    return {
+      provider: pc.provider?.name || 'Market',
+      awayML, homeML,
+      awayPct: Math.round((awayImplied / vigTotal) * 100),
+      homePct: Math.round((homeImplied / vigTotal) * 100),
+      overUnder: typeof pc.overUnder === 'number' ? pc.overUnder : null,
+    };
+  } catch { return null; }
+}
 // Stadium coordinates for weather lookup
 const stadiumCoords = {
   ARI:{lat:33.445,lon:-112.067,name:'Chase Field',dome:true,retractable:true},
@@ -2996,6 +3070,7 @@ async function loadGameProps() {
     await loadSportsbookKLines(today);
     await loadParkFactors().catch(() => {});
     await loadBullpenFatigue().catch(() => {});
+    await loadEspnEventIds(today).catch(() => {});
     const games = await getTodaySchedule('team,probablePitcher,linescore', { force: true });
 
     if (!games.length) {
@@ -3070,6 +3145,16 @@ async function loadGameProps() {
             };
           } catch {}
         }
+
+        // Real sportsbook odds (ESPN/DraftKings) — display-only comparison against the
+        // DR model's own win%/total. Deliberately NOT an input to awayScore/homeScore or
+        // any other scoring below: a line that shifts throughout the game would otherwise
+        // let the market silently "tamper with" a projection that's supposed to be an
+        // independent read, and folding it in would make "DR vs. the market" meaningless
+        // as a thing to track. Fetched once here (same pre-game-only lock as everything
+        // else in this block) and frozen into the snapshot below, so it reflects the same
+        // moment-in-time snapshot as the rest of the model rather than a live line.
+        const market = await getMarketOdds(awayAbbr, homeAbbr);
 
         // Scoring model — each factor adds/subtracts from home team edge
         let awayScore = 50, homeScore = 50;
@@ -3267,14 +3352,14 @@ async function loadGameProps() {
         const loserAbbr  = winner==='away' ? homeAbbr : awayAbbr;
         const loserPct   = winner==='away' ? homePct : awayPct;
 
-        model = { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor, hrWeatherBoostPct, parkFactorVal: pf };
+        model = { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor, hrWeatherBoostPct, parkFactorVal: pf, market };
         // Always keep the snapshot fresh — pre-game cycles overwrite it so that whenever
         // the game does go live, the lock captures the most recent pre-game state rather
         // than a stale first-load snapshot from hours earlier.
         _gamePropsSnapshot[g.gamePk] = model;
       }
 
-      const { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor, hrWeatherBoostPct, parkFactorVal } = model;
+      const { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor, hrWeatherBoostPct, parkFactorVal, market } = model;
 
       window.drWinProbStore[g.gamePk] = { awayAbbr, homeAbbr, awayPct, homePct, winnerAbbr, winnerPct, confidence };
       _favoredCache[g.gamePk] = { abbr: winnerAbbr, pct: winnerPct, source: 'model' };
@@ -3336,6 +3421,20 @@ async function loadGameProps() {
       const parkFactorLabel = parkFactorVal > 107 ? 'HR-Friendly' : parkFactorVal < 93 ? 'Pitcher-Friendly' : 'Neutral';
       const parkFactorPct = parkFactorVal - 100;
       const parkFactorChip = `<span class="gp-factor ${parkFactorCls}" title="Statcast park factor for ${stadiumCoords[homeAbbr]?.name||homeAbbr} — 100 = league average (0%)">🏟️ Park Factor: ${parkFactorPct > 0 ? '+' : ''}${parkFactorPct}% · ${parkFactorLabel}${gpFactorBar(Math.abs(parkFactorVal - 100) / 33, parkFactorCls)}</span>`;
+
+      // Market comparison (ESPN/DraftKings) — purely informational, see the
+      // getMarketOdds call site above for why this never touches the model's own
+      // scoring. Shown only when a real line was found; silently omitted otherwise
+      // (e.g. odds not posted yet, or an abbreviation mismatch skipped the match).
+      let marketChip = '';
+      if (market) {
+        const marketFavAbbr = market.awayPct >= market.homePct ? awayAbbr : homeAbbr;
+        const marketFavPct = Math.max(market.awayPct, market.homePct);
+        const marketFavML = market.awayPct >= market.homePct ? market.awayML : market.homeML;
+        const agreesWithDR = marketFavAbbr === winnerAbbr;
+        const ouText = market.overUnder != null ? ` · O/U ${market.overUnder}` : '';
+        marketChip = `<span class="gp-factor ${agreesWithDR ? 'pos' : 'neu'}" title="${market.provider} line via ESPN, captured pre-game — informational only, never used in the DR model or projections">🏦 Market: ${marketFavAbbr} ${marketFavML > 0 ? '+' : ''}${marketFavML} (${marketFavPct}%)${ouText}${agreesWithDR ? '' : ' vs DR'}</span>`;
+      }
 
       // Bullpen fatigue — only shown when at least one side's 'pen is genuinely
       // Taxed/Gassed from the last two days' real reliever workload (see
@@ -3420,7 +3519,7 @@ async function loadGameProps() {
         </div>
 
         <!-- HR Boost + Park Factor labels, same compact chip style as Key factors below -->
-        <div class="gp-factors">${hrBoostChip}${parkFactorChip}${bullpenChip}${factorChips}</div>
+        <div class="gp-factors">${hrBoostChip}${parkFactorChip}${marketChip}${bullpenChip}${factorChips}</div>
         <div class="gp-live-result-zone" data-live-score-badge="1" style="margin-top:8px">${resultBadge || ''}</div>
       </div>`, resultCorrect };
     }));
