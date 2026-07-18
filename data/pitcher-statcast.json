@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-18T00:14:26.622Z",
+  "generatedAt": "2026-07-18T06:32:46.529Z",
   "season": 2026,
   "pitchers": {
     "434378": {
@@ -2583,7 +2583,45 @@
           "whiffPct": 20.3,
           "hardHitPct": 66.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 4,
+          "zones": {
+            "1": {
+              "usagePct": 5.4,
+              "wobaAgainst": 0.25
+            },
+            "2": {
+              "usagePct": 8.6,
+              "wobaAgainst": 0.164
+            },
+            "3": {
+              "usagePct": 9.1,
+              "wobaAgainst": 0.195
+            },
+            "4": {
+              "usagePct": 7.5,
+              "wobaAgainst": 0.38
+            },
+            "5": {
+              "usagePct": 9.5,
+              "wobaAgainst": 0.24
+            },
+            "6": {
+              "usagePct": 5.9,
+              "wobaAgainst": 0.787
+            },
+            "7": {
+              "usagePct": 2.7,
+              "wobaAgainst": 0.5
+            },
+            "8": {
+              "usagePct": 3.4,
+              "wobaAgainst": 0.9
+            },
+            "9": {
+              "usagePct": 2,
+              "wobaAgainst": 0.313
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -2598,7 +2636,45 @@
           "whiffPct": 33.3,
           "hardHitPct": 23.8,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 3,
+          "zones": {
+            "1": {
+              "usagePct": 0.8,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 0.4,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 0.4,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 2,
+              "wobaAgainst": null
+            },
+            "5": {
+              "usagePct": 5.3,
+              "wobaAgainst": 0.717
+            },
+            "6": {
+              "usagePct": 9.3,
+              "wobaAgainst": 0.3
+            },
+            "7": {
+              "usagePct": 6.1,
+              "wobaAgainst": 0.4
+            },
+            "8": {
+              "usagePct": 10.1,
+              "wobaAgainst": 0.357
+            },
+            "9": {
+              "usagePct": 8.9,
+              "wobaAgainst": 0.3
+            }
+          }
         },
         {
           "name": "Slider",
@@ -2613,7 +2689,45 @@
           "whiffPct": 51,
           "hardHitPct": 35.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 0.7,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 0.7,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 1.4,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 5.7,
+              "wobaAgainst": 0.45
+            },
+            "5": {
+              "usagePct": 2.8,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 1.4,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 5,
+              "wobaAgainst": 0.417
+            },
+            "8": {
+              "usagePct": 9.9,
+              "wobaAgainst": 0.36
+            },
+            "9": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Curveball",
@@ -2628,7 +2742,45 @@
           "whiffPct": 38.5,
           "hardHitPct": 0,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 2.3,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 8,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 4.5,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 3.4,
+              "wobaAgainst": null
+            },
+            "5": {
+              "usagePct": 2.3,
+              "wobaAgainst": null
+            },
+            "6": {
+              "usagePct": 4.5,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 6.8,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 4.5,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 3.4,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -2643,9 +2795,44 @@
           "whiffPct": 0,
           "hardHitPct": 0,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "3": {
+              "usagePct": 25,
+              "wobaAgainst": null
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.208
+        },
+        "2": {
+          "wobaAgainst": 0.164
+        },
+        "3": {
+          "wobaAgainst": 0.179
+        },
+        "4": {
+          "wobaAgainst": 0.392
+        },
+        "5": {
+          "wobaAgainst": 0.287
+        },
+        "6": {
+          "wobaAgainst": 0.579
+        },
+        "7": {
+          "wobaAgainst": 0.411
+        },
+        "8": {
+          "wobaAgainst": 0.489
+        },
+        "9": {
+          "wobaAgainst": 0.235
+        }
+      }
     },
     "571578": {
       "totalPitches": 1314,
@@ -7839,7 +8026,45 @@
           "whiffPct": 13.1,
           "hardHitPct": 61.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 4,
+          "zones": {
+            "1": {
+              "usagePct": 3.3,
+              "wobaAgainst": 0.667
+            },
+            "2": {
+              "usagePct": 6.4,
+              "wobaAgainst": 0.414
+            },
+            "3": {
+              "usagePct": 5.5,
+              "wobaAgainst": 0.25
+            },
+            "4": {
+              "usagePct": 6.7,
+              "wobaAgainst": 0.593
+            },
+            "5": {
+              "usagePct": 9.4,
+              "wobaAgainst": 0.239
+            },
+            "6": {
+              "usagePct": 8.2,
+              "wobaAgainst": 0.506
+            },
+            "7": {
+              "usagePct": 5.5,
+              "wobaAgainst": 0.25
+            },
+            "8": {
+              "usagePct": 8.5,
+              "wobaAgainst": 0.139
+            },
+            "9": {
+              "usagePct": 3,
+              "wobaAgainst": 0.537
+            }
+          }
         },
         {
           "name": "Split-Finger",
@@ -7854,7 +8079,45 @@
           "whiffPct": 29.8,
           "hardHitPct": 28.1,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 3,
+          "zones": {
+            "1": {
+              "usagePct": 2.3,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 0.3,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 0.3,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 3.6,
+              "wobaAgainst": 0.671
+            },
+            "5": {
+              "usagePct": 3,
+              "wobaAgainst": 0.625
+            },
+            "6": {
+              "usagePct": 1.3,
+              "wobaAgainst": 0.667
+            },
+            "7": {
+              "usagePct": 8.6,
+              "wobaAgainst": 0.09
+            },
+            "8": {
+              "usagePct": 9.9,
+              "wobaAgainst": 0.133
+            },
+            "9": {
+              "usagePct": 3.6,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -7869,7 +8132,45 @@
           "whiffPct": 2.6,
           "hardHitPct": 54.4,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 3.3,
+              "wobaAgainst": 1.017
+            },
+            "2": {
+              "usagePct": 3.6,
+              "wobaAgainst": 0.9
+            },
+            "3": {
+              "usagePct": 3.3,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 6.9,
+              "wobaAgainst": 0.125
+            },
+            "5": {
+              "usagePct": 14.9,
+              "wobaAgainst": 0.326
+            },
+            "6": {
+              "usagePct": 6.2,
+              "wobaAgainst": 0.833
+            },
+            "7": {
+              "usagePct": 6.2,
+              "wobaAgainst": 0.18
+            },
+            "8": {
+              "usagePct": 13,
+              "wobaAgainst": 0.55
+            },
+            "9": {
+              "usagePct": 5.8,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Slider",
@@ -7884,7 +8185,41 @@
           "whiffPct": 23.8,
           "hardHitPct": 33.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 3,
+          "zones": {
+            "1": {
+              "usagePct": 2.4,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 0.6,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 3,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 5.4,
+              "wobaAgainst": 0.313
+            },
+            "6": {
+              "usagePct": 6,
+              "wobaAgainst": 0.967
+            },
+            "7": {
+              "usagePct": 2.4,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 6,
+              "wobaAgainst": 0.95
+            },
+            "9": {
+              "usagePct": 8.4,
+              "wobaAgainst": 0.58
+            }
+          }
         },
         {
           "name": "Sweeper",
@@ -7899,7 +8234,45 @@
           "whiffPct": 18.8,
           "hardHitPct": 23.1,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 1.9,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 3.8,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 2.5,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 6.3,
+              "wobaAgainst": 0.45
+            },
+            "5": {
+              "usagePct": 6.9,
+              "wobaAgainst": 0.45
+            },
+            "6": {
+              "usagePct": 8.8,
+              "wobaAgainst": 0.625
+            },
+            "7": {
+              "usagePct": 6.3,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 8.8,
+              "wobaAgainst": 0.313
+            },
+            "9": {
+              "usagePct": 8.8,
+              "wobaAgainst": 0.45
+            }
+          }
         },
         {
           "name": "Cutter",
@@ -7914,7 +8287,45 @@
           "whiffPct": 21.4,
           "hardHitPct": 53.1,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 5,
+          "zones": {
+            "1": {
+              "usagePct": 3.1,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 6.1,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 4.9,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 4.9,
+              "wobaAgainst": 2
+            },
+            "5": {
+              "usagePct": 9.8,
+              "wobaAgainst": 0.815
+            },
+            "6": {
+              "usagePct": 4.9,
+              "wobaAgainst": 0.3
+            },
+            "7": {
+              "usagePct": 2.5,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 8,
+              "wobaAgainst": 0.667
+            },
+            "9": {
+              "usagePct": 7.4,
+              "wobaAgainst": 0.85
+            }
+          }
         },
         {
           "name": "Curveball",
@@ -7929,9 +8340,76 @@
           "whiffPct": 17.6,
           "hardHitPct": 33.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 1,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 1,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 1,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 3,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 8.1,
+              "wobaAgainst": 0.3
+            },
+            "6": {
+              "usagePct": 3,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 5.1,
+              "wobaAgainst": 1
+            },
+            "8": {
+              "usagePct": 13.1,
+              "wobaAgainst": 0.45
+            },
+            "9": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.459
+        },
+        "2": {
+          "wobaAgainst": 0.237
+        },
+        "3": {
+          "wobaAgainst": 0.114
+        },
+        "4": {
+          "wobaAgainst": 0.433
+        },
+        "5": {
+          "wobaAgainst": 0.43
+        },
+        "6": {
+          "wobaAgainst": 0.613
+        },
+        "7": {
+          "wobaAgainst": 0.202
+        },
+        "8": {
+          "wobaAgainst": 0.377
+        },
+        "9": {
+          "wobaAgainst": 0.374
+        }
+      }
     },
     "608379": {
       "totalPitches": 1778,
@@ -11245,7 +11723,45 @@
           "whiffPct": 18.9,
           "hardHitPct": 51.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 4,
+          "zones": {
+            "1": {
+              "usagePct": 5.2,
+              "wobaAgainst": 0.2
+            },
+            "2": {
+              "usagePct": 8.8,
+              "wobaAgainst": 0.439
+            },
+            "3": {
+              "usagePct": 11.1,
+              "wobaAgainst": 0.179
+            },
+            "4": {
+              "usagePct": 9.9,
+              "wobaAgainst": 0.12
+            },
+            "5": {
+              "usagePct": 9.8,
+              "wobaAgainst": 0.66
+            },
+            "6": {
+              "usagePct": 6.5,
+              "wobaAgainst": 0.539
+            },
+            "7": {
+              "usagePct": 2.1,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 2.1,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 1.3,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Sweeper",
@@ -11260,7 +11776,45 @@
           "whiffPct": 29.4,
           "hardHitPct": 28.1,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 4,
+          "zones": {
+            "1": {
+              "usagePct": 2,
+              "wobaAgainst": 2
+            },
+            "2": {
+              "usagePct": 1.8,
+              "wobaAgainst": 0.45
+            },
+            "3": {
+              "usagePct": 2.4,
+              "wobaAgainst": 0.233
+            },
+            "4": {
+              "usagePct": 6.2,
+              "wobaAgainst": 0.325
+            },
+            "5": {
+              "usagePct": 6.6,
+              "wobaAgainst": 0.878
+            },
+            "6": {
+              "usagePct": 3.5,
+              "wobaAgainst": 0.3
+            },
+            "7": {
+              "usagePct": 6,
+              "wobaAgainst": 0.361
+            },
+            "8": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0.567
+            },
+            "9": {
+              "usagePct": 4.6,
+              "wobaAgainst": 0.15
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -11275,7 +11829,45 @@
           "whiffPct": 6.9,
           "hardHitPct": 36.5,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 0.7,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 4.2,
+              "wobaAgainst": 0.3
+            },
+            "3": {
+              "usagePct": 5.5,
+              "wobaAgainst": 0.257
+            },
+            "4": {
+              "usagePct": 6.6,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 6.6,
+              "wobaAgainst": 0.15
+            },
+            "6": {
+              "usagePct": 11.4,
+              "wobaAgainst": 0.309
+            },
+            "7": {
+              "usagePct": 6.6,
+              "wobaAgainst": 0.6
+            },
+            "8": {
+              "usagePct": 7.3,
+              "wobaAgainst": 0.564
+            },
+            "9": {
+              "usagePct": 7.3,
+              "wobaAgainst": 0.415
+            }
+          }
         },
         {
           "name": "Cutter",
@@ -11290,7 +11882,45 @@
           "whiffPct": 33.3,
           "hardHitPct": 29.4,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "1": {
+              "usagePct": 4.9,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 6.9,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 6.3,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 6.9,
+              "wobaAgainst": 0.43
+            },
+            "5": {
+              "usagePct": 4.9,
+              "wobaAgainst": 0.58
+            },
+            "6": {
+              "usagePct": 3.5,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 3.5,
+              "wobaAgainst": 1
+            },
+            "8": {
+              "usagePct": 2.8,
+              "wobaAgainst": null
+            },
+            "9": {
+              "usagePct": 2.1,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -11305,9 +11935,68 @@
           "whiffPct": 19.2,
           "hardHitPct": 62.5,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "2": {
+              "usagePct": 2.9,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 1.4,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 5.8,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 4.3,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 7.2,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 4.3,
+              "wobaAgainst": 1.25
+            },
+            "9": {
+              "usagePct": 5.8,
+              "wobaAgainst": 0
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.345
+        },
+        "2": {
+          "wobaAgainst": 0.385
+        },
+        "3": {
+          "wobaAgainst": 0.192
+        },
+        "4": {
+          "wobaAgainst": 0.225
+        },
+        "5": {
+          "wobaAgainst": 0.6
+        },
+        "6": {
+          "wobaAgainst": 0.366
+        },
+        "7": {
+          "wobaAgainst": 0.504
+        },
+        "8": {
+          "wobaAgainst": 0.538
+        },
+        "9": {
+          "wobaAgainst": 0.252
+        }
+      }
     },
     "641302": {
       "totalPitches": 651,
@@ -12280,7 +12969,45 @@
           "whiffPct": 21.7,
           "hardHitPct": 45.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 4,
+          "zones": {
+            "1": {
+              "usagePct": 3.6,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 7.8,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 8.3,
+              "wobaAgainst": 0.472
+            },
+            "4": {
+              "usagePct": 2.9,
+              "wobaAgainst": 0.667
+            },
+            "5": {
+              "usagePct": 6.9,
+              "wobaAgainst": 0.195
+            },
+            "6": {
+              "usagePct": 7.8,
+              "wobaAgainst": 0.181
+            },
+            "7": {
+              "usagePct": 1.3,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0.1
+            },
+            "9": {
+              "usagePct": 4.7,
+              "wobaAgainst": 0.25
+            }
+          }
         },
         {
           "name": "4-Seam Fastball",
@@ -12295,7 +13022,45 @@
           "whiffPct": 15.7,
           "hardHitPct": 56.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 9,
+          "zones": {
+            "1": {
+              "usagePct": 9.3,
+              "wobaAgainst": 0.641
+            },
+            "2": {
+              "usagePct": 9.1,
+              "wobaAgainst": 0.392
+            },
+            "3": {
+              "usagePct": 4.7,
+              "wobaAgainst": 0.278
+            },
+            "4": {
+              "usagePct": 6.3,
+              "wobaAgainst": 0.58
+            },
+            "5": {
+              "usagePct": 8.6,
+              "wobaAgainst": 0.588
+            },
+            "6": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0.744
+            },
+            "7": {
+              "usagePct": 3.3,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0.245
+            },
+            "9": {
+              "usagePct": 3.5,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Split-Finger",
@@ -12310,7 +13075,45 @@
           "whiffPct": 16.3,
           "hardHitPct": 39.1,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 4,
+          "zones": {
+            "1": {
+              "usagePct": 2.3,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 3,
+              "wobaAgainst": 0.533
+            },
+            "3": {
+              "usagePct": 1,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 8.9,
+              "wobaAgainst": 0.203
+            },
+            "5": {
+              "usagePct": 5.9,
+              "wobaAgainst": 0.406
+            },
+            "6": {
+              "usagePct": 3,
+              "wobaAgainst": 0.414
+            },
+            "7": {
+              "usagePct": 5.2,
+              "wobaAgainst": 0.225
+            },
+            "8": {
+              "usagePct": 6.6,
+              "wobaAgainst": 0.38
+            },
+            "9": {
+              "usagePct": 4.6,
+              "wobaAgainst": 0.15
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -12325,7 +13128,45 @@
           "whiffPct": 10.8,
           "hardHitPct": 48.1,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 6,
+          "zones": {
+            "1": {
+              "usagePct": 7.4,
+              "wobaAgainst": 0.307
+            },
+            "2": {
+              "usagePct": 7,
+              "wobaAgainst": 0.483
+            },
+            "3": {
+              "usagePct": 2.8,
+              "wobaAgainst": 0.3
+            },
+            "4": {
+              "usagePct": 12.1,
+              "wobaAgainst": 0.475
+            },
+            "5": {
+              "usagePct": 8.8,
+              "wobaAgainst": 0.989
+            },
+            "6": {
+              "usagePct": 3.3,
+              "wobaAgainst": 0.625
+            },
+            "7": {
+              "usagePct": 7.9,
+              "wobaAgainst": 0.239
+            },
+            "8": {
+              "usagePct": 7,
+              "wobaAgainst": 0.25
+            },
+            "9": {
+              "usagePct": 1.4,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Sweeper",
@@ -12340,9 +13181,76 @@
           "whiffPct": 22.2,
           "hardHitPct": 26.9,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 3.5,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 5,
+              "wobaAgainst": 0.45
+            },
+            "3": {
+              "usagePct": 4.3,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 5,
+              "wobaAgainst": 0.45
+            },
+            "5": {
+              "usagePct": 2.8,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 3.5,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 2.8,
+              "wobaAgainst": 0.3
+            },
+            "8": {
+              "usagePct": 2.8,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0.675
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.438
+        },
+        "2": {
+          "wobaAgainst": 0.337
+        },
+        "3": {
+          "wobaAgainst": 0.372
+        },
+        "4": {
+          "wobaAgainst": 0.383
+        },
+        "5": {
+          "wobaAgainst": 0.497
+        },
+        "6": {
+          "wobaAgainst": 0.342
+        },
+        "7": {
+          "wobaAgainst": 0.211
+        },
+        "8": {
+          "wobaAgainst": 0.234
+        },
+        "9": {
+          "wobaAgainst": 0.242
+        }
+      }
     },
     "641816": {
       "totalPitches": 1300,
@@ -15620,7 +16528,45 @@
           "whiffPct": 17.6,
           "hardHitPct": 56.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 3,
+          "zones": {
+            "1": {
+              "usagePct": 6.3,
+              "wobaAgainst": 0.225
+            },
+            "2": {
+              "usagePct": 7.5,
+              "wobaAgainst": 0.721
+            },
+            "3": {
+              "usagePct": 6.3,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 5.9,
+              "wobaAgainst": 0.45
+            },
+            "5": {
+              "usagePct": 7.5,
+              "wobaAgainst": 0.98
+            },
+            "6": {
+              "usagePct": 7.5,
+              "wobaAgainst": 0.18
+            },
+            "7": {
+              "usagePct": 2,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 3.5,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 3.1,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Slider",
@@ -15635,7 +16581,45 @@
           "whiffPct": 39.4,
           "hardHitPct": 48.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 4.1,
+              "wobaAgainst": 0.225
+            },
+            "2": {
+              "usagePct": 2,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 1.2,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 6.1,
+              "wobaAgainst": 0.43
+            },
+            "5": {
+              "usagePct": 3.3,
+              "wobaAgainst": 0.9
+            },
+            "6": {
+              "usagePct": 4.5,
+              "wobaAgainst": 0.85
+            },
+            "7": {
+              "usagePct": 2.4,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 8.6,
+              "wobaAgainst": 0.436
+            },
+            "9": {
+              "usagePct": 10.6,
+              "wobaAgainst": 0.45
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -15650,7 +16634,45 @@
           "whiffPct": 22.9,
           "hardHitPct": 49,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "1": {
+              "usagePct": 1.3,
+              "wobaAgainst": 0.9
+            },
+            "2": {
+              "usagePct": 0.9,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 0.4,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 6.6,
+              "wobaAgainst": 0.4
+            },
+            "5": {
+              "usagePct": 6.2,
+              "wobaAgainst": 0.414
+            },
+            "6": {
+              "usagePct": 2.7,
+              "wobaAgainst": 0.45
+            },
+            "7": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0.47
+            },
+            "8": {
+              "usagePct": 10.6,
+              "wobaAgainst": 0.307
+            },
+            "9": {
+              "usagePct": 5.3,
+              "wobaAgainst": 0.45
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -15665,7 +16687,45 @@
           "whiffPct": 4.3,
           "hardHitPct": 50,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 7.5,
+              "wobaAgainst": 0.3
+            },
+            "2": {
+              "usagePct": 9.4,
+              "wobaAgainst": 0.3
+            },
+            "3": {
+              "usagePct": 4.7,
+              "wobaAgainst": 0.3
+            },
+            "4": {
+              "usagePct": 3.8,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 9.4,
+              "wobaAgainst": 0.22
+            },
+            "6": {
+              "usagePct": 2.8,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 2.8,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 6.6,
+              "wobaAgainst": 0.36
+            },
+            "9": {
+              "usagePct": 2.8,
+              "wobaAgainst": 1.45
+            }
+          }
         },
         {
           "name": "Curveball",
@@ -15695,7 +16755,37 @@
           "whiffPct": 28,
           "hardHitPct": 41.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "2": {
+              "usagePct": 8.8,
+              "wobaAgainst": 2
+            },
+            "3": {
+              "usagePct": 8.8,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 3.5,
+              "wobaAgainst": null
+            },
+            "5": {
+              "usagePct": 12.3,
+              "wobaAgainst": 0.537
+            },
+            "6": {
+              "usagePct": 7,
+              "wobaAgainst": 0.625
+            },
+            "8": {
+              "usagePct": 3.5,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 8.8,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Sweeper",
@@ -15710,9 +16800,68 @@
           "whiffPct": 30,
           "hardHitPct": 0,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 2.6,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 7.7,
+              "wobaAgainst": 0.7
+            },
+            "3": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 2.6,
+              "wobaAgainst": null
+            },
+            "5": {
+              "usagePct": 2.6,
+              "wobaAgainst": null
+            },
+            "6": {
+              "usagePct": 7.7,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 7.7,
+              "wobaAgainst": null
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.3
+        },
+        "2": {
+          "wobaAgainst": 0.597
+        },
+        "3": {
+          "wobaAgainst": 0.082
+        },
+        "4": {
+          "wobaAgainst": 0.369
+        },
+        "5": {
+          "wobaAgainst": 0.514
+        },
+        "6": {
+          "wobaAgainst": 0.323
+        },
+        "7": {
+          "wobaAgainst": 0.313
+        },
+        "8": {
+          "wobaAgainst": 0.292
+        },
+        "9": {
+          "wobaAgainst": 0.459
+        }
+      }
     },
     "656302": {
       "totalPitches": 1718,
@@ -17290,7 +18439,45 @@
           "whiffPct": 10.1,
           "hardHitPct": 55.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 5,
+          "zones": {
+            "1": {
+              "usagePct": 5.7,
+              "wobaAgainst": 0.129
+            },
+            "2": {
+              "usagePct": 4.9,
+              "wobaAgainst": 0.45
+            },
+            "3": {
+              "usagePct": 3.9,
+              "wobaAgainst": 0.1
+            },
+            "4": {
+              "usagePct": 6.5,
+              "wobaAgainst": 0.325
+            },
+            "5": {
+              "usagePct": 7.9,
+              "wobaAgainst": 0.265
+            },
+            "6": {
+              "usagePct": 9.2,
+              "wobaAgainst": 0.514
+            },
+            "7": {
+              "usagePct": 4.5,
+              "wobaAgainst": 0.208
+            },
+            "8": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0.49
+            },
+            "9": {
+              "usagePct": 5.7,
+              "wobaAgainst": 0.1
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -17305,7 +18492,33 @@
           "whiffPct": 28.3,
           "hardHitPct": 33.8,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "4": {
+              "usagePct": 3,
+              "wobaAgainst": 0.537
+            },
+            "5": {
+              "usagePct": 1.7,
+              "wobaAgainst": 0.45
+            },
+            "6": {
+              "usagePct": 0.2,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 11.9,
+              "wobaAgainst": 0.193
+            },
+            "8": {
+              "usagePct": 7.9,
+              "wobaAgainst": 0.511
+            },
+            "9": {
+              "usagePct": 4.5,
+              "wobaAgainst": 0.54
+            }
+          }
         },
         {
           "name": "Sweeper",
@@ -17320,7 +18533,45 @@
           "whiffPct": 22.1,
           "hardHitPct": 29.4,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 3.4,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 2.2,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 1.2,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 5.9,
+              "wobaAgainst": 0.18
+            },
+            "5": {
+              "usagePct": 7.5,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 4.4,
+              "wobaAgainst": 0.631
+            },
+            "7": {
+              "usagePct": 5.9,
+              "wobaAgainst": 0.25
+            },
+            "8": {
+              "usagePct": 9.3,
+              "wobaAgainst": 0.15
+            },
+            "9": {
+              "usagePct": 7.8,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "4-Seam Fastball",
@@ -17335,7 +18586,45 @@
           "whiffPct": 21,
           "hardHitPct": 30.6,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 5.4,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 10.2,
+              "wobaAgainst": 0.09
+            },
+            "3": {
+              "usagePct": 11.2,
+              "wobaAgainst": 0.075
+            },
+            "4": {
+              "usagePct": 4.9,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 4.4,
+              "wobaAgainst": 0.54
+            },
+            "6": {
+              "usagePct": 3.9,
+              "wobaAgainst": 0.625
+            },
+            "7": {
+              "usagePct": 1.5,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 2,
+              "wobaAgainst": 0.967
+            },
+            "9": {
+              "usagePct": 1,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Cutter",
@@ -17350,9 +18639,76 @@
           "whiffPct": 23,
           "hardHitPct": 27,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "1": {
+              "usagePct": 4,
+              "wobaAgainst": 0.417
+            },
+            "2": {
+              "usagePct": 12.4,
+              "wobaAgainst": 0.113
+            },
+            "3": {
+              "usagePct": 12.9,
+              "wobaAgainst": 0.4
+            },
+            "4": {
+              "usagePct": 1.5,
+              "wobaAgainst": 0.9
+            },
+            "5": {
+              "usagePct": 5.9,
+              "wobaAgainst": 1.45
+            },
+            "6": {
+              "usagePct": 8.4,
+              "wobaAgainst": 0.43
+            },
+            "7": {
+              "usagePct": 1,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 4,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 1.5,
+              "wobaAgainst": null
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.154
+        },
+        "2": {
+          "wobaAgainst": 0.164
+        },
+        "3": {
+          "wobaAgainst": 0.176
+        },
+        "4": {
+          "wobaAgainst": 0.327
+        },
+        "5": {
+          "wobaAgainst": 0.355
+        },
+        "6": {
+          "wobaAgainst": 0.522
+        },
+        "7": {
+          "wobaAgainst": 0.202
+        },
+        "8": {
+          "wobaAgainst": 0.452
+        },
+        "9": {
+          "wobaAgainst": 0.2
+        }
+      }
     },
     "657424": {
       "totalPitches": 526,
@@ -18870,7 +20226,45 @@
           "whiffPct": 26.4,
           "hardHitPct": 36.8,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 6.4,
+              "wobaAgainst": 0.358
+            },
+            "2": {
+              "usagePct": 6.2,
+              "wobaAgainst": 0.617
+            },
+            "3": {
+              "usagePct": 8.4,
+              "wobaAgainst": 0.281
+            },
+            "4": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0.606
+            },
+            "5": {
+              "usagePct": 7.2,
+              "wobaAgainst": 0.305
+            },
+            "6": {
+              "usagePct": 7.8,
+              "wobaAgainst": 0.225
+            },
+            "7": {
+              "usagePct": 1.2,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 3.3,
+              "wobaAgainst": 0.15
+            },
+            "9": {
+              "usagePct": 3.9,
+              "wobaAgainst": 0.36
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -18885,7 +20279,45 @@
           "whiffPct": 8.4,
           "hardHitPct": 47.8,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 6.4,
+              "wobaAgainst": 0.117
+            },
+            "2": {
+              "usagePct": 4.6,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 2.4,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 8.6,
+              "wobaAgainst": 0.082
+            },
+            "5": {
+              "usagePct": 11,
+              "wobaAgainst": 0.564
+            },
+            "6": {
+              "usagePct": 6.1,
+              "wobaAgainst": 0.313
+            },
+            "7": {
+              "usagePct": 7,
+              "wobaAgainst": 0.439
+            },
+            "8": {
+              "usagePct": 8.6,
+              "wobaAgainst": 0.27
+            },
+            "9": {
+              "usagePct": 4.6,
+              "wobaAgainst": 0.36
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -18900,7 +20332,45 @@
           "whiffPct": 15.1,
           "hardHitPct": 52.5,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 3.9,
+              "wobaAgainst": 0.625
+            },
+            "2": {
+              "usagePct": 3.5,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 1.6,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 6.7,
+              "wobaAgainst": 0.43
+            },
+            "5": {
+              "usagePct": 7.5,
+              "wobaAgainst": 0.215
+            },
+            "6": {
+              "usagePct": 3.1,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 5.9,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 9.1,
+              "wobaAgainst": 0.1
+            },
+            "9": {
+              "usagePct": 6.7,
+              "wobaAgainst": 0.25
+            }
+          }
         },
         {
           "name": "Slider",
@@ -18915,7 +20385,45 @@
           "whiffPct": 40.5,
           "hardHitPct": 31.6,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 0.4,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 2.5,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 1.8,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 1.4,
+              "wobaAgainst": 0.417
+            },
+            "5": {
+              "usagePct": 3.2,
+              "wobaAgainst": 0.833
+            },
+            "6": {
+              "usagePct": 3.5,
+              "wobaAgainst": 0.667
+            },
+            "7": {
+              "usagePct": 0.7,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 6.4,
+              "wobaAgainst": 0.43
+            },
+            "9": {
+              "usagePct": 10.3,
+              "wobaAgainst": 0.18
+            }
+          }
         },
         {
           "name": "Cutter",
@@ -18930,7 +20438,45 @@
           "whiffPct": 29.7,
           "hardHitPct": 54.8,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 5.2,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 6.8,
+              "wobaAgainst": 0.9
+            },
+            "3": {
+              "usagePct": 3.2,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 5.6,
+              "wobaAgainst": 1.25
+            },
+            "5": {
+              "usagePct": 10.4,
+              "wobaAgainst": 0.257
+            },
+            "6": {
+              "usagePct": 7.6,
+              "wobaAgainst": 1.012
+            },
+            "7": {
+              "usagePct": 2.4,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 7.2,
+              "wobaAgainst": 0.129
+            },
+            "9": {
+              "usagePct": 8,
+              "wobaAgainst": 0.225
+            }
+          }
         },
         {
           "name": "Curveball",
@@ -18945,9 +20491,76 @@
           "whiffPct": 39.5,
           "hardHitPct": 42.9,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 2.2,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 0.4,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 0.4,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 3.1,
+              "wobaAgainst": 0.225
+            },
+            "5": {
+              "usagePct": 5.8,
+              "wobaAgainst": 0.65
+            },
+            "6": {
+              "usagePct": 3.1,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 4.9,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0.54
+            },
+            "9": {
+              "usagePct": 8.8,
+              "wobaAgainst": 0
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.272
+        },
+        "2": {
+          "wobaAgainst": 0.379
+        },
+        "3": {
+          "wobaAgainst": 0.205
+        },
+        "4": {
+          "wobaAgainst": 0.387
+        },
+        "5": {
+          "wobaAgainst": 0.421
+        },
+        "6": {
+          "wobaAgainst": 0.468
+        },
+        "7": {
+          "wobaAgainst": 0.198
+        },
+        "8": {
+          "wobaAgainst": 0.264
+        },
+        "9": {
+          "wobaAgainst": 0.236
+        }
+      }
     },
     "663460": {
       "totalPitches": 811,
@@ -20573,7 +22186,29 @@
           "whiffPct": 20,
           "hardHitPct": 100,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "2": {
+              "usagePct": 5,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 5,
+              "wobaAgainst": null
+            },
+            "5": {
+              "usagePct": 5,
+              "wobaAgainst": null
+            },
+            "6": {
+              "usagePct": 10,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 15,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -20588,7 +22223,25 @@
           "whiffPct": 44.4,
           "hardHitPct": 33.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "2": {
+              "usagePct": 11.1,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 5.6,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 16.7,
+              "wobaAgainst": 0.9
+            },
+            "9": {
+              "usagePct": 16.7,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "4-Seam Fastball",
@@ -20603,7 +22256,33 @@
           "whiffPct": 8.3,
           "hardHitPct": 42.9,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 6.3,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 31.3,
+              "wobaAgainst": 0.18
+            },
+            "3": {
+              "usagePct": 6.3,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 18.8,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 12.5,
+              "wobaAgainst": 0.9
+            },
+            "8": {
+              "usagePct": 6.3,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -20618,7 +22297,17 @@
           "whiffPct": 0,
           "hardHitPct": 100,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "4": {
+              "usagePct": 16.7,
+              "wobaAgainst": null
+            },
+            "6": {
+              "usagePct": 33.3,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "Sweeper",
@@ -20633,9 +22322,32 @@
           "whiffPct": 0,
           "hardHitPct": 0,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0
+        },
+        "2": {
+          "wobaAgainst": 0.15
+        },
+        "4": {
+          "wobaAgainst": 0
+        },
+        "5": {
+          "wobaAgainst": 0.9
+        },
+        "7": {
+          "wobaAgainst": 0
+        },
+        "8": {
+          "wobaAgainst": 0.9
+        },
+        "9": {
+          "wobaAgainst": 0
+        }
+      }
     },
     "663855": {
       "totalPitches": 442,
@@ -23734,7 +25446,45 @@
           "whiffPct": 50.9,
           "hardHitPct": 18.6,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 3,
+          "zones": {
+            "1": {
+              "usagePct": 1,
+              "wobaAgainst": 0.36
+            },
+            "2": {
+              "usagePct": 2.1,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 3.4,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 3.7,
+              "wobaAgainst": 0.138
+            },
+            "5": {
+              "usagePct": 3.8,
+              "wobaAgainst": 0.15
+            },
+            "6": {
+              "usagePct": 6,
+              "wobaAgainst": 0.322
+            },
+            "7": {
+              "usagePct": 7.2,
+              "wobaAgainst": 0.159
+            },
+            "8": {
+              "usagePct": 8.2,
+              "wobaAgainst": 0.271
+            },
+            "9": {
+              "usagePct": 2.9,
+              "wobaAgainst": 0.225
+            }
+          }
         },
         {
           "name": "4-Seam Fastball",
@@ -23749,7 +25499,45 @@
           "whiffPct": 17,
           "hardHitPct": 33.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 4,
+          "zones": {
+            "1": {
+              "usagePct": 9.7,
+              "wobaAgainst": 0.369
+            },
+            "2": {
+              "usagePct": 8.1,
+              "wobaAgainst": 0.427
+            },
+            "3": {
+              "usagePct": 2.9,
+              "wobaAgainst": 0.18
+            },
+            "4": {
+              "usagePct": 10.7,
+              "wobaAgainst": 0.338
+            },
+            "5": {
+              "usagePct": 6.8,
+              "wobaAgainst": 0.459
+            },
+            "6": {
+              "usagePct": 1,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 7.2,
+              "wobaAgainst": 0.407
+            },
+            "8": {
+              "usagePct": 3.1,
+              "wobaAgainst": 0.542
+            },
+            "9": {
+              "usagePct": 1,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -23764,7 +25552,45 @@
           "whiffPct": 39,
           "hardHitPct": 24.2,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "1": {
+              "usagePct": 0.7,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 1.8,
+              "wobaAgainst": 0.9
+            },
+            "3": {
+              "usagePct": 3.5,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 3.7,
+              "wobaAgainst": 0.43
+            },
+            "5": {
+              "usagePct": 6.5,
+              "wobaAgainst": 0.473
+            },
+            "6": {
+              "usagePct": 8.3,
+              "wobaAgainst": 0.404
+            },
+            "7": {
+              "usagePct": 6.7,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0.421
+            },
+            "9": {
+              "usagePct": 8.5,
+              "wobaAgainst": 0.377
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -23779,9 +25605,76 @@
           "whiffPct": 12.2,
           "hardHitPct": 42.1,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "1": {
+              "usagePct": 0.3,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 2.1,
+              "wobaAgainst": 0.3
+            },
+            "3": {
+              "usagePct": 3.1,
+              "wobaAgainst": 0.45
+            },
+            "4": {
+              "usagePct": 3.4,
+              "wobaAgainst": 0.83
+            },
+            "5": {
+              "usagePct": 7.5,
+              "wobaAgainst": 0.377
+            },
+            "6": {
+              "usagePct": 13.7,
+              "wobaAgainst": 0.274
+            },
+            "7": {
+              "usagePct": 7.8,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 11.9,
+              "wobaAgainst": 0.563
+            },
+            "9": {
+              "usagePct": 12.2,
+              "wobaAgainst": 0.165
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.367
+        },
+        "2": {
+          "wobaAgainst": 0.393
+        },
+        "3": {
+          "wobaAgainst": 0.169
+        },
+        "4": {
+          "wobaAgainst": 0.346
+        },
+        "5": {
+          "wobaAgainst": 0.392
+        },
+        "6": {
+          "wobaAgainst": 0.321
+        },
+        "7": {
+          "wobaAgainst": 0.21
+        },
+        "8": {
+          "wobaAgainst": 0.415
+        },
+        "9": {
+          "wobaAgainst": 0.257
+        }
+      }
     },
     "666201": {
       "totalPitches": 161,
@@ -25803,7 +27696,45 @@
           "whiffPct": 23.1,
           "hardHitPct": 43.8,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 5,
+          "zones": {
+            "1": {
+              "usagePct": 6.1,
+              "wobaAgainst": 0.064
+            },
+            "2": {
+              "usagePct": 9.7,
+              "wobaAgainst": 0.313
+            },
+            "3": {
+              "usagePct": 6.3,
+              "wobaAgainst": 0.59
+            },
+            "4": {
+              "usagePct": 8.1,
+              "wobaAgainst": 0.393
+            },
+            "5": {
+              "usagePct": 9.5,
+              "wobaAgainst": 0.338
+            },
+            "6": {
+              "usagePct": 5.3,
+              "wobaAgainst": 0.264
+            },
+            "7": {
+              "usagePct": 4.7,
+              "wobaAgainst": 0.18
+            },
+            "8": {
+              "usagePct": 4.4,
+              "wobaAgainst": 0.37
+            },
+            "9": {
+              "usagePct": 1.6,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Curveball",
@@ -25818,7 +27749,45 @@
           "whiffPct": 30.8,
           "hardHitPct": 49.2,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 4,
+          "zones": {
+            "1": {
+              "usagePct": 0.9,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 3.7,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 4,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 3,
+              "wobaAgainst": 0.43
+            },
+            "5": {
+              "usagePct": 5.6,
+              "wobaAgainst": 0.257
+            },
+            "6": {
+              "usagePct": 5.8,
+              "wobaAgainst": 0.129
+            },
+            "7": {
+              "usagePct": 6,
+              "wobaAgainst": 0.58
+            },
+            "8": {
+              "usagePct": 6,
+              "wobaAgainst": 0.331
+            },
+            "9": {
+              "usagePct": 4.2,
+              "wobaAgainst": 0.358
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -25833,7 +27802,45 @@
           "whiffPct": 34.9,
           "hardHitPct": 29.2,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 0.5,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 2.3,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 5.4,
+              "wobaAgainst": 0.45
+            },
+            "4": {
+              "usagePct": 0.9,
+              "wobaAgainst": null
+            },
+            "5": {
+              "usagePct": 6.8,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 6.8,
+              "wobaAgainst": 0.254
+            },
+            "7": {
+              "usagePct": 3.6,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 4.5,
+              "wobaAgainst": 0.3
+            },
+            "9": {
+              "usagePct": 7.2,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Cutter",
@@ -25848,7 +27855,45 @@
           "whiffPct": 24.1,
           "hardHitPct": 55.6,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 3,
+          "zones": {
+            "1": {
+              "usagePct": 6,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 6,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 1.6,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 8.2,
+              "wobaAgainst": 0.333
+            },
+            "5": {
+              "usagePct": 4.9,
+              "wobaAgainst": 0.65
+            },
+            "6": {
+              "usagePct": 2.7,
+              "wobaAgainst": 1
+            },
+            "7": {
+              "usagePct": 8.2,
+              "wobaAgainst": 0.25
+            },
+            "8": {
+              "usagePct": 4.4,
+              "wobaAgainst": 0.68
+            },
+            "9": {
+              "usagePct": 2.2,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Slider",
@@ -25863,7 +27908,45 @@
           "whiffPct": 24.3,
           "hardHitPct": 50,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 4.1,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 8.2,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 0.5,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 6.7,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 9.7,
+              "wobaAgainst": 0.113
+            },
+            "6": {
+              "usagePct": 4.6,
+              "wobaAgainst": 0.3
+            },
+            "7": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0.45
+            },
+            "8": {
+              "usagePct": 6.7,
+              "wobaAgainst": 0.18
+            },
+            "9": {
+              "usagePct": 1.5,
+              "wobaAgainst": 0.9
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -25878,9 +27961,76 @@
           "whiffPct": 16.3,
           "hardHitPct": 35,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 1.1,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 7.5,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 4.3,
+              "wobaAgainst": 0.9
+            },
+            "4": {
+              "usagePct": 1.1,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 10.8,
+              "wobaAgainst": 0.625
+            },
+            "6": {
+              "usagePct": 7.5,
+              "wobaAgainst": 0.45
+            },
+            "7": {
+              "usagePct": 3.2,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 3.2,
+              "wobaAgainst": 0.9
+            },
+            "9": {
+              "usagePct": 9.7,
+              "wobaAgainst": 0
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.09
+        },
+        "2": {
+          "wobaAgainst": 0.206
+        },
+        "3": {
+          "wobaAgainst": 0.481
+        },
+        "4": {
+          "wobaAgainst": 0.346
+        },
+        "5": {
+          "wobaAgainst": 0.314
+        },
+        "6": {
+          "wobaAgainst": 0.296
+        },
+        "7": {
+          "wobaAgainst": 0.323
+        },
+        "8": {
+          "wobaAgainst": 0.38
+        },
+        "9": {
+          "wobaAgainst": 0.203
+        }
+      }
     },
     "669060": {
       "totalPitches": 208,
@@ -26298,7 +28448,45 @@
           "whiffPct": 20.5,
           "hardHitPct": 58.1,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "1": {
+              "usagePct": 5.9,
+              "wobaAgainst": 0.5
+            },
+            "2": {
+              "usagePct": 12.5,
+              "wobaAgainst": 0.215
+            },
+            "3": {
+              "usagePct": 7.5,
+              "wobaAgainst": 0.164
+            },
+            "4": {
+              "usagePct": 2.7,
+              "wobaAgainst": 0.18
+            },
+            "5": {
+              "usagePct": 7.3,
+              "wobaAgainst": 0.56
+            },
+            "6": {
+              "usagePct": 7.7,
+              "wobaAgainst": 0.1
+            },
+            "7": {
+              "usagePct": 0.9,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 2.5,
+              "wobaAgainst": null
+            },
+            "9": {
+              "usagePct": 4.6,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Cutter",
@@ -26313,7 +28501,45 @@
           "whiffPct": 21.9,
           "hardHitPct": 32.9,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 3.3,
+              "wobaAgainst": 0.45
+            },
+            "2": {
+              "usagePct": 9.1,
+              "wobaAgainst": 0.377
+            },
+            "3": {
+              "usagePct": 9.4,
+              "wobaAgainst": 0.243
+            },
+            "4": {
+              "usagePct": 1.9,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 8,
+              "wobaAgainst": 0.861
+            },
+            "6": {
+              "usagePct": 10.2,
+              "wobaAgainst": 0.281
+            },
+            "7": {
+              "usagePct": 0.3,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 2.2,
+              "wobaAgainst": 0.45
+            },
+            "9": {
+              "usagePct": 7.7,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Sweeper",
@@ -26328,7 +28554,45 @@
           "whiffPct": 33.8,
           "hardHitPct": 36.6,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 4.3,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 1.8,
+              "wobaAgainst": 0.487
+            },
+            "3": {
+              "usagePct": 2.7,
+              "wobaAgainst": 0.6
+            },
+            "4": {
+              "usagePct": 5.5,
+              "wobaAgainst": 0.129
+            },
+            "5": {
+              "usagePct": 6.4,
+              "wobaAgainst": 0.139
+            },
+            "6": {
+              "usagePct": 5.5,
+              "wobaAgainst": 0.338
+            },
+            "7": {
+              "usagePct": 1.5,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 7.3,
+              "wobaAgainst": 0.693
+            },
+            "9": {
+              "usagePct": 6.1,
+              "wobaAgainst": 0.543
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -26343,7 +28607,45 @@
           "whiffPct": 16.1,
           "hardHitPct": 53.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 6.3,
+              "wobaAgainst": 0.339
+            },
+            "2": {
+              "usagePct": 4.6,
+              "wobaAgainst": 0.129
+            },
+            "3": {
+              "usagePct": 2.3,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 9.2,
+              "wobaAgainst": 0.4
+            },
+            "5": {
+              "usagePct": 6.3,
+              "wobaAgainst": 0.239
+            },
+            "6": {
+              "usagePct": 5.9,
+              "wobaAgainst": 0.129
+            },
+            "7": {
+              "usagePct": 5.6,
+              "wobaAgainst": 0.58
+            },
+            "8": {
+              "usagePct": 13.2,
+              "wobaAgainst": 0.473
+            },
+            "9": {
+              "usagePct": 5.3,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -26358,7 +28660,45 @@
           "whiffPct": 11.9,
           "hardHitPct": 47.4,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "1": {
+              "usagePct": 2.4,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 1.6,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 2.4,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 8.1,
+              "wobaAgainst": 0.537
+            },
+            "5": {
+              "usagePct": 10.6,
+              "wobaAgainst": 0.25
+            },
+            "6": {
+              "usagePct": 2.4,
+              "wobaAgainst": 2
+            },
+            "7": {
+              "usagePct": 8.1,
+              "wobaAgainst": 0.4
+            },
+            "8": {
+              "usagePct": 1.6,
+              "wobaAgainst": null
+            },
+            "9": {
+              "usagePct": 2.4,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "Curveball",
@@ -26373,9 +28713,76 @@
           "whiffPct": 26.5,
           "hardHitPct": 60,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 10,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 1.7,
+              "wobaAgainst": 0.9
+            },
+            "3": {
+              "usagePct": 2.5,
+              "wobaAgainst": 0.625
+            },
+            "4": {
+              "usagePct": 5.8,
+              "wobaAgainst": 1.25
+            },
+            "5": {
+              "usagePct": 2.5,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 1.7,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 2.5,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 8.3,
+              "wobaAgainst": 0.45
+            },
+            "9": {
+              "usagePct": 4.2,
+              "wobaAgainst": 0
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.297
+        },
+        "2": {
+          "wobaAgainst": 0.277
+        },
+        "3": {
+          "wobaAgainst": 0.25
+        },
+        "4": {
+          "wobaAgainst": 0.303
+        },
+        "5": {
+          "wobaAgainst": 0.409
+        },
+        "6": {
+          "wobaAgainst": 0.268
+        },
+        "7": {
+          "wobaAgainst": 0.445
+        },
+        "8": {
+          "wobaAgainst": 0.539
+        },
+        "9": {
+          "wobaAgainst": 0.158
+        }
+      }
     },
     "669165": {
       "totalPitches": 483,
@@ -27313,7 +29720,45 @@
           "whiffPct": 22.9,
           "hardHitPct": 37.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 4,
+          "zones": {
+            "1": {
+              "usagePct": 4.4,
+              "wobaAgainst": 0.16
+            },
+            "2": {
+              "usagePct": 3.4,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 3.4,
+              "wobaAgainst": 0.145
+            },
+            "4": {
+              "usagePct": 9.2,
+              "wobaAgainst": 0.472
+            },
+            "5": {
+              "usagePct": 7.9,
+              "wobaAgainst": 0.308
+            },
+            "6": {
+              "usagePct": 4.7,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 4.8,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 8.2,
+              "wobaAgainst": 0.539
+            },
+            "9": {
+              "usagePct": 6,
+              "wobaAgainst": 0.113
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -27328,7 +29773,45 @@
           "whiffPct": 34.1,
           "hardHitPct": 22,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 1.9,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 0.8,
+              "wobaAgainst": 0.3
+            },
+            "3": {
+              "usagePct": 0.5,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0.2
+            },
+            "5": {
+              "usagePct": 4.3,
+              "wobaAgainst": 0.208
+            },
+            "6": {
+              "usagePct": 1.6,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 8.6,
+              "wobaAgainst": 0.304
+            },
+            "8": {
+              "usagePct": 8.4,
+              "wobaAgainst": 0.069
+            },
+            "9": {
+              "usagePct": 1.4,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Cutter",
@@ -27343,7 +29826,45 @@
           "whiffPct": 22.5,
           "hardHitPct": 36.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 5,
+          "zones": {
+            "1": {
+              "usagePct": 1.7,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 8.6,
+              "wobaAgainst": 0.286
+            },
+            "3": {
+              "usagePct": 7.8,
+              "wobaAgainst": 0.425
+            },
+            "4": {
+              "usagePct": 1.7,
+              "wobaAgainst": 0.9
+            },
+            "5": {
+              "usagePct": 3.7,
+              "wobaAgainst": 0.967
+            },
+            "6": {
+              "usagePct": 9.2,
+              "wobaAgainst": 0.406
+            },
+            "7": {
+              "usagePct": 1.2,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 1.4,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 5.8,
+              "wobaAgainst": 0.225
+            }
+          }
         },
         {
           "name": "Slider",
@@ -27358,7 +29879,45 @@
           "whiffPct": 34.1,
           "hardHitPct": 35.6,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 4,
+          "zones": {
+            "1": {
+              "usagePct": 1.4,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 3.1,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 0.3,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 3.4,
+              "wobaAgainst": 1
+            },
+            "5": {
+              "usagePct": 6.9,
+              "wobaAgainst": 0.409
+            },
+            "6": {
+              "usagePct": 4.8,
+              "wobaAgainst": 0.771
+            },
+            "7": {
+              "usagePct": 2.4,
+              "wobaAgainst": 2
+            },
+            "8": {
+              "usagePct": 4.5,
+              "wobaAgainst": 0.43
+            },
+            "9": {
+              "usagePct": 6.9,
+              "wobaAgainst": 0.113
+            }
+          }
         },
         {
           "name": "4-Seam Fastball",
@@ -27373,9 +29932,76 @@
           "whiffPct": 23.5,
           "hardHitPct": 44.1,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 3,
+          "zones": {
+            "1": {
+              "usagePct": 6.4,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 9.1,
+              "wobaAgainst": 0.475
+            },
+            "3": {
+              "usagePct": 6.4,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 5,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 6.4,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 6.8,
+              "wobaAgainst": 0.414
+            },
+            "7": {
+              "usagePct": 1.8,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 1.4,
+              "wobaAgainst": 0.625
+            },
+            "9": {
+              "usagePct": 3.6,
+              "wobaAgainst": 0
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.114
+        },
+        "2": {
+          "wobaAgainst": 0.231
+        },
+        "3": {
+          "wobaAgainst": 0.227
+        },
+        "4": {
+          "wobaAgainst": 0.377
+        },
+        "5": {
+          "wobaAgainst": 0.328
+        },
+        "6": {
+          "wobaAgainst": 0.304
+        },
+        "7": {
+          "wobaAgainst": 0.298
+        },
+        "8": {
+          "wobaAgainst": 0.364
+        },
+        "9": {
+          "wobaAgainst": 0.12
+        }
+      }
     },
     "669373": {
       "totalPitches": 1161,
@@ -27393,7 +30019,45 @@
           "whiffPct": 24.4,
           "hardHitPct": 38.6,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 5,
+          "zones": {
+            "1": {
+              "usagePct": 7.4,
+              "wobaAgainst": 0.384
+            },
+            "2": {
+              "usagePct": 10.5,
+              "wobaAgainst": 0.35
+            },
+            "3": {
+              "usagePct": 8.2,
+              "wobaAgainst": 0.362
+            },
+            "4": {
+              "usagePct": 6.4,
+              "wobaAgainst": 0.296
+            },
+            "5": {
+              "usagePct": 7.6,
+              "wobaAgainst": 0.15
+            },
+            "6": {
+              "usagePct": 7.4,
+              "wobaAgainst": 0.386
+            },
+            "7": {
+              "usagePct": 2.3,
+              "wobaAgainst": 0.3
+            },
+            "8": {
+              "usagePct": 2.7,
+              "wobaAgainst": 1.25
+            },
+            "9": {
+              "usagePct": 1.9,
+              "wobaAgainst": 0.45
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -27408,7 +30072,45 @@
           "whiffPct": 48.6,
           "hardHitPct": 26.5,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 3,
+          "zones": {
+            "1": {
+              "usagePct": 0.3,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 1.2,
+              "wobaAgainst": 0.8
+            },
+            "3": {
+              "usagePct": 3,
+              "wobaAgainst": 0.18
+            },
+            "4": {
+              "usagePct": 1.5,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 3.9,
+              "wobaAgainst": 0.362
+            },
+            "6": {
+              "usagePct": 6.8,
+              "wobaAgainst": 0.286
+            },
+            "7": {
+              "usagePct": 2.1,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0.633
+            },
+            "9": {
+              "usagePct": 8.6,
+              "wobaAgainst": 0.179
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -27423,7 +30125,45 @@
           "whiffPct": 19.2,
           "hardHitPct": 39,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 5,
+              "wobaAgainst": 0.175
+            },
+            "2": {
+              "usagePct": 9.2,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 4.6,
+              "wobaAgainst": 0.45
+            },
+            "4": {
+              "usagePct": 8.4,
+              "wobaAgainst": 0.508
+            },
+            "5": {
+              "usagePct": 9.2,
+              "wobaAgainst": 0.129
+            },
+            "6": {
+              "usagePct": 5.7,
+              "wobaAgainst": 0.386
+            },
+            "7": {
+              "usagePct": 5.3,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 8.8,
+              "wobaAgainst": 0.675
+            },
+            "9": {
+              "usagePct": 3.4,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Slider",
@@ -27438,7 +30178,45 @@
           "whiffPct": 29.9,
           "hardHitPct": 44.4,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 2,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 7,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 3.5,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 7,
+              "wobaAgainst": 0.3
+            },
+            "5": {
+              "usagePct": 9.5,
+              "wobaAgainst": 0.414
+            },
+            "6": {
+              "usagePct": 5,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 8,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 6.5,
+              "wobaAgainst": 0.36
+            },
+            "9": {
+              "usagePct": 2,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "Curveball",
@@ -27453,9 +30231,72 @@
           "whiffPct": 40,
           "hardHitPct": 50,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "2": {
+              "usagePct": 3.4,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 5.2,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 5.2,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 3.4,
+              "wobaAgainst": null
+            },
+            "6": {
+              "usagePct": 3.4,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 8.6,
+              "wobaAgainst": 2
+            },
+            "8": {
+              "usagePct": 10.3,
+              "wobaAgainst": null
+            },
+            "9": {
+              "usagePct": 5.2,
+              "wobaAgainst": 0
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.326
+        },
+        "2": {
+          "wobaAgainst": 0.288
+        },
+        "3": {
+          "wobaAgainst": 0.295
+        },
+        "4": {
+          "wobaAgainst": 0.31
+        },
+        "5": {
+          "wobaAgainst": 0.271
+        },
+        "6": {
+          "wobaAgainst": 0.308
+        },
+        "7": {
+          "wobaAgainst": 0.242
+        },
+        "8": {
+          "wobaAgainst": 0.597
+        },
+        "9": {
+          "wobaAgainst": 0.179
+        }
+      }
     },
     "669387": {
       "totalPitches": 1372,
@@ -27583,7 +30424,45 @@
           "whiffPct": 23.2,
           "hardHitPct": 44.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 6,
+          "zones": {
+            "1": {
+              "usagePct": 8.7,
+              "wobaAgainst": 0.313
+            },
+            "2": {
+              "usagePct": 10.6,
+              "wobaAgainst": 0.281
+            },
+            "3": {
+              "usagePct": 6.4,
+              "wobaAgainst": 0.427
+            },
+            "4": {
+              "usagePct": 8.9,
+              "wobaAgainst": 0.5
+            },
+            "5": {
+              "usagePct": 7.7,
+              "wobaAgainst": 0.404
+            },
+            "6": {
+              "usagePct": 5,
+              "wobaAgainst": 0.319
+            },
+            "7": {
+              "usagePct": 3.4,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 2.4,
+              "wobaAgainst": 0.25
+            },
+            "9": {
+              "usagePct": 1.6,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -27598,7 +30477,45 @@
           "whiffPct": 24.3,
           "hardHitPct": 42.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 3,
+          "zones": {
+            "1": {
+              "usagePct": 0.5,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 0.8,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 1.1,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 1.6,
+              "wobaAgainst": 0.625
+            },
+            "5": {
+              "usagePct": 6.5,
+              "wobaAgainst": 0.505
+            },
+            "6": {
+              "usagePct": 3.5,
+              "wobaAgainst": 0.257
+            },
+            "7": {
+              "usagePct": 7.8,
+              "wobaAgainst": 0.436
+            },
+            "8": {
+              "usagePct": 8.1,
+              "wobaAgainst": 0.422
+            },
+            "9": {
+              "usagePct": 8.1,
+              "wobaAgainst": 0.307
+            }
+          }
         },
         {
           "name": "Sweeper",
@@ -27613,7 +30530,41 @@
           "whiffPct": 30.8,
           "hardHitPct": 20,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 0.5,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 2.3,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 4.7,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 8.4,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0.225
+            },
+            "7": {
+              "usagePct": 8.8,
+              "wobaAgainst": 0.567
+            },
+            "8": {
+              "usagePct": 9.8,
+              "wobaAgainst": 0.54
+            },
+            "9": {
+              "usagePct": 6.5,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -27628,7 +30579,45 @@
           "whiffPct": 7.9,
           "hardHitPct": 35.9,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 4.6,
+              "wobaAgainst": 0.625
+            },
+            "3": {
+              "usagePct": 3.1,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 9.7,
+              "wobaAgainst": 0.208
+            },
+            "5": {
+              "usagePct": 8.7,
+              "wobaAgainst": 0.436
+            },
+            "6": {
+              "usagePct": 8.7,
+              "wobaAgainst": 0.514
+            },
+            "7": {
+              "usagePct": 8.2,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0.61
+            },
+            "9": {
+              "usagePct": 5.6,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Cutter",
@@ -27643,9 +30632,72 @@
           "whiffPct": 22.7,
           "hardHitPct": 37.5,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 1.1,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 1.1,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 7,
+              "wobaAgainst": 0.208
+            },
+            "5": {
+              "usagePct": 10.8,
+              "wobaAgainst": 0.18
+            },
+            "6": {
+              "usagePct": 4.9,
+              "wobaAgainst": 0.45
+            },
+            "7": {
+              "usagePct": 13,
+              "wobaAgainst": 0.5
+            },
+            "8": {
+              "usagePct": 8.6,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 2.7,
+              "wobaAgainst": null
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.204
+        },
+        "2": {
+          "wobaAgainst": 0.286
+        },
+        "3": {
+          "wobaAgainst": 0.276
+        },
+        "4": {
+          "wobaAgainst": 0.371
+        },
+        "5": {
+          "wobaAgainst": 0.364
+        },
+        "6": {
+          "wobaAgainst": 0.344
+        },
+        "7": {
+          "wobaAgainst": 0.313
+        },
+        "8": {
+          "wobaAgainst": 0.422
+        },
+        "9": {
+          "wobaAgainst": 0.172
+        }
+      }
     },
     "669438": {
       "totalPitches": 487,
@@ -27999,7 +31051,45 @@
           "whiffPct": 13.6,
           "hardHitPct": 61.1,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 3,
+          "zones": {
+            "1": {
+              "usagePct": 2.4,
+              "wobaAgainst": 2
+            },
+            "2": {
+              "usagePct": 3.9,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 7.9,
+              "wobaAgainst": 0.45
+            },
+            "4": {
+              "usagePct": 4.7,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 6.3,
+              "wobaAgainst": 0.667
+            },
+            "6": {
+              "usagePct": 5.5,
+              "wobaAgainst": 1.25
+            },
+            "7": {
+              "usagePct": 7.1,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 5.5,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 4.7,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -28014,7 +31104,33 @@
           "whiffPct": 22.2,
           "hardHitPct": 44.4,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 1.4,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 2.9,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 10,
+              "wobaAgainst": 0.225
+            },
+            "5": {
+              "usagePct": 2.9,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 4.3,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 8.6,
+              "wobaAgainst": 0.625
+            }
+          }
         },
         {
           "name": "Curveball",
@@ -28044,7 +31160,37 @@
           "whiffPct": 18.8,
           "hardHitPct": 43.8,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "2": {
+              "usagePct": 5.7,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 9.4,
+              "wobaAgainst": 0.725
+            },
+            "4": {
+              "usagePct": 1.9,
+              "wobaAgainst": null
+            },
+            "5": {
+              "usagePct": 15.1,
+              "wobaAgainst": 0.5
+            },
+            "6": {
+              "usagePct": 13.2,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 1.9,
+              "wobaAgainst": null
+            },
+            "9": {
+              "usagePct": 3.8,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Slider",
@@ -28059,9 +31205,64 @@
           "whiffPct": 31.6,
           "hardHitPct": 71.4,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "2": {
+              "usagePct": 3.1,
+              "wobaAgainst": 0.9
+            },
+            "4": {
+              "usagePct": 9.4,
+              "wobaAgainst": null
+            },
+            "5": {
+              "usagePct": 12.5,
+              "wobaAgainst": 0.9
+            },
+            "6": {
+              "usagePct": 3.1,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 6.3,
+              "wobaAgainst": 2
+            },
+            "9": {
+              "usagePct": 12.5,
+              "wobaAgainst": 1.45
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 2
+        },
+        "2": {
+          "wobaAgainst": 0.18
+        },
+        "3": {
+          "wobaAgainst": 0.633
+        },
+        "4": {
+          "wobaAgainst": 0.225
+        },
+        "5": {
+          "wobaAgainst": 0.644
+        },
+        "6": {
+          "wobaAgainst": 0.358
+        },
+        "7": {
+          "wobaAgainst": 0
+        },
+        "8": {
+          "wobaAgainst": 0.771
+        },
+        "9": {
+          "wobaAgainst": 0.414
+        }
+      }
     },
     "669461": {
       "totalPitches": 1573,
@@ -29924,7 +33125,45 @@
           "whiffPct": 7.1,
           "hardHitPct": 25,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 1.4,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 2.8,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 14.1,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 5.6,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 11.3,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 9.9,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 8.5,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 1.4,
+              "wobaAgainst": null
+            },
+            "9": {
+              "usagePct": 1.4,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "Cutter",
@@ -29939,7 +33178,41 @@
           "whiffPct": 20,
           "hardHitPct": 75,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 9.2,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 9.2,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 3.1,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 3.1,
+              "wobaAgainst": null
+            },
+            "5": {
+              "usagePct": 13.8,
+              "wobaAgainst": 0.45
+            },
+            "6": {
+              "usagePct": 1.5,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 7.7,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 6.2,
+              "wobaAgainst": 0.9
+            }
+          }
         },
         {
           "name": "Sweeper",
@@ -29954,7 +33227,41 @@
           "whiffPct": 50,
           "hardHitPct": 100,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "2": {
+              "usagePct": 1.7,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 6.9,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 5.2,
+              "wobaAgainst": null
+            },
+            "5": {
+              "usagePct": 5.2,
+              "wobaAgainst": 1.25
+            },
+            "6": {
+              "usagePct": 5.2,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 13.8,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 8.6,
+              "wobaAgainst": null
+            },
+            "9": {
+              "usagePct": 5.2,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "4-Seam Fastball",
@@ -29969,9 +33276,70 @@
           "whiffPct": 28.6,
           "hardHitPct": 50,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 4,
+          "zones": {
+            "1": {
+              "usagePct": 2.2,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 11.2,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 11.2,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 5.6,
+              "wobaAgainst": 0.9
+            },
+            "5": {
+              "usagePct": 9,
+              "wobaAgainst": null
+            },
+            "6": {
+              "usagePct": 3.4,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 1.1,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 3.4,
+              "wobaAgainst": null
+            },
+            "9": {
+              "usagePct": 2.2,
+              "wobaAgainst": 0
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0
+        },
+        "4": {
+          "wobaAgainst": 0.45
+        },
+        "5": {
+          "wobaAgainst": 0.537
+        },
+        "6": {
+          "wobaAgainst": 0
+        },
+        "7": {
+          "wobaAgainst": 0
+        },
+        "8": {
+          "wobaAgainst": 0.9
+        },
+        "9": {
+          "wobaAgainst": 0
+        }
+      }
     },
     "671109": {
       "totalPitches": 53,
@@ -30349,7 +33717,45 @@
           "whiffPct": 14.2,
           "hardHitPct": 53.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 7,
+          "zones": {
+            "1": {
+              "usagePct": 5.4,
+              "wobaAgainst": 0.561
+            },
+            "2": {
+              "usagePct": 6.7,
+              "wobaAgainst": 0.242
+            },
+            "3": {
+              "usagePct": 2.9,
+              "wobaAgainst": 0.225
+            },
+            "4": {
+              "usagePct": 8.4,
+              "wobaAgainst": 0.289
+            },
+            "5": {
+              "usagePct": 10.6,
+              "wobaAgainst": 0.289
+            },
+            "6": {
+              "usagePct": 6.2,
+              "wobaAgainst": 0.239
+            },
+            "7": {
+              "usagePct": 5.8,
+              "wobaAgainst": 0.239
+            },
+            "8": {
+              "usagePct": 4.8,
+              "wobaAgainst": 0.287
+            },
+            "9": {
+              "usagePct": 5.2,
+              "wobaAgainst": 0.271
+            }
+          }
         },
         {
           "name": "Cutter",
@@ -30364,7 +33770,45 @@
           "whiffPct": 39,
           "hardHitPct": 36.2,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 4,
+          "zones": {
+            "1": {
+              "usagePct": 3.6,
+              "wobaAgainst": 0.18
+            },
+            "2": {
+              "usagePct": 7.3,
+              "wobaAgainst": 0.462
+            },
+            "3": {
+              "usagePct": 3.3,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 3.8,
+              "wobaAgainst": 0.45
+            },
+            "5": {
+              "usagePct": 5.4,
+              "wobaAgainst": 0.475
+            },
+            "6": {
+              "usagePct": 4.4,
+              "wobaAgainst": 0.257
+            },
+            "7": {
+              "usagePct": 2.9,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 4.4,
+              "wobaAgainst": 0.225
+            },
+            "9": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0.386
+            }
+          }
         },
         {
           "name": "Split-Finger",
@@ -30379,7 +33823,45 @@
           "whiffPct": 38.7,
           "hardHitPct": 35.4,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 5.7,
+              "wobaAgainst": 0.25
+            },
+            "2": {
+              "usagePct": 5.5,
+              "wobaAgainst": 0.494
+            },
+            "3": {
+              "usagePct": 3.7,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 4.2,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 7.8,
+              "wobaAgainst": 0.305
+            },
+            "6": {
+              "usagePct": 3.7,
+              "wobaAgainst": 0.717
+            },
+            "7": {
+              "usagePct": 3.4,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 5.5,
+              "wobaAgainst": 0.338
+            },
+            "9": {
+              "usagePct": 5.7,
+              "wobaAgainst": 0.725
+            }
+          }
         },
         {
           "name": "Curveball",
@@ -30394,9 +33876,76 @@
           "whiffPct": 38,
           "hardHitPct": 40,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 5,
+          "zones": {
+            "1": {
+              "usagePct": 2.5,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 5,
+              "wobaAgainst": 0.45
+            },
+            "3": {
+              "usagePct": 3,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 5,
+              "wobaAgainst": 0.225
+            },
+            "5": {
+              "usagePct": 5,
+              "wobaAgainst": 1
+            },
+            "6": {
+              "usagePct": 2.5,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 4.5,
+              "wobaAgainst": 0.45
+            },
+            "8": {
+              "usagePct": 6.5,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 1.5,
+              "wobaAgainst": 0
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.327
+        },
+        "2": {
+          "wobaAgainst": 0.365
+        },
+        "3": {
+          "wobaAgainst": 0.075
+        },
+        "4": {
+          "wobaAgainst": 0.226
+        },
+        "5": {
+          "wobaAgainst": 0.379
+        },
+        "6": {
+          "wobaAgainst": 0.281
+        },
+        "7": {
+          "wobaAgainst": 0.208
+        },
+        "8": {
+          "wobaAgainst": 0.267
+        },
+        "9": {
+          "wobaAgainst": 0.369
+        }
+      }
     },
     "671922": {
       "totalPitches": 753,
@@ -32107,7 +35656,45 @@
           "whiffPct": 31.3,
           "hardHitPct": 32.6,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 6,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 10.8,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 5,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 8.2,
+              "wobaAgainst": 0.309
+            },
+            "5": {
+              "usagePct": 7.7,
+              "wobaAgainst": 0.156
+            },
+            "6": {
+              "usagePct": 4.1,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 3.8,
+              "wobaAgainst": 0.225
+            },
+            "8": {
+              "usagePct": 4.6,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 1.7,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Slider",
@@ -32122,7 +35709,45 @@
           "whiffPct": 39.2,
           "hardHitPct": 27.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 0.4,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 1.9,
+              "wobaAgainst": 0.625
+            },
+            "3": {
+              "usagePct": 3.4,
+              "wobaAgainst": 0.9
+            },
+            "4": {
+              "usagePct": 1.5,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 6.4,
+              "wobaAgainst": 0.555
+            },
+            "6": {
+              "usagePct": 5.2,
+              "wobaAgainst": 0.225
+            },
+            "7": {
+              "usagePct": 9.7,
+              "wobaAgainst": 0.29
+            },
+            "8": {
+              "usagePct": 11.2,
+              "wobaAgainst": 0.208
+            },
+            "9": {
+              "usagePct": 4.1,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -32137,7 +35762,45 @@
           "whiffPct": 13.3,
           "hardHitPct": 52.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "1": {
+              "usagePct": 0.9,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 3.1,
+              "wobaAgainst": 0.43
+            },
+            "3": {
+              "usagePct": 2.7,
+              "wobaAgainst": 0.717
+            },
+            "4": {
+              "usagePct": 4.5,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 8.9,
+              "wobaAgainst": 0.778
+            },
+            "6": {
+              "usagePct": 8.9,
+              "wobaAgainst": 0.129
+            },
+            "7": {
+              "usagePct": 11.6,
+              "wobaAgainst": 0.36
+            },
+            "8": {
+              "usagePct": 12.5,
+              "wobaAgainst": 0.519
+            },
+            "9": {
+              "usagePct": 5.8,
+              "wobaAgainst": 0.3
+            }
+          }
         },
         {
           "name": "Curveball",
@@ -32152,7 +35815,45 @@
           "whiffPct": 29,
           "hardHitPct": 38.1,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 1.8,
+              "wobaAgainst": 1.25
+            },
+            "2": {
+              "usagePct": 0.6,
+              "wobaAgainst": 0.9
+            },
+            "3": {
+              "usagePct": 3,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 3.6,
+              "wobaAgainst": 0.9
+            },
+            "5": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0.9
+            },
+            "6": {
+              "usagePct": 6,
+              "wobaAgainst": 0.45
+            },
+            "7": {
+              "usagePct": 3.6,
+              "wobaAgainst": 1.625
+            },
+            "8": {
+              "usagePct": 9.5,
+              "wobaAgainst": 0.04
+            },
+            "9": {
+              "usagePct": 6,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Cutter",
@@ -32167,7 +35868,45 @@
           "whiffPct": 14.7,
           "hardHitPct": 38.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "1": {
+              "usagePct": 11.5,
+              "wobaAgainst": 0.671
+            },
+            "2": {
+              "usagePct": 3.8,
+              "wobaAgainst": 0.45
+            },
+            "3": {
+              "usagePct": 4.5,
+              "wobaAgainst": 1.25
+            },
+            "4": {
+              "usagePct": 9.6,
+              "wobaAgainst": 0.129
+            },
+            "5": {
+              "usagePct": 10.3,
+              "wobaAgainst": 0.54
+            },
+            "6": {
+              "usagePct": 3.8,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 5.8,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 5.8,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 1.3,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -32182,9 +35921,68 @@
           "whiffPct": 42.1,
           "hardHitPct": 0,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "2": {
+              "usagePct": 1.3,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 5.1,
+              "wobaAgainst": null
+            },
+            "5": {
+              "usagePct": 2.5,
+              "wobaAgainst": null
+            },
+            "6": {
+              "usagePct": 7.6,
+              "wobaAgainst": 0.9
+            },
+            "7": {
+              "usagePct": 6.3,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 7.6,
+              "wobaAgainst": null
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.458
+        },
+        "2": {
+          "wobaAgainst": 0.248
+        },
+        "3": {
+          "wobaAgainst": 0.614
+        },
+        "4": {
+          "wobaAgainst": 0.254
+        },
+        "5": {
+          "wobaAgainst": 0.527
+        },
+        "6": {
+          "wobaAgainst": 0.225
+        },
+        "7": {
+          "wobaAgainst": 0.402
+        },
+        "8": {
+          "wobaAgainst": 0.272
+        },
+        "9": {
+          "wobaAgainst": 0.069
+        }
+      }
     },
     "675848": {
       "totalPitches": 783,
@@ -35047,7 +38845,45 @@
           "whiffPct": 35.2,
           "hardHitPct": 37.8,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 3.2,
+              "wobaAgainst": 0.45
+            },
+            "2": {
+              "usagePct": 3,
+              "wobaAgainst": 0.4
+            },
+            "3": {
+              "usagePct": 1.5,
+              "wobaAgainst": 0.32
+            },
+            "4": {
+              "usagePct": 5.3,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 4.9,
+              "wobaAgainst": 0.164
+            },
+            "6": {
+              "usagePct": 4.6,
+              "wobaAgainst": 0.404
+            },
+            "7": {
+              "usagePct": 3.4,
+              "wobaAgainst": 0.15
+            },
+            "8": {
+              "usagePct": 7.6,
+              "wobaAgainst": 0.408
+            },
+            "9": {
+              "usagePct": 5.3,
+              "wobaAgainst": 0.243
+            }
+          }
         },
         {
           "name": "Slider",
@@ -35062,7 +38898,45 @@
           "whiffPct": 40.3,
           "hardHitPct": 35.6,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 4,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 3.3,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 2.1,
+              "wobaAgainst": 0.967
+            },
+            "4": {
+              "usagePct": 5,
+              "wobaAgainst": 0.156
+            },
+            "5": {
+              "usagePct": 7.5,
+              "wobaAgainst": 0.4
+            },
+            "6": {
+              "usagePct": 5.4,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 4,
+              "wobaAgainst": 0.6
+            },
+            "8": {
+              "usagePct": 9.4,
+              "wobaAgainst": 0.321
+            },
+            "9": {
+              "usagePct": 7.7,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "4-Seam Fastball",
@@ -35077,7 +38951,45 @@
           "whiffPct": 11.4,
           "hardHitPct": 51.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 7,
+          "zones": {
+            "1": {
+              "usagePct": 5.8,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 7.7,
+              "wobaAgainst": 0.773
+            },
+            "3": {
+              "usagePct": 3.7,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 4.7,
+              "wobaAgainst": 0.8
+            },
+            "5": {
+              "usagePct": 9.3,
+              "wobaAgainst": 0.309
+            },
+            "6": {
+              "usagePct": 8.8,
+              "wobaAgainst": 0.337
+            },
+            "7": {
+              "usagePct": 1.6,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 5.6,
+              "wobaAgainst": 0.225
+            },
+            "9": {
+              "usagePct": 7,
+              "wobaAgainst": 0.225
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -35092,7 +39004,45 @@
           "whiffPct": 34.2,
           "hardHitPct": 41.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0.45
+            },
+            "2": {
+              "usagePct": 4.1,
+              "wobaAgainst": 0.9
+            },
+            "3": {
+              "usagePct": 1,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 6.1,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 6.6,
+              "wobaAgainst": 0.225
+            },
+            "6": {
+              "usagePct": 1,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 4.6,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0.307
+            },
+            "9": {
+              "usagePct": 4.6,
+              "wobaAgainst": 0.45
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -35107,9 +39057,76 @@
           "whiffPct": 5.1,
           "hardHitPct": 41.2,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "1": {
+              "usagePct": 10.5,
+              "wobaAgainst": 0.85
+            },
+            "2": {
+              "usagePct": 1.1,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 1.1,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 12.2,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 5.5,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 5,
+              "wobaAgainst": 0.386
+            },
+            "7": {
+              "usagePct": 8.3,
+              "wobaAgainst": 0.725
+            },
+            "8": {
+              "usagePct": 7.2,
+              "wobaAgainst": 0.45
+            },
+            "9": {
+              "usagePct": 6.6,
+              "wobaAgainst": 0
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.329
+        },
+        "2": {
+          "wobaAgainst": 0.57
+        },
+        "3": {
+          "wobaAgainst": 0.375
+        },
+        "4": {
+          "wobaAgainst": 0.196
+        },
+        "5": {
+          "wobaAgainst": 0.249
+        },
+        "6": {
+          "wobaAgainst": 0.323
+        },
+        "7": {
+          "wobaAgainst": 0.332
+        },
+        "8": {
+          "wobaAgainst": 0.348
+        },
+        "9": {
+          "wobaAgainst": 0.191
+        }
+      }
     },
     "676979": {
       "totalPitches": 514,
@@ -35832,7 +39849,45 @@
           "whiffPct": 21.2,
           "hardHitPct": 55.6,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 11,
+          "zones": {
+            "1": {
+              "usagePct": 5.8,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 7.5,
+              "wobaAgainst": 0.345
+            },
+            "3": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0.771
+            },
+            "4": {
+              "usagePct": 5.4,
+              "wobaAgainst": 0.459
+            },
+            "5": {
+              "usagePct": 7.7,
+              "wobaAgainst": 0.479
+            },
+            "6": {
+              "usagePct": 7.3,
+              "wobaAgainst": 0.218
+            },
+            "7": {
+              "usagePct": 5.4,
+              "wobaAgainst": 0.5
+            },
+            "8": {
+              "usagePct": 4.3,
+              "wobaAgainst": 0.783
+            },
+            "9": {
+              "usagePct": 2.8,
+              "wobaAgainst": 0.54
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -35847,7 +39902,45 @@
           "whiffPct": 35.1,
           "hardHitPct": 34.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 4,
+          "zones": {
+            "1": {
+              "usagePct": 0.5,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 1.4,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 3.4,
+              "wobaAgainst": 0.225
+            },
+            "4": {
+              "usagePct": 2.3,
+              "wobaAgainst": 0.3
+            },
+            "5": {
+              "usagePct": 3.8,
+              "wobaAgainst": 0.4
+            },
+            "6": {
+              "usagePct": 4.5,
+              "wobaAgainst": 0.129
+            },
+            "7": {
+              "usagePct": 4.5,
+              "wobaAgainst": 0.5
+            },
+            "8": {
+              "usagePct": 6.3,
+              "wobaAgainst": 0.346
+            },
+            "9": {
+              "usagePct": 7,
+              "wobaAgainst": 0.181
+            }
+          }
         },
         {
           "name": "Sweeper",
@@ -35862,7 +39955,45 @@
           "whiffPct": 43.6,
           "hardHitPct": 25.9,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "1": {
+              "usagePct": 0.5,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 2.1,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 4,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 3.8,
+              "wobaAgainst": 0.45
+            },
+            "5": {
+              "usagePct": 6.1,
+              "wobaAgainst": 0.113
+            },
+            "6": {
+              "usagePct": 5.4,
+              "wobaAgainst": 0.45
+            },
+            "7": {
+              "usagePct": 6.8,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 9.4,
+              "wobaAgainst": 0.595
+            },
+            "9": {
+              "usagePct": 4.7,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -35877,7 +40008,45 @@
           "whiffPct": 7.6,
           "hardHitPct": 42.9,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 2,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 3.8,
+              "wobaAgainst": 0.6
+            },
+            "3": {
+              "usagePct": 5.6,
+              "wobaAgainst": 0.9
+            },
+            "4": {
+              "usagePct": 3.2,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 9.1,
+              "wobaAgainst": 0.2
+            },
+            "6": {
+              "usagePct": 7.9,
+              "wobaAgainst": 0.3
+            },
+            "7": {
+              "usagePct": 8.2,
+              "wobaAgainst": 0.381
+            },
+            "8": {
+              "usagePct": 13.2,
+              "wobaAgainst": 0.35
+            },
+            "9": {
+              "usagePct": 5.8,
+              "wobaAgainst": 0.391
+            }
+          }
         },
         {
           "name": "Slider",
@@ -35892,9 +40061,76 @@
           "whiffPct": 33.3,
           "hardHitPct": 34.5,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "1": {
+              "usagePct": 1,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 3.5,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 5.4,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 6.4,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 6.9,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 4,
+              "wobaAgainst": 0.358
+            },
+            "7": {
+              "usagePct": 8.4,
+              "wobaAgainst": 0.464
+            },
+            "8": {
+              "usagePct": 6.4,
+              "wobaAgainst": 0.2
+            },
+            "9": {
+              "usagePct": 5,
+              "wobaAgainst": 0.45
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0
+        },
+        "2": {
+          "wobaAgainst": 0.35
+        },
+        "3": {
+          "wobaAgainst": 0.5
+        },
+        "4": {
+          "wobaAgainst": 0.343
+        },
+        "5": {
+          "wobaAgainst": 0.275
+        },
+        "6": {
+          "wobaAgainst": 0.255
+        },
+        "7": {
+          "wobaAgainst": 0.397
+        },
+        "8": {
+          "wobaAgainst": 0.418
+        },
+        "9": {
+          "wobaAgainst": 0.307
+        }
+      }
     },
     "677961": {
       "totalPitches": 319,
@@ -35992,7 +40228,45 @@
           "whiffPct": 0,
           "hardHitPct": 36.8,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 2.2,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 3.7,
+              "wobaAgainst": 0.45
+            },
+            "3": {
+              "usagePct": 1.5,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 4.4,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 8.9,
+              "wobaAgainst": 1
+            },
+            "6": {
+              "usagePct": 4.4,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 10.4,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 11.1,
+              "wobaAgainst": 0.3
+            },
+            "9": {
+              "usagePct": 10.4,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -36007,7 +40281,33 @@
           "whiffPct": 30,
           "hardHitPct": 25,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "4": {
+              "usagePct": 6.3,
+              "wobaAgainst": null
+            },
+            "5": {
+              "usagePct": 1.6,
+              "wobaAgainst": null
+            },
+            "6": {
+              "usagePct": 1.6,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 4.7,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 9.4,
+              "wobaAgainst": 0.9
+            },
+            "9": {
+              "usagePct": 3.1,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "Sweeper",
@@ -36022,7 +40322,41 @@
           "whiffPct": 11.1,
           "hardHitPct": 66.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 4.5,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 1.1,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 7.9,
+              "wobaAgainst": null
+            },
+            "5": {
+              "usagePct": 7.9,
+              "wobaAgainst": 0.9
+            },
+            "6": {
+              "usagePct": 2.2,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 5.6,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 6.7,
+              "wobaAgainst": null
+            },
+            "9": {
+              "usagePct": 7.9,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "4-Seam Fastball",
@@ -36037,7 +40371,41 @@
           "whiffPct": 20,
           "hardHitPct": 25,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 8.1,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 10.8,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 8.1,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 8.1,
+              "wobaAgainst": 0.9
+            },
+            "5": {
+              "usagePct": 13.5,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 5.4,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 2.7,
+              "wobaAgainst": 0.9
+            },
+            "9": {
+              "usagePct": 2.7,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "Slider",
@@ -36052,9 +40420,50 @@
           "whiffPct": 0,
           "hardHitPct": 0,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 5.6,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 11.1,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 5.6,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 11.1,
+              "wobaAgainst": 0
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "2": {
+          "wobaAgainst": 0.45
+        },
+        "3": {
+          "wobaAgainst": 0
+        },
+        "4": {
+          "wobaAgainst": 0.225
+        },
+        "5": {
+          "wobaAgainst": 0.725
+        },
+        "6": {
+          "wobaAgainst": 0
+        },
+        "7": {
+          "wobaAgainst": 0
+        },
+        "8": {
+          "wobaAgainst": 0.54
+        }
+      }
     },
     "678020": {
       "totalPitches": 375,
@@ -36887,7 +41296,45 @@
           "whiffPct": 15.8,
           "hardHitPct": 58.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 4,
+          "zones": {
+            "1": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0.407
+            },
+            "2": {
+              "usagePct": 8.5,
+              "wobaAgainst": 0.542
+            },
+            "3": {
+              "usagePct": 3.7,
+              "wobaAgainst": 0.225
+            },
+            "4": {
+              "usagePct": 6.2,
+              "wobaAgainst": 0.339
+            },
+            "5": {
+              "usagePct": 9,
+              "wobaAgainst": 0.6
+            },
+            "6": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0.339
+            },
+            "7": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0.43
+            },
+            "8": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0.283
+            },
+            "9": {
+              "usagePct": 3.9,
+              "wobaAgainst": 0.45
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -36902,7 +41349,45 @@
           "whiffPct": 28.3,
           "hardHitPct": 37.5,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 2.6,
+              "wobaAgainst": 0.45
+            },
+            "2": {
+              "usagePct": 1.3,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 0.7,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 7.2,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 4.6,
+              "wobaAgainst": 0.45
+            },
+            "6": {
+              "usagePct": 2.6,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 6.5,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 6.5,
+              "wobaAgainst": 0.225
+            },
+            "9": {
+              "usagePct": 2.6,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Curveball",
@@ -36917,7 +41402,45 @@
           "whiffPct": 19.4,
           "hardHitPct": 50,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 1.7,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 5.2,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 2.6,
+              "wobaAgainst": 0.9
+            },
+            "4": {
+              "usagePct": 4.3,
+              "wobaAgainst": 1.25
+            },
+            "5": {
+              "usagePct": 6,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 4.3,
+              "wobaAgainst": 0.9
+            },
+            "7": {
+              "usagePct": 4.3,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 6.9,
+              "wobaAgainst": 0.61
+            },
+            "9": {
+              "usagePct": 7.8,
+              "wobaAgainst": 0.625
+            }
+          }
         },
         {
           "name": "Slider",
@@ -36932,9 +41455,76 @@
           "whiffPct": 33.3,
           "hardHitPct": 30.8,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 3,
+              "wobaAgainst": 0.45
+            },
+            "2": {
+              "usagePct": 4,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 2,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 8.1,
+              "wobaAgainst": 0.625
+            },
+            "5": {
+              "usagePct": 8.1,
+              "wobaAgainst": 2
+            },
+            "6": {
+              "usagePct": 2,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 4,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 7.1,
+              "wobaAgainst": 1.017
+            },
+            "9": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.423
+        },
+        "2": {
+          "wobaAgainst": 0.406
+        },
+        "3": {
+          "wobaAgainst": 0.3
+        },
+        "4": {
+          "wobaAgainst": 0.427
+        },
+        "5": {
+          "wobaAgainst": 0.638
+        },
+        "6": {
+          "wobaAgainst": 0.359
+        },
+        "7": {
+          "wobaAgainst": 0.269
+        },
+        "8": {
+          "wobaAgainst": 0.433
+        },
+        "9": {
+          "wobaAgainst": 0.358
+        }
+      }
     },
     "680573": {
       "totalPitches": 1006,
@@ -38792,7 +43382,45 @@
           "whiffPct": 39.1,
           "hardHitPct": 22.8,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "1": {
+              "usagePct": 2.4,
+              "wobaAgainst": 0.14
+            },
+            "2": {
+              "usagePct": 1.8,
+              "wobaAgainst": 0.625
+            },
+            "3": {
+              "usagePct": 0.4,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 6.1,
+              "wobaAgainst": 0.1
+            },
+            "5": {
+              "usagePct": 3.9,
+              "wobaAgainst": 0.671
+            },
+            "6": {
+              "usagePct": 2.2,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 6.3,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 6.5,
+              "wobaAgainst": 0.404
+            },
+            "9": {
+              "usagePct": 5.5,
+              "wobaAgainst": 0.18
+            }
+          }
         },
         {
           "name": "4-Seam Fastball",
@@ -38807,7 +43435,45 @@
           "whiffPct": 20.7,
           "hardHitPct": 41.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 5,
+          "zones": {
+            "1": {
+              "usagePct": 9.2,
+              "wobaAgainst": 0.1
+            },
+            "2": {
+              "usagePct": 8.7,
+              "wobaAgainst": 0.975
+            },
+            "3": {
+              "usagePct": 9.8,
+              "wobaAgainst": 0.157
+            },
+            "4": {
+              "usagePct": 3.9,
+              "wobaAgainst": 0.76
+            },
+            "5": {
+              "usagePct": 6.8,
+              "wobaAgainst": 0.331
+            },
+            "6": {
+              "usagePct": 6.3,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 1.3,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 2.2,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 4.4,
+              "wobaAgainst": 0.667
+            }
+          }
         },
         {
           "name": "Sweeper",
@@ -38822,7 +43488,45 @@
           "whiffPct": 25.6,
           "hardHitPct": 18.8,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 3,
+          "zones": {
+            "1": {
+              "usagePct": 5.5,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 2.8,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 0.6,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 5.5,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 8.3,
+              "wobaAgainst": 1
+            },
+            "6": {
+              "usagePct": 6.6,
+              "wobaAgainst": 0.3
+            },
+            "7": {
+              "usagePct": 2.2,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 6.1,
+              "wobaAgainst": 0.436
+            },
+            "9": {
+              "usagePct": 7.7,
+              "wobaAgainst": 0.386
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -38837,7 +43541,45 @@
           "whiffPct": 7.1,
           "hardHitPct": 25.9,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "1": {
+              "usagePct": 4.2,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 4.2,
+              "wobaAgainst": 0.9
+            },
+            "3": {
+              "usagePct": 0.6,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 12,
+              "wobaAgainst": 0.38
+            },
+            "5": {
+              "usagePct": 8.4,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 2.4,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 6,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 9.6,
+              "wobaAgainst": 0.667
+            },
+            "9": {
+              "usagePct": 3,
+              "wobaAgainst": 0.533
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -38852,7 +43594,41 @@
           "whiffPct": 25,
           "hardHitPct": 33.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 0.9,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 0.9,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 3.5,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 7,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 1.7,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 8.7,
+              "wobaAgainst": 0.3
+            },
+            "8": {
+              "usagePct": 3.5,
+              "wobaAgainst": null
+            },
+            "9": {
+              "usagePct": 2.6,
+              "wobaAgainst": 0.9
+            }
+          }
         },
         {
           "name": "Cutter",
@@ -38867,7 +43643,45 @@
           "whiffPct": 14,
           "hardHitPct": 43.5,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "1": {
+              "usagePct": 4.8,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 7.7,
+              "wobaAgainst": 2
+            },
+            "3": {
+              "usagePct": 5.8,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 16.3,
+              "wobaAgainst": 0.417
+            },
+            "5": {
+              "usagePct": 14.4,
+              "wobaAgainst": 0.15
+            },
+            "6": {
+              "usagePct": 5.8,
+              "wobaAgainst": 0.725
+            },
+            "7": {
+              "usagePct": 2.9,
+              "wobaAgainst": 0.9
+            },
+            "8": {
+              "usagePct": 2.9,
+              "wobaAgainst": null
+            },
+            "9": {
+              "usagePct": 7.7,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Slider",
@@ -38882,9 +43696,60 @@
           "whiffPct": 25,
           "hardHitPct": 66.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "4": {
+              "usagePct": 5.3,
+              "wobaAgainst": null
+            },
+            "5": {
+              "usagePct": 15.8,
+              "wobaAgainst": null
+            },
+            "6": {
+              "usagePct": 5.3,
+              "wobaAgainst": 0.9
+            },
+            "8": {
+              "usagePct": 5.3,
+              "wobaAgainst": null
+            },
+            "9": {
+              "usagePct": 15.8,
+              "wobaAgainst": 0
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.076
+        },
+        "2": {
+          "wobaAgainst": 0.919
+        },
+        "3": {
+          "wobaAgainst": 0.11
+        },
+        "4": {
+          "wobaAgainst": 0.324
+        },
+        "5": {
+          "wobaAgainst": 0.43
+        },
+        "6": {
+          "wobaAgainst": 0.247
+        },
+        "7": {
+          "wobaAgainst": 0.129
+        },
+        "8": {
+          "wobaAgainst": 0.43
+        },
+        "9": {
+          "wobaAgainst": 0.31
+        }
+      }
     },
     "681343": {
       "totalPitches": 225,
@@ -42867,7 +47732,45 @@
           "whiffPct": 27.2,
           "hardHitPct": 44.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 11,
+          "zones": {
+            "1": {
+              "usagePct": 6.7,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 9,
+              "wobaAgainst": 0.627
+            },
+            "3": {
+              "usagePct": 7.2,
+              "wobaAgainst": 0.671
+            },
+            "4": {
+              "usagePct": 4,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 7.9,
+              "wobaAgainst": 0.666
+            },
+            "6": {
+              "usagePct": 6.1,
+              "wobaAgainst": 0.24
+            },
+            "7": {
+              "usagePct": 0.7,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 2.1,
+              "wobaAgainst": 0.313
+            },
+            "9": {
+              "usagePct": 2.4,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "Slider",
@@ -42882,7 +47785,45 @@
           "whiffPct": 39.1,
           "hardHitPct": 33.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 5,
+          "zones": {
+            "1": {
+              "usagePct": 1.8,
+              "wobaAgainst": 0.625
+            },
+            "2": {
+              "usagePct": 3.8,
+              "wobaAgainst": 0.667
+            },
+            "3": {
+              "usagePct": 2.4,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 2.2,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 7.4,
+              "wobaAgainst": 0.327
+            },
+            "6": {
+              "usagePct": 10.7,
+              "wobaAgainst": 0.241
+            },
+            "7": {
+              "usagePct": 0.2,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 4.2,
+              "wobaAgainst": 0.339
+            },
+            "9": {
+              "usagePct": 9.9,
+              "wobaAgainst": 0.461
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -42897,7 +47838,45 @@
           "whiffPct": 22.2,
           "hardHitPct": 44.4,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 3,
+              "wobaAgainst": 0.233
+            },
+            "2": {
+              "usagePct": 3,
+              "wobaAgainst": 0.18
+            },
+            "3": {
+              "usagePct": 0.4,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 10,
+              "wobaAgainst": 0.375
+            },
+            "5": {
+              "usagePct": 5.5,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 2.6,
+              "wobaAgainst": 0.417
+            },
+            "7": {
+              "usagePct": 8.1,
+              "wobaAgainst": 0.423
+            },
+            "8": {
+              "usagePct": 8.5,
+              "wobaAgainst": 0.508
+            },
+            "9": {
+              "usagePct": 4.4,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Curveball",
@@ -42912,9 +47891,76 @@
           "whiffPct": 27.3,
           "hardHitPct": 20,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 6.6,
+              "wobaAgainst": 0.3
+            },
+            "2": {
+              "usagePct": 3,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 4.2,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 3,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 10.8,
+              "wobaAgainst": 0.625
+            },
+            "6": {
+              "usagePct": 6,
+              "wobaAgainst": 0.625
+            },
+            "7": {
+              "usagePct": 3.6,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 4.2,
+              "wobaAgainst": null
+            },
+            "9": {
+              "usagePct": 7.2,
+              "wobaAgainst": 0
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.178
+        },
+        "2": {
+          "wobaAgainst": 0.513
+        },
+        "3": {
+          "wobaAgainst": 0.427
+        },
+        "4": {
+          "wobaAgainst": 0.237
+        },
+        "5": {
+          "wobaAgainst": 0.486
+        },
+        "6": {
+          "wobaAgainst": 0.271
+        },
+        "7": {
+          "wobaAgainst": 0.358
+        },
+        "8": {
+          "wobaAgainst": 0.387
+        },
+        "9": {
+          "wobaAgainst": 0.361
+        }
+      }
     },
     "686228": {
       "totalPitches": 20,
@@ -48621,7 +53667,45 @@
           "whiffPct": 26,
           "hardHitPct": 43.2,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 4,
+          "zones": {
+            "1": {
+              "usagePct": 8.5,
+              "wobaAgainst": 0.225
+            },
+            "2": {
+              "usagePct": 11.3,
+              "wobaAgainst": 0.388
+            },
+            "3": {
+              "usagePct": 6.5,
+              "wobaAgainst": 0.142
+            },
+            "4": {
+              "usagePct": 6.1,
+              "wobaAgainst": 0.47
+            },
+            "5": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0.292
+            },
+            "6": {
+              "usagePct": 6.5,
+              "wobaAgainst": 0.221
+            },
+            "7": {
+              "usagePct": 1.3,
+              "wobaAgainst": 0.9
+            },
+            "8": {
+              "usagePct": 3.9,
+              "wobaAgainst": 0.4
+            },
+            "9": {
+              "usagePct": 2.6,
+              "wobaAgainst": 0.519
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -48636,7 +53720,45 @@
           "whiffPct": 11.4,
           "hardHitPct": 50.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 3,
+          "zones": {
+            "1": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0.257
+            },
+            "2": {
+              "usagePct": 6.3,
+              "wobaAgainst": 0.8
+            },
+            "3": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 9.8,
+              "wobaAgainst": 0.605
+            },
+            "5": {
+              "usagePct": 10.8,
+              "wobaAgainst": 0.257
+            },
+            "6": {
+              "usagePct": 7,
+              "wobaAgainst": 0.338
+            },
+            "7": {
+              "usagePct": 4.8,
+              "wobaAgainst": 0.257
+            },
+            "8": {
+              "usagePct": 6,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 5.4,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Slider",
@@ -48651,7 +53773,41 @@
           "whiffPct": 29.6,
           "hardHitPct": 50,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 1.2,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 2,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 2.7,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 6.6,
+              "wobaAgainst": 0.307
+            },
+            "6": {
+              "usagePct": 2.3,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 7.8,
+              "wobaAgainst": 0.15
+            },
+            "8": {
+              "usagePct": 10.2,
+              "wobaAgainst": 0.3
+            },
+            "9": {
+              "usagePct": 10.2,
+              "wobaAgainst": 0.414
+            }
+          }
         },
         {
           "name": "Sweeper",
@@ -48666,7 +53822,45 @@
           "whiffPct": 34.5,
           "hardHitPct": 34.1,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "1": {
+              "usagePct": 4.1,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 2.9,
+              "wobaAgainst": 0.45
+            },
+            "3": {
+              "usagePct": 1.2,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 4.1,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 7,
+              "wobaAgainst": 0.967
+            },
+            "6": {
+              "usagePct": 8.3,
+              "wobaAgainst": 0.305
+            },
+            "7": {
+              "usagePct": 1.7,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 8.3,
+              "wobaAgainst": 0.425
+            },
+            "9": {
+              "usagePct": 6.6,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -48681,9 +53875,76 @@
           "whiffPct": 17.9,
           "hardHitPct": 23.8,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 3.5,
+              "wobaAgainst": 0.3
+            },
+            "2": {
+              "usagePct": 0.9,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 0.9,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 4.3,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 5.2,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 2.6,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 7.8,
+              "wobaAgainst": 0.225
+            },
+            "8": {
+              "usagePct": 10.4,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 4.3,
+              "wobaAgainst": null
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.242
+        },
+        "2": {
+          "wobaAgainst": 0.432
+        },
+        "3": {
+          "wobaAgainst": 0.117
+        },
+        "4": {
+          "wobaAgainst": 0.405
+        },
+        "5": {
+          "wobaAgainst": 0.364
+        },
+        "6": {
+          "wobaAgainst": 0.254
+        },
+        "7": {
+          "wobaAgainst": 0.225
+        },
+        "8": {
+          "wobaAgainst": 0.291
+        },
+        "9": {
+          "wobaAgainst": 0.307
+        }
+      }
     },
     "693645": {
       "totalPitches": 1819,
@@ -49136,7 +54397,45 @@
           "whiffPct": 35.8,
           "hardHitPct": 35.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 1,
+              "wobaAgainst": 0.45
+            },
+            "2": {
+              "usagePct": 2.6,
+              "wobaAgainst": 0.225
+            },
+            "3": {
+              "usagePct": 1.3,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 2.6,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0.179
+            },
+            "6": {
+              "usagePct": 5.6,
+              "wobaAgainst": 0.18
+            },
+            "7": {
+              "usagePct": 5.6,
+              "wobaAgainst": 0.225
+            },
+            "8": {
+              "usagePct": 9.2,
+              "wobaAgainst": 0.313
+            },
+            "9": {
+              "usagePct": 5.9,
+              "wobaAgainst": 0.195
+            }
+          }
         },
         {
           "name": "Sweeper",
@@ -49151,7 +54450,45 @@
           "whiffPct": 36.7,
           "hardHitPct": 29.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 3,
+          "zones": {
+            "1": {
+              "usagePct": 7.4,
+              "wobaAgainst": 0.381
+            },
+            "2": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0.5
+            },
+            "3": {
+              "usagePct": 6,
+              "wobaAgainst": 0.625
+            },
+            "4": {
+              "usagePct": 8.8,
+              "wobaAgainst": 0.225
+            },
+            "5": {
+              "usagePct": 11,
+              "wobaAgainst": 0.182
+            },
+            "6": {
+              "usagePct": 6,
+              "wobaAgainst": 1
+            },
+            "7": {
+              "usagePct": 6.4,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 4.6,
+              "wobaAgainst": 0.9
+            },
+            "9": {
+              "usagePct": 1.8,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "4-Seam Fastball",
@@ -49166,7 +54503,45 @@
           "whiffPct": 24.8,
           "hardHitPct": 35.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 3,
+          "zones": {
+            "1": {
+              "usagePct": 6.7,
+              "wobaAgainst": 0.257
+            },
+            "2": {
+              "usagePct": 10.3,
+              "wobaAgainst": 0.15
+            },
+            "3": {
+              "usagePct": 7,
+              "wobaAgainst": 0.5
+            },
+            "4": {
+              "usagePct": 5.7,
+              "wobaAgainst": 0.588
+            },
+            "5": {
+              "usagePct": 8.7,
+              "wobaAgainst": 0.817
+            },
+            "6": {
+              "usagePct": 4,
+              "wobaAgainst": 0.313
+            },
+            "7": {
+              "usagePct": 4,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 5,
+              "wobaAgainst": 0.4
+            },
+            "9": {
+              "usagePct": 3.3,
+              "wobaAgainst": 0.18
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -49181,7 +54556,45 @@
           "whiffPct": 8,
           "hardHitPct": 39.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 3,
+          "zones": {
+            "1": {
+              "usagePct": 6.2,
+              "wobaAgainst": 0.967
+            },
+            "2": {
+              "usagePct": 7.3,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 7.9,
+              "wobaAgainst": 0.45
+            },
+            "4": {
+              "usagePct": 4.5,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 10.7,
+              "wobaAgainst": 0.519
+            },
+            "6": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 3.4,
+              "wobaAgainst": 2
+            },
+            "8": {
+              "usagePct": 6.7,
+              "wobaAgainst": null
+            },
+            "9": {
+              "usagePct": 3.4,
+              "wobaAgainst": 1.017
+            }
+          }
         },
         {
           "name": "Slider",
@@ -49196,7 +54609,41 @@
           "whiffPct": 14.3,
           "hardHitPct": 33.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 8.5,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 8.5,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 2.1,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 2.1,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 14.9,
+              "wobaAgainst": 0.967
+            },
+            "6": {
+              "usagePct": 2.1,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 4.3,
+              "wobaAgainst": 0.9
+            },
+            "9": {
+              "usagePct": 4.3,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "Curveball",
@@ -49211,7 +54658,29 @@
           "whiffPct": 50,
           "hardHitPct": 100,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "3": {
+              "usagePct": 7.1,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 7.1,
+              "wobaAgainst": null
+            },
+            "5": {
+              "usagePct": 7.1,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 7.1,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 7.1,
+              "wobaAgainst": null
+            }
+          }
         },
         {
           "name": "Cutter",
@@ -49226,9 +54695,72 @@
           "whiffPct": 16.7,
           "hardHitPct": 100,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 5,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 10,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 2.5,
+              "wobaAgainst": null
+            },
+            "5": {
+              "usagePct": 7.5,
+              "wobaAgainst": 1.25
+            },
+            "6": {
+              "usagePct": 5,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 5,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 12.5,
+              "wobaAgainst": 1.25
+            },
+            "9": {
+              "usagePct": 5,
+              "wobaAgainst": null
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.432
+        },
+        "2": {
+          "wobaAgainst": 0.19
+        },
+        "3": {
+          "wobaAgainst": 0.415
+        },
+        "4": {
+          "wobaAgainst": 0.271
+        },
+        "5": {
+          "wobaAgainst": 0.445
+        },
+        "6": {
+          "wobaAgainst": 0.297
+        },
+        "7": {
+          "wobaAgainst": 0.271
+        },
+        "8": {
+          "wobaAgainst": 0.446
+        },
+        "9": {
+          "wobaAgainst": 0.321
+        }
+      }
     },
     "694037": {
       "totalPitches": 289,
@@ -49311,7 +54843,45 @@
           "whiffPct": 15,
           "hardHitPct": 40,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 6.5,
+              "wobaAgainst": 0.358
+            },
+            "2": {
+              "usagePct": 10.6,
+              "wobaAgainst": 0.179
+            },
+            "3": {
+              "usagePct": 2.8,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 7.9,
+              "wobaAgainst": 0.567
+            },
+            "5": {
+              "usagePct": 9.7,
+              "wobaAgainst": 0.422
+            },
+            "6": {
+              "usagePct": 11.6,
+              "wobaAgainst": 0.18
+            },
+            "7": {
+              "usagePct": 2.3,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 2.3,
+              "wobaAgainst": 0.45
+            },
+            "9": {
+              "usagePct": 3.7,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Sinker",
@@ -49326,7 +54896,41 @@
           "whiffPct": 9.9,
           "hardHitPct": 47.5,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 4,
+          "zones": {
+            "1": {
+              "usagePct": 2.1,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 3.1,
+              "wobaAgainst": 0.45
+            },
+            "4": {
+              "usagePct": 11,
+              "wobaAgainst": 0.333
+            },
+            "5": {
+              "usagePct": 10.5,
+              "wobaAgainst": 0.67
+            },
+            "6": {
+              "usagePct": 4.7,
+              "wobaAgainst": 1
+            },
+            "7": {
+              "usagePct": 8.9,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 11.5,
+              "wobaAgainst": 0.215
+            },
+            "9": {
+              "usagePct": 5.2,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Curveball",
@@ -49341,7 +54945,41 @@
           "whiffPct": 36.4,
           "hardHitPct": 26.1,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 0.6,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 0.6,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 6.8,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 3.4,
+              "wobaAgainst": 0.45
+            },
+            "6": {
+              "usagePct": 1.7,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 8,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 5.1,
+              "wobaAgainst": 1.083
+            },
+            "9": {
+              "usagePct": 8.5,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Cutter",
@@ -49356,7 +54994,41 @@
           "whiffPct": 26.9,
           "hardHitPct": 31.6,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 5.7,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 8.9,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 8.1,
+              "wobaAgainst": 0.313
+            },
+            "4": {
+              "usagePct": 1.6,
+              "wobaAgainst": null
+            },
+            "5": {
+              "usagePct": 5.7,
+              "wobaAgainst": 0.45
+            },
+            "6": {
+              "usagePct": 14.6,
+              "wobaAgainst": 0.15
+            },
+            "8": {
+              "usagePct": 4.1,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 10.6,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Sweeper",
@@ -49371,7 +55043,45 @@
           "whiffPct": 29.5,
           "hardHitPct": 36.8,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 2.3,
+              "wobaAgainst": 0.45
+            },
+            "2": {
+              "usagePct": 1.5,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 2.3,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 3.1,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 6.2,
+              "wobaAgainst": 0.625
+            },
+            "6": {
+              "usagePct": 3.8,
+              "wobaAgainst": 0.45
+            },
+            "7": {
+              "usagePct": 0.8,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 3.8,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 6.9,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -49386,7 +55096,29 @@
           "whiffPct": 24,
           "hardHitPct": 39.1,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "4": {
+              "usagePct": 3.3,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 2.5,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 14.2,
+              "wobaAgainst": 0.537
+            },
+            "8": {
+              "usagePct": 11.7,
+              "wobaAgainst": 1.007
+            },
+            "9": {
+              "usagePct": 1.7,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Slider",
@@ -49401,9 +55133,48 @@
           "whiffPct": 50,
           "hardHitPct": null,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "4": {
+              "usagePct": 25,
+              "wobaAgainst": null
+            },
+            "6": {
+              "usagePct": 25,
+              "wobaAgainst": null
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.381
+        },
+        "2": {
+          "wobaAgainst": 0.195
+        },
+        "3": {
+          "wobaAgainst": 0.179
+        },
+        "4": {
+          "wobaAgainst": 0.3
+        },
+        "5": {
+          "wobaAgainst": 0.548
+        },
+        "6": {
+          "wobaAgainst": 0.311
+        },
+        "7": {
+          "wobaAgainst": 0.253
+        },
+        "8": {
+          "wobaAgainst": 0.528
+        },
+        "9": {
+          "wobaAgainst": 0
+        }
+      }
     },
     "694335": {
       "totalPitches": 706,
@@ -51176,7 +56947,45 @@
           "whiffPct": 8,
           "hardHitPct": 45.8,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "1": {
+              "usagePct": 6.7,
+              "wobaAgainst": 0.58
+            },
+            "2": {
+              "usagePct": 4.3,
+              "wobaAgainst": 0.3
+            },
+            "3": {
+              "usagePct": 2,
+              "wobaAgainst": 0.6
+            },
+            "4": {
+              "usagePct": 7.9,
+              "wobaAgainst": 0.493
+            },
+            "5": {
+              "usagePct": 12.1,
+              "wobaAgainst": 0.161
+            },
+            "6": {
+              "usagePct": 9.2,
+              "wobaAgainst": 0.145
+            },
+            "7": {
+              "usagePct": 5.4,
+              "wobaAgainst": 0.313
+            },
+            "8": {
+              "usagePct": 9,
+              "wobaAgainst": 0.208
+            },
+            "9": {
+              "usagePct": 7.2,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Slider",
@@ -51191,7 +57000,45 @@
           "whiffPct": 34.7,
           "hardHitPct": 38.5,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 4,
+          "zones": {
+            "1": {
+              "usagePct": 3.4,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 2.1,
+              "wobaAgainst": 0
+            },
+            "3": {
+              "usagePct": 1,
+              "wobaAgainst": 2
+            },
+            "4": {
+              "usagePct": 4.7,
+              "wobaAgainst": 0.225
+            },
+            "5": {
+              "usagePct": 7,
+              "wobaAgainst": 0.61
+            },
+            "6": {
+              "usagePct": 2.6,
+              "wobaAgainst": 1.25
+            },
+            "7": {
+              "usagePct": 4.1,
+              "wobaAgainst": 0.14
+            },
+            "8": {
+              "usagePct": 9.6,
+              "wobaAgainst": 0.527
+            },
+            "9": {
+              "usagePct": 9,
+              "wobaAgainst": 0.364
+            }
+          }
         },
         {
           "name": "4-Seam Fastball",
@@ -51206,7 +57053,45 @@
           "whiffPct": 12.4,
           "hardHitPct": 37,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "1": {
+              "usagePct": 5.7,
+              "wobaAgainst": 1
+            },
+            "2": {
+              "usagePct": 10.2,
+              "wobaAgainst": 0.193
+            },
+            "3": {
+              "usagePct": 5.1,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 7,
+              "wobaAgainst": 0.338
+            },
+            "5": {
+              "usagePct": 9.2,
+              "wobaAgainst": 0.25
+            },
+            "6": {
+              "usagePct": 8.3,
+              "wobaAgainst": 0.539
+            },
+            "7": {
+              "usagePct": 2.2,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 3.8,
+              "wobaAgainst": 0.313
+            },
+            "9": {
+              "usagePct": 3.2,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -51221,9 +57106,76 @@
           "whiffPct": 28.2,
           "hardHitPct": 29.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 2,
+          "zones": {
+            "1": {
+              "usagePct": 2,
+              "wobaAgainst": 1
+            },
+            "2": {
+              "usagePct": 0.3,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 0.3,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 6.3,
+              "wobaAgainst": 0.45
+            },
+            "5": {
+              "usagePct": 3.6,
+              "wobaAgainst": 0.3
+            },
+            "6": {
+              "usagePct": 2,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 8.9,
+              "wobaAgainst": 0.179
+            },
+            "8": {
+              "usagePct": 7.9,
+              "wobaAgainst": 0.322
+            },
+            "9": {
+              "usagePct": 4,
+              "wobaAgainst": 0.417
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.69
+        },
+        "2": {
+          "wobaAgainst": 0.189
+        },
+        "3": {
+          "wobaAgainst": 0.38
+        },
+        "4": {
+          "wobaAgainst": 0.415
+        },
+        "5": {
+          "wobaAgainst": 0.299
+        },
+        "6": {
+          "wobaAgainst": 0.335
+        },
+        "7": {
+          "wobaAgainst": 0.188
+        },
+        "8": {
+          "wobaAgainst": 0.383
+        },
+        "9": {
+          "wobaAgainst": 0.263
+        }
+      }
     },
     "695239": {
       "totalPitches": 258,
@@ -55516,7 +61468,45 @@
           "whiffPct": 22.2,
           "hardHitPct": 60,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 3.1,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 7.8,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 14.1,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 4.7,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 12.5,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 9.4,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 3.1,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 4.7,
+              "wobaAgainst": null
+            },
+            "9": {
+              "usagePct": 10.9,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -55531,7 +61521,29 @@
           "whiffPct": 10,
           "hardHitPct": 100,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 6.3,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 6.3,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 12.5,
+              "wobaAgainst": null
+            },
+            "5": {
+              "usagePct": 6.3,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 12.5,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Curveball",
@@ -55546,9 +61558,56 @@
           "whiffPct": 16.7,
           "hardHitPct": 100,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 4.2,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 4.2,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 4.2,
+              "wobaAgainst": 1.25
+            },
+            "5": {
+              "usagePct": 4.2,
+              "wobaAgainst": null
+            },
+            "6": {
+              "usagePct": 8.3,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 4.2,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 8.3,
+              "wobaAgainst": null
+            }
+          }
         }
-      ]
+      ],
+      "byZone": {
+        "4": {
+          "wobaAgainst": 0.625
+        },
+        "5": {
+          "wobaAgainst": 0
+        },
+        "6": {
+          "wobaAgainst": 0
+        },
+        "8": {
+          "wobaAgainst": 0
+        },
+        "9": {
+          "wobaAgainst": 0
+        }
+      }
     },
     "702752": {
       "totalPitches": 198,
