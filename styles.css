@@ -3708,3 +3708,14 @@ select:focus-visible {
   padding-right: 34px;
   box-sizing: border-box;
 }
+/* HR Threats cards (.dr1027-hr-score) have the exact same watch-star-over-the-
+   percentage conflict as .dr109-score above, but padding-right on the score
+   itself was tried here first and reverted — it forced the "HR Probability"
+   label to wrap mid-word instead of just reserving space. Repositioning the
+   star to sit just outside the card's own top-right corner clears the number
+   without touching the score's layout at all; .dr1027-hr-card already sets
+   overflow:visible so the star renders in full rather than getting clipped. */
+.dr1027-hr-card .dr-watch-star {
+  top: -9px;
+  right: -9px;
+}

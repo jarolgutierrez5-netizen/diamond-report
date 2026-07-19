@@ -3054,6 +3054,38 @@ const parkFactors = {
 
 let gamePropsLoaded = false;
 
+// Pre-game DR picks captured server-side by scripts/update-tracker.mjs (its morning
+// run happens ~14:07 UTC, hours before any first pitch) — kept in memory only, no
+// localStorage, since it's re-fetched fresh each page load and only used as a
+// same-day cross-check. See the "Cross-check against the server-side tracker" block
+// in loadGameProps (win/loss picks) and loadKProps (K projections/lines) for why
+// this exists: both features lock their own in-memory snapshot once a game goes
+// live so mid-game stat changes can't shift an already-made pick, but that lock is
+// per-browser-session — the very first time a given browser renders a game that's
+// *already* live/final, there's no existing snapshot yet, so it computes fresh
+// using the pitcher's now-already-updated stat line. The tracker record is immune
+// to that since a scheduled job always captures it hours before first pitch.
+let _trackerPicksCache = null;
+let _trackerPicksLoadPromise = null;
+async function loadTrackerPicks() {
+  if (_trackerPicksCache) return _trackerPicksCache;
+  if (_trackerPicksLoadPromise) return _trackerPicksLoadPromise;
+  _trackerPicksLoadPromise = (async () => {
+    const result = { drpByGamePk: {}, kpropByPitcherId: {} };
+    try {
+      const res = await fetch('./data/tracker.json', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        (data?.market?.drp || []).forEach(r => { if (r.gamePk != null) result.drpByGamePk[r.gamePk] = r; });
+        (data?.market?.kprop || []).forEach(r => { if (r.pitcherId != null) result.kpropByPitcherId[r.pitcherId] = r; });
+      }
+    } catch {}
+    _trackerPicksCache = result;
+    return result;
+  })();
+  return _trackerPicksLoadPromise;
+}
+
 // Shared DR win-probability model output, keyed by gamePk. Populated by loadGameProps
 // (the same ERA/WHIP/K9/park/weather/home-field model that powers Diamond Report Picks)
 // and reused elsewhere on the site (e.g. the FAVORED pill on game cards) instead of
@@ -3071,6 +3103,7 @@ async function loadGameProps() {
     await loadParkFactors().catch(() => {});
     await loadBullpenFatigue().catch(() => {});
     await loadEspnEventIds(today).catch(() => {});
+    const { drpByGamePk: trackerDrpByGamePk } = await loadTrackerPicks().catch(() => ({ drpByGamePk: {} }));
     const games = await getTodaySchedule('team,probablePitcher,linescore', { force: true });
 
     if (!games.length) {
@@ -3341,16 +3374,43 @@ async function loadGameProps() {
 
         // Determine winner
         const total = awayScore + homeScore;
-        const awayPct = Math.round((awayScore/total)*100);
-        const homePct = 100 - awayPct;
-        const diff = Math.abs(awayPct - homePct);
-        const confidence = diff < 6 ? 'TOSS-UP' : diff < 12 ? 'LEAN' : diff < 20 ? 'LIKELY' : 'STRONG';
-        const confColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : diff < 20 ? '#2ecc71' : '#00ff88';
-        const winner = awayPct > homePct ? 'away' : 'home';
-        const winnerAbbr = winner==='away' ? awayAbbr : homeAbbr;
-        const winnerPct = winner==='away' ? awayPct : homePct;
-        const loserAbbr  = winner==='away' ? homeAbbr : awayAbbr;
-        const loserPct   = winner==='away' ? homePct : awayPct;
+        let awayPct = Math.round((awayScore/total)*100);
+        let homePct = 100 - awayPct;
+        let diff = Math.abs(awayPct - homePct);
+        let confidence = diff < 6 ? 'TOSS-UP' : diff < 12 ? 'LEAN' : diff < 20 ? 'LIKELY' : 'STRONG';
+        let confColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : diff < 20 ? '#2ecc71' : '#00ff88';
+        let winner = awayPct > homePct ? 'away' : 'home';
+        let winnerAbbr = winner==='away' ? awayAbbr : homeAbbr;
+        let winnerPct = winner==='away' ? awayPct : homePct;
+        let loserAbbr  = winner==='away' ? homeAbbr : awayAbbr;
+        let loserPct   = winner==='away' ? homePct : awayPct;
+
+        // Cross-check against the server-side tracker's pre-game pick (data/tracker.json,
+        // captured every morning well before first pitch — see update-tracker.mjs) whenever
+        // this is the very first time THIS browser has computed this particular game AND
+        // it's already live/final. That combination means there's no existing
+        // _gamePropsSnapshot/localStorage lock to fall back on yet, so the computation above
+        // just ran using the pitcher's now-already-updated season stats — i.e. it can be
+        // contaminated by the game's own outcome and show a different (flipped) pick than
+        // whatever was true pre-game. The tracker record is immune to that: it's always
+        // captured by a scheduled job hours before first pitch, never tied to any one visit.
+        if ((isLive || isFinal) && trackerDrpByGamePk[g.gamePk]) {
+          const tr = trackerDrpByGamePk[g.gamePk];
+          const trackerWinnerIsAway = tr.pick === awayAbbr;
+          const trackerWinnerIsHome = tr.pick === homeAbbr;
+          if ((trackerWinnerIsAway || trackerWinnerIsHome) && tr.pick !== winnerAbbr && Number.isFinite(tr.pickPct)) {
+            winner = trackerWinnerIsAway ? 'away' : 'home';
+            winnerAbbr = tr.pick;
+            winnerPct = tr.pickPct;
+            loserAbbr = trackerWinnerIsAway ? homeAbbr : awayAbbr;
+            loserPct = 100 - tr.pickPct;
+            awayPct = trackerWinnerIsAway ? tr.pickPct : loserPct;
+            homePct = trackerWinnerIsHome ? tr.pickPct : loserPct;
+            diff = Math.abs(awayPct - homePct);
+            confidence = diff < 6 ? 'TOSS-UP' : diff < 12 ? 'LEAN' : diff < 20 ? 'LIKELY' : 'STRONG';
+            confColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : diff < 20 ? '#2ecc71' : '#00ff88';
+          }
+        }
 
         model = { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor, hrWeatherBoostPct, parkFactorVal: pf, market };
         // Always keep the snapshot fresh — pre-game cycles overwrite it so that whenever
@@ -6216,6 +6276,7 @@ async function loadKProps() {
   try {
     const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
     await loadSportsbookKLines(today);
+    const { kpropByPitcherId: trackerKpropByPitcherId } = await loadTrackerPicks().catch(() => ({ kpropByPitcherId: {} }));
     const games = await getTodaySchedule('team,probablePitcher');
 
     // K Props now use DR projections only. External sportsbook line cards have been removed.
@@ -6368,6 +6429,26 @@ async function loadKProps() {
           projK: projK.toFixed(1), pred, pushLean, reasoning,
           timeStr, gameTimestamp: dt.getTime(), gamePk: g.gamePk,
         };
+
+        // Cross-check against the server-side tracker's pre-game K projection/line
+        // (data/tracker.json, captured every morning well before first pitch — see
+        // loadTrackerPicks above) whenever this is the very first time THIS browser
+        // has computed this pitcher's prop AND the game is already live/final. Same
+        // contamination risk as the DR win-probability pick: with no existing
+        // _kPropsSnapshot entry to fall back on, the computation above just ran using
+        // this pitcher's now-already-pitched stat line.
+        if ((isLive || isFinal) && !_kPropsSnapshot[pitcher.id]) {
+          const trk = trackerKpropByPitcherId[pitcher.id];
+          if (trk && trk.gamePk === g.gamePk && Number.isFinite(trk.line)) {
+            propRow.ouLine = trk.line;
+            propRow.modelLine = trk.line;
+            propRow.compareLine = trk.line;
+            propRow.recommendedOverLine = trk.line.toFixed(1);
+            if (Number.isFinite(trk.projK)) propRow.projK = trk.projK.toFixed(1);
+            if (trk.pick) propRow.pred = trk.pick;
+          }
+        }
+
         // Lock this snapshot — it will be reused once the game goes live
         if (!_kPropsSnapshot[pitcher.id]) {
           _kPropsSnapshot[pitcher.id] = propRow;
