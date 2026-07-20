@@ -698,13 +698,6 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
     min-height: 54px !important;
   }
 
-  #props #hr-potential-content .dr1027-matchup-btn,
-  #hr-potential-content .dr1027-matchup-btn {
-    margin-top: auto !important;
-    width: 100% !important;
-    flex: 0 0 auto !important;
-  }
-
   @media (min-width: 1181px) and (max-width: 1500px) {
     #props #hr-potential-content .dr1027-hr-card-list,
     #hr-potential-content .dr1027-hr-card-list {
@@ -1072,9 +1065,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 
 /* Was clamped to 3 lines with overflow:hidden "so cards remain aligned" —
    that silently truncated genuinely longer reasoning text mid-sentence with
-   no way to read the rest. The lineup button (.kprop-lineup-section, see the
-   margin-top:auto rule elsewhere) is what keeps cards visually aligned at
-   the bottom of a row now; the reason text itself always shows in full. */
+   no way to read the rest. The reason text itself always shows in full now. */
 #kprops-content .dr109-reason,
 #hits-props-content .dr109-reason,
 #rbis-props-content .dr109-reason,
@@ -1088,10 +1079,6 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
      this element (the only flex child that could shrink) got compressed
      down to its 64px floor, silently cutting text off. flex-shrink:0 forces
      the whole card (and thus the grid row) to grow to fit real content. */
-  flex-shrink:0 !important;
-}
-#kprops-content .kprop-lineup-section{
-  margin-top:10px !important;
   flex-shrink:0 !important;
 }
 
@@ -1488,23 +1475,6 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
 .dr1027-why strong {
   color: #fff !important;
 }
-.dr1027-matchup-btn {
-  width: 100% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  min-height: 42px !important;
-  padding: 11px 14px !important;
-  border-radius: 12px !important;
-  font-size: 12px !important;
-  font-weight: 900 !important;
-  letter-spacing: .6px !important;
-  background: rgba(8,22,42,.95) !important;
-  border: 1px solid rgba(47,107,255,.55) !important;
-  color: #2f6bff !important;
-  margin-top: 10px !important;
-}
-
 /* ── Per-stat neon identity colors for stat chips ─────────────────────────────
    .dr109-chip (K Props, Hits/RBI/TB/SB/HRRBI boards) and .dr1027-chip (HR
    Threats) share this scheme via app.js's chip()/hrChip() fallback: a chip
@@ -1677,17 +1647,6 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   border-color: rgba(255, 77, 109, .45) !important;
   color: #ffb0bf !important;
 }
-/* Strikeout cards share a CSS-grid row with align-items:stretch, so a card next
-   to a taller neighbor (longer "why" text, hit badge, etc.) gets stretched to
-   match. .dr109-card is flex column + justify-content:flex-start, so all of
-   that extra height piled up as one dead gap above the lineup button instead
-   of the button sitting flush at the bottom. Pinning the button to the bottom
-   with margin-top:auto keeps the chip-row-to-reason-text spacing identical
-   across every card in a row regardless of content length. */
-#kprops-content .dr109-card .kprop-lineup-section {
-  margin-top: auto !important;
-}
-
 /* ── Desktop collapsible sidebar nav ──────────────────────────────────────
    Hidden by default (phones keep the existing hamburger drawer below
    768px, completely untouched). Shown from 900px up — wide enough for a

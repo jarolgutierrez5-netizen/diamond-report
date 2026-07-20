@@ -6694,7 +6694,7 @@ function renderKProps() {
       const hasLiveK = !!(live && (live.isLive || live.isFinal));
       const missedK = !!(live && live.isFinal && p.pred !== 'PUSH' && !alreadyHit);
 
-      return `<div class="dr109-card${alreadyHit ? ' prop-hit' : missedK ? ' prop-miss' : ''}" style="cursor:pointer" onclick="const b=this.querySelector('.dr1016-lineup-btn');if(b&&!event.target.closest('button,a'))b.click();">
+      return `<div class="dr109-card${alreadyHit ? ' prop-hit' : missedK ? ' prop-miss' : ''}" style="cursor:pointer" onclick="if(!event.target.closest('button,a'))window.openKPropLineupModal('${p.pitcherId}','${p.pitcherName.replace(/'/g,"\\'")}','${p.teamAbbr}','${p.oppAbbr}')">
         ${window.drWatchStarHTML(p.pitcherId, p.pitcherName)}
         <div class="dr109-card-head">
           <div class="dr109-player">
@@ -6725,12 +6725,6 @@ function renderKProps() {
           <span class="dr109-chip ${risk === 'Low' ? 'good' : risk === 'Medium' ? 'warn' : 'bad'}"><span>Risk:</span><strong>${risk}</strong></span>
         </div>
         <div class="dr109-reason"><strong>Why it supports the line:</strong> ${p.pitcherName} grades at ${chance}% for ${strikeoutLineText} because the model combines ${p.k9 ?? '–'} K/9, ${p.era ?? '–'} ERA/${p.whip ?? '–'} WHIP command profile, projected workload, and opponent contact tendency. Opponent context: ${p.oppAbbr}.</div>
-        <div class="kprop-lineup-section dr1016-k-lineup">
-          <button class="btn-lineup dr1016-lineup-btn" onclick="toggleKPropLineup(this, '${p.pitcherId}', '${p.pitcherName.replace(/'/g,"\\'")}', '${p.teamAbbr}', '${p.oppAbbr}')">
-            ▼ BATTING LINEUP &amp; MATCHUPS
-          </button>
-          <div class="kprop-lineup-panel" style="display:none;margin-top:8px"></div>
-        </div>
       </div>`;
     }).join('')}</div>
   <div style="font-size:10px;color:var(--muted);padding:10px 16px 14px;line-height:1.5;border-top:1px solid var(--border)">
@@ -6739,33 +6733,29 @@ function renderKProps() {
 }
 
 // Schedule 7am load + 9am refresh for K Props
-async function toggleKPropLineup(btn, pitcherId, pitcherName, teamAbbr, oppAbbr) {
-  const outerPanel = btn.nextElementSibling;
-  if (!outerPanel) return;
-
-  // v7.19 fix: the K Prop lineup CSS previously forced all kprop panels to
-  // display:block !important, so clicking the button again could not collapse it.
-  const isOpen = outerPanel.dataset.open === '1' || outerPanel.style.display === 'block';
-  if (isOpen) {
-    outerPanel.dataset.open = '0';
-    outerPanel.style.setProperty('display', 'none', 'important');
-    btn.innerHTML = '▼ BATTING LINEUP &amp; MATCHUPS';
-    btn.classList.remove('active');
-    return;
-  }
-  outerPanel.dataset.open = '1';
-  btn.innerHTML = '▲ HIDE BATTING LINEUP &amp; MATCHUPS';
-  btn.classList.add('active');
-  outerPanel.style.setProperty('display', 'block', 'important');
-  if (outerPanel.dataset.loaded) return;
-  outerPanel.dataset.loaded = '1';
-
+// Opens the same pop-out lineup modal used by the Pitcher Report table (see
+// openPitcherLineupModal in app.js) for a K Props pitcher — clicking a K
+// Props card calls this directly. Kept as its own fetch path rather than
+// routed through fetchAndRenderLineup/lineupCache: K Props pitchers aren't
+// guaranteed to be in prRows (Pitcher Report may not have loaded yet), so
+// this resolves the game/opposing lineup itself the same way it always has.
+async function openKPropLineupModal(pitcherId, pitcherName, teamAbbr, oppAbbr) {
   const pid = normalizePitcherId(pitcherId);
   const panelId = `kprop-panel-${pid}`;
-  outerPanel.id = panelId;
-  outerPanel.className = 'kprop-lineup-panel pr-expand-panel';
-  outerPanel.innerHTML = '<div style="padding:14px 16px;font-size:12px;color:var(--muted)"><span class="spin"></span> Loading lineup…</div>';
+  const overlay = document.getElementById('pr-lineup-modal-overlay');
+  const body = document.getElementById('pr-lineup-modal-body');
+  const title = document.getElementById('pr-lineup-modal-title');
+  const sub = document.getElementById('pr-lineup-modal-sub');
+  if (!overlay || !body) return;
 
+  openLineupModalPid = null; // this modal instance isn't tracked by the Pitcher Report rehydrate path
+  if (title) title.textContent = pitcherName || 'Batting Lineup & Matchups';
+  if (sub) sub.textContent = teamAbbr && oppAbbr ? `${teamAbbr} vs ${oppAbbr}` : '';
+  body.innerHTML = `<div class="pr-expand-panel kprop-lineup-panel" id="${panelId}"><span class="spin"></span> Loading lineup…</div>`;
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  const outerPanel = document.getElementById(panelId);
   try {
     const games = await getTodaySchedule('team,probablePitcher');
     const game = games.find(g =>
@@ -6784,7 +6774,6 @@ async function toggleKPropLineup(btn, pitcherId, pitcherName, teamAbbr, oppAbbr)
     const repo = getRepoLineupForGame(game.gamePk, oppSide);
     if (repo?.confirmed === true && repo?.lineup?.length) {
       renderLineup(panelId, { lineup: repo.lineup, teamAbbr: oppTeamAbbr, confirmed: true, source: repo.source, confirmedAt: repo.confirmedAt }, null, null, oppTeamAbbr, pitcherId, pitcherName);
-      outerPanel.style.cssText += ';width:100%!important;min-width:0!important;box-sizing:border-box!important;overflow-x:auto!important;';
       return;
     }
 
@@ -6799,7 +6788,6 @@ async function toggleKPropLineup(btn, pitcherId, pitcherName, teamAbbr, oppAbbr)
     const hasOfficialBattingOrder = batters.some(b => b && (b.battingOrder || b.stats?.batting?.battingOrder));
     if (!hasOfficialBattingOrder || !batters.length) {
       renderLineupPending(panelId, oppTeamAbbr);
-      outerPanel.style.cssText += ';width:100%!important;min-width:0!important;box-sizing:border-box!important;overflow-x:hidden!important;';
       return;
     }
     batters = batters
@@ -6823,12 +6811,11 @@ async function toggleKPropLineup(btn, pitcherId, pitcherName, teamAbbr, oppAbbr)
     }).filter(b => b.name !== '–');
 
     renderLineup(panelId, { lineup, teamAbbr: oppTeamAbbr, confirmed: true }, null, null, oppTeamAbbr, pitcherId, pitcherName);
-    // Force full width after render — the panel can get squeezed by flex layout
-    outerPanel.style.cssText += ';width:100%!important;min-width:0!important;box-sizing:border-box!important;overflow-x:auto!important;';
   } catch(e) {
     outerPanel.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
 }
+window.openKPropLineupModal = openKPropLineupModal;
 // K Props sort — by any pitcher stat column
 let _kPropsSort = null;
 let _kPropsSortDir = 1; // 1 = default direction, -1 = reversed
@@ -10107,7 +10094,7 @@ var analytics='<div class="tp-analytics-grid">'+
     if (s.last10HomeRuns != null && s.last10HomeRuns !== '') return s.last10HomeRuns;
     return null;
   }
-  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); populateHRGameSelect(base); if(!base.length){el.innerHTML='<div class="mu-empty">No HR potential data yet — check back once lineups are posted.</div>';return;} var arr=applyHRFilters(base).filter(function(r){return !isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL';}).sort(function(a,b){return n(b.hrProb)-n(a.hrProb);}); if(!arr.length){el.innerHTML='<div class="mu-empty" style="padding:24px">No players match the selected filters. Try fewer filters, or select ALL to reset.</div>';return;} var cards=arr.map(function(r){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); var l10=dr113Last10HRValue(r); var bpPct=ballparkPalFactorForPlayer(r.gamePk,r.id); var stats=[hrChip('HR Prob',p.toFixed(1)+'%','green'),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1),'gold'):'',bpPct!=null?hrChip('Ballpark Pal',(bpPct>0?'+':'')+bpPct+'%',bpPct>0?'green':bpPct<0?'red':''):''].filter(Boolean); return '<div class="dr1027-hr-card '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="cursor:pointer" onclick="var b=this.querySelector(\'.dr1027-matchup-btn\');if(b&&!event.target.closest(\'button,a\'))b.click();">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-why">'+whyHR(r)+'</div><button class="hrp-matchup-btn dr1027-matchup-btn" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="const d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName)">⚔ PITCHER MATCHUP</button></div>'; }).join(''); el.innerHTML=hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; }
+  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); populateHRGameSelect(base); if(!base.length){el.innerHTML='<div class="mu-empty">No HR potential data yet — check back once lineups are posted.</div>';return;} var arr=applyHRFilters(base).filter(function(r){return !isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL';}).sort(function(a,b){return n(b.hrProb)-n(a.hrProb);}); if(!arr.length){el.innerHTML='<div class="mu-empty" style="padding:24px">No players match the selected filters. Try fewer filters, or select ALL to reset.</div>';return;} var cards=arr.map(function(r){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); var l10=dr113Last10HRValue(r); var bpPct=ballparkPalFactorForPlayer(r.gamePk,r.id); var stats=[hrChip('HR Prob',p.toFixed(1)+'%','green'),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1),'gold'):'',bpPct!=null?hrChip('Ballpark Pal',(bpPct>0?'+':'')+bpPct+'%',bpPct>0?'green':bpPct<0?'red':''):''].filter(Boolean); return '<div class="dr1027-hr-card '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="cursor:pointer" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="if(!event.target.closest(\'button,a\')){var d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName);}">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-why">'+whyHR(r)+'</div></div>'; }).join(''); el.innerHTML=hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; }
   function setHRFilter(f){ var s=getFilters(); if(f==='all')s.clear(); else { if(s.has(f))s.delete(f); else s.add(f); } renderHRPTableV1032(); }
   window.renderHRPTable=renderHRPTableV1032;
   window.filterHRP=setHRFilter;
