@@ -89,6 +89,14 @@ jobs:
         continue-on-error: true
         timeout-minutes: 8
 
+      - name: TEMP - probe Ballpark Pal API docs
+        run: |
+          curl -sS -L "https://www.ballparkpal.com/api/docs/" -o /tmp/bpp-docs.html || echo "curl exit $?"
+          echo "--- length ---"
+          wc -c /tmp/bpp-docs.html || true
+          echo "--- content ---"
+          cat /tmp/bpp-docs.html || true
+
       - name: Commit and push if changed
         run: |
           # git diff --quiet only detects changes to already-tracked files — it silently
