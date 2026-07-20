@@ -1332,10 +1332,6 @@ body.dr-paused *::after,
 .premium-team-logo{width:14px;height:14px;object-fit:contain;vertical-align:middle}
 .premium-quality{font-size:10px;color:#fbbf24;letter-spacing:1px;margin-top:2px}
 .premium-score{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:900;color:#22e06f;flex:none}
-.premium-reason{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
-.premium-track-record{display:flex;align-items:baseline;gap:8px;border:1px solid var(--border);border-radius:999px;background:rgba(7,15,30,.7);padding:7px 16px;width:fit-content;margin:0 auto 16px}
-.premium-track-record strong{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:900}
-.premium-track-record span{font-size:11px;color:var(--muted);letter-spacing:.02em}
 @media(max-width:520px){.premium-card-list{grid-template-columns:1fr}}
 
 /* ── Cyberpunk/futuristic theme pass ────────────────────────────────────────
@@ -3312,12 +3308,6 @@ select:focus-visible {
   background: linear-gradient(90deg, rgba(251,191,36,.4), transparent);
   margin-left: 4px;
 }
-.premium-track-record {
-  background: linear-gradient(180deg, rgba(28,21,4,.75), rgba(16,13,4,.85)) !important;
-  border-color: rgba(251,191,36,.3) !important;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
 .premium-game-head {
   border-left: 2px solid rgba(251,191,36,.4);
   padding-left: 8px;
@@ -3679,15 +3669,16 @@ select:focus-visible {
   box-sizing: border-box;
 }
 /* HR Threats cards (.dr1027-hr-score) have the exact same watch-star-over-the-
-   percentage conflict as .dr109-score above, but padding-right on the score
-   itself was tried here first and reverted — it forced the "HR Probability"
-   label to wrap mid-word instead of just reserving space. Repositioning the
-   star to sit just outside the card's own top-right corner clears the number
-   without touching the score's layout at all; .dr1027-hr-card already sets
-   overflow:visible so the star renders in full rather than getting clipped. */
-.dr1027-hr-card .dr-watch-star {
-  top: -9px;
-  right: -9px;
+   percentage conflict as .dr109-score above. Pushing the star outside the
+   card's own corner (previous fix) left it looking detached/clipped against
+   the card list background — .dr1027-hr-score now has white-space:nowrap on
+   its label (a later redesign), so reserving room with padding-right no
+   longer causes the mid-word wrap that made this workaround necessary in the
+   first place. Star stays at the default inset top/right position.
+*/
+.dr1027-hr-score {
+  padding-right: 38px !important;
+  box-sizing: border-box !important;
 }
 /* Default desktop/tablet density to match what the site actually looks like
    at ~80% browser zoom (the reference: more of the page visible at once,

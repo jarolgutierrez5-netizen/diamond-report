@@ -1299,13 +1299,12 @@ window.updateHeroTodayRecordStrip = updateHeroTodayRecordStrip;
 // first scheduled run of scripts/update-tracker.mjs actually produces data/tracker.json —
 // no fabricated record shown before real history exists. The full all-time/rolling
 // breakdown by market lives on methodology.html now (its own standalone tracker.json
-// fetch) — this page only needs the Premium tab's own all-time badge and today's picks.
+// fetch) — this page only needs today's Elite Picks.
 async function loadAllTimeTrackerRecord() {
   try {
     const res = await fetch('./data/tracker.json', { cache: 'no-store' });
     if (!res.ok) return;
     const data = await res.json();
-    if (data?.allTime?.premium?.total > 0) window.__premiumAllTimeRecord = data.allTime.premium;
     // Today's Elite Picks are selected and locked in server-side (scripts/update-tracker.mjs,
     // captureEliteToday) so every visitor sees the exact same picks with the exact same
     // score — the Premium tab only joins these against live row data for display, it no
@@ -11318,28 +11317,6 @@ function showPremiumGate(feature){
     return tl.indexOf('LIVE') >= 0 || tl === 'FINAL';
   }
 
-  var ORDINALS = { 1:'1st', 2:'2nd', 3:'3rd', 4:'4th', 5:'5th' };
-  // Short "why" chips — cosmetic only, computed live from the row's current signals.
-  // Membership and the score/quality badge come from the locked server-side capture;
-  // only this descriptive text can vary if a row's live data shifts later in the day.
-  function reasonsFor(marketKey, row){
-    var bits = [];
-    if (row.isFavorable) bits.push('Favorable matchup');
-    var onFire = row.isOnFire || n(row.onFireScore) >= 60 || n(row.hotBoostPct) >= 3;
-    if (onFire) bits.push('🔥 Hot streak');
-    var slot = Number(row.battingOrder);
-    if (Number.isFinite(slot) && slot >= 1 && slot <= 5) bits.push('Hits ' + (ORDINALS[slot] || slot + 'th') + ' in order');
-    if (marketKey === 'sb') {
-      var s = row.stats || {};
-      if ((n(s.stolenBases) + n(s.caughtStealing)) >= 5) bits.push('Speed threat');
-    } else if (marketKey === 'hr') {
-      if (n(row.iso) >= 0.180 || n(row.hrSeason) >= 15) bits.push('Elite power');
-    } else {
-      if (n(row.ops) >= 0.780 || n(row.iso) >= 0.180) bits.push('Elite bat');
-    }
-    return bits.slice(0, 2);
-  }
-
   // Joins a locked server-side pick record against today's live row data (for photo,
   // pitcher name, current "why" chips, lock badge). Falls back to a minimal row built
   // from the tracker record itself when no live match is found (e.g. the site's live
@@ -11388,15 +11365,12 @@ function showPremiumGate(feature){
   function cardHTML(entry, rank, marketKey){
     var r = entry.row, p = Math.round(entry.score);
     var lockBadge = isRowLocked(r) ? '<span class="premium-lock" title="Locked at first pitch — this pick no longer changes">🔒</span>' : '';
-    var reasons = reasonsFor(marketKey, r);
-    var reasonHTML = reasons.length ? '<div class="premium-reason">'+esc(reasons.join(' · '))+'</div>' : '';
     return '<div class="premium-card">' +
       '<div class="premium-rank">#'+(rank+1)+'</div>' +
       '<img class="premium-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt="">' +
       '<div class="premium-info">' +
         '<div class="premium-name">'+esc(r.name||'–')+lockBadge+'</div>' +
         '<div class="premium-meta">'+tl(r.teamAbbr)+esc(r.teamAbbr||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+bpBadgeHTML(marketKey, r)+'</div>' +
-        reasonHTML +
         '<div class="premium-quality">'+esc('★'.repeat(Math.max(1,entry.quality)))+'</div>' +
       '</div>' +
       '<div class="premium-score">'+p+'%</div>' +
@@ -11443,27 +11417,15 @@ function showPremiumGate(feature){
     '</div>';
   }
 
-  // Elite Picks' own all-time record, sourced from data/tracker.json the same way the
-  // hero trust strip is (see loadAllTimeTrackerRecord in app.js) — real, persisted,
-  // independently-graded history. No-ops until the backend has actually graded at least
-  // one Elite Pick (window.__premiumAllTimeRecord stays unset until then).
-  function trackRecordHTML(){
-    var rec = window.__premiumAllTimeRecord;
-    if (!rec || !rec.total) return '';
-    var pct = Math.round((rec.wins / rec.total) * 100);
-    var color = rec.wins === rec.total ? '#22e06f' : rec.wins > rec.total / 2 ? '#fbbf24' : '#fca5a5';
-    return '<div class="premium-track-record"><strong style="color:'+color+'">'+rec.wins+'-'+rec.losses+'</strong><span>Elite Picks · '+pct+'% all-time ('+rec.total+' graded)</span></div>';
-  }
-
   function render(){
     var el = document.getElementById('premium-content');
     if (!el) return;
     if (!window.__premiumTodayPicksRaw) {
-      el.innerHTML = trackRecordHTML() + '<div class="mu-empty" style="padding:16px">Loading today’s Elite Picks…</div>';
+      el.innerHTML = '<div class="mu-empty" style="padding:16px">Loading today’s Elite Picks…</div>';
       return;
     }
     var lists = buildEliteLists();
-    el.innerHTML = trackRecordHTML() + MARKETS.map(function(m){ return sectionHTML(m, lists[m.key] || []); }).join('');
+    el.innerHTML = MARKETS.map(function(m){ return sectionHTML(m, lists[m.key] || []); }).join('');
   }
   window.renderPremiumPicks = render;
 
