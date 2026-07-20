@@ -1825,9 +1825,21 @@ const _kPropsSnapshot = {};
 const _gamePropsSnapshot = {};
 let sportsbookKLinesByPitcher = {};
 let sportsbookKLinesLoadedForDate = null;
+// Richer odds detail (price, book) alongside the bare line above — display-only,
+// used for the K Props "Market" chip. Kept separate from sportsbookKLinesByPitcher
+// so this never changes what getSportsbookKLine returns (that already feeds
+// recommendedOverLine/projK's line and shouldn't gain a new behavior here).
+let sportsbookOddsByPitcher = {};
 
 function normalizeKPropName(name) {
-  return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  // Strip accents to their base letter (é→e, í→i, ñ→n, etc.) before dropping
+  // non-alphanumerics — without this, an accented name loses those letters
+  // entirely instead of folding them, so "José Berríos" (the raw MLB Stats API
+  // name) never matched the same player's already-accent-stripped name coming
+  // back from data/k-props.json (see scripts/update-tracker.mjs's normalizeName,
+  // which already does this fold server-side). Silently broke sportsbook K-line
+  // matching for every accented name, not just the newer Market chip lookup.
+  return String(name || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
 }
 function parseKLineValue(value) {
   if (value == null || value === '') return null;
@@ -1849,9 +1861,28 @@ function indexSportsbookKLine(row) {
   if (id != null) sportsbookKLinesByPitcher[String(id)] = line;
   if (name) sportsbookKLinesByPitcher[normalizeKPropName(name)] = line;
 }
+// Same key scheme as indexSportsbookKLine, but keeps the overPrice/underPrice/book
+// fields a real sync (see scripts/update-tracker.mjs's K_PROPS_ODDS_PATH export)
+// can provide, which indexSportsbookKLine discards down to a bare number.
+function indexSportsbookOdds(row) {
+  if (!row) return;
+  const line = parseKLineValue(
+    row.sbLine ?? row.sportsbookLine ?? row.kLine ?? row.line ?? row.ouLine ?? row.dkLine ?? row.draftKingsLine ?? row.points ?? row.total
+  );
+  if (line == null) return;
+  const id = row.pitcherId ?? row.playerId ?? row.id ?? row.mlbId;
+  const name = row.pitcherName ?? row.playerName ?? row.name;
+  const detail = { line, overPrice: row.overPrice ?? null, underPrice: row.underPrice ?? null, book: row.book ?? null };
+  if (id != null) sportsbookOddsByPitcher[String(id)] = detail;
+  if (name) sportsbookOddsByPitcher[normalizeKPropName(name)] = detail;
+}
+function getSportsbookOdds(pitcherId, pitcherName) {
+  return sportsbookOddsByPitcher[String(pitcherId)] ?? sportsbookOddsByPitcher[normalizeKPropName(pitcherName)] ?? null;
+}
 async function loadSportsbookKLines(today) {
   if (sportsbookKLinesLoadedForDate === today) return;
   sportsbookKLinesByPitcher = {};
+  sportsbookOddsByPitcher = {};
   const urls = [
     `data/k-props-${today}.json`,
     `data/k_props_${today}.json`,
@@ -1878,7 +1909,7 @@ async function loadSportsbookKLines(today) {
       }
     } catch {}
   }
-  sources.flat().forEach(indexSportsbookKLine);
+  sources.flat().forEach(row => { indexSportsbookKLine(row); indexSportsbookOdds(row); });
   sportsbookKLinesLoadedForDate = today;
 }
 function getSportsbookKLine(pitcherId, pitcherName) {
@@ -6550,6 +6581,7 @@ function renderKProps() {
         <div class="dr109-chiprow">
           ${alreadyHit ? `<span class="dr109-chip hit-check"><span>✓ HIT:</span><strong>${kHitCount} / ${kTarget}</strong></span>` : hasLiveK ? `<span class="dr109-chip"><span>${missedK ? 'Final' : 'Live'}:</span><strong>${kHitCount} / ${kTarget}</strong></span>` : ''}
           <span class="dr109-chip good"><span>Line:</span><strong>${strikeoutLineText}</strong></span>
+          ${p.market ? `<span class="dr109-chip" title="${p.market.book || 'Sportsbook'} line, informational only — never used to compute this pitcher's projection or line above">🏦 Market: O ${formatKLine(p.market.line)}${p.market.overPrice != null ? ` (${p.market.overPrice > 0 ? '+' : ''}${p.market.overPrice})` : ''}</span>` : ''}
           <span class="dr109-chip stat-k-9"><span>K/9:</span><strong>${p.k9 ?? '–'}</strong></span>
           <span class="dr109-chip stat-era"><span>ERA:</span><strong>${p.era ?? '–'}</strong></span>
           <span class="dr109-chip stat-whip"><span>WHIP:</span><strong>${p.whip ?? '–'}</strong></span>
@@ -6791,6 +6823,12 @@ function scheduleKPropsLoad() {
     var projK = Math.max(1, (k9 * projIP / 9) + ((oppKpct - 0.22) * 10));
     var sbLine = null;
     try { if (typeof getSportsbookKLine === 'function') sbLine = getSportsbookKLine(pitcher.id, pitcher.fullName); } catch(e){}
+    // Display-only market comparison (same "informational, never fed into the
+    // model" rule as the Game Projections Market chip) — separate from sbLine
+    // above, which already (by existing design) becomes recommendedOverLine
+    // itself when a real book line exists.
+    var marketOdds = null;
+    try { if (typeof getSportsbookOdds === 'function') marketOdds = getSportsbookOdds(pitcher.id, pitcher.fullName); } catch(e){}
     var recommendedOverLine = sbLine != null ? Number(sbLine) : Math.max(0.5, Math.floor(projK) - 0.5);
     var overEdge = projK - recommendedOverLine;
     // Genuine simulated odds: run TRIALS games sampling a Poisson-distributed strikeout
@@ -6857,7 +6895,8 @@ function scheduleKPropsLoad() {
       ouLine: recommendedOverLine, modelLine: Math.round(projK*2)/2, compareLine: recommendedOverLine,
       recommendedOverLine: recommendedOverLine.toFixed(1), overProb: overProb, confidenceTier: confidenceTier,
       projK: projK.toFixed(1), pred: 'OVER', pushLean: null, reasoning: reason,
-      timeStr: timeStr, gameTimestamp: dt.getTime(), gamePk: g.gamePk
+      timeStr: timeStr, gameTimestamp: dt.getTime(), gamePk: g.gamePk,
+      market: marketOdds
     };
     // Cross-check against the server-side tracker's pre-game K projection/line
     // (data/tracker.json, captured every morning well before first pitch — see

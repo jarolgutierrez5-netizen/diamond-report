@@ -57,6 +57,12 @@ import path from 'node:path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TRACKER_PATH = path.join(__dirname, '..', 'data', 'tracker.json');
+// Exported from the same fetchOddsLookup() call already made below (no extra API
+// usage) so the live client's K Props board can show the real book's line/price as
+// a display-only "Market" label, same pattern as the Game Projections Market chip —
+// this file was never being written before, so loadSportsbookKLines() on the client
+// had nothing to actually read despite already knowing how to parse it.
+const K_PROPS_ODDS_PATH = path.join(__dirname, '..', 'data', 'k-props.json');
 const API = 'https://statsapi.mlb.com/api/v1';
 // Real sportsbook lines, when available — see fetchOddsLookup() below. Entirely
 // optional: everything gracefully falls back to the model's own line/analysis when
@@ -1363,6 +1369,22 @@ async function captureToday(store) {
   if (store.oddsLastFetchedDate !== today) {
     oddsLookup = await fetchOddsLookup();
     store.oddsLastFetchedDate = today;
+    try {
+      const lines = Array.from(oddsLookup.pitcherLines.entries())
+        .filter(([, v]) => v.strikeouts)
+        .map(([name, v]) => ({
+          pitcherName: name,
+          line: v.strikeouts.line,
+          overPrice: v.strikeouts.overPrice,
+          underPrice: v.strikeouts.underPrice,
+          book: v.strikeouts.book,
+        }));
+      await mkdir(path.dirname(K_PROPS_ODDS_PATH), { recursive: true });
+      await writeFile(K_PROPS_ODDS_PATH, JSON.stringify({ generatedAt: new Date().toISOString(), lines }, null, 2) + '\n');
+      console.log(`Wrote data/k-props.json: ${lines.length} real sportsbook K line(s).`);
+    } catch (e) {
+      console.warn('Failed to write data/k-props.json:', e.message);
+    }
   } else {
     console.log('Odds already fetched today — reusing model-only fallback for this pass.');
   }
