@@ -1288,19 +1288,8 @@ function updateHeroTodayRecordStrip() {
     const pct = Math.round((kp.wins / kp.total) * 100);
     items.push(`<div class="dr-trust-item"><strong style="color:${recordColor(kp.wins, kp.total)}">${kp.wins}-${kp.losses}</strong><span>K Props · ${pct}% today</span></div>`);
   }
-  // All-time record, sourced from data/tracker.json (the automated nightly grading job —
-  // see scripts/update-tracker.mjs). Real, persisted, independently-computed history, not
-  // the DOM-scraped Tracker system this site never actually shipped a tab for.
-  const drAll = window.__drAllTimeRecord;
-  if (drAll && drAll.total > 0) {
-    const pct = Math.round((drAll.wins / drAll.total) * 100);
-    items.push(`<div class="dr-trust-item"><strong style="color:${recordColor(drAll.wins, drAll.total)}">${drAll.wins}-${drAll.losses}</strong><span>Diamond Report Pick · ${pct}% all-time</span></div>`);
-  }
-  const kpAll = window.__kpAllTimeRecord;
-  if (kpAll && kpAll.total > 0) {
-    const pct = Math.round((kpAll.wins / kpAll.total) * 100);
-    items.push(`<div class="dr-trust-item"><strong style="color:${recordColor(kpAll.wins, kpAll.total)}">${kpAll.wins}-${kpAll.losses}</strong><span>K Props · ${pct}% all-time</span></div>`);
-  }
+  // All-time record now lives on the Methodology page instead of here — see
+  // methodology.html's own tracker.json fetch. This strip stays scoped to today only.
   el.innerHTML = items.join('');
   el.style.display = items.length ? '' : 'none';
 }
@@ -1308,99 +1297,15 @@ window.updateHeroTodayRecordStrip = updateHeroTodayRecordStrip;
 
 // Fetches the nightly-graded all-time record once on load. Gracefully no-ops until the
 // first scheduled run of scripts/update-tracker.mjs actually produces data/tracker.json —
-// no fabricated record shown before real history exists.
-// Rolling hit-rate per market over the last N days, computed from tracker.json's
-// real per-pick date+result records (the only thing every market's pick actually
-// carries — none of them log which model factor drove the pick, so this is
-// scoped to what's honestly derivable: is the model hot or cold lately, not
-// "which factor is working"). A graded pick is one with result 'win' or 'loss';
-// 'pending'/'push' are excluded from the denominator.
-function computeMarketAccuracyBreakdown(trackerData) {
-  const todayCT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-  const todayMs = new Date(todayCT + 'T00:00:00').getTime();
-  const windows = [7, 14, 30];
-  const out = {};
-  for (const marketKey of ['drp', 'kprop', 'premium', 'hrThreat']) {
-    const picks = (trackerData?.market?.[marketKey] || []).filter(r => r.result === 'win' || r.result === 'loss');
-    const allTime = trackerData?.allTime?.[marketKey] || { wins: 0, losses: 0, pushes: 0, total: 0 };
-    const rolling = {};
-    for (const days of windows) {
-      const cutoffMs = todayMs - days * 86400000;
-      const inWindow = picks.filter(r => new Date(r.date + 'T00:00:00').getTime() >= cutoffMs);
-      const wins = inWindow.filter(r => r.result === 'win').length;
-      const total = inWindow.length;
-      rolling[days] = { wins, losses: total - wins, total, pct: total > 0 ? Math.round((wins / total) * 100) : null };
-    }
-    out[marketKey] = {
-      allTime: { ...allTime, pct: allTime.total > 0 ? Math.round((allTime.wins / allTime.total) * 100) : null },
-      rolling,
-    };
-  }
-  return out;
-}
-
-const TRACK_RECORD_MARKET_LABELS = {
-  drp: 'Moneyline Picks',
-  kprop: 'Strikeout Props',
-  premium: 'Premium Picks',
-  hrThreat: 'HR Threat',
-};
-function trackRecordPctColor(pct) {
-  if (pct == null) return 'var(--muted)';
-  return pct >= 55 ? '#2ecc71' : pct < 45 ? '#dc2626' : 'var(--accent2)';
-}
-window.renderTrackRecordPanel = function renderTrackRecordPanel() {
-  const body = document.getElementById('track-record-modal-body');
-  if (!body) return;
-  const breakdown = window.__drTrackRecordBreakdown;
-  if (!breakdown) {
-    body.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Track record data hasn't loaded yet — try reopening this in a moment.</div>`;
-    return;
-  }
-  const rows = Object.entries(TRACK_RECORD_MARKET_LABELS).map(([key, label]) => {
-    const m = breakdown[key];
-    if (!m || !m.allTime.total) return '';
-    const windowCell = (days) => {
-      const w = m.rolling[days];
-      if (!w || !w.total) return `<div class="trk-window"><span class="trk-window-label">${days}D</span><span class="trk-window-val" style="color:var(--muted)">–</span></div>`;
-      return `<div class="trk-window"><span class="trk-window-label">${days}D</span><span class="trk-window-val" style="color:${trackRecordPctColor(w.pct)}">${w.pct}%</span><span class="trk-window-sub">${w.wins}-${w.losses}</span></div>`;
-    };
-    return `<div class="trk-row">
-      <div class="trk-row-head">
-        <span class="trk-row-label">${label}</span>
-        <span class="trk-row-alltime" style="color:${trackRecordPctColor(m.allTime.pct)}">${m.allTime.pct != null ? m.allTime.pct + '%' : '–'} <span class="trk-row-record">(${m.allTime.wins}-${m.allTime.losses}${m.allTime.pushes ? '-' + m.allTime.pushes : ''} all-time)</span></span>
-      </div>
-      <div class="trk-windows">${windowCell(7)}${windowCell(14)}${windowCell(30)}</div>
-    </div>`;
-  }).filter(Boolean).join('');
-  body.innerHTML = rows
-    ? `<div class="trk-intro">Every graded pick this model has made this season, by market. "All-time" is the full season; 7/14/30-day columns show whether it's running hot or cold lately. Pending and pushed picks aren't counted.</div>${rows}`
-    : `<div class="mu-empty">No graded picks yet this season.</div>`;
-};
-window.openTrackRecordModal = function openTrackRecordModal() {
-  const overlay = document.getElementById('track-record-modal-overlay');
-  if (!overlay) return;
-  overlay.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-  if (window.__drTrackRecordBreakdown) renderTrackRecordPanel();
-  else loadAllTimeTrackerRecord();
-};
-window.closeTrackRecordModal = function closeTrackRecordModal() {
-  const overlay = document.getElementById('track-record-modal-overlay');
-  if (overlay) overlay.style.display = 'none';
-  document.body.style.overflow = '';
-};
-
+// no fabricated record shown before real history exists. The full all-time/rolling
+// breakdown by market lives on methodology.html now (its own standalone tracker.json
+// fetch) — this page only needs the Premium tab's own all-time badge and today's picks.
 async function loadAllTimeTrackerRecord() {
   try {
     const res = await fetch('./data/tracker.json', { cache: 'no-store' });
     if (!res.ok) return;
     const data = await res.json();
-    if (data?.allTime?.drp?.total > 0) window.__drAllTimeRecord = data.allTime.drp;
-    if (data?.allTime?.kprop?.total > 0) window.__kpAllTimeRecord = data.allTime.kprop;
     if (data?.allTime?.premium?.total > 0) window.__premiumAllTimeRecord = data.allTime.premium;
-    window.__drTrackRecordBreakdown = computeMarketAccuracyBreakdown(data);
-    if (typeof window.renderTrackRecordPanel === 'function') window.renderTrackRecordPanel();
     // Today's Elite Picks are selected and locked in server-side (scripts/update-tracker.mjs,
     // captureEliteToday) so every visitor sees the exact same picks with the exact same
     // score — the Premium tab only joins these against live row data for display, it no

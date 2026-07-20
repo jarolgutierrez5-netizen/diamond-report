@@ -88,6 +88,45 @@ body {
   font-size: 13.5px;
   color: #d6def2;
 }
+.record-grid {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 0 0 20px;
+}
+.record-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 18px;
+  background: var(--surface);
+}
+.record-row + .record-row {
+  border-top: 1px solid var(--border);
+}
+.record-label {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+}
+.record-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.record-pct {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 12px;
+}
+.record-empty {
+  padding: 16px 18px;
+  color: var(--muted);
+  font-size: 13.5px;
+  background: var(--surface);
+}
 .dr-footer {
   border-top: 1px solid var(--border);
   padding: 28px 24px 34px;
