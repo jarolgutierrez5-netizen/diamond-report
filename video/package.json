@@ -5,12 +5,14 @@
   "main": "index.js",
   "scripts": {
     "start": "remotion studio src/index.ts",
-    "render": "remotion render src/index.ts PicksOfTheDay out/picks-of-the-day.mp4"
+    "render": "remotion render src/index.ts PicksOfTheDay out/picks-of-the-day.mp4",
+    "render:weekly": "node scripts/render-weekly-recap.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@remotion/bundler": "^4.0.495",
     "@remotion/cli": "^4.0.495",
     "@remotion/renderer": "^4.0.495",
     "react": "^19.2.7",
