@@ -3562,28 +3562,67 @@ async function loadGameProps() {
       // nothing here is computed fresh or feeds back into scoring.
       const densityPct = Math.round((densityMultForDisplay - 1) * 100);
       const windPct = Math.round((windMultForDisplay - 1) * 100);
-      const detailStat = (label, val) => `<div><span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${label}</span><br><span style="font-size:12px;color:var(--text)">${val}</span></div>`;
       // Ballpark Pal's own independently-modeled weather-only HR effect (licensed
       // API, see scripts/sync-ballparkpal.mjs) — a second, differently-computed
       // number next to our own DIY air-density/wind figure above. Purely a
       // cross-check; omitted entirely when the sync hasn't run or has no data
       // for this game yet, same as the Bullpen chip's fail-silent pattern.
       const bpWeatherPct = ballparkPalWeatherPctForGame(g.gamePk);
-      const bpRow = bpWeatherPct != null ? detailStat('Ballpark Pal Weather (cross-check)', `${bpWeatherPct > 0 ? '+' : ''}${bpWeatherPct}% HR`) : '';
+      // Horizontal bar centered at 0, filling toward green (boosts HR) or red
+      // (suppresses HR) — deltaPct is already the signed % to plot, scale is the
+      // ± range the bar's full half-width represents (clamped only visually;
+      // the printed valueText is always the real, unclamped number).
+      const centerBar = (label, deltaPct, scale, valueText) => {
+        const clamped = Math.max(-scale, Math.min(scale, deltaPct));
+        const color = clamped === 0 ? 'var(--muted)' : clamped > 0 ? '#2ee6a6' : '#ff4d6d';
+        const fillPct = (Math.abs(clamped) / scale * 50).toFixed(1);
+        const left = clamped > 0 ? 50 : (50 - fillPct);
+        return `<div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;color:var(--muted);min-width:118px;white-space:nowrap">${label}</span>
+          <span style="position:relative;flex:1;height:6px;background:var(--bg);border:1px solid var(--border);border-radius:3px">
+            <span style="position:absolute;left:calc(50% - .5px);top:-1px;bottom:-1px;width:1px;background:var(--border)"></span>
+            <span style="position:absolute;left:${left}%;top:0;bottom:0;width:${fillPct}%;background:${color};border-radius:3px"></span>
+          </span>
+          <span style="font-size:11px;font-weight:700;color:${color};min-width:46px;text-align:right;white-space:nowrap">${valueText}</span>
+        </div>`;
+      };
+      const effectBars = [
+        centerBar('🌬️ Air Density', densityPct, 15, `${densityPct > 0 ? '+' : ''}${densityPct}%`),
+        centerBar('💨 Wind', windPct, 20, `${windPct > 0 ? '+' : ''}${windPct}%`),
+        bpWeatherPct != null ? centerBar('🌐 Ballpark Pal', bpWeatherPct, 15, `${bpWeatherPct > 0 ? '+' : ''}${bpWeatherPct}%`) : '',
+        centerBar('🏟️ Park Factor', parkFactorVal - 100, 30, `${parkFactorVal}`),
+      ].filter(Boolean).join('');
+      const windArrow = (weather && Number.isFinite(weather.windDir))
+        // Arrow points the direction the wind is blowing TOWARD (windDir is
+        // meteorological "blowing FROM", so +180 flips it) — 0deg (N) = up.
+        ? `<span style="display:inline-block;transform:rotate(${(weather.windDir + 180) % 360}deg);font-size:20px;line-height:1">↑</span>`
+        : '';
       const parkWeatherHTML = weather ? `
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;padding:12px 14px">
-          ${detailStat('Park', stadiumName || homeAbbr)}
-          ${detailStat('Conditions', weatherCodeLabel(weather.code))}
-          ${detailStat('Temp', `${weather.temp}°F`)}
-          ${detailStat('Humidity', weather.humidity != null ? `${weather.humidity}%` : '–')}
-          ${detailStat('Wind', `${weather.wind}mph ${compassLabel(weather.windDir)}`)}
-          ${detailStat('Pressure (MSL)', weather.pressureMsl != null ? `${Math.round(weather.pressureMsl)} hPa` : '–')}
-          ${detailStat('Air Density Effect', `${densityPct > 0 ? '+' : ''}${densityPct}% HR`)}
-          ${detailStat('Wind Effect', `${windPct > 0 ? '+' : ''}${windPct}% HR`)}
-          ${detailStat('Park Factor', `${parkFactorVal} (100 = avg)`)}
-          ${bpRow}
+        <div style="padding:12px 14px">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <div style="font-size:34px;line-height:1">${weatherCodeEmoji(weather.code)}</div>
+            <div style="min-width:90px">
+              <div style="font-size:20px;font-weight:700;color:var(--text);line-height:1.1">${weather.temp}°F</div>
+              <div style="font-size:11px;color:var(--muted)">${weatherCodeLabel(weather.code)} · ${stadiumName || homeAbbr}</div>
+            </div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+              ${windArrow}
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--text)">${weather.wind}mph</div>
+                <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${compassLabel(weather.windDir)}</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;margin:10px 0 12px;font-size:10px;color:var(--muted)">
+            <span>💧 Humidity: ${weather.humidity != null ? `${weather.humidity}%` : '–'}</span>
+            <span>🔽 Pressure: ${weather.pressureMsl != null ? `${Math.round(weather.pressureMsl)} hPa` : '–'}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px">${effectBars}</div>
         </div>` : `
-        <div style="padding:12px 14px;font-size:12px;color:var(--muted)">${stadiumName || homeAbbr} — ${stadiumCoords[homeAbbr]?.dome && !stadiumCoords[homeAbbr]?.retractable ? 'fixed dome, weather neutral' : 'weather unavailable'}. Park Factor: ${parkFactorVal} (100 = avg).${bpWeatherPct != null ? ` Ballpark Pal weather cross-check: ${bpWeatherPct > 0 ? '+' : ''}${bpWeatherPct}% HR.` : ''}</div>`;
+        <div style="padding:12px 14px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">🏟️ ${stadiumName || homeAbbr} — ${stadiumCoords[homeAbbr]?.dome && !stadiumCoords[homeAbbr]?.retractable ? 'fixed dome, weather neutral' : 'weather unavailable'}</div>
+          <div style="display:flex;flex-direction:column;gap:7px">${effectBars}</div>
+        </div>`;
 
       const confBarW = Math.min(winnerPct, 100);
       const confBarColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : '#2ecc71';
@@ -3803,6 +3842,18 @@ function weatherCodeLabel(code) {
     95: 'Thunderstorm', 96: 'Thunderstorm w/ hail', 99: 'Severe thunderstorm w/ hail',
   };
   return map[code] ?? '–';
+}
+// Same WMO codes as weatherCodeLabel, mapped to an emoji for the Park & Weather panel's icon.
+function weatherCodeEmoji(code) {
+  if (code === 0) return '☀️';
+  if (code === 1) return '🌤️';
+  if (code === 2) return '⛅';
+  if (code === 3) return '☁️';
+  if (code === 45 || code === 48) return '🌫️';
+  if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code)) return '🌧️';
+  if ([71, 73, 75].includes(code)) return '❄️';
+  if ([95, 96, 99].includes(code)) return '⛈️';
+  return '🌡️';
 }
 
 // ── Air-density-based weather model (replaces the old flat wind-bucket/temp-
