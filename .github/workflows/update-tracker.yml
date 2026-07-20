@@ -67,8 +67,9 @@ jobs:
           git add data/tracker.json
           [ -f data/k-props.json ] && git add data/k-props.json
           [ -f data/ballparkpal-comparison.json ] && git add data/ballparkpal-comparison.json
+          [ -f data/drp-sim-comparison.json ] && git add data/drp-sim-comparison.json
           if git diff --cached --quiet; then
-            echo "No changes to data/tracker.json, data/k-props.json, or data/ballparkpal-comparison.json — nothing to commit."
+            echo "No changes to data/tracker.json, data/k-props.json, data/ballparkpal-comparison.json, or data/drp-sim-comparison.json — nothing to commit."
             exit 0
           fi
           git config user.name "diamond-report-bot"

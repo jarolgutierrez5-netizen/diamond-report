@@ -441,6 +441,258 @@ async function seasonPitchingStat(pid, season) {
   }
 }
 
+// ── DRP Game Simulation, Phase 1: log5 plate-appearance outcome model ──
+// First step toward replacing DRP's additive point-scoring formula (below)
+// with a bottom-up game simulation, the same shape of approach Ballpark Pal
+// uses (simulate the game play-by-play and let win probability emerge,
+// rather than a formula that scores factors and adds them up). NOT wired
+// into any live pick yet — a standalone, tested model that a later phase
+// will use to drive an actual inning-by-inning simulation loop.
+//
+// log5 is the standard sabermetric formula for combining a batter's and a
+// pitcher's rate for the same outcome into a matchup-specific probability,
+// weighted against the league-average rate for that outcome — see Bill
+// James' original formulation. It's a principled middle ground between
+// "just use the batter's rate" and "just use the pitcher's rate."
+//
+// League-average per-PA rates below are static reference values (recent-era
+// MLB averages), not fetched live — same precedent as the static
+// PARK_FACTORS table above. Good enough for log5's denominator; a future
+// version could compute them from the season's actual league totals.
+const LEAGUE_AVG_PA_RATES = {
+  hr: 0.031,
+  xbh: 0.049, // doubles + triples
+  single: 0.140,
+  bb: 0.085,
+  k: 0.225,
+  // remaining ~0.470 is outs in play — not modeled as its own log5 rate,
+  // "out" is whatever probability mass the other five don't use.
+};
+
+function log5(pBatter, pPitcher, pLeague) {
+  if (!(pLeague > 0) || !(pLeague < 1)) return pBatter; // degenerate league rate — fall back to the batter's own rate
+  const a = clamp(pBatter, 0.001, 0.999);
+  const b = clamp(pPitcher, 0.001, 0.999);
+  const c = clamp(pLeague, 0.001, 0.999);
+  const num = (a * b) / c;
+  const den = num + ((1 - a) * (1 - b)) / (1 - c);
+  return den > 0 ? num / den : a;
+}
+
+// batterStat/pitcherStat are the raw MLB Stats API stat objects already
+// returned by seasonBattingStat/seasonPitchingStat. Returns a probability
+// distribution over {hr, xbh, single, bb, k, out} that sums to 1.
+function computeMatchupOutcomeDist(batterStat, pitcherStat) {
+  const bPA = n(batterStat.plateAppearances) || 1;
+  const bHits = n(batterStat.hits), bHR = n(batterStat.homeRuns);
+  const bXBH = n(batterStat.doubles) + n(batterStat.triples);
+  const bSingle = Math.max(0, bHits - bHR - bXBH);
+  const bBB = n(batterStat.baseOnBalls) + n(batterStat.hitByPitch);
+  const bK = n(batterStat.strikeOuts);
+  const batterRates = {
+    hr: bHR / bPA, xbh: bXBH / bPA, single: bSingle / bPA,
+    bb: bBB / bPA, k: bK / bPA,
+  };
+
+  // MLB Stats API pitching splits don't reliably carry doubles/triples
+  // allowed, so the extra-base-vs-single composition of a pitcher's hits
+  // allowed falls back to the batter's own XBH-vs-single split (or the
+  // league split, if the batter has too few hits to have a meaningful one)
+  // rather than a true pitcher-specific split — a real simplification,
+  // flagged the same way this file already flags its other known ones.
+  const pBF = n(pitcherStat.battersFaced) || 1;
+  const pHits = n(pitcherStat.hits), pHR = n(pitcherStat.homeRuns);
+  const pNonHRHits = Math.max(0, pHits - pHR);
+  const bXBHShareOfHits = (bXBH + bSingle) > 0
+    ? bXBH / (bXBH + bSingle)
+    : LEAGUE_AVG_PA_RATES.xbh / (LEAGUE_AVG_PA_RATES.xbh + LEAGUE_AVG_PA_RATES.single);
+  const pXBH = pNonHRHits * bXBHShareOfHits;
+  const pSingle = pNonHRHits - pXBH;
+  const pBB = n(pitcherStat.baseOnBalls) + n(pitcherStat.hitBatsmen);
+  const pK = n(pitcherStat.strikeOuts);
+  const pitcherRates = {
+    hr: pHR / pBF, xbh: pXBH / pBF, single: pSingle / pBF,
+    bb: pBB / pBF, k: pK / pBF,
+  };
+
+  const dist = {};
+  for (const key of ['hr', 'xbh', 'single', 'bb', 'k']) {
+    dist[key] = log5(batterRates[key], pitcherRates[key], LEAGUE_AVG_PA_RATES[key]);
+  }
+  const usedMass = dist.hr + dist.xbh + dist.single + dist.bb + dist.k;
+  dist.out = Math.max(0, 1 - usedMass);
+  // Normalize in case the five modeled outcomes summed above 1 (rare, but
+  // possible when several matchup rates skew the same direction) — scale
+  // everything proportionally rather than letting "out" go negative.
+  const total = usedMass + dist.out;
+  if (total > 0 && Math.abs(total - 1) > 1e-9) {
+    for (const key of ['hr', 'xbh', 'single', 'bb', 'k', 'out']) dist[key] /= total;
+  }
+  return dist;
+}
+
+// ── DRP Game Simulation, Phase 2: base-out-state simulation loop ──
+// Samples one outcome per plate appearance from computeMatchupOutcomeDist()
+// and advances runners accordingly, inning by inning, for a full 9(+)-inning
+// game — the actual "bottom-up" mechanism Phase 1 was built to feed. Still
+// not wired into any live pick; simulateDRPGame() below is the entry point
+// a future phase will call from captureToday alongside (not instead of) the
+// existing computeDRPick().
+//
+// Base-advancement rules here are simplified, fixed heuristics (e.g. "a
+// runner on 2nd scores on a single 60% of the time"), not a real 24-state
+// Retrosheet transition matrix — that data isn't something this script has
+// programmatic access to. Good enough to make PA outcomes translate into
+// realistic-looking run totals; not claimed to be more precise than that.
+// Same spirit as this file's other documented simplifications (see the top
+// of the file).
+
+function sampleOutcome(dist) {
+  const r = Math.random();
+  let cum = 0;
+  for (const key of ['hr', 'xbh', 'single', 'bb', 'k', 'out']) {
+    cum += dist[key];
+    if (r < cum) return key;
+  }
+  return 'out'; // floating-point fallback — cum should reach ~1 before this
+}
+
+// bases: { first: bool, second: bool, third: bool }. Returns the new base
+// state plus runs scored on this play. outsBeforePlay is outs already
+// recorded in the half-inning before this plate appearance (used for the
+// sac-fly-style scoring chance on a ball-in-play out).
+function advanceRunners(bases, outcome, outsBeforePlay) {
+  const b = { first: bases.first, second: bases.second, third: bases.third };
+  let runs = 0;
+
+  if (outcome === 'hr') {
+    if (b.third) runs++;
+    if (b.second) runs++;
+    if (b.first) runs++;
+    runs++; // batter
+    return { bases: { first: false, second: false, third: false }, runs };
+  }
+
+  if (outcome === 'xbh') {
+    // Treats 2B/3B as one bucket (see computeMatchupOutcomeDist) — modeled
+    // as double-shaped advancement, the more common of the two.
+    if (b.third) runs++;
+    if (b.second) runs++;
+    const runnerFrom1st = b.first; // advances to 3rd, doesn't score
+    return { bases: { first: false, second: runnerFrom1st, third: true }, runs };
+  }
+
+  if (outcome === 'single') {
+    if (b.third) runs++;
+    let newThird = false;
+    if (b.second) {
+      if (Math.random() < 0.60) runs++; else newThird = true;
+    }
+    return { bases: { first: true, second: b.first, third: newThird }, runs };
+  }
+
+  if (outcome === 'bb') {
+    // Force advancement only.
+    if (b.first) {
+      if (b.second) {
+        if (b.third) runs++; // bases loaded, forced home
+        return { bases: { first: true, second: true, third: true }, runs };
+      }
+      return { bases: { first: true, second: true, third: b.third }, runs };
+    }
+    return { bases: { first: true, second: b.second, third: b.third }, runs };
+  }
+
+  if (outcome === 'k') {
+    return { bases: b, runs: 0 }; // no advancement on strikeout
+  }
+
+  // outcome === 'out' (ball in play) — approximate sac-fly scoring chance.
+  if (b.third && outsBeforePlay < 2 && Math.random() < 0.35) {
+    return { bases: { first: b.first, second: b.second, third: false }, runs: 1 };
+  }
+  return { bases: b, runs: 0 };
+}
+
+// lineupStats: array of 9 batter stat objects (real order if available).
+// pitcherStatFn: () => current pitcher's stat object for this PA (lets the
+// caller swap starter -> bullpen mid-inning without this function knowing).
+// battingIdxRef: { i: number } — mutated in place so the lineup keeps
+// cycling correctly across half-innings within the same simulated game.
+function simulateHalfInning(lineupStats, battingIdxRef, pitcherStatFn) {
+  let outs = 0, runs = 0;
+  let bases = { first: false, second: false, third: false };
+  while (outs < 3) {
+    const batterStat = lineupStats[battingIdxRef.i % lineupStats.length];
+    battingIdxRef.i++;
+    const dist = computeMatchupOutcomeDist(batterStat, pitcherStatFn());
+    const outcome = sampleOutcome(dist);
+    if (outcome === 'k' || outcome === 'out') outs++;
+    const result = advanceRunners(bases, outcome, outs - (outcome === 'k' || outcome === 'out' ? 1 : 0));
+    bases = result.bases;
+    runs += result.runs;
+  }
+  return runs;
+}
+
+// Picks the starter's stat until they've faced roughly a full outing's worth
+// of batters, then the bullpen stat for the rest of the game — a simplified
+// stand-in for real pull decisions (pitch count, leverage, matchups), same
+// caveat as above. ~22 batters faced is roughly a 5-inning outing.
+const STARTER_BATTERS_FACED_LIMIT = 22;
+
+function makePitcherStatFn(starterStat, bullpenStat, battersFacedRef) {
+  return () => {
+    battersFacedRef.i++;
+    return battersFacedRef.i <= STARTER_BATTERS_FACED_LIMIT ? starterStat : bullpenStat;
+  };
+}
+
+// One full simulated game. Returns { awayRuns, homeRuns }.
+function simulateOneGame(awayLineup, awayStarterStat, awayBullpenStat, homeLineup, homeStarterStat, homeBullpenStat) {
+  const awayIdx = { i: 0 }, homeIdx = { i: 0 };
+  const awayBF = { i: 0 }, homeBF = { i: 0 };
+  const awayPitcherFn = makePitcherStatFn(homeStarterStat, homeBullpenStat, homeBF); // away bats vs home's pitcher
+  const homePitcherFn = makePitcherStatFn(awayStarterStat, awayBullpenStat, awayBF); // home bats vs away's pitcher
+  let awayRuns = 0, homeRuns = 0;
+  const MAX_INNINGS = 12; // simulation cap — see note below
+
+  for (let inning = 1; inning <= 9 || (awayRuns === homeRuns && inning <= MAX_INNINGS); inning++) {
+    awayRuns += simulateHalfInning(awayLineup, awayIdx, awayPitcherFn);
+    // Standard "no need to bat in the bottom 9th if already leading" skipped
+    // for simplicity — negligible effect on aggregate win%/totals across
+    // thousands of trials, and it keeps this loop simple.
+    homeRuns += simulateHalfInning(homeLineup, homeIdx, homePitcherFn);
+  }
+  return { awayRuns, homeRuns };
+}
+
+// Entry point for a future capture-time integration. lineups/starter/bullpen
+// stats are the raw MLB Stats API stat objects this file already fetches
+// elsewhere (seasonBattingStat per lineup slot, seasonPitchingStat for
+// starters, a team pitching aggregate for "bullpen" — see the caller this
+// will eventually have in captureToday). trials defaults low enough to run
+// quickly in CI; raise for a more stable estimate once this is validated.
+function simulateDRPGame({ awayLineup, awayStarterStat, awayBullpenStat, homeLineup, homeStarterStat, homeBullpenStat }, trials = 1000) {
+  let awayWins = 0, homeWins = 0, ties = 0, totalAwayRuns = 0, totalHomeRuns = 0;
+  for (let t = 0; t < trials; t++) {
+    const { awayRuns, homeRuns } = simulateOneGame(awayLineup, awayStarterStat, awayBullpenStat, homeLineup, homeStarterStat, homeBullpenStat);
+    if (awayRuns > homeRuns) awayWins++;
+    else if (homeRuns > awayRuns) homeWins++;
+    else ties++; // hit the MAX_INNINGS cap still tied — rare
+    totalAwayRuns += awayRuns;
+    totalHomeRuns += homeRuns;
+  }
+  return {
+    awayWinPct: Math.round((awayWins / trials) * 100),
+    homeWinPct: Math.round((homeWins / trials) * 100),
+    tiePct: Math.round((ties / trials) * 100),
+    avgAwayRuns: +(totalAwayRuns / trials).toFixed(2),
+    avgHomeRuns: +(totalHomeRuns / trials).toFixed(2),
+    trials,
+  };
+}
+
 // ── Diamond Report Pick model (ported from loadGameProps in app.js, minus weather) ──
 async function computeDRPick(g, season) {
   const awayAbbr = g.teams.away.team.abbreviation;
@@ -1198,6 +1450,169 @@ async function battersForSide(g, side) {
   } catch (e) { return []; }
 }
 
+// ── DRP Game Simulation, Phase 3: real data + comparison tracking ──
+// Wires Phases 1-2 to real lineups (battersForSide — real lineup if posted,
+// else the same active-roster fallback already used elsewhere in this file)
+// and real season pitching stats, then captures a comparison entry in a
+// separate file (data/drp-sim-comparison.json — never merged into
+// tracker.json, same pattern as the Ballpark Pal comparison) so the
+// simulation's picks can be graded against real outcomes before ever
+// replacing the live, formula-based DRP pick. Not read by the client.
+
+const DRP_SIM_COMPARISON_PATH = path.join(__dirname, '..', 'data', 'drp-sim-comparison.json');
+
+// Team-level season pitching line, used as the "bullpen" stat once a
+// starter is pulled — a simplified proxy (it includes the starter's own
+// innings too), not a true relief-only split. See simulateOneGame's own
+// comment for the rest of the pitching-change simplifications.
+async function fetchTeamPitchingAggregate(teamId, season) {
+  try {
+    const d = await fetchJSON(`${API}/teams/${teamId}/stats?stats=season&group=pitching&season=${season}`);
+    return d?.stats?.[0]?.splits?.[0]?.stat || {};
+  } catch (e) { return {}; }
+}
+
+async function buildDRPSimLineup(g, side, season) {
+  const batters = await battersForSide(g, side);
+  const stats = await mapLimit(batters, 6, async (b) => (b.id ? seasonBattingStat(b.id, season) : null));
+  const valid = stats.filter(s => s && n(s.plateAppearances) > 0);
+  return valid.length ? valid : null;
+}
+
+async function computeDRPSimulation(g, season) {
+  const awayAbbr = g.teams.away.team.abbreviation;
+  const homeAbbr = g.teams.home.team.abbreviation;
+  const awayP = g.teams.away.probablePitcher;
+  const homeP = g.teams.home.probablePitcher;
+  if (!awayP || !homeP) return null;
+
+  const [awayLineup, homeLineup, awayStarterStat, homeStarterStat, awayBullpenStat, homeBullpenStat] = await Promise.all([
+    buildDRPSimLineup(g, 'away', season),
+    buildDRPSimLineup(g, 'home', season),
+    seasonPitchingStat(awayP.id, season),
+    seasonPitchingStat(homeP.id, season),
+    fetchTeamPitchingAggregate(g.teams.away.team.id, season),
+    fetchTeamPitchingAggregate(g.teams.home.team.id, season),
+  ]);
+  if (!awayLineup || !homeLineup) return null;
+
+  const sim = simulateDRPGame({ awayLineup, awayStarterStat, awayBullpenStat, homeLineup, homeStarterStat, homeBullpenStat }, 1000);
+  const simPick = sim.awayWinPct >= sim.homeWinPct ? awayAbbr : homeAbbr;
+  const simPickPct = Math.max(sim.awayWinPct, sim.homeWinPct);
+  return { simPick, simPickPct, simAwayRuns: sim.avgAwayRuns, simHomeRuns: sim.avgHomeRuns };
+}
+
+async function loadDRPSimComparison() {
+  try {
+    const raw = await readFile(DRP_SIM_COMPARISON_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    parsed.entries ||= [];
+    return parsed;
+  } catch (e) {
+    return {
+      version: 1,
+      generatedAt: null,
+      entries: [],
+      summary: {
+        formula: { wins: 0, losses: 0, pushes: 0, total: 0 },
+        simulation: { wins: 0, losses: 0, pushes: 0, total: 0 },
+      },
+    };
+  }
+}
+
+async function saveDRPSimComparison(store) {
+  store.generatedAt = new Date().toISOString();
+  await mkdir(path.dirname(DRP_SIM_COMPARISON_PATH), { recursive: true });
+  await writeFile(DRP_SIM_COMPARISON_PATH, JSON.stringify(store, null, 2) + '\n');
+}
+
+function recomputeDRPSimSummary(store) {
+  const summary = {
+    formula: { wins: 0, losses: 0, pushes: 0, total: 0 },
+    simulation: { wins: 0, losses: 0, pushes: 0, total: 0 },
+  };
+  for (const e of store.entries) {
+    if (e.formulaResult === 'win') summary.formula.wins++;
+    else if (e.formulaResult === 'loss') summary.formula.losses++;
+    else if (e.formulaResult === 'push') summary.formula.pushes++;
+    if (e.formulaResult && e.formulaResult !== 'pending') summary.formula.total++;
+
+    if (e.simResult === 'win') summary.simulation.wins++;
+    else if (e.simResult === 'loss') summary.simulation.losses++;
+    else if (e.simResult === 'push') summary.simulation.pushes++;
+    if (e.simResult && e.simResult !== 'pending') summary.simulation.total++;
+  }
+  store.summary = summary;
+}
+
+async function gradeDRPSimComparison(compStore) {
+  const today = cdtDateString(new Date());
+  const pending = compStore.entries.filter(e => e.formulaResult === 'pending' && e.date < today);
+  if (!pending.length) return 0;
+
+  const dates = [...new Set(pending.map(e => e.date))];
+  let graded = 0;
+  for (const date of dates) {
+    let games = [];
+    try {
+      const sched = await fetchJSON(`${API}/schedule?sportId=1&date=${date}&hydrate=linescore`);
+      games = sched?.dates?.find(d => d.date === date)?.games || [];
+    } catch (e) {
+      console.warn(`DRP sim comparison: schedule fetch failed for ${date}:`, e.message);
+      continue;
+    }
+    const gamesByPk = Object.fromEntries(games.map(g => [g.gamePk, g]));
+
+    for (const e of pending.filter(r => r.date === date)) {
+      const g = gamesByPk[e.gamePk];
+      if (!g || g.status?.abstractGameState !== 'Final') continue;
+      const awayScore = n(g.teams?.away?.score, NaN);
+      const homeScore = n(g.teams?.home?.score, NaN);
+      if (!Number.isFinite(awayScore) || !Number.isFinite(homeScore)) continue;
+      const actualWinner = awayScore === homeScore ? 'TIE' : (awayScore > homeScore ? e.awayTeam : e.homeTeam);
+      e.actualWinner = actualWinner;
+      e.formulaResult = actualWinner === 'TIE' ? 'push' : (actualWinner === e.formulaPick ? 'win' : 'loss');
+      e.simResult = actualWinner === 'TIE' ? 'push' : (actualWinner === e.simPick ? 'win' : 'loss');
+      graded++;
+    }
+  }
+  return graded;
+}
+
+// Called from inside captureToday (has previewGames/store.market.drp/season
+// already in scope) — only simulates games we ourselves captured a formula
+// DRP pick for, same guard the Ballpark Pal comparison capture uses.
+async function captureDRPSimComparisonToday(compStore, previewGames, store, season) {
+  let added = 0;
+  for (const g of previewGames) {
+    const awayAbbr = g.teams.away.team.abbreviation;
+    const homeAbbr = g.teams.home.team.abbreviation;
+    const gameDay = cdtDateString(new Date(g.gameDate));
+    const key = `${gameDay}|${g.gamePk}`;
+    if (compStore.entries.some(e => e.key === key)) continue;
+    const formulaDrp = store.market.drp.find(r => r.gamePk === g.gamePk);
+    if (!formulaDrp) continue;
+    let sim;
+    try {
+      sim = await computeDRPSimulation(g, season);
+    } catch (e) {
+      console.warn(`DRP simulation failed for gamePk ${g.gamePk}:`, e.message);
+      continue;
+    }
+    if (!sim) continue;
+    compStore.entries.push({
+      key, date: gameDay, gamePk: g.gamePk, awayTeam: awayAbbr, homeTeam: homeAbbr,
+      formulaPick: formulaDrp.pick, formulaPickPct: formulaDrp.pickPct,
+      simPick: sim.simPick, simPickPct: sim.simPickPct,
+      simAwayRuns: sim.simAwayRuns, simHomeRuns: sim.simHomeRuns,
+      actualWinner: null, formulaResult: 'pending', simResult: 'pending',
+    });
+    added++;
+  }
+  return added;
+}
+
 async function buildEliteBatterPool(games, season) {
   const statcastIndex = await loadStatcastPowerIndex();
   const pitcherStatcastIndex = await loadPitcherStatcastPowerIndex();
@@ -1521,7 +1936,7 @@ async function gradeHRThreatPending(store) {
   return graded;
 }
 
-async function captureToday(store, compStore) {
+async function captureToday(store, compStore, drpSimCompStore) {
   const today = cdtDateString(new Date());
   const sched = await fetchJSON(`${API}/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher,linescore,weather`);
   const games = sched?.dates?.find(d => d.date === today)?.games || [];
@@ -1591,6 +2006,11 @@ async function captureToday(store, compStore) {
   if (compStore) {
     const bpAdded = await captureBallparkPalComparisonToday(compStore, previewGames, store);
     console.log(`Captured ${bpAdded} new Ballpark Pal comparison entr(ies) for ${today}.`);
+  }
+
+  if (drpSimCompStore) {
+    const simAdded = await captureDRPSimComparisonToday(drpSimCompStore, previewGames, store, season);
+    console.log(`Captured ${simAdded} new DRP simulation comparison entr(ies) for ${today}.`);
   }
 
   // Built once and shared — Elite Picks and the HR Threats hit-rate tracker both need
@@ -1676,7 +2096,10 @@ async function main() {
   const compStore = await loadBallparkPalComparison();
   const bpGraded = await gradeBallparkPalComparison(compStore);
 
-  await captureToday(store, compStore);
+  const drpSimCompStore = await loadDRPSimComparison();
+  const simGraded = await gradeDRPSimComparison(drpSimCompStore);
+
+  await captureToday(store, compStore, drpSimCompStore);
   recomputeAllTime(store);
   await saveTracker(store);
   console.log('tracker.json updated:', TRACKER_PATH);
@@ -1685,6 +2108,10 @@ async function main() {
   recomputeBallparkPalSummary(compStore);
   await saveBallparkPalComparison(compStore);
   console.log(`Ballpark Pal comparison: graded ${bpGraded}, ${compStore.entries.length} total entries, summary:`, JSON.stringify(compStore.summary));
+
+  recomputeDRPSimSummary(drpSimCompStore);
+  await saveDRPSimComparison(drpSimCompStore);
+  console.log(`DRP sim comparison: graded ${simGraded}, ${drpSimCompStore.entries.length} total entries, summary:`, JSON.stringify(drpSimCompStore.summary));
 }
 
 // Only auto-run when executed directly (`node update-tracker.mjs`) — importing this
@@ -1711,4 +2138,9 @@ export {
   battingSplitHomeAway, homeRoadPowerFactor,
   loadBallparkPalComparison, saveBallparkPalComparison, recomputeBallparkPalSummary,
   fetchBallparkPalMoneyline, gradeBallparkPalComparison, captureBallparkPalComparisonToday,
+  log5, computeMatchupOutcomeDist, LEAGUE_AVG_PA_RATES,
+  sampleOutcome, advanceRunners, simulateHalfInning, simulateOneGame, simulateDRPGame,
+  fetchTeamPitchingAggregate, buildDRPSimLineup, computeDRPSimulation,
+  loadDRPSimComparison, saveDRPSimComparison, recomputeDRPSimSummary,
+  gradeDRPSimComparison, captureDRPSimComparisonToday,
 };
