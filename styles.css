@@ -698,13 +698,6 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
     min-height: 54px !important;
   }
 
-  #props #hr-potential-content .dr1027-matchup-btn,
-  #hr-potential-content .dr1027-matchup-btn {
-    margin-top: auto !important;
-    width: 100% !important;
-    flex: 0 0 auto !important;
-  }
-
   @media (min-width: 1181px) and (max-width: 1500px) {
     #props #hr-potential-content .dr1027-hr-card-list,
     #hr-potential-content .dr1027-hr-card-list {
@@ -1072,9 +1065,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 
 /* Was clamped to 3 lines with overflow:hidden "so cards remain aligned" —
    that silently truncated genuinely longer reasoning text mid-sentence with
-   no way to read the rest. The lineup button (.kprop-lineup-section, see the
-   margin-top:auto rule elsewhere) is what keeps cards visually aligned at
-   the bottom of a row now; the reason text itself always shows in full. */
+   no way to read the rest. The reason text itself always shows in full now. */
 #kprops-content .dr109-reason,
 #hits-props-content .dr109-reason,
 #rbis-props-content .dr109-reason,
@@ -1088,10 +1079,6 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
      this element (the only flex child that could shrink) got compressed
      down to its 64px floor, silently cutting text off. flex-shrink:0 forces
      the whole card (and thus the grid row) to grow to fit real content. */
-  flex-shrink:0 !important;
-}
-#kprops-content .kprop-lineup-section{
-  margin-top:10px !important;
   flex-shrink:0 !important;
 }
 
@@ -1265,8 +1252,9 @@ body.dr-paused *::after,
 /* ---- Pitcher Report list layout ---- */
 /* The starting-pitcher list is a single .pr-starters-table (one row per pitcher) —
    see the .pr-starters-table rules further down. .pr-mobile-name/-sub/-time are
-   still used for the pitcher-cell text inside each row, and .pr-mobile-expand is
-   still used for the BATTING LINEUP & MATCHUPS panel that expands below a row. */
+   still used for the pitcher-cell text inside each row; the BATTING LINEUP &
+   MATCHUPS panel opens in the shared .mu-modal pop-out (#pr-lineup-modal-overlay
+   in index.html) instead of expanding inline below the row. */
 #pr-content .pr-mobile-name {
   font-size: 16px !important;
   font-weight: 400 !important;
@@ -1283,29 +1271,6 @@ body.dr-paused *::after,
   font-size: 11px !important;
   white-space: nowrap !important;
   text-align: right !important;
-}
-#pr-content .pr-mobile-expand {
-  display: none;
-  background: #080d17 !important;
-  border-top: 1px solid var(--border) !important;
-  margin-top: 10px !important;
-  padding-top: 10px !important;
-  overflow: visible !important;
-  width: 100% !important;
-  max-width: 100% !important;
-}
-#pr-content .pr-mobile-expand[hidden] { display: none !important; }
-#pr-content .pr-mobile-expand:not(.is-open) { display: none !important; }
-#pr-content .pr-mobile-expand.is-open {
-  display: block !important;
-  height: auto !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-#pr-content .pr-mobile-expand .pr-expand-panel {
-  padding: 0 !important;
-  overflow: visible !important;
-  transform: none !important;
 }
 @media (max-width: 480px) {
 }
@@ -1510,23 +1475,6 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
 .dr1027-why strong {
   color: #fff !important;
 }
-.dr1027-matchup-btn {
-  width: 100% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  min-height: 42px !important;
-  padding: 11px 14px !important;
-  border-radius: 12px !important;
-  font-size: 12px !important;
-  font-weight: 900 !important;
-  letter-spacing: .6px !important;
-  background: rgba(8,22,42,.95) !important;
-  border: 1px solid rgba(47,107,255,.55) !important;
-  color: #2f6bff !important;
-  margin-top: 10px !important;
-}
-
 /* ── Per-stat neon identity colors for stat chips ─────────────────────────────
    .dr109-chip (K Props, Hits/RBI/TB/SB/HRRBI boards) and .dr1027-chip (HR
    Threats) share this scheme via app.js's chip()/hrChip() fallback: a chip
@@ -1626,8 +1574,8 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
 /* ── Pitcher Report: starting-pitcher list as a single heat-mapped table
    (replaces the old stacked .pr-mobile-card list — one row per pitcher, same
    .pr-stats-table look the summary row already used, plus a left-aligned
-   pitcher cell). BATTING LINEUP & MATCHUPS still expands into a full-width
-   row directly below via .pr-expand-tr. */
+   pitcher cell). Clicking a row opens BATTING LINEUP & MATCHUPS in the
+   shared .mu-modal pop-out instead of expanding a row inline. */
 .pr-starters-table {
   min-width: 900px !important;
   border-collapse: separate !important;
@@ -1636,11 +1584,6 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
 .pr-starters-table td, .pr-starters-table th {
   white-space: nowrap !important;
 }
-.pr-starters-table .btn-lineup {
-  width: 100% !important;
-  white-space: normal !important;
-  line-height: 1.25 !important;
-}
 .pr-lineup-batter-cell {
   text-align: left !important;
   display: flex !important;
@@ -1648,9 +1591,6 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   gap: 8px !important;
   flex-wrap: wrap !important;
   white-space: normal !important;
-}
-.pr-row-tr.is-expanded {
-  background: rgba(47,107,255,.06);
 }
 
 /* Desktop: table width:100% + auto layout stretches evenly on wide monitors,
@@ -1681,13 +1621,6 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
 .pr-starters-table thead th:first-child {
   z-index: 3;
 }
-.pr-row-tr.is-expanded td:first-child {
-  background: linear-gradient(rgba(47,107,255,.06), rgba(47,107,255,.06)), var(--surface);
-}
-
-.pr-lineup-btn-short {
-  display: none;
-}
 
 @media (max-width: 640px) {
   .pr-starters-table th,
@@ -1706,16 +1639,6 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   .pr-starters-table .pr-mobile-time {
     font-size: 9px !important;
   }
-  .pr-starters-table .btn-lineup {
-    font-size: 9px !important;
-    padding: 5px 6px !important;
-  }
-  .pr-lineup-btn-full {
-    display: none;
-  }
-  .pr-lineup-btn-short {
-    display: inline;
-  }
 }
 
 /* High-risk tier for the K Props Risk chip — .dr109-chip only had .good/.warn
@@ -1724,17 +1647,6 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   border-color: rgba(255, 77, 109, .45) !important;
   color: #ffb0bf !important;
 }
-/* Strikeout cards share a CSS-grid row with align-items:stretch, so a card next
-   to a taller neighbor (longer "why" text, hit badge, etc.) gets stretched to
-   match. .dr109-card is flex column + justify-content:flex-start, so all of
-   that extra height piled up as one dead gap above the lineup button instead
-   of the button sitting flush at the bottom. Pinning the button to the bottom
-   with margin-top:auto keeps the chip-row-to-reason-text spacing identical
-   across every card in a row regardless of content length. */
-#kprops-content .dr109-card .kprop-lineup-section {
-  margin-top: auto !important;
-}
-
 /* ── Desktop collapsible sidebar nav ──────────────────────────────────────
    Hidden by default (phones keep the existing hamburger drawer below
    768px, completely untouched). Shown from 900px up — wide enough for a

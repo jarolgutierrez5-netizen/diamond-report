@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026072010">
+<link rel="stylesheet" href="styles.min.css?v=2026072012">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -655,6 +655,22 @@
 </div>
 </div>
 
+<!-- Pitcher Report: Batting Lineup & Matchups pop-out -->
+<div class="mu-modal-overlay" id="pr-lineup-modal-overlay" onclick="if(event.target===this)closePitcherLineupModal()" style="display:none">
+<div class="mu-modal">
+<div class="mu-modal-head">
+<div>
+<div class="mu-modal-title" id="pr-lineup-modal-title">BATTING LINEUP &amp; MATCHUPS</div>
+<div class="mu-modal-sub" id="pr-lineup-modal-sub"></div>
+</div>
+<button class="mu-close" onclick="closePitcherLineupModal()">✕</button>
+</div>
+<div class="mu-modal-body" id="pr-lineup-modal-body">
+<span class="spin"></span> Loading lineup…
+    </div>
+</div>
+</div>
+
 
 <!-- prod removed: v5-1-die-api-guard-stats debug widget targeted elements (die-api-network, die-api-cache, etc.) that no longer exist in the page; it was polling every 2s for nothing. -->
 
@@ -821,7 +837,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026072007" defer></script>
+<script src="app.min.js?v=2026072009" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
