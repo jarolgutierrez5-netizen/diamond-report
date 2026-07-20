@@ -1,38 +1,41 @@
 // TEMPORARY diagnostic — not part of the app, deleted after this check.
-// Investigates whether ballparkpal.com/Park-Factors.php can be scraped/synced
-// automatically (a stable HTML table, an embedded JSON blob, or a discoverable
-// CSV export endpoint), as a possible upgrade over the site's current hand-tuned
-// wind/temp weather formula.
+// Follow-up to the first probe: confirms whether real per-game DATA ROWS are
+// present in the unauthenticated HTML (not just the table headers/shell), since
+// the page's own JSON-LD metadata claims isAccessibleForFree:false.
 async function main() {
   const res = await fetch('https://www.ballparkpal.com/Park-Factors.php', {
     headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
   });
   console.log('status:', res.status);
-  console.log('content-type:', res.headers.get('content-type'));
   const html = await res.text();
   console.log('length:', html.length);
 
-  // Look for CSV/export hints
-  const csvHints = html.match(/[^"']*\.(csv|CSV)[^"']*/g) || [];
-  console.log('csv-like references:', JSON.stringify([...new Set(csvHints)].slice(0, 20)));
+  // Known real signal for today's slate (from the user's own CSV export) — if this
+  // string appears in the raw unauthenticated HTML, real row data is present without
+  // needing to log in.
+  const needles = ['Coors Field', 'Wrigley Field', 'WAS @ COL', 'DET @ CHC'];
+  needles.forEach(needle => {
+    const idx = html.indexOf(needle);
+    console.log(`"${needle}" found:`, idx >= 0, idx >= 0 ? `at index ${idx}` : '');
+  });
 
-  const exportHints = html.match(/[^"']*(export|download)[^"']*/gi) || [];
-  console.log('export/download references:', JSON.stringify([...new Set(exportHints)].slice(0, 20)));
+  const tIdx = html.search(/<table[^>]*id="parkFactorsTable"/i);
+  if (tIdx >= 0) {
+    const tbodyIdx = html.indexOf('<tbody', tIdx);
+    console.log('tbody found after table start:', tbodyIdx >= 0, 'at', tbodyIdx);
+    if (tbodyIdx >= 0) {
+      console.log('tbody snippet (2500 chars):', html.slice(tbodyIdx, tbodyIdx + 2500));
+    }
+  }
 
-  // Look for an embedded data table or JSON blob
-  const hasTable = /<table/i.test(html);
-  console.log('has <table>:', hasTable);
-  const scriptMatches = html.match(/<script[^>]*src="([^"]+)"/g) || [];
-  console.log('script tags (first 15):', JSON.stringify(scriptMatches.slice(0, 15)));
+  // Check for any AJAX/fetch data-source URL DataTables might be configured with
+  // (a sign the table is populated client-side from a separate endpoint instead of
+  // server-rendered).
+  const ajaxMatch = html.match(/ajax\s*:\s*[^,}\n]+/gi);
+  console.log('DataTables ajax config hints:', JSON.stringify(ajaxMatch));
 
-  // Look for robots meta / login wall signals
-  console.log('mentions login/subscribe:', /login|subscribe|sign in|paywall/i.test(html));
-
-  // Print a chunk around the first <table if present
-  const tIdx = html.search(/<table/i);
-  if (tIdx >= 0) console.log('table snippet:', html.slice(tIdx, tIdx + 1500));
-
-  console.log('--- first 2000 chars of body ---');
-  console.log(html.slice(0, 2000));
+  console.log('mentions isAccessibleForFree:', html.includes('isAccessibleForFree'));
+  const ldIdx = html.indexOf('isAccessibleForFree');
+  if (ldIdx >= 0) console.log('context around isAccessibleForFree:', html.slice(Math.max(0, ldIdx - 100), ldIdx + 200));
 }
 main().catch(e => { console.error('PROBE FAILED', e); process.exit(1); });
