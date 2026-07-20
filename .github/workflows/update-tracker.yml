@@ -46,18 +46,6 @@ jobs:
         with:
           node-version: '22'
 
-      - name: TEMP - probe live site deploy state
-        run: |
-          UA="Mozilla/5.0 (compatible; DiamondReportBot/1.0; +https://diamondreport.app)"
-          echo "--- diamondreport.app/ ---"
-          curl -sS -L -A "$UA" -w "\nHTTP %{http_code}, %{size_download} bytes, final URL: %{url_effective}\n" "https://diamondreport.app/" -o /tmp/dr-live-index.html
-          echo "--- first 1500 bytes ---"
-          head -c 1500 /tmp/dr-live-index.html
-          echo
-          echo "--- www.diamondreport.app/ ---"
-          curl -sS -L -A "$UA" -w "\nHTTP %{http_code}, %{size_download} bytes, final URL: %{url_effective}\n" "https://www.diamondreport.app/" -o /tmp/dr-live-index-www.html
-          head -c 500 /tmp/dr-live-index-www.html
-
       - name: Run tracker updater
         env:
           # Optional — real sportsbook lines for K Props + market context for Elite
