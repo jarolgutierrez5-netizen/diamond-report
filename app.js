@@ -2228,12 +2228,18 @@ function renderPRTable() {
   if (!el) return;
   const sorted = getSortedPRRowsForCurrentSort();
   const hs = id => `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_46,q_auto:best/v1/people/${id}/headshot/67/current`;
-  const heatCell = (val, dispFn, goodBelow, badAbove, tip) => {
+  // data-label carries each cell's short column header along for the mobile
+  // card layout (see the @media (max-width: 700px) rules in styles.css),
+  // where a CSS ::before turns every stat into a labeled chip instead of a
+  // table column — .pr-mobile-tag distinguishes a plain cell from a heat
+  // cell so that layout can give plain cells a neutral chip background
+  // without overwriting the heat cells' own inline color.
+  const heatCell = (val, dispFn, goodBelow, badAbove, tip, label) => {
     const bg = heatBG(val, goodBelow, badAbove);
     const txt = val == null ? '<span style="color:var(--muted)">–</span>' : dispFn(val);
-    return `<td style="background:${bg}"${tip?` data-tip="${tip}"`:''}>${txt}</td>`;
+    return `<td style="background:${bg}"${tip?` data-tip="${tip}"`:''}${label?` data-label="${label}"`:''}>${txt}</td>`;
   };
-  const plainCell = (value, tip) => `<td${tip?` data-tip="${tip}"`:''}>${value}</td>`;
+  const plainCell = (value, tip, label) => `<td class="pr-plain-cell"${tip?` data-tip="${tip}"`:''}${label?` data-label="${label}"`:''}>${value}</td>`;
 
   const rowsAndPanels = sorted.map(r => {
     const p = r.pitcher;
@@ -2259,17 +2265,17 @@ function renderPRTable() {
             <div class="pr-mobile-time" style="color:${p.timeColor};font-weight:${p.timeLabel.includes('LIVE')?700:400}">${p.timeLabel}</div>
           </div>
         </td>
-        ${plainCell(r.ip!=null?r.ip.toFixed(1):'–', 'Innings Pitched')}
-        ${plainCell(r.bf!=null?r.bf:'–', 'Batters Faced')}
-        ${heatCell(r.fip,  v=>v.toFixed(2), 3.25, 4.50, 'Fielding Independent Pitching')}
-        ${heatCell(r.avg,  v=>v.toFixed(3).replace(/^0/,''), .220, .270, 'Batting Average Against')}
-        ${heatCell(r.woba, v=>v.toFixed(3).replace(/^0/,''), .290, .340, 'Weighted On-Base Average')}
-        ${heatCell(r.whip, v=>v.toFixed(2), 1.10, 1.40, 'Walks + Hits per Inning Pitched')}
-        ${heatCell(r.iso,  v=>v.toFixed(3).replace(/^0/,''), .150, .200, 'Isolated Power — extra-base power allowed')}
-        ${heatCell(r.slg,  v=>v.toFixed(3).replace(/^0/,''), .350, .430, 'Slugging Percentage Against')}
-        ${heatCell(r.hr9,  v=>v.toFixed(2), 0.80, 1.50, 'Home Runs per 9 Innings')}
-        ${plainCell(r.tb!=null?r.tb:'–', 'Total Bases Allowed')}
-        ${plainCell(`<span style="color:${r.kpg>=7?'var(--green)':r.kpg>=5?'var(--text)':'var(--muted)'}">${r.kpg??'–'}</span>`, 'Average Strikeouts per Game Started')}
+        ${plainCell(r.ip!=null?r.ip.toFixed(1):'–', 'Innings Pitched', 'IP')}
+        ${plainCell(r.bf!=null?r.bf:'–', 'Batters Faced', 'BF')}
+        ${heatCell(r.fip,  v=>v.toFixed(2), 3.25, 4.50, 'Fielding Independent Pitching', 'FIP')}
+        ${heatCell(r.avg,  v=>v.toFixed(3).replace(/^0/,''), .220, .270, 'Batting Average Against', 'AVG')}
+        ${heatCell(r.woba, v=>v.toFixed(3).replace(/^0/,''), .290, .340, 'Weighted On-Base Average', 'wOBA')}
+        ${heatCell(r.whip, v=>v.toFixed(2), 1.10, 1.40, 'Walks + Hits per Inning Pitched', 'WHIP')}
+        ${heatCell(r.iso,  v=>v.toFixed(3).replace(/^0/,''), .150, .200, 'Isolated Power — extra-base power allowed', 'ISO')}
+        ${heatCell(r.slg,  v=>v.toFixed(3).replace(/^0/,''), .350, .430, 'Slugging Percentage Against', 'SLG')}
+        ${heatCell(r.hr9,  v=>v.toFixed(2), 0.80, 1.50, 'Home Runs per 9 Innings', 'HR/9')}
+        ${plainCell(r.tb!=null?r.tb:'–', 'Total Bases Allowed', 'TB')}
+        ${plainCell(`<span style="color:${r.kpg>=7?'var(--green)':r.kpg>=5?'var(--text)':'var(--muted)'}">${r.kpg??'–'}</span>`, 'Average Strikeouts per Game Started', 'K/GM')}
       </tr>`;
 
     // Hidden, off-row lineup panel — kept alive independent of the table row
@@ -3265,8 +3271,8 @@ async function loadGameProps() {
           const homeWinPct = homeW / (homeW + homeL);
           const recordDiff = awayWinPct - homeWinPct; // positive = away has the better record
           const recordPts = Math.max(-18, Math.min(18, recordDiff * 60));
-          if (recordPts >= 1) { awayScore += recordPts; factors.push({team:'away', label:factorLabel('away', `${awayAbbr} record edge (${awayW}-${awayL})`), type:'pos'}); }
-          else if (recordPts <= -1) { homeScore += Math.abs(recordPts); factors.push({team:'home', label:factorLabel('home', `${homeAbbr} record edge (${homeW}-${homeL})`), type:'pos'}); }
+          if (recordPts >= 1) { awayScore += recordPts; factors.push({team:'away', label:factorLabel('away', `Record edge (${awayW}-${awayL})`), type:'pos'}); }
+          else if (recordPts <= -1) { homeScore += Math.abs(recordPts); factors.push({team:'home', label:factorLabel('home', `Record edge (${homeW}-${homeL})`), type:'pos'}); }
         }
 
         // Time of day factor — day games (before 5pm CDT) slightly favor home team; night games more even
