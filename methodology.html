@@ -43,6 +43,10 @@
   <h2>Graded in the open</h2>
   <p>Every pick's result is tracked automatically against the actual final outcome of the game and logged, win or loss. That record is public — you don't have to take our word for how the models are performing, you can check it yourself.</p>
 
+  <h2 id="record">Our all-time record</h2>
+  <p>Every graded pick this model has made this season, by market — pulled live from the same automated tracker that grades each pick after the game goes final. Pending and pushed picks aren't counted. Looking for today's record specifically? That's on the <a href="/">Games Today</a> board.</p>
+  <div class="record-grid" id="record-grid"><div class="record-empty">Loading record…</div></div>
+
   <h2>What this isn't</h2>
   <div class="legal-note">Diamond Report is for informational and entertainment purposes only. Our models are statistical projections, not guarantees — no system projects sports outcomes with certainty, and past results don't guarantee future ones. Nothing on this site is gambling or betting advice. If you choose to bet, do so responsibly and in accordance with your local laws.</div>
 
@@ -61,6 +65,37 @@
   </div>
   <div class="dr-footer-meta">© 2026 Diamond Report.</div>
 </footer>
+
+<script>
+(function () {
+  var LABELS = { drp: 'Moneyline Picks', kprop: 'Strikeout Props', premium: 'Premium Picks', hrThreat: 'HR Threat' };
+  function pctColor(pct) {
+    if (pct == null) return '#8fa3c8';
+    return pct >= 55 ? '#2ecc71' : pct < 45 ? '#dc2626' : '#2f6bff';
+  }
+  function render(data) {
+    var el = document.getElementById('record-grid');
+    if (!el) return;
+    var rows = Object.keys(LABELS).map(function (key) {
+      var m = data && data.allTime && data.allTime[key];
+      if (!m || !m.total) return '';
+      var pct = Math.round((m.wins / m.total) * 100);
+      var record = m.wins + '-' + m.losses + (m.pushes ? '-' + m.pushes : '');
+      return '<div class="record-row"><span class="record-label">' + LABELS[key] + '</span>' +
+        '<span class="record-value" style="color:' + pctColor(pct) + '">' + record +
+        ' <span class="record-pct">(' + pct + '%)</span></span></div>';
+    }).filter(Boolean).join('');
+    el.innerHTML = rows || '<div class="record-empty">No graded picks yet this season.</div>';
+  }
+  fetch('./data/tracker.json', { cache: 'no-store' })
+    .then(function (res) { return res.ok ? res.json() : null; })
+    .then(function (data) { render(data); })
+    .catch(function () {
+      var el = document.getElementById('record-grid');
+      if (el) el.innerHTML = '<div class="record-empty">Record data unavailable right now.</div>';
+    });
+})();
+</script>
 
 </body>
 </html>
