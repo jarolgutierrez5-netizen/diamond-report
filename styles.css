@@ -3610,3 +3610,58 @@ select:focus-visible {
     zoom: 0.8;
   }
 }
+
+/* Starting Pitcher Report: drop the inner fixed-height scroll box (the
+   consolidated block earlier in this file re-applies max-height:560px to
+   .dr-scroll-tall at several breakpoints) so the table grows with its
+   content and the page scrolls instead of double-scrolling inside a small
+   box. #pr-content only — every other .dr-scroll-tall panel is unaffected.
+   Appended last so it wins the cascade tie-break against those equal-
+   specificity !important rules via source order. */
+#pr-content.dr-scroll-tall {
+  max-height: none !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+/* Modal shell revamp — .mu-modal was a flat var(--surface) box with a plain
+   1px border, the one surface on the site that never got the glass-card
+   treatment (gradient + backdrop-blur + glow) already used everywhere else
+   (.lineup-batter-card, .dr1027-hr-card, .premium-card, etc). Shared by
+   every .mu-modal-overlay instance — the Batter vs Pitcher modal and the
+   Batting Lineup & Matchups pop-out both pick this up, so both look current
+   instead of only one getting fixed. Appended last for the same cascade
+   tie-break reason as the scroll fix above. */
+.mu-modal-overlay {
+  backdrop-filter: blur(3px) !important;
+  -webkit-backdrop-filter: blur(3px) !important;
+}
+.mu-modal {
+  background: linear-gradient(165deg, rgba(19,29,50,.94), rgba(8,13,24,.97)) !important;
+  border: 1px solid rgba(47,107,255,.28) !important;
+  box-shadow: 0 0 0 1px rgba(47,107,255,.08), 0 24px 60px rgba(0,0,0,.5), 0 0 40px rgba(47,107,255,.08) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  animation: mu-modal-in .18s cubic-bezier(.2,.8,.3,1);
+}
+@keyframes mu-modal-in {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.mu-modal-head {
+  background: linear-gradient(180deg, rgba(47,107,255,.10), transparent) !important;
+  border-bottom: 1px solid rgba(47,107,255,.2) !important;
+}
+.mu-close {
+  width: 30px !important;
+  height: 30px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  transition: background .15s ease, color .15s ease;
+}
+.mu-close:hover {
+  background: rgba(255,255,255,.08) !important;
+  color: #fff !important;
+}

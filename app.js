@@ -2149,7 +2149,7 @@ function openPitcherLineupModal(pidRaw) {
 
   openLineupModalPid = pid;
   if (title) title.textContent = meta.pitcherName || 'Batting Lineup & Matchups';
-  if (sub) sub.textContent = meta.teamAbbr && meta.oppAbbr ? `${meta.teamAbbr} vs ${meta.oppAbbr}` : '';
+  if (sub) sub.textContent = `Batting Lineup & Matchups${meta.teamAbbr && meta.oppAbbr ? ` · ${meta.teamAbbr} vs ${meta.oppAbbr}` : ''}`;
   body.innerHTML = '';
   panel.style.display = 'block';
   body.appendChild(panel);
@@ -6750,7 +6750,7 @@ async function openKPropLineupModal(pitcherId, pitcherName, teamAbbr, oppAbbr) {
 
   openLineupModalPid = null; // this modal instance isn't tracked by the Pitcher Report rehydrate path
   if (title) title.textContent = pitcherName || 'Batting Lineup & Matchups';
-  if (sub) sub.textContent = teamAbbr && oppAbbr ? `${teamAbbr} vs ${oppAbbr}` : '';
+  if (sub) sub.textContent = `Batting Lineup & Matchups${teamAbbr && oppAbbr ? ` · ${teamAbbr} vs ${oppAbbr}` : ''}`;
   body.innerHTML = `<div class="pr-expand-panel kprop-lineup-panel" id="${panelId}"><span class="spin"></span> Loading lineup…</div>`;
   overlay.style.display = 'flex';
   document.body.style.overflow = 'hidden';
