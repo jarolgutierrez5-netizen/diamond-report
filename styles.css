@@ -3719,3 +3719,21 @@ select:focus-visible {
   top: -9px;
   right: -9px;
 }
+/* Default desktop/tablet density to match what the site actually looks like
+   at ~80% browser zoom (the reference: more of the page visible at once,
+   tighter but still fully readable — the look wanted for when ad units start
+   competing for space). Real CSS `zoom`, not `transform: scale` — unlike
+   transform, zoom is reflected in offsetWidth/getBoundingClientRect/click
+   coordinates exactly the way an actual browser zoom is, so none of this
+   site's JS-driven layout math (card click targets, expand panels, modal
+   positioning) needs to change. vh/vw units and media-query breakpoints still
+   key off the real, unzoomed viewport size, so responsiveness is unaffected.
+   Scoped to min-width:981px — just above the existing 980px mobile
+   breakpoint elsewhere in this file — because mobile already has its own
+   dedicated compact rules; stacking 80% zoom on top of those would push text
+   and tap targets below a usable size. */
+@media (min-width: 981px) {
+  html {
+    zoom: 0.8;
+  }
+}

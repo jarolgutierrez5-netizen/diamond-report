@@ -63,6 +63,15 @@ const TRACKER_PATH = path.join(__dirname, '..', 'data', 'tracker.json');
 // this file was never being written before, so loadSportsbookKLines() on the client
 // had nothing to actually read despite already knowing how to parse it.
 const K_PROPS_ODDS_PATH = path.join(__dirname, '..', 'data', 'k-props.json');
+// Separate file, separate pipeline — deliberately never merged into
+// data/tracker.json. Captures our own Diamond Report Pick alongside Ballpark
+// Pal's own Moneyline projection for the same game every morning, then grades
+// both against the real final score the next day, purely so accuracy can be
+// compared side by side over time. Never read by anything that feeds a
+// score or a pick — informational/analytics only.
+const BP_COMPARISON_PATH = path.join(__dirname, '..', 'data', 'ballparkpal-comparison.json');
+const BALLPARKPAL_API_KEY = process.env.BALLPARKPAL_API_KEY || '';
+const BALLPARKPAL_BASE = 'https://www.ballparkpal.com/api/v1';
 const API = 'https://statsapi.mlb.com/api/v1';
 // Real sportsbook lines, when available — see fetchOddsLookup() below. Entirely
 // optional: everything gracefully falls back to the model's own line/analysis when
@@ -227,6 +236,165 @@ function recomputeAllTime(store) {
       total: rows.length,
     };
   }
+}
+
+// ── Ballpark Pal projections comparison (separate file, see BP_COMPARISON_PATH) ──
+async function loadBallparkPalComparison() {
+  try {
+    const raw = await readFile(BP_COMPARISON_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    parsed.entries ||= [];
+    return parsed;
+  } catch (e) {
+    return {
+      version: 1,
+      generatedAt: null,
+      entries: [],
+      summary: {
+        ours: { wins: 0, losses: 0, pushes: 0, total: 0 },
+        ballparkPal: { wins: 0, losses: 0, pushes: 0, total: 0 },
+      },
+    };
+  }
+}
+
+async function saveBallparkPalComparison(store) {
+  store.generatedAt = new Date().toISOString();
+  await mkdir(path.dirname(BP_COMPARISON_PATH), { recursive: true });
+  await writeFile(BP_COMPARISON_PATH, JSON.stringify(store, null, 2) + '\n');
+}
+
+function recomputeBallparkPalSummary(store) {
+  const summary = {
+    ours: { wins: 0, losses: 0, pushes: 0, total: 0 },
+    ballparkPal: { wins: 0, losses: 0, pushes: 0, total: 0 },
+  };
+  for (const e of store.entries) {
+    if (e.ourResult === 'win') summary.ours.wins++;
+    else if (e.ourResult === 'loss') summary.ours.losses++;
+    else if (e.ourResult === 'push') summary.ours.pushes++;
+    if (e.ourResult && e.ourResult !== 'pending') summary.ours.total++;
+
+    if (e.bpResult === 'win') summary.ballparkPal.wins++;
+    else if (e.bpResult === 'loss') summary.ballparkPal.losses++;
+    else if (e.bpResult === 'push') summary.ballparkPal.pushes++;
+    if (e.bpResult && e.bpResult !== 'pending') summary.ballparkPal.total++;
+  }
+  store.summary = summary;
+}
+
+async function fetchBallparkPal(pathAndQuery, attempts = 3) {
+  if (!BALLPARKPAL_API_KEY) return null;
+  const url = `${BALLPARKPAL_BASE}${pathAndQuery}`;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(url, { headers: { 'X-API-Key': BALLPARKPAL_API_KEY } });
+      if (res.status === 429) {
+        const retryAfterSec = Number(res.headers.get('Retry-After')) || (2 * (i + 1));
+        await new Promise(r => setTimeout(r, retryAfterSec * 1000));
+        continue;
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      return json.data;
+    } catch (e) {
+      if (i === attempts - 1) { console.warn(`Ballpark Pal fetch failed for ${pathAndQuery}:`, e.message); return null; }
+      await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+    }
+  }
+  return null;
+}
+
+// Ballpark Pal models Moneyline as a per-team "runs scored over/under 0.5"
+// market rather than a flat win probability — confirmed live: for a given
+// gameId, marketKey "mkt_1"/displayName "Moneyline" returns four rows (each
+// team x over/under), where a team's "over 0.5" probability is mathematically
+// its win probability (the two teams' "over" probabilities sum to ~1, and
+// each team's "under" is the complement of its own "over" — baseball has no
+// ties, so "scores more than half a run more than being shut out" only
+// resolves to "wins"). teamId here is the real MLB Stats API team id (already
+// hydrated on the schedule game object), not something separately looked up.
+async function fetchBallparkPalMoneyline(gamePk, awayTeamId, homeTeamId) {
+  const payload = await fetchBallparkPal(`/projections/probabilities?gameId=${gamePk}`);
+  const items = payload?.items;
+  if (!Array.isArray(items)) return null;
+  const findPct = (teamId) => {
+    const row = items.find(it => it.displayName === 'Moneyline' && it.side === 'over' && it.subject?.type === 'team' && it.subject?.id === teamId);
+    return row && Number.isFinite(row.probability) ? Math.round(row.probability * 100) : null;
+  };
+  const awayPct = findPct(awayTeamId);
+  const homePct = findPct(homeTeamId);
+  if (awayPct == null || homePct == null) return null;
+  return { awayPct, homePct };
+}
+
+async function gradeBallparkPalComparison(compStore) {
+  const today = cdtDateString(new Date());
+  const pending = compStore.entries.filter(e => e.ourResult === 'pending' && e.date < today);
+  if (!pending.length) return 0;
+
+  const dates = [...new Set(pending.map(e => e.date))];
+  let graded = 0;
+  for (const date of dates) {
+    let games = [];
+    try {
+      const sched = await fetchJSON(`${API}/schedule?sportId=1&date=${date}&hydrate=linescore`);
+      games = sched?.dates?.find(d => d.date === date)?.games || [];
+    } catch (e) {
+      console.warn(`Ballpark Pal comparison: schedule fetch failed for ${date}:`, e.message);
+      continue;
+    }
+    const gamesByPk = Object.fromEntries(games.map(g => [g.gamePk, g]));
+
+    for (const e of pending.filter(r => r.date === date)) {
+      const g = gamesByPk[e.gamePk];
+      if (!g || g.status?.abstractGameState !== 'Final') continue;
+      const awayScore = n(g.teams?.away?.score, NaN);
+      const homeScore = n(g.teams?.home?.score, NaN);
+      if (!Number.isFinite(awayScore) || !Number.isFinite(homeScore)) continue;
+      const actualWinner = awayScore === homeScore ? 'TIE' : (awayScore > homeScore ? e.awayTeam : e.homeTeam);
+      e.actualWinner = actualWinner;
+      e.ourResult = actualWinner === 'TIE' ? 'push' : (actualWinner === e.ourPick ? 'win' : 'loss');
+      e.bpResult = actualWinner === 'TIE' ? 'push' : (actualWinner === e.bpPick ? 'win' : 'loss');
+      graded++;
+    }
+  }
+  return graded;
+}
+
+// Called from inside captureToday (has previewGames/store.market.drp already
+// in scope) — only compares games we ourselves captured a DRP pick for, so
+// this never becomes its own independent source of picks.
+async function captureBallparkPalComparisonToday(compStore, previewGames, store) {
+  if (!BALLPARKPAL_API_KEY) return 0;
+  let added = 0;
+  for (const g of previewGames) {
+    const awayAbbr = g.teams.away.team.abbreviation;
+    const homeAbbr = g.teams.home.team.abbreviation;
+    const gameDay = cdtDateString(new Date(g.gameDate));
+    const key = `${gameDay}|${g.gamePk}`;
+    if (compStore.entries.some(e => e.key === key)) continue;
+    const ourDrp = store.market.drp.find(r => r.gamePk === g.gamePk);
+    if (!ourDrp) continue;
+    let bp;
+    try {
+      bp = await fetchBallparkPalMoneyline(g.gamePk, g.teams.away.team.id, g.teams.home.team.id);
+    } catch (e) {
+      console.warn(`Ballpark Pal comparison capture failed for gamePk ${g.gamePk}:`, e.message);
+      continue;
+    }
+    if (!bp) continue;
+    const bpPick = bp.awayPct >= bp.homePct ? awayAbbr : homeAbbr;
+    const bpPickPct = Math.max(bp.awayPct, bp.homePct);
+    compStore.entries.push({
+      key, date: gameDay, gamePk: g.gamePk, awayTeam: awayAbbr, homeTeam: homeAbbr,
+      ourPick: ourDrp.pick, ourPickPct: ourDrp.pickPct,
+      bpPick, bpPickPct,
+      actualWinner: null, ourResult: 'pending', bpResult: 'pending',
+    });
+    added++;
+  }
+  return added;
 }
 
 // ── Recent-form blend — same shape as app.js's recentPitchingForm/blendRecentForm ──
@@ -1353,7 +1521,7 @@ async function gradeHRThreatPending(store) {
   return graded;
 }
 
-async function captureToday(store) {
+async function captureToday(store, compStore) {
   const today = cdtDateString(new Date());
   const sched = await fetchJSON(`${API}/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher,linescore,weather`);
   const games = sched?.dates?.find(d => d.date === today)?.games || [];
@@ -1419,6 +1587,11 @@ async function captureToday(store) {
     }
   }
   console.log(`Captured ${added} new pending DRP/K Props pick(s) for ${today}.`);
+
+  if (compStore) {
+    const bpAdded = await captureBallparkPalComparisonToday(compStore, previewGames, store);
+    console.log(`Captured ${bpAdded} new Ballpark Pal comparison entr(ies) for ${today}.`);
+  }
 
   // Built once and shared — Elite Picks and the HR Threats hit-rate tracker both need
   // the same full batter pool (season stats, recent form, platoon splits per batter),
@@ -1499,11 +1672,19 @@ async function gradePending(store) {
 async function main() {
   const store = await loadTracker();
   await gradePending(store);
-  await captureToday(store);
+
+  const compStore = await loadBallparkPalComparison();
+  const bpGraded = await gradeBallparkPalComparison(compStore);
+
+  await captureToday(store, compStore);
   recomputeAllTime(store);
   await saveTracker(store);
   console.log('tracker.json updated:', TRACKER_PATH);
   console.log('All-time:', JSON.stringify(store.allTime));
+
+  recomputeBallparkPalSummary(compStore);
+  await saveBallparkPalComparison(compStore);
+  console.log(`Ballpark Pal comparison: graded ${bpGraded}, ${compStore.entries.length} total entries, summary:`, JSON.stringify(compStore.summary));
 }
 
 // Only auto-run when executed directly (`node update-tracker.mjs`) — importing this
@@ -1528,4 +1709,6 @@ export {
   parseInningsPitched, pitcherBattersFacedPer9,
   windPowerFactor, temperaturePowerFactor, isDayGameCT, doubleheaderFatigueFactor, teamRestFatigueFactor,
   battingSplitHomeAway, homeRoadPowerFactor,
+  loadBallparkPalComparison, saveBallparkPalComparison, recomputeBallparkPalSummary,
+  fetchBallparkPalMoneyline, gradeBallparkPalComparison, captureBallparkPalComparisonToday,
 };

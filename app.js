@@ -3562,28 +3562,67 @@ async function loadGameProps() {
       // nothing here is computed fresh or feeds back into scoring.
       const densityPct = Math.round((densityMultForDisplay - 1) * 100);
       const windPct = Math.round((windMultForDisplay - 1) * 100);
-      const detailStat = (label, val) => `<div><span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${label}</span><br><span style="font-size:12px;color:var(--text)">${val}</span></div>`;
       // Ballpark Pal's own independently-modeled weather-only HR effect (licensed
       // API, see scripts/sync-ballparkpal.mjs) — a second, differently-computed
       // number next to our own DIY air-density/wind figure above. Purely a
       // cross-check; omitted entirely when the sync hasn't run or has no data
       // for this game yet, same as the Bullpen chip's fail-silent pattern.
       const bpWeatherPct = ballparkPalWeatherPctForGame(g.gamePk);
-      const bpRow = bpWeatherPct != null ? detailStat('Ballpark Pal Weather (cross-check)', `${bpWeatherPct > 0 ? '+' : ''}${bpWeatherPct}% HR`) : '';
+      // Horizontal bar centered at 0, filling toward green (boosts HR) or red
+      // (suppresses HR) — deltaPct is already the signed % to plot, scale is the
+      // ± range the bar's full half-width represents (clamped only visually;
+      // the printed valueText is always the real, unclamped number).
+      const centerBar = (label, deltaPct, scale, valueText) => {
+        const clamped = Math.max(-scale, Math.min(scale, deltaPct));
+        const color = clamped === 0 ? 'var(--muted)' : clamped > 0 ? '#2ee6a6' : '#ff4d6d';
+        const fillPct = (Math.abs(clamped) / scale * 50).toFixed(1);
+        const left = clamped > 0 ? 50 : (50 - fillPct);
+        return `<div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;color:var(--muted);min-width:118px;white-space:nowrap">${label}</span>
+          <span style="position:relative;flex:1;height:6px;background:var(--bg);border:1px solid var(--border);border-radius:3px">
+            <span style="position:absolute;left:calc(50% - .5px);top:-1px;bottom:-1px;width:1px;background:var(--border)"></span>
+            <span style="position:absolute;left:${left}%;top:0;bottom:0;width:${fillPct}%;background:${color};border-radius:3px"></span>
+          </span>
+          <span style="font-size:11px;font-weight:700;color:${color};min-width:46px;text-align:right;white-space:nowrap">${valueText}</span>
+        </div>`;
+      };
+      const effectBars = [
+        centerBar('🌬️ Air Density', densityPct, 15, `${densityPct > 0 ? '+' : ''}${densityPct}%`),
+        centerBar('💨 Wind', windPct, 20, `${windPct > 0 ? '+' : ''}${windPct}%`),
+        bpWeatherPct != null ? centerBar('🌐 Ballpark Pal', bpWeatherPct, 15, `${bpWeatherPct > 0 ? '+' : ''}${bpWeatherPct}%`) : '',
+        centerBar('🏟️ Park Factor', parkFactorVal - 100, 30, `${parkFactorVal}`),
+      ].filter(Boolean).join('');
+      const windArrow = (weather && Number.isFinite(weather.windDir))
+        // Arrow points the direction the wind is blowing TOWARD (windDir is
+        // meteorological "blowing FROM", so +180 flips it) — 0deg (N) = up.
+        ? `<span style="display:inline-block;transform:rotate(${(weather.windDir + 180) % 360}deg);font-size:20px;line-height:1">↑</span>`
+        : '';
       const parkWeatherHTML = weather ? `
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;padding:12px 14px">
-          ${detailStat('Park', stadiumName || homeAbbr)}
-          ${detailStat('Conditions', weatherCodeLabel(weather.code))}
-          ${detailStat('Temp', `${weather.temp}°F`)}
-          ${detailStat('Humidity', weather.humidity != null ? `${weather.humidity}%` : '–')}
-          ${detailStat('Wind', `${weather.wind}mph ${compassLabel(weather.windDir)}`)}
-          ${detailStat('Pressure (MSL)', weather.pressureMsl != null ? `${Math.round(weather.pressureMsl)} hPa` : '–')}
-          ${detailStat('Air Density Effect', `${densityPct > 0 ? '+' : ''}${densityPct}% HR`)}
-          ${detailStat('Wind Effect', `${windPct > 0 ? '+' : ''}${windPct}% HR`)}
-          ${detailStat('Park Factor', `${parkFactorVal} (100 = avg)`)}
-          ${bpRow}
+        <div style="padding:12px 14px">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <div style="font-size:34px;line-height:1">${weatherCodeEmoji(weather.code)}</div>
+            <div style="min-width:90px">
+              <div style="font-size:20px;font-weight:700;color:var(--text);line-height:1.1">${weather.temp}°F</div>
+              <div style="font-size:11px;color:var(--muted)">${weatherCodeLabel(weather.code)} · ${stadiumName || homeAbbr}</div>
+            </div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+              ${windArrow}
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--text)">${weather.wind}mph</div>
+                <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${compassLabel(weather.windDir)}</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;margin:10px 0 12px;font-size:10px;color:var(--muted)">
+            <span>💧 Humidity: ${weather.humidity != null ? `${weather.humidity}%` : '–'}</span>
+            <span>🔽 Pressure: ${weather.pressureMsl != null ? `${Math.round(weather.pressureMsl)} hPa` : '–'}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px">${effectBars}</div>
         </div>` : `
-        <div style="padding:12px 14px;font-size:12px;color:var(--muted)">${stadiumName || homeAbbr} — ${stadiumCoords[homeAbbr]?.dome && !stadiumCoords[homeAbbr]?.retractable ? 'fixed dome, weather neutral' : 'weather unavailable'}. Park Factor: ${parkFactorVal} (100 = avg).${bpWeatherPct != null ? ` Ballpark Pal weather cross-check: ${bpWeatherPct > 0 ? '+' : ''}${bpWeatherPct}% HR.` : ''}</div>`;
+        <div style="padding:12px 14px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">🏟️ ${stadiumName || homeAbbr} — ${stadiumCoords[homeAbbr]?.dome && !stadiumCoords[homeAbbr]?.retractable ? 'fixed dome, weather neutral' : 'weather unavailable'}</div>
+          <div style="display:flex;flex-direction:column;gap:7px">${effectBars}</div>
+        </div>`;
 
       const confBarW = Math.min(winnerPct, 100);
       const confBarColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : '#2ecc71';
@@ -3803,6 +3842,18 @@ function weatherCodeLabel(code) {
     95: 'Thunderstorm', 96: 'Thunderstorm w/ hail', 99: 'Severe thunderstorm w/ hail',
   };
   return map[code] ?? '–';
+}
+// Same WMO codes as weatherCodeLabel, mapped to an emoji for the Park & Weather panel's icon.
+function weatherCodeEmoji(code) {
+  if (code === 0) return '☀️';
+  if (code === 1) return '🌤️';
+  if (code === 2) return '⛅';
+  if (code === 3) return '☁️';
+  if (code === 45 || code === 48) return '🌫️';
+  if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code)) return '🌧️';
+  if ([71, 73, 75].includes(code)) return '❄️';
+  if ([95, 96, 99].includes(code)) return '⛈️';
+  return '🌡️';
 }
 
 // ── Air-density-based weather model (replaces the old flat wind-bucket/temp-
@@ -5101,12 +5152,52 @@ function ballparkPalWeatherPctForGame(gameId) {
 // Threats cards, which are already batter-specific. homeRuns is Ballpark
 // Pal's combined park+weather multiplier for this exact player in today's
 // game (e.g. 1.06 = modeled +6% vs. neutral).
-function ballparkPalFactorForPlayer(gameId, playerId) {
+// statKey: 'homeRuns' | 'doublesTriples' | 'singles' — whichever combined
+// park+weather multiplier is most relevant to the board asking (HR Threats
+// asks for homeRuns; Elite Picks' Total Bases/Hits markets ask for
+// doublesTriples/singles — see sync-ballparkpal.mjs for what's synced).
+function ballparkPalStatFactorForPlayer(gameId, playerId, statKey) {
   const rows = ballparkPalFactors[gameId];
   if (!rows) return null;
   const row = rows.find(r => String(r.playerId) === String(playerId));
-  if (!row || !Number.isFinite(row.homeRuns)) return null;
-  return Math.round((row.homeRuns - 1) * 100);
+  if (!row || !Number.isFinite(row[statKey])) return null;
+  return Math.round((row[statKey] - 1) * 100);
+}
+function ballparkPalFactorForPlayer(gameId, playerId) {
+  return ballparkPalStatFactorForPlayer(gameId, playerId, 'homeRuns');
+}
+
+// data/ballparkpal-game-factors.json (see sync-ballparkpal.mjs) — game-level
+// (not per-hitter) offense-environment percentages from Ballpark Pal's
+// /parkfactors endpoint. Used where a board has no single batter to key a
+// per-hitter lookup off of (K Props: the pitcher's opponent lineup as a
+// whole, not one hitter).
+let ballparkPalGameFactors = {};
+let ballparkPalGameFactorsLoaded = false;
+let ballparkPalGameFactorsPromise = null;
+async function loadBallparkPalGameFactors(force = false) {
+  if (ballparkPalGameFactorsLoaded && !force) return ballparkPalGameFactors;
+  if (ballparkPalGameFactorsPromise && !force) return ballparkPalGameFactorsPromise;
+  ballparkPalGameFactorsPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/ballparkpal-game-factors.json`);
+      const byGame = {};
+      (data.rows || []).forEach(r => { if (Number.isFinite(r.gameId)) byGame[r.gameId] = r; });
+      ballparkPalGameFactors = byGame;
+    } catch (e) {}
+    ballparkPalGameFactorsLoaded = true;
+    return ballparkPalGameFactors;
+  })();
+  return ballparkPalGameFactorsPromise;
+}
+// runsPercent is already a signed deviation from a neutral park (e.g. 32 =
+// +32% more runs than neutral for this park+weather today, confirmed against
+// a real Coors Field row) — used as the general offense-environment summary
+// since Ballpark Pal doesn't publish a strikeout-specific figure.
+function ballparkPalOffensePctForGame(gameId) {
+  const row = ballparkPalGameFactors[gameId];
+  if (!row || !Number.isFinite(row.runsPercent)) return null;
+  return row.runsPercent;
 }
 
 function clampNum(n, min, max) { n = Number(n); if (!Number.isFinite(n)) return min; return Math.max(min, Math.min(max, n)); }
@@ -6768,6 +6859,7 @@ function renderKProps() {
           ${alreadyHit ? `<span class="dr109-chip hit-check"><span>✓ HIT:</span><strong>${kHitCount} / ${kTarget}</strong></span>` : hasLiveK ? `<span class="dr109-chip"><span>${missedK ? 'Final' : 'Live'}:</span><strong>${kHitCount} / ${kTarget}</strong></span>` : ''}
           <span class="dr109-chip good"><span>Line:</span><strong>${strikeoutLineText}</strong></span>
           ${p.market ? `<span class="dr109-chip" title="${p.market.book || 'Sportsbook'} line, informational only — never used to compute this pitcher's projection or line above">🏦 Market: O ${formatKLine(p.market.line)}${p.market.overPrice != null ? ` (${p.market.overPrice > 0 ? '+' : ''}${p.market.overPrice})` : ''}</span>` : ''}
+          ${p.bpOffensePct != null ? `<span class="dr109-chip" title="Ballpark Pal's overall park+weather offense environment for this game — not strikeout-specific, informational only, never used to compute this pitcher's projection">🌐 Park Env: ${p.bpOffensePct > 0 ? '+' : ''}${p.bpOffensePct}% offense</span>` : ''}
           <span class="dr109-chip stat-k-9"><span>K/9:</span><strong>${p.k9 ?? '–'}</strong></span>
           <span class="dr109-chip stat-era"><span>ERA:</span><strong>${p.era ?? '–'}</strong></span>
           <span class="dr109-chip stat-whip"><span>WHIP:</span><strong>${p.whip ?? '–'}</strong></span>
@@ -7082,7 +7174,8 @@ function scheduleKPropsLoad() {
       recommendedOverLine: recommendedOverLine.toFixed(1), overProb: overProb, confidenceTier: confidenceTier,
       projK: projK.toFixed(1), pred: 'OVER', pushLean: null, reasoning: reason,
       timeStr: timeStr, gameTimestamp: dt.getTime(), gamePk: g.gamePk,
-      market: marketOdds
+      market: marketOdds,
+      bpOffensePct: (typeof ballparkPalOffensePctForGame === 'function') ? ballparkPalOffensePctForGame(g.gamePk) : null
     };
     // Cross-check against the server-side tracker's pre-game K projection/line
     // (data/tracker.json, captured every morning well before first pitch — see
@@ -7140,6 +7233,7 @@ function scheduleKPropsLoad() {
         }
         var today = todayCdt();
         try { if (typeof loadSportsbookKLines === 'function') await withTimeout(loadSportsbookKLines(today), 3500); } catch(e){}
+        try { if (typeof loadBallparkPalGameFactors === 'function') await withTimeout(loadBallparkPalGameFactors(), 3500); } catch(e){}
         var games = [];
         try { games = await withTimeout(getTodaySchedule('team,probablePitcher'), 10000) || []; } catch(e){ games = []; }
         try { kPropsAllGames = games; } catch(e) { window.kPropsAllGames = games; }
@@ -11368,6 +11462,24 @@ function showPremiumGate(feature){
   function hs(id){ return id ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_72,q_auto:best/v1/people/'+id+'/headshot/67/current' : ''; }
   function tl(abbr){ var id = (window.teamIds||{})[abbr]; return id ? '<img class="premium-team-logo" src="https://www.mlbstatic.com/team-logos/'+id+'.svg" alt="" loading="lazy" decoding="async">' : ''; }
 
+  // Ballpark Pal only publishes per-hitter homeRuns/doublesTriples/singles
+  // multipliers (see sync-ballparkpal.mjs) — RBIs/Stolen Bases/Hits+Runs+RBI
+  // have no honest direct mapping, so those markets simply don't get a badge.
+  function bpStatKeyForMarket(marketKey){
+    if (marketKey === 'hr') return 'homeRuns';
+    if (marketKey === 'tb') return 'doublesTriples';
+    if (marketKey === 'hits') return 'singles';
+    return null;
+  }
+  function bpBadgeHTML(marketKey, row){
+    var statKey = bpStatKeyForMarket(marketKey);
+    if (!statKey || typeof ballparkPalStatFactorForPlayer !== 'function') return '';
+    var pct = ballparkPalStatFactorForPlayer(row.gamePk, row.id, statKey);
+    if (pct == null) return '';
+    var color = pct > 0 ? '#2ee6a6' : pct < 0 ? '#ff4d6d' : 'var(--muted)';
+    return ' · <span style="color:'+color+'" title="Ballpark Pal cross-check, informational only">🌐 '+(pct>0?'+':'')+pct+'%</span>';
+  }
+
   function cardHTML(entry, rank, marketKey){
     var r = entry.row, p = Math.round(entry.score);
     var lockBadge = isRowLocked(r) ? '<span class="premium-lock" title="Locked at first pitch — this pick no longer changes">🔒</span>' : '';
@@ -11378,7 +11490,7 @@ function showPremiumGate(feature){
       '<img class="premium-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt="">' +
       '<div class="premium-info">' +
         '<div class="premium-name">'+esc(r.name||'–')+lockBadge+'</div>' +
-        '<div class="premium-meta">'+tl(r.teamAbbr)+esc(r.teamAbbr||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div>' +
+        '<div class="premium-meta">'+tl(r.teamAbbr)+esc(r.teamAbbr||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+bpBadgeHTML(marketKey, r)+'</div>' +
         reasonHTML +
         '<div class="premium-quality">'+esc('★'.repeat(Math.max(1,entry.quality)))+'</div>' +
       '</div>' +
