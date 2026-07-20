@@ -3385,8 +3385,14 @@ async function loadGameProps() {
         // home-run-specific signal, distinct from the broader runs-total number
         // (which also folds in pitching/park/record).
         let weatherHRMult = 1;
+        // Tracked separately (not just the combined weatherHRMult) purely so the
+        // Park & Weather detail panel below can show the two effects broken out —
+        // neither value feeds into anything beyond that display.
+        let densityMultForDisplay = 1, windMultForDisplay = 1;
         if (weather) {
-          weatherHRMult = airDensityHRMult(weather) * windHRMult(weather, homeAbbr);
+          densityMultForDisplay = airDensityHRMult(weather);
+          windMultForDisplay = windHRMult(weather, homeAbbr);
+          weatherHRMult = densityMultForDisplay * windMultForDisplay;
           awayRuns *= weatherHRMult; homeRuns *= weatherHRMult;
         }
         const hrWeatherBoostPct = Math.round((weatherHRMult - 1) * 100);
@@ -3435,14 +3441,14 @@ async function loadGameProps() {
           }
         }
 
-        model = { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor, hrWeatherBoostPct, parkFactorVal: pf, market };
+        model = { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor, hrWeatherBoostPct, parkFactorVal: pf, market, weather, densityMultForDisplay, windMultForDisplay, stadiumName: stadium?.name };
         // Always keep the snapshot fresh — pre-game cycles overwrite it so that whenever
         // the game does go live, the lock captures the most recent pre-game state rather
         // than a stale first-load snapshot from hours earlier.
         _gamePropsSnapshot[g.gamePk] = model;
       }
 
-      const { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor, hrWeatherBoostPct, parkFactorVal, market } = model;
+      const { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor, hrWeatherBoostPct, parkFactorVal, market, weather, densityMultForDisplay, windMultForDisplay, stadiumName } = model;
 
       window.drWinProbStore[g.gamePk] = { awayAbbr, homeAbbr, awayPct, homePct, winnerAbbr, winnerPct, confidence };
       _favoredCache[g.gamePk] = { abbr: winnerAbbr, pct: winnerPct, source: 'model' };
@@ -3549,6 +3555,27 @@ async function loadGameProps() {
         }
       }
 
+      // Park & Weather detail panel — click-to-expand readable breakdown of numbers
+      // the model already computed above (weather, densityMultForDisplay,
+      // windMultForDisplay, parkFactorVal); same display-only rule as the chips —
+      // nothing here is computed fresh or feeds back into scoring.
+      const densityPct = Math.round((densityMultForDisplay - 1) * 100);
+      const windPct = Math.round((windMultForDisplay - 1) * 100);
+      const detailStat = (label, val) => `<div><span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${label}</span><br><span style="font-size:12px;color:var(--text)">${val}</span></div>`;
+      const parkWeatherHTML = weather ? `
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;padding:12px 14px">
+          ${detailStat('Park', stadiumName || homeAbbr)}
+          ${detailStat('Conditions', weatherCodeLabel(weather.code))}
+          ${detailStat('Temp', `${weather.temp}°F`)}
+          ${detailStat('Humidity', weather.humidity != null ? `${weather.humidity}%` : '–')}
+          ${detailStat('Wind', `${weather.wind}mph ${compassLabel(weather.windDir)}`)}
+          ${detailStat('Pressure (MSL)', weather.pressureMsl != null ? `${Math.round(weather.pressureMsl)} hPa` : '–')}
+          ${detailStat('Air Density Effect', `${densityPct > 0 ? '+' : ''}${densityPct}% HR`)}
+          ${detailStat('Wind Effect', `${windPct > 0 ? '+' : ''}${windPct}% HR`)}
+          ${detailStat('Park Factor', `${parkFactorVal} (100 = avg)`)}
+        </div>` : `
+        <div style="padding:12px 14px;font-size:12px;color:var(--muted)">${stadiumName || homeAbbr} — ${stadiumCoords[homeAbbr]?.dome && !stadiumCoords[homeAbbr]?.retractable ? 'fixed dome, weather neutral' : 'weather unavailable'}. Park Factor: ${parkFactorVal} (100 = avg).</div>`;
+
       const confBarW = Math.min(winnerPct, 100);
       const confBarColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : '#2ecc71';
 
@@ -3617,6 +3644,8 @@ async function loadGameProps() {
 
         <!-- HR Boost + Park Factor labels, same compact chip style as Key factors below -->
         <div class="gp-factors">${hrBoostChip}${parkFactorChip}${marketChip}${bullpenChip}${factorChips}</div>
+        <button class="btn-lineup dr1027-details-btn" onclick="toggleGameDetails(this)" style="margin-top:8px">▼ PARK &amp; WEATHER DETAILS</button>
+        <div class="gp-details-panel pr-expand-panel" style="display:none;margin-top:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px">${parkWeatherHTML}</div>
         <div class="gp-live-result-zone" data-live-score-badge="1" style="margin-top:8px">${resultBadge || ''}</div>
       </div>`, resultCorrect };
     }));
@@ -3648,6 +3677,25 @@ async function loadGameProps() {
 
   } catch(e) {
     if (el) el.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
+  }
+}
+
+// Park & Weather detail panel toggle — content is already inlined in the card's
+// HTML (built alongside the rest of the model in loadGameProps), so this is a
+// plain show/hide, no fetch needed, unlike the K Props lineup panel it's styled
+// after.
+function toggleGameDetails(btn) {
+  const panel = btn.nextElementSibling;
+  if (!panel) return;
+  const isOpen = panel.style.display === 'block';
+  if (isOpen) {
+    panel.style.setProperty('display', 'none', 'important');
+    btn.innerHTML = '▼ PARK &amp; WEATHER DETAILS';
+    btn.classList.remove('active');
+  } else {
+    panel.style.setProperty('display', 'block', 'important');
+    btn.innerHTML = '▲ HIDE PARK &amp; WEATHER DETAILS';
+    btn.classList.add('active');
   }
 }
 
@@ -3726,6 +3774,26 @@ function windEffect(deg, homeAbbr) {
   if (deg >= 60 && deg <= 150) return 'out';
   if (deg >= 240 && deg <= 330) return 'in';
   return 'cross';
+}
+// 16-point compass label for the Park & Weather detail panel — purely display,
+// same wind direction degrees windEffect already uses for the actual model input.
+function compassLabel(deg) {
+  if (deg == null || !Number.isFinite(deg)) return '–';
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(((deg % 360) / 22.5)) % 16];
+}
+// WMO weather codes, as returned by Open-Meteo's "weathercode" field — display only.
+function weatherCodeLabel(code) {
+  const map = {
+    0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
+    45: 'Fog', 48: 'Depositing rime fog',
+    51: 'Light drizzle', 53: 'Drizzle', 55: 'Dense drizzle',
+    61: 'Light rain', 63: 'Rain', 65: 'Heavy rain',
+    71: 'Light snow', 73: 'Snow', 75: 'Heavy snow',
+    80: 'Light rain showers', 81: 'Rain showers', 82: 'Violent rain showers',
+    95: 'Thunderstorm', 96: 'Thunderstorm w/ hail', 99: 'Severe thunderstorm w/ hail',
+  };
+  return map[code] ?? '–';
 }
 
 // ── Air-density-based weather model (replaces the old flat wind-bucket/temp-
