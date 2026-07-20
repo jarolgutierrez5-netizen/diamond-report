@@ -2151,10 +2151,19 @@ function openPitcherLineupModal(pidRaw) {
   if (title) title.textContent = meta.pitcherName || 'Batting Lineup & Matchups';
   if (sub) sub.textContent = `Batting Lineup & Matchups${meta.teamAbbr && meta.oppAbbr ? ` · ${meta.teamAbbr} vs ${meta.oppAbbr}` : ''}`;
   body.innerHTML = '';
+  const arsenalWrap = document.createElement('div');
+  arsenalWrap.id = `pr-arsenal-${pid}`;
+  arsenalWrap.innerHTML = `<div style="padding:10px 0;color:var(--muted);font-size:12px"><span class="spin"></span> Loading ${meta.pitcherName || 'pitcher'}'s pitch data…</div>`;
+  body.appendChild(arsenalWrap);
   panel.style.display = 'block';
+  panel.style.marginTop = '14px';
   body.appendChild(panel);
   overlay.style.display = 'flex';
   document.body.style.overflow = 'hidden';
+
+  loadPitcherStatcast().then(() => {
+    arsenalWrap.innerHTML = pitcherArsenalPanelHTML(pid, meta.pitcherName);
+  });
 
   const cacheKey = `${meta.gamePk}-${meta.side}`;
   if (lineupCache[cacheKey]) {
@@ -2568,6 +2577,134 @@ function renderLineupPending(panelId, teamAbbr = '') {
         </div>
       </div>
     </div>`;
+}
+
+// Pitcher's own real pitch-arsenal breakdown (usage/AVG/wOBA/SLG/HR/Whiff% per
+// pitch type, plus a per-pitch attack-zone location heatmap) — same real
+// synced data (data/pitcher-statcast.json, see scripts/sync-pitcher-statcast.mjs
+// and sync-pitcher-zone-hr.mjs) and same markup/classes as the Batter vs
+// Pitcher matchup modal's pitch-mix section, extracted standalone so it can
+// also show up in the Batting Lineup & Matchups pop-out (Pitcher Report and
+// K Props both use this), where there's no specific batter to build a
+// matchup against — just the pitcher's own numbers. The Attack Zone tab
+// clicks are already handled by a document-level delegated listener keyed
+// off [data-attack-zone-toggle]/.dr1042-split-btn[data-pitch], so this needs
+// no extra wiring wherever it's injected.
+const ZONE_LABELS = ['In/High','High','Out/High','Inside','Middle','Away','In/Low','Low','Out/Low'];
+function pitcherArsenalPanelHTML(pitcherId, pitcherName) {
+  const profile = pitcherStatcast[String(pitcherId)] || null;
+  const hasRealPitchMix = !!(profile?.byPitch?.length);
+
+  function attackZoneColor(pct) {
+    if (pct == null) return { bg:'#0d1220', text:'var(--muted)' };
+    if (pct >= 20) return { bg:'#4a1010', text:'#ff6b6b' };
+    if (pct >= 14) return { bg:'#3a2010', text:'#f4a261' };
+    if (pct >= 8)  return { bg:'#1a2a10', text:'#90ee60' };
+    return { bg:'#0d1a0d', text:'#3a6a3a' };
+  }
+  const attackZonePitches = (profile?.byPitch || []).filter(p => p?.name && p.zones && Object.keys(p.zones).length);
+  let attackZoneHTML = '';
+  if (attackZonePitches.length) {
+    const auid = `azone-${String(pitcherId||'p')}-${Math.random().toString(36).slice(2,8)}`;
+    const tabs = attackZonePitches.map((p, i) => `<button type="button" class="dr1042-split-btn${i===0?' active':''}" data-pitch="${i}">${p.name}</button>`).join('');
+    const bodies = attackZonePitches.map((p, i) => {
+      const cells = [1,2,3,4,5,6,7,8,9].map(z => {
+        const cell = p.zones[z];
+        const pct = cell?.usagePct;
+        if (pct == null) return `<div class="sz-cell" style="background:#0d1220;color:var(--muted)" title="${ZONE_LABELS[z-1]}: no data">–</div>`;
+        const c = attackZoneColor(pct);
+        const wobaTxt = cell.wobaAgainst != null ? `, ${cell.wobaAgainst.toFixed ? cell.wobaAgainst.toFixed(3) : cell.wobaAgainst} wOBA against` : '';
+        return `<div class="sz-cell" style="background:${c.bg};color:${c.text}" title="${ZONE_LABELS[z-1]}: ${pct}% of his ${p.name}s${wobaTxt}">${pct}%</div>`;
+      }).join('');
+      return `<div class="dr-azone-mode-body${i===0?' active':''}" data-pitch="${i}"><div class="strike-zone">${cells}</div></div>`;
+    }).join('');
+    attackZoneHTML = `
+    <div class="zone-section" id="${auid}" data-attack-zone-toggle>
+      <div class="zone-title">ATTACK ZONE BY PITCH · REAL LOCATION DATA</div>
+      <div class="zone-wrap">
+        <div class="zone-grid-outer">
+          <span class="zone-label">OUTSIDE ←&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ INSIDE</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="display:flex;flex-direction:column;gap:2px;font-size:9px;color:var(--muted);text-align:right;padding-right:4px">
+              <div style="height:40px;display:flex;align-items:center">HIGH</div>
+              <div style="height:40px;display:flex;align-items:center">MID</div>
+              <div style="height:40px;display:flex;align-items:center">LOW</div>
+            </div>
+            ${bodies}
+          </div>
+          <span class="zone-label" style="margin-top:4px">% = share of that pitch's own throws landing in each zone</span>
+        </div>
+        <div>
+          <div class="dr1042-split-toggle" role="tablist" aria-label="Attack zone pitch toggle" style="flex-wrap:wrap;height:auto">${tabs}</div>
+          <div class="zone-note" style="margin-top:10px;max-width:220px">Where ${(pitcherName||'').split(' ').pop()} actually locates each individual pitch — his real location tendency pitch by pitch, not just the blended zone profile above.</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  const pitchSectionLabel = hasRealPitchMix
+    ? `${(pitcherName||'').split(' ').pop()}'S PITCHES · ${(profile.totalPitches || 0).toLocaleString()} THROWN THIS SEASON`
+    : `${(pitcherName||'').split(' ').pop()}'S PITCHES · NO REAL DATA YET`;
+
+  function gbGood(kind, v) {
+    if (v === null || v === undefined || Number.isNaN(v)) return false;
+    if (kind === 'avg') return v >= .280;
+    if (kind === 'slg') return v >= .450;
+    if (kind === 'hr') return v >= 3;
+    if (kind === 'whiff') return v <= 20;
+    if (kind === 'woba') return v >= .340;
+    return false;
+  }
+  function gbCls(kind, v) { return gbGood(kind, v) ? ' gb-good' : ''; }
+  function fmtDec(v, d=3) {
+    if (v === null || v === undefined || v === '' || v === '–') return '–';
+    const n = parseFloat(v);
+    return Number.isNaN(n) ? '–' : n.toFixed(d).replace(/^0(?=\.)/, '');
+  }
+  function pitchEffTag(label, cls) { return `<span class="dr1041-chip ${cls}" style="font-size:9px;padding:2px 7px;margin-right:4px">${label}</span>`; }
+  function pitchEffRow(name, usage, avg, woba, slg, hr, whiffPct, veloTxt) {
+    const tags = [];
+    if (whiffPct != null && whiffPct >= 28) tags.push(pitchEffTag('🎯 Putaway','good'));
+    if ((avg != null && avg >= .260) || (slg != null && slg >= .430)) tags.push(pitchEffTag('⚠ Vulnerable','weak'));
+    return `<tr>
+      <td><strong>${name}</strong>${veloTxt||''}</td>
+      <td class="usage">${usage!=null?Number(usage).toFixed(0)+'%':'–'}</td>
+      <td class="num${gbCls('avg',avg)}">${fmtDec(avg,3)}</td>
+      <td class="num${gbCls('woba',woba)}">${fmtDec(woba,3)}</td>
+      <td class="num${gbCls('slg',slg)}">${fmtDec(slg,3)}</td>
+      <td class="num${gbCls('hr',hr)}">${hr!=null?hr:'–'}</td>
+      <td class="num${gbCls('whiff',whiffPct)}">${whiffPct!=null?Number(whiffPct).toFixed(0)+'%':'–'}</td>
+      <td>${tags.join('') || '<span style="color:var(--muted);font-size:11px">–</span>'}</td>
+    </tr>`;
+  }
+
+  let pitchRows = '';
+  if (hasRealPitchMix) {
+    pitchRows = profile.byPitch.map(p => {
+      const woba = p.woba ?? p.wobaAgainst ?? p.xwoba ?? p.xwobaContact ?? null;
+      const avg = p.avg ?? p.avgAgainst ?? null;
+      const slg = p.slg ?? p.slgAgainst ?? null;
+      const hr = p.homeRuns ?? p.hr ?? null;
+      const whiffPct = p.whiffPct ?? p.whiffRate ?? null;
+      const veloTxt = p.avgVelo ? ` · ${p.avgVelo} mph` : '';
+      return pitchEffRow(p.name, p.usagePct, avg, woba, slg, hr, whiffPct, veloTxt);
+    }).join('');
+  }
+
+  const gbLegendHTML = '<div class="dr1041-legend-note"><span class="gb-good-dot"></span> Green = favorable for the batter — a real weak spot for the pitcher on that pitch, not just a good season overall.</div>';
+  const pitchEffectivenessTableHTML = hasRealPitchMix ? `<div class="dr1041-pitch-mix" style="margin-top:14px">
+    <div class="dr1041-pitch-head">
+      <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">Real synced pitch-level data for ${pitcherName}.</div></div>
+    </div>
+    <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage</th><th>AVG</th><th>wOBA</th><th>SLG</th><th>HR</th><th>Whiff%</th><th>Notes</th></tr></thead><tbody>${pitchRows}</tbody></table></div>
+    ${gbLegendHTML}
+  </div>` : `<div class="dr1041-pitch-mix" style="margin-top:14px">
+    <div class="dr1041-pitch-head">
+      <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">No real pitch-level data available for ${pitcherName} yet — this section will populate once the daily Statcast sync has run.</div></div>
+    </div>
+  </div>`;
+
+  return pitchEffectivenessTableHTML + attackZoneHTML;
 }
 
 function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, pitcherName) {
@@ -6751,9 +6888,15 @@ async function openKPropLineupModal(pitcherId, pitcherName, teamAbbr, oppAbbr) {
   openLineupModalPid = null; // this modal instance isn't tracked by the Pitcher Report rehydrate path
   if (title) title.textContent = pitcherName || 'Batting Lineup & Matchups';
   if (sub) sub.textContent = `Batting Lineup & Matchups${teamAbbr && oppAbbr ? ` · ${teamAbbr} vs ${oppAbbr}` : ''}`;
-  body.innerHTML = `<div class="pr-expand-panel kprop-lineup-panel" id="${panelId}"><span class="spin"></span> Loading lineup…</div>`;
+  body.innerHTML = `<div id="kprop-arsenal-${pid}"><div style="padding:10px 0;color:var(--muted);font-size:12px"><span class="spin"></span> Loading ${pitcherName || 'pitcher'}'s pitch data…</div></div>` +
+    `<div class="pr-expand-panel kprop-lineup-panel" id="${panelId}" style="margin-top:14px"><span class="spin"></span> Loading lineup…</div>`;
   overlay.style.display = 'flex';
   document.body.style.overflow = 'hidden';
+
+  loadPitcherStatcast().then(() => {
+    const arsenalWrap = document.getElementById(`kprop-arsenal-${pid}`);
+    if (arsenalWrap) arsenalWrap.innerHTML = pitcherArsenalPanelHTML(pid, pitcherName);
+  });
 
   const outerPanel = document.getElementById(panelId);
   try {
