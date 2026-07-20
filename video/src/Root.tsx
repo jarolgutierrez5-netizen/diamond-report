@@ -2,6 +2,7 @@ import React from 'react';
 import { Composition } from 'remotion';
 import { PicksOfTheDay } from './PicksOfTheDay';
 import { WeeklyRecap } from './WeeklyRecap';
+import { TodaysPicksExplainer, TODAYS_PICKS_EXPLAINER_DURATION } from './TodaysPicksExplainer';
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -40,6 +41,14 @@ export const RemotionRoot: React.FC = () => {
           overallLosses: 0,
           overallWinPct: 0,
         }}
+      />
+      <Composition
+        id="TodaysPicksExplainer"
+        component={TodaysPicksExplainer}
+        durationInFrames={TODAYS_PICKS_EXPLAINER_DURATION}
+        fps={30}
+        width={1080}
+        height={1920}
       />
     </>
   );
