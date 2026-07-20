@@ -3194,7 +3194,14 @@ async function loadGameProps() {
             const wKey = `${homeAbbr}:${bucket}`;
             let wd = _weatherCache.get(wKey);
             if (!wd) {
-              const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,windspeed_10m,winddirection_10m,precipitation,weathercode&temperature_unit=fahrenheit&windspeed_unit=mph`);
+              // relative_humidity_2m + pressure_msl added for the air-density-based HR
+              // Boost model below (see airDensityHRMult) — pressure_msl (sea-level-
+              // equivalent, not surface_pressure) is deliberate: it isolates today's
+              // weather-system pressure anomaly from each park's permanent elevation,
+              // which the separate Statcast-based park factor already accounts for.
+              // Using raw surface_pressure here would double-count Coors' altitude as
+              // if it were a "weather" effect every single day.
+              const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,relative_humidity_2m,windspeed_10m,winddirection_10m,precipitation,pressure_msl,weathercode&temperature_unit=fahrenheit&windspeed_unit=mph`);
               if (!res.ok) throw new Error(`HTTP ${res.status}`);
               wd = await res.json();
               _weatherCache.set(wKey, wd);
@@ -3202,9 +3209,11 @@ async function loadGameProps() {
             const c = wd.current;
             weather = {
               temp: Math.round(c.temperature_2m),
+              humidity: c.relative_humidity_2m,
               wind: Math.round(c.windspeed_10m),
               windDir: c.winddirection_10m,
               precip: c.precipitation,
+              pressureMsl: c.pressure_msl,
               code: c.weathercode,
             };
           } catch {}
@@ -3367,34 +3376,17 @@ async function loadGameProps() {
         const totalParkAdj = 1 + ((pf - 100) / 100) * 0.5;
         awayRuns *= totalParkAdj; homeRuns *= totalParkAdj;
 
-        // Weather — same wind/temp thresholds as the win-prob factors above. Tracked
-        // as a single combined multiplier (weatherHRMult) so the same wind+temp effect
-        // driving the runs total can also be surfaced on its own as an "HR Boost" read
-        // — wind and temp are the two weather inputs that most directly affect how far
-        // a fly ball carries, i.e. genuine home-run-specific signal, distinct from the
-        // broader runs-total number (which also folds in pitching/park/record).
-        // Wind and temp each used to be a flat on/off jump right at one hard
-        // threshold (e.g. 86F and 105F both produced the exact same +5%), so on
-        // most realistic wind/temp readings the only two possible outputs were
-        // 0% or +/-5%. Scaling both continuously past a neutral band means a
-        // barely-over-the-line reading and an extreme reading no longer render
-        // identically.
+        // Weather — real air-density physics (airDensityHRMult) combined with a
+        // continuous wind-speed effect (windHRMult), replacing the old flat wind-
+        // bucket/temp-threshold formula. See both functions' comments (defined near
+        // windEffect below) for the physics and calibration. Tracked as a single
+        // combined multiplier (weatherHRMult) so the same effect driving the runs
+        // total can also be surfaced on its own as an "HR Boost" read — genuine
+        // home-run-specific signal, distinct from the broader runs-total number
+        // (which also folds in pitching/park/record).
         let weatherHRMult = 1;
         if (weather) {
-          if (weather.wind > 8) {
-            const totalWindImpact = windEffect(weather.windDir, homeAbbr);
-            // Ramps from 0 at 8mph to the full effect at 30mph+.
-            const windScale = Math.min(1, (weather.wind - 8) / 22);
-            if (totalWindImpact === 'out') weatherHRMult *= 1 + 0.10 * windScale;
-            else if (totalWindImpact === 'in') weatherHRMult *= 1 - 0.09 * windScale;
-          }
-          if (weather.temp < 60 || weather.temp > 80) {
-            // Neutral band is 60-80F; ramps from there out to +/-30F past the
-            // band edge (i.e. fully scaled by 30F or 110F).
-            const tempDelta = weather.temp < 60 ? (60 - weather.temp) : (weather.temp - 80);
-            const tempScale = Math.min(1, tempDelta / 30);
-            weatherHRMult *= weather.temp < 60 ? 1 - 0.07 * tempScale : 1 + 0.07 * tempScale;
-          }
+          weatherHRMult = airDensityHRMult(weather) * windHRMult(weather, homeAbbr);
           awayRuns *= weatherHRMult; homeRuns *= weatherHRMult;
         }
         const hrWeatherBoostPct = Math.round((weatherHRMult - 1) * 100);
@@ -3502,12 +3494,14 @@ async function loadGameProps() {
       // are computed.
       // Purely cosmetic fill bar under each chip's value, scaled to how extreme the
       // number is within its realistic range — reinforces the pos/neg color coding
-      // without changing what the number means. ~13% is roughly the max combined
-      // wind+temp swing weatherHRMult can produce; ~33 is roughly the max deviation
-      // from 100 seen across the real park-factor table above.
+      // without changing what the number means. ~20% is roughly the max realistic
+      // combined air-density+wind swing weatherHRMult produces (individual clamps
+      // are wider — see airDensityHRMult/windHRMult — but both maxing out together
+      // is rare); ~33 is roughly the max deviation from 100 seen across the real
+      // park-factor table above.
       const gpFactorBar = (pct, cls) => `<span class="gp-factor-bar"><span class="gp-factor-bar-fill ${cls}" style="width:${Math.round(Math.max(0, Math.min(1, pct)) * 100)}%"></span></span>`;
       const hrBoostCls = hrWeatherBoostPct > 0 ? 'pos' : hrWeatherBoostPct < 0 ? 'neg' : 'neu';
-      const hrBoostChip = `<span class="gp-factor ${hrBoostCls}" title="Wind + temperature effect on HR likelihood only — excludes park, pitching, and offense">🌬️ HR Boost: ${hrWeatherBoostPct > 0 ? '+' : ''}${hrWeatherBoostPct}%${gpFactorBar(Math.abs(hrWeatherBoostPct) / 13, hrBoostCls)}</span>`;
+      const hrBoostChip = `<span class="gp-factor ${hrBoostCls}" title="Air density (temp/humidity/pressure) + wind effect on HR likelihood only — excludes park, pitching, and offense">🌬️ HR Boost: ${hrWeatherBoostPct > 0 ? '+' : ''}${hrWeatherBoostPct}%${gpFactorBar(Math.abs(hrWeatherBoostPct) / 20, hrBoostCls)}</span>`;
       const parkFactorCls = parkFactorVal > 107 ? 'pos' : parkFactorVal < 93 ? 'neg' : 'neu';
       const parkFactorLabel = parkFactorVal > 107 ? 'HR-Friendly' : parkFactorVal < 93 ? 'Pitcher-Friendly' : 'Neutral';
       const parkFactorPct = parkFactorVal - 100;
@@ -3732,6 +3726,68 @@ function windEffect(deg, homeAbbr) {
   if (deg >= 60 && deg <= 150) return 'out';
   if (deg >= 240 && deg <= 330) return 'in';
   return 'cross';
+}
+
+// ── Air-density-based weather model (replaces the old flat wind-bucket/temp-
+// threshold formula) ────────────────────────────────────────────────────
+// Real physics: thinner air (hot, humid, and/or low-pressure) means less drag
+// on a fly ball, so it carries farther — the same mechanism that makes Coors
+// Field a hitter's park, just applied to day-to-day weather instead of
+// permanent altitude. Computed from the ideal gas law with a humidity
+// correction (moist air is very slightly LESS dense than dry air at the same
+// temp/pressure, since water vapor's molar mass is lower than N2/O2's).
+//
+// Density formula: rho = Pd/(Rd*T) + Pv/(Rv*T)
+//   Pd = partial pressure of dry air, Pv = partial pressure of water vapor
+//   Rd = 287.05 J/(kg*K) (dry air), Rv = 461.495 J/(kg*K) (water vapor)
+// Saturation vapor pressure from the Tetens approximation (accurate to
+// within ~1% over normal game-time temperature ranges, which is plenty for
+// this purpose — this isn't a meteorology tool).
+function airDensityKgM3(tempF, pressureMslHPa, relHumidityPct) {
+  const tempC = (tempF - 32) * 5 / 9;
+  const tempK = tempC + 273.15;
+  const satVaporHPa = 6.1078 * Math.pow(10, (7.5 * tempC) / (tempC + 237.3));
+  const vaporHPa = satVaporHPa * (Math.max(0, Math.min(100, relHumidityPct ?? 50)) / 100);
+  const totalPa = pressureMslHPa * 100;
+  const vaporPa = vaporHPa * 100;
+  const dryPa = totalPa - vaporPa;
+  return (dryPa / (287.05 * tempK)) + (vaporPa / (461.495 * tempK));
+}
+// "Neutral" game-time reference: 70F, 50% humidity, standard sea-level-
+// equivalent pressure (1013.25 hPa). Using pressure_msl (not raw local
+// surface pressure) for both today's reading and this reference means the
+// comparison isolates the day's weather-system pressure anomaly — it does
+// NOT vary by each park's own elevation, since pressure_msl already strips
+// altitude out. That keeps this purely a "weather" signal, not a second copy
+// of the permanent altitude effect the site's separate park factor covers.
+const NEUTRAL_AIR_DENSITY = airDensityKgM3(70, 1013.25, 50);
+function airDensityHRMult(weather) {
+  if (!weather || !Number.isFinite(weather.pressureMsl)) return 1;
+  const rho = airDensityKgM3(weather.temp, weather.pressureMsl, weather.humidity);
+  const densityRatio = NEUTRAL_AIR_DENSITY / rho; // >1 = thinner-than-normal air (HR-friendly)
+  // Real-world fly-ball physics (Nathan, "The Physics of Baseball") puts fly-ball
+  // distance roughly proportional to 1/density over the range weather can swing it,
+  // and because HR-or-not is so sensitive right at the fence, a given % change in
+  // distance produces a noticeably larger % change in HR rate — commonly estimated
+  // around 1.5-2x. 1.6 here is a middle-of-that-range calibration, not a precise
+  // derivation; clamped to +/-15% so an extreme reading can't dominate the number.
+  const DENSITY_HR_SENSITIVITY = 1.6;
+  return Math.max(0.85, Math.min(1.15, 1 + DENSITY_HR_SENSITIVITY * (densityRatio - 1)));
+}
+// Wind's effect scales continuously with speed above a light-breeze floor,
+// instead of only ever kicking in above one hard threshold — roughly 0.8% HR
+// multiplier per mph blowing out/in past 5mph, a mid-range estimate from the
+// same fly-ball-distance-to-HR-rate sensitivity used above (wind's push on
+// distance is well-established as roughly linear in speed for a tailwind/
+// headwind component). Crosswind (windEffect() === 'cross') is treated as
+// having no directional HR effect.
+function windHRMult(weather, homeAbbr) {
+  if (!weather || !(weather.wind > 5)) return 1;
+  const impact = windEffect(weather.windDir, homeAbbr);
+  if (impact === 'cross') return 1;
+  const WIND_HR_SENSITIVITY = 0.008;
+  const mult = 1 + WIND_HR_SENSITIVITY * (weather.wind - 5) * (impact === 'out' ? 1 : -1);
+  return Math.max(0.85, Math.min(1.2, mult));
 }
 
 // Refresh game props every 5 minutes when loaded (only while tab is visible)
