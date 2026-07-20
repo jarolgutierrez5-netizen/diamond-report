@@ -3271,8 +3271,8 @@ async function loadGameProps() {
           const homeWinPct = homeW / (homeW + homeL);
           const recordDiff = awayWinPct - homeWinPct; // positive = away has the better record
           const recordPts = Math.max(-18, Math.min(18, recordDiff * 60));
-          if (recordPts >= 1) { awayScore += recordPts; factors.push({team:'away', label:factorLabel('away', `${awayAbbr} record edge (${awayW}-${awayL})`), type:'pos'}); }
-          else if (recordPts <= -1) { homeScore += Math.abs(recordPts); factors.push({team:'home', label:factorLabel('home', `${homeAbbr} record edge (${homeW}-${homeL})`), type:'pos'}); }
+          if (recordPts >= 1) { awayScore += recordPts; factors.push({team:'away', label:factorLabel('away', `Record edge (${awayW}-${awayL})`), type:'pos'}); }
+          else if (recordPts <= -1) { homeScore += Math.abs(recordPts); factors.push({team:'home', label:factorLabel('home', `Record edge (${homeW}-${homeL})`), type:'pos'}); }
         }
 
         // Time of day factor — day games (before 5pm CDT) slightly favor home team; night games more even
