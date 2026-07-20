@@ -127,16 +127,22 @@ async function buildTeamFatigue(team) {
   return { gamesFound: gamePks.length, totalRelieverPitches, relieverAppearances, backToBackArms };
 }
 
-// Thresholds are illustrative, not derived from any published bullpen-workload
-// standard — total reliever pitches across a team's last two days, roughly:
-// under a normal single reliever outing's worth = fresh, up to ~2 full bullpen
-// games' worth = normal, beyond that = genuinely taxed. Back-to-back arms is
-// the sharper signal and weighted more heavily in the tier cutoffs below.
+// Recalibrated 2026-07-20: the original 35/80/130 cutoffs were set far below
+// real totals. A normal team uses 3-5 relievers/game at ~15-25 pitches each —
+// 60-100 relief pitches per game is unremarkable, so summed across the
+// ~2-game window this script covers, normal totals routinely land at
+// 120-160+. Checked against a live 30-team snapshot (2026-07-20): mean score
+// 156, median 136 — both already past the old "Gassed" cutoff of 130, which
+// is why nearly every team was showing Gassed/Taxed regardless of actual
+// bullpen usage. New cutoffs center the typical range on Normal and reserve
+// Taxed/Gassed for real upper-tail outliers (that snapshot's real
+// distribution: 47-411, most teams 85-160) — verify against a fresh snapshot
+// if usage patterns drift over the season.
 function fatigueTier(f) {
   const score = f.totalRelieverPitches + f.backToBackArms * 25;
-  if (score >= 130) return 'Gassed';
-  if (score >= 80) return 'Taxed';
-  if (score >= 35) return 'Normal';
+  if (score >= 230) return 'Gassed';
+  if (score >= 160) return 'Taxed';
+  if (score >= 75) return 'Normal';
   return 'Fresh';
 }
 
