@@ -3737,3 +3737,28 @@ select:focus-visible {
     text-transform: uppercase !important;
   }
 }
+
+/* ── HR Threats cards: match the Hits board's chip/badge look ────────────────
+   The HR Threats card body already shares .dr109-card's layout language (see
+   the "restyle to match K Props" block above), but its signal badges (ON
+   FIRE / DUE / DROUGHT / FAVORABLE / TOP HR THREAT) and the GRADE badge still
+   used a much louder, fully color-filled pill style than the Hits/RBI/TB/SB
+   board's chips, which only tint a chip's border + text over the same dark
+   base fill (.dr109-chip.good/.warn). Resetting the fill here (rather than
+   editing the .dr1027-chip.green/gold/red rules in place, deep in the
+   consolidated stylesheet) brings the two boards to the same visual weight. */
+.dr1027-chip.green,
+.dr1027-chip.gold,
+.dr1027-chip.red {
+  background: #0b1424 !important;
+}
+.dr1027-chip.green { color: #9ef0bd !important; }
+.dr1027-chip.gold { color: #ffd39b !important; }
+.dr1027-chip.red { color: #fca5a5 !important; }
+.dr1027-hr-score em {
+  background: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  font-weight: 800 !important;
+}
