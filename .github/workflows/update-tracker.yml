@@ -46,6 +46,17 @@ jobs:
         with:
           node-version: '22'
 
+      - name: TEMP - probe live site deploy state
+        run: |
+          curl -sS -L "https://diamondreport.app/index.html" -o /tmp/dr-live-index.html || echo "curl exit $?"
+          echo "--- app.min.js script tag ---"
+          grep -o 'app\.min\.js?v=[0-9]*' /tmp/dr-live-index.html || echo "not found"
+          echo "--- fetching app.min.js, checking for Ballpark Pal marker ---"
+          SRC=$(grep -o 'app\.min\.js?v=[0-9]*' /tmp/dr-live-index.html | head -1)
+          curl -sS -L "https://diamondreport.app/$SRC" -o /tmp/dr-live-app.min.js || echo "curl exit $?"
+          wc -c /tmp/dr-live-app.min.js
+          grep -o "ballparkPalFactorForPlayer" /tmp/dr-live-app.min.js || echo "MARKER NOT FOUND"
+
       - name: Run tracker updater
         env:
           # Optional — real sportsbook lines for K Props + market context for Elite
