@@ -1888,37 +1888,18 @@ let prSortCol = null, prSortDir = 1, prRows = [];
 const lineupCache = {};
 let repoLineupsData = null;
 let repoLineupsLoaded = false;
-const lineupMeta  = {}; // pitcherId -> {pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp}
-const expandedRows = new Set();
+const lineupMeta  = {}; // pitcherId -> {pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp, teamAbbr, oppAbbr}
 // Production stability patch: normalize pitcher ids and prevent stale lineup requests
 // from overwriting an actively opened Batting Lineup & Matchup panel.
 const lineupLoading = new Set();
 const lineupRequestTokens = {};
 const normalizePitcherId = (id) => String(id);
 
-function setLineupOpenState(pid, isOpen) {
-  const key = normalizePitcherId(pid);
-  const expandRow = document.getElementById(`pr-expand-${key}`);
-  const card = document.getElementById(`pr-row-${key}`);
-  const btn = card?.querySelector('.btn-lineup');
-
-  if (expandRow) {
-    expandRow.classList.toggle('is-open', !!isOpen);
-    expandRow.hidden = !isOpen;
-    expandRow.style.display = isOpen ? 'block' : 'none';
-  }
-  if (card) card.classList.toggle('is-expanded', !!isOpen);
-  if (btn) {
-    btn.innerHTML = `<span class="pr-lineup-btn-full">${isOpen ? '▲ HIDE' : '▼ BATTING LINEUP & MATCHUPS'}</span><span class="pr-lineup-btn-short">${isOpen ? '▲' : '▼ LINEUP'}</span>`;
-    btn.classList.toggle('active', !!isOpen);
-  }
-}
-
-function isLineupOpen(pid) {
-  const key = normalizePitcherId(pid);
-  const expandRow = document.getElementById(`pr-expand-${key}`);
-  return !!expandRow && !expandRow.hidden && expandRow.style.display !== 'none';
-}
+// Which pitcher's lineup is currently showing in the pop-out modal, if any —
+// the whole Pitcher Report table (including this panel's own DOM node) gets
+// rebuilt on every live-score refresh, so this is what lets a re-render pick
+// the open modal back up instead of leaving it stuck on stale content.
+let openLineupModalPid = null;
 
 async function loadRepoLineups() {
   if (repoLineupsLoaded) return repoLineupsData;
@@ -2025,7 +2006,7 @@ function importConfirmedLineupFile(input) {
       manualLineupsData = mergeLineupData(manualLineupsData, parsed);
       localStorage.setItem('drConfirmedLineups', JSON.stringify(manualLineupsData));
       Object.keys(lineupCache).forEach(k => delete lineupCache[k]);
-      rehydrateExpandedPitcherRows();
+      rehydrateOpenLineupModal();
       alert('Confirmed lineup imported. Open lineup panels have been refreshed.');
     } catch (e) {
       alert('Could not import lineup file: ' + e.message);
@@ -2128,18 +2109,6 @@ async function loadPitcherReport() {
 
     renderPRTable();
     loadKsToday();
-
-    // ── Desktop-only warmup. On mobile/tablet, eager panel rendering can race the tap
-    // action and cause Safari/iPadOS to collapse or blank the expanded content.
-    setTimeout(() => {
-      if (isPRMobileTabletView()) return;
-      prRows.forEach(r => {
-        const p = r.pitcher;
-        if (p.id && p.gamePk && p.side != null && expandedRows.has(normalizePitcherId(p.id))) {
-          fetchAndRenderLineup(p.id, p.name, p.gamePk, p.side, p.oppTeamId, r.rawHr9, r.rawIp).catch(()=>{});
-        }
-      });
-    }, 500);
   } catch(e) {
     document.getElementById('pr-content').innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
@@ -2163,29 +2132,51 @@ function getSortedPRRowsForCurrentSort() {
   });
 }
 
-function rehydrateExpandedPitcherRows() {
-  expandedRows.forEach(rawPid => {
-    const pid = normalizePitcherId(rawPid);
-    const row = prRows.find(r => normalizePitcherId(r.pitcher.id) === pid);
-    if (!row) return;
-    const panel = document.getElementById(`panel-${pid}`);
-    setLineupOpenState(pid, true);
-    if (!panel) return;
-    const cacheKey = `${row.pitcher.gamePk}-${row.pitcher.side}`;
-    lineupMeta[pid] = lineupMeta[pid] || {
-      pitcherName: row.pitcher.name,
-      gamePk: row.pitcher.gamePk,
-      side: row.pitcher.side,
-      oppTeamId: row.pitcher.oppTeamId,
-      pitcherHr9: row.rawHr9,
-      pitcherIp: row.rawIp
-    };
-    if (lineupCache[cacheKey]) {
-      renderLineup(`panel-${pid}`, lineupCache[cacheKey], row.rawHr9, row.rawIp, row.pitcher.oppAbbr, pid, row.pitcher.name);
-    } else if (!lineupLoading.has(pid)) {
-      fetchAndRenderLineup(pid, row.pitcher.name, row.pitcher.gamePk, row.pitcher.side, row.pitcher.oppTeamId, row.rawHr9, row.rawIp).catch(()=>{});
-    }
-  });
+// Opens (or re-populates, after a table refresh rebuilds its DOM) the pop-out
+// lineup modal for a given pitcher row — clicking the row calls this directly;
+// renderPRTable calls it again after every refresh so an open modal survives
+// the live-score re-render instead of going stale.
+function openPitcherLineupModal(pidRaw) {
+  const pid = normalizePitcherId(pidRaw);
+  const meta = lineupMeta[pid];
+  if (!meta) return;
+  const overlay = document.getElementById('pr-lineup-modal-overlay');
+  const body = document.getElementById('pr-lineup-modal-body');
+  const title = document.getElementById('pr-lineup-modal-title');
+  const sub = document.getElementById('pr-lineup-modal-sub');
+  const panel = document.getElementById(`panel-${pid}`);
+  if (!overlay || !body || !panel) return;
+
+  openLineupModalPid = pid;
+  if (title) title.textContent = meta.pitcherName || 'Batting Lineup & Matchups';
+  if (sub) sub.textContent = meta.teamAbbr && meta.oppAbbr ? `${meta.teamAbbr} vs ${meta.oppAbbr}` : '';
+  body.innerHTML = '';
+  panel.style.display = 'block';
+  body.appendChild(panel);
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  const cacheKey = `${meta.gamePk}-${meta.side}`;
+  if (lineupCache[cacheKey]) {
+    renderLineup(`panel-${pid}`, lineupCache[cacheKey], meta.pitcherHr9, meta.pitcherIp, meta.oppAbbr, pid, meta.pitcherName);
+  } else if (!lineupLoading.has(pid)) {
+    fetchAndRenderLineup(pid, meta.pitcherName, meta.gamePk, meta.side, meta.oppTeamId, meta.pitcherHr9, meta.pitcherIp, false, true).catch(()=>{});
+  }
+}
+window.openPitcherLineupModal = openPitcherLineupModal;
+
+function closePitcherLineupModal() {
+  const overlay = document.getElementById('pr-lineup-modal-overlay');
+  if (overlay) overlay.style.display = 'none';
+  document.body.style.overflow = '';
+  openLineupModalPid = null;
+}
+window.closePitcherLineupModal = closePitcherLineupModal;
+
+function rehydrateOpenLineupModal() {
+  if (!openLineupModalPid) return;
+  if (!lineupMeta[openLineupModalPid]) { closePitcherLineupModal(); return; }
+  openPitcherLineupModal(openLineupModalPid);
 }
 
 // Card-based layout at every screen size (previously desktop got a dense 15-column
@@ -2235,16 +2226,22 @@ function renderPRTable() {
   };
   const plainCell = (value, tip) => `<td${tip?` data-tip="${tip}"`:''}>${value}</td>`;
 
-  const rows = sorted.map(r => {
+  const rowsAndPanels = sorted.map(r => {
     const p = r.pitcher;
     const pid = normalizePitcherId(p.id);
-    const isExpanded = expandedRows.has(pid);
 
     // K prop line — real sportsbook line if available, else model projection rounded to nearest half
     const kpropLine = getKPropLine(p, r);
     if (kpropLine != null) pitcherOULines[p.id] = kpropLine;
 
-    return `<tr class="pr-row-tr${isExpanded ? ' is-expanded' : ''}" id="pr-row-${pid}">
+    // Populated for every row (not just ones the user has opened) so a click
+    // on the row can open the pop-out modal with just a pitcher id.
+    lineupMeta[pid] = {
+      pitcherName: p.name, gamePk: p.gamePk, side: p.side, oppTeamId: p.oppTeamId,
+      pitcherHr9: r.rawHr9, pitcherIp: r.rawIp, teamAbbr: p.teamAbbr, oppAbbr: p.oppAbbr,
+    };
+
+    const row = `<tr class="pr-row-tr" id="pr-row-${pid}" style="cursor:pointer" onclick="window.openPitcherLineupModal('${pid}')">
         <td class="pr-lineup-batter-cell">
           <img class="pr-headshot" src="${hs(p.id)}" alt="${p.name}" loading="lazy" decoding="async">
           <div style="min-width:0">
@@ -2264,23 +2261,18 @@ function renderPRTable() {
         ${heatCell(r.hr9,  v=>v.toFixed(2), 0.80, 1.50, 'Home Runs per 9 Innings')}
         ${plainCell(r.tb!=null?r.tb:'–', 'Total Bases Allowed')}
         ${plainCell(`<span style="color:${r.kpg>=7?'var(--green)':r.kpg>=5?'var(--text)':'var(--muted)'}">${r.kpg??'–'}</span>`, 'Average Strikeouts per Game Started')}
-        <td>
-          <button class="btn-lineup${isExpanded?' active':''}" onclick="toggleLineup('${pid}', '${p.name.replace(/'/g,"\\'")}', ${p.gamePk}, '${p.side}', ${p.oppTeamId}, ${r.rawHr9}, ${r.rawIp})">
-            <span class="pr-lineup-btn-full">${isExpanded ? '▲ HIDE' : '▼ BATTING LINEUP & MATCHUPS'}</span>
-            <span class="pr-lineup-btn-short">${isExpanded ? '▲' : '▼ LINEUP'}</span>
-          </button>
-        </td>
-      </tr>
-      <tr class="pr-expand-tr">
-        <td colspan="13" style="padding:0;border-bottom:1px solid var(--border)">
-          <div class="pr-mobile-expand${isExpanded ? ' is-open' : ''}" id="pr-expand-${pid}" ${isExpanded ? '' : 'hidden'} style="${isExpanded?'display:block':'display:none'}">
-            <div class="pr-expand-panel" id="panel-${pid}">
-              <span class="spin"></span> Loading lineup…
-            </div>
-          </div>
-        </td>
       </tr>`;
-  }).join('');
+
+    // Hidden, off-row lineup panel — kept alive independent of the table row
+    // markup so HR Threats' pre-lineup fallback (loadHRPotential) can keep
+    // warming lineupCache via fetchAndRenderLineup even when no modal is
+    // open. The pop-out modal borrows this exact node (by id) when opened.
+    const panel = `<div class="pr-expand-panel" id="panel-${pid}" style="display:none"><span class="spin"></span> Loading lineup…</div>`;
+
+    return { row, panel };
+  });
+  const rows = rowsAndPanels.map(x => x.row).join('');
+  const hiddenPanels = rowsAndPanels.map(x => x.panel).join('');
 
   const prSortBtns = PR_SORT_FIELDS.map(({key,label}) => {
     const active = prSortCol === key;
@@ -2298,10 +2290,10 @@ function renderPRTable() {
       <thead><tr>
         <th style="text-align:left">Pitcher</th>
         <th>IP</th><th>BF</th><th>FIP</th><th>AVG</th><th>wOBA</th><th>WHIP</th><th>ISO</th><th>SLG</th><th>HR/9</th><th>TB</th><th>K/GM</th>
-        <th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
+    <div id="pr-lineup-panels" style="display:none">${hiddenPanels}</div>
     <div class="pr-legend">
       <span class="pr-legend-chip"><span class="pr-legend-dot good"></span>Elite</span>
       <span class="pr-legend-chip"><span class="pr-legend-dot neu"></span>Average</span>
@@ -2312,7 +2304,7 @@ function renderPRTable() {
       <span class="pr-legend-note">2026 season</span>
     </div>`;
 
-  rehydrateExpandedPitcherRows();
+  rehydrateOpenLineupModal();
 }
 
 
@@ -2366,54 +2358,11 @@ function _displayBattingValue(stat, key, dec = 3) {
   return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0/, '');
 }
 
-async function toggleLineup(pitcherId, pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp) {
-  const pid = normalizePitcherId(pitcherId);
-  const panel = document.getElementById(`panel-${pid}`);
-  const btn = document.querySelector(`#pr-row-${pid} .btn-lineup`);
-
-  if (!panel) return;
-
-  if (expandedRows.has(pid)) {
-    expandedRows.delete(pid);
-    setLineupOpenState(pid, false);
-    if (btn) btn.disabled = false;
-    return;
-  }
-
-  expandedRows.add(pid);
-  setLineupOpenState(pid, true);
-  lineupMeta[pid] = { pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp };
-
-  const cacheKey = `${gamePk}-${side}`;
-  if (lineupCache[cacheKey]) {
-    renderLineup(`panel-${pid}`, lineupCache[cacheKey], pitcherHr9, pitcherIp, null, pid, pitcherName);
-    return;
-  }
-
-  if (lineupLoading.has(pid)) {
-    // A background/previous request is already feeding this exact panel.
-    // Keep it visibly open instead of stacking duplicate requests.
-    if (btn) {
-      btn.innerHTML = '<span class="pr-lineup-btn-full">▲ HIDE</span><span class="pr-lineup-btn-short">▲</span>';
-      btn.classList.add('active');
-    }
-    return;
-  }
-
-  if (btn) btn.disabled = true;
-  await fetchAndRenderLineup(pid, pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp);
-  const finalBtn = document.querySelector(`#pr-row-${pid} .btn-lineup`);
-  if (finalBtn) finalBtn.disabled = false;
-}
-
 async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp, skipEnrichment = false, bypassPRGuards = false) {
   const pid = normalizePitcherId(pitcherId);
   const panel = document.getElementById(`panel-${pid}`);
   if (!panel) return;
-  if (!bypassPRGuards) {
-    if (isPRMobileTabletView() && !expandedRows.has(pid)) return;
-    setLineupOpenState(pid, expandedRows.has(pid));
-  }
+  if (!bypassPRGuards && isPRMobileTabletView()) return;
 
   const token = `${Date.now()}-${Math.random()}`;
   lineupRequestTokens[pid] = token;
@@ -2569,8 +2518,6 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
     if (lineupRequestTokens[pid] === token) {
       lineupLoading.delete(pid);
       panel.style.minHeight = '';
-      const btn = document.querySelector(`#pr-row-${pid} .btn-lineup`);
-      if (btn) btn.disabled = false;
     }
   }
 }

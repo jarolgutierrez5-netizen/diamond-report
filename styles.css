@@ -1265,8 +1265,9 @@ body.dr-paused *::after,
 /* ---- Pitcher Report list layout ---- */
 /* The starting-pitcher list is a single .pr-starters-table (one row per pitcher) —
    see the .pr-starters-table rules further down. .pr-mobile-name/-sub/-time are
-   still used for the pitcher-cell text inside each row, and .pr-mobile-expand is
-   still used for the BATTING LINEUP & MATCHUPS panel that expands below a row. */
+   still used for the pitcher-cell text inside each row; the BATTING LINEUP &
+   MATCHUPS panel opens in the shared .mu-modal pop-out (#pr-lineup-modal-overlay
+   in index.html) instead of expanding inline below the row. */
 #pr-content .pr-mobile-name {
   font-size: 16px !important;
   font-weight: 400 !important;
@@ -1283,29 +1284,6 @@ body.dr-paused *::after,
   font-size: 11px !important;
   white-space: nowrap !important;
   text-align: right !important;
-}
-#pr-content .pr-mobile-expand {
-  display: none;
-  background: #080d17 !important;
-  border-top: 1px solid var(--border) !important;
-  margin-top: 10px !important;
-  padding-top: 10px !important;
-  overflow: visible !important;
-  width: 100% !important;
-  max-width: 100% !important;
-}
-#pr-content .pr-mobile-expand[hidden] { display: none !important; }
-#pr-content .pr-mobile-expand:not(.is-open) { display: none !important; }
-#pr-content .pr-mobile-expand.is-open {
-  display: block !important;
-  height: auto !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-#pr-content .pr-mobile-expand .pr-expand-panel {
-  padding: 0 !important;
-  overflow: visible !important;
-  transform: none !important;
 }
 @media (max-width: 480px) {
 }
@@ -1626,8 +1604,8 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
 /* ── Pitcher Report: starting-pitcher list as a single heat-mapped table
    (replaces the old stacked .pr-mobile-card list — one row per pitcher, same
    .pr-stats-table look the summary row already used, plus a left-aligned
-   pitcher cell). BATTING LINEUP & MATCHUPS still expands into a full-width
-   row directly below via .pr-expand-tr. */
+   pitcher cell). Clicking a row opens BATTING LINEUP & MATCHUPS in the
+   shared .mu-modal pop-out instead of expanding a row inline. */
 .pr-starters-table {
   min-width: 900px !important;
   border-collapse: separate !important;
@@ -1636,11 +1614,6 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
 .pr-starters-table td, .pr-starters-table th {
   white-space: nowrap !important;
 }
-.pr-starters-table .btn-lineup {
-  width: 100% !important;
-  white-space: normal !important;
-  line-height: 1.25 !important;
-}
 .pr-lineup-batter-cell {
   text-align: left !important;
   display: flex !important;
@@ -1648,9 +1621,6 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   gap: 8px !important;
   flex-wrap: wrap !important;
   white-space: normal !important;
-}
-.pr-row-tr.is-expanded {
-  background: rgba(47,107,255,.06);
 }
 
 /* Desktop: table width:100% + auto layout stretches evenly on wide monitors,
@@ -1681,13 +1651,6 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
 .pr-starters-table thead th:first-child {
   z-index: 3;
 }
-.pr-row-tr.is-expanded td:first-child {
-  background: linear-gradient(rgba(47,107,255,.06), rgba(47,107,255,.06)), var(--surface);
-}
-
-.pr-lineup-btn-short {
-  display: none;
-}
 
 @media (max-width: 640px) {
   .pr-starters-table th,
@@ -1705,16 +1668,6 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   .pr-starters-table .pr-mobile-sub,
   .pr-starters-table .pr-mobile-time {
     font-size: 9px !important;
-  }
-  .pr-starters-table .btn-lineup {
-    font-size: 9px !important;
-    padding: 5px 6px !important;
-  }
-  .pr-lineup-btn-full {
-    display: none;
-  }
-  .pr-lineup-btn-short {
-    display: inline;
   }
 }
 
