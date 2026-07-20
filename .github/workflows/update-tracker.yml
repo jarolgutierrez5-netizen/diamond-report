@@ -48,14 +48,15 @@ jobs:
 
       - name: TEMP - probe live site deploy state
         run: |
-          curl -sS -L "https://diamondreport.app/index.html" -o /tmp/dr-live-index.html || echo "curl exit $?"
-          echo "--- app.min.js script tag ---"
-          grep -o 'app\.min\.js?v=[0-9]*' /tmp/dr-live-index.html || echo "not found"
-          echo "--- fetching app.min.js, checking for Ballpark Pal marker ---"
-          SRC=$(grep -o 'app\.min\.js?v=[0-9]*' /tmp/dr-live-index.html | head -1)
-          curl -sS -L "https://diamondreport.app/$SRC" -o /tmp/dr-live-app.min.js || echo "curl exit $?"
-          wc -c /tmp/dr-live-app.min.js
-          grep -o "ballparkPalFactorForPlayer" /tmp/dr-live-app.min.js || echo "MARKER NOT FOUND"
+          UA="Mozilla/5.0 (compatible; DiamondReportBot/1.0; +https://diamondreport.app)"
+          echo "--- diamondreport.app/ ---"
+          curl -sS -L -A "$UA" -w "\nHTTP %{http_code}, %{size_download} bytes, final URL: %{url_effective}\n" "https://diamondreport.app/" -o /tmp/dr-live-index.html
+          echo "--- first 1500 bytes ---"
+          head -c 1500 /tmp/dr-live-index.html
+          echo
+          echo "--- www.diamondreport.app/ ---"
+          curl -sS -L -A "$UA" -w "\nHTTP %{http_code}, %{size_download} bytes, final URL: %{url_effective}\n" "https://www.diamondreport.app/" -o /tmp/dr-live-index-www.html
+          head -c 500 /tmp/dr-live-index-www.html
 
       - name: Run tracker updater
         env:
