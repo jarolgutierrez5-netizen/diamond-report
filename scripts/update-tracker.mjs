@@ -441,6 +441,96 @@ async function seasonPitchingStat(pid, season) {
   }
 }
 
+// ── DRP Game Simulation, Phase 1: log5 plate-appearance outcome model ──
+// First step toward replacing DRP's additive point-scoring formula (below)
+// with a bottom-up game simulation, the same shape of approach Ballpark Pal
+// uses (simulate the game play-by-play and let win probability emerge,
+// rather than a formula that scores factors and adds them up). NOT wired
+// into any live pick yet — a standalone, tested model that a later phase
+// will use to drive an actual inning-by-inning simulation loop.
+//
+// log5 is the standard sabermetric formula for combining a batter's and a
+// pitcher's rate for the same outcome into a matchup-specific probability,
+// weighted against the league-average rate for that outcome — see Bill
+// James' original formulation. It's a principled middle ground between
+// "just use the batter's rate" and "just use the pitcher's rate."
+//
+// League-average per-PA rates below are static reference values (recent-era
+// MLB averages), not fetched live — same precedent as the static
+// PARK_FACTORS table above. Good enough for log5's denominator; a future
+// version could compute them from the season's actual league totals.
+const LEAGUE_AVG_PA_RATES = {
+  hr: 0.031,
+  xbh: 0.049, // doubles + triples
+  single: 0.140,
+  bb: 0.085,
+  k: 0.225,
+  // remaining ~0.470 is outs in play — not modeled as its own log5 rate,
+  // "out" is whatever probability mass the other five don't use.
+};
+
+function log5(pBatter, pPitcher, pLeague) {
+  if (!(pLeague > 0) || !(pLeague < 1)) return pBatter; // degenerate league rate — fall back to the batter's own rate
+  const a = clamp(pBatter, 0.001, 0.999);
+  const b = clamp(pPitcher, 0.001, 0.999);
+  const c = clamp(pLeague, 0.001, 0.999);
+  const num = (a * b) / c;
+  const den = num + ((1 - a) * (1 - b)) / (1 - c);
+  return den > 0 ? num / den : a;
+}
+
+// batterStat/pitcherStat are the raw MLB Stats API stat objects already
+// returned by seasonBattingStat/seasonPitchingStat. Returns a probability
+// distribution over {hr, xbh, single, bb, k, out} that sums to 1.
+function computeMatchupOutcomeDist(batterStat, pitcherStat) {
+  const bPA = n(batterStat.plateAppearances) || 1;
+  const bHits = n(batterStat.hits), bHR = n(batterStat.homeRuns);
+  const bXBH = n(batterStat.doubles) + n(batterStat.triples);
+  const bSingle = Math.max(0, bHits - bHR - bXBH);
+  const bBB = n(batterStat.baseOnBalls) + n(batterStat.hitByPitch);
+  const bK = n(batterStat.strikeOuts);
+  const batterRates = {
+    hr: bHR / bPA, xbh: bXBH / bPA, single: bSingle / bPA,
+    bb: bBB / bPA, k: bK / bPA,
+  };
+
+  // MLB Stats API pitching splits don't reliably carry doubles/triples
+  // allowed, so the extra-base-vs-single composition of a pitcher's hits
+  // allowed falls back to the batter's own XBH-vs-single split (or the
+  // league split, if the batter has too few hits to have a meaningful one)
+  // rather than a true pitcher-specific split — a real simplification,
+  // flagged the same way this file already flags its other known ones.
+  const pBF = n(pitcherStat.battersFaced) || 1;
+  const pHits = n(pitcherStat.hits), pHR = n(pitcherStat.homeRuns);
+  const pNonHRHits = Math.max(0, pHits - pHR);
+  const bXBHShareOfHits = (bXBH + bSingle) > 0
+    ? bXBH / (bXBH + bSingle)
+    : LEAGUE_AVG_PA_RATES.xbh / (LEAGUE_AVG_PA_RATES.xbh + LEAGUE_AVG_PA_RATES.single);
+  const pXBH = pNonHRHits * bXBHShareOfHits;
+  const pSingle = pNonHRHits - pXBH;
+  const pBB = n(pitcherStat.baseOnBalls) + n(pitcherStat.hitBatsmen);
+  const pK = n(pitcherStat.strikeOuts);
+  const pitcherRates = {
+    hr: pHR / pBF, xbh: pXBH / pBF, single: pSingle / pBF,
+    bb: pBB / pBF, k: pK / pBF,
+  };
+
+  const dist = {};
+  for (const key of ['hr', 'xbh', 'single', 'bb', 'k']) {
+    dist[key] = log5(batterRates[key], pitcherRates[key], LEAGUE_AVG_PA_RATES[key]);
+  }
+  const usedMass = dist.hr + dist.xbh + dist.single + dist.bb + dist.k;
+  dist.out = Math.max(0, 1 - usedMass);
+  // Normalize in case the five modeled outcomes summed above 1 (rare, but
+  // possible when several matchup rates skew the same direction) — scale
+  // everything proportionally rather than letting "out" go negative.
+  const total = usedMass + dist.out;
+  if (total > 0 && Math.abs(total - 1) > 1e-9) {
+    for (const key of ['hr', 'xbh', 'single', 'bb', 'k', 'out']) dist[key] /= total;
+  }
+  return dist;
+}
+
 // ── Diamond Report Pick model (ported from loadGameProps in app.js, minus weather) ──
 async function computeDRPick(g, season) {
   const awayAbbr = g.teams.away.team.abbreviation;
@@ -1711,4 +1801,5 @@ export {
   battingSplitHomeAway, homeRoadPowerFactor,
   loadBallparkPalComparison, saveBallparkPalComparison, recomputeBallparkPalSummary,
   fetchBallparkPalMoneyline, gradeBallparkPalComparison, captureBallparkPalComparisonToday,
+  log5, computeMatchupOutcomeDist, LEAGUE_AVG_PA_RATES,
 };
