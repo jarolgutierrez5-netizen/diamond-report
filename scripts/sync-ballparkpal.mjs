@@ -68,21 +68,21 @@ async function main() {
   await mkdir(DATA_DIR, { recursive: true });
 
   const date = todayEasternDateString();
-  let rows;
+  let payload;
   try {
-    rows = await fetchData(`/parkfactors/hitters?date=${date}`);
+    payload = await fetchData(`/parkfactors/hitters?date=${date}`);
   } catch (e) {
     console.error('Ballpark Pal sync failed:', e.message);
     process.exitCode = 1;
     return;
   }
 
+  // The docs list this endpoint's fields as a flat array, but the live
+  // response wraps them in an `items` array instead (confirmed against a real
+  // request — data: { items: [...] }).
+  const rows = payload?.items;
   if (!Array.isArray(rows)) {
-    // TEMP diagnostic — response shape doesn't match the docs' field list as a
-    // flat array; dump the actual structure so the real shape can be confirmed.
-    console.error(`Unexpected /parkfactors/hitters response shape — got ${typeof rows}`);
-    console.error('TEMP raw data keys:', Object.keys(rows || {}));
-    console.error('TEMP raw data sample:', JSON.stringify(rows).slice(0, 2000));
+    console.error(`Unexpected /parkfactors/hitters response shape — got keys [${Object.keys(payload || {}).join(', ')}]`);
     process.exitCode = 1;
     return;
   }
