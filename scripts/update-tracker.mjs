@@ -1088,6 +1088,19 @@ async function buildEliteBatterPool(games, season) {
         // server-side): recent AVG meaningfully above season AVG, or a HR within the
         // last 10 games.
         const isHot = !!recent && recent.ab >= 15 && ((recent.avg != null && recent.avg >= seasonAvg + 0.030) || recent.hr >= 1);
+        // Mirrors the client's HR Threats board tags (app.js: isDrought/isDue) so the
+        // HR Threat tracker capture below can snapshot them for real hit-rate analysis
+        // later — those tags were never being validated against actual outcomes since
+        // nothing captured them at pick time. Uses the same lastXGames window already
+        // fetched for isHot (10 games here vs. the client's boxscore-log-based 8 games)
+        // rather than a second API call for a near-identical signal.
+        const isDrought = hrSeason > 0 && !!recent && recent.hr === 0;
+        const isDue = isDrought && (
+          (iso >= 0.170 ? 1 : 0) +
+          (isFavorable ? 1 : 0) +
+          (batterOPS >= 0.750 ? 1 : 0) +
+          (hrSeason >= 8 ? 1 : 0) // recent.hr===0 already established by isDrought above
+        ) >= 2;
         return {
           id: pid, name: person.fullName, teamAbbr, oppAbbr, gamePk: g.gamePk,
           avg, obp, slg, ops, iso, hrSeason, battingOrder,
@@ -1095,7 +1108,7 @@ async function buildEliteBatterPool(games, season) {
           pitcherHr9: n(pitcherStat.homeRunsPer9), pitcherSbAllowed: n(pitcherStat.stolenBases), pitcherCsAllowed: n(pitcherStat.caughtStealing),
           pitcherBFper9: pitcherBattersFacedPer9(pitcherStat),
           pitcherAvgAllowed, pitcherSlgAllowed, parkFactor: PARK_FACTORS[g.teams.home.team.abbreviation] || 100,
-          isFavorable, isHot, statcast: statcastIndex.get(String(pid)) || null,
+          isFavorable, isHot, isDrought, isDue, statcast: statcastIndex.get(String(pid)) || null,
           windFactor: windPowerFactor(g.weather), temperatureFactor: temperaturePowerFactor(g.weather),
           fatigueFactor: battingTeamFatigue,
           pitcherStatcast, homeRoadFactor,
@@ -1279,6 +1292,12 @@ async function captureHRThreatToday(store, pool) {
     store.market.hrThreat.push({
       key, date: today, playerId: r.id, playerName: r.name, team: r.teamAbbr, opp: r.oppAbbr,
       gamePk: r.gamePk, score, result: 'pending', actual: null,
+      // Snapshot of the live client board's HR Threats tags at pick time (see
+      // buildEliteBatterPool's isFavorable/isHot/isDrought/isDue) — score above is a
+      // separate Monte Carlo simulation and never used these tags, so this is the
+      // first place any of them get recorded against a real outcome. isOnFire is
+      // named to match the client (app.js), backed by the isHot proxy computed here.
+      isOnFire: !!r.isHot, isFavorable: !!r.isFavorable, isDrought: !!r.isDrought, isDue: !!r.isDue,
     });
     already.add(r.id);
     added++;
