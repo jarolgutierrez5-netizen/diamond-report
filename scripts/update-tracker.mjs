@@ -1450,6 +1450,169 @@ async function battersForSide(g, side) {
   } catch (e) { return []; }
 }
 
+// ── DRP Game Simulation, Phase 3: real data + comparison tracking ──
+// Wires Phases 1-2 to real lineups (battersForSide — real lineup if posted,
+// else the same active-roster fallback already used elsewhere in this file)
+// and real season pitching stats, then captures a comparison entry in a
+// separate file (data/drp-sim-comparison.json — never merged into
+// tracker.json, same pattern as the Ballpark Pal comparison) so the
+// simulation's picks can be graded against real outcomes before ever
+// replacing the live, formula-based DRP pick. Not read by the client.
+
+const DRP_SIM_COMPARISON_PATH = path.join(__dirname, '..', 'data', 'drp-sim-comparison.json');
+
+// Team-level season pitching line, used as the "bullpen" stat once a
+// starter is pulled — a simplified proxy (it includes the starter's own
+// innings too), not a true relief-only split. See simulateOneGame's own
+// comment for the rest of the pitching-change simplifications.
+async function fetchTeamPitchingAggregate(teamId, season) {
+  try {
+    const d = await fetchJSON(`${API}/teams/${teamId}/stats?stats=season&group=pitching&season=${season}`);
+    return d?.stats?.[0]?.splits?.[0]?.stat || {};
+  } catch (e) { return {}; }
+}
+
+async function buildDRPSimLineup(g, side, season) {
+  const batters = await battersForSide(g, side);
+  const stats = await mapLimit(batters, 6, async (b) => (b.id ? seasonBattingStat(b.id, season) : null));
+  const valid = stats.filter(s => s && n(s.plateAppearances) > 0);
+  return valid.length ? valid : null;
+}
+
+async function computeDRPSimulation(g, season) {
+  const awayAbbr = g.teams.away.team.abbreviation;
+  const homeAbbr = g.teams.home.team.abbreviation;
+  const awayP = g.teams.away.probablePitcher;
+  const homeP = g.teams.home.probablePitcher;
+  if (!awayP || !homeP) return null;
+
+  const [awayLineup, homeLineup, awayStarterStat, homeStarterStat, awayBullpenStat, homeBullpenStat] = await Promise.all([
+    buildDRPSimLineup(g, 'away', season),
+    buildDRPSimLineup(g, 'home', season),
+    seasonPitchingStat(awayP.id, season),
+    seasonPitchingStat(homeP.id, season),
+    fetchTeamPitchingAggregate(g.teams.away.team.id, season),
+    fetchTeamPitchingAggregate(g.teams.home.team.id, season),
+  ]);
+  if (!awayLineup || !homeLineup) return null;
+
+  const sim = simulateDRPGame({ awayLineup, awayStarterStat, awayBullpenStat, homeLineup, homeStarterStat, homeBullpenStat }, 1000);
+  const simPick = sim.awayWinPct >= sim.homeWinPct ? awayAbbr : homeAbbr;
+  const simPickPct = Math.max(sim.awayWinPct, sim.homeWinPct);
+  return { simPick, simPickPct, simAwayRuns: sim.avgAwayRuns, simHomeRuns: sim.avgHomeRuns };
+}
+
+async function loadDRPSimComparison() {
+  try {
+    const raw = await readFile(DRP_SIM_COMPARISON_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    parsed.entries ||= [];
+    return parsed;
+  } catch (e) {
+    return {
+      version: 1,
+      generatedAt: null,
+      entries: [],
+      summary: {
+        formula: { wins: 0, losses: 0, pushes: 0, total: 0 },
+        simulation: { wins: 0, losses: 0, pushes: 0, total: 0 },
+      },
+    };
+  }
+}
+
+async function saveDRPSimComparison(store) {
+  store.generatedAt = new Date().toISOString();
+  await mkdir(path.dirname(DRP_SIM_COMPARISON_PATH), { recursive: true });
+  await writeFile(DRP_SIM_COMPARISON_PATH, JSON.stringify(store, null, 2) + '\n');
+}
+
+function recomputeDRPSimSummary(store) {
+  const summary = {
+    formula: { wins: 0, losses: 0, pushes: 0, total: 0 },
+    simulation: { wins: 0, losses: 0, pushes: 0, total: 0 },
+  };
+  for (const e of store.entries) {
+    if (e.formulaResult === 'win') summary.formula.wins++;
+    else if (e.formulaResult === 'loss') summary.formula.losses++;
+    else if (e.formulaResult === 'push') summary.formula.pushes++;
+    if (e.formulaResult && e.formulaResult !== 'pending') summary.formula.total++;
+
+    if (e.simResult === 'win') summary.simulation.wins++;
+    else if (e.simResult === 'loss') summary.simulation.losses++;
+    else if (e.simResult === 'push') summary.simulation.pushes++;
+    if (e.simResult && e.simResult !== 'pending') summary.simulation.total++;
+  }
+  store.summary = summary;
+}
+
+async function gradeDRPSimComparison(compStore) {
+  const today = cdtDateString(new Date());
+  const pending = compStore.entries.filter(e => e.formulaResult === 'pending' && e.date < today);
+  if (!pending.length) return 0;
+
+  const dates = [...new Set(pending.map(e => e.date))];
+  let graded = 0;
+  for (const date of dates) {
+    let games = [];
+    try {
+      const sched = await fetchJSON(`${API}/schedule?sportId=1&date=${date}&hydrate=linescore`);
+      games = sched?.dates?.find(d => d.date === date)?.games || [];
+    } catch (e) {
+      console.warn(`DRP sim comparison: schedule fetch failed for ${date}:`, e.message);
+      continue;
+    }
+    const gamesByPk = Object.fromEntries(games.map(g => [g.gamePk, g]));
+
+    for (const e of pending.filter(r => r.date === date)) {
+      const g = gamesByPk[e.gamePk];
+      if (!g || g.status?.abstractGameState !== 'Final') continue;
+      const awayScore = n(g.teams?.away?.score, NaN);
+      const homeScore = n(g.teams?.home?.score, NaN);
+      if (!Number.isFinite(awayScore) || !Number.isFinite(homeScore)) continue;
+      const actualWinner = awayScore === homeScore ? 'TIE' : (awayScore > homeScore ? e.awayTeam : e.homeTeam);
+      e.actualWinner = actualWinner;
+      e.formulaResult = actualWinner === 'TIE' ? 'push' : (actualWinner === e.formulaPick ? 'win' : 'loss');
+      e.simResult = actualWinner === 'TIE' ? 'push' : (actualWinner === e.simPick ? 'win' : 'loss');
+      graded++;
+    }
+  }
+  return graded;
+}
+
+// Called from inside captureToday (has previewGames/store.market.drp/season
+// already in scope) — only simulates games we ourselves captured a formula
+// DRP pick for, same guard the Ballpark Pal comparison capture uses.
+async function captureDRPSimComparisonToday(compStore, previewGames, store, season) {
+  let added = 0;
+  for (const g of previewGames) {
+    const awayAbbr = g.teams.away.team.abbreviation;
+    const homeAbbr = g.teams.home.team.abbreviation;
+    const gameDay = cdtDateString(new Date(g.gameDate));
+    const key = `${gameDay}|${g.gamePk}`;
+    if (compStore.entries.some(e => e.key === key)) continue;
+    const formulaDrp = store.market.drp.find(r => r.gamePk === g.gamePk);
+    if (!formulaDrp) continue;
+    let sim;
+    try {
+      sim = await computeDRPSimulation(g, season);
+    } catch (e) {
+      console.warn(`DRP simulation failed for gamePk ${g.gamePk}:`, e.message);
+      continue;
+    }
+    if (!sim) continue;
+    compStore.entries.push({
+      key, date: gameDay, gamePk: g.gamePk, awayTeam: awayAbbr, homeTeam: homeAbbr,
+      formulaPick: formulaDrp.pick, formulaPickPct: formulaDrp.pickPct,
+      simPick: sim.simPick, simPickPct: sim.simPickPct,
+      simAwayRuns: sim.simAwayRuns, simHomeRuns: sim.simHomeRuns,
+      actualWinner: null, formulaResult: 'pending', simResult: 'pending',
+    });
+    added++;
+  }
+  return added;
+}
+
 async function buildEliteBatterPool(games, season) {
   const statcastIndex = await loadStatcastPowerIndex();
   const pitcherStatcastIndex = await loadPitcherStatcastPowerIndex();
@@ -1773,7 +1936,7 @@ async function gradeHRThreatPending(store) {
   return graded;
 }
 
-async function captureToday(store, compStore) {
+async function captureToday(store, compStore, drpSimCompStore) {
   const today = cdtDateString(new Date());
   const sched = await fetchJSON(`${API}/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher,linescore,weather`);
   const games = sched?.dates?.find(d => d.date === today)?.games || [];
@@ -1843,6 +2006,11 @@ async function captureToday(store, compStore) {
   if (compStore) {
     const bpAdded = await captureBallparkPalComparisonToday(compStore, previewGames, store);
     console.log(`Captured ${bpAdded} new Ballpark Pal comparison entr(ies) for ${today}.`);
+  }
+
+  if (drpSimCompStore) {
+    const simAdded = await captureDRPSimComparisonToday(drpSimCompStore, previewGames, store, season);
+    console.log(`Captured ${simAdded} new DRP simulation comparison entr(ies) for ${today}.`);
   }
 
   // Built once and shared — Elite Picks and the HR Threats hit-rate tracker both need
@@ -1928,7 +2096,10 @@ async function main() {
   const compStore = await loadBallparkPalComparison();
   const bpGraded = await gradeBallparkPalComparison(compStore);
 
-  await captureToday(store, compStore);
+  const drpSimCompStore = await loadDRPSimComparison();
+  const simGraded = await gradeDRPSimComparison(drpSimCompStore);
+
+  await captureToday(store, compStore, drpSimCompStore);
   recomputeAllTime(store);
   await saveTracker(store);
   console.log('tracker.json updated:', TRACKER_PATH);
@@ -1937,6 +2108,10 @@ async function main() {
   recomputeBallparkPalSummary(compStore);
   await saveBallparkPalComparison(compStore);
   console.log(`Ballpark Pal comparison: graded ${bpGraded}, ${compStore.entries.length} total entries, summary:`, JSON.stringify(compStore.summary));
+
+  recomputeDRPSimSummary(drpSimCompStore);
+  await saveDRPSimComparison(drpSimCompStore);
+  console.log(`DRP sim comparison: graded ${simGraded}, ${drpSimCompStore.entries.length} total entries, summary:`, JSON.stringify(drpSimCompStore.summary));
 }
 
 // Only auto-run when executed directly (`node update-tracker.mjs`) — importing this
@@ -1965,4 +2140,7 @@ export {
   fetchBallparkPalMoneyline, gradeBallparkPalComparison, captureBallparkPalComparisonToday,
   log5, computeMatchupOutcomeDist, LEAGUE_AVG_PA_RATES,
   sampleOutcome, advanceRunners, simulateHalfInning, simulateOneGame, simulateDRPGame,
+  fetchTeamPitchingAggregate, buildDRPSimLineup, computeDRPSimulation,
+  loadDRPSimComparison, saveDRPSimComparison, recomputeDRPSimSummary,
+  gradeDRPSimComparison, captureDRPSimComparisonToday,
 };
