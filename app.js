@@ -6259,222 +6259,15 @@ async function loadHRsToday() {
 // Since direct sportsbook APIs require paid keys, we model projected K lines
 // from pitcher K/9 and opposing lineup K% — displayed as our own projection
 // alongside the model-based O/U line. Label clearly as DR projection.
-
-async function loadKProps() {
-  const el = document.getElementById('kprops-content');
-  const refreshEl = document.getElementById('kprops-refresh');
-  // Don't return early — still need to cache data even if Props tab isn't open
-
-  const now = new Date();
-
-  // Skip if already loaded within last 2 hours
-  if (kPropsLoadedAt) {
-    const msSince = now - kPropsLoadedAt;
-    if (msSince < 2 * 60 * 60 * 1000) { renderKProps(); return; }
-  }
-
-  try {
-    const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
-    await loadSportsbookKLines(today);
-    const { kpropByPitcherId: trackerKpropByPitcherId } = await loadTrackerPicks().catch(() => ({ kpropByPitcherId: {} }));
-    const games = await getTodaySchedule('team,probablePitcher');
-
-    // K Props now use DR projections only. External sportsbook line cards have been removed.
-
-    const props = [];
-
-    for (const g of games) {
-      const dt = new Date(g.gameDate);
-      const timeStr = dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'});
-      const awayAbbr = g.teams.away.team.abbreviation;
-      const homeAbbr = g.teams.home.team.abbreviation;
-
-      const state = g.status?.abstractGameState || '';
-      const isLive  = state === 'Live'  || g.status?.detailedState === 'In Progress';
-      const isFinal = state === 'Final' || g.status?.detailedState === 'Final';
-
-      for (const [side,opp] of [['away','home'],['home','away']]) {
-        const pitcher = g.teams[side].probablePitcher;
-        if (!pitcher) continue;
-
-        // If the game is already live or final, use the locked pre-game snapshot.
-        // Never recalculate — pitcher ERA/WHIP shouldn't shift the line once play has begun.
-        if ((isLive || isFinal) && _kPropsSnapshot[pitcher.id]) {
-          props.push(_kPropsSnapshot[pitcher.id]);
-          continue;
-        }
-
-        let k9=8, ip=0, wins=0, losses=0, era=4.00, whip=1.25;
-        let fip=null, avg=null, woba=null, iso=null, slg=null, hr9=null, bf=0, tbf=0, kPerGm=null;
-        try {
-          const pd = await fetchJSON(`https://diamondreport.app/api/v1/people/${pitcher.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
-          const ps=pd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||{};
-          k9=parseFloat(ps.strikeoutsPer9Inn)||8;
-          ip=parseFloat(ps.inningsPitched)||0;
-          wins=ps.wins??0; losses=ps.losses??0;
-          era=parseFloat(ps.era)||4.00;
-          whip=parseFloat(ps.whip)||1.25;
-          fip=parseFloat(ps.fip) || null;
-          avg=parseFloat(ps.avg)||null;
-          // Real wOBA isn't part of this stat object — OBP-against stands in, same as Pitcher Report.
-          woba=parseFloat(ps.obp)||null;
-          slg=parseFloat(ps.slg)||null;
-          iso=slg!=null&&avg!=null ? Math.round((slg-avg)*1000)/1000 : null;
-          // Derived from raw HR-allowed count / IP rather than a precomputed "per 9" field
-          // name, which isn't reliable across MLB Stats API responses.
-          const hrAllowed = parseFloat(ps.homeRuns);
-          hr9 = (ip > 0 && !isNaN(hrAllowed)) ? (hrAllowed / ip) * 9 : null;
-          const _qaCtx = 'K Props (legacy): ' + (pitcher.fullName || pitcher.id);
-          drCheckStat(_qaCtx, 'ERA', era, 'era');
-          drCheckStat(_qaCtx, 'WHIP', whip, 'whip');
-          drCheckStat(_qaCtx, 'K/9', k9, 'k9');
-          drCheckStat(_qaCtx, 'HR/9', hr9, 'hr9');
-          drCheckStat(_qaCtx, 'AVG', avg, 'avg');
-          drCheckStat(_qaCtx, 'wOBA (OBP stand-in)', woba, 'obp');
-          drCheckStat(_qaCtx, 'ISO', iso, 'iso');
-          drCheckStat(_qaCtx, 'SLG', slg, 'slg');
-          drCheckStat(_qaCtx, 'FIP', fip, 'fip');
-          bf=parseInt(ps.battersFaced)||0;
-          tbf=bf;
-          const gamesStarted=parseInt(ps.gamesStarted)||Math.max(wins+losses,1);
-          kPerGm=gamesStarted>0 ? Math.round((k9*(ip/Math.max(gamesStarted,1))/9)*10)/10 : null;
-        } catch {}
-
-        let oppKpct = 0.22;
-        try {
-          const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
-          const teamBox=bd.teams?.[opp];
-          const batters=(teamBox?.batters||[]).map(id=>teamBox.players[`ID${id}`]).filter(Boolean).slice(0,9);
-          const kpcts=batters.map(b=>{
-            const s=b.seasonStats?.batting||{};
-            return (s.strikeOuts&&s.plateAppearances)?s.strikeOuts/s.plateAppearances:0.22;
-          });
-          if(kpcts.length) oppKpct=kpcts.reduce((a,b)=>a+b,0)/kpcts.length;
-        } catch {}
-
-        const projIP = Math.min(Math.max(ip / Math.max(wins+losses, 1), 4), 7);
-        const baseProj = k9 * projIP / 9;
-        const kpctAdj = (oppKpct - 0.22) * 10;
-        const projK = Math.max(baseProj + kpctAdj, 1);
-        const modelLine = Math.round(projK * 2) / 2;
-        const sbLine = getSportsbookKLine(pitcher.id, pitcher.fullName);
-        const compareLine = sbLine ?? modelLine;
-
-        // v8.57 Production: Strikeouts are now displayed as OVER-only recommendations.
-        // If a sportsbook K line is available, use it for transparency; otherwise choose
-        // a realistic alternate-style line slightly below the model projection.
-        const recommendedOverLine = sbLine != null
-          ? sbLine
-          : Math.max(0.5, Math.floor(projK) - 0.5);
-        const overEdge = projK - recommendedOverLine;
-        const overProb = Math.max(34, Math.min(78, Math.round(50 + (overEdge * 14))));
-        const confidenceTier = overProb >= 70 ? 'Elite'
-          : overProb >= 63 ? 'Strong'
-          : overProb >= 56 ? 'Good'
-          : overProb >= 50 ? 'Lean'
-          : 'Low';
-        const pred = 'OVER';
-        const pushLean = null;
-        const diff = overEdge;
-
-        const oppKpctLabel = `${(oppKpct*100).toFixed(0)}% opp K rate`;
-        const k9Label = `${k9.toFixed(1)} K/9`;
-        const workloadLabel = `${projIP.toFixed(1)} proj IP`;
-        const projectionLabel = `${projK.toFixed(1)} Ks projected`;
-        const lineLabel = `${formatKLine(recommendedOverLine)} recommended over`;
-        const eraLabel = `${era.toFixed(2)} ERA`;
-        const whipLabel = `${whip.toFixed(2)} WHIP`;
-        const diffLabel = Math.abs(diff) >= 0.3 ? `${diff > 0 ? '+' : ''}${diff.toFixed(1)} vs line` : `±${Math.abs(diff).toFixed(1)} vs line`;
-        const seasonLabel = `${wins}-${losses} · ${ip.toFixed(0)} IP`;
-
-        const matchupTag = oppKpct >= 0.245 ? 'High-K matchup' : oppKpct <= 0.195 ? 'Contact-heavy matchup' : 'Average K matchup';
-        const k9Tag = k9 >= 9 ? 'Strong K pitcher' : k9 <= 7 ? 'Lower K profile' : 'Solid K profile';
-        const eraTag = era <= 3.25 ? 'Elite ERA' : era >= 5.00 ? 'High ERA' : 'Mid ERA';
-        const whipTag = whip <= 1.10 ? 'Elite WHIP' : whip >= 1.40 ? 'High WHIP' : 'Avg WHIP';
-        const workloadTag = projIP >= 6 ? 'Deep workload expected' : projIP <= 4.5 ? 'Short outing likely' : 'Standard workload';
-        const decisionTag = `OVER ${formatKLine(recommendedOverLine)} · ${overProb}%`;
-
-        const eraContext = era <= 3.25 ? 'an elite ERA' : era >= 5.00 ? 'a high ERA' : 'a solid ERA';
-        const whipContext = whip <= 1.10 ? 'excellent command' : whip >= 1.40 ? 'shaky command' : 'average command';
-        const matchupContext = oppKpct >= 0.245 ? 'faces a lineup that strikes out often' : oppKpct <= 0.195 ? 'faces a contact-heavy lineup' : 'faces an average-K lineup';
-        const workloadContext = projIP >= 6 ? 'expected to go deep' : projIP <= 4.5 ? 'likely a short outing' : 'standard workload expected';
-        const lineContext = Math.abs(diff) >= 0.5
-          ? (diff > 0 ? `projection sits ${diff.toFixed(1)} above the line` : `projection sits ${Math.abs(diff).toFixed(1)} below the line`)
-          : `projection is close to the line`;
-        const reasoning = {
-          matchupTag, k9Tag, eraTag, whipTag, workloadTag, decisionTag,
-          oppKpctLabel, k9Label, workloadLabel, projectionLabel, lineLabel,
-          eraLabel, whipLabel, diffLabel, seasonLabel,
-          summary: `${pitcher.fullName.split(' ').pop()} (${eraContext}, ${whipContext}) ${matchupContext} — ${workloadContext}. The ${lineContext}.`
-        };
-
-
-
-        const propRow = {
-          pitcherName: pitcher.fullName, pitcherId: pitcher.id,
-          teamAbbr: g.teams[side].team.abbreviation,
-          oppAbbr: g.teams[opp].team.abbreviation,
-          wl:`${wins}-${losses}`, era: era.toFixed(2), k9: k9.toFixed(1),
-          ip: ip.toFixed(1), bf: tbf,
-          fip: fip!=null ? fip.toFixed(2) : null,
-          avg: avg!=null ? avg.toFixed(3) : null,
-          woba: woba!=null ? woba.toFixed(3) : null,
-          iso: iso!=null ? iso.toFixed(3) : null,
-          slg: slg!=null ? slg.toFixed(3) : null,
-          hr9: hr9!=null ? hr9.toFixed(2) : null,
-          kPerGm: kPerGm!=null ? kPerGm.toFixed(1) : null,
-          whip: whip.toFixed(2),
-          sbLine, ouLine: recommendedOverLine, modelLine, compareLine: recommendedOverLine,
-          recommendedOverLine: recommendedOverLine.toFixed(1), overProb, confidenceTier,
-          projK: projK.toFixed(1), pred, pushLean, reasoning,
-          timeStr, gameTimestamp: dt.getTime(), gamePk: g.gamePk,
-        };
-
-        // Cross-check against the server-side tracker's pre-game K projection/line
-        // (data/tracker.json, captured every morning well before first pitch — see
-        // loadTrackerPicks above) whenever this is the very first time THIS browser
-        // has computed this pitcher's prop AND the game is already live/final. Same
-        // contamination risk as the DR win-probability pick: with no existing
-        // _kPropsSnapshot entry to fall back on, the computation above just ran using
-        // this pitcher's now-already-pitched stat line.
-        if ((isLive || isFinal) && !_kPropsSnapshot[pitcher.id]) {
-          const trk = trackerKpropByPitcherId[pitcher.id];
-          if (trk && trk.gamePk === g.gamePk && Number.isFinite(trk.line)) {
-            propRow.ouLine = trk.line;
-            propRow.modelLine = trk.line;
-            propRow.compareLine = trk.line;
-            propRow.recommendedOverLine = trk.line.toFixed(1);
-            if (Number.isFinite(trk.projK)) propRow.projK = trk.projK.toFixed(1);
-            if (trk.pick) propRow.pred = trk.pick;
-          }
-        }
-
-        // Lock this snapshot — it will be reused once the game goes live
-        if (!_kPropsSnapshot[pitcher.id]) {
-          _kPropsSnapshot[pitcher.id] = propRow;
-        }
-        props.push(propRow);
-      }
-    }
-
-    props.sort((a,b)=>a.gameTimestamp-b.gameTimestamp);
-    kPropsData = props;
-    Object.keys(pitcherOULines).forEach(k => delete pitcherOULines[k]);
-    props.forEach(p => { if (p.compareLine != null) pitcherOULines[p.pitcherId] = p.compareLine; });
-    kPropsLoadedAt = new Date();
-    renderKProps();
-    // Pre-warm repo lineups so the first lineup expand is instant
-    loadRepoLineups().catch(() => {});
-    if (document.getElementById('props')?.classList.contains('active')) loadKsTodayWithRetry();
-
-    const kpTime = kPropsLoadedAt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-    if (refreshEl) refreshEl.textContent = `Last updated ${kpTime}`;
-  } catch(e) {
-    if(el) el.innerHTML=`<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
-  }
-}
-
-
+//
+// The actual loader is defined further below (the "v10.27 safe loader"
+// IIFE's buildRow/safeLoadKProps) — an earlier version of this function used
+// to live here directly, but it was fully superseded by that patch
+// (window.loadKProps gets unconditionally reassigned) and had silently
+// diverged from what's actually live: it never blended recent form and used
+// a linear overProb heuristic instead of the real Monte Carlo simulation the
+// live path uses. Removed rather than left as dead code that no longer
+// matched reality.
 
 // PROD v10.13: Direct Pitcher Strikeouts Confidence Engine support
 function drKNum(v, fb=0){ const n = Number(v); return Number.isFinite(n) ? n : fb; }
@@ -7066,6 +6859,32 @@ function scheduleKPropsLoad() {
       projK: projK.toFixed(1), pred: 'OVER', pushLean: null, reasoning: reason,
       timeStr: timeStr, gameTimestamp: dt.getTime(), gamePk: g.gamePk
     };
+    // Cross-check against the server-side tracker's pre-game K projection/line
+    // (data/tracker.json, captured every morning well before first pitch — see
+    // loadTrackerPicks) whenever the caller reached buildRow with the game already
+    // live/final and no existing _kPropsSnapshot entry (see the gate in
+    // safeLoadKProps below) — that combination means this is the very first time
+    // this browser has computed this pitcher's prop, so everything just computed
+    // above used the pitcher's now-already-pitched stat line and can be
+    // contaminated/flipped relative to what was true pre-game. The tracker record
+    // is immune to that since a scheduled job always captures it hours before
+    // first pitch.
+    var pState = g && g.status && g.status.abstractGameState;
+    var pIsLive = pState === 'Live' || (g && g.status && g.status.detailedState === 'In Progress');
+    var pIsFinal = pState === 'Final';
+    if (pIsLive || pIsFinal) {
+      var trackerData = await loadTrackerPicks().catch(function(){ return { kpropByPitcherId: {} }; });
+      var trk = trackerData.kpropByPitcherId[pitcher.id];
+      if (trk && trk.gamePk === g.gamePk && Number.isFinite(trk.line)) {
+        propRow.ouLine = trk.line;
+        propRow.modelLine = trk.line;
+        propRow.compareLine = trk.line;
+        propRow.recommendedOverLine = trk.line.toFixed(1);
+        if (Number.isFinite(trk.projK)) propRow.projK = trk.projK.toFixed(1);
+        if (trk.pick) propRow.pred = trk.pick;
+      }
+    }
+
     // Keep the snapshot fresh on every pre-game call so it always reflects the latest
     // pre-game state; the caller stops calling buildRow at all once the game is live/final
     // and a snapshot already exists, which is what actually freezes the projection.
