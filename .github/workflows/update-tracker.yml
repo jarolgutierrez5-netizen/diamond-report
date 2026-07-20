@@ -46,6 +46,16 @@ jobs:
         with:
           node-version: '22'
 
+      - name: TEMP - install Playwright for live-render verification
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+        timeout-minutes: 6
+
+      - name: TEMP - verify Ballpark Pal chips render live
+        run: node scripts/tmp-verify-render.mjs
+        timeout-minutes: 3
+
       - name: Run tracker updater
         env:
           # Optional — real sportsbook lines for K Props + market context for Elite
