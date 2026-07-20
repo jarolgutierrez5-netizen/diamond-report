@@ -1775,10 +1775,45 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
     box-sizing: border-box;
     gap: 2px;
     overflow-y: auto;
-    background: linear-gradient(180deg, rgba(6,10,18,.97), rgba(8,13,23,.95));
+    /* On short viewports (half-screen/split windows especially) this list is
+       taller than the visible sidebar — it was already scrollable
+       (overflow-y: auto), but nothing signaled that, so the last few items
+       (Premium, the paintbrush/settings icon) just looked cut off and
+       unreachable. The two `local`-attached layers below are opaque masks
+       that scroll WITH the content, covering the two `scroll`-attached blue
+       shadow layers everywhere except right at the top/bottom edge of the
+       visible area — so a shadow only shows when there's actually more
+       content to scroll to in that direction, and disappears at the very
+       start/end. Classic CSS-only "scroll shadow" technique, no JS needed;
+       works regardless of whether the platform shows a visible scrollbar
+       (macOS/Linux overlay scrollbars are otherwise invisible until a user
+       is actively scrolling or hovering, so this doesn't just rely on that).
+       Solid colors approximate the original background gradient's two stops
+       since these mask layers can't use a gradient with alpha the same way. */
+    background-color: #070c14;
+    background-image:
+      linear-gradient(#070c14 40%, rgba(7,12,20,0)),
+      linear-gradient(rgba(7,12,20,0), #080d17 60%),
+      linear-gradient(rgba(47,107,255,.55), rgba(47,107,255,0)),
+      linear-gradient(rgba(47,107,255,0), rgba(47,107,255,.55));
+    background-repeat: no-repeat;
+    background-size: 100% 28px, 100% 28px, 100% 10px, 100% 10px;
+    background-position: top, bottom, top, bottom;
+    background-attachment: local, local, scroll, scroll;
     border-right: 1px solid rgba(47,107,255,.28);
     box-shadow: 18px 0 38px rgba(0,0,0,.24);
     transition: width .18s ease;
+  }
+  /* Explicit (not just relying on the global rule) so this still applies if
+     specificity ever shifts — matters most on platforms with non-overlay
+     scrollbars (Windows), where this is the primary discoverability signal
+     alongside the shadow technique above. */
+  #dr-sidebar-nav::-webkit-scrollbar {
+    width: 6px !important;
+  }
+  #dr-sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(74, 158, 255, .6) !important;
+    border-radius: 999px !important;
   }
   #dr-sidebar-nav.collapsed {
     width: 64px;
