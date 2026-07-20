@@ -1,6 +1,7 @@
 import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { DrawOnPath } from './DrawOnPath';
+import { idleBob } from './motion';
 import { COLORS, FONT_SIZE, SPRING_CONFIG } from './theme';
 
 type IconTileProps = {
@@ -8,9 +9,18 @@ type IconTileProps = {
   color: string;
   delay: number;
   size?: number;
+  bobPhase?: number;
 } & ({ pathD: string; glyph?: undefined } | { glyph: string; pathD?: undefined });
 
-export const IconTile: React.FC<IconTileProps> = ({ pathD, glyph, label, color, delay, size = 130 }) => {
+export const IconTile: React.FC<IconTileProps> = ({
+  pathD,
+  glyph,
+  label,
+  color,
+  delay,
+  size = 130,
+  bobPhase = 0,
+}) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const s = spring({ frame: frame - delay, fps, config: SPRING_CONFIG });
@@ -19,12 +29,13 @@ export const IconTile: React.FC<IconTileProps> = ({ pathD, glyph, label, color, 
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
+  const bob = s >= 0.98 ? idleBob(frame, 6, 0.1, bobPhase) : 0;
 
   return (
     <div
       style={{
         opacity: s,
-        transform: `scale(${scale})`,
+        transform: `scale(${scale}) translateY(${bob}px)`,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

@@ -2,6 +2,7 @@ import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { SafeZone } from './SafeZone';
 import { IconTile } from './IconTile';
+import { Particles } from './Particles';
 import { ICON_PATHS } from './icons';
 import { COLORS, FONT_SIZE, SPRING_CONFIG } from './theme';
 
@@ -16,7 +17,6 @@ export const Scene1Intro: React.FC = () => {
     { pathD: ICON_PATHS.diamond, label: 'Game Projections', color: COLORS.accent },
     { pathD: ICON_PATHS.flame, label: 'HR Threats', color: '#f97316' },
     { glyph: 'K', label: 'K Props', color: '#38bdf8' },
-    { pathD: ICON_PATHS.star, label: 'Elite Picks', color: '#facc15' },
   ] as const;
 
   return (
@@ -27,6 +27,8 @@ export const Scene1Intro: React.FC = () => {
         flexDirection: 'column',
       }}
     >
+      <Particles count={8} opacity={0.35} seedPrefix="s1-particle" />
+
       <div
         style={{
           opacity: headlineSpring,
@@ -34,7 +36,7 @@ export const Scene1Intro: React.FC = () => {
         }}
       >
         <div style={{ fontSize: FONT_SIZE.headline, fontWeight: 800, lineHeight: 1.1 }}>
-          4 Boards. 1 Daily Edge.
+          3 Boards. 1 Daily Edge.
         </div>
       </div>
       <div
@@ -45,23 +47,23 @@ export const Scene1Intro: React.FC = () => {
         }}
       >
         <div style={{ fontSize: FONT_SIZE.body, color: COLORS.dim, maxWidth: 880, lineHeight: 1.4 }}>
-          Every game day, Diamond Report scores today&apos;s MLB slate across four boards — before first pitch.
+          Every game day, Diamond Report scores today&apos;s MLB slate across three boards — before first pitch.
         </div>
       </div>
 
       <div
         style={{
           flex: 1,
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          rowGap: 56,
-          columnGap: 40,
+          display: 'flex',
+          flexDirection: 'row',
           alignItems: 'center',
-          justifyItems: 'center',
+          justifyContent: 'center',
+          gap: 48,
+          flexWrap: 'wrap',
         }}
       >
         {tiles.map((tile, i) => (
-          <IconTile key={tile.label} {...tile} delay={50 + i * 10} />
+          <IconTile key={tile.label} {...tile} delay={44 + i * 10} size={150} bobPhase={i * 2} />
         ))}
       </div>
     </SafeZone>

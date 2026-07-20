@@ -2,24 +2,17 @@ import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { SafeZone } from './SafeZone';
 import { Particles } from './Particles';
-import { IconTile } from './IconTile';
-import { ICON_PATHS } from './icons';
+import { Logo } from './Logo';
+import { idlePulse } from './motion';
 import { COLORS, FONT_SIZE, SPRING_CONFIG } from './theme';
 
-export const Scene5CTA: React.FC = () => {
+export const Scene5Logo: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
   const headlineSpring = spring({ frame, fps, config: SPRING_CONFIG });
   const bodySpring = spring({ frame: frame - 12, fps, config: SPRING_CONFIG });
-  const footerSpring = spring({ frame: frame - 110, fps, config: SPRING_CONFIG });
-
-  const tiles = [
-    { pathD: ICON_PATHS.diamond, label: 'Game Projections', color: COLORS.accent },
-    { pathD: ICON_PATHS.flame, label: 'HR Threats', color: '#f97316' },
-    { glyph: 'K', label: 'K Props', color: '#38bdf8' },
-    { pathD: ICON_PATHS.star, label: 'Elite Picks', color: '#facc15' },
-  ] as const;
+  const logoGlow = frame >= 90 ? idlePulse(frame, 0.05, 0.09) : 1;
 
   return (
     <SafeZone
@@ -29,7 +22,7 @@ export const Scene5CTA: React.FC = () => {
         flexDirection: 'column',
       }}
     >
-      <Particles count={14} />
+      <Particles count={16} seedPrefix="s5-particle" />
 
       <div
         style={{
@@ -54,32 +47,10 @@ export const Scene5CTA: React.FC = () => {
         </div>
       </div>
 
-      <div
-        style={{
-          flex: 1,
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr 1fr',
-          alignItems: 'center',
-          justifyItems: 'center',
-        }}
-      >
-        {tiles.map((tile, i) => (
-          <IconTile key={tile.label} {...tile} delay={40 + i * 9} size={100} />
-        ))}
-      </div>
-
-      <div
-        style={{
-          opacity: footerSpring,
-          transform: `translateY(${interpolate(footerSpring, [0, 1], [16, 0])}px)`,
-          textAlign: 'center',
-          fontSize: FONT_SIZE.label,
-          fontWeight: 700,
-          color: COLORS.accent,
-          letterSpacing: 1,
-        }}
-      >
-        diamondreport.app
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ transform: `scale(${logoGlow})` }}>
+          <Logo scale={1.7} delay={40} />
+        </div>
       </div>
     </SafeZone>
   );

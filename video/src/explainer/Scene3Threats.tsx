@@ -3,6 +3,8 @@ import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { SafeZone } from './SafeZone';
 import { DrawOnPath } from './DrawOnPath';
 import { CountUp } from './CountUp';
+import { Particles } from './Particles';
+import { idlePulse } from './motion';
 import { ICON_PATHS } from './icons';
 import { COLORS, FONT_SIZE, SPRING_CONFIG } from './theme';
 
@@ -55,6 +57,8 @@ export const Scene3Threats: React.FC = () => {
     extrapolateRight: 'clamp',
   });
   const kSpring = spring({ frame: frame - 38, fps, config: SPRING_CONFIG });
+  const flameFlicker = flameDraw >= 1 ? idlePulse(frame, 0.06, 0.25) : 1;
+  const kPulse = kSpring >= 0.98 ? idlePulse(frame, 0.05, 0.18, 3) : 1;
 
   return (
     <SafeZone
@@ -64,6 +68,8 @@ export const Scene3Threats: React.FC = () => {
         flexDirection: 'column',
       }}
     >
+      <Particles count={7} opacity={0.3} seedPrefix="s3-particle" />
+
       <div
         style={{
           opacity: headlineSpring,
@@ -88,7 +94,12 @@ export const Scene3Threats: React.FC = () => {
       <div style={{ flex: 1, display: 'flex', gap: 44, alignItems: 'center' }}>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <svg width={56} height={56} viewBox="0 0 100 100">
+            <svg
+              width={56}
+              height={56}
+              viewBox="0 0 100 100"
+              style={{ transform: `scale(${flameFlicker})` }}
+            >
               <DrawOnPath d={ICON_PATHS.flame} progress={flameDraw} stroke="#f97316" strokeWidth={7} />
             </svg>
             <span style={{ fontSize: FONT_SIZE.body, fontWeight: 700 }}>HR Threats</span>
@@ -108,7 +119,7 @@ export const Scene3Threats: React.FC = () => {
                 fontWeight: 800,
                 color: '#38bdf8',
                 opacity: kSpring,
-                transform: `scale(${interpolate(kSpring, [0, 1], [0.6, 1])})`,
+                transform: `scale(${interpolate(kSpring, [0, 1], [0.6, 1]) * kPulse})`,
               }}
             >
               K

@@ -5,8 +5,8 @@ import { fade } from '@remotion/transitions/fade';
 import { Scene1Intro } from './explainer/Scene1Intro';
 import { Scene2DRP } from './explainer/Scene2DRP';
 import { Scene3Threats } from './explainer/Scene3Threats';
-import { Scene4Elite } from './explainer/Scene4Elite';
-import { Scene5CTA } from './explainer/Scene5CTA';
+import { Scene4ComingSoon } from './explainer/Scene4ComingSoon';
+import { Scene5Logo } from './explainer/Scene5Logo';
 
 // Loop is one 120-frame (4s @ 30fps) bar of the generated drum beat — see
 // video/scripts/generate-beat.mjs. Total video is 900 frames (30s @ 30fps).
@@ -48,14 +48,14 @@ export const TodaysPicksExplainer: React.FC = () => {
           timing={linearTiming({ durationInFrames: TRANSITION_FRAMES })}
         />
         <TransitionSeries.Sequence durationInFrames={SCENE_FRAMES[3]}>
-          <Scene4Elite />
+          <Scene4ComingSoon />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition
           presentation={fade()}
           timing={linearTiming({ durationInFrames: TRANSITION_FRAMES })}
         />
         <TransitionSeries.Sequence durationInFrames={SCENE_FRAMES[4]}>
-          <Scene5CTA />
+          <Scene5Logo />
         </TransitionSeries.Sequence>
       </TransitionSeries>
     </>

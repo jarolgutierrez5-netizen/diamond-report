@@ -3,6 +3,8 @@ import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { SafeZone } from './SafeZone';
 import { DrawOnPath } from './DrawOnPath';
 import { CountUp } from './CountUp';
+import { Particles } from './Particles';
+import { idlePulse } from './motion';
 import { ICON_PATHS } from './icons';
 import { COLORS, FONT_SIZE, SPRING_CONFIG } from './theme';
 
@@ -25,6 +27,7 @@ export const Scene2DRP: React.FC = () => {
     extrapolateRight: 'clamp',
   });
   const homePct = 100 - awayPct;
+  const diamondPulse = drawProgress >= 1 ? idlePulse(frame, 0.04, 0.09) : 1;
 
   return (
     <SafeZone
@@ -34,6 +37,8 @@ export const Scene2DRP: React.FC = () => {
         flexDirection: 'column',
       }}
     >
+      <Particles count={7} opacity={0.3} seedPrefix="s2-particle" />
+
       <div
         style={{
           opacity: headlineSpring,
@@ -59,7 +64,7 @@ export const Scene2DRP: React.FC = () => {
         <div
           style={{
             opacity: diagramSpring,
-            transform: `scale(${interpolate(diagramSpring, [0, 1], [0.85, 1])})`,
+            transform: `scale(${interpolate(diagramSpring, [0, 1], [0.85, 1]) * diamondPulse})`,
             display: 'flex',
             justifyContent: 'center',
           }}
