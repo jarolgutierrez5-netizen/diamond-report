@@ -78,7 +78,11 @@ async function main() {
   }
 
   if (!Array.isArray(rows)) {
+    // TEMP diagnostic — response shape doesn't match the docs' field list as a
+    // flat array; dump the actual structure so the real shape can be confirmed.
     console.error(`Unexpected /parkfactors/hitters response shape — got ${typeof rows}`);
+    console.error('TEMP raw data keys:', Object.keys(rows || {}));
+    console.error('TEMP raw data sample:', JSON.stringify(rows).slice(0, 2000));
     process.exitCode = 1;
     return;
   }
