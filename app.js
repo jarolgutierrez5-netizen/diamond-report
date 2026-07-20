@@ -3133,6 +3133,7 @@ async function loadGameProps() {
     await loadSportsbookKLines(today);
     await loadParkFactors().catch(() => {});
     await loadBullpenFatigue().catch(() => {});
+    await loadBallparkPalFactors().catch(() => {});
     await loadEspnEventIds(today).catch(() => {});
     const { drpByGamePk: trackerDrpByGamePk } = await loadTrackerPicks().catch(() => ({ drpByGamePk: {} }));
     const games = await getTodaySchedule('team,probablePitcher,linescore', { force: true });
@@ -3562,6 +3563,13 @@ async function loadGameProps() {
       const densityPct = Math.round((densityMultForDisplay - 1) * 100);
       const windPct = Math.round((windMultForDisplay - 1) * 100);
       const detailStat = (label, val) => `<div><span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${label}</span><br><span style="font-size:12px;color:var(--text)">${val}</span></div>`;
+      // Ballpark Pal's own independently-modeled weather-only HR effect (licensed
+      // API, see scripts/sync-ballparkpal.mjs) — a second, differently-computed
+      // number next to our own DIY air-density/wind figure above. Purely a
+      // cross-check; omitted entirely when the sync hasn't run or has no data
+      // for this game yet, same as the Bullpen chip's fail-silent pattern.
+      const bpWeatherPct = ballparkPalWeatherPctForGame(g.gamePk);
+      const bpRow = bpWeatherPct != null ? detailStat('Ballpark Pal Weather (cross-check)', `${bpWeatherPct > 0 ? '+' : ''}${bpWeatherPct}% HR`) : '';
       const parkWeatherHTML = weather ? `
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;padding:12px 14px">
           ${detailStat('Park', stadiumName || homeAbbr)}
@@ -3573,8 +3581,9 @@ async function loadGameProps() {
           ${detailStat('Air Density Effect', `${densityPct > 0 ? '+' : ''}${densityPct}% HR`)}
           ${detailStat('Wind Effect', `${windPct > 0 ? '+' : ''}${windPct}% HR`)}
           ${detailStat('Park Factor', `${parkFactorVal} (100 = avg)`)}
+          ${bpRow}
         </div>` : `
-        <div style="padding:12px 14px;font-size:12px;color:var(--muted)">${stadiumName || homeAbbr} — ${stadiumCoords[homeAbbr]?.dome && !stadiumCoords[homeAbbr]?.retractable ? 'fixed dome, weather neutral' : 'weather unavailable'}. Park Factor: ${parkFactorVal} (100 = avg).</div>`;
+        <div style="padding:12px 14px;font-size:12px;color:var(--muted)">${stadiumName || homeAbbr} — ${stadiumCoords[homeAbbr]?.dome && !stadiumCoords[homeAbbr]?.retractable ? 'fixed dome, weather neutral' : 'weather unavailable'}. Park Factor: ${parkFactorVal} (100 = avg).${bpWeatherPct != null ? ` Ballpark Pal weather cross-check: ${bpWeatherPct > 0 ? '+' : ''}${bpWeatherPct}% HR.` : ''}</div>`;
 
       const confBarW = Math.min(winnerPct, 100);
       const confBarColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : '#2ecc71';
@@ -5046,6 +5055,47 @@ async function loadBullpenFatigue(force = false) {
     return bullpenFatigue;
   })();
   return bullpenFatiguePromise;
+}
+
+// data/ballparkpal-hr-factors.json (see scripts/sync-ballparkpal.mjs) is a flat
+// per-hitter list from Ballpark Pal's licensed API — their own independently
+// modeled split of stadium-only vs. weather-only HR multiplier per player per
+// game. Indexed here by gameId (MLB gamePk) into an array of that game's
+// hitter rows, since Game Projections is game-level, not per-batter: the
+// panel shows the average homeRunsWeather across the game's hitters as a
+// second, independently-computed cross-check next to our own DIY air-density
+// number — informational only, same role the Market chip plays for win
+// probability, never fed into scoring.
+let ballparkPalFactors = {};
+let ballparkPalFactorsLoaded = false;
+let ballparkPalFactorsPromise = null;
+async function loadBallparkPalFactors(force = false) {
+  if (ballparkPalFactorsLoaded && !force) return ballparkPalFactors;
+  if (ballparkPalFactorsPromise && !force) return ballparkPalFactorsPromise;
+  ballparkPalFactorsPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/ballparkpal-hr-factors.json`);
+      const byGame = {};
+      (data.rows || []).forEach(r => {
+        if (!Number.isFinite(r.gameId)) return;
+        (byGame[r.gameId] = byGame[r.gameId] || []).push(r);
+      });
+      ballparkPalFactors = byGame;
+    } catch (e) {}
+    ballparkPalFactorsLoaded = true;
+    return ballparkPalFactors;
+  })();
+  return ballparkPalFactorsPromise;
+}
+// Average homeRunsWeather (a multiplier deviation, e.g. 0.02 = weather alone
+// added ~2%) across a game's hitter rows — null if the sync hasn't run yet or
+// this game isn't in it, in which case the panel simply omits the cross-check.
+function ballparkPalWeatherPctForGame(gameId) {
+  const rows = ballparkPalFactors[gameId];
+  if (!rows || !rows.length) return null;
+  const vals = rows.map(r => r.homeRunsWeather).filter(Number.isFinite);
+  if (!vals.length) return null;
+  return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 100);
 }
 
 function clampNum(n, min, max) { n = Number(n); if (!Number.isFinite(n)) return min; return Math.max(min, Math.min(max, n)); }
