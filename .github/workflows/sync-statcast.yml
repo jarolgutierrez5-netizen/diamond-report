@@ -89,6 +89,18 @@ jobs:
         continue-on-error: true
         timeout-minutes: 8
 
+      # Runs every trigger (not gated to the morning run) — it's a single
+      # lightweight API call, and Ballpark Pal's weather-baked-in park factors
+      # can shift through the day as their own forecast updates. Well within
+      # the API's 15,000/month quota even at 6 calls/day. Skips gracefully if
+      # the secret isn't set (falls back to the DIY air-density model only).
+      - name: Run Ballpark Pal weather/park-factor sync
+        env:
+          BALLPARKPAL_API_KEY: ${{ secrets.BALLPARKPAL_API_KEY }}
+        run: node scripts/sync-ballparkpal.mjs
+        continue-on-error: true
+        timeout-minutes: 3
+
       - name: Commit and push if changed
         run: |
           # git diff --quiet only detects changes to already-tracked files — it silently
@@ -106,6 +118,7 @@ jobs:
           git add data/pitcher-statcast.json data/batter-pitch-type-season.json data/statcast-hot-hitters.json
           [ -f data/park-factors.json ] && git add data/park-factors.json
           [ -f data/bullpen-fatigue.json ] && git add data/bullpen-fatigue.json
+          [ -f data/ballparkpal-hr-factors.json ] && git add data/ballparkpal-hr-factors.json
           if git diff --cached --quiet; then
             echo "No changes to sync — nothing to commit."
             exit 0

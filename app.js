@@ -1825,9 +1825,21 @@ const _kPropsSnapshot = {};
 const _gamePropsSnapshot = {};
 let sportsbookKLinesByPitcher = {};
 let sportsbookKLinesLoadedForDate = null;
+// Richer odds detail (price, book) alongside the bare line above — display-only,
+// used for the K Props "Market" chip. Kept separate from sportsbookKLinesByPitcher
+// so this never changes what getSportsbookKLine returns (that already feeds
+// recommendedOverLine/projK's line and shouldn't gain a new behavior here).
+let sportsbookOddsByPitcher = {};
 
 function normalizeKPropName(name) {
-  return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  // Strip accents to their base letter (é→e, í→i, ñ→n, etc.) before dropping
+  // non-alphanumerics — without this, an accented name loses those letters
+  // entirely instead of folding them, so "José Berríos" (the raw MLB Stats API
+  // name) never matched the same player's already-accent-stripped name coming
+  // back from data/k-props.json (see scripts/update-tracker.mjs's normalizeName,
+  // which already does this fold server-side). Silently broke sportsbook K-line
+  // matching for every accented name, not just the newer Market chip lookup.
+  return String(name || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
 }
 function parseKLineValue(value) {
   if (value == null || value === '') return null;
@@ -1849,9 +1861,28 @@ function indexSportsbookKLine(row) {
   if (id != null) sportsbookKLinesByPitcher[String(id)] = line;
   if (name) sportsbookKLinesByPitcher[normalizeKPropName(name)] = line;
 }
+// Same key scheme as indexSportsbookKLine, but keeps the overPrice/underPrice/book
+// fields a real sync (see scripts/update-tracker.mjs's K_PROPS_ODDS_PATH export)
+// can provide, which indexSportsbookKLine discards down to a bare number.
+function indexSportsbookOdds(row) {
+  if (!row) return;
+  const line = parseKLineValue(
+    row.sbLine ?? row.sportsbookLine ?? row.kLine ?? row.line ?? row.ouLine ?? row.dkLine ?? row.draftKingsLine ?? row.points ?? row.total
+  );
+  if (line == null) return;
+  const id = row.pitcherId ?? row.playerId ?? row.id ?? row.mlbId;
+  const name = row.pitcherName ?? row.playerName ?? row.name;
+  const detail = { line, overPrice: row.overPrice ?? null, underPrice: row.underPrice ?? null, book: row.book ?? null };
+  if (id != null) sportsbookOddsByPitcher[String(id)] = detail;
+  if (name) sportsbookOddsByPitcher[normalizeKPropName(name)] = detail;
+}
+function getSportsbookOdds(pitcherId, pitcherName) {
+  return sportsbookOddsByPitcher[String(pitcherId)] ?? sportsbookOddsByPitcher[normalizeKPropName(pitcherName)] ?? null;
+}
 async function loadSportsbookKLines(today) {
   if (sportsbookKLinesLoadedForDate === today) return;
   sportsbookKLinesByPitcher = {};
+  sportsbookOddsByPitcher = {};
   const urls = [
     `data/k-props-${today}.json`,
     `data/k_props_${today}.json`,
@@ -1878,7 +1909,7 @@ async function loadSportsbookKLines(today) {
       }
     } catch {}
   }
-  sources.flat().forEach(indexSportsbookKLine);
+  sources.flat().forEach(row => { indexSportsbookKLine(row); indexSportsbookOdds(row); });
   sportsbookKLinesLoadedForDate = today;
 }
 function getSportsbookKLine(pitcherId, pitcherName) {
@@ -3102,6 +3133,7 @@ async function loadGameProps() {
     await loadSportsbookKLines(today);
     await loadParkFactors().catch(() => {});
     await loadBullpenFatigue().catch(() => {});
+    await loadBallparkPalFactors().catch(() => {});
     await loadEspnEventIds(today).catch(() => {});
     const { drpByGamePk: trackerDrpByGamePk } = await loadTrackerPicks().catch(() => ({ drpByGamePk: {} }));
     const games = await getTodaySchedule('team,probablePitcher,linescore', { force: true });
@@ -3163,7 +3195,14 @@ async function loadGameProps() {
             const wKey = `${homeAbbr}:${bucket}`;
             let wd = _weatherCache.get(wKey);
             if (!wd) {
-              const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,windspeed_10m,winddirection_10m,precipitation,weathercode&temperature_unit=fahrenheit&windspeed_unit=mph`);
+              // relative_humidity_2m + pressure_msl added for the air-density-based HR
+              // Boost model below (see airDensityHRMult) — pressure_msl (sea-level-
+              // equivalent, not surface_pressure) is deliberate: it isolates today's
+              // weather-system pressure anomaly from each park's permanent elevation,
+              // which the separate Statcast-based park factor already accounts for.
+              // Using raw surface_pressure here would double-count Coors' altitude as
+              // if it were a "weather" effect every single day.
+              const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,relative_humidity_2m,windspeed_10m,winddirection_10m,precipitation,pressure_msl,weathercode&temperature_unit=fahrenheit&windspeed_unit=mph`);
               if (!res.ok) throw new Error(`HTTP ${res.status}`);
               wd = await res.json();
               _weatherCache.set(wKey, wd);
@@ -3171,9 +3210,11 @@ async function loadGameProps() {
             const c = wd.current;
             weather = {
               temp: Math.round(c.temperature_2m),
+              humidity: c.relative_humidity_2m,
               wind: Math.round(c.windspeed_10m),
               windDir: c.winddirection_10m,
               precip: c.precipitation,
+              pressureMsl: c.pressure_msl,
               code: c.weathercode,
             };
           } catch {}
@@ -3336,34 +3377,23 @@ async function loadGameProps() {
         const totalParkAdj = 1 + ((pf - 100) / 100) * 0.5;
         awayRuns *= totalParkAdj; homeRuns *= totalParkAdj;
 
-        // Weather — same wind/temp thresholds as the win-prob factors above. Tracked
-        // as a single combined multiplier (weatherHRMult) so the same wind+temp effect
-        // driving the runs total can also be surfaced on its own as an "HR Boost" read
-        // — wind and temp are the two weather inputs that most directly affect how far
-        // a fly ball carries, i.e. genuine home-run-specific signal, distinct from the
-        // broader runs-total number (which also folds in pitching/park/record).
-        // Wind and temp each used to be a flat on/off jump right at one hard
-        // threshold (e.g. 86F and 105F both produced the exact same +5%), so on
-        // most realistic wind/temp readings the only two possible outputs were
-        // 0% or +/-5%. Scaling both continuously past a neutral band means a
-        // barely-over-the-line reading and an extreme reading no longer render
-        // identically.
+        // Weather — real air-density physics (airDensityHRMult) combined with a
+        // continuous wind-speed effect (windHRMult), replacing the old flat wind-
+        // bucket/temp-threshold formula. See both functions' comments (defined near
+        // windEffect below) for the physics and calibration. Tracked as a single
+        // combined multiplier (weatherHRMult) so the same effect driving the runs
+        // total can also be surfaced on its own as an "HR Boost" read — genuine
+        // home-run-specific signal, distinct from the broader runs-total number
+        // (which also folds in pitching/park/record).
         let weatherHRMult = 1;
+        // Tracked separately (not just the combined weatherHRMult) purely so the
+        // Park & Weather detail panel below can show the two effects broken out —
+        // neither value feeds into anything beyond that display.
+        let densityMultForDisplay = 1, windMultForDisplay = 1;
         if (weather) {
-          if (weather.wind > 8) {
-            const totalWindImpact = windEffect(weather.windDir, homeAbbr);
-            // Ramps from 0 at 8mph to the full effect at 30mph+.
-            const windScale = Math.min(1, (weather.wind - 8) / 22);
-            if (totalWindImpact === 'out') weatherHRMult *= 1 + 0.10 * windScale;
-            else if (totalWindImpact === 'in') weatherHRMult *= 1 - 0.09 * windScale;
-          }
-          if (weather.temp < 60 || weather.temp > 80) {
-            // Neutral band is 60-80F; ramps from there out to +/-30F past the
-            // band edge (i.e. fully scaled by 30F or 110F).
-            const tempDelta = weather.temp < 60 ? (60 - weather.temp) : (weather.temp - 80);
-            const tempScale = Math.min(1, tempDelta / 30);
-            weatherHRMult *= weather.temp < 60 ? 1 - 0.07 * tempScale : 1 + 0.07 * tempScale;
-          }
+          densityMultForDisplay = airDensityHRMult(weather);
+          windMultForDisplay = windHRMult(weather, homeAbbr);
+          weatherHRMult = densityMultForDisplay * windMultForDisplay;
           awayRuns *= weatherHRMult; homeRuns *= weatherHRMult;
         }
         const hrWeatherBoostPct = Math.round((weatherHRMult - 1) * 100);
@@ -3412,14 +3442,14 @@ async function loadGameProps() {
           }
         }
 
-        model = { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor, hrWeatherBoostPct, parkFactorVal: pf, market };
+        model = { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor, hrWeatherBoostPct, parkFactorVal: pf, market, weather, densityMultForDisplay, windMultForDisplay, stadiumName: stadium?.name };
         // Always keep the snapshot fresh — pre-game cycles overwrite it so that whenever
         // the game does go live, the lock captures the most recent pre-game state rather
         // than a stale first-load snapshot from hours earlier.
         _gamePropsSnapshot[g.gamePk] = model;
       }
 
-      const { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor, hrWeatherBoostPct, parkFactorVal, market } = model;
+      const { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor, hrWeatherBoostPct, parkFactorVal, market, weather, densityMultForDisplay, windMultForDisplay, stadiumName } = model;
 
       window.drWinProbStore[g.gamePk] = { awayAbbr, homeAbbr, awayPct, homePct, winnerAbbr, winnerPct, confidence };
       _favoredCache[g.gamePk] = { abbr: winnerAbbr, pct: winnerPct, source: 'model' };
@@ -3471,12 +3501,14 @@ async function loadGameProps() {
       // are computed.
       // Purely cosmetic fill bar under each chip's value, scaled to how extreme the
       // number is within its realistic range — reinforces the pos/neg color coding
-      // without changing what the number means. ~13% is roughly the max combined
-      // wind+temp swing weatherHRMult can produce; ~33 is roughly the max deviation
-      // from 100 seen across the real park-factor table above.
+      // without changing what the number means. ~20% is roughly the max realistic
+      // combined air-density+wind swing weatherHRMult produces (individual clamps
+      // are wider — see airDensityHRMult/windHRMult — but both maxing out together
+      // is rare); ~33 is roughly the max deviation from 100 seen across the real
+      // park-factor table above.
       const gpFactorBar = (pct, cls) => `<span class="gp-factor-bar"><span class="gp-factor-bar-fill ${cls}" style="width:${Math.round(Math.max(0, Math.min(1, pct)) * 100)}%"></span></span>`;
       const hrBoostCls = hrWeatherBoostPct > 0 ? 'pos' : hrWeatherBoostPct < 0 ? 'neg' : 'neu';
-      const hrBoostChip = `<span class="gp-factor ${hrBoostCls}" title="Wind + temperature effect on HR likelihood only — excludes park, pitching, and offense">🌬️ HR Boost: ${hrWeatherBoostPct > 0 ? '+' : ''}${hrWeatherBoostPct}%${gpFactorBar(Math.abs(hrWeatherBoostPct) / 13, hrBoostCls)}</span>`;
+      const hrBoostChip = `<span class="gp-factor ${hrBoostCls}" title="Air density (temp/humidity/pressure) + wind effect on HR likelihood only — excludes park, pitching, and offense">🌬️ HR Boost: ${hrWeatherBoostPct > 0 ? '+' : ''}${hrWeatherBoostPct}%${gpFactorBar(Math.abs(hrWeatherBoostPct) / 20, hrBoostCls)}</span>`;
       const parkFactorCls = parkFactorVal > 107 ? 'pos' : parkFactorVal < 93 ? 'neg' : 'neu';
       const parkFactorLabel = parkFactorVal > 107 ? 'HR-Friendly' : parkFactorVal < 93 ? 'Pitcher-Friendly' : 'Neutral';
       const parkFactorPct = parkFactorVal - 100;
@@ -3524,11 +3556,40 @@ async function loadGameProps() {
         }
       }
 
+      // Park & Weather detail panel — click-to-expand readable breakdown of numbers
+      // the model already computed above (weather, densityMultForDisplay,
+      // windMultForDisplay, parkFactorVal); same display-only rule as the chips —
+      // nothing here is computed fresh or feeds back into scoring.
+      const densityPct = Math.round((densityMultForDisplay - 1) * 100);
+      const windPct = Math.round((windMultForDisplay - 1) * 100);
+      const detailStat = (label, val) => `<div><span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${label}</span><br><span style="font-size:12px;color:var(--text)">${val}</span></div>`;
+      // Ballpark Pal's own independently-modeled weather-only HR effect (licensed
+      // API, see scripts/sync-ballparkpal.mjs) — a second, differently-computed
+      // number next to our own DIY air-density/wind figure above. Purely a
+      // cross-check; omitted entirely when the sync hasn't run or has no data
+      // for this game yet, same as the Bullpen chip's fail-silent pattern.
+      const bpWeatherPct = ballparkPalWeatherPctForGame(g.gamePk);
+      const bpRow = bpWeatherPct != null ? detailStat('Ballpark Pal Weather (cross-check)', `${bpWeatherPct > 0 ? '+' : ''}${bpWeatherPct}% HR`) : '';
+      const parkWeatherHTML = weather ? `
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;padding:12px 14px">
+          ${detailStat('Park', stadiumName || homeAbbr)}
+          ${detailStat('Conditions', weatherCodeLabel(weather.code))}
+          ${detailStat('Temp', `${weather.temp}°F`)}
+          ${detailStat('Humidity', weather.humidity != null ? `${weather.humidity}%` : '–')}
+          ${detailStat('Wind', `${weather.wind}mph ${compassLabel(weather.windDir)}`)}
+          ${detailStat('Pressure (MSL)', weather.pressureMsl != null ? `${Math.round(weather.pressureMsl)} hPa` : '–')}
+          ${detailStat('Air Density Effect', `${densityPct > 0 ? '+' : ''}${densityPct}% HR`)}
+          ${detailStat('Wind Effect', `${windPct > 0 ? '+' : ''}${windPct}% HR`)}
+          ${detailStat('Park Factor', `${parkFactorVal} (100 = avg)`)}
+          ${bpRow}
+        </div>` : `
+        <div style="padding:12px 14px;font-size:12px;color:var(--muted)">${stadiumName || homeAbbr} — ${stadiumCoords[homeAbbr]?.dome && !stadiumCoords[homeAbbr]?.retractable ? 'fixed dome, weather neutral' : 'weather unavailable'}. Park Factor: ${parkFactorVal} (100 = avg).${bpWeatherPct != null ? ` Ballpark Pal weather cross-check: ${bpWeatherPct > 0 ? '+' : ''}${bpWeatherPct}% HR.` : ''}</div>`;
+
       const confBarW = Math.min(winnerPct, 100);
       const confBarColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : '#2ecc71';
 
       const teamAccent = teamColors[homeAbbr] || teamColors[awayAbbr] || 'var(--accent)';
-      return { html: `<div class="gp-card" data-game-pk="${g.gamePk}" data-away="${awayAbbr}" data-home="${homeAbbr}" data-winner="${winnerAbbr}" data-game-time="${dt.getTime()}" style="--team-accent:${teamAccent}">
+      return { html: `<div class="gp-card" data-game-pk="${g.gamePk}" data-away="${awayAbbr}" data-home="${homeAbbr}" data-winner="${winnerAbbr}" data-game-time="${dt.getTime()}" style="--team-accent:${teamAccent};cursor:pointer" onclick="const b=this.querySelector('.dr1027-details-btn');if(b&&!event.target.closest('button,a'))b.click();">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <!-- Teams -->
           <div class="gp-matchup" style="flex:1;min-width:180px">
@@ -3592,6 +3653,8 @@ async function loadGameProps() {
 
         <!-- HR Boost + Park Factor labels, same compact chip style as Key factors below -->
         <div class="gp-factors">${hrBoostChip}${parkFactorChip}${marketChip}${bullpenChip}${factorChips}</div>
+        <button class="btn-lineup dr1027-details-btn" onclick="toggleGameDetails(this)" style="margin-top:8px">▼ PARK &amp; WEATHER DETAILS</button>
+        <div class="gp-details-panel pr-expand-panel" style="display:none;margin-top:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px">${parkWeatherHTML}</div>
         <div class="gp-live-result-zone" data-live-score-badge="1" style="margin-top:8px">${resultBadge || ''}</div>
       </div>`, resultCorrect };
     }));
@@ -3623,6 +3686,25 @@ async function loadGameProps() {
 
   } catch(e) {
     if (el) el.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
+  }
+}
+
+// Park & Weather detail panel toggle — content is already inlined in the card's
+// HTML (built alongside the rest of the model in loadGameProps), so this is a
+// plain show/hide, no fetch needed, unlike the K Props lineup panel it's styled
+// after.
+function toggleGameDetails(btn) {
+  const panel = btn.nextElementSibling;
+  if (!panel) return;
+  const isOpen = panel.style.display === 'block';
+  if (isOpen) {
+    panel.style.setProperty('display', 'none', 'important');
+    btn.innerHTML = '▼ PARK &amp; WEATHER DETAILS';
+    btn.classList.remove('active');
+  } else {
+    panel.style.setProperty('display', 'block', 'important');
+    btn.innerHTML = '▲ HIDE PARK &amp; WEATHER DETAILS';
+    btn.classList.add('active');
   }
 }
 
@@ -3701,6 +3783,88 @@ function windEffect(deg, homeAbbr) {
   if (deg >= 60 && deg <= 150) return 'out';
   if (deg >= 240 && deg <= 330) return 'in';
   return 'cross';
+}
+// 16-point compass label for the Park & Weather detail panel — purely display,
+// same wind direction degrees windEffect already uses for the actual model input.
+function compassLabel(deg) {
+  if (deg == null || !Number.isFinite(deg)) return '–';
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(((deg % 360) / 22.5)) % 16];
+}
+// WMO weather codes, as returned by Open-Meteo's "weathercode" field — display only.
+function weatherCodeLabel(code) {
+  const map = {
+    0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
+    45: 'Fog', 48: 'Depositing rime fog',
+    51: 'Light drizzle', 53: 'Drizzle', 55: 'Dense drizzle',
+    61: 'Light rain', 63: 'Rain', 65: 'Heavy rain',
+    71: 'Light snow', 73: 'Snow', 75: 'Heavy snow',
+    80: 'Light rain showers', 81: 'Rain showers', 82: 'Violent rain showers',
+    95: 'Thunderstorm', 96: 'Thunderstorm w/ hail', 99: 'Severe thunderstorm w/ hail',
+  };
+  return map[code] ?? '–';
+}
+
+// ── Air-density-based weather model (replaces the old flat wind-bucket/temp-
+// threshold formula) ────────────────────────────────────────────────────
+// Real physics: thinner air (hot, humid, and/or low-pressure) means less drag
+// on a fly ball, so it carries farther — the same mechanism that makes Coors
+// Field a hitter's park, just applied to day-to-day weather instead of
+// permanent altitude. Computed from the ideal gas law with a humidity
+// correction (moist air is very slightly LESS dense than dry air at the same
+// temp/pressure, since water vapor's molar mass is lower than N2/O2's).
+//
+// Density formula: rho = Pd/(Rd*T) + Pv/(Rv*T)
+//   Pd = partial pressure of dry air, Pv = partial pressure of water vapor
+//   Rd = 287.05 J/(kg*K) (dry air), Rv = 461.495 J/(kg*K) (water vapor)
+// Saturation vapor pressure from the Tetens approximation (accurate to
+// within ~1% over normal game-time temperature ranges, which is plenty for
+// this purpose — this isn't a meteorology tool).
+function airDensityKgM3(tempF, pressureMslHPa, relHumidityPct) {
+  const tempC = (tempF - 32) * 5 / 9;
+  const tempK = tempC + 273.15;
+  const satVaporHPa = 6.1078 * Math.pow(10, (7.5 * tempC) / (tempC + 237.3));
+  const vaporHPa = satVaporHPa * (Math.max(0, Math.min(100, relHumidityPct ?? 50)) / 100);
+  const totalPa = pressureMslHPa * 100;
+  const vaporPa = vaporHPa * 100;
+  const dryPa = totalPa - vaporPa;
+  return (dryPa / (287.05 * tempK)) + (vaporPa / (461.495 * tempK));
+}
+// "Neutral" game-time reference: 70F, 50% humidity, standard sea-level-
+// equivalent pressure (1013.25 hPa). Using pressure_msl (not raw local
+// surface pressure) for both today's reading and this reference means the
+// comparison isolates the day's weather-system pressure anomaly — it does
+// NOT vary by each park's own elevation, since pressure_msl already strips
+// altitude out. That keeps this purely a "weather" signal, not a second copy
+// of the permanent altitude effect the site's separate park factor covers.
+const NEUTRAL_AIR_DENSITY = airDensityKgM3(70, 1013.25, 50);
+function airDensityHRMult(weather) {
+  if (!weather || !Number.isFinite(weather.pressureMsl)) return 1;
+  const rho = airDensityKgM3(weather.temp, weather.pressureMsl, weather.humidity);
+  const densityRatio = NEUTRAL_AIR_DENSITY / rho; // >1 = thinner-than-normal air (HR-friendly)
+  // Real-world fly-ball physics (Nathan, "The Physics of Baseball") puts fly-ball
+  // distance roughly proportional to 1/density over the range weather can swing it,
+  // and because HR-or-not is so sensitive right at the fence, a given % change in
+  // distance produces a noticeably larger % change in HR rate — commonly estimated
+  // around 1.5-2x. 1.6 here is a middle-of-that-range calibration, not a precise
+  // derivation; clamped to +/-15% so an extreme reading can't dominate the number.
+  const DENSITY_HR_SENSITIVITY = 1.6;
+  return Math.max(0.85, Math.min(1.15, 1 + DENSITY_HR_SENSITIVITY * (densityRatio - 1)));
+}
+// Wind's effect scales continuously with speed above a light-breeze floor,
+// instead of only ever kicking in above one hard threshold — roughly 0.8% HR
+// multiplier per mph blowing out/in past 5mph, a mid-range estimate from the
+// same fly-ball-distance-to-HR-rate sensitivity used above (wind's push on
+// distance is well-established as roughly linear in speed for a tailwind/
+// headwind component). Crosswind (windEffect() === 'cross') is treated as
+// having no directional HR effect.
+function windHRMult(weather, homeAbbr) {
+  if (!weather || !(weather.wind > 5)) return 1;
+  const impact = windEffect(weather.windDir, homeAbbr);
+  if (impact === 'cross') return 1;
+  const WIND_HR_SENSITIVITY = 0.008;
+  const mult = 1 + WIND_HR_SENSITIVITY * (weather.wind - 5) * (impact === 'out' ? 1 : -1);
+  return Math.max(0.85, Math.min(1.2, mult));
 }
 
 // Refresh game props every 5 minutes when loaded (only while tab is visible)
@@ -4893,6 +5057,58 @@ async function loadBullpenFatigue(force = false) {
   return bullpenFatiguePromise;
 }
 
+// data/ballparkpal-hr-factors.json (see scripts/sync-ballparkpal.mjs) is a flat
+// per-hitter list from Ballpark Pal's licensed API — their own independently
+// modeled split of stadium-only vs. weather-only HR multiplier per player per
+// game. Indexed here by gameId (MLB gamePk) into an array of that game's
+// hitter rows, since Game Projections is game-level, not per-batter: the
+// panel shows the average homeRunsWeather across the game's hitters as a
+// second, independently-computed cross-check next to our own DIY air-density
+// number — informational only, same role the Market chip plays for win
+// probability, never fed into scoring.
+let ballparkPalFactors = {};
+let ballparkPalFactorsLoaded = false;
+let ballparkPalFactorsPromise = null;
+async function loadBallparkPalFactors(force = false) {
+  if (ballparkPalFactorsLoaded && !force) return ballparkPalFactors;
+  if (ballparkPalFactorsPromise && !force) return ballparkPalFactorsPromise;
+  ballparkPalFactorsPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/ballparkpal-hr-factors.json`);
+      const byGame = {};
+      (data.rows || []).forEach(r => {
+        if (!Number.isFinite(r.gameId)) return;
+        (byGame[r.gameId] = byGame[r.gameId] || []).push(r);
+      });
+      ballparkPalFactors = byGame;
+    } catch (e) {}
+    ballparkPalFactorsLoaded = true;
+    return ballparkPalFactors;
+  })();
+  return ballparkPalFactorsPromise;
+}
+// Average homeRunsWeather (a multiplier deviation, e.g. 0.02 = weather alone
+// added ~2%) across a game's hitter rows — null if the sync hasn't run yet or
+// this game isn't in it, in which case the panel simply omits the cross-check.
+function ballparkPalWeatherPctForGame(gameId) {
+  const rows = ballparkPalFactors[gameId];
+  if (!rows || !rows.length) return null;
+  const vals = rows.map(r => r.homeRunsWeather).filter(Number.isFinite);
+  if (!vals.length) return null;
+  return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 100);
+}
+// Exact per-hitter lookup (unlike the game-level average above) — used on HR
+// Threats cards, which are already batter-specific. homeRuns is Ballpark
+// Pal's combined park+weather multiplier for this exact player in today's
+// game (e.g. 1.06 = modeled +6% vs. neutral).
+function ballparkPalFactorForPlayer(gameId, playerId) {
+  const rows = ballparkPalFactors[gameId];
+  if (!rows) return null;
+  const row = rows.find(r => String(r.playerId) === String(playerId));
+  if (!row || !Number.isFinite(row.homeRuns)) return null;
+  return Math.round((row.homeRuns - 1) * 100);
+}
+
 function clampNum(n, min, max) { n = Number(n); if (!Number.isFinite(n)) return min; return Math.max(min, Math.min(max, n)); }
 function pctNum(v) { if (v === null || v === undefined || v === '') return null; const n = Number(String(v).replace('%','')); return Number.isFinite(n) ? n : null; }
 function buildFallbackHotHitterProfile(row) {
@@ -5510,6 +5726,7 @@ async function loadHRPotential() {
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
     await loadStatcastHotHitters();
     await loadParkFactors().catch(() => {});
+    await loadBallparkPalFactors().catch(() => {});
     const games = await getTodaySchedule('team,probablePitcher');
     await loadActivePlayerIdsForGames(games).catch(() => {});
 
@@ -6259,222 +6476,15 @@ async function loadHRsToday() {
 // Since direct sportsbook APIs require paid keys, we model projected K lines
 // from pitcher K/9 and opposing lineup K% — displayed as our own projection
 // alongside the model-based O/U line. Label clearly as DR projection.
-
-async function loadKProps() {
-  const el = document.getElementById('kprops-content');
-  const refreshEl = document.getElementById('kprops-refresh');
-  // Don't return early — still need to cache data even if Props tab isn't open
-
-  const now = new Date();
-
-  // Skip if already loaded within last 2 hours
-  if (kPropsLoadedAt) {
-    const msSince = now - kPropsLoadedAt;
-    if (msSince < 2 * 60 * 60 * 1000) { renderKProps(); return; }
-  }
-
-  try {
-    const today = new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
-    await loadSportsbookKLines(today);
-    const { kpropByPitcherId: trackerKpropByPitcherId } = await loadTrackerPicks().catch(() => ({ kpropByPitcherId: {} }));
-    const games = await getTodaySchedule('team,probablePitcher');
-
-    // K Props now use DR projections only. External sportsbook line cards have been removed.
-
-    const props = [];
-
-    for (const g of games) {
-      const dt = new Date(g.gameDate);
-      const timeStr = dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'});
-      const awayAbbr = g.teams.away.team.abbreviation;
-      const homeAbbr = g.teams.home.team.abbreviation;
-
-      const state = g.status?.abstractGameState || '';
-      const isLive  = state === 'Live'  || g.status?.detailedState === 'In Progress';
-      const isFinal = state === 'Final' || g.status?.detailedState === 'Final';
-
-      for (const [side,opp] of [['away','home'],['home','away']]) {
-        const pitcher = g.teams[side].probablePitcher;
-        if (!pitcher) continue;
-
-        // If the game is already live or final, use the locked pre-game snapshot.
-        // Never recalculate — pitcher ERA/WHIP shouldn't shift the line once play has begun.
-        if ((isLive || isFinal) && _kPropsSnapshot[pitcher.id]) {
-          props.push(_kPropsSnapshot[pitcher.id]);
-          continue;
-        }
-
-        let k9=8, ip=0, wins=0, losses=0, era=4.00, whip=1.25;
-        let fip=null, avg=null, woba=null, iso=null, slg=null, hr9=null, bf=0, tbf=0, kPerGm=null;
-        try {
-          const pd = await fetchJSON(`https://diamondreport.app/api/v1/people/${pitcher.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
-          const ps=pd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||{};
-          k9=parseFloat(ps.strikeoutsPer9Inn)||8;
-          ip=parseFloat(ps.inningsPitched)||0;
-          wins=ps.wins??0; losses=ps.losses??0;
-          era=parseFloat(ps.era)||4.00;
-          whip=parseFloat(ps.whip)||1.25;
-          fip=parseFloat(ps.fip) || null;
-          avg=parseFloat(ps.avg)||null;
-          // Real wOBA isn't part of this stat object — OBP-against stands in, same as Pitcher Report.
-          woba=parseFloat(ps.obp)||null;
-          slg=parseFloat(ps.slg)||null;
-          iso=slg!=null&&avg!=null ? Math.round((slg-avg)*1000)/1000 : null;
-          // Derived from raw HR-allowed count / IP rather than a precomputed "per 9" field
-          // name, which isn't reliable across MLB Stats API responses.
-          const hrAllowed = parseFloat(ps.homeRuns);
-          hr9 = (ip > 0 && !isNaN(hrAllowed)) ? (hrAllowed / ip) * 9 : null;
-          const _qaCtx = 'K Props (legacy): ' + (pitcher.fullName || pitcher.id);
-          drCheckStat(_qaCtx, 'ERA', era, 'era');
-          drCheckStat(_qaCtx, 'WHIP', whip, 'whip');
-          drCheckStat(_qaCtx, 'K/9', k9, 'k9');
-          drCheckStat(_qaCtx, 'HR/9', hr9, 'hr9');
-          drCheckStat(_qaCtx, 'AVG', avg, 'avg');
-          drCheckStat(_qaCtx, 'wOBA (OBP stand-in)', woba, 'obp');
-          drCheckStat(_qaCtx, 'ISO', iso, 'iso');
-          drCheckStat(_qaCtx, 'SLG', slg, 'slg');
-          drCheckStat(_qaCtx, 'FIP', fip, 'fip');
-          bf=parseInt(ps.battersFaced)||0;
-          tbf=bf;
-          const gamesStarted=parseInt(ps.gamesStarted)||Math.max(wins+losses,1);
-          kPerGm=gamesStarted>0 ? Math.round((k9*(ip/Math.max(gamesStarted,1))/9)*10)/10 : null;
-        } catch {}
-
-        let oppKpct = 0.22;
-        try {
-          const bd = await fetchJSON(`https://diamondreport.app/api/v1/game/${g.gamePk}/boxscore`);
-          const teamBox=bd.teams?.[opp];
-          const batters=(teamBox?.batters||[]).map(id=>teamBox.players[`ID${id}`]).filter(Boolean).slice(0,9);
-          const kpcts=batters.map(b=>{
-            const s=b.seasonStats?.batting||{};
-            return (s.strikeOuts&&s.plateAppearances)?s.strikeOuts/s.plateAppearances:0.22;
-          });
-          if(kpcts.length) oppKpct=kpcts.reduce((a,b)=>a+b,0)/kpcts.length;
-        } catch {}
-
-        const projIP = Math.min(Math.max(ip / Math.max(wins+losses, 1), 4), 7);
-        const baseProj = k9 * projIP / 9;
-        const kpctAdj = (oppKpct - 0.22) * 10;
-        const projK = Math.max(baseProj + kpctAdj, 1);
-        const modelLine = Math.round(projK * 2) / 2;
-        const sbLine = getSportsbookKLine(pitcher.id, pitcher.fullName);
-        const compareLine = sbLine ?? modelLine;
-
-        // v8.57 Production: Strikeouts are now displayed as OVER-only recommendations.
-        // If a sportsbook K line is available, use it for transparency; otherwise choose
-        // a realistic alternate-style line slightly below the model projection.
-        const recommendedOverLine = sbLine != null
-          ? sbLine
-          : Math.max(0.5, Math.floor(projK) - 0.5);
-        const overEdge = projK - recommendedOverLine;
-        const overProb = Math.max(34, Math.min(78, Math.round(50 + (overEdge * 14))));
-        const confidenceTier = overProb >= 70 ? 'Elite'
-          : overProb >= 63 ? 'Strong'
-          : overProb >= 56 ? 'Good'
-          : overProb >= 50 ? 'Lean'
-          : 'Low';
-        const pred = 'OVER';
-        const pushLean = null;
-        const diff = overEdge;
-
-        const oppKpctLabel = `${(oppKpct*100).toFixed(0)}% opp K rate`;
-        const k9Label = `${k9.toFixed(1)} K/9`;
-        const workloadLabel = `${projIP.toFixed(1)} proj IP`;
-        const projectionLabel = `${projK.toFixed(1)} Ks projected`;
-        const lineLabel = `${formatKLine(recommendedOverLine)} recommended over`;
-        const eraLabel = `${era.toFixed(2)} ERA`;
-        const whipLabel = `${whip.toFixed(2)} WHIP`;
-        const diffLabel = Math.abs(diff) >= 0.3 ? `${diff > 0 ? '+' : ''}${diff.toFixed(1)} vs line` : `±${Math.abs(diff).toFixed(1)} vs line`;
-        const seasonLabel = `${wins}-${losses} · ${ip.toFixed(0)} IP`;
-
-        const matchupTag = oppKpct >= 0.245 ? 'High-K matchup' : oppKpct <= 0.195 ? 'Contact-heavy matchup' : 'Average K matchup';
-        const k9Tag = k9 >= 9 ? 'Strong K pitcher' : k9 <= 7 ? 'Lower K profile' : 'Solid K profile';
-        const eraTag = era <= 3.25 ? 'Elite ERA' : era >= 5.00 ? 'High ERA' : 'Mid ERA';
-        const whipTag = whip <= 1.10 ? 'Elite WHIP' : whip >= 1.40 ? 'High WHIP' : 'Avg WHIP';
-        const workloadTag = projIP >= 6 ? 'Deep workload expected' : projIP <= 4.5 ? 'Short outing likely' : 'Standard workload';
-        const decisionTag = `OVER ${formatKLine(recommendedOverLine)} · ${overProb}%`;
-
-        const eraContext = era <= 3.25 ? 'an elite ERA' : era >= 5.00 ? 'a high ERA' : 'a solid ERA';
-        const whipContext = whip <= 1.10 ? 'excellent command' : whip >= 1.40 ? 'shaky command' : 'average command';
-        const matchupContext = oppKpct >= 0.245 ? 'faces a lineup that strikes out often' : oppKpct <= 0.195 ? 'faces a contact-heavy lineup' : 'faces an average-K lineup';
-        const workloadContext = projIP >= 6 ? 'expected to go deep' : projIP <= 4.5 ? 'likely a short outing' : 'standard workload expected';
-        const lineContext = Math.abs(diff) >= 0.5
-          ? (diff > 0 ? `projection sits ${diff.toFixed(1)} above the line` : `projection sits ${Math.abs(diff).toFixed(1)} below the line`)
-          : `projection is close to the line`;
-        const reasoning = {
-          matchupTag, k9Tag, eraTag, whipTag, workloadTag, decisionTag,
-          oppKpctLabel, k9Label, workloadLabel, projectionLabel, lineLabel,
-          eraLabel, whipLabel, diffLabel, seasonLabel,
-          summary: `${pitcher.fullName.split(' ').pop()} (${eraContext}, ${whipContext}) ${matchupContext} — ${workloadContext}. The ${lineContext}.`
-        };
-
-
-
-        const propRow = {
-          pitcherName: pitcher.fullName, pitcherId: pitcher.id,
-          teamAbbr: g.teams[side].team.abbreviation,
-          oppAbbr: g.teams[opp].team.abbreviation,
-          wl:`${wins}-${losses}`, era: era.toFixed(2), k9: k9.toFixed(1),
-          ip: ip.toFixed(1), bf: tbf,
-          fip: fip!=null ? fip.toFixed(2) : null,
-          avg: avg!=null ? avg.toFixed(3) : null,
-          woba: woba!=null ? woba.toFixed(3) : null,
-          iso: iso!=null ? iso.toFixed(3) : null,
-          slg: slg!=null ? slg.toFixed(3) : null,
-          hr9: hr9!=null ? hr9.toFixed(2) : null,
-          kPerGm: kPerGm!=null ? kPerGm.toFixed(1) : null,
-          whip: whip.toFixed(2),
-          sbLine, ouLine: recommendedOverLine, modelLine, compareLine: recommendedOverLine,
-          recommendedOverLine: recommendedOverLine.toFixed(1), overProb, confidenceTier,
-          projK: projK.toFixed(1), pred, pushLean, reasoning,
-          timeStr, gameTimestamp: dt.getTime(), gamePk: g.gamePk,
-        };
-
-        // Cross-check against the server-side tracker's pre-game K projection/line
-        // (data/tracker.json, captured every morning well before first pitch — see
-        // loadTrackerPicks above) whenever this is the very first time THIS browser
-        // has computed this pitcher's prop AND the game is already live/final. Same
-        // contamination risk as the DR win-probability pick: with no existing
-        // _kPropsSnapshot entry to fall back on, the computation above just ran using
-        // this pitcher's now-already-pitched stat line.
-        if ((isLive || isFinal) && !_kPropsSnapshot[pitcher.id]) {
-          const trk = trackerKpropByPitcherId[pitcher.id];
-          if (trk && trk.gamePk === g.gamePk && Number.isFinite(trk.line)) {
-            propRow.ouLine = trk.line;
-            propRow.modelLine = trk.line;
-            propRow.compareLine = trk.line;
-            propRow.recommendedOverLine = trk.line.toFixed(1);
-            if (Number.isFinite(trk.projK)) propRow.projK = trk.projK.toFixed(1);
-            if (trk.pick) propRow.pred = trk.pick;
-          }
-        }
-
-        // Lock this snapshot — it will be reused once the game goes live
-        if (!_kPropsSnapshot[pitcher.id]) {
-          _kPropsSnapshot[pitcher.id] = propRow;
-        }
-        props.push(propRow);
-      }
-    }
-
-    props.sort((a,b)=>a.gameTimestamp-b.gameTimestamp);
-    kPropsData = props;
-    Object.keys(pitcherOULines).forEach(k => delete pitcherOULines[k]);
-    props.forEach(p => { if (p.compareLine != null) pitcherOULines[p.pitcherId] = p.compareLine; });
-    kPropsLoadedAt = new Date();
-    renderKProps();
-    // Pre-warm repo lineups so the first lineup expand is instant
-    loadRepoLineups().catch(() => {});
-    if (document.getElementById('props')?.classList.contains('active')) loadKsTodayWithRetry();
-
-    const kpTime = kPropsLoadedAt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-    if (refreshEl) refreshEl.textContent = `Last updated ${kpTime}`;
-  } catch(e) {
-    if(el) el.innerHTML=`<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
-  }
-}
-
-
+//
+// The actual loader is defined further below (the "v10.27 safe loader"
+// IIFE's buildRow/safeLoadKProps) — an earlier version of this function used
+// to live here directly, but it was fully superseded by that patch
+// (window.loadKProps gets unconditionally reassigned) and had silently
+// diverged from what's actually live: it never blended recent form and used
+// a linear overProb heuristic instead of the real Monte Carlo simulation the
+// live path uses. Removed rather than left as dead code that no longer
+// matched reality.
 
 // PROD v10.13: Direct Pitcher Strikeouts Confidence Engine support
 function drKNum(v, fb=0){ const n = Number(v); return Number.isFinite(n) ? n : fb; }
@@ -6742,7 +6752,7 @@ function renderKProps() {
       const hasLiveK = !!(live && (live.isLive || live.isFinal));
       const missedK = !!(live && live.isFinal && p.pred !== 'PUSH' && !alreadyHit);
 
-      return `<div class="dr109-card${alreadyHit ? ' prop-hit' : missedK ? ' prop-miss' : ''}">
+      return `<div class="dr109-card${alreadyHit ? ' prop-hit' : missedK ? ' prop-miss' : ''}" style="cursor:pointer" onclick="const b=this.querySelector('.dr1016-lineup-btn');if(b&&!event.target.closest('button,a'))b.click();">
         ${window.drWatchStarHTML(p.pitcherId, p.pitcherName)}
         <div class="dr109-card-head">
           <div class="dr109-player">
@@ -6757,6 +6767,7 @@ function renderKProps() {
         <div class="dr109-chiprow">
           ${alreadyHit ? `<span class="dr109-chip hit-check"><span>✓ HIT:</span><strong>${kHitCount} / ${kTarget}</strong></span>` : hasLiveK ? `<span class="dr109-chip"><span>${missedK ? 'Final' : 'Live'}:</span><strong>${kHitCount} / ${kTarget}</strong></span>` : ''}
           <span class="dr109-chip good"><span>Line:</span><strong>${strikeoutLineText}</strong></span>
+          ${p.market ? `<span class="dr109-chip" title="${p.market.book || 'Sportsbook'} line, informational only — never used to compute this pitcher's projection or line above">🏦 Market: O ${formatKLine(p.market.line)}${p.market.overPrice != null ? ` (${p.market.overPrice > 0 ? '+' : ''}${p.market.overPrice})` : ''}</span>` : ''}
           <span class="dr109-chip stat-k-9"><span>K/9:</span><strong>${p.k9 ?? '–'}</strong></span>
           <span class="dr109-chip stat-era"><span>ERA:</span><strong>${p.era ?? '–'}</strong></span>
           <span class="dr109-chip stat-whip"><span>WHIP:</span><strong>${p.whip ?? '–'}</strong></span>
@@ -6998,6 +7009,12 @@ function scheduleKPropsLoad() {
     var projK = Math.max(1, (k9 * projIP / 9) + ((oppKpct - 0.22) * 10));
     var sbLine = null;
     try { if (typeof getSportsbookKLine === 'function') sbLine = getSportsbookKLine(pitcher.id, pitcher.fullName); } catch(e){}
+    // Display-only market comparison (same "informational, never fed into the
+    // model" rule as the Game Projections Market chip) — separate from sbLine
+    // above, which already (by existing design) becomes recommendedOverLine
+    // itself when a real book line exists.
+    var marketOdds = null;
+    try { if (typeof getSportsbookOdds === 'function') marketOdds = getSportsbookOdds(pitcher.id, pitcher.fullName); } catch(e){}
     var recommendedOverLine = sbLine != null ? Number(sbLine) : Math.max(0.5, Math.floor(projK) - 0.5);
     var overEdge = projK - recommendedOverLine;
     // Genuine simulated odds: run TRIALS games sampling a Poisson-distributed strikeout
@@ -7064,8 +7081,35 @@ function scheduleKPropsLoad() {
       ouLine: recommendedOverLine, modelLine: Math.round(projK*2)/2, compareLine: recommendedOverLine,
       recommendedOverLine: recommendedOverLine.toFixed(1), overProb: overProb, confidenceTier: confidenceTier,
       projK: projK.toFixed(1), pred: 'OVER', pushLean: null, reasoning: reason,
-      timeStr: timeStr, gameTimestamp: dt.getTime(), gamePk: g.gamePk
+      timeStr: timeStr, gameTimestamp: dt.getTime(), gamePk: g.gamePk,
+      market: marketOdds
     };
+    // Cross-check against the server-side tracker's pre-game K projection/line
+    // (data/tracker.json, captured every morning well before first pitch — see
+    // loadTrackerPicks) whenever the caller reached buildRow with the game already
+    // live/final and no existing _kPropsSnapshot entry (see the gate in
+    // safeLoadKProps below) — that combination means this is the very first time
+    // this browser has computed this pitcher's prop, so everything just computed
+    // above used the pitcher's now-already-pitched stat line and can be
+    // contaminated/flipped relative to what was true pre-game. The tracker record
+    // is immune to that since a scheduled job always captures it hours before
+    // first pitch.
+    var pState = g && g.status && g.status.abstractGameState;
+    var pIsLive = pState === 'Live' || (g && g.status && g.status.detailedState === 'In Progress');
+    var pIsFinal = pState === 'Final';
+    if (pIsLive || pIsFinal) {
+      var trackerData = await loadTrackerPicks().catch(function(){ return { kpropByPitcherId: {} }; });
+      var trk = trackerData.kpropByPitcherId[pitcher.id];
+      if (trk && trk.gamePk === g.gamePk && Number.isFinite(trk.line)) {
+        propRow.ouLine = trk.line;
+        propRow.modelLine = trk.line;
+        propRow.compareLine = trk.line;
+        propRow.recommendedOverLine = trk.line.toFixed(1);
+        if (Number.isFinite(trk.projK)) propRow.projK = trk.projK.toFixed(1);
+        if (trk.pick) propRow.pred = trk.pick;
+      }
+    }
+
     // Keep the snapshot fresh on every pre-game call so it always reflects the latest
     // pre-game state; the caller stops calling buildRow at all once the game is live/final
     // and a snapshot already exists, which is what actually freezes the projection.
@@ -10118,7 +10162,7 @@ var analytics='<div class="tp-analytics-grid">'+
     if (s.last10HomeRuns != null && s.last10HomeRuns !== '') return s.last10HomeRuns;
     return null;
   }
-  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); populateHRGameSelect(base); if(!base.length){el.innerHTML='<div class="mu-empty">No HR potential data yet — check back once lineups are posted.</div>';return;} var arr=applyHRFilters(base).filter(function(r){return !isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL';}).sort(function(a,b){return n(b.hrProb)-n(a.hrProb);}); if(!arr.length){el.innerHTML='<div class="mu-empty" style="padding:24px">No players match the selected filters. Try fewer filters, or select ALL to reset.</div>';return;} var cards=arr.map(function(r){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); var l10=dr113Last10HRValue(r); var stats=[hrChip('HR Prob',p.toFixed(1)+'%','green'),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1),'gold'):''].filter(Boolean); return '<div class="dr1027-hr-card '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-why">'+whyHR(r)+'</div><button class="hrp-matchup-btn dr1027-matchup-btn" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="const d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName)">⚔ PITCHER MATCHUP</button></div>'; }).join(''); el.innerHTML=hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; }
+  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); populateHRGameSelect(base); if(!base.length){el.innerHTML='<div class="mu-empty">No HR potential data yet — check back once lineups are posted.</div>';return;} var arr=applyHRFilters(base).filter(function(r){return !isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL';}).sort(function(a,b){return n(b.hrProb)-n(a.hrProb);}); if(!arr.length){el.innerHTML='<div class="mu-empty" style="padding:24px">No players match the selected filters. Try fewer filters, or select ALL to reset.</div>';return;} var cards=arr.map(function(r){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); var l10=dr113Last10HRValue(r); var bpPct=ballparkPalFactorForPlayer(r.gamePk,r.id); var stats=[hrChip('HR Prob',p.toFixed(1)+'%','green'),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1),'gold'):'',bpPct!=null?hrChip('Ballpark Pal',(bpPct>0?'+':'')+bpPct+'%',bpPct>0?'green':bpPct<0?'red':''):''].filter(Boolean); return '<div class="dr1027-hr-card '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="cursor:pointer" onclick="var b=this.querySelector(\'.dr1027-matchup-btn\');if(b&&!event.target.closest(\'button,a\'))b.click();">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-why">'+whyHR(r)+'</div><button class="hrp-matchup-btn dr1027-matchup-btn" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="const d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName)">⚔ PITCHER MATCHUP</button></div>'; }).join(''); el.innerHTML=hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; }
   function setHRFilter(f){ var s=getFilters(); if(f==='all')s.clear(); else { if(s.has(f))s.delete(f); else s.add(f); } renderHRPTableV1032(); }
   window.renderHRPTable=renderHRPTableV1032;
   window.filterHRP=setHRFilter;

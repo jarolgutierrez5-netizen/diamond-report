@@ -56,12 +56,17 @@ jobs:
 
       - name: Commit and push if changed
         run: |
-          if git diff --quiet -- data/tracker.json; then
-            echo "No changes to data/tracker.json — nothing to commit."
+          # git diff --quiet only detects changes to already-tracked files — it silently
+          # ignores a brand-new untracked file, which is exactly what data/k-props.json
+          # is on its first-ever run. Stage first, then check the index against HEAD so
+          # a genuinely new file is treated as a real change instead of "nothing to commit".
+          git add data/tracker.json
+          [ -f data/k-props.json ] && git add data/k-props.json
+          if git diff --cached --quiet; then
+            echo "No changes to data/tracker.json or data/k-props.json — nothing to commit."
             exit 0
           fi
           git config user.name "diamond-report-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add data/tracker.json
           git commit -m "Update tracker: capture today's picks, grade prior day's results"
           git push
