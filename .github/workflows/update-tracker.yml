@@ -52,6 +52,10 @@ jobs:
           # Picks. Set in Settings → Secrets and variables → Actions. Everything
           # falls back to the model-only line/analysis if this isn't set.
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          # Optional — Ballpark Pal's licensed API, used here only to capture their
+          # Moneyline projection alongside ours in data/ballparkpal-comparison.json
+          # for an accuracy comparison. Skipped entirely if unset.
+          BALLPARKPAL_API_KEY: ${{ secrets.BALLPARKPAL_API_KEY }}
         run: node scripts/update-tracker.mjs
 
       - name: Commit and push if changed
@@ -62,8 +66,9 @@ jobs:
           # a genuinely new file is treated as a real change instead of "nothing to commit".
           git add data/tracker.json
           [ -f data/k-props.json ] && git add data/k-props.json
+          [ -f data/ballparkpal-comparison.json ] && git add data/ballparkpal-comparison.json
           if git diff --cached --quiet; then
-            echo "No changes to data/tracker.json or data/k-props.json — nothing to commit."
+            echo "No changes to data/tracker.json, data/k-props.json, or data/ballparkpal-comparison.json — nothing to commit."
             exit 0
           fi
           git config user.name "diamond-report-bot"
