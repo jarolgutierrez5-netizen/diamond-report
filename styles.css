@@ -3762,3 +3762,15 @@ select:focus-visible {
   padding: 0 !important;
   font-weight: 800 !important;
 }
+
+/* ── K Props / Hits / RBI / TB / SB / HRRBI cards: "Projection Hit"/"Missed"
+   badge on its own line ────────────────────────────────────────────────────
+   The badge used to sit inline right after the player name inside .dr109-name,
+   which already clips with overflow:hidden (nowrap + ellipsis, or a 2-line
+   -webkit-line-clamp on some boards) — a real name + the badge together
+   routinely overflowed that box's width, hard-clipping the badge pill mid-word
+   instead of wrapping or ellipsizing. Giving it its own row below the name
+   removes it from that width budget entirely, regardless of name length. */
+.dr109-badge-row {
+  margin: 3px 0 2px;
+}
