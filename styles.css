@@ -3649,3 +3649,91 @@ select:focus-visible {
   background: rgba(255,255,255,.08) !important;
   color: #fff !important;
 }
+
+/* Starting Pitcher Report — mobile card layout. Below 700px the table used
+   to just shrink its font/padding and stay a 900px-min-width table, forcing
+   horizontal scroll with the pitcher-info column alone eating most of the
+   visible width before you ever reached a stat. Turn each row into a real
+   card instead: pitcher info as a full-width header, the ten stat cells
+   below it as a wrapped, individually-labeled chip grid (each <td> already
+   carries a data-label attribute from renderPRTable for exactly this — see
+   app.js). Tables support display:grid/flex on rows/cells same as any other
+   element, so this needs no HTML/JS restructuring, only CSS. */
+@media (max-width: 700px) {
+  .pr-starters-table-wrap {
+    overflow-x: visible !important;
+  }
+  .pr-starters-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    border-spacing: 0 !important;
+  }
+  .pr-starters-table thead {
+    display: none !important;
+  }
+  .pr-starters-table tbody {
+    display: block !important;
+  }
+  .pr-row-tr {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+    background: linear-gradient(180deg, rgba(17,26,45,.78), rgba(14,23,40,.82)) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 14px !important;
+    padding: 10px !important;
+    margin-bottom: 10px !important;
+  }
+  .pr-starters-table td {
+    padding: 0 !important;
+    white-space: normal !important;
+  }
+  .pr-starters-table td.pr-lineup-batter-cell {
+    grid-column: 1 / -1 !important;
+    position: static !important;
+    left: auto !important;
+    background: none !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding-bottom: 10px !important;
+    margin-bottom: 4px !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+  .pr-headshot {
+    width: 34px !important;
+    height: 34px !important;
+    flex-shrink: 0 !important;
+  }
+  .pr-mobile-name {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    line-height: 1.25 !important;
+  }
+  .pr-mobile-sub, .pr-mobile-time {
+    font-size: 10.5px !important;
+  }
+  .pr-starters-table td[data-label] {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    padding: 5px 7px !important;
+    font-family: var(--font-mono) !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+  }
+  .pr-starters-table td.pr-plain-cell[data-label] {
+    background: rgba(255,255,255,.03) !important;
+  }
+  .pr-starters-table td[data-label]::before {
+    content: attr(data-label);
+    font-family: 'Manrope', sans-serif !important;
+    font-size: 8px !important;
+    font-weight: 800 !important;
+    letter-spacing: .05em !important;
+    color: var(--muted) !important;
+    text-transform: uppercase !important;
+  }
+}
