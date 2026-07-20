@@ -531,6 +531,168 @@ function computeMatchupOutcomeDist(batterStat, pitcherStat) {
   return dist;
 }
 
+// ── DRP Game Simulation, Phase 2: base-out-state simulation loop ──
+// Samples one outcome per plate appearance from computeMatchupOutcomeDist()
+// and advances runners accordingly, inning by inning, for a full 9(+)-inning
+// game — the actual "bottom-up" mechanism Phase 1 was built to feed. Still
+// not wired into any live pick; simulateDRPGame() below is the entry point
+// a future phase will call from captureToday alongside (not instead of) the
+// existing computeDRPick().
+//
+// Base-advancement rules here are simplified, fixed heuristics (e.g. "a
+// runner on 2nd scores on a single 60% of the time"), not a real 24-state
+// Retrosheet transition matrix — that data isn't something this script has
+// programmatic access to. Good enough to make PA outcomes translate into
+// realistic-looking run totals; not claimed to be more precise than that.
+// Same spirit as this file's other documented simplifications (see the top
+// of the file).
+
+function sampleOutcome(dist) {
+  const r = Math.random();
+  let cum = 0;
+  for (const key of ['hr', 'xbh', 'single', 'bb', 'k', 'out']) {
+    cum += dist[key];
+    if (r < cum) return key;
+  }
+  return 'out'; // floating-point fallback — cum should reach ~1 before this
+}
+
+// bases: { first: bool, second: bool, third: bool }. Returns the new base
+// state plus runs scored on this play. outsBeforePlay is outs already
+// recorded in the half-inning before this plate appearance (used for the
+// sac-fly-style scoring chance on a ball-in-play out).
+function advanceRunners(bases, outcome, outsBeforePlay) {
+  const b = { first: bases.first, second: bases.second, third: bases.third };
+  let runs = 0;
+
+  if (outcome === 'hr') {
+    if (b.third) runs++;
+    if (b.second) runs++;
+    if (b.first) runs++;
+    runs++; // batter
+    return { bases: { first: false, second: false, third: false }, runs };
+  }
+
+  if (outcome === 'xbh') {
+    // Treats 2B/3B as one bucket (see computeMatchupOutcomeDist) — modeled
+    // as double-shaped advancement, the more common of the two.
+    if (b.third) runs++;
+    if (b.second) runs++;
+    const runnerFrom1st = b.first; // advances to 3rd, doesn't score
+    return { bases: { first: false, second: runnerFrom1st, third: true }, runs };
+  }
+
+  if (outcome === 'single') {
+    if (b.third) runs++;
+    let newThird = false;
+    if (b.second) {
+      if (Math.random() < 0.60) runs++; else newThird = true;
+    }
+    return { bases: { first: true, second: b.first, third: newThird }, runs };
+  }
+
+  if (outcome === 'bb') {
+    // Force advancement only.
+    if (b.first) {
+      if (b.second) {
+        if (b.third) runs++; // bases loaded, forced home
+        return { bases: { first: true, second: true, third: true }, runs };
+      }
+      return { bases: { first: true, second: true, third: b.third }, runs };
+    }
+    return { bases: { first: true, second: b.second, third: b.third }, runs };
+  }
+
+  if (outcome === 'k') {
+    return { bases: b, runs: 0 }; // no advancement on strikeout
+  }
+
+  // outcome === 'out' (ball in play) — approximate sac-fly scoring chance.
+  if (b.third && outsBeforePlay < 2 && Math.random() < 0.35) {
+    return { bases: { first: b.first, second: b.second, third: false }, runs: 1 };
+  }
+  return { bases: b, runs: 0 };
+}
+
+// lineupStats: array of 9 batter stat objects (real order if available).
+// pitcherStatFn: () => current pitcher's stat object for this PA (lets the
+// caller swap starter -> bullpen mid-inning without this function knowing).
+// battingIdxRef: { i: number } — mutated in place so the lineup keeps
+// cycling correctly across half-innings within the same simulated game.
+function simulateHalfInning(lineupStats, battingIdxRef, pitcherStatFn) {
+  let outs = 0, runs = 0;
+  let bases = { first: false, second: false, third: false };
+  while (outs < 3) {
+    const batterStat = lineupStats[battingIdxRef.i % lineupStats.length];
+    battingIdxRef.i++;
+    const dist = computeMatchupOutcomeDist(batterStat, pitcherStatFn());
+    const outcome = sampleOutcome(dist);
+    if (outcome === 'k' || outcome === 'out') outs++;
+    const result = advanceRunners(bases, outcome, outs - (outcome === 'k' || outcome === 'out' ? 1 : 0));
+    bases = result.bases;
+    runs += result.runs;
+  }
+  return runs;
+}
+
+// Picks the starter's stat until they've faced roughly a full outing's worth
+// of batters, then the bullpen stat for the rest of the game — a simplified
+// stand-in for real pull decisions (pitch count, leverage, matchups), same
+// caveat as above. ~22 batters faced is roughly a 5-inning outing.
+const STARTER_BATTERS_FACED_LIMIT = 22;
+
+function makePitcherStatFn(starterStat, bullpenStat, battersFacedRef) {
+  return () => {
+    battersFacedRef.i++;
+    return battersFacedRef.i <= STARTER_BATTERS_FACED_LIMIT ? starterStat : bullpenStat;
+  };
+}
+
+// One full simulated game. Returns { awayRuns, homeRuns }.
+function simulateOneGame(awayLineup, awayStarterStat, awayBullpenStat, homeLineup, homeStarterStat, homeBullpenStat) {
+  const awayIdx = { i: 0 }, homeIdx = { i: 0 };
+  const awayBF = { i: 0 }, homeBF = { i: 0 };
+  const awayPitcherFn = makePitcherStatFn(homeStarterStat, homeBullpenStat, homeBF); // away bats vs home's pitcher
+  const homePitcherFn = makePitcherStatFn(awayStarterStat, awayBullpenStat, awayBF); // home bats vs away's pitcher
+  let awayRuns = 0, homeRuns = 0;
+  const MAX_INNINGS = 12; // simulation cap — see note below
+
+  for (let inning = 1; inning <= 9 || (awayRuns === homeRuns && inning <= MAX_INNINGS); inning++) {
+    awayRuns += simulateHalfInning(awayLineup, awayIdx, awayPitcherFn);
+    // Standard "no need to bat in the bottom 9th if already leading" skipped
+    // for simplicity — negligible effect on aggregate win%/totals across
+    // thousands of trials, and it keeps this loop simple.
+    homeRuns += simulateHalfInning(homeLineup, homeIdx, homePitcherFn);
+  }
+  return { awayRuns, homeRuns };
+}
+
+// Entry point for a future capture-time integration. lineups/starter/bullpen
+// stats are the raw MLB Stats API stat objects this file already fetches
+// elsewhere (seasonBattingStat per lineup slot, seasonPitchingStat for
+// starters, a team pitching aggregate for "bullpen" — see the caller this
+// will eventually have in captureToday). trials defaults low enough to run
+// quickly in CI; raise for a more stable estimate once this is validated.
+function simulateDRPGame({ awayLineup, awayStarterStat, awayBullpenStat, homeLineup, homeStarterStat, homeBullpenStat }, trials = 1000) {
+  let awayWins = 0, homeWins = 0, ties = 0, totalAwayRuns = 0, totalHomeRuns = 0;
+  for (let t = 0; t < trials; t++) {
+    const { awayRuns, homeRuns } = simulateOneGame(awayLineup, awayStarterStat, awayBullpenStat, homeLineup, homeStarterStat, homeBullpenStat);
+    if (awayRuns > homeRuns) awayWins++;
+    else if (homeRuns > awayRuns) homeWins++;
+    else ties++; // hit the MAX_INNINGS cap still tied — rare
+    totalAwayRuns += awayRuns;
+    totalHomeRuns += homeRuns;
+  }
+  return {
+    awayWinPct: Math.round((awayWins / trials) * 100),
+    homeWinPct: Math.round((homeWins / trials) * 100),
+    tiePct: Math.round((ties / trials) * 100),
+    avgAwayRuns: +(totalAwayRuns / trials).toFixed(2),
+    avgHomeRuns: +(totalHomeRuns / trials).toFixed(2),
+    trials,
+  };
+}
+
 // ── Diamond Report Pick model (ported from loadGameProps in app.js, minus weather) ──
 async function computeDRPick(g, season) {
   const awayAbbr = g.teams.away.team.abbreviation;
@@ -1802,4 +1964,5 @@ export {
   loadBallparkPalComparison, saveBallparkPalComparison, recomputeBallparkPalSummary,
   fetchBallparkPalMoneyline, gradeBallparkPalComparison, captureBallparkPalComparisonToday,
   log5, computeMatchupOutcomeDist, LEAGUE_AVG_PA_RATES,
+  sampleOutcome, advanceRunners, simulateHalfInning, simulateOneGame, simulateDRPGame,
 };
