@@ -1910,6 +1910,68 @@ function marketImpliedProb(marketOdds) {
   return { pct: Math.round(overP * 100), devigged: false };
 }
 
+// Client-side Monte Carlo for the matchup modal's "Simulate This Matchup" button (HR
+// Threats). data/batter-situational-props.json's hr.trueProbPct is already the exact
+// closed-form answer for "at least one HR in paPerGame independent PAs at rate
+// perPARate" (gameProbFromPerPARate in sync-batter-situational-props.mjs) — running
+// real trials here doesn't produce a more accurate number, it lets the user watch that
+// same rate play out over N simulated games and see the natural game-to-game variance
+// around it, which the single percentage on its own doesn't convey.
+const HR_SIM_TRIALS = 20000;
+function simulateHRGameOutcomes(perPARate, paPerGame, trials = HR_SIM_TRIALS) {
+  const paLow = Math.floor(paPerGame), paHigh = Math.ceil(paPerGame);
+  const frac = paPerGame - paLow;
+  const hrCounts = [0, 0, 0]; // [0 HR, 1 HR, 2+ HR]
+  for (let t = 0; t < trials; t++) {
+    const pa = Math.random() < frac ? paHigh : paLow;
+    let hr = 0;
+    for (let i = 0; i < pa; i++) { if (Math.random() < perPARate) hr++; }
+    hrCounts[Math.min(hr, 2)]++;
+  }
+  return { trials, hrCounts, atLeastOnePct: +(((trials - hrCounts[0]) / trials) * 100).toFixed(1) };
+}
+
+// Wired to the 🎲 SIMULATE THIS MATCHUP button (see edgeHTML in renderMatchupModal).
+// The trial run itself is a synchronous loop over HR_SIM_TRIALS iterations — fast
+// enough (well under a frame) that there's nothing to actually wait on, but rendering
+// the button's own "Simulating…" state before computing (via rAF, so the browser
+// paints it first) makes the button feel like it did something rather than just
+// instantly swapping to a result.
+function runHRMatchupSimulation(btn) {
+  const batterId = btn.dataset.batterId;
+  const perPARate = parseFloat(btn.dataset.rate);
+  const modelPct = parseFloat(btn.dataset.truePct);
+  const resultEl = document.getElementById(`hr-sim-result-${batterId}`);
+  if (!resultEl || !Number.isFinite(perPARate)) return;
+  btn.disabled = true;
+  btn.textContent = '🎲 SIMULATING…';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const { trials, hrCounts, atLeastOnePct } = simulateHRGameOutcomes(perPARate, FANTASY_PROJECTED_PA);
+    const pct = n => +((n / trials) * 100).toFixed(1);
+    const bar = (label, count, color) => `
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <span style="width:56px;font-size:10px;color:var(--muted)">${label}</span>
+        <div style="flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden">
+          <div style="width:${pct(count)}%;height:100%;background:${color}"></div>
+        </div>
+        <span style="width:60px;text-align:right;font-size:10px;color:var(--text);font-family:'JetBrains Mono',monospace">${pct(count)}% (${count.toLocaleString()})</span>
+      </div>`;
+    const diff = Math.abs(atLeastOnePct - modelPct);
+    resultEl.innerHTML = `
+      <div style="margin-top:8px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+        <div style="font-size:11px;color:var(--text)"><strong>🎲 Ran ${trials.toLocaleString()} simulated games</strong> at his ${(perPARate*100).toFixed(1)}% per-PA HR rate for this matchup:</div>
+        ${bar('0 HR', hrCounts[0], 'var(--muted)')}
+        ${bar('1 HR', hrCounts[1], 'var(--accent2)')}
+        ${bar('2+ HR', hrCounts[2], 'var(--green)')}
+        <div style="font-size:10px;color:var(--muted);margin-top:8px">At least 1 HR in <strong style="color:var(--text)">${atLeastOnePct}%</strong> of simulated games — model projection was ${modelPct}% (${diff < 1 ? 'matches' : `~${diff.toFixed(1)}pp sim variance`}). Re-run for a fresh random batch.</div>
+      </div>`;
+    resultEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '🎲 SIMULATE AGAIN';
+  }));
+}
+window.runHRMatchupSimulation = runHRMatchupSimulation;
+
 // Shared K prop Over/Under: use the real sportsbook line when we have one, otherwise
 // fall back to the model's projection rounded to the nearest half (so there's never a push).
 // Single source of truth for the K prop line shown to users.
@@ -5109,10 +5171,19 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       const edgeTxt = edge != null
         ? `<span style="color:${edge >= 5 ? 'var(--green)' : edge <= -5 ? '#f4a261' : 'var(--muted)'};font-weight:700">${edge > 0 ? '+' : ''}${edge}pp edge</span>`
         : `<span style="color:var(--muted)">no real market line yet</span>`;
+      // Home Run only: the simulate button lives here rather than on Hits/TB since
+      // that's the market this was actually requested for.
+      const simHTML = m.oddsMarket === 'home_runs' ? `
+        <div class="hr-sim-wrap" style="margin:8px 0 2px 22px">
+          <button type="button" class="hr-sim-btn" id="hr-sim-btn-${batterId}"
+            data-batter-id="${batterId}" data-rate="${m.data.shrunkRate}" data-true-pct="${trueProb}"
+            onclick="runHRMatchupSimulation(this)">🎲 SIMULATE THIS MATCHUP</button>
+          <div class="hr-sim-result" id="hr-sim-result-${batterId}" style="display:none"></div>
+        </div>` : '';
       return `<div class="vuln-item">
         <span class="vuln-icon">🎯</span>
         <span style="color:var(--text)"><strong>${m.label}:</strong> ${trueProb}% true probability${implied != null ? ` vs ${implied.pct}% market implied${implied.devigged ? '' : ' (single-side, not devigged)'}` : ''} — ${edgeTxt}</span>
-      </div>`;
+      </div>${simHTML}`;
     }).filter(Boolean).join('');
     if (!rows) return `
       <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">No situational markets computed yet for ${shortName}.</div>`;
