@@ -4890,7 +4890,11 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         <span style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700">${m.value}</span>
         ${m.trend !== undefined ? `<span style="font-size:10px;font-family:'JetBrains Mono',monospace;display:inline-flex;align-items:center">${trendArrow(m.trend)}${trendSparkline(m.trend)}</span>` : (m.delta || '')}
       </div>
-      ${barWidth != null ? `<div class="metric-bar-track"><div class="metric-bar-fill" data-bar-target="${barWidth}" style="width:0%;background:${metricBarColor(barWidth)}"></div></div>` : ''}
+      ${barWidth != null ? `
+      <div class="metric-bar-track">
+        <div class="metric-bar-tick" style="left:50%"></div>
+        <div class="metric-bar-ball" data-bar-target="${barWidth}" style="left:0%;--ball-glow:${metricBarColor(barWidth)}">⚾</div>
+      </div>` : ''}
     </div>`;
   };
 
@@ -5090,14 +5094,14 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   const scoreEl = body.querySelector('[data-score]');
   if (scoreEl && pitchMixDashboard.score != null) animateCountUp(scoreEl, pitchMixDashboard.score, 0);
 
-  // Grow the Recent Form bars in from 0 on first paint. Set width in a second
-  // rAF (not the same frame the 0% width was painted in) so the browser commits
-  // the 0% state first and the CSS transition actually has something to animate
-  // from, instead of jumping straight to the target width.
-  const barFills = body.querySelectorAll('.metric-bar-fill[data-bar-target]');
+  // Slide the Recent Form baseballs in from the left edge on first paint. Set
+  // left in a second rAF (not the same frame the 0% position was painted in)
+  // so the browser commits the 0% state first and the CSS transition actually
+  // has something to animate from, instead of jumping straight to the target.
+  const barFills = body.querySelectorAll('.metric-bar-ball[data-bar-target]');
   if (barFills.length) {
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      barFills.forEach(el => { el.style.width = el.getAttribute('data-bar-target') + '%'; });
+      barFills.forEach(el => { el.style.left = el.getAttribute('data-bar-target') + '%'; });
     }));
   }
 }
