@@ -1837,6 +1837,79 @@ function getSportsbookKLine(pitcherId, pitcherName) {
   return sportsbookKLinesByPitcher[String(pitcherId)] ?? sportsbookKLinesByPitcher[normalizeKPropName(pitcherName)] ?? null;
 }
 
+// ── Situational true-probability vs market implied probability ──────────
+// Two independent data sources, both already built server-side, brought
+// together client-side into a real "edge" number:
+//   1. data/prop-market-odds.json (scripts/update-tracker.mjs) — real
+//      sportsbook lines for EVERY quoted batter (not just Elite Picks), same
+//      batterLines odds-api pull that already existed, just persisted more
+//      broadly than before.
+//   2. data/batter-situational-props.json (scripts/sync-batter-situational-props.mjs)
+//      — the batter's own empirical HR/Hits/Total-Bases rate in plate
+//      appearances that actually resemble today's matchup (opposing hand,
+//      park tier, opposing-pitcher velocity tier), shrunk toward his season
+//      rate and converted to a whole-game probability.
+// Both are informational/comparison-only, same rule as every other market
+// chip on this site — neither ever changes hrProb or any other score.
+let propMarketOddsByPlayer = {};
+let propMarketOddsLoadedForDate = null;
+async function loadPropMarketOdds(today) {
+  if (propMarketOddsLoadedForDate === today) return;
+  propMarketOddsByPlayer = {};
+  try {
+    const data = await drFetchDailyJSON('data/prop-market-odds.json');
+    (data.players || []).forEach(p => {
+      if (!p.playerName) return;
+      propMarketOddsByPlayer[normalizeKPropName(p.playerName)] = p.markets || {};
+    });
+  } catch (e) {}
+  propMarketOddsLoadedForDate = today;
+}
+// marketKey matches the-odds-api's own market suffixes: home_runs, hits, total_bases.
+function getPropMarketOdds(batterName, marketKey) {
+  const entry = propMarketOddsByPlayer[normalizeKPropName(batterName)];
+  return entry?.[marketKey] ?? null;
+}
+
+let situationalProps = {};
+let situationalPropsLoaded = false;
+let situationalPropsPromise = null;
+async function loadSituationalProps(force = false) {
+  if (situationalPropsLoaded && !force) return situationalProps;
+  if (situationalPropsPromise && !force) return situationalPropsPromise;
+  situationalPropsPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON('data/batter-situational-props.json');
+      const players = data.players || {};
+      situationalProps = {};
+      Object.keys(players).forEach(id => { situationalProps[String(id)] = players[id]; });
+    } catch (e) {
+      situationalProps = {};
+    }
+    situationalPropsLoaded = true;
+    return situationalProps;
+  })();
+  return situationalPropsPromise;
+}
+
+// American odds -> implied probability, same formula as the Game Projections
+// Market chip (getMarketOdds above). Devigs using the paired over/under price
+// when both sides are actually quoted; falls back to the single quoted side's
+// raw (non-devigged) probability otherwise, clearly not the same thing, so
+// callers should label it accordingly rather than presenting it as devigged.
+function impliedProbFromAmerican(price) {
+  if (!Number.isFinite(price)) return null;
+  return price < 0 ? (-price) / (-price + 100) : 100 / (price + 100);
+}
+function marketImpliedProb(marketOdds) {
+  if (!marketOdds) return null;
+  const overP = impliedProbFromAmerican(marketOdds.overPrice);
+  const underP = impliedProbFromAmerican(marketOdds.underPrice);
+  if (overP == null) return null;
+  if (underP != null) return { pct: Math.round((overP / (overP + underP)) * 100), devigged: true };
+  return { pct: Math.round(overP * 100), devigged: false };
+}
+
 // Shared K prop Over/Under: use the real sportsbook line when we have one, otherwise
 // fall back to the model's projection rounded to the nearest half (so there's never a push).
 // Single source of truth for the K prop line shown to users.
@@ -4045,7 +4118,8 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
       fetchJSON(`https://diamondreport.app/api/v1/people/${batterId}/stats?stats=statSplits&group=hitting&sitCodes=vl,vr&season=2026`).catch(() => null),
       fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}/stats?stats=statSplits&group=pitching&sitCodes=vl,vr&season=2026`).catch(() => null)
     ]);
-    await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadPitcherRolling()]);
+    const todayCDT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+    await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadPitcherRolling(), loadSituationalProps(), loadPropMarketOdds(todayCDT)]);
 
     const batterPerson = batterData.people?.[0] || {};
     const pitcherPerson = pitcherData.people?.[0] || {};
@@ -4060,8 +4134,9 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
     const pitcherProfile = pitcherStatcast[String(pitcherId)] || null;
     const nearHRList = nearHRs[String(batterId)] || null;
     const rollingProfile = pitcherRolling[String(pitcherId)] || null;
+    const situationalProfile = situationalProps[String(batterId)] || null;
 
-    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, rollingProfile });
+    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, rollingProfile, situationalProfile });
   } catch(e) {
     body.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
@@ -4085,7 +4160,7 @@ function animateCountUp(el, endValue, decimals = 0, duration = 700) {
   requestAnimationFrame(step);
 }
 
-function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, rollingProfile=null }) {
+function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, rollingProfile=null, situationalProfile=null }) {
   function fv(v, dec=3) {
     if (v==null||v===''||v==='---') return '–';
     const n = parseFloat(v); return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0(\.)/, '$1');
@@ -4984,6 +5059,52 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       </div>`;
   })();
 
+  // ── Situational true probability vs market implied probability ──────────
+  // "True probability" here is deliberately NOT the same number as hrProb
+  // elsewhere on the site (that's a blended-season-rate formula) — this is
+  // the batter's own empirical rate in plate appearances that actually
+  // resemble today's matchup, shrunk toward his season rate, from
+  // data/batter-situational-props.json. "Implied probability" is the real
+  // sportsbook line from data/prop-market-odds.json, devigged when both
+  // sides are quoted. Edge = true - implied. Both null-safe and gracefully
+  // absent — this batter may not be in a confirmed lineup yet, or the
+  // market may not have posted a line for him.
+  const edgeHTML = (() => {
+    const shortName = batterName.split(' ').pop();
+    if (!situationalProfile) return `
+      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">Situational true-probability tracking for ${shortName} hasn't synced yet — this needs a confirmed starting-lineup spot today.</div>`;
+
+    const markets = [
+      { label: 'Home Run', oddsMarket: 'home_runs', data: situationalProfile.hr },
+      { label: 'Any Hit', oddsMarket: 'hits', data: situationalProfile.hits },
+      { label: '2+ Total Bases', oddsMarket: 'total_bases', data: situationalProfile.tb },
+    ];
+    const rows = markets.map(m => {
+      const trueProb = m.data?.trueProbPct;
+      if (trueProb == null) return '';
+      const marketOdds = getPropMarketOdds(batterName, m.oddsMarket);
+      const implied = marketImpliedProb(marketOdds);
+      const edge = implied != null ? trueProb - implied.pct : null;
+      const edgeTxt = edge != null
+        ? `<span style="color:${edge >= 5 ? 'var(--green)' : edge <= -5 ? '#f4a261' : 'var(--muted)'};font-weight:700">${edge > 0 ? '+' : ''}${edge}pp edge</span>`
+        : `<span style="color:var(--muted)">no real market line yet</span>`;
+      return `<div class="vuln-item">
+        <span class="vuln-icon">🎯</span>
+        <span style="color:var(--text)"><strong>${m.label}:</strong> ${trueProb}% true probability${implied != null ? ` vs ${implied.pct}% market implied${implied.devigged ? '' : ' (single-side, not devigged)'}` : ''} — ${edgeTxt}</span>
+      </div>`;
+    }).filter(Boolean).join('');
+    if (!rows) return `
+      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">No situational markets computed yet for ${shortName}.</div>`;
+
+    const ctx = situationalProfile.context;
+    return `
+      <div class="vuln-box" style="margin-top:10px">
+        <div class="vuln-title">🎯 SITUATIONAL TRUE PROBABILITY <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(his own history vs today's exact matchup, shrunk toward season rate)</span></div>
+        ${rows}
+        <div style="font-size:10px;color:var(--muted);margin-top:6px">Based on ${situationalProfile.situationalPA} plate appearance(s) matching today's situation (vs ${ctx.oppHand}HP, ${ctx.parkTier} park${ctx.oppPowerTier ? `, ${ctx.oppPowerTier} arm` : ''}), out of ${situationalProfile.seasonPA} total PA this season.</div>
+      </div>`;
+  })();
+
   const hotStreakHTML = `
     <div class="mu-hotstreak-section" style="margin-bottom:20px">
       <div class="zone-title">🔥 HOT STREAK SIGNALS</div>
@@ -5016,6 +5137,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         <strong style="color:var(--text)">How to read this:</strong> batting average can lie — a hitter can smash the ball all week straight into gloves, or bloop his way to a lucky hot streak. These numbers look at the swings themselves: how hard he's hitting the ball and where it's going. A green <strong style="color:var(--green)">▲ due</strong> tag means his swings have been better than his results — good things may be coming. An orange <strong style="color:var(--accent2)">▼ running hot</strong> tag means the opposite: the results have been better than the swings, and he may cool off.
       </div>
       ${nearHRHTML}
+      ${edgeHTML}
     </div>`;
 
   body.innerHTML = `

@@ -110,6 +110,17 @@ jobs:
         continue-on-error: true
         timeout-minutes: 8
 
+      # Depends on data/pitcher-rolling.json from the step just above (opposing
+      # pitcher power tier) and data/statcast-hot-hitters.json (the tracked batter
+      # pool). No `if:` gate — unlike the near-HR step below, this needs today's
+      # CONFIRMED STARTING LINEUPS, which post far later than probable pitchers do,
+      # so re-running on every intraday trigger is what actually lets this fill in
+      # through the day rather than staying empty from a too-early morning run.
+      - name: Run situational true-probability sync (HR/Hits/TB, batter's own history vs today's matchup)
+        run: node scripts/sync-batter-situational-props.mjs
+        continue-on-error: true
+        timeout-minutes: 20
+
       # Depends on data/statcast-hot-hitters.json already existing (the batter pool
       # this scopes to). Morning-run only, like the other batter-pool steps — this
       # walks the whole ~250-player tracked pool at a polite per-request delay, so it
@@ -159,6 +170,8 @@ jobs:
           [ -f data/injury-history.json ] && git add data/injury-history.json
           [ -f data/near-hrs.json ] && git add data/near-hrs.json
           [ -f data/pitcher-rolling.json ] && git add data/pitcher-rolling.json
+          [ -f data/batter-situational-props.json ] && git add data/batter-situational-props.json
+          [ -f data/prop-market-odds.json ] && git add data/prop-market-odds.json
           if git diff --cached --quiet; then
             echo "No changes to sync — nothing to commit."
             exit 0
