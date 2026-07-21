@@ -100,6 +100,16 @@ jobs:
         continue-on-error: true
         timeout-minutes: 8
 
+      # Same bounded per-probable-starter scope as the zone/HR step above (reuses its
+      # todaysProbablePitcherIds/pitcherSearchURL), so it re-runs on every intraday
+      # trigger too — a pitcher's last-3-starts velocity/usage/whiff trend doesn't
+      # change once his starter slot is confirmed, but re-running costs nothing extra
+      # and keeps this consistent with the zone/HR step it shares its pitcher list with.
+      - name: Run rolling pitch metrics sync (velocity/usage/whiff trend, last 3 starts)
+        run: node scripts/sync-pitcher-rolling.mjs
+        continue-on-error: true
+        timeout-minutes: 8
+
       # Depends on data/statcast-hot-hitters.json already existing (the batter pool
       # this scopes to). Morning-run only, like the other batter-pool steps — this
       # walks the whole ~250-player tracked pool at a polite per-request delay, so it
@@ -148,6 +158,7 @@ jobs:
           [ -f data/ballparkpal-game-factors.json ] && git add data/ballparkpal-game-factors.json
           [ -f data/injury-history.json ] && git add data/injury-history.json
           [ -f data/near-hrs.json ] && git add data/near-hrs.json
+          [ -f data/pitcher-rolling.json ] && git add data/pitcher-rolling.json
           if git diff --cached --quiet; then
             echo "No changes to sync — nothing to commit."
             exit 0

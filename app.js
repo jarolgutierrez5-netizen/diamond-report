@@ -1530,6 +1530,15 @@ let nearHRs = {};
 let nearHRsLoaded = false;
 let nearHRsPromise = null;
 
+// Rolling pitch metrics (velocity/usage/whiff, last 3 starts vs season) — loaded
+// from data/pitcher-rolling.json, written by scripts/sync-pitcher-rolling.mjs.
+// Keyed by pitcher MLB ID (string). Empty object = file not yet synced or this
+// pitcher isn't a probable starter today; the matchup modal falls back
+// gracefully, same as pitcherStatcast.
+let pitcherRolling = {};
+let pitcherRollingLoaded = false;
+let pitcherRollingPromise = null;
+
 // Per-pitcher Statcast store — loaded from data/pitcher-statcast.json,
 // written by scripts/sync-pitcher-statcast.mjs. Keyed by pitcher MLB ID.
 // Empty object = file not yet synced; front-end falls back gracefully.
@@ -4036,7 +4045,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
       fetchJSON(`https://diamondreport.app/api/v1/people/${batterId}/stats?stats=statSplits&group=hitting&sitCodes=vl,vr&season=2026`).catch(() => null),
       fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}/stats?stats=statSplits&group=pitching&sitCodes=vl,vr&season=2026`).catch(() => null)
     ]);
-    await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs()]);
+    await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadPitcherRolling()]);
 
     const batterPerson = batterData.people?.[0] || {};
     const pitcherPerson = pitcherData.people?.[0] || {};
@@ -4050,8 +4059,9 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
     const hotHitter = getStatcastHotHitterProfile({ id: batterId, name: batterName, ops: bs.ops, stats: { slg: bs.slg, avg: bs.avg } });
     const pitcherProfile = pitcherStatcast[String(pitcherId)] || null;
     const nearHRList = nearHRs[String(batterId)] || null;
+    const rollingProfile = pitcherRolling[String(pitcherId)] || null;
 
-    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList });
+    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, rollingProfile });
   } catch(e) {
     body.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
@@ -4075,7 +4085,7 @@ function animateCountUp(el, endValue, decimals = 0, duration = 700) {
   requestAnimationFrame(step);
 }
 
-function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null }) {
+function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, rollingProfile=null }) {
   function fv(v, dec=3) {
     if (v==null||v===''||v==='---') return '–';
     const n = parseFloat(v); return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0(\.)/, '$1');
@@ -4662,6 +4672,53 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     </div>
   </div>`;
 
+  // ── Rolling Pitch Metrics — last 3 starts vs season, per pitch type ──────
+  // Answers "is this pitcher's stuff trending up or down right now," which the
+  // season-only Pitch Effectiveness table above can't — a real velocity dip or
+  // whiff-rate drop over recent starts is a much more direct "how will today's
+  // at-bats go" signal than a full-season average. Data from
+  // data/pitcher-rolling.json (scripts/sync-pitcher-rolling.mjs). Green/orange
+  // framed from the BATTER's perspective throughout this modal: velocity down
+  // or whiff rate down both mean easier at-bats, so both color green; velocity
+  // up or whiff rate up both mean tougher at-bats, so both color orange. Small
+  // deltas below each metric's noise threshold render muted rather than forcing
+  // a color call on what's probably just start-to-start variance.
+  const rollingMetricsHTML = (() => {
+    const shortPName = pitcherName.split(' ').pop();
+    if (!rollingProfile || !rollingProfile.byPitch?.length) return `
+    <div class="dr1041-pitch-mix" style="margin-top:14px">
+      <div class="dr1041-pitch-head">
+        <div><div class="dr1041-kicker">📈 ROLLING PITCH METRICS · NO REAL DATA YET</div><div class="dr1041-subtext">No last-3-start trend data available for ${shortPName} yet — this section will populate once the daily Statcast sync has run for today's probable starters.</div></div>
+      </div>
+    </div>`;
+    function deltaTag(delta, noiseThreshold) {
+      if (delta == null) return `<span style="color:var(--muted)">–</span>`;
+      // #f4a261 is the same "warning/tougher" orange the Strike Zone legend already
+      // uses for its warm-zone tier — var(--accent)/var(--accent2) are both blue in
+      // this theme, which would misread as neutral/informational rather than a
+      // caution, so this reuses the established orange instead of the accent var.
+      const color = delta <= -noiseThreshold ? 'var(--green)' : delta >= noiseThreshold ? '#f4a261' : 'var(--muted)';
+      const sign = delta > 0 ? '+' : '';
+      return `<span style="color:${color};font-weight:700">${sign}${delta.toFixed(1)}</span>`;
+    }
+    const rows = rollingProfile.byPitch.map(p => `
+      <tr>
+        <td><strong>${p.name}</strong></td>
+        <td class="num">${p.seasonUsagePct != null ? p.seasonUsagePct.toFixed(0) + '%' : '–'} → ${p.rollingUsagePct != null ? p.rollingUsagePct.toFixed(0) + '%' : '–'}</td>
+        <td class="num">${p.seasonVelo != null ? p.seasonVelo.toFixed(1) : '–'} → ${p.rollingVelo != null ? p.rollingVelo.toFixed(1) : '–'} mph (${deltaTag(p.veloDelta, 0.5)})</td>
+        <td class="num">${p.seasonWhiffPct != null ? p.seasonWhiffPct.toFixed(0) + '%' : '–'} → ${p.rollingWhiffPct != null ? p.rollingWhiffPct.toFixed(0) + '%' : '–'} (${deltaTag(p.whiffDelta, 3)})</td>
+      </tr>`).join('');
+    const lastDates = (rollingProfile.lastStartDates || []).join(', ');
+    return `
+    <div class="dr1041-pitch-mix" style="margin-top:14px">
+      <div class="dr1041-pitch-head">
+        <div><div class="dr1041-kicker">📈 ROLLING PITCH METRICS · LAST 3 STARTS VS SEASON</div><div class="dr1041-subtext">${shortPName}'s last 3 starts (${lastDates}) compared to his full-season baseline, per pitch — is his stuff trending up or down right now.</div></div>
+      </div>
+      <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage (Season → L3)</th><th>Velo (Season → L3)</th><th>Whiff% (Season → L3)</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="zone-note" style="margin-top:8px">Green = trending easier for the batter (velocity or whiff rate down). Orange = trending tougher (velocity or whiff rate up). Muted = change too small to be a real signal.</div>
+    </div>`;
+  })();
+
   // Zone Fit's "Location Tendency" dot grid was always a fixed decorative pattern
   // ([1,3,4,5,7].includes(...)), never real pitch-location data — there is no real data
   // source for it without a full pitch-by-pitch Statcast location sync (a separate,
@@ -5048,6 +5105,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     <div class="dr1041-matchup-dashboard">
       ${pitchMixDashboard.html}
       ${pitchEffectivenessTableHTML}
+      ${rollingMetricsHTML}
 
       <!-- Strike Zone + Attack Zone by Pitch, side by side -->
       <div class="dr1041-zone-grid">
@@ -5211,6 +5269,26 @@ async function loadNearHRs(force=false) {
     return nearHRs;
   })();
   return nearHRsPromise;
+}
+// Same repo-fed-JSON-with-graceful-fallback pattern as loadNearHRs() above —
+// data/pitcher-rolling.json is keyed by pitcher ID already, so this just
+// normalizes the ID to a string for lookup consistency with the rest of the app.
+async function loadPitcherRolling(force=false) {
+  if (pitcherRollingLoaded && !force) return pitcherRolling;
+  if (pitcherRollingPromise && !force) return pitcherRollingPromise;
+  pitcherRollingPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/pitcher-rolling.json`);
+      const players = data.pitchers || {};
+      pitcherRolling = {};
+      Object.keys(players).forEach(id => { pitcherRolling[String(id)] = players[id]; });
+    } catch(e) {
+      pitcherRolling = {};
+    }
+    pitcherRollingLoaded = true;
+    return pitcherRolling;
+  })();
+  return pitcherRollingPromise;
 }
 // Overwrites the hardcoded park-factor estimates (declared above, near the venue
 // list) with real, auto-updating Baseball Savant HR-index values once synced —
