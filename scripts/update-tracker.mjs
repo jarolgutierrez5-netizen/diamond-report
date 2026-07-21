@@ -1282,6 +1282,24 @@ function pitcherBattersFacedPer9(pitcherStat) {
   return (rate >= BF_PER_9_MIN && rate <= BF_PER_9_MAX) ? rate : null;
 }
 
+// scripts/analyze-hr-matchups.mjs, run 2026-07-20 against the 362 HR Threat picks
+// graded so far, found a statistically significant (z=2.26, p<0.05) calibration
+// inversion: picks scored 22%+ hit at 6.5% actual, while picks scored under 22% hit
+// at 14.3% actual -- backwards from what a well-calibrated model should show. The HR
+// branch below stacks up to five independent multipliers (batter Statcast power,
+// fatigue, home/road, pitcher Statcast power, wind, temperature) with no shrinkage on
+// the composite -- each is individually reasonable and bounded, but a pick where
+// several happen to line up favorably by chance compounds into an overconfident score.
+// This dampens each multiplier's deviation from neutral (1.0) rather than removing any
+// of them, so direction/relative ranking are preserved, just the compounding is damped.
+// 0.6 is a first-pass value, not derived from a fit -- re-run analyze-hr-matchups.mjs
+// once enough picks graded under this shrinkage accumulate and retune if the buckets
+// still aren't monotonic.
+const HR_MULT_SHRINKAGE = 0.6;
+function shrinkMult(m) {
+  return 1 + (m - 1) * HR_MULT_SHRINKAGE;
+}
+
 function scoreForMarket(marketKey, row) {
   if (marketKey === 'hr') {
     // hrSeason/atBats is HR-per-AT-BAT; MC_AB_PER_PA converts it to HR-per-PLATE-
@@ -1299,8 +1317,8 @@ function scoreForMarket(marketKey, row) {
     // applied here rather than to the combined rate the way windFactor/temperatureFactor
     // are, since they're specific to this batter/team, not the whole park/game
     // environment.
-    const batterRate = boxScoreBatterRate * battedBallPowerIndex(row.statcast)
-      * (row.fatigueFactor || 1) * (row.homeRoadFactor || 1);
+    const batterRate = boxScoreBatterRate * shrinkMult(battedBallPowerIndex(row.statcast))
+      * shrinkMult(row.fatigueFactor || 1) * shrinkMult(row.homeRoadFactor || 1);
     // Prefer this specific pitcher's own real batters-faced-per-9 (pitcherBFper9) when
     // their season stat line has enough innings to trust it; fall back to the league-
     // average constant otherwise.
@@ -1309,13 +1327,13 @@ function scoreForMarket(marketKey, row) {
     // (xSLG/hard-hit% allowed), the pitcher-side mirror of the batter correction above
     // -- battedBallPowerIndex is generic over both. Neutral (1x) with no Statcast
     // coverage or too thin a sample, same as the batter side.
-    const pitcherRate = boxScorePitcherRate * battedBallPowerIndex(row.pitcherStatcast);
+    const pitcherRate = boxScorePitcherRate * shrinkMult(battedBallPowerIndex(row.pitcherStatcast));
     // Wind and temperature (see windPowerFactor/temperaturePowerFactor above) both
     // affect the whole park/game environment equally regardless of who's hitting or
     // pitching, so they're applied once to the combined rate rather than to the
     // batter/pitcher components separately -- applying either twice would double-count
     // the same physical effect.
-    const hrPerPA = (batterRate * 0.6 + pitcherRate * 0.4) * (row.windFactor || 1) * (row.temperatureFactor || 1);
+    const hrPerPA = (batterRate * 0.6 + pitcherRate * 0.4) * shrinkMult(row.windFactor || 1) * shrinkMult(row.temperatureFactor || 1);
     return simulateHRGameOdds(hrPerPA, row.battingOrder);
   }
   if (marketKey === 'sb') return simulateSBOdds(row);
