@@ -1692,11 +1692,12 @@ async function buildEliteBatterPool(games, season) {
         ) >= 2;
         return {
           id: pid, name: person.fullName, teamAbbr, oppAbbr, gamePk: g.gamePk,
+          pitcherId: pitcher.id, pitcherName: pitcher.fullName,
           avg, obp, slg, ops, iso, hrSeason, battingOrder,
           atBats: ab, stolenBases: n(stat.stolenBases), caughtStealing: n(stat.caughtStealing),
           pitcherHr9: n(pitcherStat.homeRunsPer9), pitcherSbAllowed: n(pitcherStat.stolenBases), pitcherCsAllowed: n(pitcherStat.caughtStealing),
           pitcherBFper9: pitcherBattersFacedPer9(pitcherStat),
-          pitcherAvgAllowed, pitcherSlgAllowed, parkFactor: PARK_FACTORS[g.teams.home.team.abbreviation] || 100,
+          pitcherAvgAllowed, pitcherSlgAllowed, pitcherWhip, parkFactor: PARK_FACTORS[g.teams.home.team.abbreviation] || 100,
           isFavorable, isHot, isDrought, isDue, statcast: statcastIndex.get(String(pid)) || null,
           windFactor: windPowerFactor(g.weather), temperatureFactor: temperaturePowerFactor(g.weather),
           fatigueFactor: battingTeamFatigue,
@@ -1887,6 +1888,17 @@ async function captureHRThreatToday(store, pool) {
       // first place any of them get recorded against a real outcome. isOnFire is
       // named to match the client (app.js), backed by the isHot proxy computed here.
       isOnFire: !!r.isHot, isFavorable: !!r.isFavorable, isDrought: !!r.isDrought, isDue: !!r.isDue,
+      // Opposing pitcher matchup snapshot at pick time — previously only the opposing
+      // TEAM was recorded (r.opp), with no way to tell which pitcher, or what inputs
+      // the score actually used, drove any individual graded result. Recording these
+      // lets a later analysis pass correlate real hit/miss outcomes against pitcher
+      // quality/park/environment inputs instead of just the final blended score,
+      // without needing to re-fetch or reconstruct any of it after the fact.
+      pitcherId: r.pitcherId ?? null, pitcherName: r.pitcherName ?? null,
+      pitcherHr9: r.pitcherHr9 ?? null, pitcherAvgAllowed: r.pitcherAvgAllowed ?? null,
+      pitcherSlgAllowed: r.pitcherSlgAllowed ?? null, pitcherWhip: r.pitcherWhip ?? null,
+      batterOPS: r.ops ?? null, batterISO: r.iso ?? null,
+      parkFactor: r.parkFactor ?? null, windFactor: r.windFactor ?? null, temperatureFactor: r.temperatureFactor ?? null,
     });
     already.add(r.id);
     added++;
