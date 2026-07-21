@@ -3782,23 +3782,37 @@ select:focus-visible {
    layout reuses .dr109-card for the player card body and .vuln-box/.vuln-item
    for the reasoning list (same classes the cold-batter diagnosis and HR
    Threats scouting report already use outside their original modal). */
-.fantasy-verdict-badge {
+.fantasy-points-badge {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   flex-shrink: 0;
   border: 1px solid var(--border);
   background: #0b1424;
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 5px 12px;
-  font-size: 11px;
-  font-weight: 1000;
-  text-transform: uppercase;
-  letter-spacing: .5px;
+  line-height: 1.15;
   white-space: nowrap;
 }
-.fantasy-verdict-badge.start { border-color: rgba(46,230,166,.55); color: #8ff0b0; }
-.fantasy-verdict-badge.sit { border-color: rgba(255,179,71,.55); color: #ffb347; }
-.fantasy-verdict-badge.out { border-color: rgba(255,77,109,.55); color: #ff9ca5; }
+.fantasy-points-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 17px;
+  font-weight: 800;
+}
+.fantasy-points-unit {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  color: var(--muted);
+}
+.fantasy-points-badge.start { border-color: rgba(46,230,166,.55); }
+.fantasy-points-badge.start .fantasy-points-num { color: #8ff0b0; }
+.fantasy-points-badge.mid { border-color: rgba(255,179,71,.55); }
+.fantasy-points-badge.mid .fantasy-points-num { color: #ffb347; }
+.fantasy-points-badge.sit { border-color: var(--border); }
+.fantasy-points-badge.sit .fantasy-points-num { color: var(--muted); }
+.fantasy-points-badge.out { border-color: rgba(255,77,109,.55); }
+.fantasy-points-badge.out .fantasy-points-num { color: #ff9ca5; }
 
 .fantasy-section {
   margin-bottom: 28px;
@@ -3812,21 +3826,6 @@ select:focus-visible {
   margin: 0 0 14px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
-}
-.fantasy-verdict-group {
-  margin-bottom: 18px;
-}
-.fantasy-verdict-group-title {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: .5px;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin: 0 0 10px;
-}
-.fantasy-verdict-group-title span {
-  font-weight: 700;
-  color: var(--muted);
 }
 .fantasy-card-list {
   display: grid;
