@@ -815,6 +815,14 @@ async function computeKProp(g, side, season, oddsLookup) {
     pick: 'OVER',
     result: 'pending',
     finalK: null,
+    // Matchup snapshot at pick time -- k9/projIP/oppKpct all feed directly into projK
+    // above but were previously discarded once the final projK number was computed, so
+    // there was no way to check afterward whether the model is systematically off for
+    // certain pitcher or opponent-lineup profiles (analogous to the HR Threat matchup
+    // snapshot added alongside analyze-hr-matchups.mjs -- see analyze-k-matchups.mjs).
+    k9: Math.round(k9 * 100) / 100,
+    projIP: Math.round(projIP * 100) / 100,
+    oppKpct: Math.round(oppKpct * 1000) / 1000,
   };
 }
 
