@@ -761,6 +761,18 @@ async function computeDRPick(g, season) {
     pickPct: winnerPct,
     result: 'pending',
     actualWinner: null,
+    // Matchup snapshot at pick time -- eraDiff/whipDiff/k9Diff/record all feed directly
+    // into awayScore/homeScore above but were previously discarded once winner/winnerPct
+    // were computed, so there was no way to check afterward whether the pick is
+    // systematically off for certain kinds of matchups (a huge ERA mismatch vs. a close
+    // one, a big record gap vs. two .500 teams, day vs. night games, etc.) -- same gap
+    // the HR Threat/K Props/Elite Picks trackers had (see analyze-drp-matchups.mjs).
+    eraDiff: Math.round(eraDiff * 100) / 100,
+    whipDiff: Math.round((awayWHIP - homeWHIP) * 1000) / 1000,
+    k9Diff: Math.round((awayK9 - homeK9) * 100) / 100,
+    awayRecordPct: (awayW + awayL) > 0 ? Math.round((awayW / (awayW + awayL)) * 1000) / 1000 : null,
+    homeRecordPct: (homeW + homeL) > 0 ? Math.round((homeW / (homeW + homeL)) * 1000) / 1000 : null,
+    isDayGame: gameHourCT < 17,
   };
 }
 
@@ -1843,6 +1855,22 @@ async function captureEliteToday(store, pool, oddsLookup) {
         playerId: r.id, playerName: r.name, team: r.teamAbbr, opp: r.oppAbbr, gamePk: r.gamePk,
         score: entry.score, quality: entry.quality, marketOdds,
         result: 'pending', actual: null,
+        // Matchup snapshot at pick time -- same gap the HR Threat/K Props trackers had:
+        // buildEliteBatterPool computes all of this per row to feed scoreForMarket, but it
+        // was discarded once the score was captured, so there was no way to check
+        // afterward whether a market is systematically off for certain batter/pitcher/park
+        // profiles (see analyze-elite-matchups.mjs). Kept generic across all six markets
+        // rather than picking a different subset per market -- storage is cheap and this
+        // stays one shared shape.
+        batterAVG: r.avg ?? null, batterOBP: r.obp ?? null, batterSLG: r.slg ?? null,
+        batterOPS: r.ops ?? null, batterISO: r.iso ?? null, hrSeason: r.hrSeason ?? null,
+        battingOrder: r.battingOrder ?? null, stolenBases: r.stolenBases ?? null,
+        pitcherId: r.pitcherId ?? null, pitcherName: r.pitcherName ?? null,
+        pitcherHr9: r.pitcherHr9 ?? null, pitcherAvgAllowed: r.pitcherAvgAllowed ?? null,
+        pitcherSlgAllowed: r.pitcherSlgAllowed ?? null, pitcherWhip: r.pitcherWhip ?? null,
+        pitcherSbAllowed: r.pitcherSbAllowed ?? null,
+        parkFactor: r.parkFactor ?? null, windFactor: r.windFactor ?? null, temperatureFactor: r.temperatureFactor ?? null,
+        isFavorable: !!r.isFavorable, isHot: !!r.isHot, isDrought: !!r.isDrought, isDue: !!r.isDue,
       });
       todaysPicks.push(store.market.premium[store.market.premium.length - 1]);
       added++;
