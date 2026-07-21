@@ -113,12 +113,40 @@ jobs:
         continue-on-error: true
         timeout-minutes: 8
 
-      # Depends on data/pitcher-rolling.json from the step just above (opposing
-      # pitcher power tier) and data/statcast-hot-hitters.json (the tracked batter
-      # pool). No `if:` gate — unlike the near-HR step below, this needs today's
-      # CONFIRMED STARTING LINEUPS, which post far later than probable pitchers do,
-      # so re-running on every intraday trigger is what actually lets this fill in
-      # through the day rather than staying empty from a too-early morning run.
+      # Gated to the main morning run only (was unconditional on all 6 daily
+      # triggers — 2 calls/run x 6 runs/day = 12/day with no "already fetched
+      # today" guard, unlike fetchOddsLookup's oddsLastFetchedDate pattern or
+      # the Ballpark Pal comparison capture's per-game skip-check). Trades a
+      # little intraday weather freshness for a 6x cut in real usage against
+      # the API's 15,000/month quota — the DIY Open-Meteo weather model this
+      # cross-checks against already refreshes correctly per game load, so a
+      # once-daily Ballpark Pal snapshot is a fine tradeoff. Skips gracefully
+      # if the secret isn't set (falls back to the DIY model only).
+      #
+      # Moved to run BEFORE the situational-true-probability step below (was
+      # after it) — that step now falls back to this one's
+      # data/ballparkpal-hr-factors.json (today's per-hitter list) when MLB's own
+      # boxscore.batters hasn't posted a confirmed lineup yet. Steps in the same
+      # job share one checkout, so running this first means even the FIRST run of
+      # the day can use same-run fresh data instead of whatever was left over from
+      # yesterday's last commit.
+      - name: Run Ballpark Pal weather/park-factor sync
+        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
+        env:
+          BALLPARKPAL_API_KEY: ${{ secrets.BALLPARKPAL_API_KEY }}
+        run: node scripts/sync-ballparkpal.mjs
+        continue-on-error: true
+        timeout-minutes: 3
+
+      # Depends on data/pitcher-rolling.json from the rolling-metrics step above
+      # (opposing pitcher power tier) and data/statcast-hot-hitters.json (the
+      # tracked batter pool). No `if:` gate — unlike the near-HR step below, this
+      # needs today's CONFIRMED STARTING LINEUPS, which post far later than
+      # probable pitchers do, so re-running on every intraday trigger is what
+      # actually lets this fill in through the day rather than staying empty from
+      # a too-early morning run. Falls back to the Ballpark Pal step above's
+      # per-hitter list (intersected with each team's active roster) when MLB's
+      # own boxscore.batters hasn't posted yet.
       - name: Run situational true-probability sync (HR/Hits/TB, batter's own history vs today's matchup)
         run: node scripts/sync-batter-situational-props.mjs
         continue-on-error: true
@@ -133,23 +161,6 @@ jobs:
         run: node scripts/sync-near-hrs.mjs
         continue-on-error: true
         timeout-minutes: 20
-
-      # Gated to the main morning run only (was unconditional on all 6 daily
-      # triggers — 2 calls/run x 6 runs/day = 12/day with no "already fetched
-      # today" guard, unlike fetchOddsLookup's oddsLastFetchedDate pattern or
-      # the Ballpark Pal comparison capture's per-game skip-check). Trades a
-      # little intraday weather freshness for a 6x cut in real usage against
-      # the API's 15,000/month quota — the DIY Open-Meteo weather model this
-      # cross-checks against already refreshes correctly per game load, so a
-      # once-daily Ballpark Pal snapshot is a fine tradeoff. Skips gracefully
-      # if the secret isn't set (falls back to the DIY model only).
-      - name: Run Ballpark Pal weather/park-factor sync
-        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
-        env:
-          BALLPARKPAL_API_KEY: ${{ secrets.BALLPARKPAL_API_KEY }}
-        run: node scripts/sync-ballparkpal.mjs
-        continue-on-error: true
-        timeout-minutes: 3
 
       - name: Commit and push if changed
         run: |

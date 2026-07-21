@@ -139,6 +139,57 @@ async function fetchText(url, attempts = 3) {
   throw lastErr;
 }
 
+const BALLPARKPAL_HR_FACTORS_PATH = path.join(DATA_DIR, 'ballparkpal-hr-factors.json');
+// Ballpark Pal's own per-hitter park-factor sync (sync-ballparkpal.mjs) already fetches
+// today's /parkfactors/hitters — a per-game, per-player list keyed by the same MLB
+// gamePk/person ids as everything else in this repo (confirmed in that script's own
+// comments) — at zero extra API cost, on the morning trigger only. Used here purely as
+// a fallback WHEN CONFIRMED for "is this batter playing today," for the same reason
+// the rest of this function refuses to guess: MLB's own boxscore.batters array (the
+// primary source above) often doesn't populate until close to first pitch, well after
+// this script's later intraday reruns have already fired.
+let ballparkPalGameIdsCache = null;
+async function loadBallparkPalPlayerIdsByGame() {
+  if (ballparkPalGameIdsCache) return ballparkPalGameIdsCache;
+  const map = new Map(); // gameId (string) -> Set<playerId (string)>
+  try {
+    const raw = await readFile(BALLPARKPAL_HR_FACTORS_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    for (const row of (data.rows || [])) {
+      if (row.gameId == null || row.playerId == null) continue;
+      const key = String(row.gameId);
+      if (!map.has(key)) map.set(key, new Set());
+      map.get(key).add(String(row.playerId));
+    }
+  } catch (e) {
+    console.warn('data/ballparkpal-hr-factors.json not available for lineup fallback — skipping:', e.message);
+  }
+  ballparkPalGameIdsCache = map;
+  return map;
+}
+
+// Ballpark Pal's hitter rows don't carry which side (home/away) a player is on — only
+// gameId + playerId — so which TEAM he's actually confirmed for still has to come from
+// somewhere. Intersecting against the team's own active roster (a stable, always-
+// available MLB endpoint, unlike the lineup-specific boxscore.batters array) answers
+// that without guessing: if Ballpark Pal modeled a park factor for him today AND he's
+// on this team's active roster, he's playing for this team today.
+const activeRosterCache = new Map(); // teamId -> Promise<Set<playerId (string)>>
+async function fetchActiveRosterIds(teamId) {
+  if (!activeRosterCache.has(teamId)) {
+    activeRosterCache.set(teamId, (async () => {
+      try {
+        const data = await fetchJSON(`${MLB_API}/teams/${teamId}/roster/active`);
+        return new Set((data.roster || []).map(r => String(r.person?.id)).filter(Boolean));
+      } catch (e) {
+        console.warn(`Active roster fetch failed for team ${teamId}:`, e.message);
+        return new Set();
+      }
+    })());
+  }
+  return activeRosterCache.get(teamId);
+}
+
 function batterSearchURL(batterId) {
   const params = new URLSearchParams({
     all: 'true',
@@ -185,8 +236,20 @@ async function todaysLineupContexts() {
     for (const { side, oppProbable } of sides) {
       if (!oppProbable?.id) continue; // no confirmed opposing starter yet — skip, not guess
       const team = box?.[side];
-      const batterIds = team?.batters || [];
-      if (!batterIds.length) continue; // lineup not posted yet
+      let batterIds = team?.batters || [];
+      if (!batterIds.length) {
+        // MLB boxscore.batters hasn't posted yet — fall back to Ballpark Pal's daily
+        // hitter list (already synced, zero extra cost) intersected with this team's
+        // active roster, so a still-unconfirmed-by-MLB lineup doesn't get skipped
+        // entirely on every run before first pitch.
+        const bpIds = (await loadBallparkPalPlayerIdsByGame()).get(String(g.gamePk));
+        const teamId = g.teams?.[side]?.team?.id;
+        if (bpIds && bpIds.size && teamId) {
+          const rosterIds = await fetchActiveRosterIds(teamId);
+          batterIds = [...bpIds].filter(id => rosterIds.has(id)).map(Number);
+        }
+        if (!batterIds.length) continue; // still nothing confirmed — skip, not guess
+      }
       const oppHandRaw = String(oppProbable.pitchHand?.code || '').toUpperCase();
       const oppHand = oppHandRaw === 'L' ? 'L' : oppHandRaw === 'R' ? 'R' : null;
       if (!oppHand) continue;
@@ -396,4 +459,4 @@ if (isMain) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { batterSearchURL, buildSituationalProfile, parkTierFor, gameProbFromPerPARate, simulateTBGameProb, main };
+export { batterSearchURL, buildSituationalProfile, parkTierFor, gameProbFromPerPARate, simulateTBGameProb, loadBallparkPalPlayerIdsByGame, todaysLineupContexts, main };
