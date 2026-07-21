@@ -5524,71 +5524,107 @@ function coldBatterAlertHTML(row) {
 window.coldBatterAlertHTML = coldBatterAlertHTML;
 window.getColdBatterDiagnosis = getColdBatterDiagnosis;
 
-// ── Fantasy Start/Sit board ──────────────────────────────────────────────
+// ── Fantasy Points board (DraftKings Classic scoring) ────────────────────
 // Reuses hrpRows (the shared batter pool behind HR Threats/Hits/RBI/etc — already
-// carries isFavorable/isOnFire/isDrought/isDue, pitcher-allowed rates, park factor,
-// and roster status) and prRows (Starting Pitcher Report — FIP/WHIP/HR9/ERA per
-// probable starter) plus the global parkFactors map. No new data source, no new
-// fetches — every verdict below is built entirely from signals already live
-// elsewhere on the site.
+// carries season stat totals, today's matchup-specific hrProb, pitcher-allowed
+// rates, and roster status) and prRows (Starting Pitcher Report — FIP/WHIP/HR9/ERA/
+// K9/IP per probable starter) plus the global parkFactors map. No new data source,
+// no new fetches — every projection below is built entirely from signals already
+// live elsewhere on the site, converted into an EXPECTED DraftKings Classic MLB
+// point total for today's game (not a real per-game simulation — season per-PA/
+// per-inning rates scaled to a projected plate-appearance/innings count for today,
+// same style of approximation the K Props/HR Threats models already use).
+//
+// DraftKings Classic MLB scoring (the real, publicly documented standard —
+// unverified against DK's live rules page from this sandbox, but these are the
+// well-known published values):
+//   Hitters:  1B +3, 2B +5, 3B +8, HR +10, RBI +2, R +2, BB +2, HBP +2, SB +5
+//   Pitchers: IP +2.25/inning (0.75/out), K +2, Win +4, ER -2, H allowed -0.6,
+//             BB/HBP allowed -0.6 (complete-game/shutout/no-hitter bonuses
+//             omitted — near-zero expected value for a single probable starter,
+//             not worth modeling in an expected-points projection).
 function fantasyNum(v) { const x = parseFloat(v); return Number.isFinite(x) ? x : 0; }
 function fantasyEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function fantasyFmt3(v) { const x = fantasyNum(v); return x > 0 ? x.toFixed(3).replace(/^0/, '') : '–'; }
 
-function fantasyBatterVerdict(r) {
-  if (r.rosterStatus) {
-    return { verdict: 'OUT', reasons: [`Listed as ${fantasyEsc(r.rosterStatus)} — do not start.`] };
-  }
+// League-average plate appearances for an everyday-ish MLB starter; hrpRows
+// doesn't carry a batting-order spot, so this is a fixed assumption rather than
+// a per-player lineup-slot estimate — noted here since it's the single biggest
+// simplification in the batter projection.
+const FANTASY_PROJECTED_PA = 4.3;
 
-  const startReasons = [];
-  if (r.isFavorable) startReasons.push(`Favorable matchup vs ${fantasyEsc(r.pitcherName || 'today’s pitcher')} — his bat grades well against a pitcher showing real weaknesses (WHIP or AVG allowed).`);
-  if (r.isOnFire) startReasons.push('On a real hot streak right now — recent form is well above his season norm.');
-  if (fantasyNum(r.hrProb) >= 20) startReasons.push(`${fantasyNum(r.hrProb).toFixed(1)}% simulated HR probability today — legitimate power upside in this matchup.`);
-  if (startReasons.length) return { verdict: 'START', reasons: startReasons };
+function fantasyBatterPoints(r) {
+  const s = r.stats || {};
+  const pa = fantasyNum(s.plateAppearances) || (fantasyNum(s.atBats) + fantasyNum(s.baseOnBalls) + fantasyNum(s.hitByPitch)) || 0;
+  const hits = fantasyNum(s.hits), doubles = fantasyNum(s.doubles), triples = fantasyNum(s.triples);
+  const hrSeason = fantasyNum(s.homeRuns);
+  const singles = Math.max(0, hits - doubles - triples - hrSeason);
+  const rate = x => pa > 0 ? (x / pa) * FANTASY_PROJECTED_PA : 0;
 
-  const sitReasons = [];
-  if (r.isDrought && !r.isDue) sitReasons.push('In a real cold stretch (no HR in his last 8 games) with no strong signal he’s about to break out.');
-  const toughPitcher = fantasyNum(r.pitcherWhipAllowed) > 0 && fantasyNum(r.pitcherWhipAllowed) <= 1.10 && fantasyNum(r.pitcherAvgAllowed) > 0 && fantasyNum(r.pitcherAvgAllowed) <= 0.230;
-  if (toughPitcher) sitReasons.push(`Facing ${fantasyEsc(r.pitcherName || 'a tough starter')}, who’s been hard to hit this season (${fantasyFmt3(r.pitcherWhipAllowed)} WHIP, ${fantasyFmt3(r.pitcherAvgAllowed)} AVG allowed).`);
-  if (sitReasons.length) return { verdict: 'SIT', reasons: sitReasons };
+  const p1B = rate(singles), p2B = rate(doubles), p3B = rate(triples);
+  const pBB = rate(fantasyNum(s.baseOnBalls)), pHBP = rate(fantasyNum(s.hitByPitch));
+  const pRBI = rate(fantasyNum(s.rbi ?? s.runsBattedIn)), pR = rate(fantasyNum(s.runs));
+  const pSB = rate(fantasyNum(s.stolenBases));
+  // HR uses today's own matchup-specific hrProb (already folds in pitcher HR/9,
+  // park factor, and hot-streak boosts) instead of a flat season rate — a
+  // meaningfully sharper day-specific estimate than season HR/PA would give, and
+  // keeps this number consistent with what HR Threats already shows for the
+  // same player.
+  const pHR = fantasyNum(r.hrProb) / 100;
 
-  return { verdict: 'START', reasons: ['No red flags for today’s matchup — a reasonable everyday start.'] };
+  const points = (3 * p1B) + (5 * p2B) + (8 * p3B) + (10 * pHR) + (2 * pRBI) + (2 * pR) + (2 * pBB) + (2 * pHBP) + (5 * pSB);
+  return {
+    points,
+    breakdown: [
+      { label: 'Hits (1B/2B/3B)', pts: (3 * p1B) + (5 * p2B) + (8 * p3B) },
+      { label: `HR (${fantasyNum(r.hrProb).toFixed(1)}% today)`, pts: 10 * pHR },
+      { label: 'RBI + Runs', pts: (2 * pRBI) + (2 * pR) },
+      { label: 'BB/HBP + SB', pts: (2 * pBB) + (2 * pHBP) + (5 * pSB) },
+    ],
+  };
 }
 
-// League-average-ish bands for FIP/WHIP (~4.20/~1.30) — same style of symmetric
-// above/below-average thresholds already used elsewhere on the site (e.g. the HR
-// Threats "favorable matchup" WHIP >= 1.25 bar).
-function fantasyPitcherVerdict(pr) {
-  const p = pr.pitcher || {};
-  const fip = fantasyNum(pr.fip), whip = fantasyNum(pr.whip);
-  const parkAbbr = p.side === 'home' ? p.teamAbbr : p.oppAbbr;
-  const parkIdx = (typeof parkFactors !== 'undefined' && parkFactors[parkAbbr] != null) ? parkFactors[parkAbbr] : 100;
+function fantasyPitcherPoints(pr) {
+  const gs = Math.max(fantasyNum(pr.gamesStarted), 1);
+  // Same projected-innings clamp (4-7) computeKProp/computeDRPick already use for
+  // a probable starter's expected innings today.
+  const projIP = pr.rawIp > 0 ? Math.min(Math.max(pr.rawIp / gs, 4), 7) : 5.4;
+  const projK = fantasyNum(pr.kprop) || (fantasyNum(pr.rawK9) * projIP / 9);
+  // Win rate from season W-L, clamped to a sane band so a tiny early-season
+  // sample (e.g. 2-0) doesn't imply an unrealistic near-certain win today.
+  const wins = fantasyNum((pr.wl || '0-0').split('-')[0]);
+  const winProb = Math.min(Math.max(gs > 0 ? wins / gs : 0.35, 0.15), 0.65);
+  const earnedRuns = (fantasyNum(pr.era) / 9) * projIP;
+  // DK weights hits-allowed and walks/HBP-allowed identically (-0.6 each), so
+  // WHIP × projected innings (= expected baserunners allowed via hit or walk)
+  // can stand in for the two categories combined without needing them split out
+  // — this dataset doesn't carry hits-allowed and walks-allowed separately.
+  const baserunners = fantasyNum(pr.whip) * projIP;
 
-  const strongStuff = (fip > 0 && fip <= 3.80) || (whip > 0 && whip <= 1.15);
-  const shakyStuff = (fip > 0 && fip >= 4.60) || (whip > 0 && whip >= 1.42);
-  const pitcherPark = parkIdx <= 94;
-  const hitterPark = parkIdx >= 108;
-
-  const startReasons = [];
-  if (strongStuff) startReasons.push(`Strong peripherals this season (FIP ${pr.fip ?? '–'}, WHIP ${pr.whip ?? '–'}).`);
-  if (pitcherPark) startReasons.push(`Pitching in a real pitcher-friendly park today (HR park index ${parkIdx}).`);
-  if (startReasons.length && !shakyStuff) return { verdict: 'START', reasons: startReasons };
-
-  const sitReasons = [];
-  if (shakyStuff) sitReasons.push(`Rough peripherals this season (FIP ${pr.fip ?? '–'}, WHIP ${pr.whip ?? '–'}).`);
-  if (hitterPark) sitReasons.push(`Pitching in a real hitter-friendly park today (HR park index ${parkIdx}).`);
-  if (sitReasons.length) return { verdict: 'SIT', reasons: sitReasons };
-
-  return { verdict: 'START', reasons: ['Solid everyday peripherals and a neutral park — a reasonable start.'] };
+  const points = (2.25 * projIP) + (2 * projK) + (4 * winProb) - (2 * earnedRuns) - (0.6 * baserunners);
+  return {
+    points,
+    breakdown: [
+      { label: `${projIP.toFixed(1)} IP projected`, pts: 2.25 * projIP },
+      { label: `${projK.toFixed(1)} K projected`, pts: 2 * projK },
+      { label: `${(winProb * 100).toFixed(0)}% win prob`, pts: 4 * winProb },
+      { label: `${earnedRuns.toFixed(1)} ER, ${baserunners.toFixed(1)} baserunners allowed (proj.)`, pts: -(2 * earnedRuns) - (0.6 * baserunners) },
+    ],
+  };
 }
 
-function fantasyVerdictBadgeHTML(verdict) {
-  const cls = verdict === 'START' ? 'start' : verdict === 'SIT' ? 'sit' : 'out';
-  return `<span class="fantasy-verdict-badge ${cls}">${verdict}</span>`;
+function fantasyPointsBadgeHTML(points, tier) {
+  return `<div class="fantasy-points-badge ${tier}"><span class="fantasy-points-num">${points.toFixed(1)}</span><span class="fantasy-points-unit">DK PTS</span></div>`;
 }
 
-function fantasyBatterCardHTML(r) {
-  const v = fantasyBatterVerdict(r);
+function fantasyBreakdownHTML(breakdown) {
+  return `<div class="vuln-box fantasy-reason-box">
+    ${breakdown.map(b => `<div class="vuln-item"><span class="vuln-icon">${b.pts >= 0 ? '➕' : '➖'}</span><span style="color:var(--text)">${fantasyEsc(b.label)}: <strong>${b.pts >= 0 ? '+' : ''}${b.pts.toFixed(1)} pts</strong></span></div>`).join('')}
+  </div>`;
+}
+
+function fantasyBatterCardHTML(r, tier) {
+  const { points, breakdown } = fantasyBatterPoints(r);
   const hs = r.id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/${r.id}/headshot/67/current` : '';
   return `<div class="dr109-card fantasy-card">
     <div class="dr109-card-head">
@@ -5596,10 +5632,10 @@ function fantasyBatterCardHTML(r) {
         <img loading="lazy" decoding="async" src="${hs}" onerror="this.style.display='none'" alt="">
         <div style="min-width:0">
           <div class="dr109-name">${fantasyEsc(r.name || 'Player')}</div>
-          <div class="dr109-meta">${fantasyEsc(r.teamAbbr || '')} · ${fantasyEsc(r.pos || '')} · vs ${fantasyEsc(r.oppAbbr || '')}${r.pitcherName ? ' · ' + fantasyEsc(r.pitcherName) : ''}</div>
+          <div class="dr109-meta">${fantasyEsc(r.teamAbbr || '')} · ${fantasyEsc(r.pos || '')} · vs ${fantasyEsc(r.oppAbbr || '')}${r.pitcherName ? ' · ' + fantasyEsc(r.pitcherName) : ''}${r.rosterStatus ? ` · <span style="color:#fca5a5">${fantasyEsc(r.rosterStatus)}</span>` : ''}</div>
         </div>
       </div>
-      ${fantasyVerdictBadgeHTML(v.verdict)}
+      ${fantasyPointsBadgeHTML(points, r.rosterStatus ? 'out' : tier)}
     </div>
     <div class="dr109-chiprow">
       <span class="dr109-chip"><span>AVG:</span><strong>${fantasyFmt3(r.avg)}</strong></span>
@@ -5607,15 +5643,13 @@ function fantasyBatterCardHTML(r) {
       <span class="dr109-chip"><span>ISO:</span><strong>${fantasyFmt3(r.iso)}</strong></span>
       <span class="dr109-chip"><span>HR Prob:</span><strong>${fantasyNum(r.hrProb).toFixed(1)}%</strong></span>
     </div>
-    <div class="vuln-box fantasy-reason-box">
-      ${v.reasons.map(reason => `<div class="vuln-item"><span class="vuln-icon">${v.verdict === 'START' ? '✅' : v.verdict === 'SIT' ? '⚠️' : '🏥'}</span><span style="color:var(--text)">${reason}</span></div>`).join('')}
-    </div>
+    ${fantasyBreakdownHTML(breakdown)}
   </div>`;
 }
 
-function fantasyPitcherCardHTML(pr) {
+function fantasyPitcherCardHTML(pr, tier) {
   const p = pr.pitcher || {};
-  const v = fantasyPitcherVerdict(pr);
+  const { points, breakdown } = fantasyPitcherPoints(pr);
   const hs = p.id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/${p.id}/headshot/67/current` : '';
   return `<div class="dr109-card fantasy-card">
     <div class="dr109-card-head">
@@ -5626,7 +5660,7 @@ function fantasyPitcherCardHTML(pr) {
           <div class="dr109-meta">${fantasyEsc(p.teamAbbr || '')} vs ${fantasyEsc(p.oppAbbr || '')} · ${fantasyEsc(p.timeLabel || '')}</div>
         </div>
       </div>
-      ${fantasyVerdictBadgeHTML(v.verdict)}
+      ${fantasyPointsBadgeHTML(points, tier)}
     </div>
     <div class="dr109-chiprow">
       <span class="dr109-chip"><span>FIP:</span><strong>${pr.fip ?? '–'}</strong></span>
@@ -5634,9 +5668,7 @@ function fantasyPitcherCardHTML(pr) {
       <span class="dr109-chip"><span>ERA:</span><strong>${pr.era ?? '–'}</strong></span>
       <span class="dr109-chip"><span>HR/9:</span><strong>${pr.hr9 ?? '–'}</strong></span>
     </div>
-    <div class="vuln-box fantasy-reason-box">
-      ${v.reasons.map(reason => `<div class="vuln-item"><span class="vuln-icon">${v.verdict === 'START' ? '✅' : v.verdict === 'SIT' ? '⚠️' : '🏥'}</span><span style="color:var(--text)">${reason}</span></div>`).join('')}
-    </div>
+    ${fantasyBreakdownHTML(breakdown)}
   </div>`;
 }
 
@@ -5646,35 +5678,37 @@ function renderFantasyBoard() {
   const pitchers = Array.isArray(prRows) ? prRows : [];
   const batters = Array.isArray(hrpRows) ? hrpRows : [];
   if (!pitchers.length && !batters.length) {
-    el.innerHTML = '<div class="mu-empty"><span class="spin"></span>Building today’s start/sit board…</div>';
+    el.innerHTML = '<div class="mu-empty"><span class="spin"></span>Building today’s fantasy points board…</div>';
     return;
   }
 
-  function groupByVerdict(items, verdictFn) {
-    const groups = { START: [], SIT: [], OUT: [] };
-    items.forEach(item => { groups[verdictFn(item).verdict].push(item); });
-    return groups;
+  // Rank-relative tiering (top/mid/bottom third of TODAY's slate) rather than
+  // fixed point thresholds — batter and pitcher point scales differ enough
+  // (a good start often projects 2-3x a good batter's line) that a single
+  // absolute cutoff can't sensibly color both, and this adapts automatically
+  // as the slate's real projection spread changes day to day.
+  function withTiers(items, pointsFn) {
+    const withPts = items.map(item => ({ item, points: pointsFn(item).points }));
+    withPts.sort((a, b) => b.points - a.points);
+    const n = withPts.length;
+    return withPts.map((row, i) => ({
+      ...row,
+      tier: n < 3 ? 'mid' : i < n / 3 ? 'start' : i < (2 * n) / 3 ? 'mid' : 'sit',
+    }));
   }
 
-  const pitcherGroups = groupByVerdict(pitchers, fantasyPitcherVerdict);
-  const batterGroups = groupByVerdict(batters, fantasyBatterVerdict);
-
-  function section(title, icon, groups, cardFn) {
-    const order = ['START', 'SIT', 'OUT'];
-    const labels = { START: '✅ START', SIT: '⚠️ SIT / CONSIDER BENCHING', OUT: '🏥 OUT' };
-    const body = order.filter(k => groups[k].length).map(k => `
-      <div class="fantasy-verdict-group">
-        <div class="fantasy-verdict-group-title">${labels[k]} <span>(${groups[k].length})</span></div>
-        <div class="fantasy-card-list">${groups[k].map(cardFn).join('')}</div>
-      </div>`).join('');
+  function section(title, icon, items, pointsFn, cardFn) {
+    if (!items.length) return `<div class="fantasy-section"><div class="fantasy-section-title">${icon} ${title}</div><div class="mu-empty">No data yet.</div></div>`;
+    const ranked = withTiers(items, pointsFn);
+    const body = ranked.map(({ item, tier }) => cardFn(item, tier)).join('');
     return `<div class="fantasy-section">
-      <div class="fantasy-section-title">${icon} ${title}</div>
-      ${body || '<div class="mu-empty">No data yet.</div>'}
+      <div class="fantasy-section-title">${icon} ${title} <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">— ranked by projected DraftKings points</span></div>
+      <div class="fantasy-card-list">${body}</div>
     </div>`;
   }
 
-  el.innerHTML = section('Starting Pitchers', '⚾', pitcherGroups, fantasyPitcherCardHTML)
-    + section('Batters', '🏏', batterGroups, fantasyBatterCardHTML);
+  el.innerHTML = section('Starting Pitchers', '⚾', pitchers, fantasyPitcherPoints, fantasyPitcherCardHTML)
+    + section('Batters', '🏏', batters, fantasyBatterPoints, fantasyBatterCardHTML);
 }
 window.renderFantasyBoard = renderFantasyBoard;
 

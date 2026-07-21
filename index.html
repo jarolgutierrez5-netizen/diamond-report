@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026072122">
+<link rel="stylesheet" href="styles.min.css?v=2026072123">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -149,7 +149,7 @@
     <button type="button" data-tab="sb" class="dr-menu-item">🏃 Stolen Bases</button>
     <button type="button" data-tab="hrrbi" class="dr-menu-item">📈 Hits+Runs+RBI</button>
     <button type="button" data-tab="premium" class="dr-menu-item">🌟 Premium</button>
-    <button type="button" data-tab="fantasy" class="dr-menu-item">🏆 Fantasy Start/Sit</button>
+    <button type="button" data-tab="fantasy" class="dr-menu-item">🏆 Fantasy Points</button>
   </div>
 </div>
 
@@ -176,7 +176,7 @@
     <button type="button" data-gamepick-pane="sb" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">🏃</span><span class="dr-sidebar-label">Stolen Bases</span></button>
     <button type="button" data-gamepick-pane="hrrbi" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">📈</span><span class="dr-sidebar-label">Hits+Runs+RBI</span></button>
     <button type="button" data-gamepick-pane="premium" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">🌟</span><span class="dr-sidebar-label">Premium</span></button>
-    <button type="button" data-gamepick-pane="fantasy" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">🏆</span><span class="dr-sidebar-label">Fantasy Start/Sit</span></button>
+    <button type="button" data-gamepick-pane="fantasy" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">🏆</span><span class="dr-sidebar-label">Fantasy Points</span></button>
     </div>
   </div>
   <div class="dr-sidebar-divider"></div>
@@ -409,7 +409,7 @@
     <button class="gamepick-tab" id="gamepick-tab-sb" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-sb" data-gamepick-pane="sb" onclick="showGamePickPane('sb')">🏃 Stolen Bases</button>
     <button class="gamepick-tab" id="gamepick-tab-hrrbi" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-hrrbi" data-gamepick-pane="hrrbi" onclick="showGamePickPane('hrrbi')">📈 Hits+Runs+RBI</button>
     <button class="gamepick-tab" id="gamepick-tab-premium" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-premium" data-gamepick-pane="premium" onclick="showGamePickPane('premium')">🌟 Premium</button>
-    <button class="gamepick-tab" id="gamepick-tab-fantasy" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-fantasy" data-gamepick-pane="fantasy" onclick="showGamePickPane('fantasy')">🏆 Fantasy Start/Sit</button>
+    <button class="gamepick-tab" id="gamepick-tab-fantasy" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-fantasy" data-gamepick-pane="fantasy" onclick="showGamePickPane('fantasy')">🏆 Fantasy Points</button>
   </div>
 </div>
 
@@ -517,8 +517,8 @@
   <div class="dr-panel dr-panel-large dr-prop-center-panel"><div class="dr-panel-head"><div><p class="section-title">ELITE <span>PICKS</span></p><small>Home Runs shows up to 3 real qualifiers per game; every other market shows the top 5 across today's slate. Every player is limited to one category so the same name can't crowd out the board. Picks lock in the moment they're selected and never change for the rest of the day.</small></div></div><div id="premium-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Building today's elite picks…</div></div></div>
 </div>
 <div class="gamepick-pane" id="gamepick-pane-fantasy" role="tabpanel" aria-labelledby="gamepick-tab-fantasy" data-gamepick-pane="fantasy" hidden>
-  <div class="dr-center-label">🏆 Fantasy Start/Sit</div>
-  <div class="dr-panel dr-panel-large dr-prop-center-panel"><div class="dr-panel-head"><div><p class="section-title">FANTASY <span>START/SIT</span></p><small>Every probable starting pitcher and today's starting lineups, called START, SIT, or OUT from real matchup quality, park factor, recent form, and injury status — the same signals used across the rest of the site, not a separate model.</small></div></div><div id="fantasy-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Building today's start/sit board…</div></div></div>
+  <div class="dr-center-label">🏆 Fantasy Points</div>
+  <div class="dr-panel dr-panel-large dr-prop-center-panel"><div class="dr-panel-head"><div><p class="section-title">FANTASY <span>POINTS</span></p><small>Every probable starting pitcher and today's starting lineups, projected for expected DraftKings Classic fantasy points from real matchup quality, park factor, recent form, and season rates — the same signals used across the rest of the site, not a separate model.</small></div></div><div id="fantasy-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Building today's fantasy points board…</div></div></div>
 </div>
 
 <div class="gamepick-pane" id="gamepick-pane-pr" role="tabpanel" aria-labelledby="gamepick-tab-pr" data-gamepick-pane="pr" hidden>
@@ -841,7 +841,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026072122" defer></script>
+<script src="app.min.js?v=2026072123" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
