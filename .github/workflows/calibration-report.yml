@@ -1,0 +1,96 @@
+name: Weekly model calibration report
+
+# Runs analyze-hr-matchups.mjs / analyze-k-matchups.mjs / analyze-elite-matchups.mjs /
+# analyze-drp-matchups.mjs against the graded picks already sitting in data/tracker.json
+# and commits the combined output as data/calibration-report.md — a durable, versioned,
+# always-current record of whether each market's real hit rate actually tracks its
+# predicted confidence, without anyone needing to remember to run the scripts by hand.
+# Pure local analysis (no network calls), so this is cheap and safe to run often; weekly
+# is enough since a single day only adds a handful of newly-graded picks per market.
+#
+# Also runs tune-model-params.mjs first (see that file's own header for the safety
+# rails) -- a bounded, logged, gated auto-tune of data/model-params.json. It only ever
+# touches that one JSON data file, never this repo's source, and every check it makes
+# (adjusted or not) is appended to data/model-tuning-log.json, so the report and the
+# tuning log always land in the same commit as a matched pair: what the data showed,
+# and what (if anything) was done about it.
+
+on:
+  schedule:
+    # 15:22 UTC Monday = ~10:22am CDT — after update-tracker.yml's 14:07 UTC morning run
+    # has graded the prior day, so the week's freshest results are included. Offset off
+    # the hour on purpose, same reasoning as update-tracker.yml's own schedule comment.
+    - cron: '22 15 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: calibration-report
+  cancel-in-progress: false
+
+jobs:
+  calibration-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run model parameter auto-tune
+        run: node scripts/tune-model-params.mjs
+
+      - name: Run calibration reports
+        run: |
+          {
+            echo "# Model Calibration Report"
+            echo
+            echo "Generated $(date -u '+%Y-%m-%d %H:%M UTC') by the weekly calibration-report workflow."
+            echo "Re-run any of these locally any time: \`node scripts/analyze-<name>-matchups.mjs\`."
+            echo
+            echo "## HR Threats"
+            echo
+            echo '```'
+            node scripts/analyze-hr-matchups.mjs
+            echo '```'
+            echo
+            echo "## K Props"
+            echo
+            echo '```'
+            node scripts/analyze-k-matchups.mjs
+            echo '```'
+            echo
+            echo "## Elite Picks"
+            echo
+            echo '```'
+            node scripts/analyze-elite-matchups.mjs
+            echo '```'
+            echo
+            echo "## Diamond Report Pick (game winner)"
+            echo
+            echo '```'
+            node scripts/analyze-drp-matchups.mjs
+            echo '```'
+          } > data/calibration-report.md
+
+      - name: Commit and push if changed
+        run: |
+          # See build-assets.yml's own comment on this same pattern: `git add` on a path
+          # that doesn't exist is a hard error, not a no-op, so model-tuning-log.json
+          # (which doesn't exist until the tuner's first-ever adjustment or skip) is
+          # added conditionally rather than named directly.
+          git add data/calibration-report.md data/model-params.json
+          [ -f data/model-tuning-log.json ] && git add data/model-tuning-log.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git config user.name "diamond-report-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -m "Weekly model calibration report + parameter auto-tune check"
+          git push

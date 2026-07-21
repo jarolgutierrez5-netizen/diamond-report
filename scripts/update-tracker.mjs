@@ -1332,12 +1332,32 @@ function pitcherBattersFacedPer9(pitcherStat) {
 // several happen to line up favorably by chance compounds into an overconfident score.
 // This dampens each multiplier's deviation from neutral (1.0) rather than removing any
 // of them, so direction/relative ranking are preserved, just the compounding is damped.
-// 0.6 is a first-pass value, not derived from a fit -- re-run analyze-hr-matchups.mjs
-// once enough picks graded under this shrinkage accumulate and retune if the buckets
-// still aren't monotonic.
-const HR_MULT_SHRINKAGE = 0.6;
+//
+// The shrinkage factor itself lives in data/model-params.json, not as a hardcoded
+// constant here -- scripts/tune-model-params.mjs (run weekly, see
+// .github/workflows/calibration-report.yml) re-checks calibration against newly graded
+// picks and nudges it in small, bounded steps, gated behind a minimum sample size and
+// statistical-significance bar, with every check (adjusted or not) logged to
+// data/model-tuning-log.json. Keeping the tunable value in a data file rather than
+// letting a scheduled job rewrite this source file means an auto-tune is always just a
+// JSON diff -- inspectable and revertable exactly like every other bot-updated data file
+// in this repo, never a silent source change. DEFAULT_MODEL_PARAMS is the fallback if
+// that file is ever missing/unreadable, and is what a fresh checkout starts from.
+const MODEL_PARAMS_PATH = path.join(__dirname, '..', 'data', 'model-params.json');
+const DEFAULT_MODEL_PARAMS = { HR_MULT_SHRINKAGE: 0.6 };
+let modelParams = { ...DEFAULT_MODEL_PARAMS };
+async function loadModelParams() {
+  try {
+    const raw = await readFile(MODEL_PARAMS_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    modelParams = { ...DEFAULT_MODEL_PARAMS, ...(parsed.params || {}) };
+  } catch (e) {
+    // Missing/invalid file -- fall back to the documented default rather than
+    // throwing; a capture/grade run must never be blocked by this.
+  }
+}
 function shrinkMult(m) {
-  return 1 + (m - 1) * HR_MULT_SHRINKAGE;
+  return 1 + (m - 1) * modelParams.HR_MULT_SHRINKAGE;
 }
 
 function scoreForMarket(marketKey, row) {
@@ -2187,6 +2207,7 @@ async function gradePending(store) {
 }
 
 async function main() {
+  await loadModelParams();
   const store = await loadTracker();
   await gradePending(store);
 
@@ -2240,4 +2261,5 @@ export {
   fetchTeamPitchingAggregate, buildDRPSimLineup, computeDRPSimulation,
   loadDRPSimComparison, saveDRPSimComparison, recomputeDRPSimSummary,
   gradeDRPSimComparison, captureDRPSimComparisonToday,
+  loadModelParams, MODEL_PARAMS_PATH, DEFAULT_MODEL_PARAMS, shrinkMult,
 };
