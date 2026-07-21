@@ -5436,6 +5436,160 @@ function coldBatterAlertHTML(row) {
 window.coldBatterAlertHTML = coldBatterAlertHTML;
 window.getColdBatterDiagnosis = getColdBatterDiagnosis;
 
+// ── Fantasy Start/Sit board ──────────────────────────────────────────────
+// Reuses hrpRows (the shared batter pool behind HR Threats/Hits/RBI/etc — already
+// carries isFavorable/isOnFire/isDrought/isDue, pitcher-allowed rates, park factor,
+// and roster status) and prRows (Starting Pitcher Report — FIP/WHIP/HR9/ERA per
+// probable starter) plus the global parkFactors map. No new data source, no new
+// fetches — every verdict below is built entirely from signals already live
+// elsewhere on the site.
+function fantasyNum(v) { const x = parseFloat(v); return Number.isFinite(x) ? x : 0; }
+function fantasyEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fantasyFmt3(v) { const x = fantasyNum(v); return x > 0 ? x.toFixed(3).replace(/^0/, '') : '–'; }
+
+function fantasyBatterVerdict(r) {
+  if (r.rosterStatus) {
+    return { verdict: 'OUT', reasons: [`Listed as ${fantasyEsc(r.rosterStatus)} — do not start.`] };
+  }
+
+  const startReasons = [];
+  if (r.isFavorable) startReasons.push(`Favorable matchup vs ${fantasyEsc(r.pitcherName || 'today’s pitcher')} — his bat grades well against a pitcher showing real weaknesses (WHIP or AVG allowed).`);
+  if (r.isOnFire) startReasons.push('On a real hot streak right now — recent form is well above his season norm.');
+  if (fantasyNum(r.hrProb) >= 20) startReasons.push(`${fantasyNum(r.hrProb).toFixed(1)}% simulated HR probability today — legitimate power upside in this matchup.`);
+  if (startReasons.length) return { verdict: 'START', reasons: startReasons };
+
+  const sitReasons = [];
+  if (r.isDrought && !r.isDue) sitReasons.push('In a real cold stretch (no HR in his last 8 games) with no strong signal he’s about to break out.');
+  const toughPitcher = fantasyNum(r.pitcherWhipAllowed) > 0 && fantasyNum(r.pitcherWhipAllowed) <= 1.10 && fantasyNum(r.pitcherAvgAllowed) > 0 && fantasyNum(r.pitcherAvgAllowed) <= 0.230;
+  if (toughPitcher) sitReasons.push(`Facing ${fantasyEsc(r.pitcherName || 'a tough starter')}, who’s been hard to hit this season (${fantasyFmt3(r.pitcherWhipAllowed)} WHIP, ${fantasyFmt3(r.pitcherAvgAllowed)} AVG allowed).`);
+  if (sitReasons.length) return { verdict: 'SIT', reasons: sitReasons };
+
+  return { verdict: 'START', reasons: ['No red flags for today’s matchup — a reasonable everyday start.'] };
+}
+
+// League-average-ish bands for FIP/WHIP (~4.20/~1.30) — same style of symmetric
+// above/below-average thresholds already used elsewhere on the site (e.g. the HR
+// Threats "favorable matchup" WHIP >= 1.25 bar).
+function fantasyPitcherVerdict(pr) {
+  const p = pr.pitcher || {};
+  const fip = fantasyNum(pr.fip), whip = fantasyNum(pr.whip);
+  const parkAbbr = p.side === 'home' ? p.teamAbbr : p.oppAbbr;
+  const parkIdx = (typeof parkFactors !== 'undefined' && parkFactors[parkAbbr] != null) ? parkFactors[parkAbbr] : 100;
+
+  const strongStuff = (fip > 0 && fip <= 3.80) || (whip > 0 && whip <= 1.15);
+  const shakyStuff = (fip > 0 && fip >= 4.60) || (whip > 0 && whip >= 1.42);
+  const pitcherPark = parkIdx <= 94;
+  const hitterPark = parkIdx >= 108;
+
+  const startReasons = [];
+  if (strongStuff) startReasons.push(`Strong peripherals this season (FIP ${pr.fip ?? '–'}, WHIP ${pr.whip ?? '–'}).`);
+  if (pitcherPark) startReasons.push(`Pitching in a real pitcher-friendly park today (HR park index ${parkIdx}).`);
+  if (startReasons.length && !shakyStuff) return { verdict: 'START', reasons: startReasons };
+
+  const sitReasons = [];
+  if (shakyStuff) sitReasons.push(`Rough peripherals this season (FIP ${pr.fip ?? '–'}, WHIP ${pr.whip ?? '–'}).`);
+  if (hitterPark) sitReasons.push(`Pitching in a real hitter-friendly park today (HR park index ${parkIdx}).`);
+  if (sitReasons.length) return { verdict: 'SIT', reasons: sitReasons };
+
+  return { verdict: 'START', reasons: ['Solid everyday peripherals and a neutral park — a reasonable start.'] };
+}
+
+function fantasyVerdictBadgeHTML(verdict) {
+  const cls = verdict === 'START' ? 'start' : verdict === 'SIT' ? 'sit' : 'out';
+  return `<span class="fantasy-verdict-badge ${cls}">${verdict}</span>`;
+}
+
+function fantasyBatterCardHTML(r) {
+  const v = fantasyBatterVerdict(r);
+  const hs = r.id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/${r.id}/headshot/67/current` : '';
+  return `<div class="dr109-card fantasy-card">
+    <div class="dr109-card-head">
+      <div class="dr109-player">
+        <img loading="lazy" decoding="async" src="${hs}" onerror="this.style.display='none'" alt="">
+        <div style="min-width:0">
+          <div class="dr109-name">${fantasyEsc(r.name || 'Player')}</div>
+          <div class="dr109-meta">${fantasyEsc(r.teamAbbr || '')} · ${fantasyEsc(r.pos || '')} · vs ${fantasyEsc(r.oppAbbr || '')}${r.pitcherName ? ' · ' + fantasyEsc(r.pitcherName) : ''}</div>
+        </div>
+      </div>
+      ${fantasyVerdictBadgeHTML(v.verdict)}
+    </div>
+    <div class="dr109-chiprow">
+      <span class="dr109-chip"><span>AVG:</span><strong>${fantasyFmt3(r.avg)}</strong></span>
+      <span class="dr109-chip"><span>OPS:</span><strong>${fantasyFmt3(r.ops)}</strong></span>
+      <span class="dr109-chip"><span>ISO:</span><strong>${fantasyFmt3(r.iso)}</strong></span>
+      <span class="dr109-chip"><span>HR Prob:</span><strong>${fantasyNum(r.hrProb).toFixed(1)}%</strong></span>
+    </div>
+    <div class="vuln-box fantasy-reason-box">
+      ${v.reasons.map(reason => `<div class="vuln-item"><span class="vuln-icon">${v.verdict === 'START' ? '✅' : v.verdict === 'SIT' ? '⚠️' : '🏥'}</span><span style="color:var(--text)">${reason}</span></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function fantasyPitcherCardHTML(pr) {
+  const p = pr.pitcher || {};
+  const v = fantasyPitcherVerdict(pr);
+  const hs = p.id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/${p.id}/headshot/67/current` : '';
+  return `<div class="dr109-card fantasy-card">
+    <div class="dr109-card-head">
+      <div class="dr109-player">
+        <img loading="lazy" decoding="async" src="${hs}" onerror="this.style.display='none'" alt="">
+        <div style="min-width:0">
+          <div class="dr109-name">${fantasyEsc(p.name || 'Pitcher')}</div>
+          <div class="dr109-meta">${fantasyEsc(p.teamAbbr || '')} vs ${fantasyEsc(p.oppAbbr || '')} · ${fantasyEsc(p.timeLabel || '')}</div>
+        </div>
+      </div>
+      ${fantasyVerdictBadgeHTML(v.verdict)}
+    </div>
+    <div class="dr109-chiprow">
+      <span class="dr109-chip"><span>FIP:</span><strong>${pr.fip ?? '–'}</strong></span>
+      <span class="dr109-chip"><span>WHIP:</span><strong>${pr.whip ?? '–'}</strong></span>
+      <span class="dr109-chip"><span>ERA:</span><strong>${pr.era ?? '–'}</strong></span>
+      <span class="dr109-chip"><span>HR/9:</span><strong>${pr.hr9 ?? '–'}</strong></span>
+    </div>
+    <div class="vuln-box fantasy-reason-box">
+      ${v.reasons.map(reason => `<div class="vuln-item"><span class="vuln-icon">${v.verdict === 'START' ? '✅' : v.verdict === 'SIT' ? '⚠️' : '🏥'}</span><span style="color:var(--text)">${reason}</span></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderFantasyBoard() {
+  const el = document.getElementById('fantasy-content');
+  if (!el) return;
+  const pitchers = Array.isArray(prRows) ? prRows : [];
+  const batters = Array.isArray(hrpRows) ? hrpRows : [];
+  if (!pitchers.length && !batters.length) {
+    el.innerHTML = '<div class="mu-empty"><span class="spin"></span>Building today’s start/sit board…</div>';
+    return;
+  }
+
+  function groupByVerdict(items, verdictFn) {
+    const groups = { START: [], SIT: [], OUT: [] };
+    items.forEach(item => { groups[verdictFn(item).verdict].push(item); });
+    return groups;
+  }
+
+  const pitcherGroups = groupByVerdict(pitchers, fantasyPitcherVerdict);
+  const batterGroups = groupByVerdict(batters, fantasyBatterVerdict);
+
+  function section(title, icon, groups, cardFn) {
+    const order = ['START', 'SIT', 'OUT'];
+    const labels = { START: '✅ START', SIT: '⚠️ SIT / CONSIDER BENCHING', OUT: '🏥 OUT' };
+    const body = order.filter(k => groups[k].length).map(k => `
+      <div class="fantasy-verdict-group">
+        <div class="fantasy-verdict-group-title">${labels[k]} <span>(${groups[k].length})</span></div>
+        <div class="fantasy-card-list">${groups[k].map(cardFn).join('')}</div>
+      </div>`).join('');
+    return `<div class="fantasy-section">
+      <div class="fantasy-section-title">${icon} ${title}</div>
+      ${body || '<div class="mu-empty">No data yet.</div>'}
+    </div>`;
+  }
+
+  el.innerHTML = section('Starting Pitchers', '⚾', pitcherGroups, fantasyPitcherCardHTML)
+    + section('Batters', '🏏', batterGroups, fantasyBatterCardHTML);
+}
+window.renderFantasyBoard = renderFantasyBoard;
+
 // ── 5AM HR POTENTIAL REFRESH ─────────────────────────────────────────
 // Checks on load and reschedules daily — handles cases where tab wasn't open at 5am
 const HR_POTENTIAL_STORAGE_KEY = 'hrp_last_loaded_date';
@@ -7402,7 +7556,7 @@ function initPropsTab() {
   // alone here meant a URL like #gamepick=premium still always warmed Game Center data on
   // first paint. Check the same #gamepick=<pane> hash the tab controller itself reads,
   // before falling back to whatever the DOM currently shows.
-  const GAMEPICK_PANES = ['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','premium','parlay','team-performance','deep'];
+  const GAMEPICK_PANES = ['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','premium','fantasy','parlay','team-performance','deep'];
   const hashMatch = /^#?gamepick=([\w-]+)/.exec(window.location.hash || '');
   const fromHash = hashMatch && GAMEPICK_PANES.includes(hashMatch[1]) ? hashMatch[1] : null;
   const activePane = fromHash || document.querySelector('#props .gamepick-pane.active')?.getAttribute('data-gamepick-pane') || 'game';
@@ -9413,7 +9567,7 @@ if (document.readyState === 'loading') {
 
 /* ---- from <script id="prod-v8-70-performance-loader"> ---- */
 (function(){
-  const loaded = { game:false, pr:false, hr:false, k:false, props:false, deep:false };
+  const loaded = { game:false, pr:false, hr:false, k:false, props:false, deep:false, fantasy:false };
   const idle = window.requestIdleCallback || function(cb){ return setTimeout(cb, 900); };
 
   window.__drLoadGamePickPaneData = function(pane){
@@ -9474,6 +9628,15 @@ if (document.readyState === 'loading') {
         loaded.deep = true;
         idle(function(){ try { if (typeof window.renderDeepResearch === 'function') window.renderDeepResearch(); } catch(e) {} });
       }
+      if (pane === 'fantasy') {
+        // Needs both the pitcher pool (prRows, Pitcher Report) and the batter pool
+        // (hrpRows, shared with HR Threats/Hits/etc.) -- reuses the same 'pr' and
+        // 'props' load flags above rather than a separate fantasy-only fetch, so
+        // visiting Fantasy first still loads real data instead of finding both
+        // pools empty.
+        if (!loaded.pr) { loaded.pr = true; try { if (typeof window.loadPitcherReport === 'function') window.loadPitcherReport(); } catch(e) {} }
+        if (!loaded.props) { loaded.props = true; idle(function(){ try { if (typeof window.loadHRPotentialWithRetry === 'function') window.loadHRPotentialWithRetry(); } catch(e) {} }); }
+      }
     } catch(e) {}
   };
 
@@ -9486,7 +9649,7 @@ if (document.readyState === 'loading') {
 /* ---- from <script id="anonymous"> ---- */
 // PROD v8.44 — Game Picks inner tab controller with persistent state
 (function(){
-  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, premium: true, parlay: true, 'team-performance': true, deep: true };
+  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, premium: true, fantasy: true, parlay: true, 'team-performance': true, deep: true };
 
   // Only the URL hash decides the pane on load (e.g. a shared #gamepick=premium
   // link). No localStorage fallback — a plain refresh/revisit with no hash
@@ -9565,7 +9728,12 @@ if (document.readyState === 'loading') {
       setTimeout(function(){ if (typeof window.renderParlayBuilds === 'function') window.renderParlayBuilds(); }, 900);
     }
     if (pane === 'team-performance') {
-      
+
+    }
+    if (pane === 'fantasy') {
+      setTimeout(function(){ if (typeof window.renderFantasyBoard === 'function') window.renderFantasyBoard(); }, 30);
+      setTimeout(function(){ if (typeof window.renderFantasyBoard === 'function') window.renderFantasyBoard(); }, 900);
+      setTimeout(function(){ if (typeof window.renderFantasyBoard === 'function') window.renderFantasyBoard(); }, 2200);
     }
     if (pane === 'deep') {
       setTimeout(function(){ if (typeof window.renderDeepResearch === 'function') window.renderDeepResearch(); }, 30);
@@ -10494,7 +10662,7 @@ function showPremiumGate(feature){
   if (window.__DR_V1129_NAV_CONTROLLER__) return;
   window.__DR_V1129_NAV_CONTROLLER__ = true;
 
-  var FREE_PANES = new Set(['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','premium']);
+  var FREE_PANES = new Set(['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','premium','fantasy']);
   var PREMIUM_PANES = new Set(['parlay','team-performance','team','deep']);
   var NORMALIZE = { team:'team-performance', teamPerformance:'team-performance' };
 

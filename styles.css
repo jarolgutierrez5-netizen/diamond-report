@@ -3774,3 +3774,75 @@ select:focus-visible {
 .dr109-badge-row {
   margin: 3px 0 2px;
 }
+
+/* ── Fantasy Start/Sit tab ─────────────────────────────────────────────────
+   Verdict badge reuses the same "dark fill + colored border/text" chip
+   language established for the HR Threats signal badges (see the K Props/
+   Hits chip restyle above) rather than a loud filled pill. Section/group
+   layout reuses .dr109-card for the player card body and .vuln-box/.vuln-item
+   for the reasoning list (same classes the cold-batter diagnosis and HR
+   Threats scouting report already use outside their original modal). */
+.fantasy-verdict-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: #0b1424;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 1000;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  white-space: nowrap;
+}
+.fantasy-verdict-badge.start { border-color: rgba(46,230,166,.55); color: #8ff0b0; }
+.fantasy-verdict-badge.sit { border-color: rgba(255,179,71,.55); color: #ffb347; }
+.fantasy-verdict-badge.out { border-color: rgba(255,77,109,.55); color: #ff9ca5; }
+
+.fantasy-section {
+  margin-bottom: 28px;
+}
+.fantasy-section-title {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 0 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.fantasy-verdict-group {
+  margin-bottom: 18px;
+}
+.fantasy-verdict-group-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.fantasy-verdict-group-title span {
+  font-weight: 700;
+  color: var(--muted);
+}
+.fantasy-card-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+.fantasy-card .dr109-card-head {
+  justify-content: space-between;
+}
+.fantasy-reason-box {
+  margin-top: 10px;
+}
+.fantasy-reason-box .vuln-item {
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+.fantasy-reason-box .vuln-item:last-child {
+  margin-bottom: 0;
+}
