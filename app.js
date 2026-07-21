@@ -4822,49 +4822,68 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   }
 
   // ── Repo-fed recent-form aggregates (Hard-Hit%, Sweet-Spot%, Barrel%, bat speed, blasts) ──
+  // pct below normalizes each raw value onto a 0-100 fill for the animated bar in
+  // metricCard — NOT the raw stat itself (most of these, e.g. Barrel%, are never
+  // anywhere near 100 in real life; a raw-value bar would read as permanently empty).
+  // Domains reuse the exact "great/good/ok" thresholds already established in
+  // getStatcastHotHitterProfile's scoring above (hardHit>=52/45/40, barrel>=15/10/7,
+  // sweetSpot>=40/34/30, batSpeed>=75/72, blastRate>=18/12, avgExitVelo>=91/89) as the
+  // top of each domain, so a "full-looking" bar here means the same thing it already
+  // means everywhere else on this site, not a newly invented scale.
+  function statcastPct(v, lo, hi) { return v == null ? null : clampNum(((parseFloat(v) - lo) / (hi - lo)) * 100, 0, 100); }
   const statcastMetrics = [
-    { label: 'Avg Exit Velo', value: hh.avgExitVelo != null ? `${parseFloat(hh.avgExitVelo)} mph` : null, desc: 'Average speed of the ball off the bat on balls in play. The most basic real measure of raw power.' },
-    { label: 'Hard-Hit%', value: hh.hardHitPct != null ? `${parseFloat(hh.hardHitPct)}%` : null, trend: hh.hardHitTrend, desc: 'How often he crushes the ball (95+ mph off the bat). Hot hitters hit the ball hard — cold ones bloop it.' },
-    { label: 'Sweet-Spot%', value: hh.sweetSpotPct != null ? `${parseFloat(hh.sweetSpotPct)}%` : null, trend: hh.sweetSpotTrend, desc: 'How often he hits line drives and deep fly balls — the kind of contact that turns into doubles and home runs.' },
-    { label: 'Barrel%', value: hh.barrelPct != null ? `${parseFloat(hh.barrelPct)}%` : null, trend: hh.barrelTrend, desc: 'How often he makes perfect contact — the hardest-hit balls at the best angles. The gold standard of a locked-in swing.' },
-    { label: 'xwOBA (14-day)', value: hh.xwoba != null ? Number(hh.xwoba).toFixed(3).replace(/^0/,'') : null, trend: hh.xwobaTrend, desc: 'The same "is he actually hot?" number as above, but measured over just the past two weeks.' },
-    { label: 'Bat Speed', value: hh.batSpeed != null ? `${Number(hh.batSpeed).toFixed(1)} mph` : null, trend: hh.batSpeedTrend, desc: 'How fast he\'s swinging. A quicker swing often shows up right before a power surge does.' },
-    { label: 'Squared-Up%', value: hh.squaredUpPct != null ? `${parseFloat(hh.squaredUpPct)}%` : null, desc: 'How often he hits the ball with the sweet spot of the bat, transferring the most possible energy regardless of swing speed.' },
-    { label: 'Blast Rate', value: hh.blastRate != null ? `${parseFloat(hh.blastRate)}%` : null, trend: hh.blastTrend, desc: 'How often his swing has both the speed and the angle to leave the yard.' },
-    { label: 'Chase%', value: hh.chasePct != null ? `${parseFloat(hh.chasePct)}%` : null, desc: 'How often he swings at pitches outside the strike zone. Lower is better — a hitter chasing more than usual is a real red flag, not a hot signal.' },
-    { label: 'Zone-Contact%', value: hh.zoneContactPct != null ? `${parseFloat(hh.zoneContactPct)}%` : null, desc: 'How often he actually makes contact when he swings at a pitch in the zone. A locked-in hitter rarely misses these.' },
-    { label: 'Sprint Speed', value: hh.sprintSpeed != null ? `${parseFloat(hh.sprintSpeed)} ft/s` : null, desc: 'Foot speed on competitive plays. Context for stolen-base and extra-base upside, not a hot/cold signal.' },
-    { label: 'Outs Above Average', value: hh.oaa != null ? `${hh.oaa > 0 ? '+' : ''}${parseFloat(hh.oaa)}` : null, desc: 'Season defensive value — how many extra outs he\'s made versus an average fielder at his position. Context, not a hot/cold signal.' },
-    { label: 'Arm Strength', value: hh.armStrength != null ? `${parseFloat(hh.armStrength)} mph` : null, desc: 'Average throwing velocity on competitive plays. Context for baserunner deterrence, not a hot/cold signal.' },
-    { label: 'Last 14 Days OPS', value: hh.recentOps != null ? Number(hh.recentOps).toFixed(3).replace(/^0/,'') : null, trend: hh.recentOpsTrend, desc: 'Real OPS from MLB\'s own game log over the last 14 days, versus his season OPS. The most reliable "is he actually hot right now" signal this app has.' },
-    { label: 'Pull%', value: hh.pullPct != null ? `${parseFloat(hh.pullPct)}%` : null, desc: 'How often he pulls the ball. The large majority of home runs are pulled, so an elevated pull rate is real power-upside context.' },
-    { label: 'Fly-Ball%', value: hh.fbPct != null ? `${parseFloat(hh.fbPct)}%` : null, desc: 'How often contact goes in the air deep enough to leave the yard. A pull-heavy fly-ball hitter has real HR upside a pull-heavy ground-ball hitter doesn\'t.' },
-    { label: 'Line-Drive%', value: hh.ldPct != null ? `${parseFloat(hh.ldPct)}%` : null, desc: 'How often he squares up a line drive. A contact-quality/BABIP signal, not a power one — high line-drive hitters get more hits, not necessarily more homers.' },
-    { label: 'Ground-Ball%', value: hh.gbPct != null ? `${parseFloat(hh.gbPct)}%` : null, desc: 'How often contact stays on the ground. Lower is generally better for power upside — ground balls almost never leave the yard.' },
-    { label: 'Extra Bases Taken%', value: hh.extraBasesTakenPct != null ? `${parseFloat(hh.extraBasesTakenPct)}%` : null, desc: 'How often he takes an extra base on a hit when he had the chance (e.g. first to third on a single). Baserunning aggressiveness, not a power signal.' },
+    { label: 'Avg Exit Velo', value: hh.avgExitVelo != null ? `${parseFloat(hh.avgExitVelo)} mph` : null, pct: statcastPct(hh.avgExitVelo, 82, 93), desc: 'Average speed of the ball off the bat on balls in play. The most basic real measure of raw power.' },
+    { label: 'Hard-Hit%', value: hh.hardHitPct != null ? `${parseFloat(hh.hardHitPct)}%` : null, pct: statcastPct(hh.hardHitPct, 20, 58), trend: hh.hardHitTrend, desc: 'How often he crushes the ball (95+ mph off the bat). Hot hitters hit the ball hard — cold ones bloop it.' },
+    { label: 'Sweet-Spot%', value: hh.sweetSpotPct != null ? `${parseFloat(hh.sweetSpotPct)}%` : null, pct: statcastPct(hh.sweetSpotPct, 20, 44), trend: hh.sweetSpotTrend, desc: 'How often he hits line drives and deep fly balls — the kind of contact that turns into doubles and home runs.' },
+    { label: 'Barrel%', value: hh.barrelPct != null ? `${parseFloat(hh.barrelPct)}%` : null, pct: statcastPct(hh.barrelPct, 0, 18), trend: hh.barrelTrend, desc: 'How often he makes perfect contact — the hardest-hit balls at the best angles. The gold standard of a locked-in swing.' },
+    { label: 'xwOBA (14-day)', value: hh.xwoba != null ? Number(hh.xwoba).toFixed(3).replace(/^0/,'') : null, pct: statcastPct(hh.xwoba, 0.260, 0.440), trend: hh.xwobaTrend, desc: 'The same "is he actually hot?" number as above, but measured over just the past two weeks.' },
+    { label: 'Bat Speed', value: hh.batSpeed != null ? `${Number(hh.batSpeed).toFixed(1)} mph` : null, pct: statcastPct(hh.batSpeed, 65, 78), trend: hh.batSpeedTrend, desc: 'How fast he\'s swinging. A quicker swing often shows up right before a power surge does.' },
+    { label: 'Squared-Up%', value: hh.squaredUpPct != null ? `${parseFloat(hh.squaredUpPct)}%` : null, pct: statcastPct(hh.squaredUpPct, 15, 40), desc: 'How often he hits the ball with the sweet spot of the bat, transferring the most possible energy regardless of swing speed.' },
+    { label: 'Blast Rate', value: hh.blastRate != null ? `${parseFloat(hh.blastRate)}%` : null, pct: statcastPct(hh.blastRate, 0, 22), trend: hh.blastTrend, desc: 'How often his swing has both the speed and the angle to leave the yard.' },
+    { label: 'Chase%', value: hh.chasePct != null ? `${parseFloat(hh.chasePct)}%` : null, pct: statcastPct(hh.chasePct, 15, 40), lowerIsBetter: true, desc: 'How often he swings at pitches outside the strike zone. Lower is better — a hitter chasing more than usual is a real red flag, not a hot signal.' },
+    { label: 'Zone-Contact%', value: hh.zoneContactPct != null ? `${parseFloat(hh.zoneContactPct)}%` : null, pct: statcastPct(hh.zoneContactPct, 65, 95), desc: 'How often he actually makes contact when he swings at a pitch in the zone. A locked-in hitter rarely misses these.' },
+    { label: 'Sprint Speed', value: hh.sprintSpeed != null ? `${parseFloat(hh.sprintSpeed)} ft/s` : null, pct: statcastPct(hh.sprintSpeed, 23, 30.5), desc: 'Foot speed on competitive plays. Context for stolen-base and extra-base upside, not a hot/cold signal.' },
+    { label: 'Outs Above Average', value: hh.oaa != null ? `${hh.oaa > 0 ? '+' : ''}${parseFloat(hh.oaa)}` : null, pct: statcastPct(hh.oaa, -10, 15), desc: 'Season defensive value — how many extra outs he\'s made versus an average fielder at his position. Context, not a hot/cold signal.' },
+    { label: 'Arm Strength', value: hh.armStrength != null ? `${parseFloat(hh.armStrength)} mph` : null, pct: statcastPct(hh.armStrength, 70, 95), desc: 'Average throwing velocity on competitive plays. Context for baserunner deterrence, not a hot/cold signal.' },
+    { label: 'Last 14 Days OPS', value: hh.recentOps != null ? Number(hh.recentOps).toFixed(3).replace(/^0/,'') : null, pct: statcastPct(hh.recentOps, 0.500, 1.100), trend: hh.recentOpsTrend, desc: 'Real OPS from MLB\'s own game log over the last 14 days, versus his season OPS. The most reliable "is he actually hot right now" signal this app has.' },
+    { label: 'Pull%', value: hh.pullPct != null ? `${parseFloat(hh.pullPct)}%` : null, pct: statcastPct(hh.pullPct, 15, 50), desc: 'How often he pulls the ball. The large majority of home runs are pulled, so an elevated pull rate is real power-upside context.' },
+    { label: 'Fly-Ball%', value: hh.fbPct != null ? `${parseFloat(hh.fbPct)}%` : null, pct: statcastPct(hh.fbPct, 15, 50), desc: 'How often contact goes in the air deep enough to leave the yard. A pull-heavy fly-ball hitter has real HR upside a pull-heavy ground-ball hitter doesn\'t.' },
+    { label: 'Line-Drive%', value: hh.ldPct != null ? `${parseFloat(hh.ldPct)}%` : null, pct: statcastPct(hh.ldPct, 10, 35), desc: 'How often he squares up a line drive. A contact-quality/BABIP signal, not a power one — high line-drive hitters get more hits, not necessarily more homers.' },
+    { label: 'Ground-Ball%', value: hh.gbPct != null ? `${parseFloat(hh.gbPct)}%` : null, pct: statcastPct(hh.gbPct, 25, 60), desc: 'How often contact stays on the ground. Lower is generally better for power upside — ground balls almost never leave the yard.' },
+    { label: 'Extra Bases Taken%', value: hh.extraBasesTakenPct != null ? `${parseFloat(hh.extraBasesTakenPct)}%` : null, pct: statcastPct(hh.extraBasesTakenPct, 20, 60), desc: 'How often he takes an extra base on a hit when he had the chance (e.g. first to third on a single). Baserunning aggressiveness, not a power signal.' },
   ].filter(m => m.value != null);
 
   const seasonFallbackMetrics = [
-    { label: 'AVG', value: bAVG, desc: 'Live MLB season batting average fallback.' },
-    { label: 'OPS', value: bOPS, desc: 'Live MLB season OPS fallback.' },
-    { label: 'ISO Power', value: bISO, desc: 'Slugging minus batting average — quick power signal.' },
+    { label: 'AVG', value: bAVG, pct: statcastPct(bAVG, 0.200, 0.320), desc: 'Live MLB season batting average fallback.' },
+    { label: 'OPS', value: bOPS, pct: statcastPct(bOPS, 0.600, 1.000), desc: 'Live MLB season OPS fallback.' },
+    { label: 'ISO Power', value: bISO, pct: statcastPct(bISO, 0.100, 0.300), desc: 'Slugging minus batting average — quick power signal.' },
     { label: 'HR', value: bHR, desc: 'Live MLB season home runs.' },
-    { label: 'K%', value: bKpct, desc: 'Live MLB strikeout rate fallback.' },
-    { label: 'BB%', value: bBBpct, desc: 'Live MLB walk rate fallback.' },
+    { label: 'K%', value: bKpct, pct: statcastPct(bKpct, 15, 35), lowerIsBetter: true, desc: 'Live MLB strikeout rate fallback.' },
+    { label: 'BB%', value: bBBpct, pct: statcastPct(bBBpct, 4, 14), desc: 'Live MLB walk rate fallback.' },
   ].filter(m => m.value && m.value !== '–');
 
   const onFireScore = Math.round(hh.onFireScore || (seasonFallbackMetrics.length ? Math.max(35, Math.min(88, ((parseFloat(bs.ops)||.700)-.600)*120 + ((parseFloat(bs.homeRuns)||0)*1.1))) : 0));
   const onFireLabel = onFireScore >= 85 ? 'ELITE' : onFireScore >= 70 ? 'HOT' : onFireScore >= 45 ? 'WARM' : 'COOL';
   const onFireColor = onFireScore >= 85 ? '#ff6b6b' : onFireScore >= 70 ? 'var(--accent2)' : onFireScore >= 45 ? 'var(--green)' : 'var(--muted)';
 
-  const metricCard = m => `
+  // Bar length always reads as "more filled = better for the batter" regardless of
+  // metric direction, so lowerIsBetter metrics (Chase%) show their normalized pct
+  // inverted here — the underlying m.pct stays a plain domain-normalized value for
+  // anyone reading the data, only the rendered width flips.
+  function metricBarWidth(m) { return m.pct == null ? null : (m.lowerIsBetter ? 100 - m.pct : m.pct); }
+  function metricBarColor(w) { return w >= 70 ? 'var(--green)' : w >= 40 ? 'var(--accent2)' : 'var(--muted)'; }
+  const metricCard = m => {
+    const barWidth = metricBarWidth(m);
+    return `
     <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px" title="${m.desc}">
       <div style="font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">${m.label}</div>
       <div style="display:flex;align-items:baseline;gap:8px;margin-top:2px;flex-wrap:wrap">
         <span style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700">${m.value}</span>
         ${m.trend !== undefined ? `<span style="font-size:10px;font-family:'JetBrains Mono',monospace;display:inline-flex;align-items:center">${trendArrow(m.trend)}${trendSparkline(m.trend)}</span>` : (m.delta || '')}
       </div>
+      ${barWidth != null ? `<div class="metric-bar-track"><div class="metric-bar-fill" data-bar-target="${barWidth}" style="width:0%;background:${metricBarColor(barWidth)}"></div></div>` : ''}
     </div>`;
+  };
 
   const hotStreakHTML = `
     <div class="mu-hotstreak-section" style="margin-bottom:20px">
@@ -4987,7 +5006,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       ${pitchMixDashboard.html}
       ${pitchEffectivenessTableHTML}
 
-      <!-- Strike Zone + Zone Fit -->
+      <!-- Strike Zone + Attack Zone by Pitch, side by side -->
       <div class="dr1041-zone-grid">
       <div class="zone-section">
         <div class="zone-title">${hasRealZones ? 'STRIKE ZONE · REAL wOBA AGAINST BY LOCATION' : 'STRIKE ZONE · NO REAL DATA YET'}</div>
@@ -5019,9 +5038,9 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       </div>` : `
       <div class="zone-note" style="padding:10px 0;color:var(--muted);font-size:12px">No real per-location Statcast data available for ${pitcherName} yet — this requires a separate pitch-location sync that hasn't been built.</div>`}
       </div>
-      ${zoneFitPanelHTML}
-      </div>
       ${attackZoneHTML}
+      </div>
+      ${zoneFitPanelHTML}
 
       <div class="dr1041-bottom-strip">
         <span class="dr1041-bottom-item">Pitcher Throws: <strong>${handLabel(pitcherHand,'pitcher')}</strong></span>
@@ -5036,6 +5055,17 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
 
   const scoreEl = body.querySelector('[data-score]');
   if (scoreEl && pitchMixDashboard.score != null) animateCountUp(scoreEl, pitchMixDashboard.score, 0);
+
+  // Grow the Recent Form bars in from 0 on first paint. Set width in a second
+  // rAF (not the same frame the 0% width was painted in) so the browser commits
+  // the 0% state first and the CSS transition actually has something to animate
+  // from, instead of jumping straight to the target width.
+  const barFills = body.querySelectorAll('.metric-bar-fill[data-bar-target]');
+  if (barFills.length) {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      barFills.forEach(el => { el.style.width = el.getAttribute('data-bar-target') + '%'; });
+    }));
+  }
 }
 
 
