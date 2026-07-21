@@ -47,8 +47,11 @@ jobs:
       # data/pitcher-statcast.json from the morning run already exists for them to
       # merge into.
       - name: Run Statcast pitch-arsenal sync
+        # Now also pulls career (2015-present) pitch-arsenal data — ~12 more cheap
+        # whole-league requests (not per-pitcher), hence the added timeout below.
         if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-pitcher-statcast.mjs
+        timeout-minutes: 10
 
       - name: Run Statcast hot-hitters sync (batter Barrel% / Hard-Hit% / xwOBA)
         if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'

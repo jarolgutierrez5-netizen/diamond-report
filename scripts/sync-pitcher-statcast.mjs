@@ -20,6 +20,15 @@
 // to confirm). The schema sanity check below fails loudly if the expected columns are
 // missing, rather than silently writing wrong data — treat the first scheduled run as
 // unverified until its output is manually checked.
+//
+// Career pitcher stats (see buildPitcherCareerStatcast): this same leaderboard endpoint
+// returns the WHOLE LEAGUE in one CSV per year requested — it's not a per-pitcher pull —
+// so building a "career" view just means repeating this same cheap whole-league fetch
+// once per season back to STATCAST_START_YEAR (Statcast's public pitch-tracking data
+// starts in 2015) and blending the per-pitch-type rows across years, weighted by that
+// year's real pitch count for that pitch type. Still bounded and cheap (~11 total
+// requests/day as of 2026, not 11-per-pitcher), morning-run only like the season pull
+// this shares its schema/parser with.
 // ─────────────────────────────────────────────────────────────────────────
 
 import { writeFile, mkdir } from 'node:fs/promises';
@@ -30,6 +39,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const SEASON = new Date().getFullYear();
 const BASE = 'https://baseballsavant.mlb.com/leaderboard/pitch-arsenal-stats';
+// Statcast's public pitch-tracking data starts in the 2015 season — pulling "career"
+// further back than this simply isn't possible from this endpoint (or any public
+// Statcast source), so this is a real data-availability floor, not an arbitrary cutoff.
+const STATCAST_START_YEAR = 2015;
 
 async function fetchCSV(url, attempts = 3) {
   let lastErr;
@@ -154,6 +167,63 @@ async function buildPitcherStatcast() {
   return pitchers;
 }
 
+// Builds a "career" (STATCAST_START_YEAR-present) per-pitch-type profile per pitcher
+// by fetching this same whole-league leaderboard once per season and blending each
+// pitch type's rate stats across years, weighted by that year's real pitch count for
+// that pitch type — a pitcher who threw 2000 sliders in his peak season and 50 in a
+// rookie cup of coffee shouldn't have those two seasons count equally.
+async function buildPitcherCareerStatcast() {
+  const buckets = {}; // id -> pitchName -> { pitchesSum, sums: {stat:weightedSum}, weights: {stat:pitchWeight} }
+  for (let year = STATCAST_START_YEAR; year <= SEASON; year++) {
+    let rows;
+    try {
+      const url = `${BASE}?type=pitcher&pitchType=&year=${year}&team=&min=1&csv=true`;
+      const csv = await fetchCSV(url);
+      rows = parseCSV(csv);
+      assertSchema(rows, `pitcher pitch-arsenal (career, ${year})`);
+    } catch (e) {
+      console.warn(`Career pitch-arsenal fetch failed for ${year}, skipping that season:`, e.message);
+      continue;
+    }
+    for (const r of rows) {
+      const id = pick(r, ['player_id', 'pitcher_id', 'mlbam_id']);
+      if (!id) continue;
+      const stat = rowToPitchStat(r);
+      const pitches = stat.pitches || 0;
+      if (!pitches) continue;
+      if (!buckets[id]) buckets[id] = {};
+      if (!buckets[id][stat.name]) buckets[id][stat.name] = { pitchesSum: 0, sums: {}, weights: {} };
+      const bucket = buckets[id][stat.name];
+      bucket.pitchesSum += pitches;
+      ['avg', 'slg', 'xslg', 'xba', 'woba', 'xwoba', 'whiffPct', 'hardHitPct', 'barrelPct'].forEach(k => {
+        if (stat[k] != null) {
+          bucket.sums[k] = (bucket.sums[k] || 0) + (stat[k] * pitches);
+          bucket.weights[k] = (bucket.weights[k] || 0) + pitches;
+        }
+      });
+    }
+    // Polite delay between requests — cheap whole-league pulls, but still real
+    // outbound calls to a public endpoint with no documented rate limit.
+    await new Promise(r => setTimeout(r, 500));
+  }
+
+  const pitchers = {};
+  for (const [id, byName] of Object.entries(buckets)) {
+    const byPitch = Object.entries(byName).map(([name, bucket]) => {
+      const stat = { name, pitches: bucket.pitchesSum, usagePct: null, homeRuns: null };
+      ['avg', 'slg', 'xslg', 'xba', 'woba', 'xwoba', 'whiffPct', 'hardHitPct', 'barrelPct'].forEach(k => {
+        stat[k] = bucket.weights[k] ? bucket.sums[k] / bucket.weights[k] : null;
+      });
+      return stat;
+    });
+    const totalPitches = byPitch.reduce((sum, p) => sum + (p.pitches || 0), 0);
+    byPitch.forEach(p => { p.usagePct = totalPitches > 0 ? +((p.pitches / totalPitches) * 100).toFixed(1) : null; });
+    byPitch.sort((a, b) => (b.usagePct || 0) - (a.usagePct || 0));
+    pitchers[id] = { totalPitches, byPitch };
+  }
+  return pitchers;
+}
+
 async function buildBatterPitchSeason() {
   const url = `${BASE}?type=batter&pitchType=&year=${SEASON}&team=&min=1&csv=true`;
   const csv = await fetchCSV(url);
@@ -189,6 +259,24 @@ async function main() {
     console.error('Batter pitch-arsenal sync failed:', e.message);
   }
 
+  // Career is a nice-to-have layered on top of the season data above, not a
+  // requirement for this script to succeed — a failure here (or a slow year or two
+  // in the STATCAST_START_YEAR..SEASON loop) shouldn't stop the season sync from
+  // being written. Merged onto the already-built pitchers object by ID; a pitcher
+  // with no career data (e.g. a real fetch failure) simply has no `career` key
+  // rather than a fabricated one, same graceful-degradation rule as everywhere else.
+  if (!pitcherErr) {
+    try {
+      const careerPitchers = await buildPitcherCareerStatcast();
+      for (const [id, careerStat] of Object.entries(careerPitchers)) {
+        if (pitchers[id]) pitchers[id].career = careerStat;
+      }
+      console.log(`Synced career pitch-arsenal data for ${Object.keys(careerPitchers).length} pitcher(s).`);
+    } catch (e) {
+      console.error('Career pitch-arsenal sync failed (season data still written):', e.message);
+    }
+  }
+
   // Only overwrite an existing file with an empty result if this run actually errored —
   // a genuinely empty leaderboard response (e.g. off-season) shouldn't nuke yesterday's
   // real data, but a real successful empty result should still write through.
@@ -211,4 +299,4 @@ if (isMain) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { parseCSV, rowToPitchStat, assertSchema, buildPitcherStatcast, buildBatterPitchSeason, main, PITCH_NAME_MAP };
+export { parseCSV, rowToPitchStat, assertSchema, buildPitcherStatcast, buildPitcherCareerStatcast, buildBatterPitchSeason, main, PITCH_NAME_MAP };

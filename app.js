@@ -4719,12 +4719,8 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     </tr>`;
   }
 
-  let pitchRows = '';
-  let pitchHrList = [];
-  if (hasRealPitchMix) {
-    pitchHrList = pitcherProfile.byPitch.map(p => ({ name: p.name, usagePct: p.usagePct }));
-    // Real pitch mix from sync script.
-    pitchRows = pitcherProfile.byPitch.map(p => {
+  function buildPitchRows(byPitchArr) {
+    return (byPitchArr || []).map(p => {
       const woba = p.woba ?? p.wobaAgainst ?? p.xwoba ?? p.xwobaContact ?? null;
       const avg = p.avg ?? p.avgAgainst ?? null;
       const slg = p.slg ?? p.slgAgainst ?? null;
@@ -4735,11 +4731,36 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     }).join('');
   }
 
-  const pitchEffectivenessTableHTML = hasRealPitchMix ? `<div class="dr1041-pitch-mix" style="margin-top:14px">
+  let pitchRows = '';
+  let pitchHrList = [];
+  if (hasRealPitchMix) {
+    pitchHrList = pitcherProfile.byPitch.map(p => ({ name: p.name, usagePct: p.usagePct }));
+    pitchRows = buildPitchRows(pitcherProfile.byPitch);
+  }
+  // Career (2015-present, blended across seasons — see sync-pitcher-statcast.mjs's
+  // buildPitcherCareerStatcast) sits alongside the season table via the exact same
+  // AUTO/vs RHP/vs LHP toggle mechanism the Pitch Mix Advantage panel above already
+  // uses (.dr1042-split-btn/.dr1042-mode-body + the shared click handler keyed off
+  // [data-pitch-mix-toggle]) — reused as-is rather than building a second toggle
+  // pattern, since it's a plain two-state swap the existing handler already covers.
+  const hasCareerPitchMix = !!(pitcherProfile?.career?.byPitch?.length);
+  const careerPitchRows = hasCareerPitchMix ? buildPitchRows(pitcherProfile.career.byPitch) : '';
+
+  const pitchEffToggleHTML = hasCareerPitchMix ? `
+      <div class="dr1042-split-toggle" role="tablist" aria-label="Season vs career toggle">
+        <button type="button" class="dr1042-split-btn active" data-mode="season">SEASON</button>
+        <button type="button" class="dr1042-split-btn" data-mode="career">CAREER</button>
+      </div>` : '';
+
+  const pitchEffectivenessTableHTML = hasRealPitchMix ? `<div class="dr1041-pitch-mix" style="margin-top:14px"${hasCareerPitchMix ? ' data-pitch-mix-toggle' : ''}>
     <div class="dr1041-pitch-head">
-      <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">Real synced pitch-level data for ${pitcherName}.</div></div>
+      <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">Real synced pitch-level data for ${pitcherName}${hasCareerPitchMix ? ' · toggle SEASON/CAREER (2015-present, blended across seasons)' : ''}.</div></div>
+      ${pitchEffToggleHTML}
     </div>
-    <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage</th><th>AVG</th><th>wOBA</th><th>SLG</th><th>HR</th><th>Whiff%</th><th>Notes</th></tr></thead><tbody>${pitchRows}</tbody></table></div>
+    <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage</th><th>AVG</th><th>wOBA</th><th>SLG</th><th>HR</th><th>Whiff%</th><th>Notes</th></tr></thead>
+      <tbody class="dr1042-mode-body active" data-mode="season">${pitchRows}</tbody>
+      ${hasCareerPitchMix ? `<tbody class="dr1042-mode-body" data-mode="career">${careerPitchRows}</tbody>` : ''}
+    </table></div>
     ${gbLegendHTML}
   </div>` : `<div class="dr1041-pitch-mix" style="margin-top:14px">
     <div class="dr1041-pitch-head">
