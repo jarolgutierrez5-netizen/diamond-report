@@ -779,7 +779,12 @@ async function computeKProp(g, side, season, oddsLookup) {
 
   // Real opposing-lineup K rate when the boxscore has posted batters pre-game; falls
   // back to the 22% league average (same fallback the live site uses) when it hasn't.
+  // Also keeps the actual 9 batters (id/name/battingOrder/own K%), not just their
+  // averaged rate -- so a later "what went right or wrong" pass can check whether a
+  // miss traces to one specific hitter in the lineup being unusually contact-heavy,
+  // not just to the pitcher's own stuff being off that night.
   let oppKpct = 0.22;
+  let lineup = [];
   try {
     const bd = await fetchJSON(`${API}/game/${g.gamePk}/boxscore`);
     const teamBox = bd?.teams?.[opp];
@@ -789,6 +794,12 @@ async function computeKProp(g, side, season, oddsLookup) {
       return (s.strikeOuts && s.plateAppearances) ? s.strikeOuts / s.plateAppearances : 0.22;
     });
     if (kpcts.length) oppKpct = kpcts.reduce((a, b) => a + b, 0) / kpcts.length;
+    lineup = oppBatters.map((b, i) => ({
+      id: b?.person?.id ?? null,
+      name: b?.person?.fullName ?? null,
+      battingOrder: i + 1,
+      kPct: Math.round((kpcts[i] ?? 0.22) * 1000) / 1000,
+    })).filter(x => x.id);
   } catch (e) {}
 
   const projK = Math.max(1, (k9 * projIP / 9) + ((oppKpct - 0.22) * 10));
@@ -815,6 +826,11 @@ async function computeKProp(g, side, season, oddsLookup) {
     pick: 'OVER',
     result: 'pending',
     finalK: null,
+    // Real post-game pitcher performance, filled in at grading time alongside finalK
+    // (see gradePending's K prop block) -- lets a later pass tell apart "the model's
+    // stuff read was wrong" from "the model was right but an early hook/short outing
+    // cut off the strikeout opportunity" for any given miss.
+    finalIP: null, finalPitches: null, finalBB: null, finalHits: null, finalBF: null,
     // Matchup snapshot at pick time -- k9/projIP/oppKpct all feed directly into projK
     // above but were previously discarded once the final projK number was computed, so
     // there was no way to check afterward whether the model is systematically off for
@@ -823,6 +839,10 @@ async function computeKProp(g, side, season, oddsLookup) {
     k9: Math.round(k9 * 100) / 100,
     projIP: Math.round(projIP * 100) / 100,
     oppKpct: Math.round(oppKpct * 1000) / 1000,
+    // The actual 9 opposing batters faced (id/name/battingOrder/own season K%) behind
+    // oppKpct above -- lets a later pass check whether a specific lineup spot, not just
+    // the lineup's blended average, is driving a systematic miss.
+    lineup,
   };
 }
 
@@ -2108,7 +2128,18 @@ async function gradePending(store) {
         const teamKey = rec.team && g.teams?.away?.team?.abbreviation === rec.team ? 'away' : 'home';
         const players = box?.teams?.[teamKey]?.players || {};
         const p = players['ID' + rec.pitcherId];
-        finalK = n(p?.stats?.pitching?.strikeOuts, NaN);
+        const pitching = p?.stats?.pitching || {};
+        finalK = n(pitching.strikeOuts, NaN);
+        // Real post-game performance, alongside finalK -- so a miss can later be told
+        // apart as "the model's stuff read was wrong" (finalIP/finalBF look normal, K's
+        // just didn't come) vs. "the model was right but got cut short" (a short outing/
+        // early hook limited the strikeout opportunity regardless of how well they threw).
+        const numOrNull = v => { const x = n(v, NaN); return Number.isFinite(x) ? x : null; };
+        rec.finalIP = pitching.inningsPitched != null ? parseInningsPitched(pitching.inningsPitched) : null;
+        rec.finalPitches = numOrNull(pitching.numberOfPitches);
+        rec.finalBB = numOrNull(pitching.baseOnBalls);
+        rec.finalHits = numOrNull(pitching.hits);
+        rec.finalBF = numOrNull(pitching.battersFaced);
       } catch (e) {
         console.warn(`Boxscore fetch failed for gamePk ${rec.gamePk}:`, e.message);
       }

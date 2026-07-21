@@ -117,6 +117,26 @@ async function main() {
   const bySource = bucketStats(decided, r => r.lineSource || 'model', ['model', 'sportsbook']);
   if (bySource.length > 1) printTable('By line source:', bySource);
 
+  // ── "What went wrong" on losses: tells apart a short outing (pulled early,
+  // never got the innings/batters faced to reach the projected K count
+  // regardless of how well they were pitching) from a full outing that just
+  // didn't produce enough strikeouts (the model's read on this pitcher's
+  // stuff/matchup was the actual miss). Only present on picks graded after
+  // finalIP/finalBF were added to the K prop grading step. ──
+  const losses = decided.filter(r => r.result === 'loss');
+  const lossesWithPerf = losses.filter(r => r.finalIP != null || r.finalBF != null);
+  if (lossesWithPerf.length) {
+    let shortOuting = 0, fullOuting = 0;
+    for (const r of lossesWithPerf) {
+      const pulledEarly = (r.finalIP != null && r.projIP != null && r.finalIP < r.projIP - 1)
+        || (r.finalBF != null && r.finalBF < 20);
+      if (pulledEarly) shortOuting++; else fullOuting++;
+    }
+    console.log(`\nMiss diagnosis (${lossesWithPerf.length}/${losses.length} losses with performance data):`);
+    console.log(`  Short outing (pulled early, never got the look): ${shortOuting} (${pct(shortOuting / lossesWithPerf.length)})`);
+    console.log(`  Full outing, just didn't miss enough bats: ${fullOuting} (${pct(fullOuting / lossesWithPerf.length)})`);
+  }
+
   // ── Pitcher K/9 and opponent-lineup K-rate breakdowns — only present on
   // picks captured after the k9/projIP/oppKpct snapshot fields were added;
   // will be thin/empty at first. ──
@@ -128,6 +148,23 @@ async function main() {
 
     const oppBucket = r => r.oppKpct == null ? null : r.oppKpct < 0.20 ? 'Low-K lineup (<20%)' : r.oppKpct < 0.25 ? 'Avg lineup (20-25%)' : 'High-K lineup (25%+)';
     printTable('By opponent lineup K-rate:', bucketStats(withMatchup, oppBucket, ['Low-K lineup (<20%)', 'Avg lineup (20-25%)', 'High-K lineup (25%+)']));
+
+    // Real lineups (not just their averaged K%) let this check whether one
+    // specific batting-order spot's season K-rate predicts the pitcher's
+    // real strikeout total better than the lineup-wide average does -- e.g.
+    // if the bottom-of-the-order K% ends up mattering more than 1-2 hitters.
+    const withLineup = withMatchup.filter(r => Array.isArray(r.lineup) && r.lineup.length === 9);
+    if (withLineup.length >= 20) {
+      const spotAvgKpct = spot => {
+        const vals = withLineup.map(r => r.lineup.find(b => b.battingOrder === spot)?.kPct).filter(v => v != null);
+        return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+      };
+      console.log(`\nAvg season K% by batting-order spot (n=${withLineup.length} lineups):`);
+      for (let spot = 1; spot <= 9; spot++) {
+        const avg = spotAvgKpct(spot);
+        if (avg != null) console.log(`  Spot ${spot}: ${pct(avg)}`);
+      }
+    }
   } else {
     console.log('  (need at least 20 graded picks with matchup data for a meaningful breakdown — check back after more picks are captured and graded)');
   }
