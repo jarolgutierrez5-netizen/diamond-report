@@ -113,6 +113,10 @@ async function main() {
       if (z != null) console.log(`  z = ${z.toFixed(2)} ${Math.abs(z) > 1.96 ? '(statistically significant difference, p<0.05)' : '(not conventionally significant at this sample size)'}`);
     }
 
+    // Same methodology as the median-split z-test just above, not just raw
+    // percentages -- a tag's TRUE/FALSE split is only worth reading once both
+    // sides clear a real sample size.
+    const TAG_MIN_SAMPLE_PER_SIDE = 20;
     for (const tag of ['isFavorable', 'isHot', 'isDrought', 'isDue']) {
       const withTag = graded.filter(r => tag in r);
       if (!withTag.length) continue;
@@ -121,7 +125,14 @@ async function main() {
       if (!on.length || !off.length) continue;
       const ow = on.filter(r => r.result === 'win').length;
       const fw = off.filter(r => r.result === 'win').length;
-      console.log(`  ${tag}: TRUE ${pct(ow / on.length)} (n=${on.length})  vs  FALSE ${pct(fw / off.length)} (n=${off.length})`);
+      const z = twoPropZ(ow, on.length, fw, off.length);
+      let line = `  ${tag}: TRUE ${pct(ow / on.length)} (n=${on.length})  vs  FALSE ${pct(fw / off.length)} (n=${off.length})`;
+      if (on.length < TAG_MIN_SAMPLE_PER_SIDE || off.length < TAG_MIN_SAMPLE_PER_SIDE) {
+        line += `\n  (below the ${TAG_MIN_SAMPLE_PER_SIDE}-per-side sample floor — too thin to read as signal yet, treat as noise-risk)`;
+      } else if (z != null) {
+        line += `\n  z = ${z.toFixed(2)} ${Math.abs(z) > 1.96 ? '(statistically significant difference, p<0.05)' : '(not conventionally significant at this sample size)'}`;
+      }
+      console.log(line);
     }
 
     const withPitcher = graded.filter(r => r.pitcherHr9 != null);

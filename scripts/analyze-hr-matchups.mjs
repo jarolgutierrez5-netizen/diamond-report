@@ -112,8 +112,14 @@ async function main() {
     if (z != null) console.log(`  z = ${z.toFixed(2)} ${Math.abs(z) > 1.96 ? '(statistically significant difference, p<0.05)' : '(not conventionally significant at this sample size)'}`);
   }
 
-  // ── Signal-tag breakdowns (isOnFire/isFavorable/isDrought/isDue) — only
-  // present on picks captured after those tags were added to the snapshot. ──
+  // ── Signal-tag breakdowns (isOnFire/isFavorable/isDrought/isDue) — same
+  // methodology as the score-calibration z-test above, not just raw percentages:
+  // only present on picks captured after those tags were added to the snapshot,
+  // and a tag's TRUE/FALSE split is only worth reading once both sides clear a
+  // real sample size — the whole reason the score check above and
+  // tune-model-params.mjs both gate on sample size before treating a split as
+  // signal instead of noise from a handful of picks. ──
+  const TAG_MIN_SAMPLE_PER_SIDE = 20;
   for (const tag of ['isOnFire', 'isFavorable', 'isDrought', 'isDue']) {
     const withTag = graded.filter(r => tag in r);
     if (!withTag.length) continue;
@@ -122,7 +128,14 @@ async function main() {
     if (!on.length || !off.length) continue;
     const ow = on.filter(r => r.result === 'win').length;
     const fw = off.filter(r => r.result === 'win').length;
-    console.log(`\n${tag}: TRUE ${pct(ow / on.length)} (n=${on.length})  vs  FALSE ${pct(fw / off.length)} (n=${off.length})`);
+    const z = twoPropZ(ow, on.length, fw, off.length);
+    let line = `\n${tag}: TRUE ${pct(ow / on.length)} (n=${on.length})  vs  FALSE ${pct(fw / off.length)} (n=${off.length})`;
+    if (on.length < TAG_MIN_SAMPLE_PER_SIDE || off.length < TAG_MIN_SAMPLE_PER_SIDE) {
+      line += `\n  (below the ${TAG_MIN_SAMPLE_PER_SIDE}-per-side sample floor — too thin to read as signal yet, treat as noise-risk)`;
+    } else if (z != null) {
+      line += `\n  z = ${z.toFixed(2)} ${Math.abs(z) > 1.96 ? '(statistically significant difference, p<0.05)' : '(not conventionally significant at this sample size)'}`;
+    }
+    console.log(line);
   }
 
   // ── Pitcher-matchup breakdowns — only present on picks captured after the
