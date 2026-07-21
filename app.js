@@ -1522,6 +1522,14 @@ const bannerKs  = {};           // pitcherId -> { name, teamAbbr, oppAbbr, ks, o
 let hrpRows = [], hrpSortCol = 'hrProb', hrpSortDir = -1, hrpFilter = 'all';
 let statcastHotHitters = {};
 
+// Warning-track fly-out ("near HR") store — loaded from data/near-hrs.json,
+// written by scripts/sync-near-hrs.mjs. Keyed by batter MLB ID (string).
+// Empty object = file not yet synced or this batter isn't in the tracked pool;
+// the matchup modal falls back gracefully in that case, same as pitcherStatcast.
+let nearHRs = {};
+let nearHRsLoaded = false;
+let nearHRsPromise = null;
+
 // Per-pitcher Statcast store — loaded from data/pitcher-statcast.json,
 // written by scripts/sync-pitcher-statcast.mjs. Keyed by pitcher MLB ID.
 // Empty object = file not yet synced; front-end falls back gracefully.
@@ -4023,7 +4031,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
       fetchJSON(`https://diamondreport.app/api/v1/people/${batterId}/stats?stats=statSplits&group=hitting&sitCodes=vl,vr&season=2026`).catch(() => null),
       fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}/stats?stats=statSplits&group=pitching&sitCodes=vl,vr&season=2026`).catch(() => null)
     ]);
-    await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason()]);
+    await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs()]);
 
     const batterPerson = batterData.people?.[0] || {};
     const pitcherPerson = pitcherData.people?.[0] || {};
@@ -4036,8 +4044,9 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
     const pitcherSplits = pitcherSplitData?.stats?.[0]?.splits || [];
     const hotHitter = getStatcastHotHitterProfile({ id: batterId, name: batterName, ops: bs.ops, stats: { slg: bs.slg, avg: bs.avg } });
     const pitcherProfile = pitcherStatcast[String(pitcherId)] || null;
+    const nearHRList = nearHRs[String(batterId)] || null;
 
-    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile });
+    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList });
   } catch(e) {
     body.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
@@ -4061,7 +4070,7 @@ function animateCountUp(el, endValue, decimals = 0, duration = 700) {
   requestAnimationFrame(step);
 }
 
-function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile }) {
+function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null }) {
   function fv(v, dec=3) {
     if (v==null||v===''||v==='---') return '–';
     const n = parseFloat(v); return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0(\.)/, '$1');
@@ -4885,6 +4894,30 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     </div>`;
   };
 
+  // ── Near HRs · last 10 games (warning-track fly-outs) ──
+  // nearHRList is null when data/near-hrs.json hasn't synced yet or this batter
+  // isn't in the tracked pool (distinct from an empty array, which means it DID
+  // sync and genuinely found none) — same three-state pattern as hasRealZones.
+  const nearHRHTML = (() => {
+    const shortName = batterName.split(' ').pop();
+    if (nearHRList == null) return `
+      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">Warning-track power tracking for ${shortName} hasn't synced yet.</div>`;
+    if (!nearHRList.length) return `
+      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">No warning-track fly outs (375+ ft, stayed in the park) for ${shortName} in his last 10 games.</div>`;
+    const rows = nearHRList.map(n => `
+      <div class="vuln-item">
+        <span class="vuln-icon">🚀</span>
+        <span style="color:var(--text)">
+          <strong>${Math.round(n.distance)} ft</strong>${n.exitVelo != null ? ` · ${n.exitVelo.toFixed(1)} mph` : ''}${n.launchAngle != null ? ` · ${Math.round(n.launchAngle)}° launch` : ''} — ${n.date}${n.matchup ? ` (${n.matchup})` : ''}${n.videoUrl ? ` · <a href="${n.videoUrl}" target="_blank" rel="noopener" style="color:var(--accent2)">Watch ▸</a>` : ''}
+        </span>
+      </div>`).join('');
+    return `
+      <div class="vuln-box" style="margin-top:10px">
+        <div class="vuln-title">🚀 NEAR HRs · LAST 10 GAMES <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(375+ ft fly outs — warning-track power)</span></div>
+        ${rows}
+      </div>`;
+  })();
+
   const hotStreakHTML = `
     <div class="mu-hotstreak-section" style="margin-bottom:20px">
       <div class="zone-title">🔥 HOT STREAK SIGNALS</div>
@@ -4916,6 +4949,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <div style="font-size:11px;color:var(--muted);line-height:1.6">
         <strong style="color:var(--text)">How to read this:</strong> batting average can lie — a hitter can smash the ball all week straight into gloves, or bloop his way to a lucky hot streak. These numbers look at the swings themselves: how hard he's hitting the ball and where it's going. A green <strong style="color:var(--green)">▲ due</strong> tag means his swings have been better than his results — good things may be coming. An orange <strong style="color:var(--accent2)">▼ running hot</strong> tag means the opposite: the results have been better than the swings, and he may cool off.
       </div>
+      ${nearHRHTML}
     </div>`;
 
   body.innerHTML = `
@@ -5148,6 +5182,26 @@ async function loadStatcastHotHitters(force=false) {
     return statcastHotHitters;
   })();
   return statcastHotHittersPromise;
+}
+// Same repo-fed-JSON-with-graceful-fallback pattern as loadStatcastHotHitters()
+// above — data/near-hrs.json is keyed by batter ID already, so this just
+// normalizes the ID to a string for lookup consistency with the rest of the app.
+async function loadNearHRs(force=false) {
+  if (nearHRsLoaded && !force) return nearHRs;
+  if (nearHRsPromise && !force) return nearHRsPromise;
+  nearHRsPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/near-hrs.json`);
+      const players = data.players || {};
+      nearHRs = {};
+      Object.keys(players).forEach(id => { nearHRs[String(id)] = players[id]; });
+    } catch(e) {
+      nearHRs = {};
+    }
+    nearHRsLoaded = true;
+    return nearHRs;
+  })();
+  return nearHRsPromise;
 }
 // Overwrites the hardcoded park-factor estimates (declared above, near the venue
 // list) with real, auto-updating Baseball Savant HR-index values once synced —
