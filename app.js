@@ -1522,6 +1522,14 @@ const bannerKs  = {};           // pitcherId -> { name, teamAbbr, oppAbbr, ks, o
 let hrpRows = [], hrpSortCol = 'hrProb', hrpSortDir = -1, hrpFilter = 'all';
 let statcastHotHitters = {};
 
+// Warning-track fly-out ("near HR") store — loaded from data/near-hrs.json,
+// written by scripts/sync-near-hrs.mjs. Keyed by batter MLB ID (string).
+// Empty object = file not yet synced or this batter isn't in the tracked pool;
+// the matchup modal falls back gracefully in that case, same as pitcherStatcast.
+let nearHRs = {};
+let nearHRsLoaded = false;
+let nearHRsPromise = null;
+
 // Per-pitcher Statcast store — loaded from data/pitcher-statcast.json,
 // written by scripts/sync-pitcher-statcast.mjs. Keyed by pitcher MLB ID.
 // Empty object = file not yet synced; front-end falls back gracefully.
@@ -4023,7 +4031,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
       fetchJSON(`https://diamondreport.app/api/v1/people/${batterId}/stats?stats=statSplits&group=hitting&sitCodes=vl,vr&season=2026`).catch(() => null),
       fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}/stats?stats=statSplits&group=pitching&sitCodes=vl,vr&season=2026`).catch(() => null)
     ]);
-    await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason()]);
+    await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs()]);
 
     const batterPerson = batterData.people?.[0] || {};
     const pitcherPerson = pitcherData.people?.[0] || {};
@@ -4036,8 +4044,9 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
     const pitcherSplits = pitcherSplitData?.stats?.[0]?.splits || [];
     const hotHitter = getStatcastHotHitterProfile({ id: batterId, name: batterName, ops: bs.ops, stats: { slg: bs.slg, avg: bs.avg } });
     const pitcherProfile = pitcherStatcast[String(pitcherId)] || null;
+    const nearHRList = nearHRs[String(batterId)] || null;
 
-    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile });
+    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList });
   } catch(e) {
     body.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
@@ -4061,7 +4070,7 @@ function animateCountUp(el, endValue, decimals = 0, duration = 700) {
   requestAnimationFrame(step);
 }
 
-function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile }) {
+function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null }) {
   function fv(v, dec=3) {
     if (v==null||v===''||v==='---') return '–';
     const n = parseFloat(v); return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0(\.)/, '$1');
@@ -4822,49 +4831,96 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   }
 
   // ── Repo-fed recent-form aggregates (Hard-Hit%, Sweet-Spot%, Barrel%, bat speed, blasts) ──
+  // pct below normalizes each raw value onto a 0-100 fill for the animated bar in
+  // metricCard — NOT the raw stat itself (most of these, e.g. Barrel%, are never
+  // anywhere near 100 in real life; a raw-value bar would read as permanently empty).
+  // Domains reuse the exact "great/good/ok" thresholds already established in
+  // getStatcastHotHitterProfile's scoring above (hardHit>=52/45/40, barrel>=15/10/7,
+  // sweetSpot>=40/34/30, batSpeed>=75/72, blastRate>=18/12, avgExitVelo>=91/89) as the
+  // top of each domain, so a "full-looking" bar here means the same thing it already
+  // means everywhere else on this site, not a newly invented scale.
+  function statcastPct(v, lo, hi) { return v == null ? null : clampNum(((parseFloat(v) - lo) / (hi - lo)) * 100, 0, 100); }
   const statcastMetrics = [
-    { label: 'Avg Exit Velo', value: hh.avgExitVelo != null ? `${parseFloat(hh.avgExitVelo)} mph` : null, desc: 'Average speed of the ball off the bat on balls in play. The most basic real measure of raw power.' },
-    { label: 'Hard-Hit%', value: hh.hardHitPct != null ? `${parseFloat(hh.hardHitPct)}%` : null, trend: hh.hardHitTrend, desc: 'How often he crushes the ball (95+ mph off the bat). Hot hitters hit the ball hard — cold ones bloop it.' },
-    { label: 'Sweet-Spot%', value: hh.sweetSpotPct != null ? `${parseFloat(hh.sweetSpotPct)}%` : null, trend: hh.sweetSpotTrend, desc: 'How often he hits line drives and deep fly balls — the kind of contact that turns into doubles and home runs.' },
-    { label: 'Barrel%', value: hh.barrelPct != null ? `${parseFloat(hh.barrelPct)}%` : null, trend: hh.barrelTrend, desc: 'How often he makes perfect contact — the hardest-hit balls at the best angles. The gold standard of a locked-in swing.' },
-    { label: 'xwOBA (14-day)', value: hh.xwoba != null ? Number(hh.xwoba).toFixed(3).replace(/^0/,'') : null, trend: hh.xwobaTrend, desc: 'The same "is he actually hot?" number as above, but measured over just the past two weeks.' },
-    { label: 'Bat Speed', value: hh.batSpeed != null ? `${Number(hh.batSpeed).toFixed(1)} mph` : null, trend: hh.batSpeedTrend, desc: 'How fast he\'s swinging. A quicker swing often shows up right before a power surge does.' },
-    { label: 'Squared-Up%', value: hh.squaredUpPct != null ? `${parseFloat(hh.squaredUpPct)}%` : null, desc: 'How often he hits the ball with the sweet spot of the bat, transferring the most possible energy regardless of swing speed.' },
-    { label: 'Blast Rate', value: hh.blastRate != null ? `${parseFloat(hh.blastRate)}%` : null, trend: hh.blastTrend, desc: 'How often his swing has both the speed and the angle to leave the yard.' },
-    { label: 'Chase%', value: hh.chasePct != null ? `${parseFloat(hh.chasePct)}%` : null, desc: 'How often he swings at pitches outside the strike zone. Lower is better — a hitter chasing more than usual is a real red flag, not a hot signal.' },
-    { label: 'Zone-Contact%', value: hh.zoneContactPct != null ? `${parseFloat(hh.zoneContactPct)}%` : null, desc: 'How often he actually makes contact when he swings at a pitch in the zone. A locked-in hitter rarely misses these.' },
-    { label: 'Sprint Speed', value: hh.sprintSpeed != null ? `${parseFloat(hh.sprintSpeed)} ft/s` : null, desc: 'Foot speed on competitive plays. Context for stolen-base and extra-base upside, not a hot/cold signal.' },
-    { label: 'Outs Above Average', value: hh.oaa != null ? `${hh.oaa > 0 ? '+' : ''}${parseFloat(hh.oaa)}` : null, desc: 'Season defensive value — how many extra outs he\'s made versus an average fielder at his position. Context, not a hot/cold signal.' },
-    { label: 'Arm Strength', value: hh.armStrength != null ? `${parseFloat(hh.armStrength)} mph` : null, desc: 'Average throwing velocity on competitive plays. Context for baserunner deterrence, not a hot/cold signal.' },
-    { label: 'Last 14 Days OPS', value: hh.recentOps != null ? Number(hh.recentOps).toFixed(3).replace(/^0/,'') : null, trend: hh.recentOpsTrend, desc: 'Real OPS from MLB\'s own game log over the last 14 days, versus his season OPS. The most reliable "is he actually hot right now" signal this app has.' },
-    { label: 'Pull%', value: hh.pullPct != null ? `${parseFloat(hh.pullPct)}%` : null, desc: 'How often he pulls the ball. The large majority of home runs are pulled, so an elevated pull rate is real power-upside context.' },
-    { label: 'Fly-Ball%', value: hh.fbPct != null ? `${parseFloat(hh.fbPct)}%` : null, desc: 'How often contact goes in the air deep enough to leave the yard. A pull-heavy fly-ball hitter has real HR upside a pull-heavy ground-ball hitter doesn\'t.' },
-    { label: 'Line-Drive%', value: hh.ldPct != null ? `${parseFloat(hh.ldPct)}%` : null, desc: 'How often he squares up a line drive. A contact-quality/BABIP signal, not a power one — high line-drive hitters get more hits, not necessarily more homers.' },
-    { label: 'Ground-Ball%', value: hh.gbPct != null ? `${parseFloat(hh.gbPct)}%` : null, desc: 'How often contact stays on the ground. Lower is generally better for power upside — ground balls almost never leave the yard.' },
-    { label: 'Extra Bases Taken%', value: hh.extraBasesTakenPct != null ? `${parseFloat(hh.extraBasesTakenPct)}%` : null, desc: 'How often he takes an extra base on a hit when he had the chance (e.g. first to third on a single). Baserunning aggressiveness, not a power signal.' },
+    { label: 'Avg Exit Velo', value: hh.avgExitVelo != null ? `${parseFloat(hh.avgExitVelo)} mph` : null, pct: statcastPct(hh.avgExitVelo, 82, 93), desc: 'Average speed of the ball off the bat on balls in play. The most basic real measure of raw power.' },
+    { label: 'Hard-Hit%', value: hh.hardHitPct != null ? `${parseFloat(hh.hardHitPct)}%` : null, pct: statcastPct(hh.hardHitPct, 20, 58), trend: hh.hardHitTrend, desc: 'How often he crushes the ball (95+ mph off the bat). Hot hitters hit the ball hard — cold ones bloop it.' },
+    { label: 'Sweet-Spot%', value: hh.sweetSpotPct != null ? `${parseFloat(hh.sweetSpotPct)}%` : null, pct: statcastPct(hh.sweetSpotPct, 20, 44), trend: hh.sweetSpotTrend, desc: 'How often he hits line drives and deep fly balls — the kind of contact that turns into doubles and home runs.' },
+    { label: 'Barrel%', value: hh.barrelPct != null ? `${parseFloat(hh.barrelPct)}%` : null, pct: statcastPct(hh.barrelPct, 0, 18), trend: hh.barrelTrend, desc: 'How often he makes perfect contact — the hardest-hit balls at the best angles. The gold standard of a locked-in swing.' },
+    { label: 'xwOBA (14-day)', value: hh.xwoba != null ? Number(hh.xwoba).toFixed(3).replace(/^0/,'') : null, pct: statcastPct(hh.xwoba, 0.260, 0.440), trend: hh.xwobaTrend, desc: 'The same "is he actually hot?" number as above, but measured over just the past two weeks.' },
+    { label: 'Bat Speed', value: hh.batSpeed != null ? `${Number(hh.batSpeed).toFixed(1)} mph` : null, pct: statcastPct(hh.batSpeed, 65, 78), trend: hh.batSpeedTrend, desc: 'How fast he\'s swinging. A quicker swing often shows up right before a power surge does.' },
+    { label: 'Squared-Up%', value: hh.squaredUpPct != null ? `${parseFloat(hh.squaredUpPct)}%` : null, pct: statcastPct(hh.squaredUpPct, 15, 40), desc: 'How often he hits the ball with the sweet spot of the bat, transferring the most possible energy regardless of swing speed.' },
+    { label: 'Blast Rate', value: hh.blastRate != null ? `${parseFloat(hh.blastRate)}%` : null, pct: statcastPct(hh.blastRate, 0, 22), trend: hh.blastTrend, desc: 'How often his swing has both the speed and the angle to leave the yard.' },
+    { label: 'Chase%', value: hh.chasePct != null ? `${parseFloat(hh.chasePct)}%` : null, pct: statcastPct(hh.chasePct, 15, 40), lowerIsBetter: true, desc: 'How often he swings at pitches outside the strike zone. Lower is better — a hitter chasing more than usual is a real red flag, not a hot signal.' },
+    { label: 'Zone-Contact%', value: hh.zoneContactPct != null ? `${parseFloat(hh.zoneContactPct)}%` : null, pct: statcastPct(hh.zoneContactPct, 65, 95), desc: 'How often he actually makes contact when he swings at a pitch in the zone. A locked-in hitter rarely misses these.' },
+    { label: 'Sprint Speed', value: hh.sprintSpeed != null ? `${parseFloat(hh.sprintSpeed)} ft/s` : null, pct: statcastPct(hh.sprintSpeed, 23, 30.5), desc: 'Foot speed on competitive plays. Context for stolen-base and extra-base upside, not a hot/cold signal.' },
+    { label: 'Outs Above Average', value: hh.oaa != null ? `${hh.oaa > 0 ? '+' : ''}${parseFloat(hh.oaa)}` : null, pct: statcastPct(hh.oaa, -10, 15), desc: 'Season defensive value — how many extra outs he\'s made versus an average fielder at his position. Context, not a hot/cold signal.' },
+    { label: 'Arm Strength', value: hh.armStrength != null ? `${parseFloat(hh.armStrength)} mph` : null, pct: statcastPct(hh.armStrength, 70, 95), desc: 'Average throwing velocity on competitive plays. Context for baserunner deterrence, not a hot/cold signal.' },
+    { label: 'Last 14 Days OPS', value: hh.recentOps != null ? Number(hh.recentOps).toFixed(3).replace(/^0/,'') : null, pct: statcastPct(hh.recentOps, 0.500, 1.100), trend: hh.recentOpsTrend, desc: 'Real OPS from MLB\'s own game log over the last 14 days, versus his season OPS. The most reliable "is he actually hot right now" signal this app has.' },
+    { label: 'Pull%', value: hh.pullPct != null ? `${parseFloat(hh.pullPct)}%` : null, pct: statcastPct(hh.pullPct, 15, 50), desc: 'How often he pulls the ball. The large majority of home runs are pulled, so an elevated pull rate is real power-upside context.' },
+    { label: 'Fly-Ball%', value: hh.fbPct != null ? `${parseFloat(hh.fbPct)}%` : null, pct: statcastPct(hh.fbPct, 15, 50), desc: 'How often contact goes in the air deep enough to leave the yard. A pull-heavy fly-ball hitter has real HR upside a pull-heavy ground-ball hitter doesn\'t.' },
+    { label: 'Line-Drive%', value: hh.ldPct != null ? `${parseFloat(hh.ldPct)}%` : null, pct: statcastPct(hh.ldPct, 10, 35), desc: 'How often he squares up a line drive. A contact-quality/BABIP signal, not a power one — high line-drive hitters get more hits, not necessarily more homers.' },
+    { label: 'Ground-Ball%', value: hh.gbPct != null ? `${parseFloat(hh.gbPct)}%` : null, pct: statcastPct(hh.gbPct, 25, 60), desc: 'How often contact stays on the ground. Lower is generally better for power upside — ground balls almost never leave the yard.' },
+    { label: 'Extra Bases Taken%', value: hh.extraBasesTakenPct != null ? `${parseFloat(hh.extraBasesTakenPct)}%` : null, pct: statcastPct(hh.extraBasesTakenPct, 20, 60), desc: 'How often he takes an extra base on a hit when he had the chance (e.g. first to third on a single). Baserunning aggressiveness, not a power signal.' },
   ].filter(m => m.value != null);
 
   const seasonFallbackMetrics = [
-    { label: 'AVG', value: bAVG, desc: 'Live MLB season batting average fallback.' },
-    { label: 'OPS', value: bOPS, desc: 'Live MLB season OPS fallback.' },
-    { label: 'ISO Power', value: bISO, desc: 'Slugging minus batting average — quick power signal.' },
+    { label: 'AVG', value: bAVG, pct: statcastPct(bAVG, 0.200, 0.320), desc: 'Live MLB season batting average fallback.' },
+    { label: 'OPS', value: bOPS, pct: statcastPct(bOPS, 0.600, 1.000), desc: 'Live MLB season OPS fallback.' },
+    { label: 'ISO Power', value: bISO, pct: statcastPct(bISO, 0.100, 0.300), desc: 'Slugging minus batting average — quick power signal.' },
     { label: 'HR', value: bHR, desc: 'Live MLB season home runs.' },
-    { label: 'K%', value: bKpct, desc: 'Live MLB strikeout rate fallback.' },
-    { label: 'BB%', value: bBBpct, desc: 'Live MLB walk rate fallback.' },
+    { label: 'K%', value: bKpct, pct: statcastPct(bKpct, 15, 35), lowerIsBetter: true, desc: 'Live MLB strikeout rate fallback.' },
+    { label: 'BB%', value: bBBpct, pct: statcastPct(bBBpct, 4, 14), desc: 'Live MLB walk rate fallback.' },
   ].filter(m => m.value && m.value !== '–');
 
   const onFireScore = Math.round(hh.onFireScore || (seasonFallbackMetrics.length ? Math.max(35, Math.min(88, ((parseFloat(bs.ops)||.700)-.600)*120 + ((parseFloat(bs.homeRuns)||0)*1.1))) : 0));
   const onFireLabel = onFireScore >= 85 ? 'ELITE' : onFireScore >= 70 ? 'HOT' : onFireScore >= 45 ? 'WARM' : 'COOL';
   const onFireColor = onFireScore >= 85 ? '#ff6b6b' : onFireScore >= 70 ? 'var(--accent2)' : onFireScore >= 45 ? 'var(--green)' : 'var(--muted)';
 
-  const metricCard = m => `
+  // Bar length always reads as "more filled = better for the batter" regardless of
+  // metric direction, so lowerIsBetter metrics (Chase%) show their normalized pct
+  // inverted here — the underlying m.pct stays a plain domain-normalized value for
+  // anyone reading the data, only the rendered width flips.
+  function metricBarWidth(m) { return m.pct == null ? null : (m.lowerIsBetter ? 100 - m.pct : m.pct); }
+  function metricBarColor(w) { return w >= 70 ? 'var(--green)' : w >= 40 ? 'var(--accent2)' : 'var(--muted)'; }
+  const metricCard = m => {
+    const barWidth = metricBarWidth(m);
+    return `
     <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px" title="${m.desc}">
       <div style="font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">${m.label}</div>
       <div style="display:flex;align-items:baseline;gap:8px;margin-top:2px;flex-wrap:wrap">
         <span style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700">${m.value}</span>
         ${m.trend !== undefined ? `<span style="font-size:10px;font-family:'JetBrains Mono',monospace;display:inline-flex;align-items:center">${trendArrow(m.trend)}${trendSparkline(m.trend)}</span>` : (m.delta || '')}
       </div>
+      ${barWidth != null ? `
+      <div class="metric-bar-track">
+        <div class="metric-bar-tick" style="left:50%"></div>
+        <div class="metric-bar-ball" data-bar-target="${barWidth}" style="left:0%;--ball-glow:${metricBarColor(barWidth)}">⚾</div>
+      </div>` : ''}
     </div>`;
+  };
+
+  // ── Near HRs · last 10 games (warning-track fly-outs) ──
+  // nearHRList is null when data/near-hrs.json hasn't synced yet or this batter
+  // isn't in the tracked pool (distinct from an empty array, which means it DID
+  // sync and genuinely found none) — same three-state pattern as hasRealZones.
+  const nearHRHTML = (() => {
+    const shortName = batterName.split(' ').pop();
+    if (nearHRList == null) return `
+      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">Warning-track power tracking for ${shortName} hasn't synced yet.</div>`;
+    if (!nearHRList.length) return `
+      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">No warning-track fly outs (375+ ft, stayed in the park) for ${shortName} in his last 10 games.</div>`;
+    const rows = nearHRList.map(n => `
+      <div class="vuln-item">
+        <span class="vuln-icon">🚀</span>
+        <span style="color:var(--text)">
+          <strong>${Math.round(n.distance)} ft</strong>${n.exitVelo != null ? ` · ${n.exitVelo.toFixed(1)} mph` : ''}${n.launchAngle != null ? ` · ${Math.round(n.launchAngle)}° launch` : ''} — ${n.date}${n.matchup ? ` (${n.matchup})` : ''}${n.videoUrl ? ` · <a href="${n.videoUrl}" target="_blank" rel="noopener" style="color:var(--accent2)">Watch ▸</a>` : ''}
+        </span>
+      </div>`).join('');
+    return `
+      <div class="vuln-box" style="margin-top:10px">
+        <div class="vuln-title">🚀 NEAR HRs · LAST 10 GAMES <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(375+ ft fly outs — warning-track power)</span></div>
+        ${rows}
+      </div>`;
+  })();
 
   const hotStreakHTML = `
     <div class="mu-hotstreak-section" style="margin-bottom:20px">
@@ -4897,6 +4953,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <div style="font-size:11px;color:var(--muted);line-height:1.6">
         <strong style="color:var(--text)">How to read this:</strong> batting average can lie — a hitter can smash the ball all week straight into gloves, or bloop his way to a lucky hot streak. These numbers look at the swings themselves: how hard he's hitting the ball and where it's going. A green <strong style="color:var(--green)">▲ due</strong> tag means his swings have been better than his results — good things may be coming. An orange <strong style="color:var(--accent2)">▼ running hot</strong> tag means the opposite: the results have been better than the swings, and he may cool off.
       </div>
+      ${nearHRHTML}
     </div>`;
 
   body.innerHTML = `
@@ -4987,7 +5044,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       ${pitchMixDashboard.html}
       ${pitchEffectivenessTableHTML}
 
-      <!-- Strike Zone + Zone Fit -->
+      <!-- Strike Zone + Attack Zone by Pitch, side by side -->
       <div class="dr1041-zone-grid">
       <div class="zone-section">
         <div class="zone-title">${hasRealZones ? 'STRIKE ZONE · REAL wOBA AGAINST BY LOCATION' : 'STRIKE ZONE · NO REAL DATA YET'}</div>
@@ -5019,9 +5076,9 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       </div>` : `
       <div class="zone-note" style="padding:10px 0;color:var(--muted);font-size:12px">No real per-location Statcast data available for ${pitcherName} yet — this requires a separate pitch-location sync that hasn't been built.</div>`}
       </div>
-      ${zoneFitPanelHTML}
-      </div>
       ${attackZoneHTML}
+      </div>
+      ${zoneFitPanelHTML}
 
       <div class="dr1041-bottom-strip">
         <span class="dr1041-bottom-item">Pitcher Throws: <strong>${handLabel(pitcherHand,'pitcher')}</strong></span>
@@ -5036,6 +5093,17 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
 
   const scoreEl = body.querySelector('[data-score]');
   if (scoreEl && pitchMixDashboard.score != null) animateCountUp(scoreEl, pitchMixDashboard.score, 0);
+
+  // Slide the Recent Form baseballs in from the left edge on first paint. Set
+  // left in a second rAF (not the same frame the 0% position was painted in)
+  // so the browser commits the 0% state first and the CSS transition actually
+  // has something to animate from, instead of jumping straight to the target.
+  const barFills = body.querySelectorAll('.metric-bar-ball[data-bar-target]');
+  if (barFills.length) {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      barFills.forEach(el => { el.style.left = el.getAttribute('data-bar-target') + '%'; });
+    }));
+  }
 }
 
 
@@ -5118,6 +5186,26 @@ async function loadStatcastHotHitters(force=false) {
     return statcastHotHitters;
   })();
   return statcastHotHittersPromise;
+}
+// Same repo-fed-JSON-with-graceful-fallback pattern as loadStatcastHotHitters()
+// above — data/near-hrs.json is keyed by batter ID already, so this just
+// normalizes the ID to a string for lookup consistency with the rest of the app.
+async function loadNearHRs(force=false) {
+  if (nearHRsLoaded && !force) return nearHRs;
+  if (nearHRsPromise && !force) return nearHRsPromise;
+  nearHRsPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/near-hrs.json`);
+      const players = data.players || {};
+      nearHRs = {};
+      Object.keys(players).forEach(id => { nearHRs[String(id)] = players[id]; });
+    } catch(e) {
+      nearHRs = {};
+    }
+    nearHRsLoaded = true;
+    return nearHRs;
+  })();
+  return nearHRsPromise;
 }
 // Overwrites the hardcoded park-factor estimates (declared above, near the venue
 // list) with real, auto-updating Baseball Savant HR-index values once synced —
@@ -5435,6 +5523,160 @@ function coldBatterAlertHTML(row) {
 }
 window.coldBatterAlertHTML = coldBatterAlertHTML;
 window.getColdBatterDiagnosis = getColdBatterDiagnosis;
+
+// ── Fantasy Start/Sit board ──────────────────────────────────────────────
+// Reuses hrpRows (the shared batter pool behind HR Threats/Hits/RBI/etc — already
+// carries isFavorable/isOnFire/isDrought/isDue, pitcher-allowed rates, park factor,
+// and roster status) and prRows (Starting Pitcher Report — FIP/WHIP/HR9/ERA per
+// probable starter) plus the global parkFactors map. No new data source, no new
+// fetches — every verdict below is built entirely from signals already live
+// elsewhere on the site.
+function fantasyNum(v) { const x = parseFloat(v); return Number.isFinite(x) ? x : 0; }
+function fantasyEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fantasyFmt3(v) { const x = fantasyNum(v); return x > 0 ? x.toFixed(3).replace(/^0/, '') : '–'; }
+
+function fantasyBatterVerdict(r) {
+  if (r.rosterStatus) {
+    return { verdict: 'OUT', reasons: [`Listed as ${fantasyEsc(r.rosterStatus)} — do not start.`] };
+  }
+
+  const startReasons = [];
+  if (r.isFavorable) startReasons.push(`Favorable matchup vs ${fantasyEsc(r.pitcherName || 'today’s pitcher')} — his bat grades well against a pitcher showing real weaknesses (WHIP or AVG allowed).`);
+  if (r.isOnFire) startReasons.push('On a real hot streak right now — recent form is well above his season norm.');
+  if (fantasyNum(r.hrProb) >= 20) startReasons.push(`${fantasyNum(r.hrProb).toFixed(1)}% simulated HR probability today — legitimate power upside in this matchup.`);
+  if (startReasons.length) return { verdict: 'START', reasons: startReasons };
+
+  const sitReasons = [];
+  if (r.isDrought && !r.isDue) sitReasons.push('In a real cold stretch (no HR in his last 8 games) with no strong signal he’s about to break out.');
+  const toughPitcher = fantasyNum(r.pitcherWhipAllowed) > 0 && fantasyNum(r.pitcherWhipAllowed) <= 1.10 && fantasyNum(r.pitcherAvgAllowed) > 0 && fantasyNum(r.pitcherAvgAllowed) <= 0.230;
+  if (toughPitcher) sitReasons.push(`Facing ${fantasyEsc(r.pitcherName || 'a tough starter')}, who’s been hard to hit this season (${fantasyFmt3(r.pitcherWhipAllowed)} WHIP, ${fantasyFmt3(r.pitcherAvgAllowed)} AVG allowed).`);
+  if (sitReasons.length) return { verdict: 'SIT', reasons: sitReasons };
+
+  return { verdict: 'START', reasons: ['No red flags for today’s matchup — a reasonable everyday start.'] };
+}
+
+// League-average-ish bands for FIP/WHIP (~4.20/~1.30) — same style of symmetric
+// above/below-average thresholds already used elsewhere on the site (e.g. the HR
+// Threats "favorable matchup" WHIP >= 1.25 bar).
+function fantasyPitcherVerdict(pr) {
+  const p = pr.pitcher || {};
+  const fip = fantasyNum(pr.fip), whip = fantasyNum(pr.whip);
+  const parkAbbr = p.side === 'home' ? p.teamAbbr : p.oppAbbr;
+  const parkIdx = (typeof parkFactors !== 'undefined' && parkFactors[parkAbbr] != null) ? parkFactors[parkAbbr] : 100;
+
+  const strongStuff = (fip > 0 && fip <= 3.80) || (whip > 0 && whip <= 1.15);
+  const shakyStuff = (fip > 0 && fip >= 4.60) || (whip > 0 && whip >= 1.42);
+  const pitcherPark = parkIdx <= 94;
+  const hitterPark = parkIdx >= 108;
+
+  const startReasons = [];
+  if (strongStuff) startReasons.push(`Strong peripherals this season (FIP ${pr.fip ?? '–'}, WHIP ${pr.whip ?? '–'}).`);
+  if (pitcherPark) startReasons.push(`Pitching in a real pitcher-friendly park today (HR park index ${parkIdx}).`);
+  if (startReasons.length && !shakyStuff) return { verdict: 'START', reasons: startReasons };
+
+  const sitReasons = [];
+  if (shakyStuff) sitReasons.push(`Rough peripherals this season (FIP ${pr.fip ?? '–'}, WHIP ${pr.whip ?? '–'}).`);
+  if (hitterPark) sitReasons.push(`Pitching in a real hitter-friendly park today (HR park index ${parkIdx}).`);
+  if (sitReasons.length) return { verdict: 'SIT', reasons: sitReasons };
+
+  return { verdict: 'START', reasons: ['Solid everyday peripherals and a neutral park — a reasonable start.'] };
+}
+
+function fantasyVerdictBadgeHTML(verdict) {
+  const cls = verdict === 'START' ? 'start' : verdict === 'SIT' ? 'sit' : 'out';
+  return `<span class="fantasy-verdict-badge ${cls}">${verdict}</span>`;
+}
+
+function fantasyBatterCardHTML(r) {
+  const v = fantasyBatterVerdict(r);
+  const hs = r.id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/${r.id}/headshot/67/current` : '';
+  return `<div class="dr109-card fantasy-card">
+    <div class="dr109-card-head">
+      <div class="dr109-player">
+        <img loading="lazy" decoding="async" src="${hs}" onerror="this.style.display='none'" alt="">
+        <div style="min-width:0">
+          <div class="dr109-name">${fantasyEsc(r.name || 'Player')}</div>
+          <div class="dr109-meta">${fantasyEsc(r.teamAbbr || '')} · ${fantasyEsc(r.pos || '')} · vs ${fantasyEsc(r.oppAbbr || '')}${r.pitcherName ? ' · ' + fantasyEsc(r.pitcherName) : ''}</div>
+        </div>
+      </div>
+      ${fantasyVerdictBadgeHTML(v.verdict)}
+    </div>
+    <div class="dr109-chiprow">
+      <span class="dr109-chip"><span>AVG:</span><strong>${fantasyFmt3(r.avg)}</strong></span>
+      <span class="dr109-chip"><span>OPS:</span><strong>${fantasyFmt3(r.ops)}</strong></span>
+      <span class="dr109-chip"><span>ISO:</span><strong>${fantasyFmt3(r.iso)}</strong></span>
+      <span class="dr109-chip"><span>HR Prob:</span><strong>${fantasyNum(r.hrProb).toFixed(1)}%</strong></span>
+    </div>
+    <div class="vuln-box fantasy-reason-box">
+      ${v.reasons.map(reason => `<div class="vuln-item"><span class="vuln-icon">${v.verdict === 'START' ? '✅' : v.verdict === 'SIT' ? '⚠️' : '🏥'}</span><span style="color:var(--text)">${reason}</span></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function fantasyPitcherCardHTML(pr) {
+  const p = pr.pitcher || {};
+  const v = fantasyPitcherVerdict(pr);
+  const hs = p.id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/${p.id}/headshot/67/current` : '';
+  return `<div class="dr109-card fantasy-card">
+    <div class="dr109-card-head">
+      <div class="dr109-player">
+        <img loading="lazy" decoding="async" src="${hs}" onerror="this.style.display='none'" alt="">
+        <div style="min-width:0">
+          <div class="dr109-name">${fantasyEsc(p.name || 'Pitcher')}</div>
+          <div class="dr109-meta">${fantasyEsc(p.teamAbbr || '')} vs ${fantasyEsc(p.oppAbbr || '')} · ${fantasyEsc(p.timeLabel || '')}</div>
+        </div>
+      </div>
+      ${fantasyVerdictBadgeHTML(v.verdict)}
+    </div>
+    <div class="dr109-chiprow">
+      <span class="dr109-chip"><span>FIP:</span><strong>${pr.fip ?? '–'}</strong></span>
+      <span class="dr109-chip"><span>WHIP:</span><strong>${pr.whip ?? '–'}</strong></span>
+      <span class="dr109-chip"><span>ERA:</span><strong>${pr.era ?? '–'}</strong></span>
+      <span class="dr109-chip"><span>HR/9:</span><strong>${pr.hr9 ?? '–'}</strong></span>
+    </div>
+    <div class="vuln-box fantasy-reason-box">
+      ${v.reasons.map(reason => `<div class="vuln-item"><span class="vuln-icon">${v.verdict === 'START' ? '✅' : v.verdict === 'SIT' ? '⚠️' : '🏥'}</span><span style="color:var(--text)">${reason}</span></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderFantasyBoard() {
+  const el = document.getElementById('fantasy-content');
+  if (!el) return;
+  const pitchers = Array.isArray(prRows) ? prRows : [];
+  const batters = Array.isArray(hrpRows) ? hrpRows : [];
+  if (!pitchers.length && !batters.length) {
+    el.innerHTML = '<div class="mu-empty"><span class="spin"></span>Building today’s start/sit board…</div>';
+    return;
+  }
+
+  function groupByVerdict(items, verdictFn) {
+    const groups = { START: [], SIT: [], OUT: [] };
+    items.forEach(item => { groups[verdictFn(item).verdict].push(item); });
+    return groups;
+  }
+
+  const pitcherGroups = groupByVerdict(pitchers, fantasyPitcherVerdict);
+  const batterGroups = groupByVerdict(batters, fantasyBatterVerdict);
+
+  function section(title, icon, groups, cardFn) {
+    const order = ['START', 'SIT', 'OUT'];
+    const labels = { START: '✅ START', SIT: '⚠️ SIT / CONSIDER BENCHING', OUT: '🏥 OUT' };
+    const body = order.filter(k => groups[k].length).map(k => `
+      <div class="fantasy-verdict-group">
+        <div class="fantasy-verdict-group-title">${labels[k]} <span>(${groups[k].length})</span></div>
+        <div class="fantasy-card-list">${groups[k].map(cardFn).join('')}</div>
+      </div>`).join('');
+    return `<div class="fantasy-section">
+      <div class="fantasy-section-title">${icon} ${title}</div>
+      ${body || '<div class="mu-empty">No data yet.</div>'}
+    </div>`;
+  }
+
+  el.innerHTML = section('Starting Pitchers', '⚾', pitcherGroups, fantasyPitcherCardHTML)
+    + section('Batters', '🏏', batterGroups, fantasyBatterCardHTML);
+}
+window.renderFantasyBoard = renderFantasyBoard;
 
 // ── 5AM HR POTENTIAL REFRESH ─────────────────────────────────────────
 // Checks on load and reschedules daily — handles cases where tab wasn't open at 5am
@@ -7402,7 +7644,7 @@ function initPropsTab() {
   // alone here meant a URL like #gamepick=premium still always warmed Game Center data on
   // first paint. Check the same #gamepick=<pane> hash the tab controller itself reads,
   // before falling back to whatever the DOM currently shows.
-  const GAMEPICK_PANES = ['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','premium','parlay','team-performance','deep'];
+  const GAMEPICK_PANES = ['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','premium','fantasy','parlay','team-performance','deep'];
   const hashMatch = /^#?gamepick=([\w-]+)/.exec(window.location.hash || '');
   const fromHash = hashMatch && GAMEPICK_PANES.includes(hashMatch[1]) ? hashMatch[1] : null;
   const activePane = fromHash || document.querySelector('#props .gamepick-pane.active')?.getAttribute('data-gamepick-pane') || 'game';
@@ -9413,7 +9655,7 @@ if (document.readyState === 'loading') {
 
 /* ---- from <script id="prod-v8-70-performance-loader"> ---- */
 (function(){
-  const loaded = { game:false, pr:false, hr:false, k:false, props:false, deep:false };
+  const loaded = { game:false, pr:false, hr:false, k:false, props:false, deep:false, fantasy:false };
   const idle = window.requestIdleCallback || function(cb){ return setTimeout(cb, 900); };
 
   window.__drLoadGamePickPaneData = function(pane){
@@ -9474,6 +9716,15 @@ if (document.readyState === 'loading') {
         loaded.deep = true;
         idle(function(){ try { if (typeof window.renderDeepResearch === 'function') window.renderDeepResearch(); } catch(e) {} });
       }
+      if (pane === 'fantasy') {
+        // Needs both the pitcher pool (prRows, Pitcher Report) and the batter pool
+        // (hrpRows, shared with HR Threats/Hits/etc.) -- reuses the same 'pr' and
+        // 'props' load flags above rather than a separate fantasy-only fetch, so
+        // visiting Fantasy first still loads real data instead of finding both
+        // pools empty.
+        if (!loaded.pr) { loaded.pr = true; try { if (typeof window.loadPitcherReport === 'function') window.loadPitcherReport(); } catch(e) {} }
+        if (!loaded.props) { loaded.props = true; idle(function(){ try { if (typeof window.loadHRPotentialWithRetry === 'function') window.loadHRPotentialWithRetry(); } catch(e) {} }); }
+      }
     } catch(e) {}
   };
 
@@ -9486,7 +9737,7 @@ if (document.readyState === 'loading') {
 /* ---- from <script id="anonymous"> ---- */
 // PROD v8.44 — Game Picks inner tab controller with persistent state
 (function(){
-  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, premium: true, parlay: true, 'team-performance': true, deep: true };
+  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, premium: true, fantasy: true, parlay: true, 'team-performance': true, deep: true };
 
   // Only the URL hash decides the pane on load (e.g. a shared #gamepick=premium
   // link). No localStorage fallback — a plain refresh/revisit with no hash
@@ -9565,7 +9816,12 @@ if (document.readyState === 'loading') {
       setTimeout(function(){ if (typeof window.renderParlayBuilds === 'function') window.renderParlayBuilds(); }, 900);
     }
     if (pane === 'team-performance') {
-      
+
+    }
+    if (pane === 'fantasy') {
+      setTimeout(function(){ if (typeof window.renderFantasyBoard === 'function') window.renderFantasyBoard(); }, 30);
+      setTimeout(function(){ if (typeof window.renderFantasyBoard === 'function') window.renderFantasyBoard(); }, 900);
+      setTimeout(function(){ if (typeof window.renderFantasyBoard === 'function') window.renderFantasyBoard(); }, 2200);
     }
     if (pane === 'deep') {
       setTimeout(function(){ if (typeof window.renderDeepResearch === 'function') window.renderDeepResearch(); }, 30);
@@ -10494,7 +10750,7 @@ function showPremiumGate(feature){
   if (window.__DR_V1129_NAV_CONTROLLER__) return;
   window.__DR_V1129_NAV_CONTROLLER__ = true;
 
-  var FREE_PANES = new Set(['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','premium']);
+  var FREE_PANES = new Set(['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','premium','fantasy']);
   var PREMIUM_PANES = new Set(['parlay','team-performance','team','deep']);
   var NORMALIZE = { team:'team-performance', teamPerformance:'team-performance' };
 
