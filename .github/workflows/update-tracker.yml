@@ -68,8 +68,14 @@ jobs:
           [ -f data/k-props.json ] && git add data/k-props.json
           [ -f data/ballparkpal-comparison.json ] && git add data/ballparkpal-comparison.json
           [ -f data/drp-sim-comparison.json ] && git add data/drp-sim-comparison.json
+          # update-tracker.mjs has written data/prop-market-odds.json since the
+          # situational-true-probability edge feature was added, but this step never
+          # staged it — every run silently wrote the file to the runner's local working
+          # copy and then discarded it, so it never once reached a commit. Confirmed via
+          # job logs: the file has never existed on main despite the script succeeding.
+          [ -f data/prop-market-odds.json ] && git add data/prop-market-odds.json
           if git diff --cached --quiet; then
-            echo "No changes to data/tracker.json, data/k-props.json, data/ballparkpal-comparison.json, or data/drp-sim-comparison.json — nothing to commit."
+            echo "No changes to data/tracker.json, data/k-props.json, data/ballparkpal-comparison.json, data/drp-sim-comparison.json, or data/prop-market-odds.json — nothing to commit."
             exit 0
           fi
           git config user.name "diamond-report-bot"

@@ -4617,7 +4617,17 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     else if (splitXslg !== null) base.xslg = splitXslg;
     const handHr = parseInt(split.homeRuns ?? split.hr ?? split.hrs ?? 0) || 0;
     const exactPitchHr = parseInt(base.homeRuns ?? base.hr ?? base.hrs);
-    if (!Number.isFinite(exactPitchHr) || exactPitchHr <= 0) base.homeRuns = Math.max(0, Math.round(handHr * ((parseFloat(usagePct) || 0) / 100)));
+    // Baseball Savant's batter pitch-arsenal endpoint never actually exposes a raw
+    // per-pitch-type HR count (confirmed: every one of 4,811 pitch-type rows across
+    // all 601 tracked batters comes back null) — this branch always fires whenever a
+    // hand is known, silently replacing "unknown" with an estimate (his overall HR
+    // total vs this pitcher hand, redistributed by this pitch's usage share). Flagged
+    // so callers can visibly mark it as estimated rather than showing a bare number
+    // indistinguishable from a real per-pitch count.
+    if (!Number.isFinite(exactPitchHr) || exactPitchHr <= 0) {
+      base.homeRuns = Math.max(0, Math.round(handHr * ((parseFloat(usagePct) || 0) / 100)));
+      base.__hrEstimated = true;
+    }
     base.__splitHand = splitHand;
     return base;
   }
@@ -4701,7 +4711,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
           <td class="num${gbCls('slg',slgRaw)}">${fmtDec(st.slg ?? st.slugging, 3, 'slg')}</td>
           <td class="num${gbCls('xslg',xslgRaw)}">${fmtDec(st.xslg ?? st.xSLG ?? st.expectedSlugging, 3, 'xslg')}</td>
           <td class="num${gbCls('woba',wobaRaw)}">${fmtDec(st.woba ?? st.wOBA, 3, 'woba')}</td>
-          <td class="num${gbCls('hr',rowHr)}">${rowHr != null ? rowHr : '–'}</td>
+          <td class="num${gbCls('hr',rowHr)}" title="${st.__hrEstimated ? 'Estimated — Baseball Savant doesn’t expose an exact per-pitch HR count for batters. This redistributes his overall HR total vs this pitcher hand by this pitch’s usage share.' : ''}">${rowHr != null ? rowHr : '–'}${st.__hrEstimated && rowHr != null ? '<sup style="color:var(--muted);font-weight:400">est</sup>' : ''}</td>
           <td class="num${gbCls('hardHit',hardRaw)}">${fmtPctVal(st.hardHitPct ?? st.hardHitRate, 0, 'hardHit')}</td>
           <td class="num${gbCls('whiff',whiffRaw)}">${fmtPctVal(st.whiffPct ?? st.whiffRate, 1, 'whiff')}</td>
           <td>${hrSpotTag}<span class="dr1041-chip${chipCls}">${grade.label}${grade.score!==null?' · '+grade.score:''}</span></td>
@@ -4893,10 +4903,12 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       const chipCls = grade.score >= 78 ? '' : grade.score >= 64 ? ' good' : grade.score >= 45 ? ' neutral' : ' weak';
       const avg = fmtDec(st.avg ?? st.battingAverage, 3, 'avg');
       const hr = +(st.homeRuns ?? st.hr ?? st.hrs ?? 0) || 0;
+      const hrTag = st.__hrEstimated
+        ? `<sup style="color:var(--muted);font-weight:400" title="Estimated — Baseball Savant doesn’t expose an exact per-pitch HR count for batters. This redistributes his overall HR total vs this pitcher hand by this pitch’s usage share.">est</sup>` : '';
       return `<tr>
         <td><strong>${p.name}</strong></td>
         <td><span class="dr1041-chip${chipCls}">${fitLabel}</span></td>
-        <td class="num">${avg} AVG / ${hr} HR</td>
+        <td class="num">${avg} AVG / ${hr} HR${hrTag}</td>
       </tr>`;
     }).join('');
     return `<div class="zone-section zone-fit-section">
@@ -5171,22 +5183,25 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       const edgeTxt = edge != null
         ? `<span style="color:${edge >= 5 ? 'var(--green)' : edge <= -5 ? '#f4a261' : 'var(--muted)'};font-weight:700">${edge > 0 ? '+' : ''}${edge}pp edge</span>`
         : `<span style="color:var(--muted)">no real market line yet</span>`;
-      // Home Run only: the simulate button lives here rather than on Hits/TB since
-      // that's the market this was actually requested for.
-      const simHTML = m.oddsMarket === 'home_runs' ? `
-        <div class="hr-sim-wrap" style="margin:8px 0 2px 22px">
-          <button type="button" class="hr-sim-btn" id="hr-sim-btn-${batterId}"
-            data-batter-id="${batterId}" data-rate="${m.data.shrunkRate}" data-true-pct="${trueProb}"
-            onclick="runHRMatchupSimulation(this)">🎲 SIMULATE THIS MATCHUP</button>
-          <div class="hr-sim-result" id="hr-sim-result-${batterId}" style="display:none"></div>
-        </div>` : '';
       return `<div class="vuln-item">
         <span class="vuln-icon">🎯</span>
         <span style="color:var(--text)"><strong>${m.label}:</strong> ${trueProb}% true probability${implied != null ? ` vs ${implied.pct}% market implied${implied.devigged ? '' : ' (single-side, not devigged)'}` : ''} — ${edgeTxt}</span>
-      </div>${simHTML}`;
+      </div>`;
     }).filter(Boolean).join('');
     if (!rows) return `
       <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">No situational markets computed yet for ${shortName}.</div>`;
+
+    // Simulate button lives at the bottom of the whole section (below every market row
+    // and the sample-size footnote), not inline under the Home Run row — HR only, since
+    // that's the market this was actually requested for.
+    const hrTrueProb = situationalProfile.hr?.trueProbPct;
+    const simHTML = hrTrueProb != null ? `
+      <div class="hr-sim-wrap" style="margin-top:12px">
+        <button type="button" class="hr-sim-btn" id="hr-sim-btn-${batterId}"
+          data-batter-id="${batterId}" data-rate="${situationalProfile.hr.shrunkRate}" data-true-pct="${hrTrueProb}"
+          onclick="runHRMatchupSimulation(this)">🎲 SIMULATE THIS MATCHUP</button>
+        <div class="hr-sim-result" id="hr-sim-result-${batterId}" style="display:none"></div>
+      </div>` : '';
 
     const ctx = situationalProfile.context;
     return `
@@ -5194,6 +5209,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         <div class="vuln-title">🎯 SITUATIONAL TRUE PROBABILITY <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(his own history vs today's exact matchup, shrunk toward season rate)</span></div>
         ${rows}
         <div style="font-size:10px;color:var(--muted);margin-top:6px">Based on ${situationalProfile.situationalPA} plate appearance(s) matching today's situation (vs ${ctx.oppHand}HP, ${ctx.parkTier} park${ctx.oppPowerTier ? `, ${ctx.oppPowerTier} arm` : ''}), out of ${situationalProfile.seasonPA} total PA this season.</div>
+        ${simHTML}
       </div>`;
   })();
 
