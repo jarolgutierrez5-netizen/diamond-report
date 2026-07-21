@@ -5377,6 +5377,65 @@ function applyHotHitterBoosts(rows) {
   return rows;
 }
 
+// "Why is this batter cold" diagnostic — combines whichever real signals are actually
+// available for this player from data/statcast-hot-hitters.json (recent-form trend via
+// MLB's own byDateRange stats, real IL/inactive roster status, a recent-return flag once
+// synced, and a season-long expected-vs-actual luck read) rather than a single guessed
+// cause. Only ever states what the data actually shows — a signal that isn't populated
+// for this player is simply omitted, never defaulted to a false "no reason found," and
+// this only returns anything at all once there's real evidence of a cold stretch
+// (recentOpsTrend <= -0.080 — the same threshold the "Cold Last 14G" tag already uses
+// internally, just never rendered anywhere before this).
+function getColdBatterDiagnosis(row) {
+  const profile = statcastHotHitters[String(row.id)] || statcastHotHitters[String(row.name || '').toLowerCase()] || null;
+  if (!profile) return null;
+  const recentOpsTrend = Number(profile.recentOpsTrend);
+  if (!Number.isFinite(recentOpsTrend) || recentOpsTrend > -0.080) return null;
+
+  const reasons = [];
+
+  // Season-long luck proxy: a well-above-average season xwOBA alongside a real recent
+  // cold stretch points at bad-luck/quality-of-contact-holding-up variance rather than a
+  // genuine decline — xwOBA and OPS aren't on the same scale, so this checks his season
+  // xwOBA against a fixed league-average-quality bar rather than computing a false-
+  // precision single gap number between the two stats.
+  const xwoba = Number(profile.xwoba);
+  if (Number.isFinite(xwoba) && xwoba >= 0.340) {
+    reasons.push({ icon: '🎲', label: 'Likely variance, not decline', text: `Season xwOBA of ${xwoba.toFixed(3)} is a well-above-average quality-of-contact level — his underlying batted-ball quality this season doesn't point at a real step back. This cold stretch reads more like normal variance than a genuine decline.` });
+  }
+
+  if (profile.rosterStatus) {
+    reasons.push({ icon: '🏥', label: `Currently ${profile.rosterStatus}`, text: `Listed as ${profile.rosterStatus} — recent numbers may reflect games before this, not a form read on a healthy player right now.` });
+  } else if (profile.recentlyReturnedFromInjury) {
+    reasons.push({ icon: '🩹', label: 'Recently activated', text: `Came off the injured list within the last two weeks (activated ${profile.recentlyReturnedFromInjury}) — early rust after a return is a common, real explanation for a cold stretch.` });
+  }
+
+  if (Array.isArray(profile.pitchMixShift) && profile.pitchMixShift.length) {
+    const top = profile.pitchMixShift[0];
+    reasons.push({ icon: '🎯', label: 'Facing a different pitch mix', text: `Seeing ${top.pitchName} ${top.recentUsagePct > top.seasonUsagePct ? 'far more' : 'far less'} than his season norm lately (${top.recentUsagePct}% vs ${top.seasonUsagePct}% season) — pitchers may be attacking him differently right now.` });
+  }
+
+  if (!reasons.length && Number.isFinite(Number(profile.recentOps))) {
+    reasons.push({ icon: '📉', label: 'No specific cause identified', text: `Recent OPS (${Number(profile.recentOps).toFixed(3)}) is well below his season OPS, but nothing in his available Statcast/injury data points at a specific cause — plain short-sample variance is the most likely read.` });
+  }
+
+  if (!reasons.length) return null;
+  return { recentOpsTrend, recentOps: Number(profile.recentOps) || null, reasons };
+}
+
+function coldBatterAlertHTML(row) {
+  const d = getColdBatterDiagnosis(row);
+  if (!d) return '';
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const trendTxt = d.recentOpsTrend.toFixed(3);
+  return `<div class="vuln-box cold-batter-box">
+    <div class="vuln-title">❄️ COLD STRETCH — LAST 14G OPS ${trendTxt}</div>
+    ${d.reasons.map(r => `<div class="vuln-item"><span class="vuln-icon">${r.icon}</span><span style="color:var(--text)"><strong>${esc(r.label)}:</strong> ${esc(r.text)}</span></div>`).join('')}
+  </div>`;
+}
+window.coldBatterAlertHTML = coldBatterAlertHTML;
+window.getColdBatterDiagnosis = getColdBatterDiagnosis;
+
 // ── 5AM HR POTENTIAL REFRESH ─────────────────────────────────────────
 // Checks on load and reschedules daily — handles cases where tab wasn't open at 5am
 const HR_POTENTIAL_STORAGE_KEY = 'hrp_last_loaded_date';
@@ -10204,7 +10263,7 @@ var analytics='<div class="tp-analytics-grid">'+
     var wlActive=!!watchlistFilters[type];
     return '<div class="dr109-filter-row" style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:0 0 12px;padding:0 14px"><div class="dr109-game-filter" style="margin:0"><label style="font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-right:8px">Edge:</label><select onchange="window.setPropEdgeFilter(\''+type+'\',this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700">'+opts+'</select></div><div class="dr109-game-filter" style="margin:0"><label style="font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-right:8px">Game:</label><select onchange="window.setPropGameFilter(\''+type+'\',this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700">'+gameOpts+'</select></div><button onclick="window.setPropWatchlistFilter(\''+type+'\')" style="font-size:11px;font-weight:700;font-family:Manrope,sans-serif;padding:6px 12px;border-radius:8px;border:1px solid '+(wlActive?'#f5c518':'var(--border)')+';background:'+(wlActive?'rgba(245,197,24,.14)':'var(--surface2)')+';color:'+(wlActive?'#f5c518':'var(--muted)')+';cursor:pointer;white-space:nowrap">★ WATCHLIST</button></div>';
   }
-  function render(type,id,force){ var el=document.getElementById(id); if(!el) return; if(!force && document.activeElement && el.contains(document.activeElement) && document.activeElement.tagName==='SELECT') return; var scrollTop=el.scrollTop; var pageY=window.scrollY; var all=rows(); var filtered=edgeFilters[type]?all.filter(function(r){ return score(type,r)>=edgeFilters[type]; }):all; if(gameFilters[type]) filtered=filtered.filter(function(r){ return String(r.gamePk)===gameFilters[type]; }); if(watchlistFilters[type]) filtered=filtered.filter(function(r){ return drIsWatchlisted(r.id); }); var arr=filtered.filter(function(r){ return String(r.timeLabel||'').toUpperCase()!=='FINAL'; }).sort(function(a,b){ return score(type,b)-score(type,a); }).slice(0,50); if(!all.length){ el.innerHTML='<div class="mu-empty">Loading '+label(type)+' board from active production data…</div>'; return; } var gf=edgeFilterHTML(type); if(!arr.length){ el.innerHTML=gf+'<div class="mu-empty" style="padding:24px">No players match the selected filters. Choose All Edges / All Games to reset.</div>'; return; } var top=arr[0], avg=Math.round(arr.slice(0,Math.min(6,arr.length)).reduce(function(a,r){return a+score(type,r)},0)/Math.min(6,arr.length)); el.innerHTML='<div class="dr109-summary"><div class="dr109-title">📊 EXPANDED <span>'+esc(label(type).toUpperCase())+' DATA</span></div><p class="dr109-copy">Each player\'s odds come from a Monte Carlo simulation of thousands of games built from their real season rate stats and lineup slot, not a hand-tuned formula. Values are generated from the active production rows so they stay fast and do not add external load time.</p><div class="dr109-grid"><div class="dr109-metric good"><b>'+esc(top.name||'–')+'</b><span>Top Rated</span></div><div class="dr109-metric"><b>'+avg+'%</b><span>Board Avg Odds</span></div><div class="dr109-metric"><b>'+arr.length+'</b><span>Players Scanned</span></div><div class="dr109-metric warn"><b>'+esc(line(type))+'</b><span>Primary Line</span></div></div></div>'+gf+arr.map(function(r){ var sc=score(type,r),isHit=hit(type,r),isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL',isMiss=isFinal&&!isHit; return '<div class="dr109-card '+(isHit?'prop-hit':isMiss?'prop-miss':'')+'">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr109-card-head"><div class="dr109-player"><img loading="lazy" src="'+head(r.id)+'" onerror="this.style.display=\'none\'" alt=""><div style="min-width:0"><div class="dr109-name">'+esc(r.name||'Player')+'</div>'+(isHit?'<div class="dr109-badge-row"><span class="prop-hit-badge">✓ Projection Hit</span></div>':isMiss?'<div class="dr109-badge-row"><span class="prop-miss-badge">✗ Missed</span></div>':'')+'<div class="dr109-meta">'+esc(r.teamAbbr||'')+' · '+esc(r.pos||'')+' · vs '+esc(r.oppAbbr||'')+'</div></div></div><div class="dr109-score">'+sc+'%<small>'+esc(label(type))+' Odds</small></div></div><div class="dr109-chiprow">'+chipSet(type,r)+'</div></div>'; }).join(''); el.scrollTop=scrollTop; window.scrollTo(window.scrollX,pageY); }
+  function render(type,id,force){ var el=document.getElementById(id); if(!el) return; if(!force && document.activeElement && el.contains(document.activeElement) && document.activeElement.tagName==='SELECT') return; var scrollTop=el.scrollTop; var pageY=window.scrollY; var all=rows(); var filtered=edgeFilters[type]?all.filter(function(r){ return score(type,r)>=edgeFilters[type]; }):all; if(gameFilters[type]) filtered=filtered.filter(function(r){ return String(r.gamePk)===gameFilters[type]; }); if(watchlistFilters[type]) filtered=filtered.filter(function(r){ return drIsWatchlisted(r.id); }); var arr=filtered.filter(function(r){ return String(r.timeLabel||'').toUpperCase()!=='FINAL'; }).sort(function(a,b){ return score(type,b)-score(type,a); }).slice(0,50); if(!all.length){ el.innerHTML='<div class="mu-empty">Loading '+label(type)+' board from active production data…</div>'; return; } var gf=edgeFilterHTML(type); if(!arr.length){ el.innerHTML=gf+'<div class="mu-empty" style="padding:24px">No players match the selected filters. Choose All Edges / All Games to reset.</div>'; return; } var top=arr[0], avg=Math.round(arr.slice(0,Math.min(6,arr.length)).reduce(function(a,r){return a+score(type,r)},0)/Math.min(6,arr.length)); el.innerHTML='<div class="dr109-summary"><div class="dr109-title">📊 EXPANDED <span>'+esc(label(type).toUpperCase())+' DATA</span></div><p class="dr109-copy">Each player\'s odds come from a Monte Carlo simulation of thousands of games built from their real season rate stats and lineup slot, not a hand-tuned formula. Values are generated from the active production rows so they stay fast and do not add external load time.</p><div class="dr109-grid"><div class="dr109-metric good"><b>'+esc(top.name||'–')+'</b><span>Top Rated</span></div><div class="dr109-metric"><b>'+avg+'%</b><span>Board Avg Odds</span></div><div class="dr109-metric"><b>'+arr.length+'</b><span>Players Scanned</span></div><div class="dr109-metric warn"><b>'+esc(line(type))+'</b><span>Primary Line</span></div></div></div>'+gf+arr.map(function(r){ var sc=score(type,r),isHit=hit(type,r),isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL',isMiss=isFinal&&!isHit; return '<div class="dr109-card '+(isHit?'prop-hit':isMiss?'prop-miss':'')+'">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr109-card-head"><div class="dr109-player"><img loading="lazy" src="'+head(r.id)+'" onerror="this.style.display=\'none\'" alt=""><div style="min-width:0"><div class="dr109-name">'+esc(r.name||'Player')+'</div>'+(isHit?'<div class="dr109-badge-row"><span class="prop-hit-badge">✓ Projection Hit</span></div>':isMiss?'<div class="dr109-badge-row"><span class="prop-miss-badge">✗ Missed</span></div>':'')+'<div class="dr109-meta">'+esc(r.teamAbbr||'')+' · '+esc(r.pos||'')+' · vs '+esc(r.oppAbbr||'')+'</div></div></div><div class="dr109-score">'+sc+'%<small>'+esc(label(type))+' Odds</small></div></div><div class="dr109-chiprow">'+chipSet(type,r)+'</div>'+coldBatterAlertHTML(r)+'</div>'; }).join(''); el.scrollTop=scrollTop; window.scrollTo(window.scrollX,pageY); }
   window.renderPropIntelligencePanes=function(){ render('hits','hits-props-content'); render('rbis','rbis-props-content'); render('tb','tb-props-content'); render('sb','sb-props-content'); render('hrrbi','hrrbi-props-content'); if(typeof window.enhanceDeepResearch==='function') try{window.enhanceDeepResearch();}catch(e){} };
   function markHRHits(){ try{ rows().forEach(function(r){ if(actual('hr',r)>=1){ ['#hrp-row-'+r.id].forEach(function(sel){ var el=document.querySelector(sel); if(el){ el.classList.add('hr-hit'); if(!el.querySelector('.hr-hit-badge')){ var chipBox=el.querySelector('.dr1017-hr-chips,.dr1026-chip-row'); if(chipBox) chipBox.insertAdjacentHTML('afterbegin','<span class="hr-hit-badge">✓ HR Projection Hit</span>'); } } }); } }); }catch(e){} }
   var oldHR=window.renderHRPTable; if(typeof oldHR==='function'){ window.renderHRPTable=function(){ var out=oldHR.apply(this,arguments); setTimeout(markHRHits,0); return out; }; }
