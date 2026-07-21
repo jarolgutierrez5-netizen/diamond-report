@@ -67,6 +67,17 @@ jobs:
         continue-on-error: true
         timeout-minutes: 5
 
+      # Depends on both data/batter-pitch-type-season.json (season pitch mix, from the
+      # pitch-arsenal step above) and statcast-hot-hitters.json's recentOpsTrend (from
+      # the situational-splits step just above) to know which batters are currently
+      # cold — must run after both. Gated to the morning-only run like those two steps,
+      # since the cold-batter population itself only refreshes once/day.
+      - name: Run pitch-mix-faced trend sync for currently-cold batters
+        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
+        run: node scripts/sync-batter-pitch-mix-trend.mjs
+        continue-on-error: true
+        timeout-minutes: 10
+
       - name: Run park-factors sync
         if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-park-factors.mjs
@@ -125,6 +136,7 @@ jobs:
           [ -f data/bullpen-fatigue.json ] && git add data/bullpen-fatigue.json
           [ -f data/ballparkpal-hr-factors.json ] && git add data/ballparkpal-hr-factors.json
           [ -f data/ballparkpal-game-factors.json ] && git add data/ballparkpal-game-factors.json
+          [ -f data/injury-history.json ] && git add data/injury-history.json
           if git diff --cached --quiet; then
             echo "No changes to sync — nothing to commit."
             exit 0
