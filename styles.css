@@ -3805,6 +3805,12 @@ select:focus-visible {
   letter-spacing: .5px;
   color: var(--muted);
 }
+.fantasy-points-subline {
+  font-size: 8px;
+  color: var(--muted);
+  margin-top: 2px;
+  white-space: nowrap;
+}
 .fantasy-points-badge.start { border-color: rgba(46,230,166,.55); }
 .fantasy-points-badge.start .fantasy-points-num { color: #8ff0b0; }
 .fantasy-points-badge.mid { border-color: rgba(255,179,71,.55); }
@@ -3813,6 +3819,28 @@ select:focus-visible {
 .fantasy-points-badge.sit .fantasy-points-num { color: var(--muted); }
 .fantasy-points-badge.out { border-color: rgba(255,77,109,.55); }
 .fantasy-points-badge.out .fantasy-points-num { color: #ff9ca5; }
+
+.fantasy-filter-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.fantasy-filter-btn {
+  background: #0c192b;
+  border: 1px solid #244462;
+  color: #c6dcff;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  cursor: pointer;
+}
+.fantasy-filter-btn.active {
+  background: rgba(47,107,255,.18);
+  border-color: #2f6bff;
+  color: #fff;
+}
 
 .fantasy-section {
   margin-bottom: 28px;

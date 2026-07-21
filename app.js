@@ -1530,6 +1530,15 @@ let nearHRs = {};
 let nearHRsLoaded = false;
 let nearHRsPromise = null;
 
+// Rolling pitch metrics (velocity/usage/whiff, last 3 starts vs season) — loaded
+// from data/pitcher-rolling.json, written by scripts/sync-pitcher-rolling.mjs.
+// Keyed by pitcher MLB ID (string). Empty object = file not yet synced or this
+// pitcher isn't a probable starter today; the matchup modal falls back
+// gracefully, same as pitcherStatcast.
+let pitcherRolling = {};
+let pitcherRollingLoaded = false;
+let pitcherRollingPromise = null;
+
 // Per-pitcher Statcast store — loaded from data/pitcher-statcast.json,
 // written by scripts/sync-pitcher-statcast.mjs. Keyed by pitcher MLB ID.
 // Empty object = file not yet synced; front-end falls back gracefully.
@@ -1892,6 +1901,11 @@ function ensureKPropsLoaded() {
   return kPropsLoadInFlight;
 }
 let latestPitcherKData = {}; // pitcherId -> { ks, isFinal, isLive } — kept fresh by loadKsToday, read by renderKProps for the W-L tally
+// Fuller live pitching box score line than latestPitcherKData carries (ER/hits/BB/HBP
+// allowed + game decision), read from the exact same boxscore payload loadKsToday
+// already fetches for the K count — no new fetch. Used by the Fantasy Points board to
+// compare a pitcher's real DraftKings points today against his pregame projection.
+let livePitcherGameStats = {}; // pitcherId -> { ip, ks, er, hitsAllowed, bbAllowed, hbpAllowed, win, isFinal, isLive }
 let prSortCol = null, prSortDir = 1, prRows = [];
 const lineupCache = {};
 let repoLineupsData = null;
@@ -4031,7 +4045,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
       fetchJSON(`https://diamondreport.app/api/v1/people/${batterId}/stats?stats=statSplits&group=hitting&sitCodes=vl,vr&season=2026`).catch(() => null),
       fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}/stats?stats=statSplits&group=pitching&sitCodes=vl,vr&season=2026`).catch(() => null)
     ]);
-    await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs()]);
+    await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadPitcherRolling()]);
 
     const batterPerson = batterData.people?.[0] || {};
     const pitcherPerson = pitcherData.people?.[0] || {};
@@ -4045,8 +4059,9 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
     const hotHitter = getStatcastHotHitterProfile({ id: batterId, name: batterName, ops: bs.ops, stats: { slg: bs.slg, avg: bs.avg } });
     const pitcherProfile = pitcherStatcast[String(pitcherId)] || null;
     const nearHRList = nearHRs[String(batterId)] || null;
+    const rollingProfile = pitcherRolling[String(pitcherId)] || null;
 
-    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList });
+    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, rollingProfile });
   } catch(e) {
     body.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
@@ -4070,7 +4085,7 @@ function animateCountUp(el, endValue, decimals = 0, duration = 700) {
   requestAnimationFrame(step);
 }
 
-function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null }) {
+function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, rollingProfile=null }) {
   function fv(v, dec=3) {
     if (v==null||v===''||v==='---') return '–';
     const n = parseFloat(v); return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0(\.)/, '$1');
@@ -4657,6 +4672,53 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     </div>
   </div>`;
 
+  // ── Rolling Pitch Metrics — last 3 starts vs season, per pitch type ──────
+  // Answers "is this pitcher's stuff trending up or down right now," which the
+  // season-only Pitch Effectiveness table above can't — a real velocity dip or
+  // whiff-rate drop over recent starts is a much more direct "how will today's
+  // at-bats go" signal than a full-season average. Data from
+  // data/pitcher-rolling.json (scripts/sync-pitcher-rolling.mjs). Green/orange
+  // framed from the BATTER's perspective throughout this modal: velocity down
+  // or whiff rate down both mean easier at-bats, so both color green; velocity
+  // up or whiff rate up both mean tougher at-bats, so both color orange. Small
+  // deltas below each metric's noise threshold render muted rather than forcing
+  // a color call on what's probably just start-to-start variance.
+  const rollingMetricsHTML = (() => {
+    const shortPName = pitcherName.split(' ').pop();
+    if (!rollingProfile || !rollingProfile.byPitch?.length) return `
+    <div class="dr1041-pitch-mix" style="margin-top:14px">
+      <div class="dr1041-pitch-head">
+        <div><div class="dr1041-kicker">📈 ROLLING PITCH METRICS · NO REAL DATA YET</div><div class="dr1041-subtext">No last-3-start trend data available for ${shortPName} yet — this section will populate once the daily Statcast sync has run for today's probable starters.</div></div>
+      </div>
+    </div>`;
+    function deltaTag(delta, noiseThreshold) {
+      if (delta == null) return `<span style="color:var(--muted)">–</span>`;
+      // #f4a261 is the same "warning/tougher" orange the Strike Zone legend already
+      // uses for its warm-zone tier — var(--accent)/var(--accent2) are both blue in
+      // this theme, which would misread as neutral/informational rather than a
+      // caution, so this reuses the established orange instead of the accent var.
+      const color = delta <= -noiseThreshold ? 'var(--green)' : delta >= noiseThreshold ? '#f4a261' : 'var(--muted)';
+      const sign = delta > 0 ? '+' : '';
+      return `<span style="color:${color};font-weight:700">${sign}${delta.toFixed(1)}</span>`;
+    }
+    const rows = rollingProfile.byPitch.map(p => `
+      <tr>
+        <td><strong>${p.name}</strong></td>
+        <td class="num">${p.seasonUsagePct != null ? p.seasonUsagePct.toFixed(0) + '%' : '–'} → ${p.rollingUsagePct != null ? p.rollingUsagePct.toFixed(0) + '%' : '–'}</td>
+        <td class="num">${p.seasonVelo != null ? p.seasonVelo.toFixed(1) : '–'} → ${p.rollingVelo != null ? p.rollingVelo.toFixed(1) : '–'} mph (${deltaTag(p.veloDelta, 0.5)})</td>
+        <td class="num">${p.seasonWhiffPct != null ? p.seasonWhiffPct.toFixed(0) + '%' : '–'} → ${p.rollingWhiffPct != null ? p.rollingWhiffPct.toFixed(0) + '%' : '–'} (${deltaTag(p.whiffDelta, 3)})</td>
+      </tr>`).join('');
+    const lastDates = (rollingProfile.lastStartDates || []).join(', ');
+    return `
+    <div class="dr1041-pitch-mix" style="margin-top:14px">
+      <div class="dr1041-pitch-head">
+        <div><div class="dr1041-kicker">📈 ROLLING PITCH METRICS · LAST 3 STARTS VS SEASON</div><div class="dr1041-subtext">${shortPName}'s last 3 starts (${lastDates}) compared to his full-season baseline, per pitch — is his stuff trending up or down right now.</div></div>
+      </div>
+      <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage (Season → L3)</th><th>Velo (Season → L3)</th><th>Whiff% (Season → L3)</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="zone-note" style="margin-top:8px">Green = trending easier for the batter (velocity or whiff rate down). Orange = trending tougher (velocity or whiff rate up). Muted = change too small to be a real signal.</div>
+    </div>`;
+  })();
+
   // Zone Fit's "Location Tendency" dot grid was always a fixed decorative pattern
   // ([1,3,4,5,7].includes(...)), never real pitch-location data — there is no real data
   // source for it without a full pitch-by-pitch Statcast location sync (a separate,
@@ -5043,6 +5105,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     <div class="dr1041-matchup-dashboard">
       ${pitchMixDashboard.html}
       ${pitchEffectivenessTableHTML}
+      ${rollingMetricsHTML}
 
       <!-- Strike Zone + Attack Zone by Pitch, side by side -->
       <div class="dr1041-zone-grid">
@@ -5206,6 +5269,26 @@ async function loadNearHRs(force=false) {
     return nearHRs;
   })();
   return nearHRsPromise;
+}
+// Same repo-fed-JSON-with-graceful-fallback pattern as loadNearHRs() above —
+// data/pitcher-rolling.json is keyed by pitcher ID already, so this just
+// normalizes the ID to a string for lookup consistency with the rest of the app.
+async function loadPitcherRolling(force=false) {
+  if (pitcherRollingLoaded && !force) return pitcherRolling;
+  if (pitcherRollingPromise && !force) return pitcherRollingPromise;
+  pitcherRollingPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/pitcher-rolling.json`);
+      const players = data.pitchers || {};
+      pitcherRolling = {};
+      Object.keys(players).forEach(id => { pitcherRolling[String(id)] = players[id]; });
+    } catch(e) {
+      pitcherRolling = {};
+    }
+    pitcherRollingLoaded = true;
+    return pitcherRolling;
+  })();
+  return pitcherRollingPromise;
 }
 // Overwrites the hardcoded park-factor estimates (declared above, near the venue
 // list) with real, auto-updating Baseball Savant HR-index values once synced —
@@ -5571,17 +5654,35 @@ function fantasyBatterPoints(r) {
   // keeps this number consistent with what HR Threats already shows for the
   // same player.
   const pHR = fantasyNum(r.hrProb) / 100;
+  const hrPts = 10 * pHR;
+  const nonHrPts = (3 * p1B) + (5 * p2B) + (8 * p3B) + (2 * pRBI) + (2 * pR) + (2 * pBB) + (2 * pHBP) + (5 * pSB);
 
-  const points = (3 * p1B) + (5 * p2B) + (8 * p3B) + (10 * pHR) + (2 * pRBI) + (2 * pR) + (2 * pBB) + (2 * pHBP) + (5 * pSB);
   return {
-    points,
+    points: nonHrPts + hrPts,
+    pointsNoHR: nonHrPts,
     breakdown: [
       { label: 'Hits (1B/2B/3B)', pts: (3 * p1B) + (5 * p2B) + (8 * p3B) },
-      { label: `HR (${fantasyNum(r.hrProb).toFixed(1)}% today)`, pts: 10 * pHR },
+      { label: `HR (${fantasyNum(r.hrProb).toFixed(1)}% today)`, pts: hrPts },
       { label: 'RBI + Runs', pts: (2 * pRBI) + (2 * pR) },
       { label: 'BB/HBP + SB', pts: (2 * pBB) + (2 * pHBP) + (5 * pSB) },
     ],
   };
+}
+
+// Actual DK points scored so far today, from the same live/final box score already
+// attached to hrpRows (r.todayStats) for the "did he hit his HR projection" markers
+// elsewhere on the site — no new fetch. Returns null when the game hasn't started
+// (todayStats is {} pregame), same "no data yet" convention as hasRealZones/nearHRList.
+function fantasyActualBatterPoints(r) {
+  const ts = r.todayStats;
+  if (!ts || !Object.keys(ts).length) return null;
+  const hits = fantasyNum(ts.hits), doubles = fantasyNum(ts.doubles), triples = fantasyNum(ts.triples);
+  const hr = fantasyNum(ts.homeRuns ?? r.todayHR);
+  const singles = Math.max(0, hits - doubles - triples - hr);
+  const bb = fantasyNum(ts.baseOnBalls), hbp = fantasyNum(ts.hitByPitch);
+  const rbi = fantasyNum(ts.rbi ?? ts.runsBattedIn), runs = fantasyNum(ts.runs);
+  const sb = fantasyNum(ts.stolenBases);
+  return (3 * singles) + (5 * doubles) + (8 * triples) + (10 * hr) + (2 * rbi) + (2 * runs) + (2 * bb) + (2 * hbp) + (5 * sb);
 }
 
 function fantasyPitcherPoints(pr) {
@@ -5613,8 +5714,26 @@ function fantasyPitcherPoints(pr) {
   };
 }
 
-function fantasyPointsBadgeHTML(points, tier) {
-  return `<div class="fantasy-points-badge ${tier}"><span class="fantasy-points-num">${points.toFixed(1)}</span><span class="fantasy-points-unit">DK PTS</span></div>`;
+// Actual DK points from livePitcherGameStats (populated by loadKsToday from the same
+// boxscore payload the K count already comes from). Innings-pitched uses MLB's
+// thirds notation (5.2 = 5⅔, not 5.2 decimal), so this converts through outs rather
+// than treating the raw value as decimal innings. Returns null pregame.
+function fantasyActualPitcherPoints(pr) {
+  const pid = pr.pitcher?.id;
+  const live = pid != null ? (livePitcherGameStats[pid] || livePitcherGameStats[String(pid)]) : null;
+  if (!live) return null;
+  const ipRaw = parseFloat(live.ip) || 0;
+  const wholeIp = Math.floor(ipRaw);
+  const outs = (wholeIp * 3) + Math.round((ipRaw - wholeIp) * 10);
+  const ipPoints = outs * 0.75;
+  const baserunners = live.hitsAllowed + live.bbAllowed + live.hbpAllowed;
+  return ipPoints + (2 * live.ks) + (live.win ? 4 : 0) - (2 * live.er) - (0.6 * baserunners);
+}
+
+// Headline number is rounded to a whole point — the detail breakdown below stays
+// at 1 decimal since that's supporting math, not "the projection" itself.
+function fantasyPointsBadgeHTML(points, tier, subLabel) {
+  return `<div class="fantasy-points-badge ${tier}"><span class="fantasy-points-num">${Math.round(points)}</span><span class="fantasy-points-unit">DK PTS</span>${subLabel ? `<span class="fantasy-points-subline">${subLabel}</span>` : ''}</div>`;
 }
 
 function fantasyBreakdownHTML(breakdown) {
@@ -5623,8 +5742,25 @@ function fantasyBreakdownHTML(breakdown) {
   </div>`;
 }
 
+// Same "✓ Projection Hit / ✗ Missed" language and classes (.prop-hit-badge/
+// .prop-miss-badge/.dr109-badge-row) the Hits board already uses — only rendered
+// once a real result exists (actual != null); a game that hasn't started yet shows
+// nothing here rather than a premature call, and an in-progress game shows a plain
+// live progress chip with no verdict until it's actually final.
+function fantasyResultBadgeHTML(actual, projected, isFinal) {
+  if (actual == null) return '';
+  if (isFinal) {
+    const hitProjection = actual >= projected;
+    return `<div class="dr109-badge-row"><span class="${hitProjection ? 'prop-hit-badge' : 'prop-miss-badge'}">${hitProjection ? '✓ Projection Hit' : '✗ Missed'} — ${Math.round(actual)} actual</span></div>`;
+  }
+  return `<div class="dr109-badge-row"><span class="dr109-chip"><span>Live:</span><strong>${Math.round(actual)} pts</strong></span></div>`;
+}
+
 function fantasyBatterCardHTML(r, tier) {
-  const { points, breakdown } = fantasyBatterPoints(r);
+  const { points, pointsNoHR, breakdown } = fantasyBatterPoints(r);
+  const isLive = String(r.timeLabel || '').includes('LIVE');
+  const isFinal = r.timeLabel === 'FINAL';
+  const actual = (isLive || isFinal) ? fantasyActualBatterPoints(r) : null;
   const hs = r.id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/${r.id}/headshot/67/current` : '';
   return `<div class="dr109-card fantasy-card">
     <div class="dr109-card-head">
@@ -5632,10 +5768,11 @@ function fantasyBatterCardHTML(r, tier) {
         <img loading="lazy" decoding="async" src="${hs}" onerror="this.style.display='none'" alt="">
         <div style="min-width:0">
           <div class="dr109-name">${fantasyEsc(r.name || 'Player')}</div>
+          ${fantasyResultBadgeHTML(actual, points, isFinal)}
           <div class="dr109-meta">${fantasyEsc(r.teamAbbr || '')} · ${fantasyEsc(r.pos || '')} · vs ${fantasyEsc(r.oppAbbr || '')}${r.pitcherName ? ' · ' + fantasyEsc(r.pitcherName) : ''}${r.rosterStatus ? ` · <span style="color:#fca5a5">${fantasyEsc(r.rosterStatus)}</span>` : ''}</div>
         </div>
       </div>
-      ${fantasyPointsBadgeHTML(points, r.rosterStatus ? 'out' : tier)}
+      ${fantasyPointsBadgeHTML(points, r.rosterStatus ? 'out' : tier, `${Math.round(pointsNoHR)} pts w/o HR`)}
     </div>
     <div class="dr109-chiprow">
       <span class="dr109-chip"><span>AVG:</span><strong>${fantasyFmt3(r.avg)}</strong></span>
@@ -5650,6 +5787,9 @@ function fantasyBatterCardHTML(r, tier) {
 function fantasyPitcherCardHTML(pr, tier) {
   const p = pr.pitcher || {};
   const { points, breakdown } = fantasyPitcherPoints(pr);
+  const isLive = String(p.timeLabel || '').includes('LIVE');
+  const isFinal = p.timeLabel === 'FINAL';
+  const actual = (isLive || isFinal) ? fantasyActualPitcherPoints(pr) : null;
   const hs = p.id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/${p.id}/headshot/67/current` : '';
   return `<div class="dr109-card fantasy-card">
     <div class="dr109-card-head">
@@ -5657,6 +5797,7 @@ function fantasyPitcherCardHTML(pr, tier) {
         <img loading="lazy" decoding="async" src="${hs}" onerror="this.style.display='none'" alt="">
         <div style="min-width:0">
           <div class="dr109-name">${fantasyEsc(p.name || 'Pitcher')}</div>
+          ${fantasyResultBadgeHTML(actual, points, isFinal)}
           <div class="dr109-meta">${fantasyEsc(p.teamAbbr || '')} vs ${fantasyEsc(p.oppAbbr || '')} · ${fantasyEsc(p.timeLabel || '')}</div>
         </div>
       </div>
@@ -5669,6 +5810,22 @@ function fantasyPitcherCardHTML(pr, tier) {
       <span class="dr109-chip"><span>HR/9:</span><strong>${pr.hr9 ?? '–'}</strong></span>
     </div>
     ${fantasyBreakdownHTML(breakdown)}
+  </div>`;
+}
+
+// 'all' | 'batters' | 'pitchers' — persisted only for the current page session
+// (module-level var), same as hrpFilter elsewhere in this file.
+let fantasyFilter = 'all';
+function setFantasyFilter(f) {
+  fantasyFilter = f;
+  renderFantasyBoard();
+}
+window.setFantasyFilter = setFantasyFilter;
+
+function fantasyFilterBarHTML() {
+  const opts = [['all', 'All'], ['pitchers', '⚾ Pitchers'], ['batters', '🏏 Batters']];
+  return `<div class="fantasy-filter-bar">
+    ${opts.map(([key, label]) => `<button type="button" class="fantasy-filter-btn${fantasyFilter === key ? ' active' : ''}" onclick="window.setFantasyFilter('${key}')">${label}</button>`).join('')}
   </div>`;
 }
 
@@ -5707,8 +5864,12 @@ function renderFantasyBoard() {
     </div>`;
   }
 
-  el.innerHTML = section('Starting Pitchers', '⚾', pitchers, fantasyPitcherPoints, fantasyPitcherCardHTML)
-    + section('Batters', '🏏', batters, fantasyBatterPoints, fantasyBatterCardHTML);
+  const showPitchers = fantasyFilter !== 'batters';
+  const showBatters = fantasyFilter !== 'pitchers';
+
+  el.innerHTML = fantasyFilterBarHTML()
+    + (showPitchers ? section('Starting Pitchers', '⚾', pitchers, fantasyPitcherPoints, fantasyPitcherCardHTML) : '')
+    + (showBatters ? section('Batters', '🏏', batters, fantasyBatterPoints, fantasyBatterCardHTML) : '');
 }
 window.renderFantasyBoard = renderFantasyBoard;
 
@@ -5897,6 +6058,22 @@ async function loadKsToday() {
             isFinal: gameFinal,
             isLive: gameLive,
           });
+          // Same boxscore payload as the K-count fields above, just reading a few more
+          // already-present keys — feeds livePitcherGameStats for the Fantasy Points
+          // board's "did he hit his projection" check, no extra fetch.
+          if (p.person?.id && (gameLive || gameFinal)) {
+            livePitcherGameStats[p.person.id] = {
+              ip,
+              ks,
+              er: parseInt(p.stats?.pitching?.earnedRuns) || 0,
+              hitsAllowed: parseInt(p.stats?.pitching?.hits) || 0,
+              bbAllowed: parseInt(p.stats?.pitching?.baseOnBalls) || 0,
+              hbpAllowed: parseInt(p.stats?.pitching?.hitBatsmen) || 0,
+              win: (parseInt(p.stats?.pitching?.wins) || 0) > 0,
+              isFinal: gameFinal,
+              isLive: gameLive,
+            };
+          }
         });
       });
     });
