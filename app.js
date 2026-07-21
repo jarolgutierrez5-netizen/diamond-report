@@ -1892,6 +1892,11 @@ function ensureKPropsLoaded() {
   return kPropsLoadInFlight;
 }
 let latestPitcherKData = {}; // pitcherId -> { ks, isFinal, isLive } — kept fresh by loadKsToday, read by renderKProps for the W-L tally
+// Fuller live pitching box score line than latestPitcherKData carries (ER/hits/BB/HBP
+// allowed + game decision), read from the exact same boxscore payload loadKsToday
+// already fetches for the K count — no new fetch. Used by the Fantasy Points board to
+// compare a pitcher's real DraftKings points today against his pregame projection.
+let livePitcherGameStats = {}; // pitcherId -> { ip, ks, er, hitsAllowed, bbAllowed, hbpAllowed, win, isFinal, isLive }
 let prSortCol = null, prSortDir = 1, prRows = [];
 const lineupCache = {};
 let repoLineupsData = null;
@@ -5571,17 +5576,35 @@ function fantasyBatterPoints(r) {
   // keeps this number consistent with what HR Threats already shows for the
   // same player.
   const pHR = fantasyNum(r.hrProb) / 100;
+  const hrPts = 10 * pHR;
+  const nonHrPts = (3 * p1B) + (5 * p2B) + (8 * p3B) + (2 * pRBI) + (2 * pR) + (2 * pBB) + (2 * pHBP) + (5 * pSB);
 
-  const points = (3 * p1B) + (5 * p2B) + (8 * p3B) + (10 * pHR) + (2 * pRBI) + (2 * pR) + (2 * pBB) + (2 * pHBP) + (5 * pSB);
   return {
-    points,
+    points: nonHrPts + hrPts,
+    pointsNoHR: nonHrPts,
     breakdown: [
       { label: 'Hits (1B/2B/3B)', pts: (3 * p1B) + (5 * p2B) + (8 * p3B) },
-      { label: `HR (${fantasyNum(r.hrProb).toFixed(1)}% today)`, pts: 10 * pHR },
+      { label: `HR (${fantasyNum(r.hrProb).toFixed(1)}% today)`, pts: hrPts },
       { label: 'RBI + Runs', pts: (2 * pRBI) + (2 * pR) },
       { label: 'BB/HBP + SB', pts: (2 * pBB) + (2 * pHBP) + (5 * pSB) },
     ],
   };
+}
+
+// Actual DK points scored so far today, from the same live/final box score already
+// attached to hrpRows (r.todayStats) for the "did he hit his HR projection" markers
+// elsewhere on the site — no new fetch. Returns null when the game hasn't started
+// (todayStats is {} pregame), same "no data yet" convention as hasRealZones/nearHRList.
+function fantasyActualBatterPoints(r) {
+  const ts = r.todayStats;
+  if (!ts || !Object.keys(ts).length) return null;
+  const hits = fantasyNum(ts.hits), doubles = fantasyNum(ts.doubles), triples = fantasyNum(ts.triples);
+  const hr = fantasyNum(ts.homeRuns ?? r.todayHR);
+  const singles = Math.max(0, hits - doubles - triples - hr);
+  const bb = fantasyNum(ts.baseOnBalls), hbp = fantasyNum(ts.hitByPitch);
+  const rbi = fantasyNum(ts.rbi ?? ts.runsBattedIn), runs = fantasyNum(ts.runs);
+  const sb = fantasyNum(ts.stolenBases);
+  return (3 * singles) + (5 * doubles) + (8 * triples) + (10 * hr) + (2 * rbi) + (2 * runs) + (2 * bb) + (2 * hbp) + (5 * sb);
 }
 
 function fantasyPitcherPoints(pr) {
@@ -5613,8 +5636,26 @@ function fantasyPitcherPoints(pr) {
   };
 }
 
-function fantasyPointsBadgeHTML(points, tier) {
-  return `<div class="fantasy-points-badge ${tier}"><span class="fantasy-points-num">${points.toFixed(1)}</span><span class="fantasy-points-unit">DK PTS</span></div>`;
+// Actual DK points from livePitcherGameStats (populated by loadKsToday from the same
+// boxscore payload the K count already comes from). Innings-pitched uses MLB's
+// thirds notation (5.2 = 5⅔, not 5.2 decimal), so this converts through outs rather
+// than treating the raw value as decimal innings. Returns null pregame.
+function fantasyActualPitcherPoints(pr) {
+  const pid = pr.pitcher?.id;
+  const live = pid != null ? (livePitcherGameStats[pid] || livePitcherGameStats[String(pid)]) : null;
+  if (!live) return null;
+  const ipRaw = parseFloat(live.ip) || 0;
+  const wholeIp = Math.floor(ipRaw);
+  const outs = (wholeIp * 3) + Math.round((ipRaw - wholeIp) * 10);
+  const ipPoints = outs * 0.75;
+  const baserunners = live.hitsAllowed + live.bbAllowed + live.hbpAllowed;
+  return ipPoints + (2 * live.ks) + (live.win ? 4 : 0) - (2 * live.er) - (0.6 * baserunners);
+}
+
+// Headline number is rounded to a whole point — the detail breakdown below stays
+// at 1 decimal since that's supporting math, not "the projection" itself.
+function fantasyPointsBadgeHTML(points, tier, subLabel) {
+  return `<div class="fantasy-points-badge ${tier}"><span class="fantasy-points-num">${Math.round(points)}</span><span class="fantasy-points-unit">DK PTS</span>${subLabel ? `<span class="fantasy-points-subline">${subLabel}</span>` : ''}</div>`;
 }
 
 function fantasyBreakdownHTML(breakdown) {
@@ -5623,8 +5664,25 @@ function fantasyBreakdownHTML(breakdown) {
   </div>`;
 }
 
+// Same "✓ Projection Hit / ✗ Missed" language and classes (.prop-hit-badge/
+// .prop-miss-badge/.dr109-badge-row) the Hits board already uses — only rendered
+// once a real result exists (actual != null); a game that hasn't started yet shows
+// nothing here rather than a premature call, and an in-progress game shows a plain
+// live progress chip with no verdict until it's actually final.
+function fantasyResultBadgeHTML(actual, projected, isFinal) {
+  if (actual == null) return '';
+  if (isFinal) {
+    const hitProjection = actual >= projected;
+    return `<div class="dr109-badge-row"><span class="${hitProjection ? 'prop-hit-badge' : 'prop-miss-badge'}">${hitProjection ? '✓ Projection Hit' : '✗ Missed'} — ${Math.round(actual)} actual</span></div>`;
+  }
+  return `<div class="dr109-badge-row"><span class="dr109-chip"><span>Live:</span><strong>${Math.round(actual)} pts</strong></span></div>`;
+}
+
 function fantasyBatterCardHTML(r, tier) {
-  const { points, breakdown } = fantasyBatterPoints(r);
+  const { points, pointsNoHR, breakdown } = fantasyBatterPoints(r);
+  const isLive = String(r.timeLabel || '').includes('LIVE');
+  const isFinal = r.timeLabel === 'FINAL';
+  const actual = (isLive || isFinal) ? fantasyActualBatterPoints(r) : null;
   const hs = r.id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/${r.id}/headshot/67/current` : '';
   return `<div class="dr109-card fantasy-card">
     <div class="dr109-card-head">
@@ -5632,10 +5690,11 @@ function fantasyBatterCardHTML(r, tier) {
         <img loading="lazy" decoding="async" src="${hs}" onerror="this.style.display='none'" alt="">
         <div style="min-width:0">
           <div class="dr109-name">${fantasyEsc(r.name || 'Player')}</div>
+          ${fantasyResultBadgeHTML(actual, points, isFinal)}
           <div class="dr109-meta">${fantasyEsc(r.teamAbbr || '')} · ${fantasyEsc(r.pos || '')} · vs ${fantasyEsc(r.oppAbbr || '')}${r.pitcherName ? ' · ' + fantasyEsc(r.pitcherName) : ''}${r.rosterStatus ? ` · <span style="color:#fca5a5">${fantasyEsc(r.rosterStatus)}</span>` : ''}</div>
         </div>
       </div>
-      ${fantasyPointsBadgeHTML(points, r.rosterStatus ? 'out' : tier)}
+      ${fantasyPointsBadgeHTML(points, r.rosterStatus ? 'out' : tier, `${Math.round(pointsNoHR)} pts w/o HR`)}
     </div>
     <div class="dr109-chiprow">
       <span class="dr109-chip"><span>AVG:</span><strong>${fantasyFmt3(r.avg)}</strong></span>
@@ -5650,6 +5709,9 @@ function fantasyBatterCardHTML(r, tier) {
 function fantasyPitcherCardHTML(pr, tier) {
   const p = pr.pitcher || {};
   const { points, breakdown } = fantasyPitcherPoints(pr);
+  const isLive = String(p.timeLabel || '').includes('LIVE');
+  const isFinal = p.timeLabel === 'FINAL';
+  const actual = (isLive || isFinal) ? fantasyActualPitcherPoints(pr) : null;
   const hs = p.id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/${p.id}/headshot/67/current` : '';
   return `<div class="dr109-card fantasy-card">
     <div class="dr109-card-head">
@@ -5657,6 +5719,7 @@ function fantasyPitcherCardHTML(pr, tier) {
         <img loading="lazy" decoding="async" src="${hs}" onerror="this.style.display='none'" alt="">
         <div style="min-width:0">
           <div class="dr109-name">${fantasyEsc(p.name || 'Pitcher')}</div>
+          ${fantasyResultBadgeHTML(actual, points, isFinal)}
           <div class="dr109-meta">${fantasyEsc(p.teamAbbr || '')} vs ${fantasyEsc(p.oppAbbr || '')} · ${fantasyEsc(p.timeLabel || '')}</div>
         </div>
       </div>
@@ -5669,6 +5732,22 @@ function fantasyPitcherCardHTML(pr, tier) {
       <span class="dr109-chip"><span>HR/9:</span><strong>${pr.hr9 ?? '–'}</strong></span>
     </div>
     ${fantasyBreakdownHTML(breakdown)}
+  </div>`;
+}
+
+// 'all' | 'batters' | 'pitchers' — persisted only for the current page session
+// (module-level var), same as hrpFilter elsewhere in this file.
+let fantasyFilter = 'all';
+function setFantasyFilter(f) {
+  fantasyFilter = f;
+  renderFantasyBoard();
+}
+window.setFantasyFilter = setFantasyFilter;
+
+function fantasyFilterBarHTML() {
+  const opts = [['all', 'All'], ['pitchers', '⚾ Pitchers'], ['batters', '🏏 Batters']];
+  return `<div class="fantasy-filter-bar">
+    ${opts.map(([key, label]) => `<button type="button" class="fantasy-filter-btn${fantasyFilter === key ? ' active' : ''}" onclick="window.setFantasyFilter('${key}')">${label}</button>`).join('')}
   </div>`;
 }
 
@@ -5707,8 +5786,12 @@ function renderFantasyBoard() {
     </div>`;
   }
 
-  el.innerHTML = section('Starting Pitchers', '⚾', pitchers, fantasyPitcherPoints, fantasyPitcherCardHTML)
-    + section('Batters', '🏏', batters, fantasyBatterPoints, fantasyBatterCardHTML);
+  const showPitchers = fantasyFilter !== 'batters';
+  const showBatters = fantasyFilter !== 'pitchers';
+
+  el.innerHTML = fantasyFilterBarHTML()
+    + (showPitchers ? section('Starting Pitchers', '⚾', pitchers, fantasyPitcherPoints, fantasyPitcherCardHTML) : '')
+    + (showBatters ? section('Batters', '🏏', batters, fantasyBatterPoints, fantasyBatterCardHTML) : '');
 }
 window.renderFantasyBoard = renderFantasyBoard;
 
@@ -5897,6 +5980,22 @@ async function loadKsToday() {
             isFinal: gameFinal,
             isLive: gameLive,
           });
+          // Same boxscore payload as the K-count fields above, just reading a few more
+          // already-present keys — feeds livePitcherGameStats for the Fantasy Points
+          // board's "did he hit his projection" check, no extra fetch.
+          if (p.person?.id && (gameLive || gameFinal)) {
+            livePitcherGameStats[p.person.id] = {
+              ip,
+              ks,
+              er: parseInt(p.stats?.pitching?.earnedRuns) || 0,
+              hitsAllowed: parseInt(p.stats?.pitching?.hits) || 0,
+              bbAllowed: parseInt(p.stats?.pitching?.baseOnBalls) || 0,
+              hbpAllowed: parseInt(p.stats?.pitching?.hitBatsmen) || 0,
+              win: (parseInt(p.stats?.pitching?.wins) || 0) > 0,
+              isFinal: gameFinal,
+              isLive: gameLive,
+            };
+          }
         });
       });
     });
