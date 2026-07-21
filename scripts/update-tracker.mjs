@@ -63,6 +63,13 @@ const TRACKER_PATH = path.join(__dirname, '..', 'data', 'tracker.json');
 // this file was never being written before, so loadSportsbookKLines() on the client
 // had nothing to actually read despite already knowing how to parse it.
 const K_PROPS_ODDS_PATH = path.join(__dirname, '..', 'data', 'k-props.json');
+// Same idea as K_PROPS_ODDS_PATH above, for the batter markets — real sportsbook
+// hits/home_runs/total_bases/rbis/stolen_bases lines for EVERY quoted batter (not
+// just the handful that end up as an Elite Pick), from the exact same batterLines
+// map fetchOddsLookup() already builds. Lets the live client compute a real
+// implied-probability edge (see scripts/sync-batter-situational-props.mjs) for any
+// batter on today's board, not only ones Elite Picks happened to select.
+const PROP_MARKET_ODDS_PATH = path.join(__dirname, '..', 'data', 'prop-market-odds.json');
 // Separate file, separate pipeline — deliberately never merged into
 // data/tracker.json. Captures our own Diamond Report Pick alongside Ballpark
 // Pal's own Moneyline projection for the same game every morning, then grades
@@ -2073,6 +2080,14 @@ async function captureToday(store, compStore, drpSimCompStore) {
       console.log(`Wrote data/k-props.json: ${lines.length} real sportsbook K line(s).`);
     } catch (e) {
       console.warn('Failed to write data/k-props.json:', e.message);
+    }
+    try {
+      const players = Array.from(oddsLookup.batterLines.entries()).map(([name, markets]) => ({ playerName: name, markets }));
+      await mkdir(path.dirname(PROP_MARKET_ODDS_PATH), { recursive: true });
+      await writeFile(PROP_MARKET_ODDS_PATH, JSON.stringify({ generatedAt: new Date().toISOString(), players }, null, 2) + '\n');
+      console.log(`Wrote data/prop-market-odds.json: real sportsbook batter prop lines for ${players.length} player(s).`);
+    } catch (e) {
+      console.warn('Failed to write data/prop-market-odds.json:', e.message);
     }
   } else {
     console.log('Odds already fetched today — reusing model-only fallback for this pass.');
