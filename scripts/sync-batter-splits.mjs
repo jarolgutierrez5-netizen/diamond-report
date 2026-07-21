@@ -51,6 +51,7 @@ import path from 'node:path';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const HOT_HITTERS_PATH = path.join(DATA_DIR, 'statcast-hot-hitters.json');
+const INJURY_HISTORY_PATH = path.join(DATA_DIR, 'injury-history.json');
 const SEASON = new Date().getFullYear();
 const MLB_API = 'https://statsapi.mlb.com/api/v1';
 const RECENT_DAYS = 14;
@@ -58,6 +59,14 @@ function isoDate(d) { return d.toISOString().slice(0, 10); }
 function daysAgo(n) { const d = new Date(); d.setDate(d.getDate() - n); return d; }
 const RECENT_START = isoDate(daysAgo(RECENT_DAYS));
 const RECENT_END = isoDate(new Date());
+function cdtDateString(d) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+}
+// How long a past IL/inactive day keeps counting as "recently returned" once a player
+// is no longer flagged -- 14 days matches the RECENT_DAYS window everything else here
+// already uses for "recent," so a returning player's whole recent-form-trend window
+// overlaps with the return itself, which is exactly when it matters most.
+const INJURY_HISTORY_WINDOW_DAYS = 14;
 
 // The combined 3-stats-block hydrate URL (statSplits + byDateRange + season) is a
 // much heavier request per team than the single-stat version this started as — a
@@ -201,6 +210,57 @@ async function buildSplitsForTeam(teamId) {
   return out;
 }
 
+// ── Real "recently returned from injury" tracking ──────────────────────────
+// The MLB roster endpoint only ever tells you a player's CURRENT status, not history --
+// there's no live signal for "was on the IL as of N days ago." Rather than reach for an
+// unverified transactions endpoint, this builds real history out of what this script
+// already fetches for free every day it runs: each run's snapshot of who is currently
+// flagged injured/inactive (see buildSplitsForTeam's rosterStatus above) gets appended
+// to data/injury-history.json, keyed by player, pruned to a rolling window. A player who
+// shows up in that history recently but ISN'T flagged today has demonstrably just
+// returned -- derived entirely from data already being pulled, no new API calls.
+async function loadInjuryHistory() {
+  try {
+    const raw = await readFile(INJURY_HISTORY_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    return { byPlayer: parsed?.byPlayer || {} };
+  } catch (e) {
+    return { byPlayer: {} };
+  }
+}
+
+async function saveInjuryHistory(history) {
+  await mkdir(DATA_DIR, { recursive: true });
+  await writeFile(INJURY_HISTORY_PATH, JSON.stringify({ generatedAt: new Date().toISOString(), byPlayer: history.byPlayer }, null, 2) + '\n');
+}
+
+// Mutates history.byPlayer in place: appends today for every currently-flagged player
+// (idempotent -- a second same-day run just finds today's date already present), then
+// drops any date older than the window, and drops a player entirely once their history
+// is empty, so this file never grows without bound across a full season.
+function updateInjuryHistory(history, today, flaggedPlayerIds) {
+  const cutoff = isoDate(daysAgo(INJURY_HISTORY_WINDOW_DAYS));
+  for (const pid of flaggedPlayerIds) {
+    const dates = history.byPlayer[pid] || (history.byPlayer[pid] = []);
+    if (!dates.includes(today)) dates.push(today);
+  }
+  for (const pid of Object.keys(history.byPlayer)) {
+    history.byPlayer[pid] = history.byPlayer[pid].filter(d => d >= cutoff);
+    if (!history.byPlayer[pid].length) delete history.byPlayer[pid];
+  }
+}
+
+// Returns { playerId: lastKnownInjuredDate } for every player with recent injury
+// history who is NOT currently flagged -- the actual "recently returned" set.
+function computeRecentlyReturned(history, flaggedPlayerIds) {
+  const out = {};
+  for (const [pid, dates] of Object.entries(history.byPlayer)) {
+    if (flaggedPlayerIds.has(pid) || !dates.length) continue;
+    out[pid] = dates[dates.length - 1];
+  }
+  return out;
+}
+
 async function main() {
   await mkdir(DATA_DIR, { recursive: true });
 
@@ -246,12 +306,29 @@ async function main() {
   const totalWithRecentForm = Object.values(allSplits).filter(s => s.recentOps != null).length;
   console.log(`Fetched splits for ${totalWithSplits} players across ${teamIds.length - teamFailures}/${teamIds.length} teams (${totalInactive} flagged injured/inactive, ${totalWithRecentForm} with recent-form trend).`);
 
+  // Real injury history, built from today's snapshot + whatever this file already has
+  // for the prior ~2 weeks -- see the section above main() for why this is derived
+  // locally instead of calling an unverified transactions endpoint.
+  const today = cdtDateString(new Date());
+  const flaggedPlayerIds = new Set(Object.entries(allSplits).filter(([, s]) => s.rosterStatus).map(([pid]) => pid));
+  const injuryHistory = await loadInjuryHistory();
+  updateInjuryHistory(injuryHistory, today, flaggedPlayerIds);
+  const recentlyReturned = computeRecentlyReturned(injuryHistory, flaggedPlayerIds);
+  await saveInjuryHistory(injuryHistory);
+  console.log(`Injury history: ${flaggedPlayerIds.size} currently flagged, ${Object.keys(recentlyReturned).length} recently returned (last ${INJURY_HISTORY_WINDOW_DAYS} days), ${Object.keys(injuryHistory.byPlayer).length} total players with recent history.`);
+
   let merged = 0;
   for (const p of hotHitters.players) {
     const s = allSplits[p.playerId];
-    if (!s) continue;
-    Object.assign(p, s);
-    merged++;
+    if (s) { Object.assign(p, s); merged++; }
+    // A currently-flagged player already carries rosterStatus above -- only set
+    // recentlyReturnedFromInjury for the (mutually exclusive) case of "was flagged
+    // recently, isn't now," so a player is never described as both at once.
+    if (!s?.rosterStatus && recentlyReturned[p.playerId]) {
+      p.recentlyReturnedFromInjury = recentlyReturned[p.playerId];
+    } else {
+      delete p.recentlyReturnedFromInjury;
+    }
   }
 
   hotHitters.generatedAt = new Date().toISOString();
@@ -264,4 +341,7 @@ if (isMain) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { activeTeamIds, buildSplitsForTeam, extractSplits, main };
+export {
+  activeTeamIds, buildSplitsForTeam, extractSplits, main,
+  loadInjuryHistory, saveInjuryHistory, updateInjuryHistory, computeRecentlyReturned,
+};

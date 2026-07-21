@@ -5407,7 +5407,7 @@ function getColdBatterDiagnosis(row) {
   if (profile.rosterStatus) {
     reasons.push({ icon: '🏥', label: `Currently ${profile.rosterStatus}`, text: `Listed as ${profile.rosterStatus} — recent numbers may reflect games before this, not a form read on a healthy player right now.` });
   } else if (profile.recentlyReturnedFromInjury) {
-    reasons.push({ icon: '🩹', label: 'Recently activated', text: `Came off the injured list within the last two weeks (activated ${profile.recentlyReturnedFromInjury}) — early rust after a return is a common, real explanation for a cold stretch.` });
+    reasons.push({ icon: '🩹', label: 'Recently off the IL', text: `Was on the injured/inactive list as recently as ${profile.recentlyReturnedFromInjury} — early rust shortly after a return is a common, real explanation for a cold stretch.` });
   }
 
   if (Array.isArray(profile.pitchMixShift) && profile.pitchMixShift.length) {
