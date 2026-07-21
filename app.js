@@ -6671,7 +6671,15 @@ async function loadHRPotential() {
         // This keeps HR Threats populated before official lineups are posted, without using
         // random active-roster timing from the boxscore as the primary source.
         if (!batters.length) {
-          const cacheKey = `${g.gamePk}-${side}`;
+          // lineupCache is written by fetchAndRenderLineup keyed off the PITCHER's own
+          // team side (with the opposing team's batters as the payload) — see
+          // `${gamePk}-${side}` there, where `side` is the pitcher's side and the stored
+          // lineup is teamBox[oppSide]. Here `side` is the BATTING team's side and `opp`
+          // is the pitcher's side, so the matching cache key is built off `opp`, not
+          // `side`. Using `side` here pulled the pitcher's own team's lineup instead of
+          // the actual opposing batters — e.g. a batter shown "facing" his own team's
+          // pitcher whenever this fallback fired (before official lineups posted).
+          const cacheKey = `${g.gamePk}-${opp}`;
           const cached = lineupCache[cacheKey];
           if (cached?.lineup?.length) {
             batters = cached.lineup.slice(0, 9).map(b => ({
