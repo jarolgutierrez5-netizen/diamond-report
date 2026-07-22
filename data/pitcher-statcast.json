@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-22T18:49:28.553Z",
+  "generatedAt": "2026-07-22T20:50:13.466Z",
   "season": 2026,
   "pitchers": {
     "434378": {
@@ -113283,7 +113283,45 @@
           "whiffPct": 22,
           "hardHitPct": 47.1,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 2.6,
+              "wobaAgainst": null
+            },
+            "2": {
+              "usagePct": 8.8,
+              "wobaAgainst": 0.45
+            },
+            "3": {
+              "usagePct": 6.1,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 7.9,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 8.8,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 7,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 4.4,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 3.5,
+              "wobaAgainst": 0.3
+            },
+            "9": {
+              "usagePct": 4.4,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Slider",
@@ -113298,7 +113336,33 @@
           "whiffPct": 23.1,
           "hardHitPct": 0,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "2": {
+              "usagePct": 4.3,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 2.2,
+              "wobaAgainst": 0
+            },
+            "4": {
+              "usagePct": 10.9,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 6.5,
+              "wobaAgainst": null
+            },
+            "6": {
+              "usagePct": 2.2,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 13,
+              "wobaAgainst": 0
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -113313,7 +113377,29 @@
           "whiffPct": 30.8,
           "hardHitPct": 33.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1,
+          "zones": {
+            "2": {
+              "usagePct": 11.5,
+              "wobaAgainst": 2
+            },
+            "5": {
+              "usagePct": 3.8,
+              "wobaAgainst": null
+            },
+            "7": {
+              "usagePct": 3.8,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 11.5,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 11.5,
+              "wobaAgainst": 0.45
+            }
+          }
         }
       ],
       "career": {
@@ -113365,6 +113451,32 @@
             "barrelPct": null
           }
         ]
+      },
+      "byZone": {
+        "2": {
+          "wobaAgainst": 0.967
+        },
+        "3": {
+          "wobaAgainst": 0
+        },
+        "4": {
+          "wobaAgainst": 0
+        },
+        "5": {
+          "wobaAgainst": 0
+        },
+        "6": {
+          "wobaAgainst": 0
+        },
+        "7": {
+          "wobaAgainst": 0
+        },
+        "8": {
+          "wobaAgainst": 0.18
+        },
+        "9": {
+          "wobaAgainst": 0.3
+        }
       }
     },
     "701121": {
