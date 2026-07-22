@@ -1737,7 +1737,6 @@ async function loadPitcherStatcast() {
 }
 let statcastHotHittersLoaded = false;
 let statcastHotHittersPromise = null;
-const prevHrpHRs = {};          // batterId -> todayHR count for diff detection
 let kPropsData = [];
 let kPropsLoadedAt = null;
 // Full today's schedule as loaded for K Props — kept separately from kPropsData so the
@@ -2015,18 +2014,6 @@ function getDRKProjectionForPitcher(pitcherId, pitcherName) {
   const n = Number(raw);
   return Number.isFinite(n) ? n : null;
 }
-function formatRoundedDRKProjection(value, sbLine = null) {
-  // Number(null) === 0, which previously made "no projection loaded yet" render
-  // as a fake "0K" — indistinguishable from a real, confirmed zero projection.
-  // Treat missing values explicitly instead of letting them fall through Number().
-  if (value === null || value === undefined || value === '') return '—';
-  const n = Number(value);
-  if (!Number.isFinite(n)) return '—';
-  const rounded = Math.round(n);
-  const line = Number(sbLine);
-  const directionArrow = Number.isFinite(line) ? (n >= line ? '⬆︎' : '⬇︎') : '';
-  return `${directionArrow ? directionArrow + ' ' : ''}${rounded}K`;
-}
 let hrpRetryTimer = null;
 let hrpFilterActive = 'all';
 // K's Today needs real DR K Proj / SB Line values to display them, but loadKProps()
@@ -2114,73 +2101,6 @@ let manualLineupsData = null;
 try {
   manualLineupsData = JSON.parse(localStorage.getItem('drConfirmedLineups') || 'null');
 } catch { manualLineupsData = null; }
-
-function normalizeConfirmedLineupUpload(payload) {
-  if (!payload) return null;
-  if (payload.games) return payload;
-
-  // Simple single-lineup import format:
-  // { "gamePk": 777777, "side": "home", "abbr": "NYY", "confirmed": true,
-  //   "lineup": [{"name":"Aaron Judge","id":592450,"pos":"RF"}, ...] }
-  if (payload.gamePk && payload.side && Array.isArray(payload.lineup)) {
-    return {
-      generatedAt: new Date().toISOString(),
-      games: {
-        [String(payload.gamePk)]: {
-          updatedAt: new Date().toISOString(),
-          source: payload.source || 'manual-upload',
-          teams: {
-            [payload.side]: {
-              abbr: payload.abbr || payload.teamAbbr || '',
-              confirmed: payload.confirmed !== false,
-              confirmedAt: payload.confirmedAt || new Date().toISOString(),
-              source: payload.source || 'manual-upload',
-              lineup: payload.lineup
-            }
-          }
-        }
-      }
-    };
-  }
-  return null;
-}
-
-function mergeLineupData(base, incoming) {
-  const out = base && base.games ? JSON.parse(JSON.stringify(base)) : { generatedAt: new Date().toISOString(), games: {} };
-  Object.entries(incoming?.games || {}).forEach(([gamePk, game]) => {
-    out.games[gamePk] = out.games[gamePk] || { teams: {} };
-    out.games[gamePk].updatedAt = game.updatedAt || new Date().toISOString();
-    out.games[gamePk].source = game.source || out.games[gamePk].source || 'manual-upload';
-    out.games[gamePk].teams = out.games[gamePk].teams || {};
-    Object.entries(game.teams || {}).forEach(([side, team]) => {
-      out.games[gamePk].teams[side] = { ...team, confirmed: team.confirmed !== false, source: team.source || 'manual-upload' };
-    });
-  });
-  out.generatedAt = new Date().toISOString();
-  return out;
-}
-
-function importConfirmedLineupFile(input) {
-  const file = input?.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const parsed = normalizeConfirmedLineupUpload(JSON.parse(reader.result));
-      if (!parsed) throw new Error('Unsupported lineup format');
-      manualLineupsData = mergeLineupData(manualLineupsData, parsed);
-      localStorage.setItem('drConfirmedLineups', JSON.stringify(manualLineupsData));
-      Object.keys(lineupCache).forEach(k => delete lineupCache[k]);
-      rehydrateOpenLineupModal();
-      alert('Confirmed lineup imported. Open lineup panels have been refreshed.');
-    } catch (e) {
-      alert('Could not import lineup file: ' + e.message);
-    } finally {
-      input.value = '';
-    }
-  };
-  reader.readAsText(file);
-}
 
 async function loadPitcherReport() {
   const el = document.getElementById('pr-content');
@@ -2530,14 +2450,6 @@ async function fetchBatterSeasonBundle(playerId, preferredSeason, fallbackStats 
   }
   return { seasonStats: bestStat, logs: bestLogs, season: String(preferredSeason || '') };
 }
-function _displayBattingValue(stat, key, dec = 3) {
-  if (!_statHasRealBattingData(stat)) return '–';
-  const v = stat?.[key];
-  if (v == null || v === '' || v === '---') return '–';
-  const n = parseFloat(v);
-  return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0/, '');
-}
-
 async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp, skipEnrichment = false, bypassPRGuards = false) {
   const pid = normalizePitcherId(pitcherId);
   const panel = document.getElementById(`panel-${pid}`);
@@ -6115,34 +6027,9 @@ window.renderFantasyBoard = renderFantasyBoard;
 // Checks on load and reschedules daily — handles cases where tab wasn't open at 5am
 const HR_POTENTIAL_STORAGE_KEY = 'hrp_last_loaded_date';
 
-function getHRPLastLoadedDate() {
-  try { return localStorage.getItem(HR_POTENTIAL_STORAGE_KEY) || ''; } catch { return ''; }
-}
 function setHRPLastLoadedDate(dateStr) {
   try { localStorage.setItem(HR_POTENTIAL_STORAGE_KEY, dateStr); } catch {}
 }
-
-function shouldRefreshHRPotential() {
-  const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
-  const lastLoaded = getHRPLastLoadedDate();
-  const cdtNow = new Date(new Date().toLocaleString('en-US', {timeZone:'America/Chicago'}));
-  const hour = cdtNow.getHours();
-  // Refresh if: never loaded today, OR loaded before 5am today and it's now past 5am
-  if (lastLoaded !== today) return true;
-  return false; // already loaded fresh today
-}
-
-function triggerHRPotentialRefresh() {
-  if (shouldRefreshHRPotential()) {
-    const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
-    setHRPLastLoadedDate(today);
-    loadHRPotentialWithRetry();
-  } else if (!hrpRows.length) {
-    // Data was never successfully populated — retry regardless
-    loadHRPotentialWithRetry();
-  }
-}
-
 
 function loadHRPotentialWithRetry() {
   return loadHRPotential().then(() => {
@@ -7199,33 +7086,6 @@ function filterHRP(filter) {
   renderHRPTable();
 }
 
-// Diff-based HR update for Props tab
-function refreshHRPDiff() {
-  if (!hrpRows.length) return;
-  let changed = false;
-  hrpRows.forEach(r => {
-    const prev = prevHrpHRs[r.id];
-    if (prev !== r.todayHR) {
-      changed = true;
-      prevHrpHRs[r.id] = r.todayHR;
-      const rowEl = document.getElementById(`hrp-row-${r.id}`);
-      if (rowEl) {
-        if (r.todayHR > 0) {
-          rowEl.classList.add('hr-today-row');
-          const nameEl = rowEl.querySelector('.hrp-batter-name');
-          if (nameEl) nameEl.style.color = 'var(--accent2)';
-          const subEl = rowEl.querySelector('.hrp-batter-sub');
-          if (subEl) {
-            let badge = subEl.querySelector('.hr-today-badge-prop');
-            if (!badge) { badge = document.createElement('span'); badge.className='hr-today-badge-prop'; badge.style.cssText='background:#0a1a33;color:#2f6bff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid #2f6bff66'; subEl.appendChild(badge); }
-            badge.textContent = `💥 HR TODAY${r.todayHR>1?' x'+r.todayHR:''}`;
-          }
-        }
-      }
-    }
-  });
-}
-
 // ── HRS TODAY ─────────────────────────────────────────────────────────
 async function loadHRsToday() {
   const el = document.getElementById('hrs-today-content');
@@ -7428,7 +7288,6 @@ function drKRealisticOverChance(p){
   return drKClamp(chance / 100, .33, .78);
 }
 function drKGrade(score){ return score>=82?'A+':score>=76?'A':score>=70?'B+':score>=64?'B':score>=58?'C+':score>=52?'C':'PASS'; }
-function drKChip(label,value,cls='') { return `<span class="dr112-chip ${cls}"><b>${label}</b>${value}</span>`; }
 function drKSummaryHTML(list){
   // Styled to match the "EXPANDED ... DATA" summary banner already used on the HR
   // Threats board (dr1027-hr-summary), so both boards read as one consistent system.
@@ -7440,15 +7299,6 @@ function drKSummaryHTML(list){
   const line=drKNum(top.recommendedOverLine ?? top.ouLine ?? top.compareLine,0);
   return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">📊 EXPANDED <span>STRIKEOUTS DATA</span></div><p class="dr1027-summary-copy">Every pitcher on the board carries a Diamond grade, realistic over probability, and risk read built from projection vs line, K/9, ERA/WHIP command, workload, and opponent contact tendency — on top of the existing Line / K Count / Cushion columns, filters, and sorting.</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${top.pitcherName||'–'}</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>${avg}%</b><span>Board Avg Confidence</span></div><div class="dr1027-summary-metric"><b>${arr.length}</b><span>Pitchers Scanned</span></div><div class="dr1027-summary-metric warn"><b>Over ${formatKLine(line)} K</b><span>Primary Signal</span></div></div></div>`;
 }
-function drKRowAnalyticsHTML(p, live, cushion, line){
-  const conf=drKConfidenceScore(p), chance=Math.round(drKRealisticOverChance(p)*100), grade=drKGrade(conf);
-  const risk=conf>=74?'Low':conf>=62?'Medium':'High';
-  const liveTxt=live && (live.isLive||live.isFinal) ? `${live.isFinal?'Final':'Live'} K Count ${live.ks}` : 'Pregame model';
-  const reason=p.reasoning||{};
-  const why=`${p.pitcherName} grades ${grade} because the model projects ${p.projK} Ks against a ${formatKLine(line)} line (${cushion>=0?'+':''}${cushion.toFixed(1)} cushion), supported by ${p.k9} K/9, ${p.era} ERA, ${p.whip} WHIP, ${reason.matchupTag||'matchup context'}, and ${reason.workloadTag||'workload estimate'}.`;
-  return `<div class="dr112-compact dr113-k-row">${drKChip('Model',conf+'%',conf>=70?'good':conf>=58?'warn':'low')}${drKChip('Over Chance',chance+'%',chance>=64?'good':chance>=54?'warn':'low')}${drKChip('Grade',grade,conf>=70?'good':conf>=58?'warn':'low')}${drKChip('Risk',risk,risk==='Low'?'good':risk==='Medium'?'warn':'low')}${drKChip('Live',liveTxt,'')}</div><div class="dr112-card-note dr113-k-why"><b>Why:</b> ${why}</div>`;
-}
-
 function renderKProps() {
   const el = document.getElementById('kprops-content');
   if (!el || !kPropsData.length) {
@@ -8120,30 +7970,6 @@ if (!DR_STATIC_DAILY_DUMP) {
   }, 180000);
 }
 
-
-function showTab(id, el) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  const sectionEl = document.getElementById(id);
-  if (sectionEl) sectionEl.classList.add('active');
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  sessionStorage.setItem('activeTab', id);
-  if (id === 'matchups' && !matchupLoaded) {
-    matchupLoaded = true;
-    loadPitcherReport();
-  }
-  if (id === 'schedule' && !scheduleLoaded) loadSchedule();
-  if (id === 'props' && window._lastLiveGames) updatePropsLiveBanner(window._lastLiveGames);
-  if (id === 'props') {
-    // Re-trigger Diamond Report Picks if content still shows spinner (first load failed or is slow)
-    const gpEl = document.getElementById('gameprops-content');
-    if (gpEl && gpEl.querySelector('.spin')) loadGameProps();
-  }
-  // Always warm up Props data (Game Props, K Props) in the background, regardless of
-  // which tab is visited — the Tracker tab depends on this data existing in the DOM
-  // and previously only loaded it if the user had manually opened Props first.
-  initPropsTab();
-}
 
 // Restore last active tab on page load
 // Restore the active tab using sessionStorage (not localStorage) so the behavior is:
