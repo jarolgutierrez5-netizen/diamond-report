@@ -11100,7 +11100,18 @@ var analytics='<div class="tp-analytics-grid">'+
         }
       });
       root.querySelectorAll('.dr1027-why,.dr1026-why,.dr1017-why').forEach(function(el){
-        el.innerHTML=(el.innerHTML||'').replace(/<b>\s*Why this HR threat\?\s*<\/b>\s*/i,'').replace(/^\s*Why this HR threat\?\s*/i,'');
+        // Reassigning innerHTML unconditionally here — even to a byte-identical value —
+        // still fires a childList mutation. The MutationObserver below (childList:true,
+        // subtree:true on this same root) treats that as new work and reschedules another
+        // cleanHRBadges() 30ms later, which reassigns again, which reschedules again — a
+        // self-sustaining loop that never terminates once any card's "why" text has ever
+        // rendered, running forever at ~33Hz for the rest of the tab's life and repainting
+        // continuously. Same root cause already fixed for Game Projections elsewhere
+        // (disconnect/reconnect around its own mutations) — the fix here is simpler: only
+        // touch innerHTML when the replace actually changes something, so a call with
+        // nothing left to strip makes zero DOM writes and the loop has nothing to feed on.
+        var next=(el.innerHTML||'').replace(/<b>\s*Why this HR threat\?\s*<\/b>\s*/i,'').replace(/^\s*Why this HR threat\?\s*/i,'');
+        if (next!==el.innerHTML) el.innerHTML=next;
       });
     }catch(e){}
   }
