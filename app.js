@@ -1910,6 +1910,68 @@ function marketImpliedProb(marketOdds) {
   return { pct: Math.round(overP * 100), devigged: false };
 }
 
+// Client-side Monte Carlo for the matchup modal's "Simulate This Matchup" button (HR
+// Threats). data/batter-situational-props.json's hr.trueProbPct is already the exact
+// closed-form answer for "at least one HR in paPerGame independent PAs at rate
+// perPARate" (gameProbFromPerPARate in sync-batter-situational-props.mjs) — running
+// real trials here doesn't produce a more accurate number, it lets the user watch that
+// same rate play out over N simulated games and see the natural game-to-game variance
+// around it, which the single percentage on its own doesn't convey.
+const HR_SIM_TRIALS = 20000;
+function simulateHRGameOutcomes(perPARate, paPerGame, trials = HR_SIM_TRIALS) {
+  const paLow = Math.floor(paPerGame), paHigh = Math.ceil(paPerGame);
+  const frac = paPerGame - paLow;
+  const hrCounts = [0, 0, 0]; // [0 HR, 1 HR, 2+ HR]
+  for (let t = 0; t < trials; t++) {
+    const pa = Math.random() < frac ? paHigh : paLow;
+    let hr = 0;
+    for (let i = 0; i < pa; i++) { if (Math.random() < perPARate) hr++; }
+    hrCounts[Math.min(hr, 2)]++;
+  }
+  return { trials, hrCounts, atLeastOnePct: +(((trials - hrCounts[0]) / trials) * 100).toFixed(1) };
+}
+
+// Wired to the 🎲 SIMULATE THIS MATCHUP button (see edgeHTML in renderMatchupModal).
+// The trial run itself is a synchronous loop over HR_SIM_TRIALS iterations — fast
+// enough (well under a frame) that there's nothing to actually wait on, but rendering
+// the button's own "Simulating…" state before computing (via rAF, so the browser
+// paints it first) makes the button feel like it did something rather than just
+// instantly swapping to a result.
+function runHRMatchupSimulation(btn) {
+  const batterId = btn.dataset.batterId;
+  const perPARate = parseFloat(btn.dataset.rate);
+  const modelPct = parseFloat(btn.dataset.truePct);
+  const resultEl = document.getElementById(`hr-sim-result-${batterId}`);
+  if (!resultEl || !Number.isFinite(perPARate)) return;
+  btn.disabled = true;
+  btn.textContent = '🎲 SIMULATING…';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const { trials, hrCounts, atLeastOnePct } = simulateHRGameOutcomes(perPARate, FANTASY_PROJECTED_PA);
+    const pct = n => +((n / trials) * 100).toFixed(1);
+    const bar = (label, count, color) => `
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <span style="width:56px;font-size:10px;color:var(--muted)">${label}</span>
+        <div style="flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden">
+          <div style="width:${pct(count)}%;height:100%;background:${color}"></div>
+        </div>
+        <span style="width:60px;text-align:right;font-size:10px;color:var(--text);font-family:'JetBrains Mono',monospace">${pct(count)}% (${count.toLocaleString()})</span>
+      </div>`;
+    const diff = Math.abs(atLeastOnePct - modelPct);
+    resultEl.innerHTML = `
+      <div style="margin-top:8px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+        <div style="font-size:11px;color:var(--text)"><strong>🎲 Ran ${trials.toLocaleString()} simulated games</strong> at his ${(perPARate*100).toFixed(1)}% per-PA HR rate for this matchup:</div>
+        ${bar('0 HR', hrCounts[0], 'var(--muted)')}
+        ${bar('1 HR', hrCounts[1], 'var(--accent2)')}
+        ${bar('2+ HR', hrCounts[2], 'var(--green)')}
+        <div style="font-size:10px;color:var(--muted);margin-top:8px">At least 1 HR in <strong style="color:var(--text)">${atLeastOnePct}%</strong> of simulated games — model projection was ${modelPct}% (${diff < 1 ? 'matches' : `~${diff.toFixed(1)}pp sim variance`}). Re-run for a fresh random batch.</div>
+      </div>`;
+    resultEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '🎲 SIMULATE AGAIN';
+  }));
+}
+window.runHRMatchupSimulation = runHRMatchupSimulation;
+
 // Shared K prop Over/Under: use the real sportsbook line when we have one, otherwise
 // fall back to the model's projection rounded to the nearest half (so there's never a push).
 // Single source of truth for the K prop line shown to users.
@@ -4555,7 +4617,17 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     else if (splitXslg !== null) base.xslg = splitXslg;
     const handHr = parseInt(split.homeRuns ?? split.hr ?? split.hrs ?? 0) || 0;
     const exactPitchHr = parseInt(base.homeRuns ?? base.hr ?? base.hrs);
-    if (!Number.isFinite(exactPitchHr) || exactPitchHr <= 0) base.homeRuns = Math.max(0, Math.round(handHr * ((parseFloat(usagePct) || 0) / 100)));
+    // Baseball Savant's batter pitch-arsenal endpoint never actually exposes a raw
+    // per-pitch-type HR count (confirmed: every one of 4,811 pitch-type rows across
+    // all 601 tracked batters comes back null) — this branch always fires whenever a
+    // hand is known, silently replacing "unknown" with an estimate (his overall HR
+    // total vs this pitcher hand, redistributed by this pitch's usage share). Flagged
+    // so callers can visibly mark it as estimated rather than showing a bare number
+    // indistinguishable from a real per-pitch count.
+    if (!Number.isFinite(exactPitchHr) || exactPitchHr <= 0) {
+      base.homeRuns = Math.max(0, Math.round(handHr * ((parseFloat(usagePct) || 0) / 100)));
+      base.__hrEstimated = true;
+    }
     base.__splitHand = splitHand;
     return base;
   }
@@ -4639,7 +4711,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
           <td class="num${gbCls('slg',slgRaw)}">${fmtDec(st.slg ?? st.slugging, 3, 'slg')}</td>
           <td class="num${gbCls('xslg',xslgRaw)}">${fmtDec(st.xslg ?? st.xSLG ?? st.expectedSlugging, 3, 'xslg')}</td>
           <td class="num${gbCls('woba',wobaRaw)}">${fmtDec(st.woba ?? st.wOBA, 3, 'woba')}</td>
-          <td class="num${gbCls('hr',rowHr)}">${rowHr != null ? rowHr : '–'}</td>
+          <td class="num${gbCls('hr',rowHr)}" title="${st.__hrEstimated ? 'Estimated — Baseball Savant doesn’t expose an exact per-pitch HR count for batters. This redistributes his overall HR total vs this pitcher hand by this pitch’s usage share.' : ''}">${rowHr != null ? rowHr : '–'}${st.__hrEstimated && rowHr != null ? '<sup style="color:var(--muted);font-weight:400">est</sup>' : ''}</td>
           <td class="num${gbCls('hardHit',hardRaw)}">${fmtPctVal(st.hardHitPct ?? st.hardHitRate, 0, 'hardHit')}</td>
           <td class="num${gbCls('whiff',whiffRaw)}">${fmtPctVal(st.whiffPct ?? st.whiffRate, 1, 'whiff')}</td>
           <td>${hrSpotTag}<span class="dr1041-chip${chipCls}">${grade.label}${grade.score!==null?' · '+grade.score:''}</span></td>
@@ -4831,10 +4903,12 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       const chipCls = grade.score >= 78 ? '' : grade.score >= 64 ? ' good' : grade.score >= 45 ? ' neutral' : ' weak';
       const avg = fmtDec(st.avg ?? st.battingAverage, 3, 'avg');
       const hr = +(st.homeRuns ?? st.hr ?? st.hrs ?? 0) || 0;
+      const hrTag = st.__hrEstimated
+        ? `<sup style="color:var(--muted);font-weight:400" title="Estimated — Baseball Savant doesn’t expose an exact per-pitch HR count for batters. This redistributes his overall HR total vs this pitcher hand by this pitch’s usage share.">est</sup>` : '';
       return `<tr>
         <td><strong>${p.name}</strong></td>
         <td><span class="dr1041-chip${chipCls}">${fitLabel}</span></td>
-        <td class="num">${avg} AVG / ${hr} HR</td>
+        <td class="num">${avg} AVG / ${hr} HR${hrTag}</td>
       </tr>`;
     }).join('');
     return `<div class="zone-section zone-fit-section">
@@ -5117,12 +5191,25 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     if (!rows) return `
       <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">No situational markets computed yet for ${shortName}.</div>`;
 
+    // Simulate button lives at the bottom of the whole section (below every market row
+    // and the sample-size footnote), not inline under the Home Run row — HR only, since
+    // that's the market this was actually requested for.
+    const hrTrueProb = situationalProfile.hr?.trueProbPct;
+    const simHTML = hrTrueProb != null ? `
+      <div class="hr-sim-wrap" style="margin-top:12px">
+        <button type="button" class="hr-sim-btn" id="hr-sim-btn-${batterId}"
+          data-batter-id="${batterId}" data-rate="${situationalProfile.hr.shrunkRate}" data-true-pct="${hrTrueProb}"
+          onclick="runHRMatchupSimulation(this)">🎲 SIMULATE THIS MATCHUP</button>
+        <div class="hr-sim-result" id="hr-sim-result-${batterId}" style="display:none"></div>
+      </div>` : '';
+
     const ctx = situationalProfile.context;
     return `
       <div class="vuln-box" style="margin-top:10px">
         <div class="vuln-title">🎯 SITUATIONAL TRUE PROBABILITY <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(his own history vs today's exact matchup, shrunk toward season rate)</span></div>
         ${rows}
         <div style="font-size:10px;color:var(--muted);margin-top:6px">Based on ${situationalProfile.situationalPA} plate appearance(s) matching today's situation (vs ${ctx.oppHand}HP, ${ctx.parkTier} park${ctx.oppPowerTier ? `, ${ctx.oppPowerTier} arm` : ''}), out of ${situationalProfile.seasonPA} total PA this season.</div>
+        ${simHTML}
       </div>`;
   })();
 
@@ -11013,7 +11100,18 @@ var analytics='<div class="tp-analytics-grid">'+
         }
       });
       root.querySelectorAll('.dr1027-why,.dr1026-why,.dr1017-why').forEach(function(el){
-        el.innerHTML=(el.innerHTML||'').replace(/<b>\s*Why this HR threat\?\s*<\/b>\s*/i,'').replace(/^\s*Why this HR threat\?\s*/i,'');
+        // Reassigning innerHTML unconditionally here — even to a byte-identical value —
+        // still fires a childList mutation. The MutationObserver below (childList:true,
+        // subtree:true on this same root) treats that as new work and reschedules another
+        // cleanHRBadges() 30ms later, which reassigns again, which reschedules again — a
+        // self-sustaining loop that never terminates once any card's "why" text has ever
+        // rendered, running forever at ~33Hz for the rest of the tab's life and repainting
+        // continuously. Same root cause already fixed for Game Projections elsewhere
+        // (disconnect/reconnect around its own mutations) — the fix here is simpler: only
+        // touch innerHTML when the replace actually changes something, so a call with
+        // nothing left to strip makes zero DOM writes and the loop has nothing to feed on.
+        var next=(el.innerHTML||'').replace(/<b>\s*Why this HR threat\?\s*<\/b>\s*/i,'').replace(/^\s*Why this HR threat\?\s*/i,'');
+        if (next!==el.innerHTML) el.innerHTML=next;
       });
     }catch(e){}
   }
