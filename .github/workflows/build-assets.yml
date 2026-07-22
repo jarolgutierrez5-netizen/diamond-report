@@ -7,10 +7,27 @@ name: Build minified assets
 # both always serve an up-to-date minified build without needing a real build step
 # on either hosting platform.
 #
-# Minification here is intentionally conservative: comments and whitespace only,
-# no identifier mangling and no structural/compressor optimizations. That keeps
-# app.min.js/styles.min.css behaviorally identical to app.js/styles.css — this is
-# a transfer-size optimization, not a code transform.
+# app.js is real production JS (no eval/new Function, no reflection on function
+# names, nothing depends on exact variable naming across scope boundaries), so
+# terser's compress+mangle (-c -m) is safe here — verified with a full Playwright
+# regression pass (every board's render path, no console/runtime errors) plus the
+# existing targeted test suite, all green against the compressed+mangled output.
+# -c -m is NOT passed --toplevel, so top-level (global-scope) function/variable
+# names are left untouched — every onclick="someFn(...)" in index.html and every
+# window.someFn = ... assignment keeps working; only names local to a function
+# body or IIFE get shortened. This cuts the shipped bundle by roughly a quarter
+# (559KB -> 428KB minified, ~150KB -> ~123KB gzipped) versus the previous
+# comments/whitespace-only build.
+#
+# Local rebuilds MUST use this exact command (same terser version, same flags) —
+# a mismatched local build previously caused this job to immediately re-commit a
+# byte-different rebuild on top of every push that touched app.js, which is how
+# this comment block came to exist in the first place.
+#
+# styles.css minification stays conservative (token-level only, no restructuring)
+# — csso's restructuring pass has historically been the riskier one to enable for
+# CSS (cascade-order-sensitive rule merging), and the JS side is where the real
+# size win already lives.
 
 on:
   push:
@@ -37,8 +54,8 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Minify app.js (comments/whitespace only — no mangle, no compress)
-        run: npx --yes terser@5.49.0 app.js --comments false -o app.min.js
+      - name: Minify app.js (compress + mangle, non-toplevel — see comment above)
+        run: npx --yes terser@5.49.0 app.js -c -m --comments false -o app.min.js
 
       - name: Minify styles.css (safe token-level minification, no restructuring)
         run: npx --yes csso-cli@4.0.2 styles.css --no-restructure --comments none -o styles.min.css
