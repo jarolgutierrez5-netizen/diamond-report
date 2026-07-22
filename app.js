@@ -1156,7 +1156,15 @@ async function getTodaySchedule(hydrate = 'team,probablePitcher', opts = {}) {
     `https://diamondreport.app/api/v1/schedule?sportId=1&date=${today}&hydrate=${hydrate}&language=en`
   ).then(data => {
     const entry = data.dates?.find(d => d.date === today) || data.dates?.[0];
-    const games = entry?.games || [];
+    // MLB's schedule endpoint doesn't reliably return games in chronological order —
+    // a doubleheader's two legs are adjacent to each other in the response (grouped by
+    // matchup) rather than interleaved with other games by actual start time, so a
+    // 1pm Game 1 / 7pm Game 2 doubleheader could sort ahead of or behind an unrelated
+    // 4pm game depending on where the API happened to place that matchup. Every board
+    // on the site shares this one function for its game list, so sorting once here by
+    // each game's own real gameDate (not the raw API order) fixes it everywhere at
+    // once instead of needing a sort in every consumer.
+    const games = (entry?.games || []).slice().sort((a, b) => new Date(a.gameDate) - new Date(b.gameDate));
     _scheduleCache[key] = { games, ts: Date.now() };
     return games;
   }).finally(() => { delete _scheduleCache[key + '_p']; });
@@ -10563,7 +10571,7 @@ if (document.readyState === 'loading') {
       getJSON('https://diamondreport.app/api/v1/standings?leagueId=103,104&season='+season()+'&standingsTypes=regularSeason')
     ]);
     state.teams=(teamsData.teams||[]).filter(function(t){return t.sport&&t.sport.id===1}).map(function(t){return {id:t.id,name:t.name,short:nameOf(t),abbr:abbr(t)}}).sort(function(a,b){return a.name.localeCompare(b.name)});
-    state.todayGames=((sched.dates&&sched.dates[0]&&sched.dates[0].games)||[]).map(function(g){return {gamePk:g.gamePk,date:g.gameDate,status:g.status&&g.status.detailedState,away:{id:g.teams.away.team.id,name:g.teams.away.team.name,abbr:abbr(g.teams.away.team),score:g.teams.away.score,record:g.teams.away.leagueRecord},home:{id:g.teams.home.team.id,name:g.teams.home.team.name,abbr:abbr(g.teams.home.team),score:g.teams.home.score,record:g.teams.home.leagueRecord}}});
+    state.todayGames=((sched.dates&&sched.dates[0]&&sched.dates[0].games)||[]).slice().sort(function(a,b){return new Date(a.gameDate)-new Date(b.gameDate)}).map(function(g){return {gamePk:g.gamePk,date:g.gameDate,status:g.status&&g.status.detailedState,away:{id:g.teams.away.team.id,name:g.teams.away.team.name,abbr:abbr(g.teams.away.team),score:g.teams.away.score,record:g.teams.away.leagueRecord},home:{id:g.teams.home.team.id,name:g.teams.home.team.name,abbr:abbr(g.teams.home.team),score:g.teams.home.score,record:g.teams.home.leagueRecord}}});
     state.records={};
     (stand.records||[]).forEach(function(div){(div.teamRecords||[]).forEach(function(r){state.records[r.team.id]={wins:r.wins,losses:r.losses,pct:r.winningPercentage,divisionRank:r.divisionRank,streak:r.streak&&r.streak.streakCode};});});
   }
@@ -10618,7 +10626,7 @@ if (document.readyState === 'loading') {
   function getJSON(url,force){ if(typeof window.fetchJSON==='function') return window.fetchJSON(url,{force:!!force}); return fetch(url+(url.indexOf('?')>-1?'&':'?')+'_v104='+Date.now(),{cache:force?'no-store':'default'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})}
   function abbr(t){return (t&&(t.abbreviation||t.abbr||String(t.teamCode||'').toUpperCase()||t.fileCode))||''}
   function logo(id,cls){return id?'<img class="'+(cls||'pp-logo')+'" src="https://www.mlbstatic.com/team-logos/'+id+'.svg" onerror="this.style.display=\'none\'" alt="" loading="lazy" decoding="async">':''}
-  async function tpBase(force){if(TP.booted&&!force&&Date.now()-TP.last<5*60*1000)return;var td=nowDate();var all=await Promise.all([getJSON('https://diamondreport.app/api/v1/teams?sportId=1&activeStatus=Y',false),getJSON('https://diamondreport.app/api/v1/schedule?sportId=1&date='+td+'&hydrate=team,linescore,probablePitcher&language=en',!!force),getJSON('https://diamondreport.app/api/v1/standings?leagueId=103,104&season='+season()+'&standingsTypes=regularSeason',false)]);TP.teams=(all[0].teams||[]).filter(function(t){return t.sport&&t.sport.id===1}).map(function(t){return {id:t.id,name:t.name,abbr:abbr(t)}}).sort(function(a,b){return a.name.localeCompare(b.name)});TP.todayGames=((all[1].dates&&all[1].dates[0]&&all[1].dates[0].games)||[]).map(function(g){return {away:{id:g.teams.away.team.id,name:g.teams.away.team.name,abbr:abbr(g.teams.away.team),score:g.teams.away.score},home:{id:g.teams.home.team.id,name:g.teams.home.team.name,abbr:abbr(g.teams.home.team),score:g.teams.home.score},status:g.status&&g.status.detailedState}});TP.records={};(all[2].records||[]).forEach(function(div){(div.teamRecords||[]).forEach(function(r){TP.records[r.team.id]={wins:r.wins,losses:r.losses,pct:r.winningPercentage,streak:r.streak&&r.streak.streakCode,rank:r.divisionRank}})});TP.booted=true;TP.last=Date.now();fillTP()}
+  async function tpBase(force){if(TP.booted&&!force&&Date.now()-TP.last<5*60*1000)return;var td=nowDate();var all=await Promise.all([getJSON('https://diamondreport.app/api/v1/teams?sportId=1&activeStatus=Y',false),getJSON('https://diamondreport.app/api/v1/schedule?sportId=1&date='+td+'&hydrate=team,linescore,probablePitcher&language=en',!!force),getJSON('https://diamondreport.app/api/v1/standings?leagueId=103,104&season='+season()+'&standingsTypes=regularSeason',false)]);TP.teams=(all[0].teams||[]).filter(function(t){return t.sport&&t.sport.id===1}).map(function(t){return {id:t.id,name:t.name,abbr:abbr(t)}}).sort(function(a,b){return a.name.localeCompare(b.name)});TP.todayGames=((all[1].dates&&all[1].dates[0]&&all[1].dates[0].games)||[]).slice().sort(function(a,b){return new Date(a.gameDate)-new Date(b.gameDate)}).map(function(g){return {away:{id:g.teams.away.team.id,name:g.teams.away.team.name,abbr:abbr(g.teams.away.team),score:g.teams.away.score},home:{id:g.teams.home.team.id,name:g.teams.home.team.name,abbr:abbr(g.teams.home.team),score:g.teams.home.score},status:g.status&&g.status.detailedState}});TP.records={};(all[2].records||[]).forEach(function(div){(div.teamRecords||[]).forEach(function(r){TP.records[r.team.id]={wins:r.wins,losses:r.losses,pct:r.winningPercentage,streak:r.streak&&r.streak.streakCode,rank:r.divisionRank}})});TP.booted=true;TP.last=Date.now();fillTP()}
   function fillTP(){var a=document.getElementById('team-performance-a'),b=document.getElementById('team-performance-b');if(!a||!b||!TP.teams.length)return;var opts=TP.teams.map(function(t){return '<option value="'+t.id+'">'+esc(t.name)+'</option>'}).join('');if(!a.dataset.v104){a.innerHTML=opts;a.dataset.v104='1'}if(!b.dataset.v104){b.innerHTML=opts;b.dataset.v104='1'}var g=TP.todayGames[0];if(g&&!a.value&&!b.value){a.value=g.away.id;b.value=g.home.id}else{if(!a.value)a.value=TP.teams[0].id;if(!b.value)b.value=(TP.teams[1]||TP.teams[0]).id}}
   function tBy(id){return TP.teams.find(function(t){return String(t.id)===String(id)})||{id:id,name:'Team '+id,abbr:''}}
   function rec(id){var r=TP.records[id]||{};return Number.isFinite(Number(r.wins))?r.wins+'-'+r.losses+' · '+(r.pct||'')+(r.streak?' · '+r.streak:''):'—'}
@@ -13214,6 +13222,7 @@ function showPremiumGate(feature){
       .then(function(data){
         var entry = (data.dates || []).find(function(d){ return d.date === yStr; }) || data.dates && data.dates[0];
         var games = (entry && entry.games) || [];
+        games = games.slice().sort(function(a,b){ return new Date(a.gameDate) - new Date(b.gameDate); });
         var mapped = games.map(function(g){
           var away = g.teams.away, home = g.teams.home;
           var state = g.status.abstractGameState;
