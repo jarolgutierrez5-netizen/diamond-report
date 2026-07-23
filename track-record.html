@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Track Record – Diamond Report</title>
+<meta name="description" content="Diamond Report's full graded pick history by market, week by week — every win and loss, tracked publicly and never edited after the fact.">
+<link rel="canonical" href="https://diamondreport.app/track-record.html">
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2306060f'/%3E%3Cg transform='translate(50,50)'%3E%3Cpolygon points='0,-28 28,0 0,28 -28,0' fill='none' stroke='%232f6bff' stroke-width='6'/%3E%3Crect x='-12' y='2' width='6' height='12' fill='%232f6bff'/%3E%3Crect x='-3' y='-6' width='6' height='20' fill='%232f6bff'/%3E%3Crect x='6' y='-14' width='6' height='28' fill='%23ffffff'/%3E%3C/g%3E%3C/svg%3E" rel="icon" type="image/svg+xml"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link href="https://fonts.gstatic.com" rel="preconnect" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="legal.css">
+<meta content="ca-pub-6433797533342090" name="google-adsense-account"/>
+<script async="" crossorigin="anonymous" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6433797533342090"></script>
+<style>
+  /* Chart-specific rules live here rather than legal.css -- nothing else on the
+     site uses them, and legal.css is deliberately kept to plain text-page rules
+     (see its own header comment). Validated against legal.css's --surface
+     (#0d0d1e) via the dataviz skill's validator: node scripts/validate_palette.js
+     "#3987e5,#d95926,#199e70,#c98500" --mode dark -- all checks pass. Fixed
+     category->color assignment, never reassigned by any filter/sort on this page. */
+  .legal-wrap.wide { max-width: 980px; }
+  .tr-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin: 24px 0 36px;
+  }
+  .tr-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .tr-stat-label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    margin-bottom: 8px;
+  }
+  .tr-stat-record {
+    font-size: 22px;
+    font-weight: 900;
+    color: #fff;
+  }
+  .tr-stat-pct {
+    font-size: 13px;
+    font-weight: 700;
+    margin-left: 6px;
+  }
+  .tr-chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 20px 12px;
+    margin: 24px 0;
+  }
+  .tr-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  .tr-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12.5px;
+    color: var(--text);
+    font-weight: 600;
+  }
+  .tr-legend-swatch {
+    width: 14px;
+    height: 2px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .tr-chart-wrap { position: relative; }
+  .tr-chart-svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .tr-tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 12px;
+    min-width: 150px;
+    opacity: 0;
+    transition: opacity .1s ease;
+    z-index: 5;
+  }
+  .tr-tooltip.visible { opacity: 1; }
+  .tr-tooltip-date {
+    color: var(--muted);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .tr-tooltip-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+  .tr-tooltip-row:last-child { margin-bottom: 0; }
+  .tr-tooltip-key { width: 10px; height: 2px; border-radius: 2px; flex-shrink: 0; }
+  .tr-tooltip-val { color: #fff; font-weight: 800; }
+  .tr-tooltip-name { color: var(--muted); }
+  .tr-table-toggle {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--accent);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 14px;
+  }
+  .tr-table-toggle:hover { border-color: var(--accent); }
+  .tr-table-wrap { display: none; overflow-x: auto; }
+  .tr-table-wrap.visible { display: block; }
+  .tr-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .tr-table th, .tr-table td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .tr-table th { color: var(--muted); font-weight: 700; }
+  .tr-table td { color: var(--text); }
+  .tr-empty { color: var(--muted); font-size: 13px; padding: 24px 0; }
+</style>
+</head>
+<body>
+
+<header class="legal-header">
+  <a href="/">
+    <svg class="mark" viewBox="0 0 100 100"><polygon points="50,22 78,50 50,78 22,50" fill="none" stroke="#2f6bff" stroke-width="6" stroke-linejoin="round"/><rect x="38" y="52" width="6" height="12" rx="1" fill="#2f6bff"/><rect x="47" y="44" width="6" height="20" rx="1" fill="#2f6bff"/><rect x="56" y="36" width="6" height="28" rx="1" fill="#ffffff"/></svg>
+    Diamond Report
+  </a>
+</header>
+
+<div class="legal-wrap wide">
+  <h1>Track Record</h1>
+  <div class="legal-updated">Every graded pick, by market, week by week — updated automatically</div>
+
+  <p>Most sports projection sites let you remember the hits and forget the misses. Diamond Report doesn't get that option: every pick is logged the moment it's made and graded automatically against the actual result, win or loss, and none of it is ever edited or removed after the fact. What's below is the complete record, broken down by market, computed fresh from the same data our <a href="/methodology.html">projections</a> are graded against.</p>
+
+  <div class="tr-stats" id="tr-stats">
+    <div class="tr-empty">Loading record…</div>
+  </div>
+
+  <div class="tr-chart-card">
+    <div class="dr-hub-section-head" style="margin-bottom:14px"><h2 style="font-size:15px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:#fff;margin:0">Weekly Win Rate By Market</h2></div>
+    <div id="tr-legend" class="tr-legend"></div>
+    <button type="button" class="tr-table-toggle" id="tr-table-toggle">View as table</button>
+    <div class="tr-chart-wrap" id="tr-chart-wrap">
+      <div class="tr-empty" id="tr-chart-empty">Loading chart…</div>
+    </div>
+    <div class="tr-table-wrap" id="tr-table-wrap"></div>
+  </div>
+
+  <h2>Why week by week</h2>
+  <p>A single day's record is mostly noise — a handful of picks either hit or they don't, and that says more about that day's games than about the model. Weekly buckets are large enough to smooth that out while still showing a real trend, not a season-to-date average that takes months to move. Weeks with no graded picks in a market show as a gap in that line rather than a false 0%.</p>
+
+  <h2>Learn more</h2>
+  <p>Read how these projections are actually built on the <a href="/methodology.html">Methodology page</a>, or head back to <a href="/">Diamond Report</a> for today's picks.</p>
+</div>
+
+<footer class="dr-footer">
+  <div class="dr-footer-links">
+    <a href="/">Home</a>
+    <a href="/about.html">About</a>
+    <a href="/methodology.html">Methodology</a>
+    <a href="/track-record.html">Track Record</a>
+    <a href="/contact.html">Contact</a>
+    <a href="/privacy.html">Privacy Policy</a>
+    <a href="/terms.html">Terms of Use</a>
+  </div>
+  <div class="dr-footer-meta">© 2026 Diamond Report.</div>
+</footer>
+
+<script>
+(function () {
+  var MARKETS = [
+    { key: 'drp', label: 'Game Picks', color: '#3987e5' },
+    { key: 'kprop', label: 'Strikeout Props', color: '#d95926' },
+    { key: 'hrThreat', label: 'HR Threats', color: '#199e70' },
+    { key: 'premium', label: 'Elite Picks', color: '#c98500' },
+  ];
+
+  function pctColor(pct) {
+    if (pct == null) return 'var(--muted)';
+    return pct >= 55 ? '#2ecc71' : pct < 45 ? '#dc2626' : 'var(--accent)';
+  }
+
+  // ISO week key (Monday-start), e.g. "2026-W29" -- a stable, sortable bucket
+  // that doesn't depend on the current date, so re-running this later on more
+  // history always buckets the same historical row the same way.
+  function isoWeekKey(dateStr) {
+    var d = new Date(dateStr + 'T12:00:00Z');
+    var day = (d.getUTCDay() + 6) % 7; // Mon=0..Sun=6
+    d.setUTCDate(d.getUTCDate() - day + 3); // nearest Thursday
+    var firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+    var firstDay = (firstThursday.getUTCDay() + 6) % 7;
+    firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDay + 3);
+    var week = 1 + Math.round((d - firstThursday) / (7 * 86400000));
+    return d.getUTCFullYear() + '-W' + String(week).padStart(2, '0');
+  }
+
+  // Monday date (for a readable x-axis label) of the ISO week a given date falls in.
+  function weekStartLabel(dateStr) {
+    var d = new Date(dateStr + 'T12:00:00Z');
+    var day = (d.getUTCDay() + 6) % 7;
+    d.setUTCDate(d.getUTCDate() - day);
+    return (d.getUTCMonth() + 1) + '/' + d.getUTCDate();
+  }
+
+  // Builds { weekKeys: [...sorted], byMarket: { key: Map(weekKey -> {wins,losses,pct}) },
+  // allTime: { key: {wins,losses,total,pct} } } from the raw tracker.
+  function buildWeeklyRecord(tracker) {
+    var weekSet = {};
+    var byMarket = {};
+    var allTime = {};
+    MARKETS.forEach(function (m) {
+      byMarket[m.key] = {};
+      allTime[m.key] = { wins: 0, losses: 0 };
+      var rows = (tracker.market && tracker.market[m.key]) || [];
+      rows.forEach(function (r) {
+        if (r.result !== 'win' && r.result !== 'loss') return;
+        var wk = isoWeekKey(r.date);
+        weekSet[wk] = weekSet[wk] || weekStartLabel(r.date);
+        byMarket[m.key][wk] = byMarket[m.key][wk] || { wins: 0, losses: 0 };
+        byMarket[m.key][wk][r.result === 'win' ? 'wins' : 'losses']++;
+        allTime[m.key][r.result === 'win' ? 'wins' : 'losses']++;
+      });
+    });
+    var weekKeys = Object.keys(weekSet).sort();
+    MARKETS.forEach(function (m) {
+      var t = allTime[m.key];
+      t.total = t.wins + t.losses;
+      t.pct = t.total ? Math.round((t.wins / t.total) * 1000) / 10 : null;
+    });
+    return { weekKeys: weekKeys, weekLabels: weekSet, byMarket: byMarket, allTime: allTime };
+  }
+
+  function renderStats(allTime) {
+    var el = document.getElementById('tr-stats');
+    if (!el) return;
+    var html = MARKETS.map(function (m) {
+      var t = allTime[m.key];
+      if (!t.total) return '';
+      var record = t.wins + '-' + t.losses;
+      return '<div class="tr-stat"><div class="tr-stat-label">' + m.label + '</div>' +
+        '<div class="tr-stat-record">' + record +
+        '<span class="tr-stat-pct" style="color:' + pctColor(t.pct) + '">(' + t.pct + '%)</span></div></div>';
+    }).join('');
+    el.innerHTML = html || '<div class="tr-empty">No graded picks yet this season.</div>';
+  }
+
+  function renderLegend() {
+    var el = document.getElementById('tr-legend');
+    if (!el) return;
+    el.innerHTML = MARKETS.map(function (m) {
+      return '<div class="tr-legend-item"><span class="tr-legend-swatch" style="background:' + m.color + '"></span>' + m.label + '</div>';
+    }).join('');
+  }
+
+  // Compact table view -- the accessible, non-hover alternative to the chart,
+  // same underlying weekly numbers.
+  function renderTable(data) {
+    var el = document.getElementById('tr-table-wrap');
+    if (!el) return;
+    if (!data.weekKeys.length) { el.innerHTML = '<div class="tr-empty">No graded picks yet this season.</div>'; return; }
+    var head = '<tr><th>Week of</th>' + MARKETS.map(function (m) { return '<th>' + m.label + '</th>'; }).join('') + '</tr>';
+    var rows = data.weekKeys.map(function (wk) {
+      var cells = MARKETS.map(function (m) {
+        var w = data.byMarket[m.key][wk];
+        if (!w) return '<td>—</td>';
+        var pct = Math.round((w.wins / (w.wins + w.losses)) * 1000) / 10;
+        return '<td>' + w.wins + '-' + w.losses + ' (' + pct + '%)</td>';
+      }).join('');
+      return '<tr><td>' + data.weekLabels[wk] + '</td>' + cells + '</tr>';
+    }).join('');
+    el.innerHTML = '<table class="tr-table"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  // Hand-rolled inline SVG line chart -- no charting library, consistent with
+  // the rest of this site. One axis (win% 0-100), fixed categorical color per
+  // market (see the <style> block header comment for the validated palette),
+  // gaps for weeks a market has no graded picks (never a false 0%), direct
+  // end-of-line labels since there are only 4 series, plus a hover
+  // crosshair+tooltip reading all 4 series at the nearest week.
+  function renderChart(data) {
+    var wrap = document.getElementById('tr-chart-wrap');
+    var emptyEl = document.getElementById('tr-chart-empty');
+    if (!wrap) return;
+    var weekKeys = data.weekKeys;
+    if (!weekKeys.length) { if (emptyEl) emptyEl.textContent = 'No graded picks yet this season.'; return; }
+    if (emptyEl) emptyEl.remove();
+
+    var W = 900, H = 340;
+    var marginLeft = 34, marginRight = 96, marginTop = 14, marginBottom = 30;
+    var plotW = W - marginLeft - marginRight;
+    var plotH = H - marginTop - marginBottom;
+    var n = weekKeys.length;
+    var xStep = n > 1 ? plotW / (n - 1) : 0;
+
+    function xAt(i) { return marginLeft + i * xStep; }
+    function yAt(pct) { return marginTop + plotH - (pct / 100) * plotH; }
+
+    var svgParts = [];
+    svgParts.push('<svg class="tr-chart-svg" viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">');
+
+    // Gridlines (recessive, hairline, solid) at 0/25/50/75/100, with the 50%
+    // breakeven line called out slightly more since it's the meaningful one.
+    [0, 25, 50, 75, 100].forEach(function (v) {
+      var y = yAt(v);
+      var isBreakeven = v === 50;
+      svgParts.push('<line x1="' + marginLeft + '" y1="' + y + '" x2="' + (marginLeft + plotW) + '" y2="' + y +
+        '" stroke="' + (isBreakeven ? 'rgba(255,255,255,.18)' : 'rgba(255,255,255,.07)') + '" stroke-width="1"' +
+        (isBreakeven ? ' stroke-dasharray="4,4"' : '') + '/>');
+      svgParts.push('<text x="' + (marginLeft - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10.5" fill="#8fa3c8">' + v + '%</text>');
+    });
+
+    // Sparse x-axis labels -- every week would collide once the season has more
+    // than a couple months of history, so this thins to roughly 8 evenly spaced
+    // ticks regardless of how many weeks exist.
+    var labelStride = Math.max(1, Math.ceil(n / 8));
+    weekKeys.forEach(function (wk, i) {
+      if (i % labelStride !== 0 && i !== n - 1) return;
+      svgParts.push('<text x="' + xAt(i) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="10" fill="#8fa3c8">' + data.weekLabels[wk] + '</text>');
+    });
+
+    // One polyline per contiguous run of real data per market (a market with a
+    // bye week shows a real gap, not a line dropping to 0). End-of-line label
+    // candidates are collected here and resolved for collisions afterward --
+    // see the pass below, which is why nothing gets pushed to svgParts yet.
+    var labelCandidates = [];
+    MARKETS.forEach(function (m) {
+      var points = weekKeys.map(function (wk, i) {
+        var w = data.byMarket[m.key][wk];
+        if (!w) return null;
+        var pct = (w.wins / (w.wins + w.losses)) * 100;
+        return { i: i, pct: pct };
+      });
+
+      var run = [];
+      function flush() {
+        if (run.length < 2) { run = []; return; }
+        var d = run.map(function (p, idx) { return (idx === 0 ? 'M' : 'L') + xAt(p.i) + ',' + yAt(p.pct); }).join(' ');
+        svgParts.push('<path d="' + d + '" fill="none" stroke="' + m.color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>');
+        run = [];
+      }
+      points.forEach(function (p) {
+        if (p == null) { flush(); return; }
+        run.push(p);
+      });
+      flush();
+
+      // Markers: >=8px (r=4) with a 2px surface-color ring, at every real point.
+      points.forEach(function (p) {
+        if (p == null) return;
+        svgParts.push('<circle cx="' + xAt(p.i) + '" cy="' + yAt(p.pct) + '" r="4" fill="' + m.color + '" stroke="#0d0d1e" stroke-width="2"/>');
+      });
+
+      var lastReal = null;
+      for (var i = points.length - 1; i >= 0; i--) { if (points[i]) { lastReal = points[i]; break; } }
+      if (lastReal) {
+        labelCandidates.push({ market: m, x: xAt(lastReal.i) + 8, y: yAt(lastReal.pct) + 4 });
+      }
+    });
+
+    // Collision pass: when two series end close enough together that their
+    // labels would overlap, only the higher one keeps its direct label -- the
+    // legend still names every series, so dropping a colliding label loses
+    // nothing (see marks-and-anatomy.md: "when end-labels collide, don't
+    // stack them ... fall back to the legend"). 13px is roughly one line of
+    // the 11px label font plus a hair of breathing room.
+    var MIN_LABEL_GAP = 13;
+    labelCandidates.sort(function (a, b) { return a.y - b.y; });
+    var placedY = null;
+    labelCandidates.forEach(function (c) {
+      if (placedY != null && c.y - placedY < MIN_LABEL_GAP) return;
+      // Label text uses a text token, not the series hex -- a light categorical
+      // hue (yellow) reads as illegible text on this surface. Identity comes
+      // from the marker dot the label sits right next to, not from the glyph
+      // color (see marks-and-anatomy.md: "text never wears the data color").
+      svgParts.push('<text x="' + c.x + '" y="' + c.y + '" font-size="11" font-weight="700" fill="#e7ecf5">' + c.market.label + '</text>');
+      placedY = c.y;
+    });
+
+    // Transparent hit-rect for the crosshair -- pointermove maps to the nearest
+    // week index and moves a shared crosshair line + tooltip, not per-point
+    // hover targets (this is the line-chart pattern, not the bar/dot one).
+    svgParts.push('<rect id="tr-hit-rect" x="' + marginLeft + '" y="' + marginTop + '" width="' + plotW + '" height="' + plotH + '" fill="transparent" style="cursor:crosshair"/>');
+    svgParts.push('<line id="tr-crosshair" x1="0" y1="' + marginTop + '" x2="0" y2="' + (marginTop + plotH) + '" stroke="rgba(255,255,255,.35)" stroke-width="1" style="display:none;pointer-events:none"/>');
+
+    svgParts.push('</svg>');
+    svgParts.push('<div class="tr-tooltip" id="tr-tooltip"></div>');
+    wrap.innerHTML = svgParts.join('');
+
+    var svg = wrap.querySelector('.tr-chart-svg');
+    var hitRect = document.getElementById('tr-hit-rect');
+    var crosshair = document.getElementById('tr-crosshair');
+    var tooltip = document.getElementById('tr-tooltip');
+
+    function showTooltip(i, clientX, clientY) {
+      var wk = weekKeys[i];
+      crosshair.setAttribute('x1', xAt(i));
+      crosshair.setAttribute('x2', xAt(i));
+      crosshair.style.display = '';
+
+      var rows = MARKETS.map(function (m) {
+        var w = data.byMarket[m.key][wk];
+        var valText = w ? (w.wins + '-' + w.losses + ' (' + (Math.round((w.wins / (w.wins + w.losses)) * 1000) / 10) + '%)') : 'no picks graded';
+        return '<div class="tr-tooltip-row"><span class="tr-tooltip-key" style="background:' + m.color + '"></span>' +
+          '<span class="tr-tooltip-name">' + m.label + ':</span> <span class="tr-tooltip-val">' + valText + '</span></div>';
+      }).join('');
+      tooltip.innerHTML = '<div class="tr-tooltip-date">Week of ' + data.weekLabels[wk] + '</div>' + rows;
+      tooltip.classList.add('visible');
+
+      var wrapRect = wrap.getBoundingClientRect();
+      var left = clientX - wrapRect.left + 14;
+      var top = clientY - wrapRect.top - 10;
+      if (left + 190 > wrapRect.width) left = clientX - wrapRect.left - 204;
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = Math.max(0, top) + 'px';
+    }
+
+    function hideTooltip() {
+      crosshair.style.display = 'none';
+      tooltip.classList.remove('visible');
+    }
+
+    function handleMove(evt) {
+      var svgRect = svg.getBoundingClientRect();
+      var scale = W / svgRect.width;
+      var xInViewBox = (evt.clientX - svgRect.left) * scale;
+      var i = Math.round((xInViewBox - marginLeft) / (xStep || 1));
+      i = Math.max(0, Math.min(n - 1, i));
+      showTooltip(i, evt.clientX, evt.clientY);
+    }
+
+    hitRect.addEventListener('pointermove', handleMove);
+    hitRect.addEventListener('pointerleave', hideTooltip);
+  }
+
+  function bindTableToggle() {
+    var btn = document.getElementById('tr-table-toggle');
+    var chartWrap = document.getElementById('tr-chart-wrap');
+    var tableWrap = document.getElementById('tr-table-wrap');
+    var legend = document.getElementById('tr-legend');
+    if (!btn) return;
+    var showingTable = false;
+    btn.addEventListener('click', function () {
+      showingTable = !showingTable;
+      tableWrap.classList.toggle('visible', showingTable);
+      chartWrap.style.display = showingTable ? 'none' : '';
+      if (legend) legend.style.display = showingTable ? 'none' : '';
+      btn.textContent = showingTable ? 'View as chart' : 'View as table';
+    });
+  }
+
+  fetch('./data/tracker.json', { cache: 'no-store' })
+    .then(function (res) { return res.ok ? res.json() : null; })
+    .then(function (tracker) {
+      if (!tracker) throw new Error('no tracker data');
+      var data = buildWeeklyRecord(tracker);
+      renderStats(data.allTime);
+      renderLegend();
+      renderChart(data);
+      renderTable(data);
+      bindTableToggle();
+    })
+    .catch(function () {
+      var stats = document.getElementById('tr-stats');
+      var chartEmpty = document.getElementById('tr-chart-empty');
+      if (stats) stats.innerHTML = '<div class="tr-empty">Record data unavailable right now.</div>';
+      if (chartEmpty) chartEmpty.textContent = 'Chart data unavailable right now.';
+    });
+})();
+</script>
+
+</body>
+</html>
