@@ -47,26 +47,24 @@ function pct(wins, total) {
 
 // ── Yesterday's recap paragraph ────────────────────────────────────────────
 // Pulls every graded (win/loss) pick across all four markets dated exactly
-// "yesterday" (CDT) and writes one grounded paragraph: the combined record,
-// plus a real named hit and a real named miss when available. Naming a miss
-// on purpose, not just wins — matches the "graded in the open, misses
-// included" stance already stated on methodology.html; a recap that only
-// ever names wins would read as spin, not analysis.
+// "yesterday" (CDT) and writes the combined record as a single grounded
+// sentence. Used to also name a specific standout hit and a specific miss,
+// but those two sentences were dropped by request — just the aggregate
+// record now.
 function buildRecap(tracker, yesterdayStr) {
   const markets = [
-    { key: 'drp', label: 'Game Picks', nameOf: r => r.pick, detailOf: r => `${r.awayTeam} @ ${r.homeTeam}` },
-    { key: 'kprop', label: 'Strikeout Props', nameOf: r => r.pitcherName, detailOf: r => `${r.pick} ${r.line} K` },
-    { key: 'hrThreat', label: 'HR Threats', nameOf: r => r.playerName, detailOf: r => `vs ${r.pitcherName || r.opp}` },
-    { key: 'premium', label: 'Elite Picks', nameOf: r => r.playerName, detailOf: r => `${String(r.market || '').toUpperCase()} vs ${r.pitcherName || r.opp}` },
+    { key: 'drp', label: 'Game Picks' },
+    { key: 'kprop', label: 'Strikeout Props' },
+    { key: 'hrThreat', label: 'HR Threats' },
+    { key: 'premium', label: 'Elite Picks' },
   ];
 
   let wins = 0, losses = 0;
-  const hits = [], misses = [];
   for (const m of markets) {
     const rows = (tracker?.market?.[m.key] || []).filter(r => r.date === yesterdayStr && (r.result === 'win' || r.result === 'loss'));
     for (const r of rows) {
-      if (r.result === 'win') { wins++; hits.push({ ...r, marketLabel: m.label, name: m.nameOf(r), detail: m.detailOf(r), score: r.score ?? r.pickPct ?? null }); }
-      else { losses++; misses.push({ ...r, marketLabel: m.label, name: m.nameOf(r), detail: m.detailOf(r) }); }
+      if (r.result === 'win') wins++;
+      else losses++;
     }
   }
 
@@ -76,21 +74,8 @@ function buildRecap(tracker, yesterdayStr) {
   }
 
   const record = { wins, losses, total, pct: pct(wins, total) };
-  // Prefer the highest-confidence graded win/loss as the named example — most
-  // representative of what the model was actually leaning on, not a random pick.
-  hits.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-  misses.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-  const hit = hits[0];
-  const miss = misses[0];
-
   const dateLabel = new Date(yesterdayStr + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' });
-  let text = `Diamond Report went ${wins}-${losses} across all markets on ${dateLabel} (${record.pct}%).`;
-  if (hit) {
-    text += ` The standout call was ${hit.name} in ${hit.marketLabel} — ${hit.detail}, and it hit.`;
-  }
-  if (miss && (!hit || miss.name !== hit.name)) {
-    text += ` Not every read landed: ${miss.name} in ${miss.marketLabel} (${miss.detail}) came up short — that one's on the public record too.`;
-  }
+  const text = `Diamond Report went ${wins}-${losses} across all markets on ${dateLabel} (${record.pct}%).`;
   return { forDate: yesterdayStr, record, text };
 }
 

@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026072445">
+<link rel="stylesheet" href="styles.min.css?v=2026072446">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -137,9 +137,9 @@
      to show every item flat, so unlike the fixed-width sidebar this
      replaced, there's no collapse toggle or Baseball accordion needed. -->
 <div class="dr-top-nav-inner" role="navigation" aria-label="Site navigation">
-  <button type="button" class="dr-top-nav-cat-btn" id="dr-top-nav-baseball-btn" aria-expanded="false" aria-controls="dr-top-nav-baseball-menu"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M5.6 4.6c1.4 1.5 1.9 3.4 1.9 5.4s-.5 3.9-1.9 5.4M14.4 4.6c-1.4 1.5-1.9 3.4-1.9 5.4s.5 3.9 1.9 5.4" stroke-width="1.15"/></svg><span>Baseball</span><span class="dr-top-nav-cat-current" id="dr-top-nav-baseball-current">Games Today</span><svg class="dr-top-nav-chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5l3 3 3-3"/></svg></button>
-  <span class="dr-top-nav-cat-btn dr-top-nav-cat-soon" title="Coming soon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 10c2-4.3 5.7-6.5 7.2-6.5s5.2 2.2 7.2 6.5c-2 4.3-5.7 6.5-7.2 6.5s-5.2-2.2-7.2-6.5z"/><path d="M5.2 10h9.6" stroke-width="1.1"/><path d="M8 8.7v2.6M10 8.4v3.2M12 8.7v2.6" stroke-width="1"/></svg><span>Football</span><em>Soon</em></span>
-  <span class="dr-top-nav-cat-btn dr-top-nav-cat-soon" title="Coming soon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14" stroke-width="1.15"/><path d="M4.9 5.1c1.9 1.7 3 3 3 4.9s-1.1 3.2-3 4.9M15.1 5.1c-1.9 1.7-3 3-3 4.9s1.1 3.2 3 4.9" stroke-width="1.1"/></svg><span>Basketball</span><em>Soon</em></span>
+  <button type="button" class="dr-top-nav-cat-btn" id="dr-top-nav-baseball-btn" aria-expanded="false" aria-controls="dr-top-nav-baseball-menu"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M5.6 4.6c1.4 1.5 1.9 3.4 1.9 5.4s-.5 3.9-1.9 5.4M14.4 4.6c-1.4 1.5-1.9 3.4-1.9 5.4s.5 3.9 1.9 5.4" stroke-width="1.15"/></svg><span>MLB</span><span class="dr-top-nav-cat-current" id="dr-top-nav-baseball-current">Games Today</span><svg class="dr-top-nav-chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5l3 3 3-3"/></svg></button>
+  <span class="dr-top-nav-cat-btn dr-top-nav-cat-soon" title="Coming soon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 10c2-4.3 5.7-6.5 7.2-6.5s5.2 2.2 7.2 6.5c-2 4.3-5.7 6.5-7.2 6.5s-5.2-2.2-7.2-6.5z"/><path d="M5.2 10h9.6" stroke-width="1.1"/><path d="M8 8.7v2.6M10 8.4v3.2M12 8.7v2.6" stroke-width="1"/></svg><span>NFL</span><em>Soon</em></span>
+  <span class="dr-top-nav-cat-btn dr-top-nav-cat-soon" title="Coming soon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14" stroke-width="1.15"/><path d="M4.9 5.1c1.9 1.7 3 3 3 4.9s-1.1 3.2-3 4.9M15.1 5.1c-1.9 1.7-3 3-3 4.9s1.1 3.2 3 4.9" stroke-width="1.1"/></svg><span>NBA</span><em>Soon</em></span>
 </div>
 <!-- Deliberately a sibling of .dr-top-nav-inner, not nested inside it -- that
      row has overflow-x:auto for the narrow-viewport scroll fallback, and CSS
@@ -157,7 +157,7 @@
   <button type="button" data-gamepick-pane="tb" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8.2L10 3l4.5 5.2L10 17z"/><path d="M5.5 8.2h9M8 8.2L10 3M12 8.2L10 3" stroke-width="1"/></svg><span>Total Bases</span></button>
   <button type="button" data-gamepick-pane="sb" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 6l4 4-4 4-4-4z"/><path d="M2.5 8.5h5M2.5 11.5h3.5" stroke-width="1.1"/></svg><span>Stolen Bases</span></button>
   <button type="button" data-gamepick-pane="hrrbi" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.5V9M10 16.5V4M16 16.5v-6.5"/><path d="M2.5 16.5h15"/></svg><span>Hits+Runs+RBI</span></button>
-  <button type="button" data-gamepick-pane="fantasy" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h8v4a4 4 0 0 1-8 0v-4z"/><path d="M6 4.5H3.5v1a3 3 0 0 0 3 3M14 4.5h2.5v1a3 3 0 0 1-3 3"/><path d="M10 11.5v2.5M8 14h4v3H8z"/></svg><span>Fantasy Points</span></button>
+  <button type="button" data-gamepick-pane="fantasy" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h8v4a4 4 0 0 1-8 0v-4z"/><path d="M6 4.5H3.5v1a3 3 0 0 0 3 3M14 4.5h2.5v1a3 3 0 0 1-3 3"/><path d="M10 11.5v2.5M8 14h4v3H8z"/></svg><span>Fantasy Points <span style="opacity:.65;font-weight:600">[Beta]</span></span></button>
 </div>
 <div class="date-badge" id="header-date"></div>
 <div class="logo" id="dr-header-logo" style="padding:0;background:none;border:none;display:flex;align-items:center;cursor:pointer" role="button" tabindex="0" aria-label="Back to News Central">
@@ -187,7 +187,7 @@
     <button type="button" data-tab="tb" class="dr-menu-item">💎 Total Bases</button>
     <button type="button" data-tab="sb" class="dr-menu-item">🏃 Stolen Bases</button>
     <button type="button" data-tab="hrrbi" class="dr-menu-item">📈 Hits+Runs+RBI</button>
-    <button type="button" data-tab="fantasy" class="dr-menu-item">🏆 Fantasy Points</button>
+    <button type="button" data-tab="fantasy" class="dr-menu-item">🏆 Fantasy Points [Beta]</button>
   </div>
 </div>
 
@@ -219,7 +219,7 @@
       <button type="button" class="dr-hub-sport-card live" id="dr-hub-baseball-card">
         <span class="dr-hub-sport-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M5.6 4.6c1.4 1.5 1.9 3.4 1.9 5.4s-.5 3.9-1.9 5.4M14.4 4.6c-1.4 1.5-1.9 3.4-1.9 5.4s.5 3.9 1.9 5.4" stroke-width="1.15"/></svg></span>
         <span class="dr-hub-sport-text">
-          <span class="dr-hub-sport-title">Baseball</span>
+          <span class="dr-hub-sport-title">MLB</span>
           <span class="dr-hub-sport-desc">Live MLB projections across 10 markets, updated daily.</span>
           <span class="dr-hub-sport-badge">● Live — Enter Projections</span>
         </span>
@@ -227,7 +227,7 @@
       <div class="dr-hub-sport-card soon" aria-disabled="true">
         <span class="dr-hub-sport-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 10c2-4.3 5.7-6.5 7.2-6.5s5.2 2.2 7.2 6.5c-2 4.3-5.7 6.5-7.2 6.5s-5.2-2.2-7.2-6.5z"/><path d="M5.2 10h9.6" stroke-width="1.1"/><path d="M8 8.7v2.6M10 8.4v3.2M12 8.7v2.6" stroke-width="1"/></svg></span>
         <span class="dr-hub-sport-text">
-          <span class="dr-hub-sport-title">Football</span>
+          <span class="dr-hub-sport-title">NFL</span>
           <span class="dr-hub-sport-desc">NFL projections launching for the 2026 season.</span>
           <span class="dr-hub-sport-badge">Coming September</span>
         </span>
@@ -235,7 +235,7 @@
       <div class="dr-hub-sport-card soon" aria-disabled="true">
         <span class="dr-hub-sport-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14" stroke-width="1.15"/><path d="M4.9 5.1c1.9 1.7 3 3 3 4.9s-1.1 3.2-3 4.9M15.1 5.1c-1.9 1.7-3 3-3 4.9s1.1 3.2 3 4.9" stroke-width="1.1"/></svg></span>
         <span class="dr-hub-sport-text">
-          <span class="dr-hub-sport-title">Basketball</span>
+          <span class="dr-hub-sport-title">NBA</span>
           <span class="dr-hub-sport-desc">NBA projections in the works.</span>
           <span class="dr-hub-sport-badge">Coming Soon</span>
         </span>
@@ -427,7 +427,7 @@
     <button class="gamepick-tab" id="gamepick-tab-tb" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-tb" data-gamepick-pane="tb" onclick="showGamePickPane('tb')">💎 Total Bases</button>
     <button class="gamepick-tab" id="gamepick-tab-sb" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-sb" data-gamepick-pane="sb" onclick="showGamePickPane('sb')">🏃 Stolen Bases</button>
     <button class="gamepick-tab" id="gamepick-tab-hrrbi" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-hrrbi" data-gamepick-pane="hrrbi" onclick="showGamePickPane('hrrbi')">📈 Hits+Runs+RBI</button>
-    <button class="gamepick-tab" id="gamepick-tab-fantasy" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-fantasy" data-gamepick-pane="fantasy" onclick="showGamePickPane('fantasy')">🏆 Fantasy Points</button>
+    <button class="gamepick-tab" id="gamepick-tab-fantasy" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-fantasy" data-gamepick-pane="fantasy" onclick="showGamePickPane('fantasy')">🏆 Fantasy Points [Beta]</button>
   </div>
 </div>
 
@@ -537,8 +537,8 @@
   <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">Hits + Runs + RBIs <span>Projections</span></p><small>Combined production opportunities ranked by on-base skill, power, run environment, and lineup position.</small></div></div><div id="hrrbi-props-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading Hits+Runs+RBI board…</div></div></div>
 </div>
 <div class="gamepick-pane" id="gamepick-pane-fantasy" role="tabpanel" aria-labelledby="gamepick-tab-fantasy" data-gamepick-pane="fantasy" hidden>
-  <div class="dr-center-label">🏆 Fantasy Points</div>
-  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">Fantasy <span>Points</span></p><small>Every probable starting pitcher and today's starting lineups, projected for expected DraftKings Classic fantasy points from real matchup quality, park factor, recent form, and season rates — the same signals used across the rest of the site, not a separate model.</small></div></div><div id="fantasy-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Building today's fantasy points board…</div></div></div>
+  <div class="dr-center-label">🏆 Fantasy Points [Beta]</div>
+  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">Fantasy <span>Points [Beta]</span></p><small>Every probable starting pitcher and today's starting lineups, projected for expected DraftKings Classic fantasy points from real matchup quality, park factor, recent form, and season rates — the same signals used across the rest of the site, not a separate model.</small></div></div><div id="fantasy-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Building today's fantasy points board…</div></div></div>
 </div>
 
 <div class="gamepick-pane" id="gamepick-pane-pr" role="tabpanel" aria-labelledby="gamepick-tab-pr" data-gamepick-pane="pr" hidden>
@@ -791,7 +791,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026072445" defer></script>
+<script src="app.min.js?v=2026072446" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
