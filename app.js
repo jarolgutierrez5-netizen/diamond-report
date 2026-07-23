@@ -10695,7 +10695,7 @@ if (document.readyState === 'loading') {
     if(type==='sb')a=a.concat([['Line',line(type),'good'],['SB',sb||'–','good'],['OBP',f(obp),''],['Speed proxy',pct(48+sb*2.2)+'%','good'],['Risk','Volatile','warn']]);
     if(type==='hrrbi')a=a.concat([['Line',line(type),'good'],['Hits',hits||'–',''],['Runs',runs||'–',''],['RBI',rbi||'–',''],['OPS',f(ops),'good'],['OBP',f(obp),'']]);
     return a.map(function(x){return chip(x[0],x[1],x[2]);}).join(''); }
-  function reason(type,r,sc){ var nm=esc(r.name||'This player'),opp=esc(r.oppAbbr||'opponent'),map={hits:'contact profile, on-base skill, projected plate appearances, and matchup quality',rbis:'RBI lane, team run environment, power profile, and traffic ahead of the bat',tb:'slugging profile, ISO power, extra-base upside, and pitcher contact quality allowed',sb:'speed profile, on-base path, game script, and stolen-base opportunity',hrrbi:'multi-category production path through hits, runs, RBIs, lineup role, and team run environment'}; var result=hit(type,r)?' <span class="prop-hit-badge">✓ Projection Hit</span>':''; return result+' '+nm+' grades at '+sc+'% for '+esc(line(type))+' because the model combines '+(map[type]||'production profile')+'. Opponent context: '+opp+'.'; }
+  function reason(type,r,sc){ var nm=esc(r.name||'This player'),opp=esc(r.oppAbbr||'opponent'),map={hits:'contact profile, on-base skill, projected plate appearances, and matchup quality',rbis:'RBI lane, team run environment, power profile, and traffic ahead of the bat',tb:'slugging profile, ISO power, extra-base upside, and pitcher contact quality allowed',sb:'speed profile, on-base path, game script, and stolen-base opportunity',hrrbi:'multi-category production path through hits, runs, RBIs, lineup role, and team run environment'}; return ' '+nm+' grades at '+sc+'% for '+esc(line(type))+' because the model combines '+(map[type]||'production profile')+'. Opponent context: '+opp+'.'; }
   function head(id){ return id?'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_84,q_auto:best/v1/people/'+id+'/headshot/67/current':''; }
   var edgeFilters = {hits:0,rbis:0,tb:0,sb:0,hrrbi:0};
   var gameFilters = {hits:'',rbis:'',tb:'',sb:'',hrrbi:''};
@@ -10982,7 +10982,16 @@ if (document.readyState === 'loading') {
       try {
         var props = document.getElementById('props');
         if (props && window.matchMedia('(max-width:1179px)').matches) {
-          props.scrollIntoView({ block:'start', behavior:'smooth' });
+          // scrollIntoView({block:'start'}) aligns props' top edge with the very top of
+          // the viewport, with no awareness that .header is position:fixed and sits on
+          // top of that same spot -- it was covering however many px of the freshly-
+          // scrolled-to content the header's actual height came out to. Read the header's
+          // real height at scroll time (it varies by breakpoint) and subtract it so the
+          // content lands below the header instead of behind it.
+          var headerEl = document.querySelector('.header');
+          var headerH = headerEl ? headerEl.getBoundingClientRect().height : 0;
+          var targetY = window.scrollY + props.getBoundingClientRect().top - headerH;
+          window.scrollTo({ top: Math.max(0, targetY), behavior:'smooth' });
         }
       } catch(e) {}
     }
