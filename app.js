@@ -1515,6 +1515,55 @@ setInterval(() => {
 
 
 
+// ── Per-board player search ─────────────────────────────────────────────
+// Each board (HR Threats, Pitcher Report, Strikeouts, Hits, RBIs, Total
+// Bases, Stolen Bases, Hits+Runs+RBI, Fantasy) gets its own text search that
+// filters that board's own list by name as you type. Most of these boards
+// rebuild their whole filter bar + list via innerHTML on every render (same
+// as their existing sort/filter controls already do), which would otherwise
+// destroy and recreate the search <input> itself and drop keyboard focus
+// after the very first character typed -- drCaptureSearchFocus/
+// drRestoreSearchFocus save and restore focus + cursor position across that
+// rebuild. Boards whose filter bar is static markup (not regenerated per
+// render) don't need this, since the input never gets destroyed.
+window.__drBoardSearch = window.__drBoardSearch || {};
+function drSetBoardSearch(boardKey, value, renderFn) {
+  window.__drBoardSearch[boardKey] = value || '';
+  if (typeof renderFn === 'function') renderFn();
+}
+function drCaptureSearchFocus(inputId) {
+  var el = document.getElementById(inputId);
+  if (el && document.activeElement === el) {
+    return { id: inputId, start: el.selectionStart, end: el.selectionEnd };
+  }
+  return null;
+}
+function drRestoreSearchFocus(saved) {
+  if (!saved) return;
+  var el = document.getElementById(saved.id);
+  if (!el) return;
+  el.focus();
+  try { el.setSelectionRange(saved.start, saved.end); } catch (e) {}
+}
+function drMatchesSearch(boardKey, name) {
+  var q = (window.__drBoardSearch[boardKey] || '').trim().toLowerCase();
+  if (!q) return true;
+  return String(name || '').toLowerCase().indexOf(q) >= 0;
+}
+function drSearchInputHTML(boardKey, inputId, placeholder, onInputExpr) {
+  var val = window.__drBoardSearch[boardKey] || '';
+  var escVal = String(val).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  var clearExpr = onInputExpr.replace(/this\.value/g, "''");
+  var clearBtn = val
+    ? '<button type="button" class="dr-board-search-clear" onclick="document.getElementById(\'' + inputId + '\').value=\'\';' + clearExpr + '" aria-label="Clear search">✕</button>'
+    : '';
+  return '<div class="dr-board-search-wrap">' +
+    '<svg class="dr-icon dr-board-search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16 16l-3.8-3.8"/></svg>' +
+    '<input type="text" id="' + inputId + '" class="dr-board-search" placeholder="' + placeholder + '" value="' + escVal + '" oninput="' + onInputExpr + '">' +
+    clearBtn +
+    '</div>';
+}
+
 // ── PITCHER REPORT ───────────────────────────────────────────────────
 let matchupLoaded = false;
 
@@ -2305,7 +2354,8 @@ function heatBG(val, goodBelow, badAbove) {
 function renderPRTable() {
   const el = document.getElementById('pr-content');
   if (!el) return;
-  const sorted = getSortedPRRowsForCurrentSort();
+  const __searchFocus = drCaptureSearchFocus('pr-search-input');
+  const sorted = getSortedPRRowsForCurrentSort().filter(r => drMatchesSearch('pr', r.pitcher?.name));
   const hs = id => `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_46,q_auto:best/v1/people/${id}/headshot/67/current`;
   // data-label carries each cell's short column header along for the mobile
   // card layout (see the @media (max-width: 700px) rules in styles.css),
@@ -2378,12 +2428,15 @@ function renderPRTable() {
     return `<button onclick="sortPR('${key}')" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${active?'var(--accent2)':'var(--border)'};background:${active?'rgba(47,107,255,.12)':'var(--surface2)'};color:${active?'var(--accent2)':'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">${label}${arrow}</button>`;
   }).join('');
 
+  const noMatches = !sorted.length && (window.__drBoardSearch.pr || '').trim();
   el.innerHTML = `
     <div class="kprops-sticky-sort" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">
       <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">SORT:</span>
       ${prSortBtns}
       <button onclick="resetPRSort()" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:3px 8px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0">RESET</button>
+      ${drSearchInputHTML('pr', 'pr-search-input', 'Search pitchers…', "drSetBoardSearch('pr',this.value,renderPRTable)")}
     </div>
+    ${noMatches ? `<div class="mu-empty" style="padding:24px">No pitchers match "${window.__drBoardSearch.pr}". Try a different name.</div>` : `
     <div class="dr1041-table-wrap pr-starters-table-wrap"><table class="pr-stats-table pr-starters-table">
       <thead><tr>
         <th style="text-align:left">Pitcher</th>
@@ -2391,7 +2444,7 @@ function renderPRTable() {
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
-    <div id="pr-lineup-panels" style="display:none">${hiddenPanels}</div>
+    <div id="pr-lineup-panels" style="display:none">${hiddenPanels}</div>`}
     <div class="pr-legend">
       <span class="pr-legend-chip"><span class="pr-legend-dot good"></span>Elite</span>
       <span class="pr-legend-chip"><span class="pr-legend-dot neu"></span>Average</span>
@@ -2403,6 +2456,7 @@ function renderPRTable() {
     </div>`;
 
   rehydrateOpenLineupModal();
+  drRestoreSearchFocus(__searchFocus);
 }
 
 
@@ -6042,16 +6096,21 @@ function fantasyFilterBarHTML() {
   const opts = [['all', 'All'], ['pitchers', '⚾ Pitchers'], ['batters', '🏏 Batters']];
   return `<div class="fantasy-filter-bar">
     ${opts.map(([key, label]) => `<button type="button" class="fantasy-filter-btn${fantasyFilter === key ? ' active' : ''}" onclick="window.setFantasyFilter('${key}')">${label}</button>`).join('')}
+    ${drSearchInputHTML('fantasy', 'fantasy-search-input', 'Search players…', "drSetBoardSearch('fantasy',this.value,renderFantasyBoard)")}
   </div>`;
 }
 
 function renderFantasyBoard() {
   const el = document.getElementById('fantasy-content');
   if (!el) return;
-  const pitchers = Array.isArray(prRows) ? prRows : [];
-  const batters = Array.isArray(hrpRows) ? hrpRows : [];
+  const __searchFocus = drCaptureSearchFocus('fantasy-search-input');
+  const pitchers = (Array.isArray(prRows) ? prRows : []).filter(p => drMatchesSearch('fantasy', p.pitcher?.name));
+  const batters = (Array.isArray(hrpRows) ? hrpRows : []).filter(b => drMatchesSearch('fantasy', b.name));
   if (!pitchers.length && !batters.length) {
-    el.innerHTML = '<div class="mu-empty"><span class="spin"></span>Building today’s fantasy points board…</div>';
+    el.innerHTML = (window.__drBoardSearch.fantasy || '').trim()
+      ? `<div class="mu-empty" style="padding:24px">No players match "${window.__drBoardSearch.fantasy}". Try a different name.</div>`
+      : '<div class="mu-empty"><span class="spin"></span>Building today’s fantasy points board…</div>';
+    drRestoreSearchFocus(__searchFocus);
     return;
   }
 
@@ -6086,6 +6145,7 @@ function renderFantasyBoard() {
   el.innerHTML = fantasyFilterBarHTML()
     + (showPitchers ? section('Starting Pitchers', '⚾', pitchers, fantasyPitcherPoints, fantasyPitcherCardHTML) : '')
     + (showBatters ? section('Batters', '🏏', batters, fantasyBatterPoints, fantasyBatterCardHTML) : '');
+  drRestoreSearchFocus(__searchFocus);
 }
 window.renderFantasyBoard = renderFantasyBoard;
 
@@ -7009,7 +7069,7 @@ function renderHRPTable() {
   // a normal slate regardless of how many other batters had a real case. Eased to 7%/3%
   // and topHrThreat now covers the top 2 per matchup (see where it's set, above) to
   // widen the shortlist without dropping the floor back to "everyone clears it."
-  ).filter(isActiveForHRThreat).filter(r => (r.topHrThreat && r.hrProb >= 3) || r.hrProb >= 7);
+  ).filter(isActiveForHRThreat).filter(r => (r.topHrThreat && r.hrProb >= 3) || r.hrProb >= 7).filter(r => drMatchesSearch('hr', r.name));
 
   // Update button active states
   const allActive = !hasFilter;
@@ -7382,6 +7442,7 @@ function renderKProps() {
     if(el) el.innerHTML=`<div class="mu-empty">No K prop data yet — check back after lineups are posted.</div>`;
     return;
   }
+  const __searchFocus = drCaptureSearchFocus('k-search-input');
 
   const hs = id => `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_38,q_auto:best/v1/people/${id}/headshot/67/current`;
   const tl = abbr => { const id=teamIds[abbr]; return id?`<img src="https://www.mlbstatic.com/team-logos/${id}.svg" style="width:20px;height:20px;object-fit:contain;vertical-align:middle" alt="" loading="lazy" decoding="async">`:'' };
@@ -7415,6 +7476,7 @@ function renderKProps() {
     ? kPropsData.filter(p => String(p.gamePk||'') === _kPropsGameFilter)
     : kPropsData;
   if (_kPropsWatchlistOnly) gameFilteredProps = gameFilteredProps.filter(p => drIsWatchlisted(p.pitcherId));
+  gameFilteredProps = gameFilteredProps.filter(p => drMatchesSearch('k', p.pitcherName));
 
   // Built from the full day's schedule (not kPropsData) so every game today shows up in
   // the filter, including games that don't have an announced probable pitcher yet —
@@ -7502,6 +7564,8 @@ function renderKProps() {
     return `<button onclick="kPropsSortBy('${key}')" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${active?'var(--accent2)':'var(--border)'};background:${active?'rgba(47,107,255,.12)':'var(--surface2)'};color:${active?'var(--accent2)':'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">${label}${arrow}</button>`;
   }).join('');
 
+  const noKMatches = !sortedProps.length && (window.__drBoardSearch.k || '').trim();
+
   el.innerHTML = `${kpTallyHTML}
   ${drKSummaryHTML(gameFilteredProps)}
   <div class="kprops-sticky-sort" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">
@@ -7511,8 +7575,9 @@ function renderKProps() {
     <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">SORT:</span>
     ${sortBtns}
     <button onclick="kPropsSortBy(null)" id="kpsort-reset" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:3px 8px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0">RESET</button>
+    ${drSearchInputHTML('k', 'k-search-input', 'Search pitchers…', "drSetBoardSearch('k',this.value,renderKProps)")}
   </div>
-  <div style="overflow-x:auto;overscroll-behavior-x:contain;touch-action:pan-y;min-width:0">
+  ${noKMatches ? `<div class="mu-empty" style="padding:24px">No pitchers match "${window.__drBoardSearch.k}". Try a different name.</div>` : `<div style="overflow-x:auto;overscroll-behavior-x:contain;touch-action:pan-y;min-width:0">
     ${sortedProps.map(p => {
       const prob = Number(p.overProb ?? 0);
       const predCls = prob >= 50 ? 'kprop-over' : 'kprop-push kprop-push-under';
@@ -7623,10 +7688,11 @@ function renderKProps() {
         </div>
         <div class="dr109-reason"><strong>Why it supports the line:</strong> ${p.pitcherName} grades at ${chance}% for ${strikeoutLineText} because the model combines ${p.k9 ?? '–'} K/9, ${p.era ?? '–'} ERA/${p.whip ?? '–'} WHIP command profile, projected workload, and opponent contact tendency. Opponent context: ${p.oppAbbr}.</div>
       </div>`;
-    }).join('')}</div>
+    }).join('')}</div>`}
   <div style="font-size:10px;color:var(--muted);padding:10px 16px 14px;line-height:1.5;border-top:1px solid var(--border)">
     💎 Projections powered by the <strong style="color:var(--text)">Diamond Intelligence Engine</strong> — built from each pitcher's full season K/9, ERA, WHIP, and projected innings against today's opponent K rate. Use as a guide alongside your own research.
   </div>\``;
+  drRestoreSearchFocus(__searchFocus);
 }
 
 // Schedule 7am load + 9am refresh for K Props
@@ -10625,6 +10691,7 @@ if (document.readyState === 'loading') {
   var EDGE_THRESHOLDS = [0,60,70,80,90];
   window.setPropEdgeFilter=function(type,val){ edgeFilters[type]=parseInt(val,10)||0; render(type,paneMap[type],true); };
   window.setPropGameFilter=function(type,val){ gameFilters[type]=val||''; render(type,paneMap[type],true); };
+  window.setPropSearchFilter=function(type,val){ window.__drBoardSearch[type]=val||''; render(type,paneMap[type],true); };
   function gamesList(){ var seen={},out=[]; rows().forEach(function(r){ var pk=String(r.gamePk||''); if(!pk||seen[pk])return; seen[pk]=1; out.push({pk:pk,label:(r.teamAbbr||'?')+' vs '+(r.oppAbbr||'?'),ts:r.gameTimestamp||0}); }); out.sort(function(a,b){return a.ts-b.ts;}); return out; }
   function edgeFilterHTML(type){
     var cur=edgeFilters[type]||0;
@@ -10633,9 +10700,9 @@ if (document.readyState === 'loading') {
     var games=gamesList();
     var gameOpts=['<option value=""'+(curG===''?' selected':'')+'>All Games</option>'].concat(games.map(function(g){ return '<option value="'+g.pk+'"'+(curG===g.pk?' selected':'')+'>'+esc(g.label)+'</option>'; })).join('');
     var wlActive=!!watchlistFilters[type];
-    return '<div class="dr109-filter-row" style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:0 0 12px;padding:0 14px"><div class="dr109-game-filter" style="margin:0"><label style="font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-right:8px">Edge:</label><select onchange="window.setPropEdgeFilter(\''+type+'\',this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700">'+opts+'</select></div><div class="dr109-game-filter" style="margin:0"><label style="font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-right:8px">Game:</label><select onchange="window.setPropGameFilter(\''+type+'\',this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700">'+gameOpts+'</select></div><button onclick="window.setPropWatchlistFilter(\''+type+'\')" style="font-size:11px;font-weight:700;font-family:Manrope,sans-serif;padding:6px 12px;border-radius:8px;border:1px solid '+(wlActive?'#f5c518':'var(--border)')+';background:'+(wlActive?'rgba(245,197,24,.14)':'var(--surface2)')+';color:'+(wlActive?'#f5c518':'var(--muted)')+';cursor:pointer;white-space:nowrap">★ WATCHLIST</button></div>';
+    return '<div class="dr109-filter-row" style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:0 0 12px;padding:0 14px"><div class="dr109-game-filter" style="margin:0"><label style="font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-right:8px">Edge:</label><select onchange="window.setPropEdgeFilter(\''+type+'\',this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700">'+opts+'</select></div><div class="dr109-game-filter" style="margin:0"><label style="font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-right:8px">Game:</label><select onchange="window.setPropGameFilter(\''+type+'\',this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700">'+gameOpts+'</select></div><button onclick="window.setPropWatchlistFilter(\''+type+'\')" style="font-size:11px;font-weight:700;font-family:Manrope,sans-serif;padding:6px 12px;border-radius:8px;border:1px solid '+(wlActive?'#f5c518':'var(--border)')+';background:'+(wlActive?'rgba(245,197,24,.14)':'var(--surface2)')+';color:'+(wlActive?'#f5c518':'var(--muted)')+';cursor:pointer;white-space:nowrap">★ WATCHLIST</button>'+drSearchInputHTML(type,'prop-search-'+type,'Search players…',"window.setPropSearchFilter('"+type+"',this.value)")+'</div>';
   }
-  function render(type,id,force){ var el=document.getElementById(id); if(!el) return; if(!force && document.activeElement && el.contains(document.activeElement) && document.activeElement.tagName==='SELECT') return; var scrollTop=el.scrollTop; var pageY=window.scrollY; var all=rows(); var filtered=edgeFilters[type]?all.filter(function(r){ return score(type,r)>=edgeFilters[type]; }):all; if(gameFilters[type]) filtered=filtered.filter(function(r){ return String(r.gamePk)===gameFilters[type]; }); if(watchlistFilters[type]) filtered=filtered.filter(function(r){ return drIsWatchlisted(r.id); }); var arr=filtered.filter(function(r){ return String(r.timeLabel||'').toUpperCase()!=='FINAL'; }).sort(function(a,b){ return score(type,b)-score(type,a); }).slice(0,50); if(!all.length){ el.innerHTML='<div class="mu-empty">Loading '+label(type)+' board from active production data…</div>'; return; } var gf=edgeFilterHTML(type); if(!arr.length){ el.innerHTML=gf+'<div class="mu-empty" style="padding:24px">No players match the selected filters. Choose All Edges / All Games to reset.</div>'; return; } var top=arr[0], avg=Math.round(arr.slice(0,Math.min(6,arr.length)).reduce(function(a,r){return a+score(type,r)},0)/Math.min(6,arr.length)); el.innerHTML='<div class="dr109-summary"><div class="dr109-title">📊 EXPANDED <span>'+esc(label(type).toUpperCase())+' DATA</span></div><p class="dr109-copy">Each player\'s odds come from a Monte Carlo simulation of thousands of games built from their real season rate stats and lineup slot, not a hand-tuned formula. Values are generated from the active production rows so they stay fast and do not add external load time.</p><div class="dr109-grid"><div class="dr109-metric good"><b>'+esc(top.name||'–')+'</b><span>Top Rated</span></div><div class="dr109-metric"><b>'+avg+'%</b><span>Board Avg Odds</span></div><div class="dr109-metric"><b>'+arr.length+'</b><span>Players Scanned</span></div><div class="dr109-metric warn"><b>'+esc(line(type))+'</b><span>Primary Line</span></div></div></div>'+gf+arr.map(function(r){ var sc=score(type,r),isHit=hit(type,r),isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL',isMiss=isFinal&&!isHit; return '<div class="dr109-card '+(isHit?'prop-hit':isMiss?'prop-miss':'')+'">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr109-card-head"><div class="dr109-player"><img loading="lazy" src="'+head(r.id)+'" onerror="this.style.display=\'none\'" alt=""><div style="min-width:0"><div class="dr109-name">'+esc(r.name||'Player')+'</div>'+(isHit?'<div class="dr109-badge-row"><span class="prop-hit-badge">✓ Projection Hit</span></div>':isMiss?'<div class="dr109-badge-row"><span class="prop-miss-badge">✗ Missed</span></div>':'')+'<div class="dr109-meta">'+esc(r.teamAbbr||'')+' · '+esc(r.pos||'')+' · vs '+esc(r.oppAbbr||'')+'</div></div></div><div class="dr109-score">'+sc+'%<small>'+esc(label(type))+' Odds</small></div></div><div class="dr109-chiprow">'+chipSet(type,r)+'</div>'+coldBatterAlertHTML(r)+'</div>'; }).join(''); el.scrollTop=scrollTop; window.scrollTo(window.scrollX,pageY); }
+  function render(type,id,force){ var el=document.getElementById(id); if(!el) return; if(!force && document.activeElement && el.contains(document.activeElement) && (document.activeElement.tagName==='SELECT'||document.activeElement.tagName==='INPUT')) return; var __searchFocus=drCaptureSearchFocus('prop-search-'+type); var scrollTop=el.scrollTop; var pageY=window.scrollY; var all=rows(); var filtered=edgeFilters[type]?all.filter(function(r){ return score(type,r)>=edgeFilters[type]; }):all; if(gameFilters[type]) filtered=filtered.filter(function(r){ return String(r.gamePk)===gameFilters[type]; }); if(watchlistFilters[type]) filtered=filtered.filter(function(r){ return drIsWatchlisted(r.id); }); filtered=filtered.filter(function(r){ return drMatchesSearch(type,r.name); }); var arr=filtered.filter(function(r){ return String(r.timeLabel||'').toUpperCase()!=='FINAL'; }).sort(function(a,b){ return score(type,b)-score(type,a); }).slice(0,50); if(!all.length){ el.innerHTML='<div class="mu-empty">Loading '+label(type)+' board from active production data…</div>'; return; } var gf=edgeFilterHTML(type); if(!arr.length){ var searchActive=(window.__drBoardSearch[type]||'').trim(); el.innerHTML=gf+'<div class="mu-empty" style="padding:24px">'+(searchActive?'No players match "'+esc(window.__drBoardSearch[type])+'". Try a different name.':'No players match the selected filters. Choose All Edges / All Games to reset.')+'</div>'; drRestoreSearchFocus(__searchFocus); return; } var top=arr[0], avg=Math.round(arr.slice(0,Math.min(6,arr.length)).reduce(function(a,r){return a+score(type,r)},0)/Math.min(6,arr.length)); el.innerHTML='<div class="dr109-summary"><div class="dr109-title">📊 EXPANDED <span>'+esc(label(type).toUpperCase())+' DATA</span></div><p class="dr109-copy">Each player\'s odds come from a Monte Carlo simulation of thousands of games built from their real season rate stats and lineup slot, not a hand-tuned formula. Values are generated from the active production rows so they stay fast and do not add external load time.</p><div class="dr109-grid"><div class="dr109-metric good"><b>'+esc(top.name||'–')+'</b><span>Top Rated</span></div><div class="dr109-metric"><b>'+avg+'%</b><span>Board Avg Odds</span></div><div class="dr109-metric"><b>'+arr.length+'</b><span>Players Scanned</span></div><div class="dr109-metric warn"><b>'+esc(line(type))+'</b><span>Primary Line</span></div></div></div>'+gf+arr.map(function(r){ var sc=score(type,r),isHit=hit(type,r),isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL',isMiss=isFinal&&!isHit; return '<div class="dr109-card '+(isHit?'prop-hit':isMiss?'prop-miss':'')+'">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr109-card-head"><div class="dr109-player"><img loading="lazy" src="'+head(r.id)+'" onerror="this.style.display=\'none\'" alt=""><div style="min-width:0"><div class="dr109-name">'+esc(r.name||'Player')+'</div>'+(isHit?'<div class="dr109-badge-row"><span class="prop-hit-badge">✓ Projection Hit</span></div>':isMiss?'<div class="dr109-badge-row"><span class="prop-miss-badge">✗ Missed</span></div>':'')+'<div class="dr109-meta">'+esc(r.teamAbbr||'')+' · '+esc(r.pos||'')+' · vs '+esc(r.oppAbbr||'')+'</div></div></div><div class="dr109-score">'+sc+'%<small>'+esc(label(type))+' Odds</small></div></div><div class="dr109-chiprow">'+chipSet(type,r)+'</div>'+coldBatterAlertHTML(r)+'</div>'; }).join(''); el.scrollTop=scrollTop; window.scrollTo(window.scrollX,pageY); drRestoreSearchFocus(__searchFocus); }
   window.renderPropIntelligencePanes=function(){ render('hits','hits-props-content'); render('rbis','rbis-props-content'); render('tb','tb-props-content'); render('sb','sb-props-content'); render('hrrbi','hrrbi-props-content'); if(typeof window.enhanceDeepResearch==='function') try{window.enhanceDeepResearch();}catch(e){} };
   function markHRHits(){ try{ rows().forEach(function(r){ if(actual('hr',r)>=1){ ['#hrp-row-'+r.id].forEach(function(sel){ var el=document.querySelector(sel); if(el){ el.classList.add('hr-hit'); if(!el.querySelector('.hr-hit-badge')){ var chipBox=el.querySelector('.dr1017-hr-chips,.dr1026-chip-row'); if(chipBox) chipBox.insertAdjacentHTML('afterbegin','<span class="hr-hit-badge">✓ HR Projection Hit</span>'); } } }); } }); }catch(e){} }
   var oldHR=window.renderHRPTable; if(typeof oldHR==='function'){ window.renderHRPTable=function(){ var out=oldHR.apply(this,arguments); setTimeout(markHRHits,0); return out; }; }
@@ -10716,12 +10783,13 @@ if (document.readyState === 'loading') {
   function labelChip(k,v,cls){ return '<span class="dr1027-chip '+(cls||'')+'"><b>'+esc(k)+'</b> '+esc(v)+'</span>'; }
   // Inclusion floor. hrProb here is a single-PA batter/pitcher rate blend (see hrProb()
   // near fetchAndRenderLineup), not a full-game simulation -- realistic values run more
-  // like a 2-6% league-average range than double digits. Matches the same 7%/3% floor
-  // renderHRPTable uses (the board's actual default renderer; this getHRRows path only
-  // runs when the "All Games" filter select is touched) so switching that filter doesn't
-  // suddenly shrink or balloon the list. topHrThreat covers the top 2 batters per pitcher
-  // matchup, not just the single best (see where it's set, in loadHRPotential).
-  function getHRRows(){ return rows().filter(function(r){return n(r.hrProb)>0 && ((r.topHrThreat && n(r.hrProb)>=3) || n(r.hrProb)>=7);}); }
+  // like a 2-6% league-average range than double digits. window.renderHRPTable ends up
+  // aliased to renderHRPTableV1032 below (see the reassignment chain at the bottom of
+  // this IIFE), so this getHRRows path is the board's actual default renderer -- kept
+  // in sync with the same 7%/3% floor the original renderHRPTable function above also
+  // uses in case that path is ever reactivated. topHrThreat covers the top 2 batters
+  // per pitcher matchup, not just the single best (see where it's set, in loadHRPotential).
+  function getHRRows(){ return rows().filter(function(r){return n(r.hrProb)>0 && ((r.topHrThreat && n(r.hrProb)>=3) || n(r.hrProb)>=7) && drMatchesSearch('hr', r.name);}); }
   function getFilters(){ if(!window.__hrpFilterSet) window.__hrpFilterSet=new Set(); return window.__hrpFilterSet; }
   function getHRGameFilter(){ return window.__hrpGameFilter||''; }
   window.setHRGameFilter=function(val){ window.__hrpGameFilter=val||''; renderHRPTableV1032(); };
