@@ -3160,6 +3160,53 @@ function resetPRSort() {
 // fetchJSON's day-long cache.
 const _weatherCache = new Map();
 
+// Weather (Open-Meteo, free, no key) — shared by loadGameProps (the DRP "HR Boost"
+// badge/projected-total model) and loadHRPotential (HR Threats' per-batter hrProb).
+// Deliberately NOT routed through fetchJSON(): that helper caches any non-live-score
+// URL in localStorage for the rest of the calendar day (DR_STATIC_DAILY_DUMP), which
+// is right for daily-batch Statcast files but wrong here — temperature and wind
+// genuinely change over the course of a day, so a morning fetch (cooler) would
+// otherwise get locked in and reused all afternoon even on a hot day. A short
+// in-memory cache keyed to a 15-minute bucket keeps this fresh without re-fetching on
+// every 2-minute auto-refresh, and is shared (module-level _weatherCache) across both
+// callers so visiting both boards in one session only pays for each game's weather once.
+async function fetchGameWeather(homeAbbr, awayAbbr) {
+  // Retractable-roof parks (ARI, HOU, MIA, MIL, SEA, TEX, TOR) are frequently played
+  // open-air, so they still get a live weather fetch — only Tropicana Field (TB) is a
+  // genuine fixed dome that's never open. Open-Meteo has no live roof-open/closed
+  // signal, so this fetches outdoor conditions for those parks regardless of actual
+  // roof state; better than always reporting neutral.
+  const stadium = stadiumCoords[homeAbbr] || stadiumCoords[awayAbbr];
+  if (!stadium || (stadium.dome && !stadium.retractable)) return null;
+  try {
+    const bucket = Math.floor(Date.now() / (15 * 60 * 1000));
+    const wKey = `${homeAbbr}:${bucket}`;
+    let wd = _weatherCache.get(wKey);
+    if (!wd) {
+      // relative_humidity_2m + pressure_msl added for the air-density-based HR Boost
+      // model (see airDensityHRMult) — pressure_msl (sea-level-equivalent, not
+      // surface_pressure) is deliberate: it isolates today's weather-system pressure
+      // anomaly from each park's permanent elevation, which the separate Statcast-
+      // based park factor already accounts for. Using raw surface_pressure here would
+      // double-count Coors' altitude as if it were a "weather" effect every single day.
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,relative_humidity_2m,windspeed_10m,winddirection_10m,precipitation,pressure_msl,weathercode&temperature_unit=fahrenheit&windspeed_unit=mph`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      wd = await res.json();
+      _weatherCache.set(wKey, wd);
+    }
+    const c = wd.current;
+    return {
+      temp: Math.round(c.temperature_2m),
+      humidity: c.relative_humidity_2m,
+      wind: Math.round(c.windspeed_10m),
+      windDir: c.winddirection_10m,
+      precip: c.precipitation,
+      pressureMsl: c.pressure_msl,
+      code: c.weathercode,
+    };
+  } catch { return null; }
+}
+
 // Market odds (display-only comparison, see loadEspnEventIds/model.market below) —
 // same in-memory 15-min-bucket pattern as weather, never persisted to localStorage.
 const _marketCache = new Map();
@@ -3459,52 +3506,10 @@ async function loadGameProps() {
           teamSeasonPitchingTotals(g.teams.home.team.id),
         ]);
 
-        // Weather (Open-Meteo, free, no key) — deliberately NOT routed through
-        // fetchJSON(). That helper caches any non-live-score URL in localStorage
-        // for the rest of the calendar day (DR_STATIC_DAILY_DUMP), which is right
-        // for daily-batch Statcast files but wrong here: temperature and wind
-        // genuinely change over the course of a day, so a morning fetch (cooler)
-        // was getting locked in and reused all afternoon even on a hot day,
-        // silently keeping the HR Boost badge at 0% long after conditions crossed
-        // the +5%/-5% thresholds. A short in-memory cache keyed to a 15-minute
-        // bucket keeps this fresh without re-fetching on every 2-minute auto-refresh.
+        // Weather -- see fetchGameWeather's own header comment for why this isn't
+        // routed through fetchJSON() and why the cache is short/in-memory-only.
         const stadium = stadiumCoords[homeAbbr] || stadiumCoords[awayAbbr];
-        let weather = null;
-        // Retractable-roof parks (ARI, HOU, MIA, MIL, SEA, TEX, TOR) are frequently
-        // played open-air, so they still get a live weather fetch — only Tropicana
-        // Field (TB) is a genuine fixed dome that's never open. Open-Meteo has no
-        // live roof-open/closed signal, so this fetches outdoor conditions for those
-        // parks regardless of actual roof state; better than always reporting 0%.
-        if (stadium && (!stadium.dome || stadium.retractable)) {
-          try {
-            const bucket = Math.floor(Date.now() / (15 * 60 * 1000));
-            const wKey = `${homeAbbr}:${bucket}`;
-            let wd = _weatherCache.get(wKey);
-            if (!wd) {
-              // relative_humidity_2m + pressure_msl added for the air-density-based HR
-              // Boost model below (see airDensityHRMult) — pressure_msl (sea-level-
-              // equivalent, not surface_pressure) is deliberate: it isolates today's
-              // weather-system pressure anomaly from each park's permanent elevation,
-              // which the separate Statcast-based park factor already accounts for.
-              // Using raw surface_pressure here would double-count Coors' altitude as
-              // if it were a "weather" effect every single day.
-              const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,relative_humidity_2m,windspeed_10m,winddirection_10m,precipitation,pressure_msl,weathercode&temperature_unit=fahrenheit&windspeed_unit=mph`);
-              if (!res.ok) throw new Error(`HTTP ${res.status}`);
-              wd = await res.json();
-              _weatherCache.set(wKey, wd);
-            }
-            const c = wd.current;
-            weather = {
-              temp: Math.round(c.temperature_2m),
-              humidity: c.relative_humidity_2m,
-              wind: Math.round(c.windspeed_10m),
-              windDir: c.winddirection_10m,
-              precip: c.precipitation,
-              pressureMsl: c.pressure_msl,
-              code: c.weathercode,
-            };
-          } catch {}
-        }
+        const weather = await fetchGameWeather(homeAbbr, awayAbbr);
 
         // Real sportsbook odds (ESPN/DraftKings) — display-only comparison against the
         // DR model's own win%/total. Deliberately NOT an input to awayScore/homeScore or
@@ -6756,6 +6761,17 @@ async function loadHRPotential() {
       }
       bd = boxscoreCache[g.gamePk] || null;
 
+      // Weather-based HR multiplier — fetched once per game (not per batter; wind and
+      // air density are a whole-park/whole-game condition, not batter-specific) and
+      // reused by every batter in this game below. Same fetchGameWeather/airDensityHRMult
+      // /windHRMult already computing the DRP "HR Boost" badge — HR Threats never used
+      // weather at all before this, a real gap now that the hot-hitter multiplier fix
+      // shipped. shrinkMult-style clamping already lives inside airDensityHRMult/
+      // windHRMult themselves (+/-15%/+/-20% caps), so this doesn't need its own shrinkage.
+      const gameHomeAbbr = g.teams.home.team.abbreviation, gameAwayAbbr = g.teams.away.team.abbreviation;
+      const gameWeather = await fetchGameWeather(gameHomeAbbr, gameAwayAbbr);
+      const weatherHRMult = gameWeather ? (airDensityHRMult(gameWeather) * windHRMult(gameWeather, gameHomeAbbr)) : 1;
+
       // Process both pitchers in parallel
       await Promise.all([['away','home'],['home','away']].map(async ([side, opp]) => {
         const pitcher = g.teams[opp].probablePitcher;
@@ -6990,7 +7006,7 @@ async function loadHRPotential() {
           // behavior, just applied as a rate multiplier instead of a flat point add-on.
           const hotMult = 1 + (clampNum(hotProfile.onFireScore, 0, 100) / 100) * 0.5;
           const shrunkHotMult = 1 + (hotMult - 1) * hrMultShrinkage;
-          const hrPerPA = ((batterRate*0.6)+(pitcherRate*0.4)) * parkAdj * shrunkHotMult;
+          const hrPerPA = ((batterRate*0.6)+(pitcherRate*0.4)) * parkAdj * shrunkHotMult * weatherHRMult;
           // Lineup slot (1-9), computed here (not just below with the display battingOrder)
           // so it can feed the per-PA count the HR simulation runs — same 3-digit MLB
           // battingOrder code as the display field derives from.
