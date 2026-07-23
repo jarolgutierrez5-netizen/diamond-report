@@ -1572,6 +1572,12 @@ const bannerHRs = {};           // batterId -> { id, name, teamAbbr, oppAbbr, co
 const bannerKs  = {};           // pitcherId -> { name, teamAbbr, oppAbbr, ks, ouLine }
 let hrpRows = [], hrpSortCol = 'hrProb', hrpSortDir = -1, hrpFilter = 'all';
 let statcastHotHitters = {};
+// Auto-tuned server-side shrinkage constant (see scripts/tune-model-params.mjs) for how
+// hard to trust the Statcast "hot hitter" signal when it moves HR odds -- same constant
+// the server-side HR Threats scoring already uses, and the same weekly calibration loop
+// that adjusts it. Defaults to 0.6 (its documented starting value) until the fetch below
+// resolves or if data/model-params.json is ever unavailable.
+let hrMultShrinkage = 0.6;
 
 // Warning-track fly-out ("near HR") store — loaded from data/near-hrs.json,
 // written by scripts/sync-near-hrs.mjs. Keyed by batter MLB ID (string).
@@ -3154,6 +3160,53 @@ function resetPRSort() {
 // fetchJSON's day-long cache.
 const _weatherCache = new Map();
 
+// Weather (Open-Meteo, free, no key) — shared by loadGameProps (the DRP "HR Boost"
+// badge/projected-total model) and loadHRPotential (HR Threats' per-batter hrProb).
+// Deliberately NOT routed through fetchJSON(): that helper caches any non-live-score
+// URL in localStorage for the rest of the calendar day (DR_STATIC_DAILY_DUMP), which
+// is right for daily-batch Statcast files but wrong here — temperature and wind
+// genuinely change over the course of a day, so a morning fetch (cooler) would
+// otherwise get locked in and reused all afternoon even on a hot day. A short
+// in-memory cache keyed to a 15-minute bucket keeps this fresh without re-fetching on
+// every 2-minute auto-refresh, and is shared (module-level _weatherCache) across both
+// callers so visiting both boards in one session only pays for each game's weather once.
+async function fetchGameWeather(homeAbbr, awayAbbr) {
+  // Retractable-roof parks (ARI, HOU, MIA, MIL, SEA, TEX, TOR) are frequently played
+  // open-air, so they still get a live weather fetch — only Tropicana Field (TB) is a
+  // genuine fixed dome that's never open. Open-Meteo has no live roof-open/closed
+  // signal, so this fetches outdoor conditions for those parks regardless of actual
+  // roof state; better than always reporting neutral.
+  const stadium = stadiumCoords[homeAbbr] || stadiumCoords[awayAbbr];
+  if (!stadium || (stadium.dome && !stadium.retractable)) return null;
+  try {
+    const bucket = Math.floor(Date.now() / (15 * 60 * 1000));
+    const wKey = `${homeAbbr}:${bucket}`;
+    let wd = _weatherCache.get(wKey);
+    if (!wd) {
+      // relative_humidity_2m + pressure_msl added for the air-density-based HR Boost
+      // model (see airDensityHRMult) — pressure_msl (sea-level-equivalent, not
+      // surface_pressure) is deliberate: it isolates today's weather-system pressure
+      // anomaly from each park's permanent elevation, which the separate Statcast-
+      // based park factor already accounts for. Using raw surface_pressure here would
+      // double-count Coors' altitude as if it were a "weather" effect every single day.
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,relative_humidity_2m,windspeed_10m,winddirection_10m,precipitation,pressure_msl,weathercode&temperature_unit=fahrenheit&windspeed_unit=mph`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      wd = await res.json();
+      _weatherCache.set(wKey, wd);
+    }
+    const c = wd.current;
+    return {
+      temp: Math.round(c.temperature_2m),
+      humidity: c.relative_humidity_2m,
+      wind: Math.round(c.windspeed_10m),
+      windDir: c.winddirection_10m,
+      precip: c.precipitation,
+      pressureMsl: c.pressure_msl,
+      code: c.weathercode,
+    };
+  } catch { return null; }
+}
+
 // Market odds (display-only comparison, see loadEspnEventIds/model.market below) —
 // same in-memory 15-min-bucket pattern as weather, never persisted to localStorage.
 const _marketCache = new Map();
@@ -3371,6 +3424,28 @@ async function loadTrackerPicks() {
   return _trackerPicksLoadPromise;
 }
 
+// Same fetch-once/cache pattern as loadTrackerPicks above, for the auto-tuned
+// HR_MULT_SHRINKAGE (see hrMultShrinkage's declaration and scripts/tune-model-params.mjs).
+// Lets the live HR Threats board apply the same evidence-weighted, calibration-checked
+// shrinkage the server-side scoring already uses, instead of an untuned constant baked
+// into this file that nothing ever re-validates against real outcomes.
+let _hrModelParamsLoadPromise = null;
+async function loadHRModelParams() {
+  if (_hrModelParamsLoadPromise) return _hrModelParamsLoadPromise;
+  _hrModelParamsLoadPromise = (async () => {
+    try {
+      const res = await fetch('./data/model-params.json', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        const v = Number(data?.params?.HR_MULT_SHRINKAGE);
+        if (Number.isFinite(v)) hrMultShrinkage = v;
+      }
+    } catch {}
+    return hrMultShrinkage;
+  })();
+  return _hrModelParamsLoadPromise;
+}
+
 // Shared DR win-probability model output, keyed by gamePk. Populated by loadGameProps
 // (the same ERA/WHIP/K9/park/weather/home-field model that powers Diamond Report Picks)
 // and reused elsewhere on the site (e.g. the FAVORED pill on game cards) instead of
@@ -3431,52 +3506,10 @@ async function loadGameProps() {
           teamSeasonPitchingTotals(g.teams.home.team.id),
         ]);
 
-        // Weather (Open-Meteo, free, no key) — deliberately NOT routed through
-        // fetchJSON(). That helper caches any non-live-score URL in localStorage
-        // for the rest of the calendar day (DR_STATIC_DAILY_DUMP), which is right
-        // for daily-batch Statcast files but wrong here: temperature and wind
-        // genuinely change over the course of a day, so a morning fetch (cooler)
-        // was getting locked in and reused all afternoon even on a hot day,
-        // silently keeping the HR Boost badge at 0% long after conditions crossed
-        // the +5%/-5% thresholds. A short in-memory cache keyed to a 15-minute
-        // bucket keeps this fresh without re-fetching on every 2-minute auto-refresh.
+        // Weather -- see fetchGameWeather's own header comment for why this isn't
+        // routed through fetchJSON() and why the cache is short/in-memory-only.
         const stadium = stadiumCoords[homeAbbr] || stadiumCoords[awayAbbr];
-        let weather = null;
-        // Retractable-roof parks (ARI, HOU, MIA, MIL, SEA, TEX, TOR) are frequently
-        // played open-air, so they still get a live weather fetch — only Tropicana
-        // Field (TB) is a genuine fixed dome that's never open. Open-Meteo has no
-        // live roof-open/closed signal, so this fetches outdoor conditions for those
-        // parks regardless of actual roof state; better than always reporting 0%.
-        if (stadium && (!stadium.dome || stadium.retractable)) {
-          try {
-            const bucket = Math.floor(Date.now() / (15 * 60 * 1000));
-            const wKey = `${homeAbbr}:${bucket}`;
-            let wd = _weatherCache.get(wKey);
-            if (!wd) {
-              // relative_humidity_2m + pressure_msl added for the air-density-based HR
-              // Boost model below (see airDensityHRMult) — pressure_msl (sea-level-
-              // equivalent, not surface_pressure) is deliberate: it isolates today's
-              // weather-system pressure anomaly from each park's permanent elevation,
-              // which the separate Statcast-based park factor already accounts for.
-              // Using raw surface_pressure here would double-count Coors' altitude as
-              // if it were a "weather" effect every single day.
-              const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,relative_humidity_2m,windspeed_10m,winddirection_10m,precipitation,pressure_msl,weathercode&temperature_unit=fahrenheit&windspeed_unit=mph`);
-              if (!res.ok) throw new Error(`HTTP ${res.status}`);
-              wd = await res.json();
-              _weatherCache.set(wKey, wd);
-            }
-            const c = wd.current;
-            weather = {
-              temp: Math.round(c.temperature_2m),
-              humidity: c.relative_humidity_2m,
-              wind: Math.round(c.windspeed_10m),
-              windDir: c.winddirection_10m,
-              precip: c.precipitation,
-              pressureMsl: c.pressure_msl,
-              code: c.weathercode,
-            };
-          } catch {}
-        }
+        const weather = await fetchGameWeather(homeAbbr, awayAbbr);
 
         // Real sportsbook odds (ESPN/DraftKings) — display-only comparison against the
         // DR model's own win%/total. Deliberately NOT an input to awayScore/homeScore or
@@ -5794,7 +5827,15 @@ function getStatcastHotHitterProfile(row) {
   return { ...fallback, ...fromRepo, source:'statcast-repo', onFireScore:Math.max(score, fallback.onFireScore || 0), hotBoostPct:+Math.max(boost, fallback.hotBoostPct || 0).toFixed(1), tags:[...new Set([...tags, ...(fallback.tags||[])])].slice(0,6) };
 }
 function applyHotHitterBoost(row) {
-  const profile = getStatcastHotHitterProfile(row);
+  // loadHRPotential's main per-batter loop already folds the Statcast hot-hitter read
+  // into baseHrProb itself (a bounded, shrunk rate MULTIPLIER applied before the game
+  // simulation runs -- see hotMultApplied/hotProfileSnapshot there) rather than adding a
+  // flat percentage-point boost on top of an already-final probability, which is what
+  // this function still does for its other caller (the Pitcher Report lineup-panel
+  // fallback, whose simpler hrProb(s) has no simulation step to fold a multiplier into).
+  // Reusing the snapshot here (instead of recomputing) also guarantees the badge/tag
+  // display matches exactly what drove the score, not a second independent read of it.
+  const profile = row.hotMultApplied ? (row.hotProfileSnapshot || getStatcastHotHitterProfile(row)) : getStatcastHotHitterProfile(row);
   // Read from the stable, un-boosted baseHrProb rather than the current (possibly
   // already-boosted) row.hrProb. loadHRPotential's progressive render re-applies this
   // to every row seen so far on each debounce cycle (not just newly added ones), so
@@ -5808,7 +5849,9 @@ function applyHotHitterBoost(row) {
   row.hotHitter = profile;
   row.hotBoostPct = boost;
   row.onFireScore = Number(profile.onFireScore || 0);
-  row.hrProb = +clampNum(base + boost, 0, 35).toFixed(1);
+  // hotMultApplied rows already have the hot-hitter effect baked into base (as a rate
+  // multiplier, before simulation) -- adding boost again here would double-count it.
+  row.hrProb = +clampNum(row.hotMultApplied ? base : base + boost, 0, 35).toFixed(1);
   row.isOnFire = row.onFireScore >= 70 || boost >= 4.5;
   row.rosterStatus = profile.rosterStatus || null;
   return row;
@@ -6643,6 +6686,7 @@ async function loadHRPotential() {
     await loadStatcastHotHitters();
     await loadParkFactors().catch(() => {});
     await loadBallparkPalFactors().catch(() => {});
+    await loadHRModelParams().catch(() => {});
     const games = await getTodaySchedule('team,probablePitcher');
     await loadActivePlayerIdsForGames(games).catch(() => {});
 
@@ -6716,6 +6760,17 @@ async function loadHRPotential() {
         if (lastErr) delete boxscoreCache[g.gamePk];
       }
       bd = boxscoreCache[g.gamePk] || null;
+
+      // Weather-based HR multiplier — fetched once per game (not per batter; wind and
+      // air density are a whole-park/whole-game condition, not batter-specific) and
+      // reused by every batter in this game below. Same fetchGameWeather/airDensityHRMult
+      // /windHRMult already computing the DRP "HR Boost" badge — HR Threats never used
+      // weather at all before this, a real gap now that the hot-hitter multiplier fix
+      // shipped. shrinkMult-style clamping already lives inside airDensityHRMult/
+      // windHRMult themselves (+/-15%/+/-20% caps), so this doesn't need its own shrinkage.
+      const gameHomeAbbr = g.teams.home.team.abbreviation, gameAwayAbbr = g.teams.away.team.abbreviation;
+      const gameWeather = await fetchGameWeather(gameHomeAbbr, gameAwayAbbr);
+      const weatherHRMult = gameWeather ? (airDensityHRMult(gameWeather) * windHRMult(gameWeather, gameHomeAbbr)) : 1;
 
       // Process both pitchers in parallel
       await Promise.all([['away','home'],['home','away']].map(async ([side, opp]) => {
@@ -6928,7 +6983,30 @@ async function loadHRPotential() {
           // module) — a real park's effect is real, but PA-level HR rate has enough other
           // noise that a full raw multiply would overcorrect for it.
           const parkAdj = 1 + ((gameParkFactor - 100) / 100) * 0.5;
-          const hrPerPA = ((batterRate*0.6)+(pitcherRate*0.4)) * parkAdj;
+          // Hot-hitter multiplier -- computed here (before the simulation) rather than as
+          // a flat percentage-point add-on afterward (see applyHotHitterBoost below), so a
+          // "hot streak" read moves the underlying per-PA rate the same way every other
+          // input here does, instead of being able to leapfrog a player across score
+          // buckets regardless of how strong the rest of the matchup actually is -- the
+          // calibration report showed exactly that: the 22-24% score bucket underperforming
+          // the 18% bucket in real outcomes. Mirrors scoreForMarket's
+          // battedBallPowerIndex/shrinkMult design server-side (see
+          // scripts/update-tracker.mjs), including reusing its same auto-tuned
+          // HR_MULT_SHRINKAGE constant (hrMultShrinkage, loaded via loadHRModelParams), so
+          // this inherits the same weekly calibration feedback loop instead of an untested
+          // constant nothing ever re-checks against real outcomes. earlyShrunkOps/
+          // earlyFavorable are deliberately self-contained here (not the fuller
+          // shrunkOps/isFavorable computed later below) so this can run before the rest of
+          // the row's stats are assembled, without reordering that existing logic.
+          const earlyShrunkOps = ((parseFloat(s.ops)||0)*hrpSampleWeight) + (0.720*(1-hrpSampleWeight));
+          const earlyFavorable = earlyShrunkOps>=.800 && (pitcherWhip>=1.25 || pitcherAvg>=.260);
+          const hotProfile = getStatcastHotHitterProfile({ id: pid, name: b.player.person?.fullName || '', ops: earlyShrunkOps, last10HR: last10HR||0, streakDays: streakDays||0, isFavorable: earlyFavorable, stats: { slg: s.slg, avg: s.avg } });
+          // 1.0-1.5x, same bound family as battedBallPowerIndex's 0.7-1.5 clamp -- this
+          // signal only ever boosts (never suppresses), matching its previous additive-only
+          // behavior, just applied as a rate multiplier instead of a flat point add-on.
+          const hotMult = 1 + (clampNum(hotProfile.onFireScore, 0, 100) / 100) * 0.5;
+          const shrunkHotMult = 1 + (hotMult - 1) * hrMultShrinkage;
+          const hrPerPA = ((batterRate*0.6)+(pitcherRate*0.4)) * parkAdj * shrunkHotMult * weatherHRMult;
           // Lineup slot (1-9), computed here (not just below with the display battingOrder)
           // so it can feed the per-PA count the HR simulation runs — same 3-digit MLB
           // battingOrder code as the display field derives from.
@@ -6992,6 +7070,7 @@ async function loadHRPotential() {
             teamAbbr, oppAbbr, pitcherName:pitcher.fullName, pitcherId:pitcher.id,
             timeLabel, timeColor, gameTimestamp:dt.getTime(), gamePk:g.gamePk,
             stats:s, todayStats: todayBoxStats, todayHits, todayRBI, todayTB, todaySB, todayRuns, todayHR, last10HR, baseHrProb, hrProb, streakDays, hrVsPitcher,
+            hotMultApplied: true, hotProfileSnapshot: hotProfile,
             avg:finalAvg, hrSeason:hr, ops:shrunkOps, obp:finalObp, slg:finalSlg,
             battingOrder,
             pitcherAvgAllowed: pitcherAvg, pitcherSlgAllowed: pitcherSlg, pitcherWhipAllowed: pitcherWhip,
@@ -10389,255 +10468,6 @@ if (document.readyState === 'loading') {
   window.closeTeamMatchup=closeTeamMatchup;
 })();
 
-/* ---- from <script id="prod-v10-12-hr-k-confidence-engine-js"> ---- */
-(function(){
-  if(window.__DR_V1012_HR_K_ENGINE__) return; window.__DR_V1012_HR_K_ENGINE__=true;
-  return; // disabled: this wrapped renderHRPTable and re-injected a "Confidence Engine" banner ~80ms after every render, which the render's own innerHTML replace kept wiping out — causing visible flicker. Its K-side twin (enhanceK) was already a no-op.
-  function n(v){v=parseFloat(v);return Number.isFinite(v)?v:0}
-  function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
-  function pct(v){return Math.round(clamp(v,1,99))}
-  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-  function f3(v){v=n(v);return v>0?v.toFixed(3).replace(/^0/,''):'–'}
-  function rows(){try{return (window.getProductionPropRows?window.getProductionPropRows():(Array.isArray(window.hrpRows)?window.hrpRows:[])).filter(function(r){return r&&r.name&&(!window.isActiveForHRThreat||window.isActiveForHRThreat(r))})}catch(e){return []}}
-  function kRows(){try{return Array.isArray(window.kPropsData)?window.kPropsData:[]}catch(e){return []}}
-  function hrProb(r){var s=r.stats||{}; var base=n(r.hrProb)||0; var score=base*5.2+n(r.iso)*80+n(r.ops)*10+n(r.hrSeason)*.32+n(r.last10HR)*2.2+(r.isFavorable?7:0)+(r.isOnFire?6:0)+(r.isDue?4:0)-(!r.pitcherId?5:0); return pct(score)}
-  function hrHitChance(r){var p=0.045+(n(r.hrProb)/100)*.72+n(r.iso)*.08+n(r.last10HR)*.006+(r.isFavorable?.018:0)+(r.isOnFire?.014:0)+(r.isDue?.008:0); return clamp(p,.03,.24)}
-  function hrGrade(v){return v>=82?'A+':v>=74?'A':v>=66?'B+':v>=58?'B':v>=48?'C+':'C'}
-  function kConfidence(p){var line=n(p.recommendedOverLine ?? p.ouLine ?? p.compareLine); var proj=n(p.projK); var cushion=proj-line; var prob=n(p.overProb); var k9=n(p.k9); var whip=n(p.whip); var era=n(p.era); var score=(prob||55)+cushion*7+(k9-8)*2+(whip&&whip<1.15?5:0)+(era&&era<3.5?4:0); return pct(score)}
-  function kHitChance(p){var conf=kConfidence(p), line=n(p.recommendedOverLine ?? p.ouLine ?? p.compareLine), proj=n(p.projK), cushion=proj-line; var base=.50+(conf-55)/115+cushion*.025; return clamp(base,.43,.78)}
-  function chip(label,val,cls){return '<span class="dr112-chip '+(cls||'')+'"><span>'+esc(label)+'</span><b>'+esc(val)+'</b></span>'}
-  function hrSummary(){var arr=rows().filter(function(r){return r.topHrThreat||n(r.hrProb)>=5}).sort(function(a,b){return hrProb(b)-hrProb(a)}); if(!arr.length) return ''; var top=arr[0], avg=arr.slice(0,8).reduce(function(a,r){return a+hrProb(r)},0)/Math.min(8,arr.length); return '<div class="dr112-engine" data-dr112="hr-summary"><div class="dr112-engine-head"><div><div class="dr112-title">💣 Home Runs <span>Confidence Engine</span></div><div class="dr112-copy">Keeps the existing HR filters, status labels, and Pitcher Matchup button while adding model confidence, realistic HR hit chance, power profile, and matchup support.</div></div><div class="dr112-score">'+pct(avg)+'%<small>Top Board Grade</small></div></div><div class="dr112-grid"><div class="dr112-metric warn"><b>'+esc(top.name||'–')+'</b><span>Top HR Threat</span></div><div class="dr112-metric"><b>'+pct(hrHitChance(top)*100)+'%</b><span>Realistic HR Chance</span></div><div class="dr112-metric good"><b>'+hrGrade(hrProb(top))+'</b><span>Diamond Grade</span></div><div class="dr112-metric '+(top.isFavorable?'good':'')+'"><b>'+(top.isFavorable?'Favorable':'Neutral')+'</b><span>Matchup Label</span></div></div><div class="dr112-ai"><b>Why this board matters:</b> HR probability is treated as a high-volatility market, so the card separates model grade from realistic hit chance. Power signals include ISO, OPS, season HRs, last-10 power, hot-hitter boost, due/drought tags, park context, and pitcher matchup availability.</div></div>'}
-  function enhanceHR(){var el=document.getElementById('hr-potential-content'); if(!el||!el.querySelector) return; var old=el.querySelector('[data-dr112="hr-summary"]'); if(old) old.remove(); var html=hrSummary(); if(html) el.insertAdjacentHTML('afterbegin',html); rows().forEach(function(r){var tr=document.getElementById('hrp-row-'+r.id); if(!tr||tr.dataset.dr112) return; tr.dataset.dr112='1'; var info=tr.querySelector('.hrp-batter-info'); var cell=tr.querySelector('.hrp-prob-cell'); if(info){ var conf=hrProb(r), chance=pct(hrHitChance(r)*100); info.insertAdjacentHTML('beforeend','<div class="dr112-hr-extra">'+chip('Model',conf+'%',conf>=70?'good':conf>=55?'warn':'')+chip('HR Chance',chance+'%',chance>=14?'warn':'')+chip('Grade',hrGrade(conf),conf>=70?'good':'')+chip('Risk','High','warn')+'<div class="dr112-card-note"><b>Why:</b> '+esc(r.name)+' is scored from HR%, ISO '+f3(r.iso)+', OPS '+f3(r.ops)+', season HR '+(n(r.hrSeason)||'–')+', last-10 HR '+(r.last10HR??'–')+', and '+(r.isFavorable?'a favorable pitcher matchup.':'neutral matchup context.')+'</div></div>'); }
-        if(cell&&!cell.querySelector('.dr112-hr-prob')) cell.insertAdjacentHTML('beforeend','<div class="dr112-hr-prob"><b>'+pct(hrHitChance(r)*100)+'%</b> est. hit</div>'); }); }
-  function kSummary(){var arr=kRows().slice().sort(function(a,b){return kConfidence(b)-kConfidence(a)}); if(!arr.length) return ''; var top=arr[0], avg=arr.slice(0,6).reduce(function(a,p){return a+kConfidence(p)},0)/Math.min(6,arr.length); var line=n(top.recommendedOverLine ?? top.ouLine ?? top.compareLine); return '<div class="dr112-engine dr112-k-note" data-dr112="k-summary"><div class="dr112-engine-head"><div><div class="dr112-title">🎯 Strikeouts <span>Confidence Engine</span></div><div class="dr112-copy">Keeps the Strikeouts labels, line/cushion/K Count boxes, filters/sorting, and matchup controls while adding realistic over probability, Diamond grade, and a clear why-this-play read.</div></div><div class="dr112-score">'+pct(avg)+'%<small>Top K Grade</small></div></div><div class="dr112-grid"><div class="dr112-metric good"><b>'+esc(top.pitcherName||'–')+'</b><span>Top K Read</span></div><div class="dr112-metric"><b>Over '+line+' K</b><span>Active Line</span></div><div class="dr112-metric warn"><b>'+(n(top.projK)-line>=0?'+':'')+(n(top.projK)-line).toFixed(1)+'</b><span>Cushion</span></div><div class="dr112-metric"><b>'+pct(kHitChance(top)*100)+'%</b><span>Realistic Over Chance</span></div></div><div class="dr112-ai"><b>Why this board matters:</b> K props are scored from model projection vs line, over probability, K/9, ERA/WHIP command profile, workload/leash, opponent contact tendency, and live K Count when available.</div></div>'}
-  function enhanceK(){return;var el=document.getElementById('kprops-content'); if(!el||!el.querySelector) return; var old=el.querySelector('[data-dr112="k-summary"]'); if(old) old.remove(); var html=kSummary(); if(html) el.insertAdjacentHTML('afterbegin',html); var map={}; kRows().forEach(function(p){map[String(p.pitcherId)]=p;}); el.querySelectorAll('.kprop-row').forEach(function(row){if(row.dataset.dr112) return; var img=row.querySelector('img[src*="people/"]'); var pid=''; if(img){var m=img.src.match(/people\/(\d+)/); if(m) pid=m[1];} var p=map[pid]; if(!p) return; row.dataset.dr112='1'; var line=n(p.recommendedOverLine ?? p.ouLine ?? p.compareLine), conf=kConfidence(p), chance=pct(kHitChance(p)*100), cushion=(n(p.projK)-line); var holder=row.querySelector('.kprop-pitcher')||row; holder.insertAdjacentHTML('beforeend','<div class="dr112-compact">'+chip('Model',conf+'%',conf>=70?'good':conf>=58?'warn':'')+chip('Over Chance',chance+'%',chance>=63?'good':chance>=54?'warn':'')+chip('Line','O '+line+' K','')+chip('Cushion',(cushion>=0?'+':'')+cushion.toFixed(1),cushion>=1?'good':cushion>=0?'warn':'low')+chip('Risk',conf>=70?'Low':conf>=58?'Medium':'High',conf>=70?'good':conf>=58?'warn':'low')+'</div><div class="dr112-card-note"><b>Why:</b> '+esc(p.pitcherName)+' is graded from projected K count '+esc(p.projK)+', line '+line+', '+esc(p.k9)+' K/9, '+esc(p.era)+' ERA, '+esc(p.whip)+' WHIP, opponent matchup, and current K Count when live.</div>'); }); }
-  function run(){setTimeout(enhanceHR,80);setTimeout(enhanceK,90)}
-  function wrap(name,fn){var old=window[name]; if(typeof old==='function'&&!old.__dr112){var w=function(){var out=old.apply(this,arguments); setTimeout(fn,80); return out}; w.__dr112=true; window[name]=w;}}
-  wrap('renderHRPTable',enhanceHR); wrap('filterHRP',function(){setTimeout(enhanceHR,50)}); wrap('renderKProps',enhanceK); wrap('loadKProps',enhanceK);
-  var oldPane=window.showGamePickPane; if(typeof oldPane==='function'&&!oldPane.__dr112){window.showGamePickPane=function(p){var out=oldPane.apply(this,arguments); if(p==='hr') setTimeout(enhanceHR,120); if(p==='k') setTimeout(enhanceK,120); return out}; window.showGamePickPane.__dr112=true;}
-  document.addEventListener('DOMContentLoaded',function(){setTimeout(run,1200);setTimeout(run,2600);setTimeout(run,5000);});
-})();
-
-/* ---- Monte Carlo prop-line simulator ---- */
-// Simulates a player's plate appearances for a single game using their real,
-// sample-size-shrunk season rate stats, then reports what fraction of simulated games
-// actually clear the market's line - a genuine simulated probability instead of a
-// hand-tuned points formula. Runs entirely client-side against data already on the
-// row object; no extra network calls.
-(function(){
-  if (window.__DR_MONTE_CARLO__) return; window.__DR_MONTE_CARLO__ = true;
-
-  var TRIALS = 3000;
-  var AB_PER_PA = 0.88; // roughly what share of a plate appearance ends as an official at-bat (rest are BB/HBP/SF)
-
-  function n(v, fallback) { v = parseFloat(v); return Number.isFinite(v) ? v : (fallback == null ? 0 : fallback); }
-  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-
-  // Estimated plate appearances for one game from lineup slot - leadoff hitters get
-  // meaningfully more trips than the bottom of the order. Falls back to a league-
-  // average estimate before the lineup posts.
-  function estimatePA(battingOrder) {
-    if (!battingOrder) return 4.2;
-    return clamp(4.75 - (battingOrder - 1) * 0.11, 3.6, 4.75);
-  }
-  window.estimateGamePA = estimatePA;
-
-  // Builds a per-plate-appearance outcome model (out / walk-or-HBP / single / double /
-  // triple / HR) from real season rate stats. avg/obp/slg here are already the sample-
-  // size-shrunk values set on the row by loadHRPotential, so a hot 3-game stretch on a
-  // handful of AB can't produce an unrealistically high simulated probability.
-  function buildBatterModel(row) {
-    var s = row.stats || {};
-    var avg = clamp(n(row.avg, 0.245), 0.120, 0.400);
-    var obp = clamp(n(row.obp, avg + 0.065), avg, 0.500);
-    var slg = clamp(n(row.slg, avg + 0.155), avg, 0.800);
-
-    // Opposing pitcher quality — previously only the standalone HR market blended in a
-    // pitcher signal; Hits/RBI/TB/H+R+RBI simulated purely off the batter's own numbers
-    // with zero matchup awareness (a batter facing a Cy Young candidate and the same
-    // batter facing a last-place bullpen arm got identical odds). Blends the pitcher's
-    // real AVG/SLG allowed into the per-PA model, batter weighted higher since it's the
-    // larger, more reliable sample.
-    var PITCHER_WEIGHT = 0.35;
-    var pitcherAvgAllowed = clamp(n(row.pitcherAvgAllowed, avg), 0.180, 0.320);
-    var pitcherSlgAllowed = clamp(n(row.pitcherSlgAllowed, slg), 0.300, 0.550);
-    var bAvg = avg * (1 - PITCHER_WEIGHT) + pitcherAvgAllowed * PITCHER_WEIGHT;
-    var obpGap = Math.max(0, obp - avg); // preserve the batter's own walk-driven OBP lift
-    var bObp = clamp(bAvg + obpGap, bAvg, 0.5);
-    var bSlg = slg * (1 - PITCHER_WEIGHT) + pitcherSlgAllowed * PITCHER_WEIGHT;
-
-    // Park factor — previously only the standalone HR market accounted for this.
-    // Applied to the extra-base portion of the profile (park effects show up far more in
-    // XBH/HR than in raw contact rate), scaled to half the park factor's deviation from
-    // 100 so an extreme park like Coors' 145 doesn't overwhelm the batter's own profile.
-    var parkAdj = 1 + ((n(row.parkFactor, 100) - 100) / 100) * 0.5;
-    var pSlg = clamp(bAvg + (bSlg - bAvg) * parkAdj, bAvg, 0.9);
-
-    var pHit = bAvg * AB_PER_PA;
-    var pWalk = Math.max(0, bObp - pHit);
-    var seasonAB = n(s.atBats, 0);
-    var seasonHR = n(row.hrSeason, 0);
-    var hrRatePerPA = seasonAB > 0 ? (seasonHR / seasonAB) * AB_PER_PA : pHit * 0.11;
-    var pHR = clamp(hrRatePerPA * parkAdj, 0, pHit * 0.55);
-    var hitBudget = Math.max(0, pHit - pHR);
-    var extraBaseBudget = Math.max(0, (pSlg - bAvg) * AB_PER_PA - pHR * 3);
-    var p3B = hitBudget * 0.025;
-    var p2B = clamp(extraBaseBudget - p3B * 2, 0, hitBudget - p3B);
-    var p1B = Math.max(0, hitBudget - p2B - p3B);
-    var pOut = Math.max(0, 1 - pHit - pWalk);
-    return { pOut: pOut, pWalk: pWalk, p1B: p1B, p2B: p2B, p3B: p3B, pHR: pHR };
-  }
-
-  function simulateGame(model, pa) {
-    var hits = 0, tb = 0, hr = 0;
-    for (var i = 0; i < pa; i++) {
-      var r = Math.random(), c = model.pOut;
-      if (r < c) continue;
-      c += model.pWalk; if (r < c) continue;
-      c += model.p1B; if (r < c) { hits++; tb += 1; continue; }
-      c += model.p2B; if (r < c) { hits++; tb += 2; continue; }
-      c += model.p3B; if (r < c) { hits++; tb += 3; continue; }
-      hits++; tb += 4; hr++;
-    }
-    return { hits: hits, tb: tb, hr: hr };
-  }
-
-  // RBI and Hits+Runs+RBI need more than the batter's own bat - RBI depends on
-  // teammates being on base ahead of them. Rather than fabricate a full lineup
-  // simulation (no real data for the other 8 hitters' game-state), this derives a
-  // per-PA "drives in a run" / "scores a run" rate from the batter's own real power
-  // and contact profile, scaled by the same real lineup-slot opportunity factors this
-  // board already used (2-3-4-5 hitters see far more traffic on base than the top or
-  // bottom of the order).
-  function estimateRBIRatePerPA(row, model) {
-    var slotFactor = ({ 2: 1.15, 3: 1.55, 4: 1.70, 5: 1.40, 6: 1.10 })[row.battingOrder] || 0.85;
-    var base = model.pHR * 1.35 + (model.p2B + model.p3B) * 0.55 + model.p1B * 0.16 + model.pOut * 0.05;
-    return clamp(base * slotFactor, 0.02, 0.42);
-  }
-  function estimateRunRatePerPA(row, model) {
-    var slotFactor = ({ 1: 1.35, 2: 1.25, 3: 1.15, 4: 1.05, 5: 1.0 })[row.battingOrder] || 0.85;
-    return clamp((model.pWalk + model.p1B + model.p2B + model.p3B + model.pHR) * 0.42 * slotFactor, 0.02, 0.45);
-  }
-
-  function poissonSample(lambda) {
-    var L = Math.exp(-lambda), k = 0, p = 1;
-    do { k++; p *= Math.random(); } while (p > L);
-    return k - 1;
-  }
-
-  // Public entry point for Hits / RBI / Total Bases / H+R+RBI / HR: returns a 1-99
-  // probability that this player's simulated per-game output clears the market's line.
-  // Memoized on the row object itself so the same row+market only gets simulated once
-  // per fresh data load, no matter how many times score() is called during a single
-  // render (filter pass, sort comparator, top-N average, card build all call it).
-  window.simulatePropOdds = function(marketType, row) {
-    row.__mcCache = row.__mcCache || {};
-    if (row.__mcCache[marketType] != null) return row.__mcCache[marketType];
-
-    var model = buildBatterModel(row);
-    var pa = estimatePA(row.battingOrder);
-    var rbiRate = estimateRBIRatePerPA(row, model);
-    var runRate = estimateRunRatePerPA(row, model);
-    var successes = 0;
-    for (var t = 0; t < TRIALS; t++) {
-      var gamePA = Math.max(1, Math.round(pa + (Math.random() - 0.5) * 1.6));
-      var g = simulateGame(model, gamePA);
-      var success = false;
-      if (marketType === 'hits') success = g.hits >= 1;
-      else if (marketType === 'tb') success = g.tb >= 2;
-      else if (marketType === 'hr') success = g.hr >= 1;
-      else if (marketType === 'rbis' || marketType === 'hrrbi') {
-        var rbi = 0, runs = 0;
-        for (var i = 0; i < gamePA; i++) {
-          if (Math.random() < rbiRate) rbi++;
-          if (Math.random() < runRate) runs++;
-        }
-        success = marketType === 'rbis' ? rbi >= 1 : (g.hits + runs + rbi) >= 2;
-      }
-      if (success) successes++;
-    }
-    var result = Math.max(1, Math.min(99, Math.round((successes / TRIALS) * 100)));
-    row.__mcCache[marketType] = result;
-    return result;
-  };
-
-  // Stolen bases are opportunity-driven (times reaching base, then an attempt) rather
-  // than a per-PA batting outcome, so this models it as a Poisson process using the
-  // batter's real season SB rate per game, adjusted by the opposing pitcher/catcher's
-  // own running-game suppression (already computed elsewhere on this board) instead of
-  // reusing the per-PA batter model above.
-  window.simulateSBOdds = function(row) {
-    row.__mcCache = row.__mcCache || {};
-    if (row.__mcCache.sb != null) return row.__mcCache.sb;
-
-    var s = row.stats || {};
-    var sb = n(s.stolenBases, 0), cs = n(s.caughtStealing, 0);
-    var att = sb + cs;
-    var successRate = att >= 5 ? sb / att : (sb > 0 ? 0.70 : 0.60);
-    var seasonAB = n(s.atBats, 0);
-    var gamesPlayed = seasonAB > 0 ? Math.max(1, seasonAB / 3.8) : 1; // ~3.8 AB/game typical
-    var sbPerGame = seasonAB > 0 ? (sb / gamesPlayed) : 0;
-    var pAtt = n(row.pitcherSbAllowed, 0) + n(row.pitcherCsAllowed, 0);
-    var batterySuppression = pAtt >= 5 ? clamp(1 - ((n(row.pitcherSbAllowed, 0) / pAtt) - 0.72) * 0.6, 0.7, 1.3) : 1;
-    var lambda = clamp(sbPerGame * batterySuppression, 0.01, 1.2);
-
-    var successes = 0;
-    for (var t = 0; t < TRIALS; t++) {
-      var attempts = poissonSample(lambda);
-      var stolen = 0;
-      for (var i = 0; i < attempts; i++) if (Math.random() < successRate) stolen++;
-      if (stolen >= 1) successes++;
-    }
-    var result = Math.max(1, Math.min(99, Math.round((successes / TRIALS) * 100)));
-    row.__mcCache.sb = result;
-    return result;
-  };
-  // "At least one HR across N independent plate appearances at a constant per-PA
-  // rate" has an exact closed-form probability (1 - (1-p)^N) — no need to simulate
-  // it. This used to run a fresh Math.random()-driven Monte Carlo on every call
-  // (including every periodic background refresh), so the same batter with
-  // identical stats could show a visibly different % every few minutes for no
-  // real reason. gamePA itself was randomized around the base PA estimate
-  // (pa ± 0.8, uniform), so paDistribution() computes the exact probability of
-  // each possible PA count instead of sampling it, and the final probability is
-  // the weighted average of 1-(1-p)^PA across that distribution. Verified against
-  // the old 50,000-trial Monte Carlo output — matches exactly.
-  function paDistribution(pa) {
-    var lo = pa - 0.8, hi = pa + 0.8;
-    var kMin = Math.floor(lo - 0.5), kMax = Math.ceil(hi + 0.5);
-    var dist = {};
-    for (var k = Math.max(1, kMin); k <= kMax; k++) {
-      var segLo = Math.max(lo, k - 0.5);
-      var segHi = Math.min(hi, k + 0.5);
-      var overlap = Math.max(0, segHi - segLo);
-      if (overlap > 0) {
-        var kk = Math.max(1, k);
-        dist[kk] = (dist[kk] || 0) + overlap / 1.6;
-      }
-    }
-    return dist;
-  }
-  window.simulateHRGameOdds = function(pPerPA, battingOrder) {
-    pPerPA = clamp(n(pPerPA, 0.03), 0, 0.5);
-    var dist = paDistribution(estimatePA(battingOrder));
-    var prob = 0;
-    for (var k in dist) { prob += dist[k] * (1 - Math.pow(1 - pPerPA, Number(k))); }
-    // Was hard-capped at 25 with no floor, unlike every other market's 1-99 range —
-    // real per-game HR probability for a genuinely elite matchup can exceed 25%, so
-    // the old cap flattened great and mediocre matchups into the same narrow band
-    // and made ranking/selection nearly meaningless. See Elite Picks HR record audit.
-    return Math.max(1, Math.min(99, Math.round(prob * 100)));
-  };
-  window.simulateKOdds = function(projK, line) {
-    var lambda = clamp(n(projK, 4.5), 0.3, 15);
-    var threshold = n(line, Math.floor(lambda));
-    var successes = 0;
-    for (var t = 0; t < TRIALS; t++) {
-      if (poissonSample(lambda) > threshold) successes++;
-    }
-    return Math.max(1, Math.min(99, Math.round((successes / TRIALS) * 100)));
-  };
-})();
 
 /* ---- from <script id="prod-v10-30-prop-hit-highlight-js"> ---- */
 (function(){
@@ -10840,7 +10670,96 @@ if (document.readyState === 'loading') {
     if (s.last10HomeRuns != null && s.last10HomeRuns !== '') return s.last10HomeRuns;
     return null;
   }
-  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); populateHRGameSelect(base); if(!base.length){el.innerHTML='<div class="mu-empty">No HR potential data yet — check back once lineups are posted.</div>';return;} var completedOnly=!!window.__hrpShowCompletedOnly; var arr=applyHRFilters(base).filter(function(r){return completedOnly ? isHit('hr',r) : (!isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL');}).sort(function(a,b){return n(b.hrProb)-n(a.hrProb);}); if(!arr.length){el.innerHTML='<div class="mu-empty" style="padding:24px">'+(completedOnly?'No completed home runs yet today. Check back once games are underway.':'No players match the selected filters. Try fewer filters, or select ALL to reset.')+'</div>';return;} var cards=arr.map(function(r){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); var l10=dr113Last10HRValue(r); var bpPct=ballparkPalFactorForPlayer(r.gamePk,r.id); var stats=[hrChip('HR Prob',p.toFixed(1)+'%','green'),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1),'gold'):'',bpPct!=null?hrChip('Ballpark Pal',(bpPct>0?'+':'')+bpPct+'%',bpPct>0?'green':bpPct<0?'red':''):''].filter(Boolean); return '<div class="dr1027-hr-card '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="cursor:pointer" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="if(!event.target.closest(\'button,a\')){var d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName);}">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-why" id="hrp-scout-'+esc(r.id)+'-'+esc(r.pitcherId||0)+'">'+(r.pitcherId?'<span class="spin"></span> Loading scouting report\u2026':'<span style="color:var(--muted)">No opposing pitcher assigned yet \u2014 scouting report unavailable.</span>')+'</div></div>'; }).join(''); el.innerHTML=hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; arr.forEach(function(r){ if(!r.pitcherId) return; loadHRScoutingReport(r.id,r.name,r.pitcherId,r.pitcherName).then(function(html){ var t=document.getElementById('hrp-scout-'+r.id+'-'+r.pitcherId); if(t) t.innerHTML=html; }); }); }
+  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); populateHRGameSelect(base); if(!base.length){el.innerHTML='<div class="mu-empty">No HR potential data yet — check back once lineups are posted.</div>';return;} var completedOnly=!!window.__hrpShowCompletedOnly; var arr=applyHRFilters(base).filter(function(r){return completedOnly ? isHit('hr',r) : (!isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL');}).sort(function(a,b){return n(b.hrProb)-n(a.hrProb);}); arr.forEach(function(r){window.__hrCompareRows[String(r.id)]=r;}); if(!arr.length){el.innerHTML='<div class="mu-empty" style="padding:24px">'+(completedOnly?'No completed home runs yet today. Check back once games are underway.':'No players match the selected filters. Try fewer filters, or select ALL to reset.')+'</div>';return;} var cards=arr.map(function(r){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); var l10=dr113Last10HRValue(r); var bpPct=ballparkPalFactorForPlayer(r.gamePk,r.id); var stats=[hrChip('HR Prob',p.toFixed(1)+'%','green'),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1),'gold'):'',bpPct!=null?hrChip('Ballpark Pal',(bpPct>0?'+':'')+bpPct+'%',bpPct>0?'green':bpPct<0?'red':''):''].filter(Boolean); return '<div class="dr1027-hr-card '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="cursor:pointer" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="if(!event.target.closest(\'button,a\')){var d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName);}">'+window.drWatchStarHTML(r.id,r.name)+'<label class="dr1027-hr-compare" onclick="event.stopPropagation()" title="Add to Compare"><input type="checkbox" '+(window.drHRCompareHas&&window.drHRCompareHas(r.id)?'checked':'')+' onchange="drHRCompareToggle(\''+esc(r.id)+'\',this.checked)"><span>Compare</span></label>'+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-why" id="hrp-scout-'+esc(r.id)+'-'+esc(r.pitcherId||0)+'">'+(r.pitcherId?'<span class="spin"></span> Loading scouting report\u2026':'<span style="color:var(--muted)">No opposing pitcher assigned yet \u2014 scouting report unavailable.</span>')+'</div></div>'; }).join(''); el.innerHTML=hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; arr.forEach(function(r){ if(!r.pitcherId) return; loadHRScoutingReport(r.id,r.name,r.pitcherId,r.pitcherName).then(function(html){ var t=document.getElementById('hrp-scout-'+r.id+'-'+r.pitcherId); if(t) t.innerHTML=html; }); }); hrCompareUpdateBar(); }
+
+  // ── HR Threats compare tray ─────────────────────────────────────────────
+  // Lets a user shortlist up to HR_COMPARE_MAX cards (checkbox per card, added
+  // right next to the watchlist star) and see them ranked head-to-head in a
+  // modal. Deliberately reuses the exact hrProb score/grade/chips already
+  // computed for the board -- no separate calculation, just a focused re-read
+  // of players the user has already scouted individually. window.__hrCompareRows
+  // is keyed by String(id) and repopulated on every render so the modal always
+  // reflects the latest live data for whichever cards are currently checked;
+  // window.__hrCompareSet only tracks *which* ids are selected and persists
+  // across re-renders/filters the same way the existing filter Set does.
+  var HR_COMPARE_MAX = 6;
+  window.__hrCompareSet = window.__hrCompareSet || new Set();
+  window.__hrCompareRows = window.__hrCompareRows || {};
+  window.drHRCompareHas = function(id){ return window.__hrCompareSet.has(String(id)); };
+  function hrCompareUpdateBar(){
+    var bar = document.getElementById('hr-compare-bar'); if(!bar) return;
+    var size = window.__hrCompareSet.size;
+    if(!size){ bar.style.display='none'; return; }
+    bar.style.display='flex';
+    var countEl = document.getElementById('hr-compare-count');
+    if(countEl) countEl.textContent = size + (size===1?' player selected':' players selected') + ' (max '+HR_COMPARE_MAX+')';
+    var btn = document.getElementById('hr-compare-open-btn');
+    if(btn) btn.disabled = size < 2;
+  }
+  window.drHRCompareToggle = function(id, checked){
+    id = String(id);
+    if(checked){
+      if(window.__hrCompareSet.size >= HR_COMPARE_MAX){
+        var row = document.getElementById('hrp-row-'+id);
+        var cb = row && row.querySelector('.dr1027-hr-compare input[type=checkbox]');
+        if(cb) cb.checked = false;
+        var countEl = document.getElementById('hr-compare-count');
+        if(countEl){ countEl.textContent = 'Max '+HR_COMPARE_MAX+' players — remove one first'; setTimeout(hrCompareUpdateBar, 1800); }
+        return;
+      }
+      window.__hrCompareSet.add(id);
+    } else {
+      window.__hrCompareSet.delete(id);
+    }
+    hrCompareUpdateBar();
+  };
+  window.drHRCompareClear = function(){
+    window.__hrCompareSet.clear();
+    document.querySelectorAll('.dr1027-hr-compare input[type=checkbox]:checked').forEach(function(cb){ cb.checked=false; });
+    hrCompareUpdateBar();
+  };
+  window.drHRCompareOpen = function(){
+    if(window.__hrCompareSet.size < 2) return;
+    var overlay = document.getElementById('hr-compare-modal-overlay');
+    var body = document.getElementById('hr-compare-modal-body');
+    var sub = document.getElementById('hr-compare-modal-sub');
+    if(!overlay || !body) return;
+    var picks = Array.from(window.__hrCompareSet)
+      .map(function(id){ return window.__hrCompareRows[id]; })
+      .filter(Boolean)
+      .sort(function(a,b){ return n(b.hrProb)-n(a.hrProb); });
+    if(!picks.length) return;
+    if(sub) sub.textContent = picks.length + ' players compared, ranked by HR Probability';
+    body.innerHTML = picks.map(function(r, i){
+      var p = n(r.hrProb);
+      var badges = [];
+      if(i===0) badges.push('<span class="hr-compare-best">👑 BEST HR PICK</span>');
+      if(r.isOnFire) badges.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red'));
+      if(r.isDue) badges.push(labelChip('⚡ DUE','YES','gold'));
+      if(r.isDrought) badges.push(labelChip('❄️ DROUGHT','YES','red'));
+      if(r.isFavorable) badges.push(labelChip('✅ FAVORABLE','MATCHUP','green'));
+      var l10 = dr113Last10HRValue(r);
+      var stats = [hrChip('Season HR', r.hrSeason||'–',''), hrChip('Last 10 HR', l10==null?'–':l10, n(l10)>=2?'green':''), hrChip('OPS', fmt3(r.ops), n(r.ops)>=.850?'green':''), hrChip('ISO', fmt3(r.iso), n(r.iso)>=.200?'gold':'')].filter(Boolean);
+      return '<div class="hr-compare-row'+(i===0?' hr-compare-top':'')+'">'
+        +'<div class="hr-compare-rank">#'+(i+1)+'</div>'
+        +'<img class="hr-compare-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt="">'
+        +'<div class="hr-compare-main">'
+          +'<div class="hr-compare-name">'+esc(r.name||'–')+'</div>'
+          +'<div class="hr-compare-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div>'
+          +'<div class="hr-compare-badges">'+badges.join('')+stats.join('')+'</div>'
+        +'</div>'
+        +'<div class="hr-compare-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Prob</span><em>GRADE '+grade(p)+'</em></div>'
+      +'</div>';
+    }).join('');
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  };
+  window.closeHRCompare = function(){
+    var overlay = document.getElementById('hr-compare-modal-overlay');
+    if(overlay) overlay.style.display = 'none';
+    document.body.style.overflow = '';
+  };
+
   function setHRFilter(f){ var s=getFilters(); if(f==='all')s.clear(); else { if(s.has(f))s.delete(f); else s.add(f); } renderHRPTableV1032(); }
   window.renderHRPTable=renderHRPTableV1032;
   window.filterHRP=setHRFilter;
@@ -11638,68 +11557,6 @@ if (document.readyState === 'loading') {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup, {once:true}); else setup();
 })();
 
-/* ---- from <script id="prod-v10-9-expanded-analytics-js"> ---- */
-(function(){
-  if(window.__DR_V109_EXPANDED__) return; window.__DR_V109_EXPANDED__=true;
-  function n(v){v=parseFloat(v);return Number.isFinite(v)?v:0}
-  function pct(v){return Math.max(1,Math.min(99,Math.round(v)))}
-  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-  function f(v,d){v=n(v); if(!v) return '–'; return v.toFixed(d==null?3:d).replace(/^0(?=\.)/,'')}
-  function int(v){v=n(v); return v?String(Math.round(v)):'–'}
-  function head(id){return id?'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_84,q_auto:best/v1/people/'+id+'/headshot/67/current':''}
-  function rows(){try{return (window.getProductionPropRows?window.getProductionPropRows():(window.hrpRows||[])).filter(function(r){return !window.isActiveForHRThreat||window.isActiveForHRThreat(r)})}catch(e){return []}}
-  function score(type,r){
-    var s=r.stats||{},
-        avg=n(r.avg), ops=n(r.ops), iso=n(r.iso), hr=n(r.hrSeason), prob=n(r.hrProb),
-        obp=n(r.obp||s.obp), slg=n(r.slg||s.slg),
-        sb=n(s.stolenBases), cs=n(s.caughtStealing), l10=n(r.last10HR);
-    var base=50;
-    var pAvgAllowed = r.pitcherAvgAllowed || .260, pSlgAllowed = r.pitcherSlgAllowed || .400;
-    var bo = r.battingOrder;
-    if(type==='hits'){
-      var paBoost = bo ? Math.max(0,(6-bo))*.7 : 0;
-      base = 38 + avg*120 + ops*8 + obp*12 + (pAvgAllowed-.260)*70 + paBoost + (r.isFavorable?4:0);
-    }
-    if(type==='rbis'){
-      var rbiSlot = bo ? ({2:4,3:9,4:11,5:8,6:4}[bo]||0) : 0;
-      base = 35 + ops*10 + iso*72 + hr*.8 + prob*.35 + rbiSlot + (r.topHrThreat?4:0);
-    }
-    if(type==='tb'){
-      var parkBoost = r.parkFactor ? (r.parkFactor-100)*.12 : 0;
-      base = 36 + ops*8 + iso*96 + prob*.45 + l10*2 + slg*8 + (pSlgAllowed-.400)*45 + parkBoost;
-    }
-    if(type==='sb'){
-      var att = sb+cs;
-      var sbRate = att>=5 ? sb/att : (sb>0?0.70:0.60);
-      var pAtt = (r.pitcherSbAllowed||0)+(r.pitcherCsAllowed||0);
-      var battery = pAtt>=5 ? (((r.pitcherSbAllowed||0)/pAtt)-0.72)*22 : 0;
-      base = 26 + Math.min(sb,20)*1.6 + sbRate*22 + avg*26 + obp*18 + battery + (String(r.pos||'').match(/SS|CF|2B|LF|RF/)?6:0);
-    }
-    if(type==='hrrbi'){
-      var lineupBoost = bo ? Math.max(0, 5-Math.abs(bo-3))*1.3 : 0;
-      base = 42 + avg*55 + ops*9 + hr*.45 + prob*.32 + (r.isFavorable?5:0) + obp*8 + lineupBoost;
-    }
-    return pct(base);
-  }
-  function label(type){return {hits:'Hits',rbis:'RBIs',tb:'Total Bases',sb:'Stolen Bases',hrrbi:'Hits+Runs+RBI',hr:'Home Runs'}[type]||'Prop'}
-  function line(type){return {hits:'Over 0.5 Hits',rbis:'Over 0.5 RBI',tb:'Over 1.5 Total Bases',sb:'Over 0.5 SB',hrrbi:'Over 1.5 H+R+RBI',hr:'HR Anytime / 1+ Total Base'}[type]||'Line'}
-  function chips(type,r){var s=r.stats||{},avg=n(r.avg),ops=n(r.ops),iso=n(r.iso),obp=n(s.obp),slg=n(s.slg),hr=n(r.hrSeason),prob=n(r.hrProb),sb=n(s.stolenBases),rbi=n(s.rbi||s.runsBattedIn),runs=n(s.runs),hits=n(s.hits);var a=[];
-    if(type==='hits')a=[['Line',line(type),'good'],['AVG',f(avg),''],['xBA proxy',f(avg+(r.isFavorable?.012:0)),'good'],['OBP',f(obp),''],['Contact',pct(66+avg*80)+'%','good'],['K Avoid',pct(72-n(s.strikeOuts)*.04)+'%',''],['PA Est','4.1',''],['Park','Neutral','']];
-    if(type==='rbis')a=[['Line',line(type),'good'],['RBI',int(rbi),''],['RISP proxy',pct(42+ops*20)+'%','good'],['Run Env',r.isFavorable?'Plus':'Neutral',r.isFavorable?'good':''],['OPS',f(ops),''],['ISO',f(iso),'warn'],['Team Stack','Supported',''],['Lineup','Middle/Power','']];
-    if(type==='tb')a=[['Line',line(type),'good'],['SLG',f(slg),''],['xSLG proxy',f(slg+iso*.12),'good'],['ISO',f(iso),'warn'],['Hard Hit',pct(28+iso*90)+'%',''],['Barrel proxy',pct(5+prob*.12)+'%','warn'],['XBH Upside',hr>=15?'High':'Med',hr>=15?'warn':''],['Park Factor','Checked','']];
-    if(type==='sb')a=[['Line',line(type),'good'],['SB',int(sb),'good'],['OBP',f(obp),''],['Speed proxy',pct(48+sb*2.2)+'%','good'],['Catcher/Pitcher','Tracked',''],['Attempts',sb>=10?'Aggressive':'Selective',sb>=10?'good':''],['Game Script','Run lane',''],['Risk','Volatile','warn']];
-    if(type==='hrrbi')a=[['Line',line(type),'good'],['Hits',int(hits),''],['Runs',int(runs),''],['RBI',int(rbi),''],['OPS',f(ops),'good'],['OBP',f(obp),''],['SLG',f(slg),''],['Run Env',r.isFavorable?'Plus':'Neutral',r.isFavorable?'good':'']];
-    return a.map(function(x){return '<span class="dr109-chip '+(x[2]||'')+'"><span>'+esc(x[0])+':</span><strong>'+esc(x[1])+'</strong></span>'}).join('')}
-  function reason(type,r,sc){var nm=esc(r.name||'This player'),opp=esc(r.oppAbbr||'opponent');var map={hits:'contact profile, on-base skill, projected plate appearances, and matchup quality',rbis:'RBI lane, team run environment, power profile, and traffic ahead of the bat',tb:'slugging upside, ISO, hard-contact indicators, and extra-base-hit path',sb:'speed profile, on-base path, opponent running-game weakness, and game script',hrrbi:'combined production path from contact, runs, RBI lane, and lineup context'};return '<b>Why it supports the line:</b> '+nm+' grades at '+sc+'% for '+line(type)+' because the model combines '+map[type]+'. Opponent context: '+opp+'.'}
-  function propSummary(type,arr){var top=arr[0],avg=arr.reduce(function(a,b){return a+score(type,b)},0)/Math.max(1,arr.length);return '<div class="dr109-summary"><div class="dr109-title">📊 Expanded '+label(type)+' Data</div><p class="dr109-copy">This board now shows line support, matchup context, recent-form proxies, Statcast-style power/contact indicators, and a plain-English reason for each play. Values are generated from the active production rows so they stay fast and do not add external load time.</p><div class="dr109-grid"><div class="dr109-metric good"><b>'+esc(top&&top.name||'–')+'</b><span>Top Rated</span></div><div class="dr109-metric"><b>'+Math.round(avg)+'%</b><span>Board Avg Confidence</span></div><div class="dr109-metric"><b>'+arr.length+'</b><span>Players Scanned</span></div><div class="dr109-metric warn"><b>'+line(type)+'</b><span>Primary Line</span></div></div></div>'}
-  function renderProps(type,id){var el=document.getElementById(id); if(!el) return; var arr=rows().slice().sort(function(a,b){return score(type,b)-score(type,a)}).slice(0,24); if(!arr.length){el.innerHTML='<div class="mu-empty">Loading expanded '+label(type)+' analytics…</div>';return} el.innerHTML=propSummary(type,arr)+arr.map(function(r){var sc=score(type,r);return '<div class="dr109-card"><div class="dr109-card-head"><div class="dr109-player"><img loading="lazy" src="'+head(r.id)+'" onerror="this.style.display=\'none\'" alt=""><div style="min-width:0"><div class="dr109-name">'+esc(r.name||'Player')+'</div><div class="dr109-meta">'+esc(r.teamAbbr||'')+' · '+esc(r.pos||'')+' · vs '+esc(r.oppAbbr||'')+'</div></div></div><div class="dr109-score">'+sc+'%<small>'+esc(label(type))+' Edge</small></div></div><div class="dr109-chiprow">'+chips(type,r)+'</div><div class="dr109-reason">'+reason(type,r,sc)+'</div></div>'}).join('')}
-  /* v10.9 legacy renderer disabled: it lacked the Projection Hit checkmark logic added later and was clobbering the correct renderer. */
-  function hrEnhance(){ return; /* disabled: this banner kept appearing/disappearing because the main HR renderer wipes it on every refresh */ var el=document.getElementById('hr-potential-content'); if(!el||el.dataset.dr109) return; var arr=rows().slice().sort(function(a,b){return n(b.hrProb)-n(a.hrProb)}).slice(0,10); if(!arr.length) return; el.dataset.dr109='1'; el.insertAdjacentHTML('afterbegin','<div class="dr109-summary"><div class="dr109-title">💣 Expanded Home Runs Data</div><p class="dr109-copy">Home Runs now highlights HR probability, ISO, slugging, projected barrel path, hard-hit profile, park/weather read, pitcher HR allowance context, and matchup support before the live HR table.</p><div class="dr109-grid"><div class="dr109-metric warn"><b>'+esc(arr[0].name||'–')+'</b><span>Top HR Threat</span></div><div class="dr109-metric"><b>'+f(arr[0].hrProb,1)+'%</b><span>HR Probability</span></div><div class="dr109-metric"><b>'+f(arr[0].iso)+'</b><span>ISO</span></div><div class="dr109-metric good"><b>'+esc(arr[0].isFavorable?'Favorable':'Neutral')+'</b><span>Matchup</span></div></div></div>')}
-  function strikeEnhance(){ return; /* disabled: kprops-content is fully rebuilt on every render, wiping this banner right after it appears */ var el=document.getElementById('kprops-content'); if(!el||el.dataset.dr109) return; el.dataset.dr109='1'; el.insertAdjacentHTML('afterbegin','<div class="dr109-summary"><div class="dr109-title">🎯 Expanded Strikeout Data</div><p class="dr109-copy">Strikeouts now supports each line with K line, projected K count, cushion, opponent K tendency, WHIP/ERA context, CSW/whiff proxies, pitch-count leash, rest profile, and risk notes.</p><div class="dr109-grid"><div class="dr109-metric good"><b>Line</b><span>K Prop Support</span></div><div class="dr109-metric"><b>Cushion</b><span>Projection vs Line</span></div><div class="dr109-metric warn"><b>Whiff</b><span>Pitch-Type Upside</span></div><div class="dr109-metric"><b>Risk</b><span>Walks / Pitch Count</span></div></div></div>')}
-  function runEnhance(){try{ hrEnhance(); strikeEnhance(); }catch(e){}}
-  var oldPane=window.showGamePickPane; if(typeof oldPane==='function'){window.showGamePickPane=function(p){var out=oldPane.apply(this,arguments); setTimeout(function(){ if(['hits','rbis','tb','sb','hrrbi'].indexOf(p)>=0) window.renderPropIntelligencePanes(); if(p==='hr') hrEnhance(); if(p==='k') strikeEnhance(); },120); setTimeout(runEnhance,900); return out;}}
-  document.addEventListener('DOMContentLoaded',function(){setTimeout(runEnhance,900);});
-})();
 
 /* ---- from <script id="prod-v10-15-mobile-horizontal-containment-js"> ---- */
 (function(){

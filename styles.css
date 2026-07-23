@@ -4105,3 +4105,126 @@ select:focus-visible {
     display: none !important;
   }
 }
+
+/* HR Threats compare tray -- per-card checkbox, floating selection bar, and the
+   ranked-comparison modal. See app.js's drHRCompare* functions. */
+.dr1027-hr-card { position: relative; }
+.dr1027-hr-compare {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 20px;
+  background: rgba(8, 8, 18, .75);
+  border: 1px solid var(--border);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+.dr1027-hr-compare input[type="checkbox"] {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.dr1027-hr-compare:has(input:checked) {
+  background: rgba(47, 107, 255, .2);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+#hr-compare-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(13, 13, 30, .97), rgba(6, 6, 15, .97));
+  border: 1px solid var(--accent);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .45);
+  max-width: calc(100vw - 24px);
+}
+#hr-compare-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+.hr-compare-bar-actions { display: flex; gap: 8px; flex-shrink: 0; }
+#hr-compare-open-btn {
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+}
+#hr-compare-open-btn:disabled { opacity: .45; cursor: not-allowed; }
+.hr-compare-clear-btn {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.hr-compare-row {
+  display: grid;
+  grid-template-columns: 28px 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(13, 13, 30, .6);
+  margin-bottom: 10px;
+}
+.hr-compare-row.hr-compare-top {
+  border-color: #f5b942;
+  box-shadow: 0 0 0 1px rgba(245, 185, 66, .3), 0 8px 24px rgba(245, 185, 66, .08);
+}
+.hr-compare-rank { font-size: 13px; font-weight: 800; color: var(--muted); text-align: center; }
+.hr-compare-top .hr-compare-rank { color: #f5b942; }
+.hr-compare-photo { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: var(--surface2); }
+.hr-compare-name { font-size: 13px; font-weight: 800; color: var(--text); }
+.hr-compare-meta { font-size: 10.5px; color: var(--muted); margin-top: 1px; }
+.hr-compare-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.hr-compare-best {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: rgba(245, 185, 66, .16);
+  border: 1px solid #f5b942;
+  color: #f5b942;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .03em;
+}
+.hr-compare-score { text-align: right; min-width: 64px; }
+.hr-compare-score strong { display: block; font-size: 17px; font-weight: 900; color: var(--green); }
+.hr-compare-score span { display: block; font-size: 8.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.hr-compare-score em { display: block; font-size: 8.5px; font-style: normal; color: var(--accent2); margin-top: 1px; }
+
+@media (max-width: 560px) {
+  .hr-compare-row { grid-template-columns: 24px 36px minmax(0, 1fr); }
+  .hr-compare-score { grid-column: 1 / -1; text-align: left; display: flex; align-items: baseline; gap: 6px; margin-top: 6px; }
+  .hr-compare-score span, .hr-compare-score em { display: inline; }
+  #hr-compare-bar { left: 10px; right: 10px; transform: none; max-width: none; }
+}

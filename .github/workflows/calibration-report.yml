@@ -1,7 +1,8 @@
 name: Weekly model calibration report
 
-# Runs analyze-hr-matchups.mjs / analyze-k-matchups.mjs / analyze-elite-matchups.mjs /
-# analyze-drp-matchups.mjs against the graded picks already sitting in data/tracker.json
+# Runs analyze-hr-matchups.mjs / analyze-k-matchups.mjs / analyze-drp-matchups.mjs
+# (Game Projections, HR Threats, K Props -- the three markets actually offered on the
+# site) against the graded picks already sitting in data/tracker.json
 # and commits the combined output as data/calibration-report.md — a durable, versioned,
 # always-current record of whether each market's real hit rate actually tracks its
 # predicted confidence, without anyone needing to remember to run the scripts by hand.
@@ -63,12 +64,6 @@ jobs:
             echo
             echo '```'
             node scripts/analyze-k-matchups.mjs
-            echo '```'
-            echo
-            echo "## Elite Picks"
-            echo
-            echo '```'
-            node scripts/analyze-elite-matchups.mjs
             echo '```'
             echo
             echo "## Diamond Report Pick (game winner)"
