@@ -3823,8 +3823,8 @@ async function loadGameProps() {
         <!-- HR Boost + Park Factor labels, same compact chip style as Key factors below -->
         <div class="gp-factors">${hrBoostChip}${parkFactorChip}${marketChip}${bullpenChip}${factorChips}</div>
         <button class="btn-lineup dr1027-details-btn" onclick="toggleGameDetails(this)" style="margin-top:8px">▼ PARK &amp; WEATHER DETAILS</button>
-        <button class="btn-lineup" onclick="event.stopPropagation();openTeamMatchup(${awayTeamId},${homeTeamId},'${awayTeamName}','${homeTeamName}','${awayAbbr}','${homeAbbr}')" style="margin-top:8px">⚖ TEAM PERFORMANCE</button>
         <div class="gp-details-panel pr-expand-panel" style="display:none;margin-top:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px">${parkWeatherHTML}</div>
+        <button class="btn-lineup" onclick="event.stopPropagation();openTeamMatchup(${awayTeamId},${homeTeamId},'${awayTeamName}','${homeTeamName}','${awayAbbr}','${homeAbbr}')" style="margin-top:8px">⚖ TEAM PERFORMANCE</button>
         <div class="gp-live-result-zone" data-live-score-badge="1" style="margin-top:8px">${resultBadge || ''}</div>
       </div>`, resultCorrect };
     }));
