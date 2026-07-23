@@ -916,6 +916,15 @@ const PITCHER_2K_SUPPRESSION_PATH = path.join(__dirname, '..', 'data', 'pitcher-
 const LEAGUE_AVG_XSLG = 0.400; // same scale as LEAGUE_AVG_SLG; MLB-wide xSLG runs close to actual SLG
 const LEAGUE_AVG_HARD_HIT_PCT = 36; // percent; roughly MLB seasonal average hard-hit rate
 const STATCAST_MIN_PITCHES = 100; // below this, a player's aggregate is too thin a sample to trust
+// data/statcast-hot-hitters.json -- the exact same file (and sync-statcast-hot-hitters.mjs
+// schema) app.js's loadStatcastHotHitters() fetches client-side to drive the HR Threats
+// "hot hitter" read. Read directly off disk here (this script already runs from a checked-
+// out repo, same as every other data/*.json read in this file) so computeLiveHRScore below
+// can be an exact, verifiable port of the live client formula -- not a second, independently
+// -drifting approximation of it -- for the sole purpose of letting analyze-hr-matchups.mjs
+// calibration-check what site visitors actually see, not just this file's own (better-
+// designed but different) scoreForMarket formula.
+const STATCAST_HOT_HITTERS_PATH = path.join(__dirname, '..', 'data', 'statcast-hot-hitters.json');
 
 // Both files store xSLG/hard-hit% per pitch-type row (batter: seasonPitchTypeStats,
 // pitcher: byPitch) -- this aggregates either one into a single pitches-weighted
@@ -952,6 +961,26 @@ async function loadStatcastPowerIndex() {
     console.warn('Statcast power index: failed to load, HR scoring will use box-score rates only:', e.message);
   }
   return statcastPowerCache;
+}
+
+let statcastHotHittersCache = null;
+async function loadStatcastHotHittersIndex() {
+  if (statcastHotHittersCache) return statcastHotHittersCache;
+  statcastHotHittersCache = new Map();
+  try {
+    const raw = await readFile(STATCAST_HOT_HITTERS_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    const list = Array.isArray(data.players) ? data.players : [];
+    // Same dual-key (id + lowercased name) lookup as app.js's statcastHotHitters, since
+    // callers here look batters up by whichever key they have on hand, same as there.
+    list.forEach(p => {
+      if (p.playerId) statcastHotHittersCache.set(String(p.playerId), p);
+      if (p.name) statcastHotHittersCache.set(String(p.name).toLowerCase(), p);
+    });
+  } catch (e) {
+    console.warn('Statcast hot-hitters index: failed to load, live HR score will use fallback profiles only:', e.message);
+  }
+  return statcastHotHittersCache;
 }
 
 let pitcherStatcastPowerCache = null;
@@ -1393,6 +1422,80 @@ function shrinkMult(m) {
   return 1 + (m - 1) * modelParams.HR_MULT_SHRINKAGE;
 }
 
+// ── Live client HR score (exact port of app.js's HR Threats formula) ──────────────
+// scoreForMarket('hr') above is this file's OWN, more sophisticated HR scoring, used
+// for actual pick selection/grading -- but it's never been what a site visitor sees.
+// The live board runs a separate, simpler client-side formula (loadHRPotential in
+// app.js). computeLiveHRScore below is a line-for-line port of that formula (not a
+// rewrite/approximation) purely so captureHRThreatToday can snapshot it alongside the
+// real `score`, letting analyze-hr-matchups.mjs calibration-check what users actually
+// see instead of only this file's internal scoring. See app.js's
+// buildFallbackHotHitterProfile/getStatcastHotHitterProfile/loadHRPotential (the
+// hrPerPA/hotMult block) for the original this mirrors.
+function liveFallbackHotHitterProfile(ops, iso, last10HR, isFavorable) {
+  return clamp(
+    (ops >= .900 ? 22 : ops >= .820 ? 16 : ops >= .760 ? 10 : 0) +
+    (iso >= .260 ? 22 : iso >= .210 ? 16 : iso >= .170 ? 9 : 0) +
+    (last10HR >= 3 ? 26 : last10HR >= 2 ? 18 : last10HR >= 1 ? 10 : 0) +
+    // streakDays (consecutive-day HR streak) isn't computed by buildEliteBatterPool --
+    // this file has no equivalent input -- so that addend (up to +14 client-side) is
+    // deliberately omitted rather than faked. A small, known conservative gap versus
+    // the real client score, only for players without live-repo Statcast coverage.
+    (isFavorable ? 10 : 0), 0, 100
+  );
+}
+function liveOnFireScore(row, statcastHotHitters) {
+  const fromRepo = statcastHotHitters.get(String(row.id)) || statcastHotHitters.get(String(row.name || '').toLowerCase());
+  const ops = row.ops || 0;
+  const iso = row.iso || 0;
+  if (!fromRepo) return liveFallbackHotHitterProfile(ops, iso, row.last10HR || 0, !!row.isFavorable);
+  const xwobaTrend = n(fromRepo.xwobaTrend), hardHitTrend = n(fromRepo.hardHitTrend);
+  const sweetSpotTrend = n(fromRepo.sweetSpotTrend), barrelTrend = n(fromRepo.barrelTrend);
+  const batSpeedTrend = n(fromRepo.batSpeedTrend), blastTrend = n(fromRepo.blastTrend);
+  const xwoba = n(fromRepo.xwoba), hardHit = n(fromRepo.hardHitPct), sweetSpot = n(fromRepo.sweetSpotPct);
+  const barrel = n(fromRepo.barrelPct), batSpeed = n(fromRepo.batSpeed), blastRate = n(fromRepo.blastRate);
+  const avgExitVelo = n(fromRepo.avgExitVelo), recentOpsTrend = n(fromRepo.recentOpsTrend);
+  const pullPct = n(fromRepo.pullPct), fbPct = n(fromRepo.fbPct), ldPct = n(fromRepo.ldPct);
+  return clamp(
+    (xwoba >= .420 ? 18 : xwoba >= .370 ? 13 : xwoba >= .330 ? 7 : 0) +
+    (xwobaTrend >= .060 ? 15 : xwobaTrend >= .030 ? 10 : xwobaTrend >= .015 ? 5 : 0) +
+    (hardHit >= 52 ? 14 : hardHit >= 45 ? 10 : hardHit >= 40 ? 5 : 0) +
+    (hardHitTrend >= 10 ? 12 : hardHitTrend >= 5 ? 8 : hardHitTrend >= 2 ? 4 : 0) +
+    (sweetSpot >= 40 ? 9 : sweetSpot >= 34 ? 6 : sweetSpot >= 30 ? 3 : 0) +
+    (sweetSpotTrend >= 8 ? 8 : sweetSpotTrend >= 4 ? 5 : sweetSpotTrend >= 2 ? 2 : 0) +
+    (barrel >= 15 ? 10 : barrel >= 10 ? 7 : barrel >= 7 ? 3 : 0) +
+    (barrelTrend >= 5 ? 7 : barrelTrend >= 2 ? 4 : 0) +
+    (batSpeed >= 75 ? 5 : batSpeed >= 72 ? 3 : 0) +
+    (batSpeedTrend >= 1.5 ? 5 : batSpeedTrend >= .7 ? 3 : 0) +
+    (blastRate >= 18 ? 5 : blastRate >= 12 ? 3 : 0) +
+    (blastTrend >= 5 ? 5 : blastTrend >= 2 ? 3 : 0) +
+    (recentOpsTrend >= .150 ? 15 : recentOpsTrend >= .080 ? 10 : recentOpsTrend >= .040 ? 5 : 0) +
+    (pullPct >= 40 && fbPct >= 38 ? 8 : pullPct >= 45 ? 6 : pullPct >= 38 ? 3 : 0) +
+    (ldPct >= 25 ? 3 : ldPct >= 21 ? 1 : 0) +
+    (avgExitVelo >= 91 ? 6 : avgExitVelo >= 89 ? 3 : 0), 0, 100
+  );
+}
+// Mirrors app.js's loadHRPotential hrPerPA/hrProb block exactly: batterRate (shrunk
+// box-score HR/AB) blended 60/40 with pitcherRate (HR/9-derived), park-adjusted, then
+// the hot-hitter read folded in as a bounded rate multiplier (shrunk by the same
+// HR_MULT_SHRINKAGE this file already auto-tunes) before simulateHRGameOdds runs --
+// same fix already shipped client-side for the score-bucket ranking problem the
+// calibration report surfaced.
+const HRP_MIN_AB_FOR_RATE = 40;
+const HRP_LEAGUE_AVG_HR_RATE = 0.031;
+function computeLiveHRScore(row, statcastHotHitters) {
+  const ab = row.atBats || 0, hr = row.hrSeason || 0;
+  const sampleWeight = Math.min(ab, HRP_MIN_AB_FOR_RATE) / HRP_MIN_AB_FOR_RATE;
+  const rawBatterRate = ab > 0 ? hr / ab : 0;
+  const batterRate = ((rawBatterRate * sampleWeight) + (HRP_LEAGUE_AVG_HR_RATE * (1 - sampleWeight))) * 0.88;
+  const pitcherRate = row.pitcherHr9 > 0 ? row.pitcherHr9 / 38 : 0.03;
+  const parkAdj = 1 + ((row.parkFactor - 100) / 100) * 0.5;
+  const onFireScore = liveOnFireScore(row, statcastHotHitters);
+  const hotMult = 1 + (onFireScore / 100) * 0.5;
+  const hrPerPA = ((batterRate * 0.6) + (pitcherRate * 0.4)) * parkAdj * shrinkMult(hotMult);
+  return simulateHRGameOdds(hrPerPA, row.battingOrder);
+}
+
 function scoreForMarket(marketKey, row) {
   if (marketKey === 'hr') {
     // hrSeason/atBats is HR-per-AT-BAT; MC_AB_PER_PA converts it to HR-per-PLATE-
@@ -1728,6 +1831,7 @@ async function buildEliteBatterPool(games, season) {
   const statcastIndex = await loadStatcastPowerIndex();
   const pitcherStatcastIndex = await loadPitcherStatcastPowerIndex();
   const pitcher2kSuppressionIndex = await loadPitcher2kSuppressionIndex();
+  const statcastHotHittersIndex = await loadStatcastHotHittersIndex();
   const rows = [];
   for (const g of games) {
     for (const [side, opp] of [['away', 'home'], ['home', 'away']]) {
@@ -1806,6 +1910,15 @@ async function buildEliteBatterPool(games, season) {
           (ops >= 0.750 ? 1 : 0) +
           (hrSeason >= 8 ? 1 : 0) // recent.hr===0 already established by isDrought above
         ) >= 2;
+        const rowParkFactor = PARK_FACTORS[g.teams.home.team.abbreviation] || 100;
+        // Snapshot of the live client's own HR score (see computeLiveHRScore's header
+        // comment) -- only meaningful for the 'hr' market; harmless (just unused) on the
+        // other five Elite Picks markets this same pool feeds.
+        const liveScore = computeLiveHRScore({
+          id: pid, name: person.fullName, ops, iso, atBats: ab, hrSeason,
+          pitcherHr9: n(pitcherStat.homeRunsPer9), parkFactor: rowParkFactor, battingOrder,
+          last10HR: recent?.hr || 0, isFavorable,
+        }, statcastHotHittersIndex);
         return {
           id: pid, name: person.fullName, teamAbbr, oppAbbr, gamePk: g.gamePk,
           pitcherId: pitcher.id, pitcherName: pitcher.fullName,
@@ -1813,12 +1926,13 @@ async function buildEliteBatterPool(games, season) {
           atBats: ab, stolenBases: n(stat.stolenBases), caughtStealing: n(stat.caughtStealing),
           pitcherHr9: n(pitcherStat.homeRunsPer9), pitcherSbAllowed: n(pitcherStat.stolenBases), pitcherCsAllowed: n(pitcherStat.caughtStealing),
           pitcherBFper9: pitcherBattersFacedPer9(pitcherStat),
-          pitcherAvgAllowed, pitcherSlgAllowed, pitcherWhip, parkFactor: PARK_FACTORS[g.teams.home.team.abbreviation] || 100,
+          pitcherAvgAllowed, pitcherSlgAllowed, pitcherWhip, parkFactor: rowParkFactor,
           isFavorable, isHot, isDrought, isDue, statcast: statcastIndex.get(String(pid)) || null,
           windFactor: windPowerFactor(g.weather), temperatureFactor: temperaturePowerFactor(g.weather),
           fatigueFactor: battingTeamFatigue,
           pitcherStatcast, homeRoadFactor,
           pitcher2kSuppressionDelta: pitcher2kSuppressionIndex.get(String(pitcher.id)) ?? null,
+          liveScore,
         };
       });
       sideRows.filter(Boolean).forEach(r => rows.push(r));
@@ -2015,6 +2129,13 @@ async function captureHRThreatToday(store, pool) {
     store.market.hrThreat.push({
       key, date: today, playerId: r.id, playerName: r.name, team: r.teamAbbr, opp: r.oppAbbr,
       gamePk: r.gamePk, score, result: 'pending', actual: null,
+      // The live client board's own score for this same player/matchup (see
+      // computeLiveHRScore) -- captured alongside `score` (this file's separate,
+      // internal scoring) so analyze-hr-matchups.mjs can calibration-check what site
+      // visitors actually see, not just this file's pick-selection formula. Only
+      // present on picks captured after this field shipped; older rows are simply
+      // missing it, same as every other snapshot field added here over time.
+      liveScore: r.liveScore ?? null,
       // Snapshot of the live client board's HR Threats tags at pick time (see
       // buildEliteBatterPool's isFavorable/isHot/isDrought/isDue) — score above is a
       // separate Monte Carlo simulation and never used these tags, so this is the

@@ -29,7 +29,7 @@ const TRACKER_PATH = path.join(__dirname, '..', 'data', 'tracker.json');
 
 function pct(n) { return (n * 100).toFixed(1) + '%'; }
 
-function bucketStats(rows, bucketFn, labelOrder) {
+function bucketStats(rows, bucketFn, labelOrder, scoreField = 'score') {
   const buckets = new Map();
   for (const r of rows) {
     const b = bucketFn(r);
@@ -38,7 +38,7 @@ function bucketStats(rows, bucketFn, labelOrder) {
     const e = buckets.get(b);
     e.total++;
     if (r.result === 'win') e.wins++;
-    if (Number.isFinite(r.score)) e.scoreSum += r.score;
+    if (Number.isFinite(r[scoreField])) e.scoreSum += r[scoreField];
   }
   const order = labelOrder || [...buckets.keys()];
   return order
@@ -114,6 +114,40 @@ async function main() {
     const z = twoPropZ(lw, low.length, hw, high.length);
     console.log(`\n  Score < 22%: ${pct(lw / low.length)} actual (n=${low.length})  vs  Score >= 22%: ${pct(hw / high.length)} actual (n=${high.length})`);
     if (z != null) console.log(`  z = ${z.toFixed(2)} ${Math.abs(z) > 1.96 ? '(statistically significant difference, p<0.05)' : '(not conventionally significant at this sample size)'}`);
+  }
+
+  // ── Live client score calibration — score above is this file's OWN scoring
+  // (scoreForMarket('hr'), used to actually pick/grade), which is NOT what a site
+  // visitor sees. liveScore is a snapshot of the separate, simpler formula the live
+  // HR Threats board actually runs (see update-tracker.mjs's computeLiveHRScore, a
+  // line-for-line port of app.js's loadHRPotential formula) -- captured starting
+  // when this field shipped, so it'll be empty/thin until enough picks accumulate
+  // under it. This is the calibration check that actually answers "does the number
+  // users see rank players correctly," separate from this file's own scoring. ──
+  const withLiveScore = graded.filter(r => Number.isFinite(r.liveScore));
+  console.log(`\nPicks with live client score snapshot: ${withLiveScore.length}/${graded.length}`);
+  if (withLiveScore.length >= 20) {
+    const liveScoreBucket = r => {
+      const s = r.liveScore;
+      if (s < 19) return '18%';
+      if (s < 20) return '19%';
+      if (s < 22) return '20-21%';
+      if (s < 25) return '22-24%';
+      if (s < 30) return '25-29%';
+      return '30%+';
+    };
+    printTable('Live client score calibration (what users actually see):', bucketStats(withLiveScore, liveScoreBucket, scoreBucketOrder, 'liveScore'), true);
+    const liveLow = withLiveScore.filter(r => r.liveScore < 22);
+    const liveHigh = withLiveScore.filter(r => r.liveScore >= 22);
+    if (liveLow.length && liveHigh.length) {
+      const lw = liveLow.filter(r => r.result === 'win').length;
+      const hw = liveHigh.filter(r => r.result === 'win').length;
+      const z = twoPropZ(lw, liveLow.length, hw, liveHigh.length);
+      console.log(`\n  Live score < 22%: ${pct(lw / liveLow.length)} actual (n=${liveLow.length})  vs  Live score >= 22%: ${pct(hw / liveHigh.length)} actual (n=${liveHigh.length})`);
+      if (z != null) console.log(`  z = ${z.toFixed(2)} ${Math.abs(z) > 1.96 ? '(statistically significant difference, p<0.05)' : '(not conventionally significant at this sample size)'}`);
+    }
+  } else {
+    console.log('  (need at least 20 graded picks with a live-score snapshot for a meaningful breakdown — check back after more picks are captured and graded under the new field)');
   }
 
   // ── Signal-tag breakdowns (isOnFire/isFavorable/isDrought/isDue) — same
