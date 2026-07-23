@@ -4002,3 +4002,18 @@ select:focus-visible {
 .fantasy-reason-box .vuln-item:last-child {
   margin-bottom: 0;
 }
+
+/* Fix: .header carries `max-width: 100vw !important` (set earlier in this
+   file). vw units and this site's `html{zoom:.8}` (PROD v10.0) interact
+   badly -- 100vw computes fine on its own, but capping max-width to it
+   renders the header at only 80% of the true viewport width, leaving a
+   gap on the right that used to go unnoticed (nothing sat flush against
+   that edge) until the top nav merged into the header pushed the logo
+   right up against it. `width: 100% !important` on the same rule already
+   makes the header full-width without this bug, so the 100vw max-width
+   was both redundant and broken -- dropped here via a late override
+   rather than editing that rule in place, matching how the rest of this
+   file's many conflicting `.header{}` rules already get overridden. */
+.header {
+  max-width: none !important;
+}
