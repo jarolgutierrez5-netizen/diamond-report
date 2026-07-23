@@ -176,6 +176,36 @@ async function main() {
     console.log(line);
   }
 
+  // ── Platoon-split breakdown (exploratory) — this batter's real AVG/OBP/SLG vs
+  // today's specific opposing pitcher's throwing hand, not currently used by any live
+  // scoring (client or server) for the HR market -- see update-tracker.mjs's
+  // platoonAB/platoonOps/platoonFavorable comment. Recorded purely to check whether
+  // it's worth building into the Compare tray's proposed platoon-corrected re-rank
+  // before spending any UI/latency budget on it, same "measure before we build"
+  // approach already taken for every other signal here. Only present on picks with
+  // 15+ AB against this pitcher hand this season (battingSplitVsHand's own sample
+  // floor), so this fills in slower than the other breakdowns. ──
+  const withPlatoon = graded.filter(r => r.platoonFavorable != null);
+  console.log(`\nPicks with platoon-split data: ${withPlatoon.length}/${graded.length}`);
+  if (withPlatoon.length) {
+    const on = withPlatoon.filter(r => r.platoonFavorable);
+    const off = withPlatoon.filter(r => !r.platoonFavorable);
+    if (on.length && off.length) {
+      const ow = on.filter(r => r.result === 'win').length;
+      const fw = off.filter(r => r.result === 'win').length;
+      const z = twoPropZ(ow, on.length, fw, off.length);
+      let line = `  platoonFavorable: TRUE ${pct(ow / on.length)} (n=${on.length})  vs  FALSE ${pct(fw / off.length)} (n=${off.length})`;
+      if (on.length < TAG_MIN_SAMPLE_PER_SIDE || off.length < TAG_MIN_SAMPLE_PER_SIDE) {
+        line += `\n  (below the ${TAG_MIN_SAMPLE_PER_SIDE}-per-side sample floor — too thin to read as signal yet, treat as noise-risk)`;
+      } else if (z != null) {
+        line += `\n  z = ${z.toFixed(2)} ${Math.abs(z) > 1.96 ? '(statistically significant difference, p<0.05)' : '(not conventionally significant at this sample size)'}`;
+      }
+      console.log(line);
+    }
+  } else {
+    console.log('  (no graded picks with platoon-split data yet — check back after more picks are captured and graded under the new field)');
+  }
+
   // ── Pitcher-matchup breakdowns — only present on picks captured after the
   // pitcher-snapshot fields were added; will be thin/empty at first. ──
   const withPitcher = graded.filter(r => r.pitcherHr9 != null);
