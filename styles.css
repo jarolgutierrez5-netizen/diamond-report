@@ -1650,10 +1650,13 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
 /* ── Desktop top nav ───────────────────────────────────────────────────────
    Hidden by default (phones keep the existing hamburger drawer below
    768px, completely untouched). Shown from 900px up, replacing the fixed
-   left sidebar this used to be — a full-width bar has room to lay every
-   item out flat, so unlike that narrow fixed column there's no collapse
-   toggle or Baseball accordion needed. Sticky at the same 76px offset the
-   sidebar this replaces already used to clear the header. */
+   left sidebar this used to be. Sticky at the same 76px offset the
+   sidebar this replaces already used to clear the header.
+
+   Grouped by sport category (Baseball, Football, Basketball) rather than
+   listing every board flat -- clicking the Baseball category reveals a
+   dropdown of its 10 boards, closed by default. Football/Basketball have
+   no boards yet, so they're plain disabled "Soon" pills with no dropdown. */
 #dr-top-nav {
   display: none;
 }
@@ -1684,7 +1687,7 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   .dr-top-nav-inner {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     width: 100%;
     box-sizing: border-box;
     padding: 10px var(--dr-v11-page-pad, 24px);
@@ -1695,7 +1698,7 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
     display: none;
   }
 }
-.dr-top-nav-tab {
+.dr-top-nav-cat-btn {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1704,18 +1707,81 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   border: 1px solid transparent;
   border-radius: 999px;
   background: transparent;
-  color: #8fa3c8;
+  color: #d6def2;
   font-family: 'Manrope', sans-serif;
   font-weight: 700;
-  font-size: 12.5px;
+  font-size: 13px;
   letter-spacing: .2px;
   white-space: nowrap;
   cursor: pointer;
   transition: background .15s ease, color .15s ease, border-color .15s ease;
 }
+.dr-top-nav-cat-btn:hover {
+  background: rgba(47,107,255,.08);
+}
+.dr-top-nav-cat-btn[aria-expanded="true"] {
+  background: rgba(47,107,255,.14);
+  border-color: rgba(47,107,255,.42);
+}
+.dr-top-nav-cat-current {
+  color: #5b9dff;
+  font-weight: 600;
+  opacity: .85;
+}
+.dr-top-nav-cat-current::before {
+  content: "·";
+  margin-right: 8px;
+  color: #3a4a6b;
+}
+.dr-top-nav-chevron {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  color: #5a6b8c;
+  transition: transform .15s ease;
+}
+.dr-top-nav-cat-btn[aria-expanded="true"] .dr-top-nav-chevron {
+  transform: rotate(180deg);
+}
+.dr-top-nav-menu {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 230px;
+  padding: 8px;
+  background: rgba(8,13,22,.98);
+  border: 1px solid rgba(47,107,255,.32);
+  border-radius: 14px;
+  box-shadow: 0 24px 48px rgba(0,0,0,.45);
+  z-index: 95;
+}
+.dr-top-nav-menu.open {
+  display: flex;
+}
+.dr-top-nav-tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #d6def2;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: .2px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
 .dr-top-nav-tab:hover {
   background: rgba(47,107,255,.08);
-  color: #d6def2;
 }
 .dr-top-nav-tab.active {
   background: rgba(47,107,255,.16);
@@ -1725,29 +1791,15 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
 .dr-top-nav-tab.active .dr-icon {
   color: #5b9dff;
 }
-.dr-top-nav-divider {
-  flex-shrink: 0;
-  width: 1px;
-  height: 22px;
-  background: rgba(255,255,255,.1);
-  margin: 0 8px;
-}
-.dr-top-nav-soon {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-  padding: 9px 14px;
+.dr-top-nav-cat-soon {
   color: #5a6b8c;
-  font-family: 'Manrope', sans-serif;
-  font-weight: 700;
-  font-size: 12.5px;
-  letter-spacing: .2px;
-  white-space: nowrap;
   opacity: .55;
   cursor: default;
 }
-.dr-top-nav-soon em {
+.dr-top-nav-cat-soon:hover {
+  background: transparent;
+}
+.dr-top-nav-cat-soon em {
   font-style: normal;
   font-size: 8px;
   font-weight: 800;
