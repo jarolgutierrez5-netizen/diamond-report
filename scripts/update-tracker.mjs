@@ -2025,6 +2025,18 @@ async function buildEliteBatterPool(games, season) {
           (hrSeason >= 8 ? 1 : 0) // recent.hr===0 already established by isDrought above
         ) >= 2;
         const rowParkFactor = PARK_FACTORS[g.teams.home.team.abbreviation] || 100;
+        // Raw platoon split (this batter's real AVG/OBP/SLG vs today's specific opposing
+        // pitcher's throwing hand) -- already fetched above (see `split`) to blend into
+        // avg/obp/slg/ops, but that blend only feeds isFavorable/iso, not the HR rate
+        // itself (scoreForMarket('hr') drives batterRate off the raw hrSeason/atBats
+        // count, not the platoon-blended OPS). Snapshotting the raw split here, purely
+        // for analyze-hr-matchups.mjs to check later, rather than acting on it -- exactly
+        // the same "measure before we build a live feature around it" step already taken
+        // for isFavorable/isOnFire/etc before those became known-scoped signals. No new
+        // fetch: split is already being paid for by the OPS blend above.
+        const platoonAB = split?.ab ?? null;
+        const platoonOps = (split && split.obp != null && split.slg != null) ? +(split.obp + split.slg).toFixed(3) : null;
+        const platoonFavorable = platoonOps != null ? platoonOps >= 0.800 : null;
         // Snapshot of the live client's own HR score (see computeLiveHRScore's header
         // comment) -- only meaningful for the 'hr' market; harmless (just unused) on the
         // other five Elite Picks markets this same pool feeds.
@@ -2046,7 +2058,7 @@ async function buildEliteBatterPool(games, season) {
           fatigueFactor: battingTeamFatigue,
           pitcherStatcast, homeRoadFactor,
           pitcher2kSuppressionDelta: pitcher2kSuppressionIndex.get(String(pitcher.id)) ?? null,
-          liveScore,
+          liveScore, platoonAB, platoonOps, platoonFavorable,
         };
       });
       sideRows.filter(Boolean).forEach(r => rows.push(r));
@@ -2272,6 +2284,15 @@ async function captureHRThreatToday(store, pool) {
       // used by scoreForMarket. Mostly null until a pitcher clears the sync
       // script's sample floor and is today's probable starter.
       pitcher2kSuppressionDelta: r.pitcher2kSuppressionDelta ?? null,
+      // Exploratory platoon-split signal (this batter's real AVG/OBP/SLG vs today's
+      // specific opposing pitcher's throwing hand) — see buildEliteBatterPool's
+      // platoonAB/platoonOps/platoonFavorable comment. Not used by any live scoring
+      // (client or server) for the 'hr' market; recorded purely so
+      // analyze-hr-matchups.mjs can check whether it's worth building into the Compare
+      // tray before any live feature gets built around it. Null until this batter has
+      // 15+ AB against this specific pitcher hand this season (battingSplitVsHand's own
+      // sample floor).
+      platoonAB: r.platoonAB ?? null, platoonOps: r.platoonOps ?? null, platoonFavorable: r.platoonFavorable ?? null,
     });
     already.add(r.id);
     added++;
