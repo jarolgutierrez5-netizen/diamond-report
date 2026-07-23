@@ -717,25 +717,28 @@ async function computeDRPick(g, season) {
 
   let awayScore = 50, homeScore = 50;
 
+  // ERA/WHIP/K9 all continuous now, no hard gate -- exact mirror of the same fix in
+  // app.js's loadGameProps (see that file's own comment for the full reasoning). The
+  // old gate-then-flat-bonus design (WHIP/K9 added the same fixed points regardless of
+  // how far past the threshold the diff was) is why pickPct almost never left the
+  // 50-55% band: 81 of 116 graded picks landed in the single 50-54% bucket.
   const awayERA = blendRecentForm(n(awayStats.era, 4.5), awayRecent, 'era');
   const homeERA = blendRecentForm(n(homeStats.era, 4.5), homeRecent, 'era');
   const eraDiff = awayERA - homeERA;
-  if (Math.abs(eraDiff) > 0.3) {
-    if (eraDiff > 0) homeScore += Math.min(eraDiff * 3, 8);
-    else awayScore += Math.min(Math.abs(eraDiff) * 3, 8);
-  }
+  const eraPts = Math.min(Math.abs(eraDiff) * 3, 10);
+  if (eraDiff > 0) homeScore += eraPts; else if (eraDiff < 0) awayScore += eraPts;
 
   const awayWHIP = blendRecentForm(n(awayStats.whip, 1.3), awayRecent, 'whip');
   const homeWHIP = blendRecentForm(n(homeStats.whip, 1.3), homeRecent, 'whip');
-  if (Math.abs(awayWHIP - homeWHIP) > 0.1) {
-    if (awayWHIP > homeWHIP) homeScore += 4;
-    else awayScore += 4;
-  }
+  const whipDiff = awayWHIP - homeWHIP;
+  const whipPts = Math.min(Math.abs(whipDiff) * 10, 6);
+  if (whipDiff > 0) homeScore += whipPts; else if (whipDiff < 0) awayScore += whipPts;
 
   const awayK9 = blendRecentForm(n(awayStats.strikeoutsPer9Inn, 8), awayRecent, 'k9');
   const homeK9 = blendRecentForm(n(homeStats.strikeoutsPer9Inn, 8), homeRecent, 'k9');
-  if (homeK9 > awayK9 + 1) homeScore += 3;
-  else if (awayK9 > homeK9 + 1) awayScore += 3;
+  const k9Diff = homeK9 - awayK9;
+  const k9Pts = Math.min(Math.abs(k9Diff) * 1.2, 5);
+  if (k9Diff > 0) homeScore += k9Pts; else if (k9Diff < 0) awayScore += k9Pts;
 
   const awayRecord = g.teams.away.leagueRecord || {};
   const homeRecord = g.teams.home.leagueRecord || {};
@@ -1487,7 +1490,13 @@ function computeLiveHRScore(row, statcastHotHitters, weatherHRMult = 1) {
   const ab = row.atBats || 0, hr = row.hrSeason || 0;
   const sampleWeight = Math.min(ab, HRP_MIN_AB_FOR_RATE) / HRP_MIN_AB_FOR_RATE;
   const rawBatterRate = ab > 0 ? hr / ab : 0;
-  const batterRate = ((rawBatterRate * sampleWeight) + (HRP_LEAGUE_AVG_HR_RATE * (1 - sampleWeight))) * 0.88;
+  const boxScoreBatterRate = ((rawBatterRate * sampleWeight) + (HRP_LEAGUE_AVG_HR_RATE * (1 - sampleWeight))) * 0.88;
+  // Quality-of-contact correction -- same battedBallPowerIndex/shrinkMult this file's
+  // own scoreForMarket already applies, and the exact signal the live client formula
+  // this function mirrors now also applies (see app.js's loadHRPotential). row.statcast
+  // is already populated by buildEliteBatterPool from the same statcastIndex
+  // scoreForMarket uses, so this needs no separate data source.
+  const batterRate = boxScoreBatterRate * shrinkMult(battedBallPowerIndex(row.statcast));
   const pitcherRate = row.pitcherHr9 > 0 ? row.pitcherHr9 / 38 : 0.03;
   const parkAdj = 1 + ((row.parkFactor - 100) / 100) * 0.5;
   const onFireScore = liveOnFireScore(row, statcastHotHitters);
@@ -2022,7 +2031,7 @@ async function buildEliteBatterPool(games, season) {
         const liveScore = computeLiveHRScore({
           id: pid, name: person.fullName, ops, iso, atBats: ab, hrSeason,
           pitcherHr9: n(pitcherStat.homeRunsPer9), parkFactor: rowParkFactor, battingOrder,
-          last10HR: recent?.hr || 0, isFavorable,
+          last10HR: recent?.hr || 0, isFavorable, statcast: statcastIndex.get(String(pid)) || null,
         }, statcastHotHittersIndex, weatherHRMult);
         return {
           id: pid, name: person.fullName, teamAbbr, oppAbbr, gamePk: g.gamePk,

@@ -224,6 +224,38 @@ async function buildPitcherCareerStatcast() {
   return pitchers;
 }
 
+// Aggregates each batter's per-pitch-type rows (already fetched for
+// batter-pitch-type-season.json) into one pitches-weighted {xslg, hardHitPct, pitches}
+// per player -- the exact same aggregation update-tracker.mjs's aggregateStatcastRows
+// already does server-side from that same file, just computed once here at sync time
+// instead of read-and-recomputed by every consumer. Written to its own small file
+// (data/batter-power-index.json) rather than shipping the full ~1.6MB per-pitch-type
+// breakdown to every HR Threats board visitor -- app.js only needs this one aggregated
+// number per batter to correct the season power baseline (see battedBallPowerIndex in
+// both app.js and update-tracker.mjs), not the full pitch-by-pitch table that the
+// Pitcher Matchup modal separately loads on demand.
+const BATTER_POWER_MIN_PITCHES = 100; // matches update-tracker.mjs's STATCAST_MIN_PITCHES
+function aggregateBatterPowerIndex(players) {
+  const out = {};
+  for (const [id, player] of Object.entries(players)) {
+    const rows = player.seasonPitchTypeStats || [];
+    let pitches = 0, xslgSum = 0, xslgWeight = 0, hardHitSum = 0, hardHitWeight = 0;
+    rows.forEach(r => {
+      const w = r.pitches || 0;
+      pitches += w;
+      if (r.xslg != null) { xslgSum += r.xslg * w; xslgWeight += w; }
+      if (r.hardHitPct != null) { hardHitSum += r.hardHitPct * w; hardHitWeight += w; }
+    });
+    if (pitches < BATTER_POWER_MIN_PITCHES) continue;
+    out[id] = {
+      xslg: xslgWeight > 0 ? +(xslgSum / xslgWeight).toFixed(4) : null,
+      hardHitPct: hardHitWeight > 0 ? +(hardHitSum / hardHitWeight).toFixed(2) : null,
+      pitches,
+    };
+  }
+  return out;
+}
+
 async function buildBatterPitchSeason() {
   const url = `${BASE}?type=batter&pitchType=&year=${SEASON}&team=&min=1&csv=true`;
   const csv = await fetchCSV(url);
@@ -288,6 +320,10 @@ async function main() {
   }
   if (!batterErr) {
     await writeFile(path.join(DATA_DIR, 'batter-pitch-type-season.json'), JSON.stringify(batterOut, null, 2) + '\n');
+    const powerIndex = aggregateBatterPowerIndex(players);
+    const powerIndexOut = { generatedAt: new Date().toISOString(), season: SEASON, players: powerIndex };
+    await writeFile(path.join(DATA_DIR, 'batter-power-index.json'), JSON.stringify(powerIndexOut, null, 2) + '\n');
+    console.log(`Aggregated batter power index for ${Object.keys(powerIndex).length} batter(s) (>= ${BATTER_POWER_MIN_PITCHES} pitches).`);
   }
 
   console.log(`Synced ${Object.keys(pitchers).length} pitchers, ${Object.keys(players).length} batters for ${SEASON}.`);
@@ -299,4 +335,4 @@ if (isMain) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { parseCSV, rowToPitchStat, assertSchema, buildPitcherStatcast, buildPitcherCareerStatcast, buildBatterPitchSeason, main, PITCH_NAME_MAP };
+export { parseCSV, rowToPitchStat, assertSchema, buildPitcherStatcast, buildPitcherCareerStatcast, buildBatterPitchSeason, aggregateBatterPowerIndex, main, PITCH_NAME_MAP };
