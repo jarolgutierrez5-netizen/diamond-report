@@ -58,6 +58,15 @@ jobs:
           BALLPARKPAL_API_KEY: ${{ secrets.BALLPARKPAL_API_KEY }}
         run: node scripts/update-tracker.mjs
 
+      # Depends on data/tracker.json's just-graded prior-day results (for the recap
+      # paragraph) and today's freshly-captured pool (for the storylines) -- must run
+      # after the step above. Own try/catch around the schedule fetch inside the script
+      # itself means a transient MLB API hiccup only costs the storylines, never the
+      # recap, so this is safe to run unconditionally rather than gating it like the
+      # continue-on-error steps elsewhere in this repo.
+      - name: Generate daily written insights (recap + today's storylines)
+        run: node scripts/generate-daily-insights.mjs
+
       - name: Commit and push if changed
         run: |
           # git diff --quiet only detects changes to already-tracked files — it silently
@@ -68,6 +77,7 @@ jobs:
           [ -f data/k-props.json ] && git add data/k-props.json
           [ -f data/ballparkpal-comparison.json ] && git add data/ballparkpal-comparison.json
           [ -f data/drp-sim-comparison.json ] && git add data/drp-sim-comparison.json
+          [ -f data/daily-insights.json ] && git add data/daily-insights.json
           # update-tracker.mjs has written data/prop-market-odds.json since the
           # situational-true-probability edge feature was added, but this step never
           # staged it — every run silently wrote the file to the runner's local working
@@ -75,7 +85,7 @@ jobs:
           # job logs: the file has never existed on main despite the script succeeding.
           [ -f data/prop-market-odds.json ] && git add data/prop-market-odds.json
           if git diff --cached --quiet; then
-            echo "No changes to data/tracker.json, data/k-props.json, data/ballparkpal-comparison.json, data/drp-sim-comparison.json, or data/prop-market-odds.json — nothing to commit."
+            echo "No changes to data/tracker.json, data/k-props.json, data/ballparkpal-comparison.json, data/drp-sim-comparison.json, data/prop-market-odds.json, or data/daily-insights.json — nothing to commit."
             exit 0
           fi
           git config user.name "diamond-report-bot"

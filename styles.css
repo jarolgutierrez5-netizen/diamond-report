@@ -3000,6 +3000,39 @@ select:focus-visible {
 }
 
 /* ── News Central hub: Today's Games ──── */
+.dr-hub-insights {
+  margin: 28px 0;
+}
+.dr-hub-insights-recap {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: #c8d3e8;
+  margin: 0 0 18px;
+  max-width: 78ch;
+}
+.dr-hub-insights-storylines {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+.dr-hub-insights-storyline {
+  background: rgba(17,24,39,.55);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+.dr-hub-insights-storyline-head {
+  font-weight: 800;
+  font-size: 13px;
+  color: #fff;
+  margin-bottom: 6px;
+}
+.dr-hub-insights-storyline-text {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #8fa3c8;
+  margin: 0;
+}
 .dr-hub-scoreboard {
   margin: 28px 0;
 }

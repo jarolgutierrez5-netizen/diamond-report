@@ -25,11 +25,13 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026072132">
+<link rel="stylesheet" href="styles.min.css?v=2026072139">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Diamond Report – MLB Analytics</title>
+<meta name="description" content="Model-driven MLB projections across 10 markets — game winners, home runs, strikeouts, hits, and more — with a written daily recap and every pick graded in the open.">
+<link rel="canonical" href="https://diamondreport.app/">
 <!-- ============================================================
      PROD v9.3 — Performance Overhaul Bootstrap
      Loads before app scripts so all existing data calls benefit.
@@ -237,6 +239,17 @@
           <span class="dr-hub-sport-badge">COMING SOON</span>
         </span>
       </div>
+    </div>
+
+    <!-- Diamond Report's own written analysis — a recap of yesterday's graded picks
+         plus a few storylines for today, generated daily by
+         scripts/generate-daily-insights.mjs (real numbers, not spun filler; see that
+         script's header comment). Placed ahead of the live data boards on purpose:
+         this is the site's original written content, not another data table. -->
+    <div class="dr-hub-insights" id="dr-hub-insights" style="display:none">
+      <div class="dr-hub-section-head"><span class="dr-hub-section-icon">📝</span><h2>Diamond Report Insights</h2><span class="dr-hub-section-line"></span></div>
+      <p class="dr-hub-insights-recap" id="dr-hub-insights-recap"></p>
+      <div class="dr-hub-insights-storylines" id="dr-hub-insights-storylines"></div>
     </div>
 
     <div class="dr-hub-scoreboard" id="dr-hub-scoreboard" style="display:none">
@@ -842,7 +855,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026072138" defer></script>
+<script src="app.min.js?v=2026072139" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->

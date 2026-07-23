@@ -12321,6 +12321,7 @@ function showPremiumGate(feature){
 
   function showHub(){
     document.body.classList.add('dr-hub-active');
+    loadHubInsights();
     loadHubNews();
     loadHubHRs();
     loadHubLeaders();
@@ -12844,6 +12845,55 @@ function showPremiumGate(feature){
     drFetchDailyJSON('data/season-projections.json').then(function(data){
       renderHubProjections(data);
     }).catch(function(){});
+  }
+
+  // Diamond Report's own written analysis (recap of yesterday's graded picks + a few
+  // storylines for today), from data/daily-insights.json — see
+  // scripts/generate-daily-insights.mjs for how it's generated (real numbers already
+  // computed for the HR Threats board, narrated, not spun filler text). Same
+  // drFetchDailyJSON pattern as season-projections.json above. Renders via textContent,
+  // not innerHTML, even though the script only ever writes text it built itself from
+  // MLB API names/numbers -- no reason to trust that path any more than user input.
+  var insightsLoaded = false;
+  function loadHubInsights(){
+    if (insightsLoaded) return;
+    insightsLoaded = true;
+    drFetchDailyJSON('data/daily-insights.json').then(function(data){
+      renderHubInsights(data);
+    }).catch(function(){});
+  }
+
+  function renderHubInsights(data){
+    var section = document.getElementById('dr-hub-insights');
+    var recapEl = document.getElementById('dr-hub-insights-recap');
+    var storylinesEl = document.getElementById('dr-hub-insights-storylines');
+    if (!section || !data) return;
+
+    var hasRecap = data.recap && data.recap.text;
+    var storylines = Array.isArray(data.storylines) ? data.storylines : [];
+    if (!hasRecap && !storylines.length) return;
+
+    if (recapEl) {
+      if (hasRecap) { recapEl.textContent = data.recap.text; recapEl.style.display = ''; }
+      else { recapEl.style.display = 'none'; }
+    }
+    if (storylinesEl) {
+      storylinesEl.innerHTML = '';
+      storylines.forEach(function(s){
+        var card = document.createElement('div');
+        card.className = 'dr-hub-insights-storyline';
+        var head = document.createElement('div');
+        head.className = 'dr-hub-insights-storyline-head';
+        head.textContent = s.playerName + (s.team ? ' (' + s.team + ')' : '');
+        var body = document.createElement('p');
+        body.className = 'dr-hub-insights-storyline-text';
+        body.textContent = s.text;
+        card.appendChild(head);
+        card.appendChild(body);
+        storylinesEl.appendChild(card);
+      });
+    }
+    section.style.display = '';
   }
 
   // Whether any of today's games has actually started yet (Live or Final).
