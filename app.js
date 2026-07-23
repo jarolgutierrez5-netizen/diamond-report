@@ -6887,7 +6887,10 @@ async function loadHRPotential() {
             }
             const {sd,ld}=batterStatCache[pid];
             s=sd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||s;
-            logs=ld.stats?.[0]?.splits||[];
+            // Not documented as guaranteed most-recent-first, so sort by date explicitly --
+            // every slice(0,N) below (last10HR, hrInLast8/isDrought, the recency blend) means
+            // "the N most recent games" only if this is actually in that order.
+            logs=(ld.stats?.[0]?.splits||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
             last10HR=logs.slice(0,10).reduce((n,g2)=>n+(parseInt(g2.stat?.homeRuns)||0),0);
             // HR Today must only reflect an actual in-game HR, never season totals before first pitch
             const gameHasStartedForHrp = isLive || isFinal;
@@ -6941,17 +6944,21 @@ async function loadHRPotential() {
           let hrProb=baseHrProb;
           const hrInLast8=(logs||[]).slice(0,8).some(g2=>parseInt(g2.stat?.homeRuns)>0);
           const isDrought=!hrInLast8&&hr>0;
-          const batterOPS=parseFloat(s.ops)||0;
-          const isFavorable=batterOPS>=.800&&(pitcherWhip>=1.25||pitcherAvg>=.260);
           // Same small-sample shrinkage as the HR rate above, applied to the rate stats the
           // Hits/RBI/TB/SB/H+R+RBI boards read (r.avg/r.ops/r.obp/r.slg) — a hot 10-AB stretch
-          // shouldn't score identically to a full, reliable season sample.
+          // shouldn't score identically to a full, reliable season sample. Computed here
+          // (before isFavorable/isDue below) so those read the same shrunk OPS this row
+          // displays to the user everywhere else, instead of the raw, un-shrunk figure --
+          // a small-sample hot streak used to be able to trip "favorable matchup"/"due"
+          // off a raw OPS the row's own OPS chip didn't even agree with.
           const LEAGUE_AVG_AVG = 0.245, LEAGUE_AVG_OPS = 0.720, LEAGUE_AVG_OBP = 0.315, LEAGUE_AVG_SLG = 0.400;
           const rawObp = parseFloat(s.obp)||0, rawSlg = parseFloat(s.slg)||0;
+          const batterOPS=parseFloat(s.ops)||0;
           const shrunkAvg = ((parseFloat(s.avg)||0)*hrpSampleWeight) + (LEAGUE_AVG_AVG*(1-hrpSampleWeight));
           const shrunkOps = (batterOPS*hrpSampleWeight) + (LEAGUE_AVG_OPS*(1-hrpSampleWeight));
           const shrunkObp = (rawObp*hrpSampleWeight) + (LEAGUE_AVG_OBP*(1-hrpSampleWeight));
           const shrunkSlg = (rawSlg*hrpSampleWeight) + (LEAGUE_AVG_SLG*(1-hrpSampleWeight));
+          const isFavorable=shrunkOps>=.800&&(pitcherWhip>=1.25||pitcherAvg>=.260);
           // Recency blend — last 10 games, from the same lastXGames log already fetched
           // above for last10HR/streakDays (zero extra API calls). Same idea as the
           // pitcher ERA/WHIP/K9 recent-form blend: a real hot or cold two-week stretch
@@ -6999,7 +7006,7 @@ async function loadHRPotential() {
             isDue: isDrought && (
               ((finalSlg - finalAvg) >= 0.170 ? 1 : 0) +
               (isFavorable ? 1 : 0) +
-              ((parseFloat(s.ops)||0) >= 0.750 ? 1 : 0) +
+              (shrunkOps >= 0.750 ? 1 : 0) +
               ((last10HR === 0 && hr >= 8) ? 1 : 0) // proven HR hitter in deep drought
             ) >= 2,
             topHrThreat:false,
@@ -7476,6 +7483,7 @@ function renderKProps() {
     ? kPropsData.filter(p => String(p.gamePk||'') === _kPropsGameFilter)
     : kPropsData;
   if (_kPropsWatchlistOnly) gameFilteredProps = gameFilteredProps.filter(p => drIsWatchlisted(p.pitcherId));
+  if (_kPropsLiveOnly) gameFilteredProps = gameFilteredProps.filter(p => { const live = latestPitcherKData[p.pitcherId]; return !!(live && live.isLive); });
   gameFilteredProps = gameFilteredProps.filter(p => drMatchesSearch('k', p.pitcherName));
 
   // Built from the full day's schedule (not kPropsData) so every game today shows up in
@@ -7565,6 +7573,7 @@ function renderKProps() {
   }).join('');
 
   const noKMatches = !sortedProps.length && (window.__drBoardSearch.k || '').trim();
+  const noKLiveGames = !sortedProps.length && !noKMatches && _kPropsLiveOnly;
 
   el.innerHTML = `${kpTallyHTML}
   ${drKSummaryHTML(gameFilteredProps)}
@@ -7572,12 +7581,13 @@ function renderKProps() {
     <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">GAME:</span>
     <select onchange="kPropsSetGameFilter(this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;flex-shrink:0">${kpGameOptsHTML}</select>
     <button onclick="kPropsToggleWatchlist()" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${_kPropsWatchlistOnly?'#f5c518':'var(--border)'};background:${_kPropsWatchlistOnly?'rgba(245,197,24,.14)':'var(--surface2)'};color:${_kPropsWatchlistOnly?'#f5c518':'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">★ WATCHLIST</button>
+    <button onclick="kPropsToggleLiveOnly()" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${_kPropsLiveOnly?'var(--live)':'var(--border)'};background:${_kPropsLiveOnly?'rgba(220,38,38,.14)':'var(--surface2)'};color:${_kPropsLiveOnly?'var(--live)':'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">● LIVE ONLY</button>
     <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">SORT:</span>
     ${sortBtns}
     <button onclick="kPropsSortBy(null)" id="kpsort-reset" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:3px 8px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0">RESET</button>
     ${drSearchInputHTML('k', 'k-search-input', 'Search pitchers…', "drSetBoardSearch('k',this.value,renderKProps)")}
   </div>
-  ${noKMatches ? `<div class="mu-empty" style="padding:24px">No pitchers match "${window.__drBoardSearch.k}". Try a different name.</div>` : `<div style="overflow-x:auto;overscroll-behavior-x:contain;touch-action:pan-y;min-width:0">
+  ${noKMatches ? `<div class="mu-empty" style="padding:24px">No pitchers match "${window.__drBoardSearch.k}". Try a different name.</div>` : noKLiveGames ? `<div class="mu-empty" style="padding:24px">No games are live right now. Turn off LIVE ONLY to see the full board.</div>` : `<div style="overflow-x:auto;overscroll-behavior-x:contain;touch-action:pan-y;min-width:0">
     ${sortedProps.map(p => {
       const prob = Number(p.overProb ?? 0);
       const predCls = prob >= 50 ? 'kprop-over' : 'kprop-push kprop-push-under';
@@ -7799,6 +7809,11 @@ function kPropsToggleWatchlist() {
   renderKProps();
 }
 window.__drKPropsWatchlistRerender = () => { if (_kPropsWatchlistOnly) renderKProps(); };
+let _kPropsLiveOnly = false;
+function kPropsToggleLiveOnly() {
+  _kPropsLiveOnly = !_kPropsLiveOnly;
+  renderKProps();
+}
 function kPropsSortBy(key) {
   if (_kPropsSort === key) {
     // Same stat clicked — toggle direction
