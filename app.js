@@ -2441,6 +2441,38 @@ async function fetchBatterSeasonBundle(playerId, preferredSeason, fallbackStats 
   }
   return { seasonStats: bestStat, logs: bestLogs, season: String(preferredSeason || '') };
 }
+// Best-effort "expected lineup" fallback for when MLB hasn't posted today's official
+// batting order yet -- pulls the team's most recent completed game's actual batting
+// order as a reasonable placeholder (not a roster/depth-chart guess, which would be
+// far less reliable), clearly labeled as unconfirmed for today by the caller.
+async function fetchExpectedLineup(teamId) {
+  if (!teamId) return null;
+  try {
+    const season = new Date().getFullYear();
+    const sched = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&season=${season}&teamId=${teamId}&hydrate=team&language=en`);
+    const games = [];
+    (sched.dates || []).forEach(d => (d.games || []).forEach(g => games.push(g)));
+    const now = Date.now();
+    const priorFinals = games
+      .filter(g => g.status?.abstractGameState === 'Final' && new Date(g.gameDate).getTime() < now)
+      .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate));
+    if (!priorFinals.length) return null;
+    const lastGame = priorFinals[0];
+    const side = String(lastGame.teams?.away?.team?.id) === String(teamId) ? 'away' : 'home';
+    const box = await fetchJSON(`https://diamondreport.app/api/v1/game/${lastGame.gamePk}/boxscore`);
+    const teamBox = box.teams?.[side];
+    let batters = (teamBox?.batters || []).map(id => teamBox.players[`ID${id}`]).filter(Boolean);
+    batters = batters.filter(b => {
+      const bo = Number(b.battingOrder || b.stats?.batting?.battingOrder || NaN);
+      return Number.isFinite(bo) && bo % 100 === 0;
+    }).sort((a, b) => (parseInt(a.battingOrder || a.stats?.batting?.battingOrder || 9999) - parseInt(b.battingOrder || b.stats?.batting?.battingOrder || 9999)));
+    if (!batters.length) return null;
+    return { batters, gameDate: lastGame.gameDate };
+  } catch (e) {
+    return null;
+  }
+}
+
 async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp, skipEnrichment = false, bypassPRGuards = false) {
   const pid = normalizePitcherId(pitcherId);
   const panel = document.getElementById(`panel-${pid}`);
@@ -2482,17 +2514,30 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
       batters = batters.sort((a,b) => (parseInt(a.battingOrder || a.stats?.batting?.battingOrder || 9999) - parseInt(b.battingOrder || b.stats?.batting?.battingOrder || 9999)));
     }
 
-    if (!hasOfficialBattingOrder || !batters.length) {
-      const cacheKey = `${gamePk}-${side}`;
-      lineupCache[cacheKey] = { lineup: [], oppSide, teamAbbr: teamBox?.team?.abbreviation || '', confirmed: false, lineupStatus: 'pending', source: 'MLB official lineup pending', updatedAt: new Date().toISOString() };
-      if (lineupRequestTokens[pid] !== token) return;
-      renderLineupPending(`panel-${pid}`, lineupCache[cacheKey].teamAbbr);
-      return;
-    }
+    let lineupConfirmed = true;
+    let lineupSource = 'MLB official batting order';
+    let lineupStatus = 'confirmed';
+    let expectedFromDate = null;
 
-    const lineupConfirmed = true;
-    const lineupSource = 'MLB official batting order';
-    const lineupStatus = 'confirmed';
+    if (!hasOfficialBattingOrder || !batters.length) {
+      // Today's official order isn't posted yet -- fall back to this team's most
+      // recent completed game's actual batting order as a reasonable placeholder,
+      // clearly labeled as unconfirmed for today rather than presented as real.
+      const expected = await fetchExpectedLineup(oppTeamId).catch(() => null);
+      if (expected && expected.batters.length) {
+        batters = expected.batters;
+        lineupConfirmed = false;
+        lineupStatus = 'expected';
+        expectedFromDate = expected.gameDate;
+        lineupSource = 'Expected lineup — from ' + new Date(expected.gameDate).toLocaleDateString('en-US', {month:'short', day:'numeric'}) + ", not yet confirmed for today";
+      } else {
+        const cacheKey = `${gamePk}-${side}`;
+        lineupCache[cacheKey] = { lineup: [], oppSide, teamAbbr: teamBox?.team?.abbreviation || '', confirmed: false, lineupStatus: 'pending', source: 'MLB official lineup pending', updatedAt: new Date().toISOString() };
+        if (lineupRequestTokens[pid] !== token) return;
+        renderLineupPending(`panel-${pid}`, lineupCache[cacheKey].teamAbbr);
+        return;
+      }
+    }
 
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
 
@@ -2548,6 +2593,7 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
       confirmed: lineupConfirmed,
       lineupStatus,
       source: lineupSource,
+      expectedFromDate,
       updatedAt: new Date().toISOString()
     };
 
@@ -2854,14 +2900,19 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
   if (!panel) return;
   const { lineup, teamAbbr } = data || {};
   const lineupIsOfficial = data?.confirmed === true || (lineup || []).some(b => b.confirmed === true);
-  if (!lineupIsOfficial || !(lineup || []).length) {
+  const lineupIsExpected = !lineupIsOfficial && data?.lineupStatus === 'expected';
+  if ((!lineupIsOfficial && !lineupIsExpected) || !(lineup || []).length) {
     renderLineupPending(panelId, teamAbbr || oppAbbr || '');
     return;
   }
   const lineupBadge = lineupIsOfficial
     ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#0d2a1a;border:1px solid #2ecc71;color:#2ecc71;border-radius:999px;padding:2px 8px;font-size:9px;font-weight:800;letter-spacing:.6px">✅ CONFIRMED LINEUP</span>'
-    : '<span style="display:inline-flex;align-items:center;gap:4px;background:#2a1800;border:1px solid #f4a261;color:#f4a261;border-radius:999px;padding:2px 8px;font-size:9px;font-weight:800;letter-spacing:.6px">⚠ LINEUP NOT CONFIRMED</span>';
-  const lineupNotice = '';
+    : lineupIsExpected
+      ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#0d1a30;border:1px solid #2f6bff;color:#7aa6ff;border-radius:999px;padding:2px 8px;font-size:9px;font-weight:800;letter-spacing:.6px">🔮 EXPECTED LINEUP</span>'
+      : '<span style="display:inline-flex;align-items:center;gap:4px;background:#2a1800;border:1px solid #f4a261;color:#f4a261;border-radius:999px;padding:2px 8px;font-size:9px;font-weight:800;letter-spacing:.6px">⚠ LINEUP NOT CONFIRMED</span>';
+  const lineupNotice = lineupIsExpected
+    ? `<div style="margin:8px 0;padding:8px 12px;background:#0d1a30;border:1px solid rgba(47,107,255,.4);border-radius:8px;font-size:11px;color:#9fbdff;line-height:1.5">🔮 <strong>Not yet confirmed for today.</strong> Showing ${teamAbbr || oppAbbr || 'this team'}'s lineup from ${data?.expectedFromDate ? new Date(data.expectedFromDate).toLocaleDateString('en-US', {month:'short', day:'numeric'}) : 'their last game'} as a placeholder — swaps to the real batting order the moment MLB posts it.</div>`
+    : '';
 
   function hrProb(s) {
     const ab = parseInt(s.atBats) || 0;
@@ -2894,7 +2945,11 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
   const topTwoIdx = new Set(withProbs.map((b, i) => i).sort((a, b) => withProbs[b].hrProb - withProbs[a].hrProb).slice(0, 2));
 
   // ── Feed into HR Potential if it's empty (lineups not posted via API yet) ──
-  if (pitcherId && pitcherName) {
+  // Only for a truly confirmed lineup — an "expected" lineup is borrowed from a prior
+  // game and isn't a reliable signal that this batter is even in today's game (bench day,
+  // platoon, injury, roster move since that game), so it shouldn't show up as an HR
+  // Threat, just as a placeholder in this lineup panel until the real order posts.
+  if (pitcherId && pitcherName && lineupIsOfficial) {
     const prRow = prRows.find(r => r.pitcher.id == pitcherId);
     const timeLabel = prRow?.pitcher.timeLabel || '–';
     const timeColor = prRow?.pitcher.timeColor || 'var(--text)';
