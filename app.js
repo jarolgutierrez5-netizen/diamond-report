@@ -1572,6 +1572,12 @@ const bannerHRs = {};           // batterId -> { id, name, teamAbbr, oppAbbr, co
 const bannerKs  = {};           // pitcherId -> { name, teamAbbr, oppAbbr, ks, ouLine }
 let hrpRows = [], hrpSortCol = 'hrProb', hrpSortDir = -1, hrpFilter = 'all';
 let statcastHotHitters = {};
+// Auto-tuned server-side shrinkage constant (see scripts/tune-model-params.mjs) for how
+// hard to trust the Statcast "hot hitter" signal when it moves HR odds -- same constant
+// the server-side HR Threats scoring already uses, and the same weekly calibration loop
+// that adjusts it. Defaults to 0.6 (its documented starting value) until the fetch below
+// resolves or if data/model-params.json is ever unavailable.
+let hrMultShrinkage = 0.6;
 
 // Warning-track fly-out ("near HR") store — loaded from data/near-hrs.json,
 // written by scripts/sync-near-hrs.mjs. Keyed by batter MLB ID (string).
@@ -3369,6 +3375,28 @@ async function loadTrackerPicks() {
     return result;
   })();
   return _trackerPicksLoadPromise;
+}
+
+// Same fetch-once/cache pattern as loadTrackerPicks above, for the auto-tuned
+// HR_MULT_SHRINKAGE (see hrMultShrinkage's declaration and scripts/tune-model-params.mjs).
+// Lets the live HR Threats board apply the same evidence-weighted, calibration-checked
+// shrinkage the server-side scoring already uses, instead of an untuned constant baked
+// into this file that nothing ever re-validates against real outcomes.
+let _hrModelParamsLoadPromise = null;
+async function loadHRModelParams() {
+  if (_hrModelParamsLoadPromise) return _hrModelParamsLoadPromise;
+  _hrModelParamsLoadPromise = (async () => {
+    try {
+      const res = await fetch('./data/model-params.json', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        const v = Number(data?.params?.HR_MULT_SHRINKAGE);
+        if (Number.isFinite(v)) hrMultShrinkage = v;
+      }
+    } catch {}
+    return hrMultShrinkage;
+  })();
+  return _hrModelParamsLoadPromise;
 }
 
 // Shared DR win-probability model output, keyed by gamePk. Populated by loadGameProps
@@ -5794,7 +5822,15 @@ function getStatcastHotHitterProfile(row) {
   return { ...fallback, ...fromRepo, source:'statcast-repo', onFireScore:Math.max(score, fallback.onFireScore || 0), hotBoostPct:+Math.max(boost, fallback.hotBoostPct || 0).toFixed(1), tags:[...new Set([...tags, ...(fallback.tags||[])])].slice(0,6) };
 }
 function applyHotHitterBoost(row) {
-  const profile = getStatcastHotHitterProfile(row);
+  // loadHRPotential's main per-batter loop already folds the Statcast hot-hitter read
+  // into baseHrProb itself (a bounded, shrunk rate MULTIPLIER applied before the game
+  // simulation runs -- see hotMultApplied/hotProfileSnapshot there) rather than adding a
+  // flat percentage-point boost on top of an already-final probability, which is what
+  // this function still does for its other caller (the Pitcher Report lineup-panel
+  // fallback, whose simpler hrProb(s) has no simulation step to fold a multiplier into).
+  // Reusing the snapshot here (instead of recomputing) also guarantees the badge/tag
+  // display matches exactly what drove the score, not a second independent read of it.
+  const profile = row.hotMultApplied ? (row.hotProfileSnapshot || getStatcastHotHitterProfile(row)) : getStatcastHotHitterProfile(row);
   // Read from the stable, un-boosted baseHrProb rather than the current (possibly
   // already-boosted) row.hrProb. loadHRPotential's progressive render re-applies this
   // to every row seen so far on each debounce cycle (not just newly added ones), so
@@ -5808,7 +5844,9 @@ function applyHotHitterBoost(row) {
   row.hotHitter = profile;
   row.hotBoostPct = boost;
   row.onFireScore = Number(profile.onFireScore || 0);
-  row.hrProb = +clampNum(base + boost, 0, 35).toFixed(1);
+  // hotMultApplied rows already have the hot-hitter effect baked into base (as a rate
+  // multiplier, before simulation) -- adding boost again here would double-count it.
+  row.hrProb = +clampNum(row.hotMultApplied ? base : base + boost, 0, 35).toFixed(1);
   row.isOnFire = row.onFireScore >= 70 || boost >= 4.5;
   row.rosterStatus = profile.rosterStatus || null;
   return row;
@@ -6643,6 +6681,7 @@ async function loadHRPotential() {
     await loadStatcastHotHitters();
     await loadParkFactors().catch(() => {});
     await loadBallparkPalFactors().catch(() => {});
+    await loadHRModelParams().catch(() => {});
     const games = await getTodaySchedule('team,probablePitcher');
     await loadActivePlayerIdsForGames(games).catch(() => {});
 
@@ -6928,7 +6967,30 @@ async function loadHRPotential() {
           // module) — a real park's effect is real, but PA-level HR rate has enough other
           // noise that a full raw multiply would overcorrect for it.
           const parkAdj = 1 + ((gameParkFactor - 100) / 100) * 0.5;
-          const hrPerPA = ((batterRate*0.6)+(pitcherRate*0.4)) * parkAdj;
+          // Hot-hitter multiplier -- computed here (before the simulation) rather than as
+          // a flat percentage-point add-on afterward (see applyHotHitterBoost below), so a
+          // "hot streak" read moves the underlying per-PA rate the same way every other
+          // input here does, instead of being able to leapfrog a player across score
+          // buckets regardless of how strong the rest of the matchup actually is -- the
+          // calibration report showed exactly that: the 22-24% score bucket underperforming
+          // the 18% bucket in real outcomes. Mirrors scoreForMarket's
+          // battedBallPowerIndex/shrinkMult design server-side (see
+          // scripts/update-tracker.mjs), including reusing its same auto-tuned
+          // HR_MULT_SHRINKAGE constant (hrMultShrinkage, loaded via loadHRModelParams), so
+          // this inherits the same weekly calibration feedback loop instead of an untested
+          // constant nothing ever re-checks against real outcomes. earlyShrunkOps/
+          // earlyFavorable are deliberately self-contained here (not the fuller
+          // shrunkOps/isFavorable computed later below) so this can run before the rest of
+          // the row's stats are assembled, without reordering that existing logic.
+          const earlyShrunkOps = ((parseFloat(s.ops)||0)*hrpSampleWeight) + (0.720*(1-hrpSampleWeight));
+          const earlyFavorable = earlyShrunkOps>=.800 && (pitcherWhip>=1.25 || pitcherAvg>=.260);
+          const hotProfile = getStatcastHotHitterProfile({ id: pid, name: b.player.person?.fullName || '', ops: earlyShrunkOps, last10HR: last10HR||0, streakDays: streakDays||0, isFavorable: earlyFavorable, stats: { slg: s.slg, avg: s.avg } });
+          // 1.0-1.5x, same bound family as battedBallPowerIndex's 0.7-1.5 clamp -- this
+          // signal only ever boosts (never suppresses), matching its previous additive-only
+          // behavior, just applied as a rate multiplier instead of a flat point add-on.
+          const hotMult = 1 + (clampNum(hotProfile.onFireScore, 0, 100) / 100) * 0.5;
+          const shrunkHotMult = 1 + (hotMult - 1) * hrMultShrinkage;
+          const hrPerPA = ((batterRate*0.6)+(pitcherRate*0.4)) * parkAdj * shrunkHotMult;
           // Lineup slot (1-9), computed here (not just below with the display battingOrder)
           // so it can feed the per-PA count the HR simulation runs — same 3-digit MLB
           // battingOrder code as the display field derives from.
@@ -6992,6 +7054,7 @@ async function loadHRPotential() {
             teamAbbr, oppAbbr, pitcherName:pitcher.fullName, pitcherId:pitcher.id,
             timeLabel, timeColor, gameTimestamp:dt.getTime(), gamePk:g.gamePk,
             stats:s, todayStats: todayBoxStats, todayHits, todayRBI, todayTB, todaySB, todayRuns, todayHR, last10HR, baseHrProb, hrProb, streakDays, hrVsPitcher,
+            hotMultApplied: true, hotProfileSnapshot: hotProfile,
             avg:finalAvg, hrSeason:hr, ops:shrunkOps, obp:finalObp, slg:finalSlg,
             battingOrder,
             pitcherAvgAllowed: pitcherAvg, pitcherSlgAllowed: pitcherSlg, pitcherWhipAllowed: pitcherWhip,
