@@ -907,6 +907,12 @@ const STATCAST_PATH = path.join(__dirname, '..', 'data', 'batter-pitch-type-seas
 // *thrown* instead of per pitch type *seen*. Same sync script, same "collected but
 // never actually read here" gap as the batter file.
 const PITCHER_STATCAST_PATH = path.join(__dirname, '..', 'data', 'pitcher-statcast.json');
+// Exploratory "2-strike contact suppression" signal (scripts/sync-pitcher-2k-suppression.mjs)
+// — not read anywhere in scoreForMarket, just snapshotted onto captured HR Threat picks
+// below so analyze-hr-matchups.mjs can bucket real graded outcomes by it later, same
+// pattern as pitcherHr9/pitcherWhip. Only covers today's probable starters (the sync
+// script's scope), so most rows will have a null value until/unless that changes.
+const PITCHER_2K_SUPPRESSION_PATH = path.join(__dirname, '..', 'data', 'pitcher-2k-suppression.json');
 const LEAGUE_AVG_XSLG = 0.400; // same scale as LEAGUE_AVG_SLG; MLB-wide xSLG runs close to actual SLG
 const LEAGUE_AVG_HARD_HIT_PCT = 36; // percent; roughly MLB seasonal average hard-hit rate
 const STATCAST_MIN_PITCHES = 100; // below this, a player's aggregate is too thin a sample to trust
@@ -963,6 +969,26 @@ async function loadPitcherStatcastPowerIndex() {
     console.warn('Pitcher Statcast power index: failed to load, HR scoring will use box-score rates only:', e.message);
   }
   return pitcherStatcastPowerCache;
+}
+
+// Recording-only — see PITCHER_2K_SUPPRESSION_PATH comment above. Missing/unparseable
+// file is expected on any day the sync step didn't run or wasn't wired up yet, so this
+// fails silently to an empty map rather than warning like the two indexes above (those
+// are load-bearing for scoring; this one isn't).
+let pitcher2kSuppressionCache = null;
+async function loadPitcher2kSuppressionIndex() {
+  if (pitcher2kSuppressionCache) return pitcher2kSuppressionCache;
+  pitcher2kSuppressionCache = new Map();
+  try {
+    const raw = await readFile(PITCHER_2K_SUPPRESSION_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    for (const [id, p] of Object.entries(data?.pitchers || {})) {
+      if (Number.isFinite(p?.suppressionDeltaPct)) pitcher2kSuppressionCache.set(String(id), p.suppressionDeltaPct);
+    }
+  } catch {
+    // no-op — see comment above
+  }
+  return pitcher2kSuppressionCache;
 }
 
 // Converts an aggregate xSLG/hard-hit% into a bounded multiplier on the corresponding
@@ -1701,6 +1727,7 @@ async function captureDRPSimComparisonToday(compStore, previewGames, store, seas
 async function buildEliteBatterPool(games, season) {
   const statcastIndex = await loadStatcastPowerIndex();
   const pitcherStatcastIndex = await loadPitcherStatcastPowerIndex();
+  const pitcher2kSuppressionIndex = await loadPitcher2kSuppressionIndex();
   const rows = [];
   for (const g of games) {
     for (const [side, opp] of [['away', 'home'], ['home', 'away']]) {
@@ -1787,6 +1814,7 @@ async function buildEliteBatterPool(games, season) {
           windFactor: windPowerFactor(g.weather), temperatureFactor: temperaturePowerFactor(g.weather),
           fatigueFactor: battingTeamFatigue,
           pitcherStatcast, homeRoadFactor,
+          pitcher2kSuppressionDelta: pitcher2kSuppressionIndex.get(String(pitcher.id)) ?? null,
         };
       });
       sideRows.filter(Boolean).forEach(r => rows.push(r));
@@ -2000,6 +2028,11 @@ async function captureHRThreatToday(store, pool) {
       pitcherSlgAllowed: r.pitcherSlgAllowed ?? null, pitcherWhip: r.pitcherWhip ?? null,
       batterOPS: r.ops ?? null, batterISO: r.iso ?? null,
       parkFactor: r.parkFactor ?? null, windFactor: r.windFactor ?? null, temperatureFactor: r.temperatureFactor ?? null,
+      // Exploratory "Pitcher IQ" signal — see PITCHER_2K_SUPPRESSION_PATH comment.
+      // Recorded here purely so it accumulates against real graded outcomes; not
+      // used by scoreForMarket. Mostly null until a pitcher clears the sync
+      // script's sample floor and is today's probable starter.
+      pitcher2kSuppressionDelta: r.pitcher2kSuppressionDelta ?? null,
     });
     already.add(r.id);
     added++;
@@ -2265,7 +2298,7 @@ export {
   captureHRThreatToday, gradeHRThreatPending,
   simulatePropOdds, simulateSBOdds, simulateHRGameOdds, scoreForMarket, eliteQualityScore,
   eliteHit, fetchOddsLookup, normalizeName,
-  loadStatcastPowerIndex, loadPitcherStatcastPowerIndex, battedBallPowerIndex,
+  loadStatcastPowerIndex, loadPitcherStatcastPowerIndex, loadPitcher2kSuppressionIndex, battedBallPowerIndex,
   parseInningsPitched, pitcherBattersFacedPer9,
   windPowerFactor, temperaturePowerFactor, isDayGameCT, doubleheaderFatigueFactor, teamRestFatigueFactor,
   battingSplitHomeAway, homeRoadPowerFactor,
