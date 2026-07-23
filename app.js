@@ -11583,83 +11583,43 @@ if (document.readyState === 'loading') {
   }, 5000);
 })();
 
-// Desktop collapsible sidebar nav — separate element from the mobile hamburger
-// drawer (#dr-mobile-drawer), so this never touches that drawer's open/close
-// behavior. Clicking a sidebar item routes through the same
+// Desktop top nav — separate element from the mobile hamburger drawer
+// (#dr-mobile-drawer), so this never touches that drawer's open/close
+// behavior. Clicking a top nav item routes through the same
 // window.DiamondNavigateToPane the mobile drawer already uses.
 //
 // Active-state highlighting is handled manually here rather than relying on
 // the existing .gamepick-tab sync (activateGamePickPane/setDesktopTabState):
 // both of those scope their tab query to root = document.getElementById('props'),
-// and this sidebar lives outside #props (it needs to be a sibling of <main>,
-// not nested inside a scrollable section, to render as a fixed full-height
-// sidebar) — so it would never get found by that scoped query.
+// and this nav lives outside #props (it needs to be a sibling of <main>, not
+// nested inside a scrollable section, to render as a sticky full-width bar)
+// — so it would never get found by that scoped query.
 (function(){
-  var STORAGE_KEY = 'dr_sidebar_collapsed';
-  function syncActive(sidebar, pane){
-    sidebar.querySelectorAll('.dr-sidebar-tab[data-gamepick-pane]').forEach(function(btn){
+  function syncActive(nav, pane){
+    nav.querySelectorAll('.dr-top-nav-tab[data-gamepick-pane]').forEach(function(btn){
       btn.classList.toggle('active', btn.getAttribute('data-gamepick-pane') === pane);
     });
   }
   function bind(){
-    var sidebar = document.getElementById('dr-sidebar-nav');
-    if (!sidebar) return;
-    var toggle = document.getElementById('dr-sidebar-toggle');
-    if (toggle && !toggle.dataset.drSidebarReady) {
-      toggle.dataset.drSidebarReady = '1';
-      toggle.addEventListener('click', function(){
-        var collapsed = sidebar.classList.toggle('collapsed');
-        document.body.classList.toggle('dr-sidebar-collapsed', collapsed);
-        try { localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0'); } catch(e) {}
-      });
-    }
-    try {
-      // Collapsed by default — only stays expanded if the visitor explicitly
-      // expanded it before (an explicit '0' saved). No saved value (first
-      // visit) or a saved '1' both collapse.
-      if (localStorage.getItem(STORAGE_KEY) !== '0') {
-        sidebar.classList.add('collapsed');
-        document.body.classList.add('dr-sidebar-collapsed');
-      }
-    } catch(e) {}
-    sidebar.querySelectorAll('.dr-sidebar-tab[data-gamepick-pane]').forEach(function(btn){
-      if (btn.dataset.drSidebarReady) return;
-      btn.dataset.drSidebarReady = '1';
+    var nav = document.getElementById('dr-top-nav');
+    if (!nav) return;
+    nav.querySelectorAll('.dr-top-nav-tab[data-gamepick-pane]').forEach(function(btn){
+      if (btn.dataset.drTopNavReady) return;
+      btn.dataset.drTopNavReady = '1';
       btn.addEventListener('click', function(){
         var pane = btn.getAttribute('data-gamepick-pane');
-        syncActive(sidebar, pane);
+        syncActive(nav, pane);
         if (typeof window.DiamondNavigateToPane === 'function') window.DiamondNavigateToPane(pane);
       });
     });
-    // Baseball group's own sub-tab list — collapsed by default (only stays
-    // expanded across visits if explicitly opened before), independent of
-    // the whole-sidebar icon-only toggle above.
-    var baseballToggle = document.getElementById('dr-sidebar-baseball-toggle');
-    var baseballItems = document.getElementById('dr-sidebar-baseball-items');
-    if (baseballToggle && baseballItems && !baseballToggle.dataset.drSidebarReady) {
-      baseballToggle.dataset.drSidebarReady = '1';
-      var GROUP_KEY = 'dr_sidebar_baseball_expanded';
-      var setBaseballExpanded = function(expanded){
-        baseballItems.classList.toggle('expanded', expanded);
-        baseballToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-      };
-      var startExpanded = false;
-      try { startExpanded = localStorage.getItem(GROUP_KEY) === '1'; } catch(e) {}
-      setBaseballExpanded(startExpanded);
-      baseballToggle.addEventListener('click', function(){
-        var expanded = !baseballItems.classList.contains('expanded');
-        setBaseballExpanded(expanded);
-        try { localStorage.setItem(GROUP_KEY, expanded ? '1' : '0'); } catch(e) {}
-      });
-    }
     // Initial state: match whatever pane the page booted into (hash-restored
     // or default), read from the already-rendered #props panes.
     var activePane = document.querySelector('#props .gamepick-pane.active');
-    if (activePane) syncActive(sidebar, activePane.getAttribute('data-gamepick-pane'));
+    if (activePane) syncActive(nav, activePane.getAttribute('data-gamepick-pane'));
     window.addEventListener('hashchange', function(){
       setTimeout(function(){
         var p = document.querySelector('#props .gamepick-pane.active');
-        if (p) syncActive(sidebar, p.getAttribute('data-gamepick-pane'));
+        if (p) syncActive(nav, p.getAttribute('data-gamepick-pane'));
       }, 30);
     });
   }

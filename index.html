@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026072318">
+<link rel="stylesheet" href="styles.min.css?v=2026072351">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -154,39 +154,34 @@
   </div>
 </div>
 
-<!-- Desktop collapsible sidebar nav (wide viewports only — mobile keeps the
-     hamburger drawer above, untouched). Reuses the existing showGamePickPane
-     routing via window.DiamondNavigateToPane, so clicking a
-     sidebar item behaves identically to the horizontal gamepick-tabs. Shares
-     the .gamepick-tab class for CSS purposes, but active-state highlighting
-     for these specific buttons is handled by a small dedicated script (see
-     the end of app.js) since this sidebar lives outside #props, which is
-     what the existing tab-sync logic scopes its queries to. -->
-<aside id="dr-sidebar-nav" class="dr-sidebar-nav" aria-label="Site navigation">
-  <button type="button" id="dr-sidebar-toggle" class="dr-sidebar-toggle" aria-label="Collapse sidebar" title="Collapse sidebar">☰</button>
-  <div class="dr-sidebar-group">
-    <button type="button" class="dr-sidebar-group-head dr-sidebar-group-toggle" id="dr-sidebar-baseball-toggle" aria-expanded="false" aria-controls="dr-sidebar-baseball-items"><span class="dr-sidebar-icon">⚾</span><span class="dr-sidebar-label">Baseball</span><span class="dr-sidebar-group-chevron">▾</span></button>
-    <div class="dr-sidebar-group-items" id="dr-sidebar-baseball-items">
-    <button type="button" data-gamepick-pane="game" class="gamepick-tab dr-sidebar-tab active"><span class="dr-sidebar-icon">📊</span><span class="dr-sidebar-label">Games Today</span></button>
-    <button type="button" data-gamepick-pane="pr" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">📋</span><span class="dr-sidebar-label">Pitcher Report</span></button>
-    <button type="button" data-gamepick-pane="hr" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">🔥</span><span class="dr-sidebar-label">Home Runs</span></button>
-    <button type="button" data-gamepick-pane="k" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">🎯</span><span class="dr-sidebar-label">Strikeouts</span></button>
-    <button type="button" data-gamepick-pane="hits" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">⚾</span><span class="dr-sidebar-label">Hits</span></button>
-    <button type="button" data-gamepick-pane="rbis" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">💰</span><span class="dr-sidebar-label">RBIs</span></button>
-    <button type="button" data-gamepick-pane="tb" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">💎</span><span class="dr-sidebar-label">Total Bases</span></button>
-    <button type="button" data-gamepick-pane="sb" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">🏃</span><span class="dr-sidebar-label">Stolen Bases</span></button>
-    <button type="button" data-gamepick-pane="hrrbi" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">📈</span><span class="dr-sidebar-label">Hits+Runs+RBI</span></button>
-    <button type="button" data-gamepick-pane="fantasy" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">🏆</span><span class="dr-sidebar-label">Fantasy Points</span></button>
-    </div>
+<!-- Desktop top nav (wide viewports only — mobile keeps the hamburger drawer
+     above, untouched). Reuses the existing showGamePickPane routing via
+     window.DiamondNavigateToPane, so clicking a top nav item behaves
+     identically to the horizontal gamepick-tabs it replaces at this width.
+     Deliberately its own fresh classes (not .gamepick-tab) rather than
+     reusing that heavily-patched legacy class -- active-state highlighting
+     for these buttons is handled by a small dedicated script (see the end
+     of app.js) since this nav lives outside #props, which is what the
+     existing tab-sync logic scopes its queries to. A full-width bar has
+     room to show every item flat, so unlike the fixed-width sidebar this
+     replaced, there's no collapse toggle or Baseball accordion needed. -->
+<div id="dr-top-nav" class="dr-top-nav" role="navigation" aria-label="Site navigation">
+  <div class="dr-top-nav-inner">
+    <button type="button" data-gamepick-pane="game" class="dr-top-nav-tab active"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="15" height="13" rx="2.5"/><path d="M2.5 8h15"/><path d="M6.5 2.5v3M13.5 2.5v3"/></svg><span>Games Today</span></button>
+    <button type="button" data-gamepick-pane="pr" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5H5a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8z"/><path d="M11.5 2.5V8H17"/><path d="M7 11h6M7 14h4"/></svg><span>Pitcher Report</span></button>
+    <button type="button" data-gamepick-pane="hr" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8c.9 2.7-2.4 3.7-2.4 6.8a2.4 2.4 0 0 0 4.8 0c0-.8-.4-1.5-.8-2 .2 1.2-.8 1.6-1 .8-.4-1.1.8-1.7.6-3.7-.1-1.6-1.2-1.9-1.2-1.9z"/><path d="M7.2 11.5A3.4 3.4 0 0 0 10 17a3.4 3.4 0 0 0 3.3-4.3"/></svg><span>Home Runs</span></button>
+    <button type="button" data-gamepick-pane="k" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2.5L4.5 11h4.2L8 17.5l6.5-9h-4.2z"/></svg><span>Strikeouts</span></button>
+    <button type="button" data-gamepick-pane="hits" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M5.6 4.6c1.4 1.5 1.9 3.4 1.9 5.4s-.5 3.9-1.9 5.4M14.4 4.6c-1.4 1.5-1.9 3.4-1.9 5.4s.5 3.9 1.9 5.4" stroke-width="1.15"/></svg><span>Hits</span></button>
+    <button type="button" data-gamepick-pane="rbis" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M12.4 7.6c-.3-.8-1.1-1.3-2.2-1.3-1.3 0-2.3.7-2.3 1.7 0 1 .8 1.4 2.1 1.7 1.5.3 2.4.8 2.4 1.9 0 1-.9 1.7-2.3 1.7-1.1 0-2-.5-2.3-1.3" stroke-width="1.1"/><path d="M10 5.3v1.1M10 13.6v1.1" stroke-width="1.1"/></svg><span>RBIs</span></button>
+    <button type="button" data-gamepick-pane="tb" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8.2L10 3l4.5 5.2L10 17z"/><path d="M5.5 8.2h9M8 8.2L10 3M12 8.2L10 3" stroke-width="1"/></svg><span>Total Bases</span></button>
+    <button type="button" data-gamepick-pane="sb" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 6l4 4-4 4-4-4z"/><path d="M2.5 8.5h5M2.5 11.5h3.5" stroke-width="1.1"/></svg><span>Stolen Bases</span></button>
+    <button type="button" data-gamepick-pane="hrrbi" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.5V9M10 16.5V4M16 16.5v-6.5"/><path d="M2.5 16.5h15"/></svg><span>Hits+Runs+RBI</span></button>
+    <button type="button" data-gamepick-pane="fantasy" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h8v4a4 4 0 0 1-8 0v-4z"/><path d="M6 4.5H3.5v1a3 3 0 0 0 3 3M14 4.5h2.5v1a3 3 0 0 1-3 3"/><path d="M10 11.5v2.5M8 14h4v3H8z"/></svg><span>Fantasy Points</span></button>
+    <span class="dr-top-nav-divider" aria-hidden="true"></span>
+    <span class="dr-top-nav-soon" title="Coming soon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 10c2-4.3 5.7-6.5 7.2-6.5s5.2 2.2 7.2 6.5c-2 4.3-5.7 6.5-7.2 6.5s-5.2-2.2-7.2-6.5z"/><path d="M5.2 10h9.6" stroke-width="1.1"/><path d="M8 8.7v2.6M10 8.4v3.2M12 8.7v2.6" stroke-width="1"/></svg><span>Football</span><em>Soon</em></span>
+    <span class="dr-top-nav-soon" title="Coming soon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14" stroke-width="1.15"/><path d="M4.9 5.1c1.9 1.7 3 3 3 4.9s-1.1 3.2-3 4.9M15.1 5.1c-1.9 1.7-3 3-3 4.9s1.1 3.2 3 4.9" stroke-width="1.1"/></svg><span>Basketball</span><em>Soon</em></span>
   </div>
-  <div class="dr-sidebar-divider"></div>
-  <div class="dr-sidebar-group dr-sidebar-future">
-    <div class="dr-sidebar-group-head"><span class="dr-sidebar-icon">🏈</span><span class="dr-sidebar-label">Football</span><span class="dr-sidebar-soon">Soon</span></div>
-  </div>
-  <div class="dr-sidebar-group dr-sidebar-future">
-    <div class="dr-sidebar-group-head"><span class="dr-sidebar-icon">🏀</span><span class="dr-sidebar-label">Basketball</span><span class="dr-sidebar-soon">Soon</span></div>
-  </div>
-</aside>
+</div>
 
 <!-- Horizontal Ad -->
 
@@ -783,7 +778,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026072318" defer></script>
+<script src="app.min.js?v=2026072351" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
