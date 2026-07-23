@@ -4106,30 +4106,29 @@ select:focus-visible {
   }
 }
 
-/* HR Threats compare tray -- per-card checkbox, floating selection bar, and the
-   ranked-comparison modal. See app.js's drHRCompare* functions. */
+/* HR Threats compare tray -- per-card checkbox (bottom of card, below the scouting
+   reasoning text), floating selection bar, and the ranked-comparison modal. See
+   app.js's drHRCompare* functions. */
 .dr1027-hr-card { position: relative; }
 .dr1027-hr-compare {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 2;
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 8px;
-  border-radius: 20px;
-  background: rgba(8, 8, 18, .75);
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(8, 8, 18, .55);
   border: 1px solid var(--border);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--muted);
   cursor: pointer;
   user-select: none;
 }
 .dr1027-hr-compare input[type="checkbox"] {
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
   margin: 0;
   accent-color: var(--accent);
   cursor: pointer;
