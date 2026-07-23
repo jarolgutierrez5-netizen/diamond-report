@@ -11583,39 +11583,42 @@ if (document.readyState === 'loading') {
   }, 5000);
 })();
 
-// Desktop top nav — separate element from the mobile hamburger drawer
-// (#dr-mobile-drawer), so this never touches that drawer's open/close
-// behavior. Clicking a board inside the Baseball dropdown routes through
-// the same window.DiamondNavigateToPane the mobile drawer already uses.
+// Desktop top nav — lives inside the header itself now (sports categories
+// left, logo pushed right), but is otherwise a separate element from the
+// mobile hamburger drawer (#dr-mobile-drawer), so this never touches that
+// drawer's open/close behavior. Clicking a board inside the Baseball
+// dropdown routes through the same window.DiamondNavigateToPane the mobile
+// drawer already uses.
 //
 // Active-state highlighting is handled manually here rather than relying on
 // the existing .gamepick-tab sync (activateGamePickPane/setDesktopTabState):
 // both of those scope their tab query to root = document.getElementById('props'),
-// and this nav lives outside #props (it needs to be a sibling of <main>, not
-// nested inside a scrollable section, to render as a sticky full-width bar)
-// — so it would never get found by that scoped query.
+// and this nav lives outside #props — so it would never get found by that
+// scoped query.
 (function(){
   function closeMenu(catBtn, menu){
     menu.classList.remove('open');
     menu.setAttribute('aria-hidden', 'true');
     catBtn.setAttribute('aria-expanded', 'false');
   }
-  function openMenu(catBtn, menu, nav){
+  function openMenu(catBtn, menu, header){
     // .dr-top-nav-menu lives as a sibling of .dr-top-nav-inner (not nested
-    // inside it) so the row's own overflow-x:auto scroll fallback can't clip
-    // it -- see the comment in index.html. That means it isn't naturally
-    // positioned under the button, so align its left edge here each time it
-    // opens (covers the row being horizontally scrolled at narrower widths).
-    var navRect = nav.getBoundingClientRect();
+    // inside it) so that row's own overflow-x:auto scroll fallback can't
+    // clip it -- see the comment in index.html. That means it isn't
+    // naturally positioned under the button, so align its left edge here
+    // each time it opens (covers the row being horizontally scrolled at
+    // narrower widths), relative to .header -- the nearest positioned
+    // ancestor now that this nav lives inside it.
+    var headerRect = header.getBoundingClientRect();
     var btnRect = catBtn.getBoundingClientRect();
-    menu.style.left = (btnRect.left - navRect.left) + 'px';
+    menu.style.left = (btnRect.left - headerRect.left) + 'px';
     menu.classList.add('open');
     menu.setAttribute('aria-hidden', 'false');
     catBtn.setAttribute('aria-expanded', 'true');
   }
-  function syncActive(nav, pane){
+  function syncActive(header, pane){
     var current = null;
-    nav.querySelectorAll('.dr-top-nav-tab[data-gamepick-pane]').forEach(function(btn){
+    header.querySelectorAll('.dr-top-nav-tab[data-gamepick-pane]').forEach(function(btn){
       var isActive = btn.getAttribute('data-gamepick-pane') === pane;
       btn.classList.toggle('active', isActive);
       if (isActive) current = btn.querySelector('span') ? btn.querySelector('span').textContent : '';
@@ -11624,8 +11627,8 @@ if (document.readyState === 'loading') {
     if (label && current) label.textContent = current;
   }
   function bind(){
-    var nav = document.getElementById('dr-top-nav');
-    if (!nav) return;
+    var header = document.querySelector('.header');
+    if (!header) return;
     var catBtn = document.getElementById('dr-top-nav-baseball-btn');
     var menu = document.getElementById('dr-top-nav-baseball-menu');
     if (catBtn && menu && !catBtn.dataset.drTopNavReady) {
@@ -11633,7 +11636,7 @@ if (document.readyState === 'loading') {
       catBtn.addEventListener('click', function(e){
         e.stopPropagation();
         if (menu.classList.contains('open')) closeMenu(catBtn, menu);
-        else openMenu(catBtn, menu, nav);
+        else openMenu(catBtn, menu, header);
       });
       document.addEventListener('click', function(e){
         if (menu.classList.contains('open') && !menu.contains(e.target) && e.target !== catBtn) closeMenu(catBtn, menu);
@@ -11642,12 +11645,12 @@ if (document.readyState === 'loading') {
         if (e.key === 'Escape' && menu.classList.contains('open')) closeMenu(catBtn, menu);
       });
     }
-    nav.querySelectorAll('.dr-top-nav-tab[data-gamepick-pane]').forEach(function(btn){
+    header.querySelectorAll('.dr-top-nav-tab[data-gamepick-pane]').forEach(function(btn){
       if (btn.dataset.drTopNavReady) return;
       btn.dataset.drTopNavReady = '1';
       btn.addEventListener('click', function(){
         var pane = btn.getAttribute('data-gamepick-pane');
-        syncActive(nav, pane);
+        syncActive(header, pane);
         if (catBtn && menu) closeMenu(catBtn, menu);
         if (typeof window.DiamondNavigateToPane === 'function') window.DiamondNavigateToPane(pane);
       });
@@ -11655,11 +11658,11 @@ if (document.readyState === 'loading') {
     // Initial state: match whatever pane the page booted into (hash-restored
     // or default), read from the already-rendered #props panes.
     var activePane = document.querySelector('#props .gamepick-pane.active');
-    if (activePane) syncActive(nav, activePane.getAttribute('data-gamepick-pane'));
+    if (activePane) syncActive(header, activePane.getAttribute('data-gamepick-pane'));
     window.addEventListener('hashchange', function(){
       setTimeout(function(){
         var p = document.querySelector('#props .gamepick-pane.active');
-        if (p) syncActive(nav, p.getAttribute('data-gamepick-pane'));
+        if (p) syncActive(header, p.getAttribute('data-gamepick-pane'));
       }, 30);
     });
   }

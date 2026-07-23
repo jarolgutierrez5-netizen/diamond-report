@@ -1649,15 +1649,19 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
 }
 /* ── Desktop top nav ───────────────────────────────────────────────────────
    Hidden by default (phones keep the existing hamburger drawer below
-   768px, completely untouched). Shown from 900px up, replacing the fixed
-   left sidebar this used to be. Sticky at the same 76px offset the
-   sidebar this replaces already used to clear the header.
+   768px, completely untouched). Shown from 900px up, folded directly into
+   the header row itself -- sports categories sit left, and
+   margin-right:auto on .dr-top-nav-inner soaks up the header's remaining
+   flex space, pushing the logo + date badge + account placeholder flush
+   right without needing to touch .header's own (heavily-patched)
+   justify-content. .header is already `position:fixed` from those legacy
+   rules, which is what the dropdown below positions itself against.
 
    Grouped by sport category (Baseball, Football, Basketball) rather than
    listing every board flat -- clicking the Baseball category reveals a
    dropdown of its 10 boards, closed by default. Football/Basketball have
    no boards yet, so they're plain disabled "Soon" pills with no dropdown. */
-#dr-top-nav {
+.dr-top-nav-inner {
   display: none;
 }
 @media (min-width: 900px) {
@@ -1673,24 +1677,12 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   .gamepick-tabs-wrap[aria-label="Game Picks section navigation"] {
     display: none !important;
   }
-  #dr-top-nav {
-    display: block;
-    position: sticky;
-    top: 76px;
-    z-index: 90;
-    background: rgba(7,12,20,.92);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(47,107,255,.28);
-    box-shadow: 0 12px 28px rgba(0,0,0,.22);
-  }
   .dr-top-nav-inner {
     display: flex;
     align-items: center;
     gap: 6px;
-    width: 100%;
-    box-sizing: border-box;
-    padding: 10px var(--dr-v11-page-pad, 24px);
+    min-width: 0;
+    margin-right: auto;
     overflow-x: auto;
     scrollbar-width: none;
   }
