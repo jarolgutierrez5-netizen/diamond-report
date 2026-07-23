@@ -10982,7 +10982,16 @@ if (document.readyState === 'loading') {
       try {
         var props = document.getElementById('props');
         if (props && window.matchMedia('(max-width:1179px)').matches) {
-          props.scrollIntoView({ block:'start', behavior:'smooth' });
+          // scrollIntoView({block:'start'}) aligns props' top edge with the very top of
+          // the viewport, with no awareness that .header is position:fixed and sits on
+          // top of that same spot -- it was covering however many px of the freshly-
+          // scrolled-to content the header's actual height came out to. Read the header's
+          // real height at scroll time (it varies by breakpoint) and subtract it so the
+          // content lands below the header instead of behind it.
+          var headerEl = document.querySelector('.header');
+          var headerH = headerEl ? headerEl.getBoundingClientRect().height : 0;
+          var targetY = window.scrollY + props.getBoundingClientRect().top - headerH;
+          window.scrollTo({ top: Math.max(0, targetY), behavior:'smooth' });
         }
       } catch(e) {}
     }
