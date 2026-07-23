@@ -4079,3 +4079,29 @@ select:focus-visible {
   color: #fff;
   background: rgba(255,255,255,.08);
 }
+
+/* ── Keep the top MLB/NFL/NBA dropdown nav shown at every tablet+ width ──
+   .dr-top-nav-inner previously only showed from 900px up, with the
+   .gamepick-tabs-wrap button grid filling in as a different-looking
+   fallback nav from 768px to 899px. By request, the top nav should look
+   the same at every width down to where the phone hamburger drawer takes
+   over (768px, untouched) instead of swapping to that grid. Appended last
+   so it wins over the earlier 900px-gated rule and every prior
+   .gamepick-tabs-wrap{display:...} override on this heavily-patched
+   selector. */
+@media (min-width: 768px) {
+  .dr-top-nav-inner {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    margin-right: auto;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .gamepick-tabs-wrap,
+  #props .gamepick-tabs-wrap,
+  .gamepick-tabs-wrap[aria-label="Game Picks section navigation"] {
+    display: none !important;
+  }
+}
