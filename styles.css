@@ -1908,6 +1908,54 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   flex-shrink: 0;
 }
 
+/* ── Reusable board-panel shell, redesign pass ────────────────────────────
+   .dr-panel/.dr-panel-head/.section-title carry 10-15+ conflicting
+   !important overrides each (multiple "remodel" passes over the years,
+   including the same abandoned cyberpunk theme the hero had) -- too
+   fragile to edit in place without risking every board that uses them.
+   Same fix as the hero: a fresh class (dr-panel-fresh), added to one
+   board's outer .dr-panel wrapper at a time, scoping clean descendant
+   rules that reliably win via specificity + !important without touching
+   the legacy rules or any board that hasn't opted in yet. Add
+   "dr-panel-fresh" to a board's wrapper to bring it into this look --
+   see the Game Projections panel in index.html for the first example.
+   NOTE: this only covers the panel shell/title -- the row/card content
+   inside most boards (e.g. .gp-card) is built from inline styles in
+   app.js template strings, a separate, larger piece of work. */
+.dr-panel-fresh {
+  background: rgba(255,255,255,.035) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  border-radius: 20px !important;
+  box-shadow: none !important;
+}
+.dr-panel-fresh .dr-panel-head {
+  background: none !important;
+  padding: 20px 22px 16px !important;
+  border-bottom: 1px solid rgba(255,255,255,.06) !important;
+}
+.dr-panel-fresh .section-title {
+  font-family: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.005em !important;
+  text-transform: none !important;
+  text-shadow: none !important;
+  color: #fff !important;
+  margin: 0 0 5px !important;
+  line-height: 1.25 !important;
+}
+.dr-panel-fresh .section-title span {
+  color: #6f9bff !important;
+  text-shadow: none !important;
+  letter-spacing: inherit !important;
+}
+.dr-panel-fresh .dr-panel-head small {
+  font-size: 12.5px !important;
+  font-weight: 400 !important;
+  color: #93a1bd !important;
+  line-height: 1.5 !important;
+}
+
 /* ── Hero: new-visitor explainer + trust pillars ──────────────────────────
    Fresh class names, not the existing .dr-prediction-hero p/h1 selectors —
    those already carry many conflicting per-breakpoint !important overrides,
