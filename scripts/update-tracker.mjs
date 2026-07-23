@@ -1780,11 +1780,15 @@ async function buildEliteBatterPool(games, season) {
         const hrSeason = n(stat.homeRuns);
         const battingOrderRaw = b.fromLineup ? Number(b.player?.battingOrder) : NaN;
         const battingOrder = Number.isFinite(battingOrderRaw) ? Math.max(1, Math.min(9, Math.floor(battingOrderRaw / 100))) : null;
-        const batterOPS = n(stat.ops);
         const pitcherWhip = n(pitcherStat.whip, 1.25);
         const pitcherAvgAllowed = n(pitcherStat.avg, 0.24);
         const pitcherSlgAllowed = n(pitcherStat.slg, 0.4);
-        const isFavorable = batterOPS >= 0.800 && (pitcherWhip >= 1.25 || pitcherAvgAllowed >= 0.260);
+        // Uses the recency+platoon-blended `ops` above, not a raw season OPS -- a batter
+        // who's been cold lately or has a bad split against this pitcher's throwing hand
+        // shouldn't get tagged "favorable" off a stale season-long number the rest of the
+        // model (iso, scoring) doesn't use either. Same fix already applied client-side
+        // (app.js's isFavorable/isDue) for the equivalent raw-vs-shrunk-OPS bug.
+        const isFavorable = ops >= 0.800 && (pitcherWhip >= 1.25 || pitcherAvgAllowed >= 0.260);
         // Real, independently-computable "hot" proxy (no Statcast sync available
         // server-side): recent AVG meaningfully above season AVG, or a HR within the
         // last 10 games.
@@ -1799,7 +1803,7 @@ async function buildEliteBatterPool(games, season) {
         const isDue = isDrought && (
           (iso >= 0.170 ? 1 : 0) +
           (isFavorable ? 1 : 0) +
-          (batterOPS >= 0.750 ? 1 : 0) +
+          (ops >= 0.750 ? 1 : 0) +
           (hrSeason >= 8 ? 1 : 0) // recent.hr===0 already established by isDrought above
         ) >= 2;
         return {
