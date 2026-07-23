@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-23T09:32:05.240Z",
+  "generatedAt": "2026-07-23T18:47:00.510Z",
   "market": {
     "drp": [
       {
@@ -6600,6 +6600,86 @@
         "projIP": 6.11,
         "oppKpct": 0.22,
         "lineup": []
+      },
+      {
+        "key": "2026-07-23|KPROP|casey legumina",
+        "date": "2026-07-23",
+        "gamePk": 822785,
+        "pitcherId": 668984,
+        "pitcherName": "Casey Legumina",
+        "team": "TB",
+        "opp": "TOR",
+        "projK": 5,
+        "line": 4.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 6.88,
+        "projIP": 7,
+        "oppKpct": 0.186,
+        "lineup": [
+          {
+            "id": 682818,
+            "name": "Yohendrick Piñango",
+            "battingOrder": 1,
+            "kPct": 0.235
+          },
+          {
+            "id": 665489,
+            "name": "Vladimir Guerrero Jr.",
+            "battingOrder": 2,
+            "kPct": 0.131
+          },
+          {
+            "id": 676391,
+            "name": "Ernie Clement",
+            "battingOrder": 3,
+            "kPct": 0.098
+          },
+          {
+            "id": 543807,
+            "name": "George Springer",
+            "battingOrder": 4,
+            "kPct": 0.195
+          },
+          {
+            "id": 672386,
+            "name": "Alejandro Kirk",
+            "battingOrder": 5,
+            "kPct": 0.123
+          },
+          {
+            "id": 672960,
+            "name": "Kazuma Okamoto",
+            "battingOrder": 6,
+            "kPct": 0.307
+          },
+          {
+            "id": 676914,
+            "name": "Davis Schneider",
+            "battingOrder": 7,
+            "kPct": 0.331
+          },
+          {
+            "id": 649966,
+            "name": "Luis Urías",
+            "battingOrder": 8,
+            "kPct": 0.121
+          },
+          {
+            "id": 664702,
+            "name": "Myles Straw",
+            "battingOrder": 9,
+            "kPct": 0.131
+          }
+        ]
       }
     ],
     "premium": [
@@ -33265,6 +33345,62 @@
         "windFactor": 1,
         "temperatureFactor": 1,
         "pitcher2kSuppressionDelta": -0.5
+      },
+      {
+        "key": "2026-07-23|HRTHREAT|691406",
+        "date": "2026-07-23",
+        "playerId": 691406,
+        "playerName": "Junior Caminero",
+        "team": "TB",
+        "opp": "TOR",
+        "gamePk": 822785,
+        "score": 33,
+        "result": "pending",
+        "actual": null,
+        "isOnFire": true,
+        "isFavorable": true,
+        "isDrought": false,
+        "isDue": false,
+        "pitcherId": 669456,
+        "pitcherName": "Shane Bieber",
+        "pitcherHr9": 2.66,
+        "pitcherAvgAllowed": 0.302,
+        "pitcherSlgAllowed": 0.594,
+        "pitcherWhip": 1.73,
+        "batterOPS": 0.94,
+        "batterISO": 0.2699112162162163,
+        "parkFactor": 91,
+        "windFactor": 1.1625,
+        "temperatureFactor": 0.982,
+        "pitcher2kSuppressionDelta": -3.3
+      },
+      {
+        "key": "2026-07-23|HRTHREAT|683748",
+        "date": "2026-07-23",
+        "playerId": 683748,
+        "playerName": "Victor Mesa Jr.",
+        "team": "TB",
+        "opp": "TOR",
+        "gamePk": 822785,
+        "score": 30,
+        "result": "pending",
+        "actual": null,
+        "isOnFire": true,
+        "isFavorable": true,
+        "isDrought": false,
+        "isDue": false,
+        "pitcherId": 669456,
+        "pitcherName": "Shane Bieber",
+        "pitcherHr9": 2.66,
+        "pitcherAvgAllowed": 0.302,
+        "pitcherSlgAllowed": 0.594,
+        "pitcherWhip": 1.73,
+        "batterOPS": 0.8,
+        "batterISO": 0.33115,
+        "parkFactor": 91,
+        "windFactor": 1.1625,
+        "temperatureFactor": 0.982,
+        "pitcher2kSuppressionDelta": -3.3
       }
     ]
   },
