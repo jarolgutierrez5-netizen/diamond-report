@@ -1578,6 +1578,29 @@ let statcastHotHitters = {};
 // that adjusts it. Defaults to 0.6 (its documented starting value) until the fetch below
 // resolves or if data/model-params.json is ever unavailable.
 let hrMultShrinkage = 0.6;
+// Shared shrink helper -- exact port of update-tracker.mjs's shrinkMult(m), used both
+// for the hot-hitter rate multiplier (loadHRPotential) and the quality-of-contact
+// season-power correction below, same as the server-side formula this mirrors.
+function shrinkMult(m) { return 1 + (m - 1) * hrMultShrinkage; }
+// Quality-of-contact correction for a batter's season HR rate -- exact port of
+// update-tracker.mjs's battedBallPowerIndex. Corrects the box-score HR/AB rate using
+// real quality-of-contact data (xSLG, hard-hit%) instead of trusting the counting stat
+// alone, which is blind to a batter hitting the ball harder (or softer) than his HR
+// total alone suggests -- see data/batter-power-index.json's own generation comment for
+// where this data comes from. Neutral (1x, no change) when there isn't enough of a
+// sample for this batter, so this never makes the model worse for an uncovered player.
+const LEAGUE_AVG_XSLG = 0.400;
+const LEAGUE_AVG_HARD_HIT_PCT = 36;
+const BATTER_POWER_MIN_PITCHES = 100;
+function battedBallPowerIndex(statcast) {
+  if (!statcast || !(statcast.pitches >= BATTER_POWER_MIN_PITCHES)) return 1;
+  const ratios = [];
+  if (statcast.xslg != null) ratios.push(statcast.xslg / LEAGUE_AVG_XSLG);
+  if (statcast.hardHitPct != null) ratios.push(statcast.hardHitPct / LEAGUE_AVG_HARD_HIT_PCT);
+  if (!ratios.length) return 1;
+  const avgRatio = ratios.reduce((a, b) => a + b, 0) / ratios.length;
+  return clampNum(avgRatio, 0.7, 1.5);
+}
 
 // Warning-track fly-out ("near HR") store — loaded from data/near-hrs.json,
 // written by scripts/sync-near-hrs.mjs. Keyed by batter MLB ID (string).
@@ -1786,6 +1809,29 @@ async function loadPitcherStatcast() {
 }
 let statcastHotHittersLoaded = false;
 let statcastHotHittersPromise = null;
+// Small, id-keyed {xslg, hardHitPct, pitches} aggregate per batter -- see
+// data/batter-power-index.json's own generation comment (sync-pitcher-statcast.mjs's
+// aggregateBatterPowerIndex) for why this exists as its own lightweight file instead of
+// eagerly loading the full ~1.6MB batter-pitch-type-season.json every HR Threats board
+// visitor never otherwise needs (that file stays lazy-loaded, only on matchup-modal open).
+let batterPowerIndex = {};
+let batterPowerIndexLoaded = false;
+let batterPowerIndexPromise = null;
+async function loadBatterPowerIndex(force = false) {
+  if (batterPowerIndexLoaded && !force) return batterPowerIndex;
+  if (batterPowerIndexPromise && !force) return batterPowerIndexPromise;
+  batterPowerIndexPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/batter-power-index.json`);
+      batterPowerIndex = data.players || {};
+    } catch (e) {
+      batterPowerIndex = {};
+    }
+    batterPowerIndexLoaded = true;
+    return batterPowerIndex;
+  })();
+  return batterPowerIndexPromise;
+}
 let kPropsData = [];
 let kPropsLoadedAt = null;
 // Full today's schedule as loaded for K Props — kept separately from kPropsData so the
@@ -6687,6 +6733,7 @@ async function loadHRPotential() {
     await loadParkFactors().catch(() => {});
     await loadBallparkPalFactors().catch(() => {});
     await loadHRModelParams().catch(() => {});
+    await loadBatterPowerIndex().catch(() => {});
     const games = await getTodaySchedule('team,probablePitcher');
     await loadActivePlayerIdsForGames(games).catch(() => {});
 
@@ -6970,7 +7017,15 @@ async function loadHRPotential() {
           // blend is too; the 0.88 factor converts the blended result to HR-per-PLATE-
           // APPEARANCE (PA also includes walks/HBP/sac flies) to match what pitcherRate
           // and hrPerPA below assume.
-          const batterRate = ((rawBatterRate*hrpSampleWeight) + (HRP_LEAGUE_AVG_HR_RATE*(1-hrpSampleWeight))) * 0.88;
+          const boxScoreBatterRate = ((rawBatterRate*hrpSampleWeight) + (HRP_LEAGUE_AVG_HR_RATE*(1-hrpSampleWeight))) * 0.88;
+          // Quality-of-contact correction (see battedBallPowerIndex's own header comment)
+          // -- corrects the pure counting-stat rate above using real xSLG/hard-hit% data
+          // when there's enough of a sample for this batter, same shrinkMult/
+          // HR_MULT_SHRINKAGE design as the hot-hitter multiplier below and the exact
+          // server-side correction scoreForMarket already applies (see
+          // scripts/update-tracker.mjs). Neutral (1x) with no coverage, same graceful
+          // degradation as every other optional signal here.
+          const batterRate = boxScoreBatterRate * shrinkMult(battedBallPowerIndex(batterPowerIndex[String(pid)]));
           // homeRunsPer9 is allowed-per-9-innings (27 outs); a pitcher actually faces
           // ~38 batters per 9 innings once baserunners allowed are counted, so dividing
           // by 27 overstated the pitcher's true HR-per-batter rate.
@@ -7005,7 +7060,7 @@ async function loadHRPotential() {
           // signal only ever boosts (never suppresses), matching its previous additive-only
           // behavior, just applied as a rate multiplier instead of a flat point add-on.
           const hotMult = 1 + (clampNum(hotProfile.onFireScore, 0, 100) / 100) * 0.5;
-          const shrunkHotMult = 1 + (hotMult - 1) * hrMultShrinkage;
+          const shrunkHotMult = shrinkMult(hotMult);
           const hrPerPA = ((batterRate*0.6)+(pitcherRate*0.4)) * parkAdj * shrunkHotMult * weatherHRMult;
           // Lineup slot (1-9), computed here (not just below with the display battingOrder)
           // so it can feed the per-PA count the HR simulation runs — same 3-digit MLB

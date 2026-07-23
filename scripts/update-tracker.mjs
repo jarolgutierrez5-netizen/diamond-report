@@ -1487,7 +1487,13 @@ function computeLiveHRScore(row, statcastHotHitters, weatherHRMult = 1) {
   const ab = row.atBats || 0, hr = row.hrSeason || 0;
   const sampleWeight = Math.min(ab, HRP_MIN_AB_FOR_RATE) / HRP_MIN_AB_FOR_RATE;
   const rawBatterRate = ab > 0 ? hr / ab : 0;
-  const batterRate = ((rawBatterRate * sampleWeight) + (HRP_LEAGUE_AVG_HR_RATE * (1 - sampleWeight))) * 0.88;
+  const boxScoreBatterRate = ((rawBatterRate * sampleWeight) + (HRP_LEAGUE_AVG_HR_RATE * (1 - sampleWeight))) * 0.88;
+  // Quality-of-contact correction -- same battedBallPowerIndex/shrinkMult this file's
+  // own scoreForMarket already applies, and the exact signal the live client formula
+  // this function mirrors now also applies (see app.js's loadHRPotential). row.statcast
+  // is already populated by buildEliteBatterPool from the same statcastIndex
+  // scoreForMarket uses, so this needs no separate data source.
+  const batterRate = boxScoreBatterRate * shrinkMult(battedBallPowerIndex(row.statcast));
   const pitcherRate = row.pitcherHr9 > 0 ? row.pitcherHr9 / 38 : 0.03;
   const parkAdj = 1 + ((row.parkFactor - 100) / 100) * 0.5;
   const onFireScore = liveOnFireScore(row, statcastHotHitters);
@@ -2022,7 +2028,7 @@ async function buildEliteBatterPool(games, season) {
         const liveScore = computeLiveHRScore({
           id: pid, name: person.fullName, ops, iso, atBats: ab, hrSeason,
           pitcherHr9: n(pitcherStat.homeRunsPer9), parkFactor: rowParkFactor, battingOrder,
-          last10HR: recent?.hr || 0, isFavorable,
+          last10HR: recent?.hr || 0, isFavorable, statcast: statcastIndex.get(String(pid)) || null,
         }, statcastHotHittersIndex, weatherHRMult);
         return {
           id: pid, name: person.fullName, teamAbbr, oppAbbr, gamePk: g.gamePk,
