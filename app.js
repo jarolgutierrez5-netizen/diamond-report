@@ -306,6 +306,13 @@
     var patterns = [/last\s+synced/i, /last\s+updated/i];
     var nodes = document.querySelectorAll('div, span, p, small');
     nodes.forEach(function (node) {
+      // Leaf elements only -- matching against the full aggregated .textContent
+      // also matched large ANCESTOR containers that merely happened to contain
+      // one of these labels somewhere inside them (e.g. HR Threats' whole
+      // .dr-filter-row wraps #props-refresh, which this sets to "Last updated
+      // HH:MM" once its data loads), hiding the entire container instead of
+      // just the intended small timestamp label.
+      if (node.children.length > 0) return;
       var text = (node.textContent || '').trim();
       if (!text) return;
       if (patterns.some(function (rx) { return rx.test(text); })) {
