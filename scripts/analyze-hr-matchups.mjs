@@ -52,13 +52,13 @@ function bucketStats(rows, bucketFn, labelOrder, scoreField = 'score') {
 function printTable(title, rows, extraCol) {
   console.log(`\n${title}`);
   const header = extraCol
-    ? `  ${'Bucket'.padEnd(16)}${'N'.padStart(6)}${'Actual hit%'.padStart(14)}${'Avg predicted%'.padStart(17)}`
-    : `  ${'Bucket'.padEnd(16)}${'N'.padStart(6)}${'Actual hit%'.padStart(14)}`;
+    ? `  ${'Bucket'.padEnd(28)}${'N'.padStart(6)}${'Actual hit%'.padStart(14)}${'Avg predicted%'.padStart(17)}`
+    : `  ${'Bucket'.padEnd(28)}${'N'.padStart(6)}${'Actual hit%'.padStart(14)}`;
   console.log(header);
   for (const r of rows) {
     const line = extraCol
-      ? `  ${String(r.bucket).padEnd(16)}${String(r.n).padStart(6)}${pct(r.hitRate).padStart(14)}${pct(r.avgPredicted).padStart(17)}`
-      : `  ${String(r.bucket).padEnd(16)}${String(r.n).padStart(6)}${pct(r.hitRate).padStart(14)}`;
+      ? `  ${String(r.bucket).padEnd(28)}${String(r.n).padStart(6)}${pct(r.hitRate).padStart(14)}${pct(r.avgPredicted).padStart(17)}`
+      : `  ${String(r.bucket).padEnd(28)}${String(r.n).padStart(6)}${pct(r.hitRate).padStart(14)}`;
     console.log(line);
   }
 }
@@ -187,8 +187,16 @@ async function main() {
     const whipBucket = r => r.pitcherWhip == null ? null : r.pitcherWhip < 1.15 ? '<1.15 WHIP' : r.pitcherWhip < 1.35 ? '1.15-1.35 WHIP' : '1.35+ WHIP';
     printTable('By opposing pitcher WHIP:', bucketStats(withPitcher, whipBucket, ['<1.15 WHIP', '1.15-1.35 WHIP', '1.35+ WHIP']));
 
-    const parkBucket = r => r.parkFactor == null ? null : r.parkFactor < 97 ? 'Pitcher park (<97)' : r.parkFactor <= 103 ? 'Neutral park' : 'Hitter park (103+)';
-    printTable('By park factor:', bucketStats(withPitcher, parkBucket, ['Pitcher park (<97)', 'Neutral park', 'Hitter park (103+)']));
+    // Coors Field (145) sits in a class of its own -- the next-highest park (CIN, 112)
+    // isn't within 30 points of it. A flat "103+" bucket lumps Coors in with parks that
+    // are only mildly hitter-friendly (MIL 104, NYY 105, BOS 106, PHI 107, TEX 108),
+    // and those modest parks' small-sample noise was burying Coors' own real signal --
+    // Coors alone showed the highest win rate of any park in the data (28.6%, n=14)
+    // while the aggregate "103+" bucket read 14.8%. Splitting off a genuinely extreme
+    // tier (120+, comfortably above every park except Coors) lets that signal show
+    // through instead of averaging it away.
+    const parkBucket = r => r.parkFactor == null ? null : r.parkFactor < 97 ? 'Pitcher park (<97)' : r.parkFactor <= 103 ? 'Neutral park (97-103)' : r.parkFactor < 120 ? 'Hitter park (104-119)' : 'Extreme hitter park (120+)';
+    printTable('By park factor:', bucketStats(withPitcher, parkBucket, ['Pitcher park (<97)', 'Neutral park (97-103)', 'Hitter park (104-119)', 'Extreme hitter park (120+)']));
   } else {
     console.log('  (need at least 20 graded picks with pitcher data for a meaningful breakdown — check back after more picks are captured and graded)');
   }
