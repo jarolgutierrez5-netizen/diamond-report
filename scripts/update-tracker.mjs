@@ -1483,7 +1483,7 @@ function liveOnFireScore(row, statcastHotHitters) {
 // calibration report surfaced.
 const HRP_MIN_AB_FOR_RATE = 40;
 const HRP_LEAGUE_AVG_HR_RATE = 0.031;
-function computeLiveHRScore(row, statcastHotHitters) {
+function computeLiveHRScore(row, statcastHotHitters, weatherHRMult = 1) {
   const ab = row.atBats || 0, hr = row.hrSeason || 0;
   const sampleWeight = Math.min(ab, HRP_MIN_AB_FOR_RATE) / HRP_MIN_AB_FOR_RATE;
   const rawBatterRate = ab > 0 ? hr / ab : 0;
@@ -1492,7 +1492,7 @@ function computeLiveHRScore(row, statcastHotHitters) {
   const parkAdj = 1 + ((row.parkFactor - 100) / 100) * 0.5;
   const onFireScore = liveOnFireScore(row, statcastHotHitters);
   const hotMult = 1 + (onFireScore / 100) * 0.5;
-  const hrPerPA = ((batterRate * 0.6) + (pitcherRate * 0.4)) * parkAdj * shrinkMult(hotMult);
+  const hrPerPA = ((batterRate * 0.6) + (pitcherRate * 0.4)) * parkAdj * shrinkMult(hotMult) * weatherHRMult;
   return simulateHRGameOdds(hrPerPA, row.battingOrder);
 }
 
@@ -1827,6 +1827,107 @@ async function captureDRPSimComparisonToday(compStore, previewGames, store, seas
   return added;
 }
 
+// ── Weather (exact port of app.js's stadiumCoords/windEffect/airDensityHRMult/
+// windHRMult/fetchGameWeather) ──────────────────────────────────────────────
+// The live client HR Threats board fetches real Open-Meteo weather per game and
+// folds it into hrProb via a physics-based HR multiplier (see app.js's own header
+// comments on airDensityHRMult/windHRMult for the full reasoning). computeLiveHRScore
+// below exists purely to mirror that live formula for calibration -- so it needs this
+// too, not this file's own, differently-designed windPowerFactor/temperaturePowerFactor
+// (which read MLB's schedule-hydrated weather text, a different source scoreForMarket
+// already uses). Ported verbatim rather than approximated, same as everything else
+// computeLiveHRScore does.
+const STADIUM_COORDS = {
+  ARI:{lat:33.445,lon:-112.067,name:'Chase Field',dome:true,retractable:true},
+  ATL:{lat:33.891,lon:-84.468,name:'Truist Park',dome:false},
+  BAL:{lat:39.284,lon:-76.622,name:'Oriole Park',dome:false},
+  BOS:{lat:42.347,lon:-71.097,name:'Fenway Park',dome:false},
+  CHC:{lat:41.948,lon:-87.655,name:'Wrigley Field',dome:false},
+  CWS:{lat:41.830,lon:-87.634,name:'Guaranteed Rate Field',dome:false},
+  CIN:{lat:39.097,lon:-84.506,name:'Great American Ball Park',dome:false},
+  CLE:{lat:41.496,lon:-81.685,name:'Progressive Field',dome:false},
+  COL:{lat:39.756,lon:-104.994,name:'Coors Field',dome:false},
+  DET:{lat:42.339,lon:-83.049,name:'Comerica Park',dome:false},
+  HOU:{lat:29.757,lon:-95.355,name:'Minute Maid Park',dome:true,retractable:true},
+  KC: {lat:39.051,lon:-94.480,name:'Kauffman Stadium',dome:false},
+  LAA:{lat:33.800,lon:-117.883,name:'Angel Stadium',dome:false},
+  LAD:{lat:34.074,lon:-118.240,name:'Dodger Stadium',dome:false},
+  MIA:{lat:25.778,lon:-80.220,name:'loanDepot Park',dome:true,retractable:true},
+  MIL:{lat:43.029,lon:-87.971,name:'American Family Field',dome:true,retractable:true},
+  MIN:{lat:44.981,lon:-93.278,name:'Target Field',dome:false},
+  NYM:{lat:40.757,lon:-73.846,name:'Citi Field',dome:false},
+  NYY:{lat:40.829,lon:-73.926,name:'Yankee Stadium',dome:false},
+  ATH:{lat:37.751,lon:-122.200,name:'Oakland Coliseum',dome:false},
+  OAK:{lat:37.751,lon:-122.200,name:'Oakland Coliseum',dome:false},
+  PHI:{lat:39.906,lon:-75.166,name:'Citizens Bank Park',dome:false},
+  PIT:{lat:40.447,lon:-80.006,name:'PNC Park',dome:false},
+  SD: {lat:32.707,lon:-117.157,name:'Petco Park',dome:false},
+  SF: {lat:37.778,lon:-122.389,name:'Oracle Park',dome:false},
+  SEA:{lat:47.591,lon:-122.332,name:'T-Mobile Park',dome:true,retractable:true},
+  STL:{lat:38.623,lon:-90.193,name:'Busch Stadium',dome:false},
+  TB: {lat:27.768,lon:-82.653,name:'Tropicana Field',dome:true},
+  TEX:{lat:32.751,lon:-97.083,name:'Globe Life Field',dome:true,retractable:true},
+  TOR:{lat:43.641,lon:-79.389,name:'Rogers Centre',dome:true,retractable:true},
+  WSH:{lat:38.873,lon:-77.007,name:'Nationals Park',dome:false},
+};
+function liveWindEffect(deg, homeAbbr) {
+  if (deg >= 60 && deg <= 150) return 'out';
+  if (deg >= 240 && deg <= 330) return 'in';
+  return 'cross';
+}
+function airDensityKgM3(tempF, pressureMslHPa, relHumidityPct) {
+  const tempC = (tempF - 32) * 5 / 9;
+  const tempK = tempC + 273.15;
+  const satVaporHPa = 6.1078 * Math.pow(10, (7.5 * tempC) / (tempC + 237.3));
+  const vaporHPa = satVaporHPa * (Math.max(0, Math.min(100, relHumidityPct ?? 50)) / 100);
+  const totalPa = pressureMslHPa * 100;
+  const vaporPa = vaporHPa * 100;
+  const dryPa = totalPa - vaporPa;
+  return (dryPa / (287.05 * tempK)) + (vaporPa / (461.495 * tempK));
+}
+const NEUTRAL_AIR_DENSITY = airDensityKgM3(70, 1013.25, 50);
+function liveAirDensityHRMult(weather) {
+  if (!weather || !Number.isFinite(weather.pressureMsl)) return 1;
+  const rho = airDensityKgM3(weather.temp, weather.pressureMsl, weather.humidity);
+  const densityRatio = NEUTRAL_AIR_DENSITY / rho;
+  const DENSITY_HR_SENSITIVITY = 1.6;
+  return Math.max(0.85, Math.min(1.15, 1 + DENSITY_HR_SENSITIVITY * (densityRatio - 1)));
+}
+function liveWindHRMult(weather, homeAbbr) {
+  if (!weather || !(weather.wind > 5)) return 1;
+  const impact = liveWindEffect(weather.windDir, homeAbbr);
+  if (impact === 'cross') return 1;
+  const WIND_HR_SENSITIVITY = 0.008;
+  const mult = 1 + WIND_HR_SENSITIVITY * (weather.wind - 5) * (impact === 'out' ? 1 : -1);
+  return Math.max(0.85, Math.min(1.2, mult));
+}
+// Cached per gamePk within a single run -- buildEliteBatterPool below calls this once
+// per game (not per batter/side), same reasoning as the client (weather is a whole-
+// game condition), but a Map cache here also protects against any future caller
+// requesting the same game's weather twice in one run.
+const _liveWeatherCache = new Map();
+async function fetchLiveGameWeather(gamePk, homeAbbr, awayAbbr) {
+  if (_liveWeatherCache.has(gamePk)) return _liveWeatherCache.get(gamePk);
+  const stadium = STADIUM_COORDS[homeAbbr] || STADIUM_COORDS[awayAbbr];
+  let weather = null;
+  if (stadium && (!stadium.dome || stadium.retractable)) {
+    try {
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,relative_humidity_2m,windspeed_10m,winddirection_10m,precipitation,pressure_msl,weathercode&temperature_unit=fahrenheit&windspeed_unit=mph`);
+      if (res.ok) {
+        const wd = await res.json();
+        const c = wd.current;
+        weather = {
+          temp: Math.round(c.temperature_2m), humidity: c.relative_humidity_2m,
+          wind: Math.round(c.windspeed_10m), windDir: c.winddirection_10m,
+          precip: c.precipitation, pressureMsl: c.pressure_msl, code: c.weathercode,
+        };
+      }
+    } catch (e) { /* leave weather null -- same graceful degradation as everything else here */ }
+  }
+  _liveWeatherCache.set(gamePk, weather);
+  return weather;
+}
+
 async function buildEliteBatterPool(games, season) {
   const statcastIndex = await loadStatcastPowerIndex();
   const pitcherStatcastIndex = await loadPitcherStatcastPowerIndex();
@@ -1834,6 +1935,10 @@ async function buildEliteBatterPool(games, season) {
   const statcastHotHittersIndex = await loadStatcastHotHittersIndex();
   const rows = [];
   for (const g of games) {
+    // Once per game (weather isn't batter- or side-specific) -- see fetchLiveGameWeather's
+    // header comment for why this mirrors app.js's own weather fetch/multiplier exactly.
+    const gameWeather = await fetchLiveGameWeather(g.gamePk, g.teams.home.team.abbreviation, g.teams.away.team.abbreviation);
+    const weatherHRMult = gameWeather ? (liveAirDensityHRMult(gameWeather) * liveWindHRMult(gameWeather, g.teams.home.team.abbreviation)) : 1;
     for (const [side, opp] of [['away', 'home'], ['home', 'away']]) {
       const pitcher = g.teams[opp].probablePitcher;
       if (!pitcher) continue;
@@ -1918,7 +2023,7 @@ async function buildEliteBatterPool(games, season) {
           id: pid, name: person.fullName, ops, iso, atBats: ab, hrSeason,
           pitcherHr9: n(pitcherStat.homeRunsPer9), parkFactor: rowParkFactor, battingOrder,
           last10HR: recent?.hr || 0, isFavorable,
-        }, statcastHotHittersIndex);
+        }, statcastHotHittersIndex, weatherHRMult);
         return {
           id: pid, name: person.fullName, teamAbbr, oppAbbr, gamePk: g.gamePk,
           pitcherId: pitcher.id, pitcherName: pitcher.fullName,
