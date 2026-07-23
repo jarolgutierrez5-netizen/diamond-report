@@ -3577,27 +3577,49 @@ async function loadGameProps() {
 
         // Pitcher ERA comparison — blended with each pitcher's last 5 starts so a
         // season-long number doesn't outweigh a real recent hot/cold stretch.
+        //
+        // ERA/WHIP/K9 all used to require crossing a hard gate (>0.3 ERA, >0.1 WHIP, >1
+        // K9) before contributing ANYTHING, and WHIP/K9 then added a flat point value
+        // regardless of how far past the gate the diff was -- a 0.11 WHIP diff and a
+        // 0.50 WHIP diff scored identically. Between the gates and the flat WHIP/K9
+        // bonuses, the model could barely ever leave the 50-55% confidence band even
+        // for a real mismatch, which is exactly what the calibration report flagged:
+        // 81 of 116 picks landed in the single 50-54% bucket. Every factor below now
+        // scales continuously with the size of the gap (small diffs contribute
+        // proportionally little, same as they should) -- the display-chip thresholds
+        // are kept separately, purely so a trivial diff doesn't clutter the card with
+        // its own "edge" chip.
         const awayERA = blendRecentForm(parseFloat(awayStats.era)||4.5, awayRecentForm, 'era');
         const homeERA = blendRecentForm(parseFloat(homeStats.era)||4.5, homeRecentForm, 'era');
         const eraDiff = awayERA - homeERA;
+        const eraPts = Math.min(Math.abs(eraDiff) * 3, 10);
+        if (eraDiff > 0) homeScore += eraPts; else if (eraDiff < 0) awayScore += eraPts;
         if (Math.abs(eraDiff) > 0.3) {
-          if (eraDiff > 0) { homeScore += Math.min(eraDiff*3, 8); factors.push({team:'home', label:factorLabel('home', `${pitcherLastName('home')} ERA adv (${homeERA.toFixed(2)})`), type:'pos'}); }
-          else { awayScore += Math.min(Math.abs(eraDiff)*3, 8); factors.push({team:'away', label:factorLabel('away', `${pitcherLastName('away')} ERA adv (${awayERA.toFixed(2)})`), type:'pos'}); }
+          if (eraDiff > 0) factors.push({team:'home', label:factorLabel('home', `${pitcherLastName('home')} ERA adv (${homeERA.toFixed(2)})`), type:'pos'});
+          else factors.push({team:'away', label:factorLabel('away', `${pitcherLastName('away')} ERA adv (${awayERA.toFixed(2)})`), type:'pos'});
         }
 
         // WHIP comparison — same recent-form blend
         const awayWHIP = blendRecentForm(parseFloat(awayStats.whip)||1.3, awayRecentForm, 'whip');
         const homeWHIP = blendRecentForm(parseFloat(homeStats.whip)||1.3, homeRecentForm, 'whip');
-        if (Math.abs(awayWHIP-homeWHIP) > 0.1) {
-          if (awayWHIP > homeWHIP) { homeScore += 4; factors.push({team:'home', label:factorLabel('home', `${pitcherLastName('home')} WHIP edge (${homeWHIP.toFixed(2)})`), type:'pos'}); }
-          else { awayScore += 4; factors.push({team:'away', label:factorLabel('away', `${pitcherLastName('away')} WHIP edge (${awayWHIP.toFixed(2)})`), type:'pos'}); }
+        const whipDiff = awayWHIP - homeWHIP;
+        const whipPts = Math.min(Math.abs(whipDiff) * 10, 6);
+        if (whipDiff > 0) homeScore += whipPts; else if (whipDiff < 0) awayScore += whipPts;
+        if (Math.abs(whipDiff) > 0.1) {
+          if (whipDiff > 0) factors.push({team:'home', label:factorLabel('home', `${pitcherLastName('home')} WHIP edge (${homeWHIP.toFixed(2)})`), type:'pos'});
+          else factors.push({team:'away', label:factorLabel('away', `${pitcherLastName('away')} WHIP edge (${awayWHIP.toFixed(2)})`), type:'pos'});
         }
 
         // K/9 — high K pitcher favored, same recent-form blend
         const awayK9 = blendRecentForm(parseFloat(awayStats.strikeoutsPer9Inn)||8, awayRecentForm, 'k9');
         const homeK9 = blendRecentForm(parseFloat(homeStats.strikeoutsPer9Inn)||8, homeRecentForm, 'k9');
-        if (homeK9 > awayK9 + 1) { homeScore += 3; factors.push({team:'home', label:factorLabel('home', `${pitcherLastName('home')} K/9 edge (${homeK9.toFixed(1)})`), type:'pos'}); }
-        else if (awayK9 > homeK9 + 1) { awayScore += 3; factors.push({team:'away', label:factorLabel('away', `${pitcherLastName('away')} K/9 edge (${awayK9.toFixed(1)})`), type:'pos'}); }
+        const k9Diff = homeK9 - awayK9;
+        const k9Pts = Math.min(Math.abs(k9Diff) * 1.2, 5);
+        if (k9Diff > 0) homeScore += k9Pts; else if (k9Diff < 0) awayScore += k9Pts;
+        if (Math.abs(k9Diff) > 1) {
+          if (k9Diff > 0) factors.push({team:'home', label:factorLabel('home', `${pitcherLastName('home')} K/9 edge (${homeK9.toFixed(1)})`), type:'pos'});
+          else factors.push({team:'away', label:factorLabel('away', `${pitcherLastName('away')} K/9 edge (${awayK9.toFixed(1)})`), type:'pos'});
+        }
 
         // Team record — previously this model had no team-strength input at all, only
         // pitcher-matchup and venue factors, so a last-place team could out-project a

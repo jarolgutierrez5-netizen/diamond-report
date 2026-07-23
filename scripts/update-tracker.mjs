@@ -717,25 +717,28 @@ async function computeDRPick(g, season) {
 
   let awayScore = 50, homeScore = 50;
 
+  // ERA/WHIP/K9 all continuous now, no hard gate -- exact mirror of the same fix in
+  // app.js's loadGameProps (see that file's own comment for the full reasoning). The
+  // old gate-then-flat-bonus design (WHIP/K9 added the same fixed points regardless of
+  // how far past the threshold the diff was) is why pickPct almost never left the
+  // 50-55% band: 81 of 116 graded picks landed in the single 50-54% bucket.
   const awayERA = blendRecentForm(n(awayStats.era, 4.5), awayRecent, 'era');
   const homeERA = blendRecentForm(n(homeStats.era, 4.5), homeRecent, 'era');
   const eraDiff = awayERA - homeERA;
-  if (Math.abs(eraDiff) > 0.3) {
-    if (eraDiff > 0) homeScore += Math.min(eraDiff * 3, 8);
-    else awayScore += Math.min(Math.abs(eraDiff) * 3, 8);
-  }
+  const eraPts = Math.min(Math.abs(eraDiff) * 3, 10);
+  if (eraDiff > 0) homeScore += eraPts; else if (eraDiff < 0) awayScore += eraPts;
 
   const awayWHIP = blendRecentForm(n(awayStats.whip, 1.3), awayRecent, 'whip');
   const homeWHIP = blendRecentForm(n(homeStats.whip, 1.3), homeRecent, 'whip');
-  if (Math.abs(awayWHIP - homeWHIP) > 0.1) {
-    if (awayWHIP > homeWHIP) homeScore += 4;
-    else awayScore += 4;
-  }
+  const whipDiff = awayWHIP - homeWHIP;
+  const whipPts = Math.min(Math.abs(whipDiff) * 10, 6);
+  if (whipDiff > 0) homeScore += whipPts; else if (whipDiff < 0) awayScore += whipPts;
 
   const awayK9 = blendRecentForm(n(awayStats.strikeoutsPer9Inn, 8), awayRecent, 'k9');
   const homeK9 = blendRecentForm(n(homeStats.strikeoutsPer9Inn, 8), homeRecent, 'k9');
-  if (homeK9 > awayK9 + 1) homeScore += 3;
-  else if (awayK9 > homeK9 + 1) awayScore += 3;
+  const k9Diff = homeK9 - awayK9;
+  const k9Pts = Math.min(Math.abs(k9Diff) * 1.2, 5);
+  if (k9Diff > 0) homeScore += k9Pts; else if (k9Diff < 0) awayScore += k9Pts;
 
   const awayRecord = g.teams.away.leagueRecord || {};
   const homeRecord = g.teams.home.leagueRecord || {};
