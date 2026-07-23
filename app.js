@@ -10591,7 +10591,96 @@ if (document.readyState === 'loading') {
     if (s.last10HomeRuns != null && s.last10HomeRuns !== '') return s.last10HomeRuns;
     return null;
   }
-  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); populateHRGameSelect(base); if(!base.length){el.innerHTML='<div class="mu-empty">No HR potential data yet — check back once lineups are posted.</div>';return;} var completedOnly=!!window.__hrpShowCompletedOnly; var arr=applyHRFilters(base).filter(function(r){return completedOnly ? isHit('hr',r) : (!isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL');}).sort(function(a,b){return n(b.hrProb)-n(a.hrProb);}); if(!arr.length){el.innerHTML='<div class="mu-empty" style="padding:24px">'+(completedOnly?'No completed home runs yet today. Check back once games are underway.':'No players match the selected filters. Try fewer filters, or select ALL to reset.')+'</div>';return;} var cards=arr.map(function(r){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); var l10=dr113Last10HRValue(r); var bpPct=ballparkPalFactorForPlayer(r.gamePk,r.id); var stats=[hrChip('HR Prob',p.toFixed(1)+'%','green'),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1),'gold'):'',bpPct!=null?hrChip('Ballpark Pal',(bpPct>0?'+':'')+bpPct+'%',bpPct>0?'green':bpPct<0?'red':''):''].filter(Boolean); return '<div class="dr1027-hr-card '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="cursor:pointer" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="if(!event.target.closest(\'button,a\')){var d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName);}">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-why" id="hrp-scout-'+esc(r.id)+'-'+esc(r.pitcherId||0)+'">'+(r.pitcherId?'<span class="spin"></span> Loading scouting report\u2026':'<span style="color:var(--muted)">No opposing pitcher assigned yet \u2014 scouting report unavailable.</span>')+'</div></div>'; }).join(''); el.innerHTML=hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; arr.forEach(function(r){ if(!r.pitcherId) return; loadHRScoutingReport(r.id,r.name,r.pitcherId,r.pitcherName).then(function(html){ var t=document.getElementById('hrp-scout-'+r.id+'-'+r.pitcherId); if(t) t.innerHTML=html; }); }); }
+  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); populateHRGameSelect(base); if(!base.length){el.innerHTML='<div class="mu-empty">No HR potential data yet — check back once lineups are posted.</div>';return;} var completedOnly=!!window.__hrpShowCompletedOnly; var arr=applyHRFilters(base).filter(function(r){return completedOnly ? isHit('hr',r) : (!isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL');}).sort(function(a,b){return n(b.hrProb)-n(a.hrProb);}); arr.forEach(function(r){window.__hrCompareRows[String(r.id)]=r;}); if(!arr.length){el.innerHTML='<div class="mu-empty" style="padding:24px">'+(completedOnly?'No completed home runs yet today. Check back once games are underway.':'No players match the selected filters. Try fewer filters, or select ALL to reset.')+'</div>';return;} var cards=arr.map(function(r){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); var l10=dr113Last10HRValue(r); var bpPct=ballparkPalFactorForPlayer(r.gamePk,r.id); var stats=[hrChip('HR Prob',p.toFixed(1)+'%','green'),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1),'gold'):'',bpPct!=null?hrChip('Ballpark Pal',(bpPct>0?'+':'')+bpPct+'%',bpPct>0?'green':bpPct<0?'red':''):''].filter(Boolean); return '<div class="dr1027-hr-card '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="cursor:pointer" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="if(!event.target.closest(\'button,a\')){var d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName);}">'+window.drWatchStarHTML(r.id,r.name)+'<label class="dr1027-hr-compare" onclick="event.stopPropagation()" title="Add to Compare"><input type="checkbox" '+(window.drHRCompareHas&&window.drHRCompareHas(r.id)?'checked':'')+' onchange="drHRCompareToggle(\''+esc(r.id)+'\',this.checked)"><span>Compare</span></label>'+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-why" id="hrp-scout-'+esc(r.id)+'-'+esc(r.pitcherId||0)+'">'+(r.pitcherId?'<span class="spin"></span> Loading scouting report\u2026':'<span style="color:var(--muted)">No opposing pitcher assigned yet \u2014 scouting report unavailable.</span>')+'</div></div>'; }).join(''); el.innerHTML=hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; arr.forEach(function(r){ if(!r.pitcherId) return; loadHRScoutingReport(r.id,r.name,r.pitcherId,r.pitcherName).then(function(html){ var t=document.getElementById('hrp-scout-'+r.id+'-'+r.pitcherId); if(t) t.innerHTML=html; }); }); hrCompareUpdateBar(); }
+
+  // ── HR Threats compare tray ─────────────────────────────────────────────
+  // Lets a user shortlist up to HR_COMPARE_MAX cards (checkbox per card, added
+  // right next to the watchlist star) and see them ranked head-to-head in a
+  // modal. Deliberately reuses the exact hrProb score/grade/chips already
+  // computed for the board -- no separate calculation, just a focused re-read
+  // of players the user has already scouted individually. window.__hrCompareRows
+  // is keyed by String(id) and repopulated on every render so the modal always
+  // reflects the latest live data for whichever cards are currently checked;
+  // window.__hrCompareSet only tracks *which* ids are selected and persists
+  // across re-renders/filters the same way the existing filter Set does.
+  var HR_COMPARE_MAX = 6;
+  window.__hrCompareSet = window.__hrCompareSet || new Set();
+  window.__hrCompareRows = window.__hrCompareRows || {};
+  window.drHRCompareHas = function(id){ return window.__hrCompareSet.has(String(id)); };
+  function hrCompareUpdateBar(){
+    var bar = document.getElementById('hr-compare-bar'); if(!bar) return;
+    var size = window.__hrCompareSet.size;
+    if(!size){ bar.style.display='none'; return; }
+    bar.style.display='flex';
+    var countEl = document.getElementById('hr-compare-count');
+    if(countEl) countEl.textContent = size + (size===1?' player selected':' players selected') + ' (max '+HR_COMPARE_MAX+')';
+    var btn = document.getElementById('hr-compare-open-btn');
+    if(btn) btn.disabled = size < 2;
+  }
+  window.drHRCompareToggle = function(id, checked){
+    id = String(id);
+    if(checked){
+      if(window.__hrCompareSet.size >= HR_COMPARE_MAX){
+        var row = document.getElementById('hrp-row-'+id);
+        var cb = row && row.querySelector('.dr1027-hr-compare input[type=checkbox]');
+        if(cb) cb.checked = false;
+        var countEl = document.getElementById('hr-compare-count');
+        if(countEl){ countEl.textContent = 'Max '+HR_COMPARE_MAX+' players — remove one first'; setTimeout(hrCompareUpdateBar, 1800); }
+        return;
+      }
+      window.__hrCompareSet.add(id);
+    } else {
+      window.__hrCompareSet.delete(id);
+    }
+    hrCompareUpdateBar();
+  };
+  window.drHRCompareClear = function(){
+    window.__hrCompareSet.clear();
+    document.querySelectorAll('.dr1027-hr-compare input[type=checkbox]:checked').forEach(function(cb){ cb.checked=false; });
+    hrCompareUpdateBar();
+  };
+  window.drHRCompareOpen = function(){
+    if(window.__hrCompareSet.size < 2) return;
+    var overlay = document.getElementById('hr-compare-modal-overlay');
+    var body = document.getElementById('hr-compare-modal-body');
+    var sub = document.getElementById('hr-compare-modal-sub');
+    if(!overlay || !body) return;
+    var picks = Array.from(window.__hrCompareSet)
+      .map(function(id){ return window.__hrCompareRows[id]; })
+      .filter(Boolean)
+      .sort(function(a,b){ return n(b.hrProb)-n(a.hrProb); });
+    if(!picks.length) return;
+    if(sub) sub.textContent = picks.length + ' players compared, ranked by HR Probability';
+    body.innerHTML = picks.map(function(r, i){
+      var p = n(r.hrProb);
+      var badges = [];
+      if(i===0) badges.push('<span class="hr-compare-best">👑 BEST HR PICK</span>');
+      if(r.isOnFire) badges.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red'));
+      if(r.isDue) badges.push(labelChip('⚡ DUE','YES','gold'));
+      if(r.isDrought) badges.push(labelChip('❄️ DROUGHT','YES','red'));
+      if(r.isFavorable) badges.push(labelChip('✅ FAVORABLE','MATCHUP','green'));
+      var l10 = dr113Last10HRValue(r);
+      var stats = [hrChip('Season HR', r.hrSeason||'–',''), hrChip('Last 10 HR', l10==null?'–':l10, n(l10)>=2?'green':''), hrChip('OPS', fmt3(r.ops), n(r.ops)>=.850?'green':''), hrChip('ISO', fmt3(r.iso), n(r.iso)>=.200?'gold':'')].filter(Boolean);
+      return '<div class="hr-compare-row'+(i===0?' hr-compare-top':'')+'">'
+        +'<div class="hr-compare-rank">#'+(i+1)+'</div>'
+        +'<img class="hr-compare-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt="">'
+        +'<div class="hr-compare-main">'
+          +'<div class="hr-compare-name">'+esc(r.name||'–')+'</div>'
+          +'<div class="hr-compare-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div>'
+          +'<div class="hr-compare-badges">'+badges.join('')+stats.join('')+'</div>'
+        +'</div>'
+        +'<div class="hr-compare-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Prob</span><em>GRADE '+grade(p)+'</em></div>'
+      +'</div>';
+    }).join('');
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  };
+  window.closeHRCompare = function(){
+    var overlay = document.getElementById('hr-compare-modal-overlay');
+    if(overlay) overlay.style.display = 'none';
+    document.body.style.overflow = '';
+  };
+
   function setHRFilter(f){ var s=getFilters(); if(f==='all')s.clear(); else { if(s.has(f))s.delete(f); else s.add(f); } renderHRPTableV1032(); }
   window.renderHRPTable=renderHRPTableV1032;
   window.filterHRP=setHRFilter;

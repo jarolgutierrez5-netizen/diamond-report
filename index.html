@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026072451">
+<link rel="stylesheet" href="styles.min.css?v=2026072452">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -503,6 +503,14 @@
       </div>
     </div>
   </div>
+
+  <div id="hr-compare-bar" style="display:none">
+    <span id="hr-compare-count">0 players selected (max 6)</span>
+    <div class="hr-compare-bar-actions">
+      <button type="button" id="hr-compare-open-btn" onclick="drHRCompareOpen()" disabled>Compare</button>
+      <button type="button" class="hr-compare-clear-btn" onclick="drHRCompareClear()">Clear</button>
+    </div>
+  </div>
 </div>
 
 <div class="gamepick-pane" id="gamepick-pane-k" role="tabpanel" aria-labelledby="gamepick-tab-k" data-gamepick-pane="k" hidden>
@@ -628,6 +636,21 @@
 </div>
 <div class="mu-modal-body" id="tp-modal-body">
 <span class="spin"></span> Loading team performance…
+    </div>
+</div>
+</div>
+
+<!-- HR Threats: compare-tray ranking pop-out -->
+<div class="mu-modal-overlay" id="hr-compare-modal-overlay" onclick="if(event.target===this)closeHRCompare()" style="display:none">
+<div class="mu-modal">
+<div class="mu-modal-head">
+<div>
+<div class="mu-modal-title" id="hr-compare-modal-title">HR THREATS COMPARE</div>
+<div class="mu-modal-sub" id="hr-compare-modal-sub"></div>
+</div>
+<button class="mu-close" onclick="closeHRCompare()">✕</button>
+</div>
+<div class="mu-modal-body" id="hr-compare-modal-body">
     </div>
 </div>
 </div>
@@ -798,7 +821,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026072451" defer></script>
+<script src="app.min.js?v=2026072452" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
