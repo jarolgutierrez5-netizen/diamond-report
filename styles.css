@@ -1647,18 +1647,21 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   border-color: rgba(255, 77, 109, .45) !important;
   color: #ffb0bf !important;
 }
-/* ── Desktop collapsible sidebar nav ──────────────────────────────────────
+/* ── Desktop top nav ───────────────────────────────────────────────────────
    Hidden by default (phones keep the existing hamburger drawer below
-   768px, completely untouched). Shown from 900px up — wide enough for a
-   collapsed 64px sidebar plus content, and low enough to cover common
-   half-screen/split-window widths instead of only full-width desktops.
-   main gets a matching margin-left so content doesn't sit under the fixed
-   sidebar. */
-#dr-sidebar-nav {
+   768px, completely untouched). Shown from 900px up, replacing the fixed
+   left sidebar this used to be. Sticky at the same 76px offset the
+   sidebar this replaces already used to clear the header.
+
+   Grouped by sport category (Baseball, Football, Basketball) rather than
+   listing every board flat -- clicking the Baseball category reveals a
+   dropdown of its 10 boards, closed by default. Football/Basketball have
+   no boards yet, so they're plain disabled "Soon" pills with no dropdown. */
+#dr-top-nav {
   display: none;
 }
 @media (min-width: 900px) {
-  /* The horizontal gamepick-tabs row is redundant once the sidebar takes
+  /* The horizontal gamepick-tabs row is redundant once the top nav takes
      over navigation at this width — without this, both show at once.
      Matches the highest-specificity selector shape already used elsewhere
      for this element (#props + class + [aria-label] attribute) since a
@@ -1670,213 +1673,134 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   .gamepick-tabs-wrap[aria-label="Game Picks section navigation"] {
     display: none !important;
   }
-  #dr-sidebar-nav {
-    display: flex !important;
-    flex-direction: column !important;
-    position: fixed !important;
-    left: 0;
+  #dr-top-nav {
+    display: block;
+    position: sticky;
     top: 76px;
-    bottom: 0;
-    width: 250px;
     z-index: 90;
-    padding: 18px 12px;
+    background: rgba(7,12,20,.92);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(47,107,255,.28);
+    box-shadow: 0 12px 28px rgba(0,0,0,.22);
+  }
+  .dr-top-nav-inner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
     box-sizing: border-box;
-    gap: 2px;
-    overflow-y: auto;
-    /* On short viewports (half-screen/split windows especially) this list is
-       taller than the visible sidebar — it was already scrollable
-       (overflow-y: auto), but nothing signaled that, so the last few items
-       (Premium, the paintbrush/settings icon) just looked cut off and
-       unreachable. The two `local`-attached layers below are opaque masks
-       that scroll WITH the content, covering the two `scroll`-attached blue
-       shadow layers everywhere except right at the top/bottom edge of the
-       visible area — so a shadow only shows when there's actually more
-       content to scroll to in that direction, and disappears at the very
-       start/end. Classic CSS-only "scroll shadow" technique, no JS needed;
-       works regardless of whether the platform shows a visible scrollbar
-       (macOS/Linux overlay scrollbars are otherwise invisible until a user
-       is actively scrolling or hovering, so this doesn't just rely on that).
-       Solid colors approximate the original background gradient's two stops
-       since these mask layers can't use a gradient with alpha the same way. */
-    background-color: #070c14;
-    background-image:
-      linear-gradient(#070c14 40%, rgba(7,12,20,0)),
-      linear-gradient(rgba(7,12,20,0), #080d17 60%),
-      linear-gradient(rgba(47,107,255,.55), rgba(47,107,255,0)),
-      linear-gradient(rgba(47,107,255,0), rgba(47,107,255,.55));
-    background-repeat: no-repeat;
-    background-size: 100% 28px, 100% 28px, 100% 10px, 100% 10px;
-    background-position: top, bottom, top, bottom;
-    background-attachment: local, local, scroll, scroll;
-    border-right: 1px solid rgba(47,107,255,.28);
-    box-shadow: 18px 0 38px rgba(0,0,0,.24);
-    transition: width .18s ease;
+    padding: 10px var(--dr-v11-page-pad, 24px);
+    overflow-x: auto;
+    scrollbar-width: none;
   }
-  /* Explicit (not just relying on the global rule) so this still applies if
-     specificity ever shifts — matters most on platforms with non-overlay
-     scrollbars (Windows), where this is the primary discoverability signal
-     alongside the shadow technique above. */
-  #dr-sidebar-nav::-webkit-scrollbar {
-    width: 6px !important;
-  }
-  #dr-sidebar-nav::-webkit-scrollbar-thumb {
-    background: rgba(74, 158, 255, .6) !important;
-    border-radius: 999px !important;
-  }
-  #dr-sidebar-nav.collapsed {
-    width: 64px;
-    padding: 18px 8px;
-  }
-  /* Matches the specificity of an existing "body > main, main" rule elsewhere
-     in this file, which otherwise wins over a plain main{} selector
-     regardless of source order. That rule sizes main from 100vw with an
-     auto margin-right — once margin-left is pinned to the sidebar width
-     here, all the leftover space collapses into one big empty gap on the
-     right instead of main filling the space actually next to the sidebar.
-     Overriding width/max-width/margin-right too makes main fill exactly
-     the space beside the sidebar. */
-  body > main, main,
-  #dr-landing-hub,
-  footer.dr-footer {
-    margin-left: 250px !important;
-    width: auto !important;
-    max-width: none !important;
-    margin-right: var(--dr-v11-page-pad) !important;
-    transition: margin-left .18s ease;
-  }
-  body.dr-sidebar-collapsed > main, body.dr-sidebar-collapsed main,
-  body.dr-sidebar-collapsed #dr-landing-hub,
-  body.dr-sidebar-collapsed footer.dr-footer {
-    margin-left: 64px !important;
+  .dr-top-nav-inner::-webkit-scrollbar {
+    display: none;
   }
 }
-.dr-sidebar-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  border: 1px solid rgba(47,107,255,.35);
-  background: rgba(47,107,255,.08);
-  color: #2f6bff;
-  cursor: pointer;
-  font-size: 16px;
-  margin-bottom: 14px;
-}
-.dr-sidebar-toggle:hover {
-  background: rgba(47,107,255,.16);
-}
-.dr-sidebar-group {
-  margin-bottom: 4px;
-}
-.dr-sidebar-group-head {
+.dr-top-nav-cat-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
-  color: #8fa3c8;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
+  flex-shrink: 0;
+  padding: 9px 14px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: #d6def2;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: .2px;
   white-space: nowrap;
-  overflow: hidden;
-}
-/* The Baseball group head is a <button> (its siblings, Football/Basketball,
-   stay plain <div>s — they have no items to expand), so it needs its own
-   reset since buttons don't inherit block-level text/layout defaults the
-   way a div does. */
-.dr-sidebar-group-toggle {
-  width: 100%;
-  background: none;
-  border: none;
-  font-family: inherit;
   cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
 }
-.dr-sidebar-group-chevron {
-  margin-left: auto;
-  font-size: 10px;
+.dr-top-nav-cat-btn:hover {
+  background: rgba(47,107,255,.08);
+}
+.dr-top-nav-cat-btn[aria-expanded="true"] {
+  background: rgba(47,107,255,.14);
+  border-color: rgba(47,107,255,.42);
+}
+.dr-top-nav-cat-current {
+  color: #5b9dff;
+  font-weight: 600;
+  opacity: .85;
+}
+.dr-top-nav-cat-current::before {
+  content: "·";
+  margin-right: 8px;
+  color: #3a4a6b;
+}
+.dr-top-nav-chevron {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
   color: #5a6b8c;
   transition: transform .15s ease;
-  flex-shrink: 0;
 }
-.dr-sidebar-group-toggle[aria-expanded="true"] .dr-sidebar-group-chevron {
+.dr-top-nav-cat-btn[aria-expanded="true"] .dr-top-nav-chevron {
   transform: rotate(180deg);
 }
-/* Collapsed by default (see the bind() logic in app.js) — hides the 10
-   Baseball sub-tabs behind the group head until expanded, so the sidebar
-   isn't dominated by one sport's full tab list before a visitor even
-   asks for it. */
-.dr-sidebar-group-items {
+.dr-top-nav-menu {
   display: none;
   flex-direction: column;
   gap: 2px;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 230px;
+  padding: 8px;
+  background: rgba(8,13,22,.98);
+  border: 1px solid rgba(47,107,255,.32);
+  border-radius: 14px;
+  box-shadow: 0 24px 48px rgba(0,0,0,.45);
+  z-index: 95;
 }
-.dr-sidebar-group-items.expanded {
+.dr-top-nav-menu.open {
   display: flex;
 }
-/* Icon-only sidebar mode still respects the group's own expand/collapse
-   state (.expanded, managed by app.js's bind()) instead of forcing every
-   sub-tab open — a prior version forced them open here on the theory that
-   there's no room for a group head label to click in a narrow column, but
-   the group head button (⚾) is still clickable by its icon alone even
-   without a visible label, and forcing 10 sub-tabs open by default is
-   exactly what made the sidebar's icon list overflow short/half-screen
-   viewports in the first place (see the scroll-shadow fix above). The
-   chevron still has nowhere to render at this width either way. */
-#dr-sidebar-nav.collapsed .dr-sidebar-group-chevron {
-  display: none;
-}
-.dr-sidebar-tab {
+.dr-top-nav-tab {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 10px;
+  padding: 9px 10px;
   border: 1px solid transparent;
   border-radius: 10px;
   background: transparent;
   color: #d6def2;
   font-family: 'Manrope', sans-serif;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 12.5px;
-  letter-spacing: .3px;
+  letter-spacing: .2px;
   text-align: left;
-  cursor: pointer;
   white-space: nowrap;
-  overflow: hidden;
-  margin-bottom: 2px;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
 }
-.dr-sidebar-tab:hover {
+.dr-top-nav-tab:hover {
   background: rgba(47,107,255,.08);
 }
-.dr-sidebar-tab.active {
-  background: linear-gradient(90deg, rgba(47,107,255,.34), rgba(47,107,255,.08)) !important;
-  border-color: rgba(47,107,255,.65) !important;
-  color: #fff !important;
-  box-shadow: 0 0 22px rgba(47,107,255,.18) inset;
+.dr-top-nav-tab.active {
+  background: rgba(47,107,255,.16);
+  border-color: rgba(47,107,255,.5);
+  color: #fff;
 }
-.dr-sidebar-tab.dr-sidebar-locked {
-  color: #7c8aa8;
+.dr-top-nav-tab.active .dr-icon {
+  color: #5b9dff;
 }
-.dr-sidebar-icon {
-  font-size: 15px;
-  flex-shrink: 0;
-  width: 18px;
-  text-align: center;
+.dr-top-nav-cat-soon {
+  color: #5a6b8c;
+  opacity: .55;
+  cursor: default;
 }
-.dr-sidebar-divider {
-  height: 1px;
-  background: rgba(255,255,255,.08);
-  margin: 10px 4px;
+.dr-top-nav-cat-soon:hover {
+  background: transparent;
 }
-.dr-sidebar-group.dr-sidebar-future {
-  opacity: .45;
-}
-.dr-sidebar-soon {
-  margin-left: auto;
+.dr-top-nav-cat-soon em {
+  font-style: normal;
   font-size: 8px;
   font-weight: 800;
   letter-spacing: .5px;
@@ -1884,15 +1808,6 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   background: rgba(255,255,255,.08);
   padding: 2px 6px;
   border-radius: 999px;
-  white-space: nowrap;
-}
-#dr-sidebar-nav.collapsed .dr-sidebar-label,
-#dr-sidebar-nav.collapsed .dr-sidebar-soon {
-  display: none;
-}
-#dr-sidebar-nav.collapsed .dr-sidebar-tab,
-#dr-sidebar-nav.collapsed .dr-sidebar-group-head {
-  justify-content: center;
 }
 
 /* ── Shared line-icon system ───────────────────────────────────────────────
@@ -1906,6 +1821,54 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   height: 18px;
   display: block;
   flex-shrink: 0;
+}
+
+/* ── Reusable board-panel shell, redesign pass ────────────────────────────
+   .dr-panel/.dr-panel-head/.section-title carry 10-15+ conflicting
+   !important overrides each (multiple "remodel" passes over the years,
+   including the same abandoned cyberpunk theme the hero had) -- too
+   fragile to edit in place without risking every board that uses them.
+   Same fix as the hero: a fresh class (dr-panel-fresh), added to one
+   board's outer .dr-panel wrapper at a time, scoping clean descendant
+   rules that reliably win via specificity + !important without touching
+   the legacy rules or any board that hasn't opted in yet. Add
+   "dr-panel-fresh" to a board's wrapper to bring it into this look --
+   see the Game Projections panel in index.html for the first example.
+   NOTE: this only covers the panel shell/title -- the row/card content
+   inside most boards (e.g. .gp-card) is built from inline styles in
+   app.js template strings, a separate, larger piece of work. */
+.dr-panel-fresh {
+  background: rgba(255,255,255,.035) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  border-radius: 20px !important;
+  box-shadow: none !important;
+}
+.dr-panel-fresh .dr-panel-head {
+  background: none !important;
+  padding: 20px 22px 16px !important;
+  border-bottom: 1px solid rgba(255,255,255,.06) !important;
+}
+.dr-panel-fresh .section-title {
+  font-family: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.005em !important;
+  text-transform: none !important;
+  text-shadow: none !important;
+  color: #fff !important;
+  margin: 0 0 5px !important;
+  line-height: 1.25 !important;
+}
+.dr-panel-fresh .section-title span {
+  color: #6f9bff !important;
+  text-shadow: none !important;
+  letter-spacing: inherit !important;
+}
+.dr-panel-fresh .dr-panel-head small {
+  font-size: 12.5px !important;
+  font-weight: 400 !important;
+  color: #93a1bd !important;
+  line-height: 1.5 !important;
 }
 
 /* ── Hero: new-visitor explainer + trust pillars ──────────────────────────

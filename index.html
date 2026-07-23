@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026072140">
+<link rel="stylesheet" href="styles.min.css?v=2026072359">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -150,45 +150,45 @@
     <button type="button" data-tab="tb" class="dr-menu-item">💎 Total Bases</button>
     <button type="button" data-tab="sb" class="dr-menu-item">🏃 Stolen Bases</button>
     <button type="button" data-tab="hrrbi" class="dr-menu-item">📈 Hits+Runs+RBI</button>
-    <button type="button" data-tab="premium" class="dr-menu-item">🌟 Premium</button>
     <button type="button" data-tab="fantasy" class="dr-menu-item">🏆 Fantasy Points</button>
   </div>
 </div>
 
-<!-- Desktop collapsible sidebar nav (wide viewports only — mobile keeps the
-     hamburger drawer above, untouched). Reuses the existing showGamePickPane/
-     showPremiumGate routing via window.DiamondNavigateToPane, so clicking a
-     sidebar item behaves identically to the horizontal gamepick-tabs. Shares
-     the .gamepick-tab class for CSS purposes, but active-state highlighting
-     for these specific buttons is handled by a small dedicated script (see
-     the end of app.js) since this sidebar lives outside #props, which is
-     what the existing tab-sync logic scopes its queries to. -->
-<aside id="dr-sidebar-nav" class="dr-sidebar-nav" aria-label="Site navigation">
-  <button type="button" id="dr-sidebar-toggle" class="dr-sidebar-toggle" aria-label="Collapse sidebar" title="Collapse sidebar">☰</button>
-  <div class="dr-sidebar-group">
-    <button type="button" class="dr-sidebar-group-head dr-sidebar-group-toggle" id="dr-sidebar-baseball-toggle" aria-expanded="false" aria-controls="dr-sidebar-baseball-items"><span class="dr-sidebar-icon">⚾</span><span class="dr-sidebar-label">Baseball</span><span class="dr-sidebar-group-chevron">▾</span></button>
-    <div class="dr-sidebar-group-items" id="dr-sidebar-baseball-items">
-    <button type="button" data-gamepick-pane="game" class="gamepick-tab dr-sidebar-tab active"><span class="dr-sidebar-icon">📊</span><span class="dr-sidebar-label">Games Today</span></button>
-    <button type="button" data-gamepick-pane="pr" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">📋</span><span class="dr-sidebar-label">Pitcher Report</span></button>
-    <button type="button" data-gamepick-pane="hr" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">🔥</span><span class="dr-sidebar-label">Home Runs</span></button>
-    <button type="button" data-gamepick-pane="k" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">🎯</span><span class="dr-sidebar-label">Strikeouts</span></button>
-    <button type="button" data-gamepick-pane="hits" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">⚾</span><span class="dr-sidebar-label">Hits</span></button>
-    <button type="button" data-gamepick-pane="rbis" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">💰</span><span class="dr-sidebar-label">RBIs</span></button>
-    <button type="button" data-gamepick-pane="tb" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">💎</span><span class="dr-sidebar-label">Total Bases</span></button>
-    <button type="button" data-gamepick-pane="sb" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">🏃</span><span class="dr-sidebar-label">Stolen Bases</span></button>
-    <button type="button" data-gamepick-pane="hrrbi" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">📈</span><span class="dr-sidebar-label">Hits+Runs+RBI</span></button>
-    <button type="button" data-gamepick-pane="premium" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">🌟</span><span class="dr-sidebar-label">Premium</span></button>
-    <button type="button" data-gamepick-pane="fantasy" class="gamepick-tab dr-sidebar-tab"><span class="dr-sidebar-icon">🏆</span><span class="dr-sidebar-label">Fantasy Points</span></button>
-    </div>
+<!-- Desktop top nav (wide viewports only — mobile keeps the hamburger drawer
+     above, untouched). Reuses the existing showGamePickPane routing via
+     window.DiamondNavigateToPane, so clicking a top nav item behaves
+     identically to the horizontal gamepick-tabs it replaces at this width.
+     Deliberately its own fresh classes (not .gamepick-tab) rather than
+     reusing that heavily-patched legacy class -- active-state highlighting
+     for these buttons is handled by a small dedicated script (see the end
+     of app.js) since this nav lives outside #props, which is what the
+     existing tab-sync logic scopes its queries to. A full-width bar has
+     room to show every item flat, so unlike the fixed-width sidebar this
+     replaced, there's no collapse toggle or Baseball accordion needed. -->
+<div id="dr-top-nav" class="dr-top-nav" role="navigation" aria-label="Site navigation">
+  <div class="dr-top-nav-inner">
+    <button type="button" class="dr-top-nav-cat-btn" id="dr-top-nav-baseball-btn" aria-expanded="false" aria-controls="dr-top-nav-baseball-menu"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M5.6 4.6c1.4 1.5 1.9 3.4 1.9 5.4s-.5 3.9-1.9 5.4M14.4 4.6c-1.4 1.5-1.9 3.4-1.9 5.4s.5 3.9 1.9 5.4" stroke-width="1.15"/></svg><span>Baseball</span><span class="dr-top-nav-cat-current" id="dr-top-nav-baseball-current">Games Today</span><svg class="dr-top-nav-chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5l3 3 3-3"/></svg></button>
+    <span class="dr-top-nav-cat-btn dr-top-nav-cat-soon" title="Coming soon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 10c2-4.3 5.7-6.5 7.2-6.5s5.2 2.2 7.2 6.5c-2 4.3-5.7 6.5-7.2 6.5s-5.2-2.2-7.2-6.5z"/><path d="M5.2 10h9.6" stroke-width="1.1"/><path d="M8 8.7v2.6M10 8.4v3.2M12 8.7v2.6" stroke-width="1"/></svg><span>Football</span><em>Soon</em></span>
+    <span class="dr-top-nav-cat-btn dr-top-nav-cat-soon" title="Coming soon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14" stroke-width="1.15"/><path d="M4.9 5.1c1.9 1.7 3 3 3 4.9s-1.1 3.2-3 4.9M15.1 5.1c-1.9 1.7-3 3-3 4.9s1.1 3.2 3 4.9" stroke-width="1.1"/></svg><span>Basketball</span><em>Soon</em></span>
   </div>
-  <div class="dr-sidebar-divider"></div>
-  <div class="dr-sidebar-group dr-sidebar-future">
-    <div class="dr-sidebar-group-head"><span class="dr-sidebar-icon">🏈</span><span class="dr-sidebar-label">Football</span><span class="dr-sidebar-soon">Soon</span></div>
+  <!-- Deliberately a sibling of .dr-top-nav-inner, not nested inside it --
+       that row has overflow-x:auto for the narrow-viewport scroll fallback,
+       and CSS forces overflow-y to auto too the moment overflow-x isn't
+       visible, which would clip this dropdown. Positioned under the
+       Baseball button via inline left/top set in app.js on open. -->
+  <div class="dr-top-nav-menu" id="dr-top-nav-baseball-menu" aria-hidden="true">
+    <button type="button" data-gamepick-pane="game" class="dr-top-nav-tab active"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="15" height="13" rx="2.5"/><path d="M2.5 8h15"/><path d="M6.5 2.5v3M13.5 2.5v3"/></svg><span>Games Today</span></button>
+    <button type="button" data-gamepick-pane="pr" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5H5a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8z"/><path d="M11.5 2.5V8H17"/><path d="M7 11h6M7 14h4"/></svg><span>Pitcher Report</span></button>
+    <button type="button" data-gamepick-pane="hr" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8c.9 2.7-2.4 3.7-2.4 6.8a2.4 2.4 0 0 0 4.8 0c0-.8-.4-1.5-.8-2 .2 1.2-.8 1.6-1 .8-.4-1.1.8-1.7.6-3.7-.1-1.6-1.2-1.9-1.2-1.9z"/><path d="M7.2 11.5A3.4 3.4 0 0 0 10 17a3.4 3.4 0 0 0 3.3-4.3"/></svg><span>Home Runs</span></button>
+    <button type="button" data-gamepick-pane="k" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2.5L4.5 11h4.2L8 17.5l6.5-9h-4.2z"/></svg><span>Strikeouts</span></button>
+    <button type="button" data-gamepick-pane="hits" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M5.6 4.6c1.4 1.5 1.9 3.4 1.9 5.4s-.5 3.9-1.9 5.4M14.4 4.6c-1.4 1.5-1.9 3.4-1.9 5.4s.5 3.9 1.9 5.4" stroke-width="1.15"/></svg><span>Hits</span></button>
+    <button type="button" data-gamepick-pane="rbis" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M12.4 7.6c-.3-.8-1.1-1.3-2.2-1.3-1.3 0-2.3.7-2.3 1.7 0 1 .8 1.4 2.1 1.7 1.5.3 2.4.8 2.4 1.9 0 1-.9 1.7-2.3 1.7-1.1 0-2-.5-2.3-1.3" stroke-width="1.1"/><path d="M10 5.3v1.1M10 13.6v1.1" stroke-width="1.1"/></svg><span>RBIs</span></button>
+    <button type="button" data-gamepick-pane="tb" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8.2L10 3l4.5 5.2L10 17z"/><path d="M5.5 8.2h9M8 8.2L10 3M12 8.2L10 3" stroke-width="1"/></svg><span>Total Bases</span></button>
+    <button type="button" data-gamepick-pane="sb" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 6l4 4-4 4-4-4z"/><path d="M2.5 8.5h5M2.5 11.5h3.5" stroke-width="1.1"/></svg><span>Stolen Bases</span></button>
+    <button type="button" data-gamepick-pane="hrrbi" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.5V9M10 16.5V4M16 16.5v-6.5"/><path d="M2.5 16.5h15"/></svg><span>Hits+Runs+RBI</span></button>
+    <button type="button" data-gamepick-pane="fantasy" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h8v4a4 4 0 0 1-8 0v-4z"/><path d="M6 4.5H3.5v1a3 3 0 0 0 3 3M14 4.5h2.5v1a3 3 0 0 1-3 3"/><path d="M10 11.5v2.5M8 14h4v3H8z"/></svg><span>Fantasy Points</span></button>
   </div>
-  <div class="dr-sidebar-group dr-sidebar-future">
-    <div class="dr-sidebar-group-head"><span class="dr-sidebar-icon">🏀</span><span class="dr-sidebar-label">Basketball</span><span class="dr-sidebar-soon">Soon</span></div>
-  </div>
-</aside>
+</div>
 
 <!-- Horizontal Ad -->
 
@@ -426,17 +426,16 @@
     <button class="gamepick-tab" id="gamepick-tab-tb" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-tb" data-gamepick-pane="tb" onclick="showGamePickPane('tb')">💎 Total Bases</button>
     <button class="gamepick-tab" id="gamepick-tab-sb" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-sb" data-gamepick-pane="sb" onclick="showGamePickPane('sb')">🏃 Stolen Bases</button>
     <button class="gamepick-tab" id="gamepick-tab-hrrbi" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-hrrbi" data-gamepick-pane="hrrbi" onclick="showGamePickPane('hrrbi')">📈 Hits+Runs+RBI</button>
-    <button class="gamepick-tab" id="gamepick-tab-premium" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-premium" data-gamepick-pane="premium" onclick="showGamePickPane('premium')">🌟 Premium</button>
     <button class="gamepick-tab" id="gamepick-tab-fantasy" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-fantasy" data-gamepick-pane="fantasy" onclick="showGamePickPane('fantasy')">🏆 Fantasy Points</button>
   </div>
 </div>
 
 <div class="gamepick-pane active" id="gamepick-pane-game" role="tabpanel" aria-labelledby="gamepick-tab-game" data-gamepick-pane="game">
   <div class="dr-center-label">📊 Games Today</div>
-  <div class="dr-panel dr-game-panel">
+  <div class="dr-panel dr-game-panel dr-panel-fresh">
     <div class="dr-panel-head">
       <div>
-        <p class="section-title">DIAMOND REPORT <span>GAME PROJECTIONS</span></p>
+        <p class="section-title">Diamond Report <span>Game Projections</span></p>
         <small>Favored side, confidence, lean/toss-up labels, and matchup factors.</small>
       </div>
       <div id="gameprops-refresh" class="dr-refresh"></div>
@@ -464,10 +463,10 @@
 
   <div class="dr-center-label">🔥 Home Runs</div>
   <div class="dr-dashboard-grid dr-hr-grid">
-    <div class="dr-panel dr-panel-large">
+    <div class="dr-panel dr-panel-large dr-panel-fresh">
       <div class="dr-panel-head">
         <div>
-          <p class="section-title">HR <span>THREATS</span></p>
+          <p class="section-title">HR <span>Threats</span></p>
           <small>Top home run threats ranked by power indicators and matchup context.</small>
         </div>
         <span class="dr-panel-tag">Live Board</span>
@@ -478,10 +477,10 @@
       <div id="hrp-legend-footer" style="font-size:10px;color:var(--muted);line-height:1.8;padding:8px 12px;border-top:1px solid var(--border);background:var(--surface);border-radius:0 0 8px 8px"></div>
     </div>
 
-    <div class="dr-panel">
+    <div class="dr-panel dr-panel-fresh">
       <div class="dr-panel-head">
         <div>
-          <p class="section-title">✅ HRS <span>FROM PROJECTION</span></p>
+          <p class="section-title">✅ HRs <span>from Projection</span></p>
           <small>Only home runs that came from Diamond Report projections.</small>
         </div>
         <span id="proj-hits-count" class="dr-count-pill"></span>
@@ -496,10 +495,10 @@
 <div class="gamepick-pane" id="gamepick-pane-k" role="tabpanel" aria-labelledby="gamepick-tab-k" data-gamepick-pane="k" hidden>
   <div class="dr-center-label">🎯 Strikeouts</div>
   <div class="dr-dashboard-grid dr-k-grid">
-    <div class="dr-panel dr-panel-large">
+    <div class="dr-panel dr-panel-large dr-panel-fresh">
       <div class="dr-panel-head">
         <div>
-          <p class="section-title">STRIKEOUT <span>PROJECTIONS</span></p>
+          <p class="section-title">Strikeout <span>Projections</span></p>
           <small>Over/Under reads powered by matchup, K rate, innings, and opponent profile.</small>
         </div>
         <div id="kprops-refresh" class="dr-refresh"></div>
@@ -513,132 +512,41 @@
 
 <div class="gamepick-pane" id="gamepick-pane-hits" role="tabpanel" aria-labelledby="gamepick-tab-hits" data-gamepick-pane="hits" hidden>
   <div class="dr-center-label">⚾ Hits</div>
-  <div class="dr-panel dr-panel-large dr-prop-center-panel"><div class="dr-panel-head"><div><p class="section-title">HITS <span>PROJECTIONS</span></p><small>Top hitters ranked by contact profile, recent form, lineup spot, and pitcher contact allowed.</small></div></div><div id="hits-props-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading hits board…</div></div></div>
+  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">Hits <span>Projections</span></p><small>Top hitters ranked by contact profile, recent form, lineup spot, and pitcher contact allowed.</small></div></div><div id="hits-props-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading hits board…</div></div></div>
 </div>
 <div class="gamepick-pane" id="gamepick-pane-rbis" role="tabpanel" aria-labelledby="gamepick-tab-rbis" data-gamepick-pane="rbis" hidden>
   <div class="dr-center-label">💰 RBIs</div>
-  <div class="dr-panel dr-panel-large dr-prop-center-panel"><div class="dr-panel-head"><div><p class="section-title">RBI <span>PROJECTIONS</span></p><small>RBI opportunities ranked by run environment, power profile, lineup context, and matchup edge.</small></div></div><div id="rbis-props-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading RBI board…</div></div></div>
+  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">RBI <span>Projections</span></p><small>RBI opportunities ranked by run environment, power profile, lineup context, and matchup edge.</small></div></div><div id="rbis-props-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading RBI board…</div></div></div>
 </div>
 <div class="gamepick-pane" id="gamepick-pane-tb" role="tabpanel" aria-labelledby="gamepick-tab-tb" data-gamepick-pane="tb" hidden>
   <div class="dr-center-label">💎 Total Bases</div>
-  <div class="dr-panel dr-panel-large dr-prop-center-panel"><div class="dr-panel-head"><div><p class="section-title">TOTAL BASES <span>PROJECTIONS</span></p><small>Total base opportunities ranked by slugging, ISO, hard-hit profile, and pitch matchup.</small></div></div><div id="tb-props-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading total bases board…</div></div></div>
+  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">Total Bases <span>Projections</span></p><small>Total base opportunities ranked by slugging, ISO, hard-hit profile, and pitch matchup.</small></div></div><div id="tb-props-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading total bases board…</div></div></div>
 </div>
 <div class="gamepick-pane" id="gamepick-pane-sb" role="tabpanel" aria-labelledby="gamepick-tab-sb" data-gamepick-pane="sb" hidden>
   <div class="dr-center-label">🏃 Stolen Bases</div>
-  <div class="dr-panel dr-panel-large dr-prop-center-panel"><div class="dr-panel-head"><div><p class="section-title">STOLEN BASE <span>PROJECTIONS</span></p><small>Speed and baserunning opportunities ranked by attempt profile, matchup, and lineup context.</small></div></div><div id="sb-props-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading stolen base board…</div></div></div>
+  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">Stolen Base <span>Projections</span></p><small>Speed and baserunning opportunities ranked by attempt profile, matchup, and lineup context.</small></div></div><div id="sb-props-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading stolen base board…</div></div></div>
 </div>
 <div class="gamepick-pane" id="gamepick-pane-hrrbi" role="tabpanel" aria-labelledby="gamepick-tab-hrrbi" data-gamepick-pane="hrrbi" hidden>
   <div class="dr-center-label">📈 Hits+Runs+RBI</div>
-  <div class="dr-panel dr-panel-large dr-prop-center-panel"><div class="dr-panel-head"><div><p class="section-title">HITS + RUNS + RBIs <span>PROJECTIONS</span></p><small>Combined production opportunities ranked by on-base skill, power, run environment, and lineup position.</small></div></div><div id="hrrbi-props-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading Hits+Runs+RBI board…</div></div></div>
-</div>
-<div class="gamepick-pane" id="gamepick-pane-premium" role="tabpanel" aria-labelledby="gamepick-tab-premium" data-gamepick-pane="premium" hidden>
-  <div class="dr-center-label">🌟 Premium</div>
-  <div class="dr-panel dr-panel-large dr-prop-center-panel"><div class="dr-panel-head"><div><p class="section-title">ELITE <span>PICKS</span></p><small>Home Runs shows up to 3 real qualifiers per game; every other market shows the top 5 across today's slate. Every player is limited to one category so the same name can't crowd out the board. Picks lock in the moment they're selected and never change for the rest of the day.</small></div></div><div id="premium-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Building today's elite picks…</div></div></div>
+  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">Hits + Runs + RBIs <span>Projections</span></p><small>Combined production opportunities ranked by on-base skill, power, run environment, and lineup position.</small></div></div><div id="hrrbi-props-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading Hits+Runs+RBI board…</div></div></div>
 </div>
 <div class="gamepick-pane" id="gamepick-pane-fantasy" role="tabpanel" aria-labelledby="gamepick-tab-fantasy" data-gamepick-pane="fantasy" hidden>
   <div class="dr-center-label">🏆 Fantasy Points</div>
-  <div class="dr-panel dr-panel-large dr-prop-center-panel"><div class="dr-panel-head"><div><p class="section-title">FANTASY <span>POINTS</span></p><small>Every probable starting pitcher and today's starting lineups, projected for expected DraftKings Classic fantasy points from real matchup quality, park factor, recent form, and season rates — the same signals used across the rest of the site, not a separate model.</small></div></div><div id="fantasy-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Building today's fantasy points board…</div></div></div>
+  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">Fantasy <span>Points</span></p><small>Every probable starting pitcher and today's starting lineups, projected for expected DraftKings Classic fantasy points from real matchup quality, park factor, recent form, and season rates — the same signals used across the rest of the site, not a separate model.</small></div></div><div id="fantasy-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Building today's fantasy points board…</div></div></div>
 </div>
 
 <div class="gamepick-pane" id="gamepick-pane-pr" role="tabpanel" aria-labelledby="gamepick-tab-pr" data-gamepick-pane="pr" hidden>
   <div class="dr-center-label">📋 Pitcher Report</div>
-  <div class="dr-panel dr-panel-large dr-prop-center-panel">
+  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh">
     <div class="dr-panel-head">
       <div>
-        <p class="section-title">STARTING PITCHER <span>REPORT</span></p>
+        <p class="section-title">Starting Pitcher <span>Report</span></p>
         <small>Every starter's season stats side by side — sort any column, and colored pills flag elite vs. concerning numbers at a glance.</small>
       </div>
     </div>
     <div id="pr-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading pitcher report…</div></div>
   </div>
 </div>
-
-<div class="gamepick-pane" id="gamepick-pane-parlay" role="tabpanel" aria-labelledby="gamepick-tab-parlay" data-gamepick-pane="parlay" hidden>
-  <div class="dr-center-label">🧾 Parlay Builds</div>
-  <div class="dr-panel dr-panel-large dr-parlay-panel">
-    <div class="dr-panel-head">
-      <div>
-        <p class="section-title">PARLAY <span>BUILDS</span></p>
-        <small>Build 2-leg, 4-leg, and 6-leg cards from the active Hits, RBI, Total Bases, Stolen Bases, and Hits+Runs+RBI boards.</small>
-      </div>
-      <div id="parlay-build-refresh" class="dr-refresh"></div>
-    </div>
-    <div class="parlay-controls" aria-label="Parlay build controls">
-      <button class="parlay-filter active" type="button" data-parlay-type="safe" onclick="setParlayBuildType('safe')">🛡️ Safe</button>
-      <button class="parlay-filter" type="button" data-parlay-type="normal" onclick="setParlayBuildType('normal')">⚾ Normal</button>
-      <button class="parlay-filter" type="button" data-parlay-type="lotto" onclick="setParlayBuildType('lotto')">🎰 LOTTO</button>
-      <button class="parlay-filter active" type="button" data-parlay-legs="2" onclick="setParlayLegCount(2)">2-Leg</button>
-      <button class="parlay-filter" type="button" data-parlay-legs="4" onclick="setParlayLegCount(4)">4-Leg</button>
-      <button class="parlay-filter" type="button" data-parlay-legs="6" onclick="setParlayLegCount(6)">6-Leg</button>
-    </div>
-    <div class="parlay-note">Safe = strongest low-risk edges. Normal = balanced standard parlay. LOTTO = high-risk/high-upside long-shot build.</div>
-    <div id="parlay-builds-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading parlay builds…</div></div>
-  </div>
-</div>
-
-<div class="gamepick-pane" id="gamepick-pane-team-performance" role="tabpanel" aria-labelledby="gamepick-tab-team-performance" data-gamepick-pane="team-performance" hidden>
-  <div class="dr-center-label">🆚 Team Performance</div>
-  <div class="dr-panel dr-panel-large dr-team-performance-panel">
-    <div class="dr-panel-head">
-      <div>
-        <p class="section-title">TEAM <span>PERFORMANCE</span></p>
-        <small>Compare teams head-to-head this season using current-year matchup results, run differential, recent H2H games, and season records.</small>
-      </div>
-      <div id="team-performance-refresh" class="dr-refresh"></div>
-    </div>
-    <div class="team-performance-controls" aria-label="Team performance comparison controls">
-      <label>Team A <select id="team-performance-a" onchange="renderTeamPerformanceComparison()"><option value="">Loading teams…</option></select></label>
-      <label>Team B <select id="team-performance-b" onchange="renderTeamPerformanceComparison()"><option value="">Loading teams…</option></select></label>
-      <button class="team-performance-btn" type="button" onclick="renderTeamPerformanceComparison(true)">Compare</button>
-    </div>
-    <div id="team-performance-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading team performance board…</div></div>
-  </div>
-</div>
-
-
-<div class="gamepick-pane" id="gamepick-pane-deep" role="tabpanel" aria-labelledby="gamepick-tab-deep" data-gamepick-pane="deep" hidden>
-  <div class="dr-center-label">🧠 Deep Research</div>
-  <div class="deep-research-grid">
-    <div class="dr-panel deep-card deep-card-wide">
-      <div class="dr-panel-head">
-        <div>
-          <p class="section-title">DIAMOND <span>INTELLIGENCE</span></p>
-          <small>Daily production briefing built from the same on-page projection boards. Tracker linkage will stay on the developer side later.</small>
-        </div>
-        <span class="dr-panel-tag">Production Brief</span>
-      </div>
-      <div class="dr-panel-body">
-        <div id="deep-briefing" class="deep-briefing"><span class="spin"></span>Building intelligence briefing…</div>
-      </div>
-    </div>
-
-    <div class="dr-panel deep-card deep-edge-card">
-      <div class="dr-panel-head"><div><p class="section-title">🏆 BIGGEST <span>EDGE</span></p><small>Highest combined confidence opportunity currently available.</small></div></div>
-      <div id="deep-biggest-edge" class="dr-panel-body deep-feature-card"><div class="mu-empty">Loading biggest edge…</div></div>
-    </div>
-
-    <div class="dr-panel deep-card deep-card-wide">
-      <div class="dr-panel-head"><div><p class="section-title">📊 TOP 10 <span>DIAMOND PLAYS</span></p><small>Best overall opportunities across active production prop tabs.</small></div></div>
-      <div id="deep-top-plays" class="dr-panel-body deep-table-wrap"><div class="mu-empty">Loading top plays…</div></div>
-    </div>
-
-    <div class="dr-panel deep-card">
-      <div class="dr-panel-head"><div><p class="section-title">🎯 BEST <span>MATCHUPS</span></p><small>Pitch mix and matchup environments worth reviewing first.</small></div></div>
-      <div id="deep-matchups" class="dr-panel-body deep-list"><div class="mu-empty">Loading matchup notes…</div></div>
-    </div>
-
-    <div class="dr-panel deep-card">
-      <div class="dr-panel-head"><div><p class="section-title">⚠️ RISK <span>WATCH</span></p><small>Signals that can lower confidence before lock.</small></div></div>
-      <div id="deep-risk" class="dr-panel-body deep-list"><div class="mu-empty">Loading risk watch…</div></div>
-    </div>
-
-    <div class="dr-panel deep-card deep-card-wide">
-      <div class="dr-panel-head"><div><p class="section-title">🤖 AI <span>RESEARCH NOTES</span></p><small>Plain-English read of what the model is surfacing today.</small></div></div>
-      <div id="deep-notes" class="dr-panel-body deep-notes"><div class="mu-empty">Loading research notes…</div></div>
-    </div>
-  </div>
-</div>
-
 
 <!-- Hidden compatibility container: keeps existing live HR updater safe while the public layout now only shows HRs from Projection. -->
 <div style="display:none!important" aria-hidden="true">
@@ -691,6 +599,22 @@
 </div>
 <div class="mu-modal-body" id="pr-lineup-modal-body">
 <span class="spin"></span> Loading lineup…
+    </div>
+</div>
+</div>
+
+<!-- Team Performance: head-to-head pop-out, opened from a Game Projections card -->
+<div class="mu-modal-overlay" id="tp-modal-overlay" onclick="if(event.target===this)closeTeamMatchup()" style="display:none">
+<div class="mu-modal">
+<div class="mu-modal-head">
+<div>
+<div class="mu-modal-title" id="tp-modal-title">TEAM PERFORMANCE</div>
+<div class="mu-modal-sub" id="tp-modal-sub"></div>
+</div>
+<button class="mu-close" onclick="closeTeamMatchup()">✕</button>
+</div>
+<div class="mu-modal-body" id="tp-modal-body">
+<span class="spin"></span> Loading team performance…
     </div>
 </div>
 </div>
@@ -861,7 +785,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026072140" defer></script>
+<script src="app.min.js?v=2026072359" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
