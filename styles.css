@@ -1895,14 +1895,47 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   justify-content: center;
 }
 
+/* ── Shared line-icon system ───────────────────────────────────────────────
+   Replaces the hub/hero's old colored emoji (⚾🏈🔥🔮 etc.) with a consistent
+   set of thin-stroke, monochrome inline SVGs -- a deliberate part of the
+   Apple-style redesign pass below: real product UI (SF Symbols) doesn't use
+   colorful emoji, it uses one calm icon language tinted to match the
+   surrounding text/accent color via currentColor. */
+.dr-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+  flex-shrink: 0;
+}
+
 /* ── Hero: new-visitor explainer + trust pillars ──────────────────────────
    Fresh class names, not the existing .dr-prediction-hero p/h1 selectors —
    those already carry many conflicting per-breakpoint !important overrides,
-   including one that sets p{display:none}. */
+   including one that sets p{display:none} and a whole prior "cyberpunk
+   theme" pass. dr-hero-eyebrow/dr-hero-title are new for the same reason.
+   Redesign direction (also applied to the hub below): more air between
+   elements, a quieter/less-saturated palette, bigger and more confident
+   type with tighter tracking, sentence case instead of shouting caps, and
+   icon tiles instead of colored emoji -- reads calmer and more considered. */
+.dr-hero-eyebrow {
+  font-weight: 600 !important;
+  letter-spacing: 1.2px !important;
+  color: #9db3e8 !important;
+}
+.dr-hero-title {
+  font-size: clamp(34px, 4.6vw, 54px) !important;
+  font-weight: 750 !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.06 !important;
+  text-transform: none !important;
+  text-shadow: none !important;
+  color: #fff !important;
+  margin: 14px 0 16px !important;
+}
 .dr-hero-subtitle {
-  color: #aebbd4;
-  font-size: 14px;
-  line-height: 1.55;
+  color: #a7b3cc;
+  font-size: 15.5px;
+  line-height: 1.6;
   max-width: 620px;
   margin: 10px auto 0;
   text-align: center;
@@ -1910,42 +1943,60 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
 .dr-hero-pillars {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  max-width: 720px;
+  gap: 14px;
+  max-width: 760px;
   width: 100%;
-  margin: 18px auto 0;
+  margin: 30px auto 0;
 }
 .dr-hero-pillar {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: rgba(17, 24, 39, .55);
-  border: 1px solid rgba(47,107,255, .18);
-  border-radius: 14px;
-  padding: 14px 10px;
+  background: rgba(255,255,255,.035);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 18px;
+  padding: 22px 16px;
   text-align: center;
+  transition: transform .18s ease, border-color .18s ease, background .18s ease;
+}
+.dr-hero-pillar:hover {
+  transform: translateY(-2px);
+  border-color: rgba(47,107,255,.35);
+  background: rgba(255,255,255,.05);
 }
 .dr-hero-pillar-icon {
-  font-size: 20px;
-  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: rgba(47,107,255,.14);
+  color: #6f9bff;
+  margin-bottom: 12px;
+}
+.dr-hero-pillar-icon .dr-icon {
+  width: 21px;
+  height: 21px;
 }
 .dr-hero-pillar-title {
-  font-weight: 900;
-  font-size: 12.5px;
+  font-weight: 700;
+  font-size: 13.5px;
+  letter-spacing: -0.005em;
   color: #fff;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
 }
 .dr-hero-pillar-sub {
-  font-size: 10.5px;
-  color: #8fa3c8;
-  line-height: 1.4;
+  font-size: 11.5px;
+  color: #93a1bd;
+  line-height: 1.5;
 }
 @media (max-width: 767px) {
   .dr-hero-pillars {
     grid-template-columns: 1fr;
   }
   .dr-hero-subtitle {
-    font-size: 12px;
+    font-size: 13px;
   }
 }
 
@@ -1954,10 +2005,11 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
    IIFE at the end of app.js. Higher-specificity, class-scoped selectors
    (rather than relying on source order) so these reliably win over the
    pre-existing "body > main, main" rule regardless of where either rule
-   sits in the file. */
+   sits in the file. Same Apple-style redesign direction as the hero above:
+   more air, quieter palette, bigger/tighter type, icon tiles not emoji. */
 #dr-landing-hub {
   display: none;
-  padding: 36px 20px 20px;
+  padding: 56px 24px 24px;
   box-sizing: border-box;
 }
 html body.dr-hub-active #dr-landing-hub {
@@ -1973,41 +2025,44 @@ html body.dr-hub-active main {
 }
 .dr-hub-eyebrow {
   text-align: center;
-  color: var(--accent);
-  font-weight: 900;
+  color: #9db3e8;
+  font-weight: 600;
   font-size: 12px;
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 .dr-hub-title {
   text-align: center;
-  font-size: 34px;
-  margin: 0 0 10px;
+  font-size: clamp(36px, 5.2vw, 56px);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  margin: 0 0 14px;
   color: #fff;
 }
 .dr-hub-sub {
   text-align: center;
-  color: #aebbd4;
-  font-size: 14px;
-  max-width: 560px;
-  margin: 0 auto 30px;
-  line-height: 1.5;
+  color: #a7b3cc;
+  font-size: 15.5px;
+  max-width: 600px;
+  margin: 0 auto 44px;
+  line-height: 1.6;
 }
 .dr-hub-sports {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  margin-bottom: 40px;
+  gap: 16px;
+  margin-bottom: 56px;
 }
 .dr-hub-sport-card {
-  background: linear-gradient(180deg, rgba(17,24,39,.75), rgba(10,14,24,.75));
-  border: 1px solid rgba(47,107,255,.22);
-  border-radius: 16px;
-  padding: 22px 18px;
+  background: rgba(255,255,255,.035);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 20px;
+  padding: 28px 22px;
   text-align: center;
   cursor: pointer;
-  transition: transform .15s ease, border-color .15s ease;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2017,12 +2072,24 @@ html body.dr-hub-active main {
   box-sizing: border-box;
 }
 .dr-hub-sport-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(47,107,255,.55);
+  transform: translateY(-3px);
+  border-color: rgba(47,107,255,.4);
+  box-shadow: 0 14px 32px rgba(0,0,0,.28);
 }
 .dr-hub-sport-icon {
-  font-size: 30px;
-  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: rgba(47,107,255,.14);
+  color: #6f9bff;
+  margin-bottom: 14px;
+}
+.dr-hub-sport-icon .dr-icon {
+  width: 25px;
+  height: 25px;
 }
 .dr-hub-sport-text {
   display: flex;
@@ -2031,30 +2098,35 @@ html body.dr-hub-active main {
   min-width: 0;
 }
 .dr-hub-sport-title {
-  font-weight: 900;
-  font-size: 16px;
-  margin-bottom: 4px;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.005em;
+  margin-bottom: 5px;
   color: #fff;
 }
 .dr-hub-sport-desc {
-  font-size: 11.5px;
-  color: #8fa3c8;
-  line-height: 1.4;
+  font-size: 12.5px;
+  color: #93a1bd;
+  line-height: 1.5;
 }
 .dr-hub-sport-card.live {
-  border-color: rgba(47,107,255,.4);
+  border-color: rgba(47,107,255,.35);
   box-shadow: 0 0 30px rgba(47,107,255,.08);
+}
+.dr-hub-sport-card.live .dr-hub-sport-icon {
+  background: rgba(47,107,255,.2);
+  color: #8fb0ff;
 }
 .dr-hub-sport-card.live .dr-hub-sport-badge {
   display: inline-block;
-  margin-top: 10px;
-  background: rgba(46,204,113,.15);
-  color: #2ecc71;
-  border: 1px solid rgba(46,204,113,.4);
-  font-size: 9.5px;
-  font-weight: 900;
-  letter-spacing: .6px;
-  padding: 3px 10px;
+  margin-top: 12px;
+  background: rgba(46,204,113,.13);
+  color: #40d47e;
+  border: 1px solid rgba(46,204,113,.35);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  padding: 4px 12px;
   border-radius: 999px;
 }
 .dr-hub-sport-card.soon {
@@ -2063,32 +2135,34 @@ html body.dr-hub-active main {
 }
 .dr-hub-sport-card.soon:hover {
   transform: none;
-  border-color: rgba(47,107,255,.22);
+  border-color: rgba(255,255,255,.08);
+  box-shadow: none;
 }
 .dr-hub-sport-card.soon .dr-hub-sport-badge {
   display: inline-block;
-  margin-top: 10px;
+  margin-top: 12px;
   background: rgba(255,255,255,.06);
   color: #8fa3c8;
-  font-size: 9.5px;
-  font-weight: 900;
-  letter-spacing: .6px;
-  padding: 3px 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  padding: 4px 12px;
   border-radius: 999px;
 }
 .dr-hub-section-head {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 0 0 16px;
+  gap: 11px;
+  margin: 0 0 20px;
 }
 .dr-hub-section-icon {
-  font-size: 16px;
+  display: flex;
+  color: #6f9bff;
 }
 .dr-hub-section-head h2 {
-  font-size: 15px;
-  font-weight: 900;
-  letter-spacing: .5px;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: .4px;
   text-transform: uppercase;
   color: #fff;
   margin: 0;
@@ -2096,7 +2170,7 @@ html body.dr-hub-active main {
 .dr-hub-section-line {
   flex: 1;
   height: 1px;
-  background: rgba(255,255,255,.1);
+  background: rgba(255,255,255,.08);
 }
 .dr-hub-news-grid {
   display: grid;
@@ -2332,7 +2406,7 @@ body > main, main,
   flex-direction: column;
 }
 .dr-hub-main { min-width: 0; }
-.dr-hub-side { min-width: 0; margin-top: 30px; }
+.dr-hub-side { min-width: 0; margin-top: 30px; display: flex; flex-direction: column; gap: 28px; }
 @media (min-width: 1000px) {
   .dr-hub-layout {
     display: grid;
@@ -3001,7 +3075,7 @@ select:focus-visible {
 
 /* ── News Central hub: Today's Games ──── */
 .dr-hub-insights {
-  margin: 28px 0;
+  margin: 0 0 48px;
 }
 .dr-hub-insights-recap {
   font-size: 14.5px;
@@ -3016,13 +3090,13 @@ select:focus-visible {
   gap: 14px;
 }
 .dr-hub-insights-storyline {
-  background: rgba(17,24,39,.55);
+  background: rgba(255,255,255,.035);
   border: 1px solid rgba(255,255,255,.08);
-  border-radius: 14px;
-  padding: 14px 16px;
+  border-radius: 16px;
+  padding: 16px 18px;
 }
 .dr-hub-insights-storyline-head {
-  font-weight: 800;
+  font-weight: 700;
   font-size: 13px;
   color: #fff;
   margin-bottom: 6px;
