@@ -1303,26 +1303,13 @@ function updateHeroTodayRecordStrip() {
 }
 window.updateHeroTodayRecordStrip = updateHeroTodayRecordStrip;
 
-// Fetches the nightly-graded all-time record once on load. Gracefully no-ops until the
-// first scheduled run of scripts/update-tracker.mjs actually produces data/tracker.json —
-// no fabricated record shown before real history exists. The full all-time/rolling
-// breakdown by market lives on methodology.html now (its own standalone tracker.json
-// fetch) — this page only needs today's Elite Picks.
+// Refreshes the hero "today's record" trust strip. Used to also fetch data/tracker.json
+// for the Premium/Elite Picks tab (removed) -- updateHeroTodayRecordStrip reads its own
+// independent globals (window.__drTodayRecord/__kpTodayRecord), so no fetch is needed
+// here anymore. Kept as its own function (rather than inlining at each call site) since
+// it's wired to a DOMContentLoaded listener and a 5-minute interval below.
 async function loadAllTimeTrackerRecord() {
-  try {
-    const res = await fetch('./data/tracker.json', { cache: 'no-store' });
-    if (!res.ok) return;
-    const data = await res.json();
-    // Today's Elite Picks are selected and locked in server-side (scripts/update-tracker.mjs,
-    // captureEliteToday) so every visitor sees the exact same picks with the exact same
-    // score — the Premium tab only joins these against live row data for display, it no
-    // longer selects or scores anything client-side. Always set (even to []) so the
-    // Premium tab can tell "not loaded yet" apart from "loaded, nothing cleared the bar".
-    const todayCT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-    window.__premiumTodayPicksRaw = (data?.market?.premium || []).filter(r => r.date === todayCT);
-    if (typeof window.renderPremiumPicks === 'function') window.renderPremiumPicks();
-    updateHeroTodayRecordStrip();
-  } catch (e) {}
+  updateHeroTodayRecordStrip();
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', loadAllTimeTrackerRecord, { once: true });
@@ -3288,6 +3275,10 @@ async function loadGameProps() {
       const timeStr = dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'});
       const awayAbbr = g.teams.away.team.abbreviation;
       const homeAbbr = g.teams.home.team.abbreviation;
+      const awayTeamId = g.teams.away.team.id;
+      const homeTeamId = g.teams.home.team.id;
+      const awayTeamName = (g.teams.away.team.name || awayAbbr).replace(/'/g,"\\'");
+      const homeTeamName = (g.teams.home.team.name || homeAbbr).replace(/'/g,"\\'");
       const awayP = g.teams.away.probablePitcher;
       const homeP = g.teams.home.probablePitcher;
       const state = g.status.abstractGameState;
@@ -3832,6 +3823,7 @@ async function loadGameProps() {
         <!-- HR Boost + Park Factor labels, same compact chip style as Key factors below -->
         <div class="gp-factors">${hrBoostChip}${parkFactorChip}${marketChip}${bullpenChip}${factorChips}</div>
         <button class="btn-lineup dr1027-details-btn" onclick="toggleGameDetails(this)" style="margin-top:8px">▼ PARK &amp; WEATHER DETAILS</button>
+        <button class="btn-lineup" onclick="event.stopPropagation();openTeamMatchup(${awayTeamId},${homeTeamId},'${awayTeamName}','${homeTeamName}','${awayAbbr}','${homeAbbr}')" style="margin-top:8px">⚖ TEAM PERFORMANCE</button>
         <div class="gp-details-panel pr-expand-panel" style="display:none;margin-top:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px">${parkWeatherHTML}</div>
         <div class="gp-live-result-zone" data-live-score-badge="1" style="margin-top:8px">${resultBadge || ''}</div>
       </div>`, resultCorrect };
@@ -7951,7 +7943,7 @@ function initPropsTab() {
   // alone here meant a URL like #gamepick=premium still always warmed Game Center data on
   // first paint. Check the same #gamepick=<pane> hash the tab controller itself reads,
   // before falling back to whatever the DOM currently shows.
-  const GAMEPICK_PANES = ['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','premium','fantasy','parlay','team-performance','deep'];
+  const GAMEPICK_PANES = ['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','fantasy'];
   const hashMatch = /^#?gamepick=([\w-]+)/.exec(window.location.hash || '');
   const fromHash = hashMatch && GAMEPICK_PANES.includes(hashMatch[1]) ? hashMatch[1] : null;
   const activePane = fromHash || document.querySelector('#props .gamepick-pane.active')?.getAttribute('data-gamepick-pane') || 'game';
@@ -9982,23 +9974,6 @@ if (document.readyState === 'loading') {
         setTimeout(function(){ try { if (typeof window.renderPropIntelligencePanes === 'function') window.renderPropIntelligencePanes(); } catch(e) {} }, 120);
         return;
       }
-      if (pane === 'premium') {
-        // Same shared player pool as the hits/rbis/tb/sb/hrrbi boards above — reuses the
-        // loaded.props flag so a cold boot straight into Premium (e.g. restoring the
-        // saved tab on refresh) still fetches it instead of relying on a manual tab
-        // click through window.showGamePickPane, which boot() doesn't go through.
-        if (!loaded.props) {
-          loaded.props = true;
-          idle(function(){ try { if (typeof window.loadHRPotentialWithRetry === 'function') window.loadHRPotentialWithRetry(); } catch(e) {} });
-        }
-        setTimeout(function(){ try { if (typeof window.renderPremiumPicks === 'function') window.renderPremiumPicks(); } catch(e) {} }, 120);
-        setTimeout(function(){ try { if (typeof window.renderPremiumPicks === 'function') window.renderPremiumPicks(); } catch(e) {} }, 900);
-        return;
-      }
-      if (pane === 'deep' && !loaded.deep) {
-        loaded.deep = true;
-        idle(function(){ try { if (typeof window.renderDeepResearch === 'function') window.renderDeepResearch(); } catch(e) {} });
-      }
       if (pane === 'fantasy') {
         // Needs both the pitcher pool (prRows, Pitcher Report) and the batter pool
         // (hrpRows, shared with HR Threats/Hits/etc.) -- reuses the same 'pr' and
@@ -10020,7 +9995,7 @@ if (document.readyState === 'loading') {
 /* ---- from <script id="anonymous"> ---- */
 // PROD v8.44 — Game Picks inner tab controller with persistent state
 (function(){
-  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, premium: true, fantasy: true, parlay: true, 'team-performance': true, deep: true };
+  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, fantasy: true };
 
   // Only the URL hash decides the pane on load (e.g. a shared #gamepick=premium
   // link). No localStorage fallback — a plain refresh/revisit with no hash
@@ -10090,26 +10065,14 @@ if (document.readyState === 'loading') {
     if (typeof window.__drLoadGamePickPaneData === 'function') {
       setTimeout(function(){ window.__drLoadGamePickPaneData(pane); }, 60);
     }
-    if (['hits','rbis','tb','sb','hrrbi','parlay'].indexOf(pane) >= 0) {
+    if (['hits','rbis','tb','sb','hrrbi'].indexOf(pane) >= 0) {
       setTimeout(function(){ if (typeof window.renderPropIntelligencePanes === 'function') window.renderPropIntelligencePanes(); }, 30);
       setTimeout(function(){ if (typeof window.renderPropIntelligencePanes === 'function') window.renderPropIntelligencePanes(); }, 700);
-    }
-    if (pane === 'parlay') {
-      setTimeout(function(){ if (typeof window.renderParlayBuilds === 'function') window.renderParlayBuilds(); }, 60);
-      setTimeout(function(){ if (typeof window.renderParlayBuilds === 'function') window.renderParlayBuilds(); }, 900);
-    }
-    if (pane === 'team-performance') {
-
     }
     if (pane === 'fantasy') {
       setTimeout(function(){ if (typeof window.renderFantasyBoard === 'function') window.renderFantasyBoard(); }, 30);
       setTimeout(function(){ if (typeof window.renderFantasyBoard === 'function') window.renderFantasyBoard(); }, 900);
       setTimeout(function(){ if (typeof window.renderFantasyBoard === 'function') window.renderFantasyBoard(); }, 2200);
-    }
-    if (pane === 'deep') {
-      setTimeout(function(){ if (typeof window.renderDeepResearch === 'function') window.renderDeepResearch(); }, 30);
-      setTimeout(function(){ if (typeof window.renderDeepResearch === 'function') window.renderDeepResearch(); }, 700);
-      setTimeout(function(){ if (typeof window.renderDeepResearch === 'function') window.renderDeepResearch(); }, 2000);
     }
   }
 
@@ -10154,70 +10117,6 @@ if (document.readyState === 'loading') {
   };
 })();
 
-/* ---- from <script id="prod-v9-8-parlay-builds-js"> ---- */
-(function(){
-  var state={ type:'safe', legs:2 };
-  function num(v){ v=parseFloat(v); return Number.isFinite(v)?v:0; }
-  function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
-  function fmt(v){ return Math.round(v)+'%'; }
-  function getRows(){ try { return window.getProductionPropRows ? window.getProductionPropRows() : (window.hrpRows||[]); } catch(e){ return []; } }
-  function activeRows(){ return getRows().filter(function(r){ return !window.isActiveForHRThreat || window.isActiveForHRThreat(r); }); }
-  function propScore(type,r){
-    var s=r.stats||{}, avg=num(r.avg), ops=num(r.ops), iso=num(r.iso), hr=num(r.hrSeason), l10=num(r.last10HR), prob=num(r.hrProb), sb=num(s.stolenBases), obp=num(s.obp), slg=num(s.slg);
-    if(type==='Hits') return clamp(38+avg*120+ops*8+(r.isFavorable?6:0),1,99);
-    if(type==='RBI') return clamp(35+ops*10+iso*70+hr*.8+prob*.35+(r.topHrThreat?5:0),1,99);
-    if(type==='Total Bases') return clamp(36+ops*8+iso*95+prob*.45+l10*2+(slg>=.500?4:0),1,99);
-    if(type==='Stolen Base') return clamp(28+sb*2.4+avg*40+obp*30+(String(r.pos||'').match(/SS|CF|2B|LF|RF/)?8:0),1,99);
-    if(type==='Hits+Runs+RBI') return clamp(42+avg*55+ops*9+hr*.45+prob*.32+(r.isFavorable?5:0),1,99);
-    return 50;
-  }
-  function lineFor(type){ if(type==='Hits')return 'Over 0.5 Hits'; if(type==='RBI')return 'Over 0.5 RBI'; if(type==='Total Bases')return 'Over 1.5 Total Bases'; if(type==='Stolen Base')return 'Over 0.5 SB'; return 'Over 1.5 H+R+RBI'; }
-  function reason(type,r){
-    var bits=[]; if(r.isFavorable) bits.push('plus matchup'); if(num(r.avg)>=.280) bits.push('contact'); if(num(r.ops)>=.850) bits.push('OPS edge'); if(num(r.iso)>=.200) bits.push('power'); if(num((r.stats||{}).stolenBases)>=10) bits.push('speed'); if(r.topHrThreat) bits.push('upside');
-    return (bits.slice(0,3).join(' · ') || 'model edge') + ' for ' + type;
-  }
-  function pool(){
-    var markets=['Hits','RBI','Total Bases','Stolen Base','Hits+Runs+RBI'], seen={};
-    var rows=activeRows();
-    var legs=[];
-    markets.forEach(function(m){ rows.forEach(function(r){
-      var id=(r.id||r.name)+'-'+m, sc=propScore(m,r); if(!r.name || seen[id]) return; seen[id]=1;
-      legs.push({ id:id, player:r.name, team:r.teamAbbr||'', opp:r.oppAbbr||'', pos:r.pos||'', market:m, line:lineFor(m), score:sc, reason:reason(m,r), highUpside:(r.topHrThreat||num(r.hrProb)>=18||num(r.iso)>=.220||num((r.stats||{}).stolenBases)>=15) });
-    }); });
-    return legs;
-  }
-  function selectLegs(type,count){
-    var arr=pool();
-    if(type==='safe') arr=arr.filter(function(x){return x.score>=68}).sort(function(a,b){return b.score-a.score});
-    else if(type==='normal') arr=arr.filter(function(x){return x.score>=58}).sort(function(a,b){return (b.score+(b.highUpside?3:0))-(a.score+(a.highUpside?3:0))});
-    else arr=arr.filter(function(x){return x.highUpside || x.score>=52}).sort(function(a,b){return ((b.highUpside?15:0)+b.score)-((a.highUpside?15:0)+a.score)});
-    var picked=[], usedPlayers={};
-    arr.forEach(function(x){ if(picked.length>=count) return; var key=x.player; if(usedPlayers[key] && type!=='lotto') return; usedPlayers[key]=1; picked.push(x); });
-    if(picked.length<count){ pool().sort(function(a,b){return b.score-a.score}).forEach(function(x){ if(picked.length<count && !picked.some(function(p){return p.id===x.id})) picked.push(x); }); }
-    return picked.slice(0,count);
-  }
-  function build(type,count,idx){
-    var legs=selectLegs(type,count), avg=legs.length?legs.reduce(function(a,b){return a+b.score},0)/legs.length:0;
-    var label=type==='safe'?'Safe':type==='normal'?'Normal':'LOTTO';
-    var desc=type==='safe'?'High-upside, lower-risk build from strongest confidence legs.':type==='normal'?'Standard balanced parlay with confidence and payout upside.':'High-risk build targeting volatility and plus-upside outcomes.';
-    return '<div class="parlay-build-card parlay-risk-'+type+'"><div class="parlay-build-head"><div><div class="parlay-build-title">'+label+' '+count+'-Leg Build</div><div class="parlay-build-sub">'+desc+'</div></div><div class="parlay-build-score"><strong>'+fmt(avg)+'</strong><span>Avg Edge</span></div></div><div class="parlay-leg-list">'+(legs.map(function(l,i){return '<div class="parlay-leg"><div><div class="parlay-leg-player">'+(i+1)+'. '+l.player+'</div><div class="parlay-leg-meta">'+l.team+' vs '+l.opp+(l.pos?' · '+l.pos:'')+'</div></div><div><div class="parlay-market">'+l.line+'</div><div class="parlay-reason">'+l.reason+'</div></div><div class="parlay-confidence">'+fmt(l.score)+'</div></div>';}).join('')||'<div class="mu-empty">Waiting for active prop data…</div>')+'</div></div>';
-  }
-  function updateButtons(){
-    document.querySelectorAll('[data-parlay-type]').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-parlay-type')===state.type); });
-    document.querySelectorAll('[data-parlay-legs]').forEach(function(b){ b.classList.toggle('active', String(state.legs)===b.getAttribute('data-parlay-legs')); });
-  }
-  window.setParlayBuildType=function(t){ state.type=t||'safe'; updateButtons(); window.renderParlayBuilds(); };
-  window.setParlayLegCount=function(n){ state.legs=parseInt(n,10)||2; updateButtons(); window.renderParlayBuilds(); };
-  window.renderParlayBuilds=function(){
-    var el=document.getElementById('parlay-builds-content'); if(!el) return;
-    updateButtons();
-    var rows=activeRows();
-    if(!rows.length){ el.innerHTML='<div class="mu-empty">Loading parlay builder from active prop data…</div>'; return; }
-    el.innerHTML=build(state.type,state.legs,0) + '<div class="parlay-note">Tip: switch between Safe, Normal, and LOTTO to rebuild the card using different risk rules.</div>';
-    var rf=document.getElementById('parlay-build-refresh'); if(rf) rf.textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-  };
-})();
-
 /* ---- from <script id="prod-v8-42-game-picks-init-fix-js"> ---- */
 // Superseded by PROD v8.44 persistent inner-tab controller above.
 // This placeholder intentionally does not force Game Center after page load.
@@ -10244,109 +10143,6 @@ if (document.readyState === 'loading') {
     forceGamePicksDefault();
   }
   setTimeout(forceGamePicksDefault, 250);
-})();
-
-/* ---- from <script id="prod-v8-56-deep-research-js"> ---- */
-(function(){
-  function n(v){ v=parseFloat(v); return Number.isFinite(v)?v:0; }
-  function pct(v){ return Math.max(1, Math.min(99, Math.round(v))); }
-  function f3(v){ v=n(v); return v>0?v.toFixed(3).replace(/^0/,''):'–'; }
-  function data(){ return (window.getProductionPropRows ? window.getProductionPropRows() : (window.hrpRows||[])).filter(function(r){ return !window.isActiveForHRThreat || window.isActiveForHRThreat(r); }); }
-  function propScore(type,r){
-    var avg=n(r.avg),ops=n(r.ops),iso=n(r.iso),hr=n(r.hrSeason),l10=n(r.last10HR),prob=n(r.hrProb),sb=n(r.stats&&r.stats.stolenBases), obp=n(r.stats&&r.stats.obp), slg=n(r.stats&&r.stats.slg);
-    if(type==='Home Run') return pct(42+prob*.55+iso*80+ops*7+l10*2+(r.isFavorable?6:0)+(r.topHrThreat?4:0));
-    if(type==='Hits') return pct(38+avg*120+ops*8+(r.isFavorable?6:0));
-    if(type==='RBI') return pct(35+ops*10+iso*70+hr*.8+prob*.35+(r.topHrThreat?5:0));
-    if(type==='Total Bases') return pct(36+ops*8+iso*95+prob*.45+l10*2+n(slg)*10);
-    if(type==='Stolen Bases') return pct(28+sb*2.4+avg*40+obp*20+(String(r.pos||'').match(/SS|CF|2B|LF|RF/)?8:0));
-    if(type==='Hits+Runs+RBI') return pct(42+avg*55+ops*9+hr*.45+prob*.32+(r.isFavorable?5:0));
-    return 50;
-  }
-  function reasons(r,type){
-    var arr=[]; if(r.isFavorable) arr.push(['good','Favorable matchup']); if(n(r.ops)>=.850) arr.push(['good','Strong OPS']); if(n(r.iso)>=.200) arr.push(['warn','Power profile']); if(n(r.last10HR)>=2) arr.push(['warn','Recent HR form']); if(n(r.stats&&r.stats.stolenBases)>=10) arr.push(['good','Speed upside']); if(type==='Hits' && n(r.avg)>=.280) arr.push(['good','Contact edge']); if(!arr.length) arr.push(['','Model grade']); return arr.slice(0,5);
-  }
-  function allPlays(){
-    var types=['Home Run','Hits','RBI','Total Bases','Stolen Bases','Hits+Runs+RBI'];
-    var rows=[]; data().forEach(function(r){ types.forEach(function(t){ rows.push({player:r, prop:t, score:propScore(t,r)}); }); });
-    rows.sort(function(a,b){return b.score-a.score;});
-    var seen={},out=[]; rows.forEach(function(x){ var key=(x.player.id||x.player.name)+'|'+x.prop; if(!seen[key] && out.length<10){seen[key]=1;out.push(x);} });
-    return out;
-  }
-  function setHTML(id,html){ var el=document.getElementById(id); if(el) el.innerHTML=html; }
-  function biggestEdge(play){
-    if(!play) return '<div class="mu-empty">Waiting for production data…</div>';
-    var r=play.player, rs=reasons(r,play.prop).map(function(x){return '<span class="deep-pill '+x[0]+'">'+x[1]+'</span>';}).join('');
-    return '<div class="deep-edge-name">'+(r.name||'–')+'</div><div class="deep-edge-prop">'+play.prop+' · Best current read</div><div class="deep-edge-score">'+play.score+'<small> / 100</small></div><div class="deep-reasons">'+rs+'</div><div class="deep-list-body" style="margin-top:12px">Why it matters: this play grades highest across the active production boards using matchup quality, recent form, baseline skill, and role context.</div>';
-  }
-  function topTable(plays){
-    if(!plays.length) return '<div class="mu-empty">Waiting for player boards to populate…</div>';
-    return '<table class="deep-table"><thead><tr><th>Rank</th><th>Player</th><th>Best Prop</th><th>Team</th><th>Score</th></tr></thead><tbody>'+plays.map(function(p,i){var r=p.player;return '<tr><td class="deep-rank">#'+(i+1)+'</td><td><span class="deep-player">'+(r.name||'–')+'</span><span class="deep-sub">'+(r.pos||'')+' · vs '+(r.oppAbbr||'')+'</span></td><td>'+p.prop+'</td><td>'+(r.teamAbbr||'–')+'</td><td><span class="deep-score-badge">'+p.score+'</span></td></tr>';}).join('')+'</tbody></table>';
-  }
-  function briefing(plays){
-    if(!plays.length) return '<span class="spin"></span>Building intelligence briefing…';
-    var top=plays[0], hr=plays.find(function(p){return p.prop==='Home Run';}), hit=plays.find(function(p){return p.prop==='Hits';}), tb=plays.find(function(p){return p.prop==='Total Bases';});
-    return '<strong>Today\'s production read:</strong> '+(top.player.name||'The top play')+' owns the strongest current Diamond score, with '+top.prop+' grading as the best available prop profile. '+(hr?'Power is led by '+hr.player.name+' based on HR probability, ISO, and matchup quality. ':'')+(hit?'The safest contact profile currently points to '+hit.player.name+' in the Hits market. ':'')+(tb?'Total Bases upside is highlighted by '+tb.player.name+' due to slugging profile and production context. ':'')+'Use the prop-specific tabs for supporting detail; tracker wiring will remain on the developer side later.';
-  }
-  function matchups(plays){
-    var fav=data().filter(function(r){return r.isFavorable;}).sort(function(a,b){return n(b.hrProb)-n(a.hrProb);}).slice(0,4);
-    if(!fav.length && plays.length) fav=plays.slice(0,4).map(function(p){return p.player;});
-    return fav.map(function(r,i){return '<div class="deep-list-item"><div class="deep-list-title">'+(i===0?'🔥':'🎯')+' '+(r.name||'Matchup')+'</div><div class="deep-list-body">'+(r.teamAbbr||'')+' vs '+(r.oppAbbr||'')+' · '+(r.isFavorable?'Favorable pitcher profile detected.':'Strong model grade from active production data.')+'</div></div>';}).join('') || '<div class="mu-empty">No matchup notes available yet.</div>';
-  }
-  function risk(plays){
-    var pending='Lineups, weather, and late scratches should be checked before locking plays.';
-    var items=['Unconfirmed lineups can change plate appearances and batting order value.','Weather or late game status changes can reduce offensive projections.',pending];
-    return items.map(function(t,i){return '<div class="deep-list-item"><div class="deep-list-title">⚠️ Watch Item '+(i+1)+'</div><div class="deep-list-body">'+t+'</div></div>';}).join('');
-  }
-  function notes(plays){
-    if(!plays.length) return '<div class="mu-empty">Research notes will populate once the production boards load.</div>';
-    var names=plays.slice(0,3).map(function(p){return p.player.name+' ('+p.prop+')';}).join(', ');
-    return '<p>The Deep Research tab is using a locked daily research snapshot so the recommendations do not reshuffle after every page refresh. The strongest locked cluster is: <strong>'+names+'</strong>.</p><p>This section remains production-only and will refresh naturally when a new daily snapshot is created.</p>';
-  }
-  function todayKey(){
-    try { return new Date().toLocaleDateString('en-CA'); } catch(e) { return new Date().toISOString().slice(0,10); }
-  }
-  function staticKey(){ return 'DR_DEEP_RESEARCH_STATIC_SNAPSHOT_'+todayKey(); }
-  function readStaticSnapshot(){
-    try {
-      var raw=localStorage.getItem(staticKey());
-      if(!raw) return null;
-      var snap=JSON.parse(raw);
-      if(!snap || snap.date!==todayKey() || !snap.html) return null;
-      return snap.html;
-    } catch(e) { return null; }
-  }
-  function writeStaticSnapshot(html){
-    try {
-      localStorage.setItem(staticKey(), JSON.stringify({date:todayKey(), savedAt:new Date().toISOString(), html:html}));
-    } catch(e) {}
-  }
-  function collectHTML(){
-    var ids=['deep-briefing','deep-biggest-edge','deep-top-plays','deep-matchups','deep-risk','deep-notes'], out={};
-    ids.forEach(function(id){ var el=document.getElementById(id); if(el) out[id]=el.innerHTML; });
-    return out;
-  }
-  function applyHTML(html){
-    if(!html) return false;
-    Object.keys(html).forEach(function(id){ setHTML(id, html[id]); });
-    return true;
-  }
-  window.clearDeepResearchStaticCache=function(){
-    try { Object.keys(localStorage).filter(function(k){return k.indexOf('DR_DEEP_RESEARCH_STATIC_SNAPSHOT_')===0;}).forEach(function(k){localStorage.removeItem(k);}); } catch(e) {}
-  };
-  window.renderDeepResearch=function(){
-    var locked=readStaticSnapshot();
-    if(locked && applyHTML(locked)) return;
-    var plays=allPlays();
-    setHTML('deep-briefing', briefing(plays));
-    setHTML('deep-biggest-edge', biggestEdge(plays[0]));
-    setHTML('deep-top-plays', topTable(plays));
-    setHTML('deep-matchups', matchups(plays));
-    setHTML('deep-risk', risk(plays));
-    setHTML('deep-notes', notes(plays));
-    if(plays.length) writeStaticSnapshot(collectHTML());
-  };
-  function boot(){setTimeout(window.renderDeepResearch,1000);}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
 
 /* ---- from <script id="prod-v8-59-prop-tabs-auto-refresh-fix"> ---- */
@@ -10376,85 +10172,20 @@ if (document.readyState === 'loading') {
   } catch(e) {}
 })();
 
-/* ---- from <script id="prod-v9-9-team-performance-js"> ---- */
+/* ---- Team Performance: head-to-head modal, opened from a Game Projections
+   card (mirrors the openMatchup()/#mu-modal-overlay batter-vs-pitcher pattern),
+   rather than a standalone tab. ---- */
 (function(){
-  var state={booted:false,teams:[],todayGames:[],records:{},loading:false,last:0};
-  function today(){var d=new Date();var y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+day}
-  function season(){return new Date().getFullYear()}
-  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-  function logo(id){return id?'<img src="https://www.mlbstatic.com/team-logos/'+id+'.svg" onerror="this.style.display=\'none\'" alt="" loading="lazy" decoding="async">':''}
-  async function getJSON(url){
-    if(typeof window.fetchJSON==='function') return window.fetchJSON(url,{force:true});
-    var res=await fetch(url+(url.indexOf('?')>-1?'&':'?')+'_tp='+Date.now(),{cache:'no-store'}); if(!res.ok) throw new Error('HTTP '+res.status); return res.json();
-  }
-  function abbr(t){return (t&&(t.abbreviation||t.abbr||String(t.teamCode||'').toUpperCase()))||''}
-  function nameOf(t){return (t&&(t.teamName||t.name||t.clubName))||'Team'}
-  function pct(w,l){w=Number(w)||0;l=Number(l)||0;return (w+l)?(w/(w+l)).toFixed(3).replace(/^0/,''):'–'}
-  async function loadBase(){
-    var [teamsData,sched,stand]=await Promise.all([
-      getJSON('https://diamondreport.app/api/v1/teams?sportId=1&activeStatus=Y'),
-      getJSON('https://diamondreport.app/api/v1/schedule?sportId=1&date='+today()+'&hydrate=team,linescore,probablePitcher&language=en'),
-      getJSON('https://diamondreport.app/api/v1/standings?leagueId=103,104&season='+season()+'&standingsTypes=regularSeason')
-    ]);
-    state.teams=(teamsData.teams||[]).filter(function(t){return t.sport&&t.sport.id===1}).map(function(t){return {id:t.id,name:t.name,short:nameOf(t),abbr:abbr(t)}}).sort(function(a,b){return a.name.localeCompare(b.name)});
-    state.todayGames=((sched.dates&&sched.dates[0]&&sched.dates[0].games)||[]).slice().sort(function(a,b){return new Date(a.gameDate)-new Date(b.gameDate)}).map(function(g){return {gamePk:g.gamePk,date:g.gameDate,status:g.status&&g.status.detailedState,away:{id:g.teams.away.team.id,name:g.teams.away.team.name,abbr:abbr(g.teams.away.team),score:g.teams.away.score,record:g.teams.away.leagueRecord},home:{id:g.teams.home.team.id,name:g.teams.home.team.name,abbr:abbr(g.teams.home.team),score:g.teams.home.score,record:g.teams.home.leagueRecord}}});
-    state.records={};
-    (stand.records||[]).forEach(function(div){(div.teamRecords||[]).forEach(function(r){state.records[r.team.id]={wins:r.wins,losses:r.losses,pct:r.winningPercentage,divisionRank:r.divisionRank,streak:r.streak&&r.streak.streakCode};});});
-  }
-  function fillSelects(){
-    var a=document.getElementById('team-performance-a'),b=document.getElementById('team-performance-b'); if(!a||!b||!state.teams.length)return;
-    var opts=state.teams.map(function(t){return '<option value="'+t.id+'">'+esc(t.name)+'</option>';}).join('');
-    if(!a.dataset.loaded){a.innerHTML=opts;a.dataset.loaded='1'} if(!b.dataset.loaded){b.innerHTML=opts;b.dataset.loaded='1'}
-    var g=state.todayGames[0]; if(g&&!a.value&&!b.value){a.value=g.away.id;b.value=g.home.id}else{if(!a.value)a.value=state.teams[0].id;if(!b.value)b.value=state.teams[1]&&state.teams[1].id||state.teams[0].id}
-  }
-  async function h2h(aid,bid){
-    var url='https://diamondreport.app/api/v1/schedule?sportId=1&season='+season()+'&teamId='+aid+'&opponentId='+bid+'&hydrate=team,linescore&language=en';
-    var data=await getJSON(url); var games=[];
-    (data.dates||[]).forEach(function(d){(d.games||[]).forEach(function(g){games.push(g)})});
-    games.sort(function(x,y){return new Date(y.gameDate)-new Date(x.gameDate)});
-    return games;
-  }
-  function summarize(games,aid,bid){
-    var s={played:0,aWins:0,bWins:0,aRuns:0,bRuns:0,finals:[],upcoming:0};
-    games.forEach(function(g){var aw=g.teams.away,ho=g.teams.home,final=/final/i.test((g.status&&g.status.detailedState)||'');var aAway=aw.team.id==aid;var aScore=aAway?aw.score:ho.score,bScore=aAway?ho.score:aw.score;if(final&&Number.isFinite(Number(aScore))&&Number.isFinite(Number(bScore))){s.played++;s.aRuns+=Number(aScore)||0;s.bRuns+=Number(bScore)||0;if(Number(aScore)>Number(bScore))s.aWins++;else if(Number(bScore)>Number(aScore))s.bWins++;s.finals.push({date:g.gameDate,aScore:aScore,bScore:bScore,aAway:aAway,status:g.status&&g.status.detailedState});}else{s.upcoming++;}});return s;
-  }
-  function team(id){return state.teams.find(function(t){return String(t.id)===String(id)})||{id:id,name:'Team '+id,abbr:''}}
-  function rec(id){var r=state.records[id]||{};return Number.isFinite(Number(r.wins))?(r.wins+'-'+r.losses+' · '+(r.pct||pct(r.wins,r.losses))+(r.streak?' · '+r.streak:'')):'Season record unavailable'}
-  function stat(k,v){return '<div class="tp-stat"><b>'+esc(v)+'</b><span>'+esc(k)+'</span></div>'}
-  function card(a,b,sum,games){
-    var edge=sum.aWins>sum.bWins?a.name:(sum.bWins>sum.aWins?b.name:'Even'); var diff=sum.aRuns-sum.bRuns; var read=sum.played?('<strong>'+esc(edge)+'</strong> has the current '+season()+' head-to-head edge. Run differential: '+(diff>0?'+':'')+diff+' for '+esc(a.abbr||a.name)+'.'):'No final head-to-head games have been recorded between these teams this season yet.';
-    var recent=sum.finals.slice(0,5).map(function(g){var d=new Date(g.date).toLocaleDateString('en-US',{month:'short',day:'numeric'});return '<div class="tp-game-line"><span>'+d+' · '+esc(g.aAway?a.abbr+' @ '+b.abbr:b.abbr+' @ '+a.abbr)+'</span><span>'+esc(a.abbr)+' '+g.aScore+' - '+esc(b.abbr)+' '+g.bScore+'</span></div>';}).join('') || '<div class="tp-game-line"><span>No completed H2H matchups yet</span><span>—</span></div>';
-    return '<div class="tp-matchup-card"><div class="tp-versus"><div class="tp-team">'+logo(a.id)+'<div class="tp-team-name">'+esc(a.name)+'</div><div class="tp-team-record">'+esc(rec(a.id))+'</div></div><div class="tp-vs-pill">HEAD 2 HEAD</div><div class="tp-team">'+logo(b.id)+'<div class="tp-team-name">'+esc(b.name)+'</div><div class="tp-team-record">'+esc(rec(b.id))+'</div></div></div><div class="tp-stat-grid">'+stat(a.abbr+' H2H W-L',sum.aWins+'-'+sum.bWins)+stat('H2H Games',sum.played)+stat(a.abbr+' Runs',sum.aRuns)+stat(b.abbr+' Runs',sum.bRuns)+'</div><div class="tp-read">'+read+'</div><div class="tp-recent"><div class="tp-recent-title">Recent '+season()+' H2H Results</div>'+recent+'</div></div>';
-  }
-  async function compare(force){
-    var el=document.getElementById('team-performance-content'); if(!el)return; var aSel=document.getElementById('team-performance-a'),bSel=document.getElementById('team-performance-b'); if(!aSel||!bSel)return;
-    if(!state.booted||force){await boot(true)}
-    var aid=aSel.value,bid=bSel.value;if(!aid||!bid||aid===bid){el.innerHTML='<div class="mu-empty">Select two different teams to compare head-to-head.</div>';return;}
-    el.innerHTML='<div class="mu-empty"><span class="spin"></span>Loading head-to-head comparison…</div>';
-    try{var games=await h2h(aid,bid),a=team(aid),b=team(bid),sum=summarize(games,aid,bid);el.innerHTML='<div class="tp-note"><strong>Team Performance:</strong> compares current-season head-to-head results and season records. Tap any today matchup below to load that comparison.</div>'+card(a,b,sum,games)+todayCards();var r=document.getElementById('team-performance-refresh');if(r)r.textContent='Updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});}catch(e){el.innerHTML='<div class="mu-empty">Could not load team performance right now.</div>';}
-  }
-  function todayCards(){if(!state.todayGames.length)return '';return '<div class="tp-recent-title" style="margin:6px 0 8px">Today\'s Matchups</div><div class="tp-today-grid">'+state.todayGames.map(function(g){return '<div class="tp-mini-card" onclick="selectTeamPerformanceMatchup(\''+g.away.id+'\',\''+g.home.id+'\')"><div class="tp-mini-title">'+esc(g.away.abbr)+' @ '+esc(g.home.abbr)+'</div><div class="tp-mini-sub">'+esc(g.status||'Scheduled')+' · '+esc(g.away.name)+' vs '+esc(g.home.name)+'</div></div>'}).join('')+'</div>'}
-  async function boot(force){var el=document.getElementById('team-performance-content'); if(!el)return;if(state.loading)return; if(state.booted&&!force&&Date.now()-state.last<5*60*1000){fillSelects();return;}state.loading=true;try{await loadBase();state.booted=true;state.last=Date.now();fillSelects();}finally{state.loading=false;}}
-  window.renderTeamPerformanceTab=async function(){var el=document.getElementById('team-performance-content');if(!el)return;if(!state.booted){el.innerHTML='<div class="mu-empty"><span class="spin"></span>Loading team performance board…</div>';await boot(false)}return compare(false)};
-  window.renderTeamPerformanceComparison=function(force){compare(!!force)};
-  window.selectTeamPerformanceMatchup=function(a,b){var aa=document.getElementById('team-performance-a'),bb=document.getElementById('team-performance-b');if(aa)aa.value=a;if(bb)bb.value=b;compare(false)};
-  document.addEventListener('click',function(e){var t=e.target&&e.target.closest&&e.target.closest('[data-gamepick-pane="team-performance"]');if(t)setTimeout(function(){window.renderTeamPerformanceTab();},60);},true);
-})();
-
-/* ---- from <script id="prod-v10-4-performance-data-tabs-js"> ---- */
-(function(){
-  if(window.__DR_V104_PERFORMANCE_DATA_TABS__) return; window.__DR_V104_PERFORMANCE_DATA_TABS__=true;
-  var TP={loading:false,booted:false,teams:[],todayGames:[],records:{},last:0};
+  if(window.__DR_TP_MODAL__) return; window.__DR_TP_MODAL__=true;
+  var TP={loading:false,booted:false,teams:[],records:{},last:0};
   function nowDate(){try{return new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});}catch(e){return new Date().toISOString().slice(0,10);}}
   function season(){return nowDate().slice(0,4)}
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-  function num(v){v=parseFloat(v);return Number.isFinite(v)?v:0}
-  function getJSON(url,force){ if(typeof window.fetchJSON==='function') return window.fetchJSON(url,{force:!!force}); return fetch(url+(url.indexOf('?')>-1?'&':'?')+'_v104='+Date.now(),{cache:force?'no-store':'default'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})}
+  function getJSON(url,force){ if(typeof window.fetchJSON==='function') return window.fetchJSON(url,{force:!!force}); return fetch(url+(url.indexOf('?')>-1?'&':'?')+'_tp='+Date.now(),{cache:force?'no-store':'default'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})}
   function abbr(t){return (t&&(t.abbreviation||t.abbr||String(t.teamCode||'').toUpperCase()||t.fileCode))||''}
   function logo(id,cls){return id?'<img class="'+(cls||'pp-logo')+'" src="https://www.mlbstatic.com/team-logos/'+id+'.svg" onerror="this.style.display=\'none\'" alt="" loading="lazy" decoding="async">':''}
-  async function tpBase(force){if(TP.booted&&!force&&Date.now()-TP.last<5*60*1000)return;var td=nowDate();var all=await Promise.all([getJSON('https://diamondreport.app/api/v1/teams?sportId=1&activeStatus=Y',false),getJSON('https://diamondreport.app/api/v1/schedule?sportId=1&date='+td+'&hydrate=team,linescore,probablePitcher&language=en',!!force),getJSON('https://diamondreport.app/api/v1/standings?leagueId=103,104&season='+season()+'&standingsTypes=regularSeason',false)]);TP.teams=(all[0].teams||[]).filter(function(t){return t.sport&&t.sport.id===1}).map(function(t){return {id:t.id,name:t.name,abbr:abbr(t)}}).sort(function(a,b){return a.name.localeCompare(b.name)});TP.todayGames=((all[1].dates&&all[1].dates[0]&&all[1].dates[0].games)||[]).slice().sort(function(a,b){return new Date(a.gameDate)-new Date(b.gameDate)}).map(function(g){return {away:{id:g.teams.away.team.id,name:g.teams.away.team.name,abbr:abbr(g.teams.away.team),score:g.teams.away.score},home:{id:g.teams.home.team.id,name:g.teams.home.team.name,abbr:abbr(g.teams.home.team),score:g.teams.home.score},status:g.status&&g.status.detailedState}});TP.records={};(all[2].records||[]).forEach(function(div){(div.teamRecords||[]).forEach(function(r){TP.records[r.team.id]={wins:r.wins,losses:r.losses,pct:r.winningPercentage,streak:r.streak&&r.streak.streakCode,rank:r.divisionRank}})});TP.booted=true;TP.last=Date.now();fillTP()}
-  function fillTP(){var a=document.getElementById('team-performance-a'),b=document.getElementById('team-performance-b');if(!a||!b||!TP.teams.length)return;var opts=TP.teams.map(function(t){return '<option value="'+t.id+'">'+esc(t.name)+'</option>'}).join('');if(!a.dataset.v104){a.innerHTML=opts;a.dataset.v104='1'}if(!b.dataset.v104){b.innerHTML=opts;b.dataset.v104='1'}var g=TP.todayGames[0];if(g&&!a.value&&!b.value){a.value=g.away.id;b.value=g.home.id}else{if(!a.value)a.value=TP.teams[0].id;if(!b.value)b.value=(TP.teams[1]||TP.teams[0]).id}}
-  function tBy(id){return TP.teams.find(function(t){return String(t.id)===String(id)})||{id:id,name:'Team '+id,abbr:''}}
+  async function tpBase(force){if(TP.booted&&!force&&Date.now()-TP.last<5*60*1000)return;var all=await Promise.all([getJSON('https://diamondreport.app/api/v1/teams?sportId=1&activeStatus=Y',false),getJSON('https://diamondreport.app/api/v1/standings?leagueId=103,104&season='+season()+'&standingsTypes=regularSeason',false)]);TP.teams=(all[0].teams||[]).filter(function(t){return t.sport&&t.sport.id===1}).map(function(t){return {id:t.id,name:t.name,abbr:abbr(t)}});TP.records={};(all[1].records||[]).forEach(function(div){(div.teamRecords||[]).forEach(function(r){TP.records[r.team.id]={wins:r.wins,losses:r.losses,pct:r.winningPercentage,streak:r.streak&&r.streak.streakCode}})});TP.booted=true;TP.last=Date.now()}
+  function tBy(id,fallbackName,fallbackAbbr){return TP.teams.find(function(t){return String(t.id)===String(id)})||{id:id,name:fallbackName||('Team '+id),abbr:fallbackAbbr||''}}
   function rec(id){var r=TP.records[id]||{};return Number.isFinite(Number(r.wins))?r.wins+'-'+r.losses+' · '+(r.pct||'')+(r.streak?' · '+r.streak:''):'—'}
   async function teamSchedule(id){var d=await getJSON('https://diamondreport.app/api/v1/schedule?sportId=1&season='+season()+'&teamId='+id+'&hydrate=team,linescore&language=en',false);var games=[];(d.dates||[]).forEach(function(day){(day.games||[]).forEach(function(g){games.push(g)})});return games}
   function teamStats(games,id){var s={g:0,w:0,l:0,rf:0,ra:0,last:[]};games.forEach(function(g){var final=/final/i.test((g.status&&g.status.detailedState)||'');if(!final)return;var aw=g.teams.away,hm=g.teams.home,isAway=String(aw.team.id)===String(id),forR=Number(isAway?aw.score:hm.score),agR=Number(isAway?hm.score:aw.score);if(!Number.isFinite(forR)||!Number.isFinite(agR))return;s.g++;s.rf+=forR;s.ra+=agR;if(forR>agR)s.w++;else s.l++;s.last.push({date:g.gameDate,forR:forR,agR:agR,opp:isAway?abbr(hm.team):abbr(aw.team),home:!isAway})});s.last.sort(function(a,b){return new Date(b.date)-new Date(a.date)});var l10=s.last.slice(0,10),lw=l10.filter(function(x){return x.forR>x.agR}).length;s.rpg=s.g?s.rf/s.g:0;s.rapg=s.g?s.ra/s.g:0;s.last10=lw+'-'+(l10.length-lw);return s}
@@ -10462,17 +10193,34 @@ if (document.readyState === 'loading') {
   function row(k,v,win){return '<div class="tp-row"><span>'+esc(k)+'</span><b class="'+(win?'tp-winner':'')+'">'+esc(v)+'</b></div>'}
   function stat(k,v){return '<div class="tp-stat"><b>'+esc(v)+'</b><span>'+esc(k)+'</span></div>'}
   function tpCard(a,b,sa,sb,h){var aScore=(sa.rpg>sb.rpg?1:0)+(sa.rapg<sb.rapg?1:0)+(h.aW>h.bW?1:0),bScore=(sb.rpg>sa.rpg?1:0)+(sb.rapg<sa.rapg?1:0)+(h.bW>h.aW?1:0),edge=aScore>bScore?a:bScore>aScore?b:null;var insight=edge?'Current edge leans '+esc(edge.name)+' based on run production, run prevention, and head-to-head results.':'This matchup grades close because the main team-performance edges are split.';var recent=h.finals.slice(0,5).map(function(g){var d=new Date(g.date).toLocaleDateString('en-US',{month:'short',day:'numeric'});return '<div class="tp-game-line"><span>'+d+' · '+(g.aAway?esc(a.abbr)+' @ '+esc(b.abbr):esc(b.abbr)+' @ '+esc(a.abbr))+'</span><span>'+esc(a.abbr)+' '+g.as+' - '+esc(b.abbr)+' '+g.bs+'</span></div>'}).join('')||'<div class="tp-game-line"><span>No completed H2H games this season</span><span>—</span></div>';return '<div class="dr-insight-card"><div class="dr-insight-title">AI Summary</div><div class="dr-insight-copy">'+insight+' '+esc(a.abbr)+' averages '+sa.rpg.toFixed(1)+' runs/game while '+esc(b.abbr)+' averages '+sb.rpg.toFixed(1)+'. H2H stands at '+h.aW+'-'+h.bW+' for '+esc(a.abbr)+'.</div></div><div class="tp-matchup-card"><div class="tp-versus"><div class="tp-team">'+logo(a.id,'')+'<div class="tp-team-name">'+esc(a.name)+'</div><div class="tp-team-record">'+esc(rec(a.id))+'</div></div><div class="tp-vs-pill">HEAD 2 HEAD</div><div class="tp-team">'+logo(b.id,'')+'<div class="tp-team-name">'+esc(b.name)+'</div><div class="tp-team-record">'+esc(rec(b.id))+'</div></div></div><div class="tp-edge-grid"><div class="tp-edge-pill"><b>'+esc(edge?edge.abbr:'EVEN')+'</b><span>Overall Edge</span></div><div class="tp-edge-pill"><b>'+h.aW+'-'+h.bW+'</b><span>'+esc(a.abbr)+' H2H</span></div><div class="tp-edge-pill"><b>'+((h.aR-h.bR)>0?'+':'')+(h.aR-h.bR)+'</b><span>'+esc(a.abbr)+' Run Diff</span></div></div><div class="tp-side-table"><div class="tp-side"><h4>'+esc(a.name)+'</h4>'+row('Runs/Game',sa.rpg.toFixed(1),sa.rpg>sb.rpg)+row('Runs Allowed/Game',sa.rapg.toFixed(1),sa.rapg<sb.rapg)+row('Last 10',sa.last10)+row('Season Games',sa.g)+'</div><div class="tp-side"><h4>'+esc(b.name)+'</h4>'+row('Runs/Game',sb.rpg.toFixed(1),sb.rpg>sa.rpg)+row('Runs Allowed/Game',sb.rapg.toFixed(1),sb.rapg<sa.rapg)+row('Last 10',sb.last10)+row('Season Games',sb.g)+'</div></div><div class="tp-stat-grid" style="margin-top:10px">'+stat(a.abbr+' H2H W-L',h.aW+'-'+h.bW)+stat('H2H Games',h.played)+stat(a.abbr+' H2H Runs',h.aR)+stat(b.abbr+' H2H Runs',h.bR)+'</div><div class="tp-recent"><div class="tp-recent-title">Recent '+season()+' H2H Results</div>'+recent+'</div></div>'}
-  function todayCards(){if(!TP.todayGames.length)return '';return '<div class="tp-recent-title" style="margin:6px 0 8px">Today\'s Matchups</div><div class="tp-today-grid">'+TP.todayGames.map(function(g){return '<div class="tp-mini-card" onclick="selectTeamPerformanceMatchup(\''+g.away.id+'\',\''+g.home.id+'\')"><div class="tp-mini-title">'+esc(g.away.abbr)+' @ '+esc(g.home.abbr)+'</div><div class="tp-mini-sub">'+esc(g.status||'Scheduled')+' · '+esc(g.away.name)+' vs '+esc(g.home.name)+'</div></div>'}).join('')+'</div>'}
-  async function compareTP(force){var el=document.getElementById('team-performance-content'),aSel=document.getElementById('team-performance-a'),bSel=document.getElementById('team-performance-b');if(!el||!aSel||!bSel)return;if(TP.loading)return;TP.loading=true;el.innerHTML='<div class="mu-empty"><span class="spin"></span>Loading team performance data…</div>';try{await tpBase(!!force);var aid=aSel.value,bid=bSel.value;if(!aid||!bid||aid===bid){el.innerHTML='<div class="mu-empty">Select two different teams to compare head-to-head.</div>';return}var all=await Promise.all([teamSchedule(aid),teamSchedule(bid),getJSON('https://diamondreport.app/api/v1/schedule?sportId=1&season='+season()+'&teamId='+aid+'&opponentId='+bid+'&hydrate=team,linescore&language=en',false)]);var hGames=[];(all[2].dates||[]).forEach(function(d){(d.games||[]).forEach(function(g){hGames.push(g)})});var a=tBy(aid),b=tBy(bid);var aStats=teamStats(all[0],aid), bStats=teamStats(all[1],bid), hStats=h2hStats(hGames,aid,bid);
-var analytics='<div class="tp-analytics-grid">'+
-'<div class="tp-analytics-card"><h4>✅ Team Overview</h4>'+row('Record',aStats.record||'—',true)+row('Run Differential',aStats.runDiff||'—')+row('Home/Away Record',aStats.homeAway||'—')+row('Last 10',aStats.last10+' / '+bStats.last10)+row('Streak',aStats.streak||'—')+'</div>'+
-'<div class="tp-analytics-card"><h4>⚾ Offensive Comparison</h4>'+row('Runs/Game',aStats.rpg.toFixed(1),aStats.rpg>bStats.rpg)+row('AVG / OPS',aStats.avg||'—',aStats.ops||'—')+row('HR / HR Game',aStats.hr||'—',aStats.hrpg||'—')+row('Barrel / Hard Hit %',aStats.barrel||'—',aStats.hardHit||'—')+row('wOBA / wRC+',aStats.woba||'—',aStats.wrc||'—')+'</div>'+
-'<div class="tp-analytics-card"><h4>🎯 Starting Pitching</h4>'+row('ERA / WHIP',aStats.era||'—',aStats.whip||'—')+row('K% / BB%',aStats.kpct||'—',aStats.bbpct||'—')+row('HR Allowed',aStats.hrAllowed||'—',bStats.hrAllowed||'—')+row('xERA / FIP',aStats.xera||'—',aStats.fip||'—')+'</div>'+
-'<div class="tp-analytics-card"><h4>🔥 Bullpen</h4>'+row('Bullpen ERA',aStats.bpEra||'—',bStats.bpEra||'—')+row('WHIP / K%',aStats.bpWhip||'—',aStats.bpK||'—')+row('HR Allowed',aStats.bpHR||'—',bStats.bpHR||'—')+row('Last 7 Days ERA',aStats.bp7||'—',bStats.bp7||'—')+row('Fatigue/Usage',aStats.fatigue||'—',bStats.fatigue||'—')+'</div>'+
-'<div class="tp-analytics-card"><h4>📊 Situational Splits</h4>'+row('vs RHP',aStats.vsRHP||'—',bStats.vsRHP||'—')+row('vs LHP',aStats.vsLHP||'—',bStats.vsLHP||'—')+row('Handedness Advantage',aStats.handEdge||'—',bStats.handEdge||'—')+row('H2H Record',hStats.aW+'-'+hStats.bW)+'</div>'+
-'<div class="tp-analytics-card"><h4>🧠 Diamond Intelligence</h4>'+row('Team Edge Score',aStats.edge||'—',bStats.edge||'—')+'<div class="tp-ai-summary">'+esc((aStats.rpg>bStats.rpg?a.abbr:b.abbr)+' holds the current team edge based on offense, pitching, bullpen, recent form, and matchup data.')+'</div></div>';el.innerHTML='<div class="tp-note"><strong>Team Performance:</strong> compares season record, offense, pitching, recent form, and current-season head-to-head results.</div>'+tpCard(a,b,aStats,bStats,hStats)+analytics+todayCards();var r=document.getElementById('team-performance-refresh');if(r)r.textContent='Updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}catch(e){el.innerHTML='<div class="mu-empty">Could not load team performance right now.</div>'}finally{TP.loading=false}}
-  window.renderTeamPerformanceTab=function(){return compareTP(false)}; window.renderTeamPerformanceComparison=function(force){return compareTP(!!force)}; window.selectTeamPerformanceMatchup=function(a,b){var aa=document.getElementById('team-performance-a'),bb=document.getElementById('team-performance-b');if(aa)aa.value=a;if(bb)bb.value=b;return compareTP(false)};
-  document.addEventListener('click',function(e){var p=e.target&&e.target.closest&&e.target.closest('[data-gamepick-pane]');if(!p)return;var pane=p.getAttribute('data-gamepick-pane');if(pane==='team-performance')setTimeout(function(){window.renderTeamPerformanceTab()},140)},true);
+
+  async function openTeamMatchup(aid,bid,aName,bName,aAbbr,bAbbr){
+    var overlay=document.getElementById('tp-modal-overlay'),body=document.getElementById('tp-modal-body'),title=document.getElementById('tp-modal-title'),sub=document.getElementById('tp-modal-sub');
+    if(!overlay||!body)return;
+    if(title)title.textContent=(aName||'Team')+'  vs  '+(bName||'Team');
+    if(sub)sub.textContent='Team Performance · Head-to-Head Analysis';
+    body.innerHTML='<div class="mu-empty" style="padding:20px 0;text-align:center"><span class="spin"></span> Loading team performance…</div>';
+    overlay.style.display='flex';
+    document.body.style.overflow='hidden';
+    try{
+      await tpBase(false);
+      var all=await Promise.all([teamSchedule(aid),teamSchedule(bid),getJSON('https://diamondreport.app/api/v1/schedule?sportId=1&season='+season()+'&teamId='+aid+'&opponentId='+bid+'&hydrate=team,linescore&language=en',false)]);
+      var hGames=[];(all[2].dates||[]).forEach(function(d){(d.games||[]).forEach(function(g){hGames.push(g)})});
+      var a=tBy(aid,aName,aAbbr),b=tBy(bid,bName,bAbbr);
+      var aStats=teamStats(all[0],aid),bStats=teamStats(all[1],bid),hStats=h2hStats(hGames,aid,bid);
+      body.innerHTML='<div class="tp-note"><strong>Team Performance:</strong> compares current-season head-to-head results and season records.</div>'+tpCard(a,b,aStats,bStats,hStats);
+    }catch(e){
+      body.innerHTML='<div class="mu-empty" style="color:var(--accent)">Could not load team performance right now.</div>';
+    }
+  }
+  window.openTeamMatchup=openTeamMatchup;
+
+  function closeTeamMatchup(){
+    var overlay=document.getElementById('tp-modal-overlay');
+    if(overlay)overlay.style.display='none';
+    document.body.style.overflow='';
+  }
+  window.closeTeamMatchup=closeTeamMatchup;
 })();
 
 /* ---- from <script id="prod-v10-12-hr-k-confidence-engine-js"> ---- */
@@ -11015,55 +10763,19 @@ var analytics='<div class="tp-analytics-grid">'+
 })();
 
 /* ---- from <script id="anonymous"> ---- */
-function showPremiumGate(feature){
-  feature = (feature === "team" ? "team-performance" : (feature || "parlay"));
-  document.querySelectorAll('.gamepick-pane').forEach(function(p){
-    p.hidden = true;
-    p.classList.remove('active');
-  });
-  var container = document.getElementById('gamepick-premium-gate');
-  if(!container){
-    container=document.createElement('div');
-    container.id='gamepick-premium-gate';
-    container.className='gamepick-pane active';
-    container.innerHTML=`
-      <div class="dr-center-label">🔒 Coming Soon</div>
-      <div class="dr-panel dr-panel-large">
-        <div class="dr-panel-head">
-          <div>
-            <p class="section-title">COMING <span>SOON</span></p>
-            <small>These sections are still being built.</small>
-          </div>
-        </div>
-        <div class="dr-panel-body" style="text-align:center;padding:32px">
-          <h2>🔒 Coming Soon</h2>
-          <p>This section isn't available yet — check back soon.</p>
-          <div style="margin-top:20px;line-height:2">
-            🔒 🧾 Parlay Builds<br>
-            🔒 🆚 Team Performance<br>
-            🔒 🧠 Deep Research
-          </div>
-        </div>
-      </div>`;
-    document.querySelector('.gamepick-tabs')?.parentElement?.after(container);
-  }
-  container.hidden=false;
-  container.classList.add('active');
-}
-
-
 /* ---- PROD v11.29: Clean native navigation controller ---- */
 (function(){
   if (window.__DR_V1129_NAV_CONTROLLER__) return;
   window.__DR_V1129_NAV_CONTROLLER__ = true;
 
-  var FREE_PANES = new Set(['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','premium','fantasy']);
-  var PREMIUM_PANES = new Set(['parlay','team-performance','team','deep']);
-  var NORMALIZE = { team:'team-performance', teamPerformance:'team-performance' };
+  // Parlay Builds, Deep Research, Team Performance (standalone tab), and Premium/Elite
+  // Picks were removed entirely -- the "Coming Soon" gate (showPremiumGate/
+  // PREMIUM_PANES) that used to sit in front of the first three no longer has
+  // anything to gate, so it's gone too rather than kept around pointing at nothing.
+  var FREE_PANES = new Set(['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','fantasy']);
 
   function normalizePane(pane){
-    pane = String(pane || 'game').trim();
-    return NORMALIZE[pane] || pane;
+    return String(pane || 'game').trim();
   }
 
   function setDesktopTabState(pane){
@@ -11076,23 +10788,9 @@ function showPremiumGate(feature){
     });
   }
 
-  function openPremiumPane(pane){
-    pane = normalizePane(pane);
-    setDesktopTabState(pane);
-    if (typeof window.showPremiumGate === 'function') {
-      window.showPremiumGate(pane);
-    }
-  }
-
   function navigateToPane(pane, opts){
     pane = normalizePane(pane);
     opts = opts || {};
-
-    if (PREMIUM_PANES.has(pane)) {
-      openPremiumPane(pane);
-      closeDrawer();
-      return;
-    }
 
     if (!FREE_PANES.has(pane)) pane = 'game';
 
@@ -11819,145 +11517,9 @@ function showPremiumGate(feature){
   /* v10.9 legacy renderer disabled: it lacked the Projection Hit checkmark logic added later and was clobbering the correct renderer. */
   function hrEnhance(){ return; /* disabled: this banner kept appearing/disappearing because the main HR renderer wipes it on every refresh */ var el=document.getElementById('hr-potential-content'); if(!el||el.dataset.dr109) return; var arr=rows().slice().sort(function(a,b){return n(b.hrProb)-n(a.hrProb)}).slice(0,10); if(!arr.length) return; el.dataset.dr109='1'; el.insertAdjacentHTML('afterbegin','<div class="dr109-summary"><div class="dr109-title">💣 Expanded Home Runs Data</div><p class="dr109-copy">Home Runs now highlights HR probability, ISO, slugging, projected barrel path, hard-hit profile, park/weather read, pitcher HR allowance context, and matchup support before the live HR table.</p><div class="dr109-grid"><div class="dr109-metric warn"><b>'+esc(arr[0].name||'–')+'</b><span>Top HR Threat</span></div><div class="dr109-metric"><b>'+f(arr[0].hrProb,1)+'%</b><span>HR Probability</span></div><div class="dr109-metric"><b>'+f(arr[0].iso)+'</b><span>ISO</span></div><div class="dr109-metric good"><b>'+esc(arr[0].isFavorable?'Favorable':'Neutral')+'</b><span>Matchup</span></div></div></div>')}
   function strikeEnhance(){ return; /* disabled: kprops-content is fully rebuilt on every render, wiping this banner right after it appears */ var el=document.getElementById('kprops-content'); if(!el||el.dataset.dr109) return; el.dataset.dr109='1'; el.insertAdjacentHTML('afterbegin','<div class="dr109-summary"><div class="dr109-title">🎯 Expanded Strikeout Data</div><p class="dr109-copy">Strikeouts now supports each line with K line, projected K count, cushion, opponent K tendency, WHIP/ERA context, CSW/whiff proxies, pitch-count leash, rest profile, and risk notes.</p><div class="dr109-grid"><div class="dr109-metric good"><b>Line</b><span>K Prop Support</span></div><div class="dr109-metric"><b>Cushion</b><span>Projection vs Line</span></div><div class="dr109-metric warn"><b>Whiff</b><span>Pitch-Type Upside</span></div><div class="dr109-metric"><b>Risk</b><span>Walks / Pitch Count</span></div></div></div>')}
-  var parlayState={type:'safe',legs:2};
-  window.setParlayBuildType=function(t){parlayState.type=t||'safe';document.querySelectorAll('[data-parlay-type]').forEach(function(b){b.classList.toggle('active',b.dataset.parlayType===parlayState.type)});renderParlayBuilds()};
-  window.setParlayLegCount=function(nm){parlayState.legs=parseInt(nm,10)||2;document.querySelectorAll('[data-parlay-legs]').forEach(function(b){b.classList.toggle('active',String(parlayState.legs)===b.dataset.parlayLegs)});renderParlayBuilds()};
-  function playPool(){var types=['hits','rbis','tb','sb','hrrbi'];var out=[];rows().forEach(function(r){types.forEach(function(t){out.push({r:r,type:t,score:score(t,r)})})});return out.sort(function(a,b){return b.score-a.score})}
-  window.renderParlayBuilds=function(){var el=document.getElementById('parlay-builds-content'); if(!el) return; var pool=playPool(); if(!pool.length){el.innerHTML='<div class="mu-empty">Loading expanded parlay builder…</div>';return} var min=parlayState.type==='safe'?82:parlayState.type==='normal'?72:58; var filtered=pool.filter(function(p){return p.score>=min}); if(filtered.length<parlayState.legs) filtered=pool; var cards=[]; for(var c=0;c<3;c++){var legs=[],seen={}; for(var i=c;i<filtered.length&&legs.length<parlayState.legs;i++){var key=filtered[i].r.name+'-'+filtered[i].type; if(seen[filtered[i].r.name]&&parlayState.type==='safe') continue; seen[filtered[i].r.name]=1; legs.push(filtered[i])} cards.push(legs)} var risk=parlayState.type==='safe'?'Low':parlayState.type==='normal'?'Medium':'High'; el.innerHTML='<div class="dr109-summary"><div class="dr109-title">🧾 Expanded Parlay Builds</div><p class="dr109-copy">The builder now creates three options for each risk style and leg count, then scores confidence, risk, correlation, volatility, expected payout range, and why the card works.</p><div class="dr109-grid"><div class="dr109-metric '+(parlayState.type==='safe'?'good':parlayState.type==='lotto'?'warn':'')+'"><b>'+esc(parlayState.type.toUpperCase())+'</b><span>Build Type</span></div><div class="dr109-metric"><b>'+parlayState.legs+'</b><span>Leg Count</span></div><div class="dr109-metric"><b>'+risk+'</b><span>Risk</span></div><div class="dr109-metric warn"><b>Top 3</b><span>Curated Cards</span></div></div></div>'+cards.map(function(legs,idx){var conf=Math.round(legs.reduce(function(a,b){return a+b.score},0)/Math.max(1,legs.length));var corr=parlayState.type==='lotto'?pct(55+idx*4):parlayState.type==='safe'?pct(70-idx*3):pct(63-idx*2);var odds=parlayState.type==='safe'?'+'.concat(120*legs.length+idx*35):parlayState.type==='normal'?'+'.concat(240*legs.length+idx*90):'+'.concat(650*legs.length+idx*220);return '<div class="dr109-parlay"><div class="dr109-card-head"><div><span class="dr109-badge '+parlayState.type+'">'+esc(parlayState.type)+' · Option '+(idx+1)+'</span><div class="dr109-title" style="margin-top:8px">'+parlayState.legs+'-Leg '+esc(parlayState.type.toUpperCase())+' Card</div></div><div class="dr109-score">'+conf+'%<small>Avg Grade</small></div></div><div class="dr109-grid"><div class="dr109-metric"><b>'+odds+'</b><span>Est. Odds</span></div><div class="dr109-metric"><b>'+corr+'%</b><span>Correlation</span></div><div class="dr109-metric '+(risk==='Low'?'good':risk==='High'?'warn':'')+'"><b>'+risk+'</b><span>Volatility</span></div><div class="dr109-metric"><b>'+Math.max(1,Math.round(conf/22))+'%</b><span>Kelly Guide</span></div></div>'+legs.map(function(p){return '<div class="dr109-leg"><div><b>'+esc(p.r.name||'Player')+'</b><br><span>'+esc(line(p.type))+' · '+esc(p.r.teamAbbr||'')+' vs '+esc(p.r.oppAbbr||'')+'</span></div><strong>'+p.score+'%</strong></div>'}).join('')+'<div class="dr109-ai"><b>Why this parlay works:</b> Legs are selected from the highest graded available boards with line support, matchup context, and limited direct conflict. <b>Risk:</b> '+(risk==='High'?'LOTTO cards intentionally use more volatile upside markets.':'Monitor lineup scratches and late odds movement before lock.')+'</div></div>'}).join('');var r=document.getElementById('parlay-build-refresh'); if(r) r.textContent='Updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});};
-  function enhanceTeam(){ return; /* disabled: team-performance-content is fully rebuilt on every render, wiping this banner right after it appears */ var el=document.getElementById('team-performance-content'); if(!el||el.dataset.dr109enh) return; if(el.textContent.match(/Loading|Select two/)) return; el.dataset.dr109enh='1'; el.insertAdjacentHTML('afterbegin','<div class="dr109-summary"><div class="dr109-title">🆚 Expanded Team Performance Data</div><p class="dr109-copy">Team Performance now emphasizes head-to-head record, run differential, last-10 form, home/away split, offense, pitching, bullpen, defense, park context, and a Diamond Report edge read.</p><div class="dr109-grid"><div class="dr109-metric good"><b>Offense</b><span>Runs / OPS / Form</span></div><div class="dr109-metric"><b>Pitching</b><span>Starter + Bullpen</span></div><div class="dr109-metric"><b>Defense</b><span>Errors / Prevention</span></div><div class="dr109-metric warn"><b>H2H</b><span>Season Matchup</span></div></div></div>')}
-  function enhanceDeepResearch(){var b=document.getElementById('deep-briefing'),e=document.getElementById('deep-biggest-edge'),t=document.getElementById('deep-top-plays'),m=document.getElementById('deep-matchups'),r=document.getElementById('deep-risk'),notes=document.getElementById('deep-notes');var pool=playPool().slice(0,10); if(!pool.length) return; var top=pool[0]; if(b)b.innerHTML='<div class="dr109-summary"><div class="dr109-title">🧠 Static Deep Research Snapshot</div><p class="dr109-copy">This is a locked daily research snapshot. It summarizes the strongest model edges without reshuffling on every page refresh.</p><div class="dr109-grid"><div class="dr109-metric good"><b>'+esc(top.r.name||'–')+'</b><span>Top Model Edge</span></div><div class="dr109-metric"><b>'+esc(label(top.type))+'</b><span>Best Market</span></div><div class="dr109-metric"><b>'+top.score+'%</b><span>Confidence</span></div><div class="dr109-metric warn"><b>Static</b><span>Refresh Stable</span></div></div></div>'; if(e)e.innerHTML='<div class="dr109-card"><div class="dr109-title">🏆 Biggest Edge</div><p class="dr109-copy"><strong>'+esc(top.r.name||'Player')+'</strong> grades highest on the board for <strong>'+esc(line(top.type))+'</strong>, supported by production profile, matchup quality, and model confidence.</p></div>'; if(t)t.innerHTML='<table class="dr109-table"><tbody>'+pool.map(function(p,i){return '<tr><td>#'+(i+1)+' '+esc(p.r.name||'Player')+' · '+esc(label(p.type))+'</td><td>'+p.score+'%</td></tr>'}).join('')+'</tbody></table>'; if(m)m.innerHTML=pool.slice(0,5).map(function(p){return '<div class="dr109-chiprow"><span class="dr109-chip good">'+esc(p.r.teamAbbr||'')+' vs '+esc(p.r.oppAbbr||'')+'</span><span class="dr109-chip">'+esc(line(p.type))+'</span><span class="dr109-chip warn">'+p.score+'%</span></div>'}).join(''); if(r)r.innerHTML='<div class="dr109-ai"><b>Risk watch:</b> Verify official lineups, late scratches, weather/roof status, odds movement, and game postponement risk before lock. Stolen bases and home runs remain the most volatile markets.</div>'; if(notes)notes.innerHTML='<div class="dr109-ai"><b>Research notes:</b> The strongest plays are clustered around players with contact/power support, favorable opponent context, and line cushion. Use Safe parlays for high-confidence plays, Normal for balanced cards, and LOTTO only for high-upside volatility.</div>'}
-  function runEnhance(){try{if(window.renderPropIntelligencePanes){} hrEnhance(); strikeEnhance(); enhanceTeam(); enhanceDeepResearch();}catch(e){}}
-  var oldPane=window.showGamePickPane; if(typeof oldPane==='function'){window.showGamePickPane=function(p){var out=oldPane.apply(this,arguments); setTimeout(function(){ if(['hits','rbis','tb','sb','hrrbi'].indexOf(p)>=0) window.renderPropIntelligencePanes(); if(p==='parlay') window.renderParlayBuilds(); if(p==='hr') hrEnhance(); if(p==='k') strikeEnhance(); if(false && p==='team-performance') enhanceTeam(); if(p==='deep') enhanceDeepResearch();},120); setTimeout(runEnhance,900); return out;}}
+  function runEnhance(){try{ hrEnhance(); strikeEnhance(); }catch(e){}}
+  var oldPane=window.showGamePickPane; if(typeof oldPane==='function'){window.showGamePickPane=function(p){var out=oldPane.apply(this,arguments); setTimeout(function(){ if(['hits','rbis','tb','sb','hrrbi'].indexOf(p)>=0) window.renderPropIntelligencePanes(); if(p==='hr') hrEnhance(); if(p==='k') strikeEnhance(); },120); setTimeout(runEnhance,900); return out;}}
   document.addEventListener('DOMContentLoaded',function(){setTimeout(runEnhance,900);});
-})();
-
-/* ---- from <script id="prod-v10-10-team-performance-persistent-js"> ---- */
-(function(){
-  if(window.__DR_V1010_TEAM_PERFORMANCE_ALWAYS__) return; window.__DR_V1010_TEAM_PERFORMANCE_ALWAYS__=true;
-  var cache={html:'',updated:0,loading:false};
-  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-  function today(){try{return new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});}catch(e){return new Date().toISOString().slice(0,10)}}
-  function abbr(t){return (t&&(t.abbreviation||t.abbr||t.teamCode||t.fileCode||'')).toString().toUpperCase()}
-  function teamName(t){return (t&&(t.name||t.teamName||t.clubName||abbr(t)))||''}
-  function isFinal(g){var s=(g.status&&g.status.abstractGameState)||'';var d=(g.status&&g.status.detailedState)||'';return /final|game over|completed/i.test(s+' '+d)}
-  function isLive(g){var s=(g.status&&g.status.abstractGameState)||'';var d=(g.status&&g.status.detailedState)||'';return /live|in progress|manager challenge|review|warmup|delayed/i.test(s+' '+d) && !isFinal(g)}
-  function score(g){var aw=g.teams&&g.teams.away,hm=g.teams&&g.teams.home;var ar=aw&&Number.isFinite(+aw.score)?+aw.score:null;var hr=hm&&Number.isFinite(+hm.score)?+hm.score:null;return (ar==null||hr==null)?'':ar+'-'+hr}
-  function statusLabel(g){var d=(g.status&&g.status.detailedState)||'';if(isFinal(g))return 'Final';if(isLive(g))return 'Live';if(/scheduled|pre-game|preview/i.test(d))return 'Scheduled';return d||'Scheduled'}
-  function matchupCard(g){var aw=g.teams&&g.teams.away&&g.teams.away.team,hm=g.teams&&g.teams.home&&g.teams.home.team;if(!aw||!hm)return '';var aid=aw.id,hid=hm.id,sc=score(g),st=statusLabel(g),cls=isLive(g)?'tp-mini-status-live':isFinal(g)?'tp-mini-status-final':'';return '<div class="tp-mini-card" onclick="if(window.selectTeamPerformanceMatchup)window.selectTeamPerformanceMatchup(\''+esc(aid)+'\',\''+esc(hid)+'\')"><div class="tp-mini-title">'+esc(abbr(aw))+' @ '+esc(abbr(hm))+(sc?'<span class="tp-mini-score">'+esc(sc)+'</span>':'')+'</div><div class="tp-mini-sub"><span class="'+cls+'">'+esc(st)+'</span> · '+esc(teamName(aw))+' vs '+esc(teamName(hm))+'</div></div>'}
-  function getGames(){if(typeof window.getTodaySchedule==='function')return window.getTodaySchedule('team,linescore',{force:true});var url='https://diamondreport.app/api/v1/schedule?sportId=1&date='+today()+'&hydrate=team,linescore&language=en&_tp1010='+Date.now();return fetch(url,{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(d){return (d.dates&&d.dates[0]&&d.dates[0].games)||[]})}
-  function edgePanel(){return '<div id="tp-performance-edge-always"><div class="tp-edge-title">Diamond Report Team Edge</div><p class="tp-edge-copy">Compare today’s matchups with a consistent read on head-to-head results, run differential, recent form, offense, pitching, bullpen, defense, park context, and matchup momentum. Tap any matchup below to load the detailed team comparison.</p><div class="tp-edge-metrics"><div class="tp-edge-metric"><b>H2H</b><span>Season Matchup</span></div><div class="tp-edge-metric"><b>Offense</b><span>Runs / OPS</span></div><div class="tp-edge-metric"><b>Pitching</b><span>Starter + Pen</span></div><div class="tp-edge-metric"><b>Form</b><span>Last 10</span></div></div></div>'}
-  function matchupsPanel(html){return '<div id="tp-always-matchups"><div class="tp-always-head"><div class="tp-always-title">Today’s Matchups</div><div class="tp-always-refresh">'+(cache.updated?'Updated '+new Date(cache.updated).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):'Loading…')+'</div></div>'+(html||'<div class="mu-empty"><span class="spin"></span>Loading today’s matchups…</div>')+'</div>'}
-  async function refreshMatchups(force){if(cache.loading)return; if(!force&&cache.html&&Date.now()-cache.updated<45000)return; cache.loading=true;try{var games=await getGames();cache.html='<div class="tp-today-grid">'+(games||[]).map(matchupCard).join('')+'</div>';cache.updated=Date.now();}catch(e){cache.html='<div class="mu-empty">Today’s matchups could not load right now.</div>';cache.updated=Date.now();}finally{cache.loading=false;ensurePanels(false)}}
-  function ensurePanels(triggerFetch){var el=document.getElementById('team-performance-content');if(!el)return;var html=edgePanel()+matchupsPanel(cache.html);var oldEdge=document.getElementById('tp-performance-edge-always');if(oldEdge)oldEdge.remove();var old=document.getElementById('tp-always-matchups');if(old)old.remove();el.insertAdjacentHTML('afterbegin',html);if(triggerFetch!==false)refreshMatchups(false)}
-  var obs=null;function arm(){return;}
-  var old=window.renderTeamPerformanceTab;if(typeof old==='function'){window.renderTeamPerformanceTab=function(){var out=old.apply(this,arguments);Promise.resolve(out).finally(function(){setTimeout(function(){arm();refreshMatchups(true)},80)});return out}}
-  var oldCmp=window.renderTeamPerformanceComparison;if(typeof oldCmp==='function'){window.renderTeamPerformanceComparison=function(){var out=oldCmp.apply(this,arguments);Promise.resolve(out).finally(function(){setTimeout(function(){arm();refreshMatchups(true)},80)});return out}}
-  document.addEventListener('click',function(e){var p=e.target&&e.target.closest&&e.target.closest('[data-gamepick-pane="team-performance"]');if(p)setTimeout(function(){arm();refreshMatchups(true)},120)},true);
-  document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){arm();refreshMatchups(true)},900)});
-})();
-
-/* ---- from <script id="prod-v10-11-parlay-probability-engine-js"> ---- */
-(function(){
-  if(window.__DR_V1011_PARLAY_PROB__) return; window.__DR_V1011_PARLAY_PROB__=true;
-  function n(v){v=parseFloat(v);return Number.isFinite(v)?v:0}
-  function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
-  function pct(v){return Math.round(clamp(v,1,99))}
-  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-  function rows(){try{return (window.getProductionPropRows?window.getProductionPropRows():(window.hrpRows||[])).filter(function(r){return !window.isActiveForHRThreat||window.isActiveForHRThreat(r)})}catch(e){return []}}
-  function marketLabel(type){return {hits:'Over 0.5 Hits',rbis:'Over 0.5 RBI',tb:'Over 1.5 Total Bases',sb:'Over 0.5 SB',hrrbi:'Over 1.5 H+R+RBI',hr:'HR Anytime'}[type]||'Prop'}
-  function legGrade(type,r){
-    var s=r.stats||{},avg=n(r.avg),ops=n(r.ops),iso=n(r.iso),hr=n(r.hrSeason),prob=n(r.hrProb),obp=n(s.obp),slg=n(s.slg),sb=n(s.stolenBases),k=n(s.strikeOuts);
-    var base=50;
-    if(type==='hits') base=42+avg*95+obp*18+ops*5+(r.isFavorable?5:0)-k*.015;
-    if(type==='rbis') base=38+ops*7+iso*55+hr*.45+prob*.18+(r.topHrThreat?3:0);
-    if(type==='tb') base=39+slg*18+iso*70+prob*.22+hr*.25+(r.isFavorable?3:0);
-    if(type==='sb') base=31+sb*1.9+obp*20+avg*28+(String(r.pos||'').match(/SS|CF|2B|LF|RF/)?5:0);
-    if(type==='hrrbi') base=43+avg*40+obp*12+ops*6+hr*.18+prob*.12+(r.isFavorable?3:0);
-    return pct(base);
-  }
-  function legProb(type,r,style){
-    var grade=legGrade(type,r);
-    var base={hits:0.57,rbis:0.47,tb:0.50,sb:0.31,hrrbi:0.52,hr:0.10}[type]||0.50;
-    var ceiling={hits:0.79,rbis:0.68,tb:0.72,sb:0.48,hrrbi:0.74,hr:0.22}[type]||0.70;
-    var floor={hits:0.46,rbis:0.35,tb:0.38,sb:0.18,hrrbi:0.40,hr:0.04}[type]||0.35;
-    var dataLift=(grade-55)/100;
-    var styleAdj=style==='safe'?0.025:style==='normal'?0:-0.035;
-    var p=base+dataLift+styleAdj;
-    return clamp(p,floor,ceiling);
-  }
-  function impliedOdds(p){
-    p=clamp(p,.01,.99); if(p>=.5){return '-'+Math.round((p/(1-p))*100)} return '+'+Math.round(((1-p)/p)*100);
-  }
-  function estParlayOdds(legs,style){
-    var dec=legs.reduce(function(a,l){return a*(1/legProb(l.type,l.r,style));},1)*0.92;
-    var plus=Math.round((dec-1)*100); return '+'+Math.max(100,plus);
-  }
-  function correlation(legs,style){
-    var sameGame={},sameTeam={},market={};
-    legs.forEach(function(l){var g=(l.r.teamAbbr||'')+'-'+(l.r.oppAbbr||''); sameGame[g]=(sameGame[g]||0)+1; sameTeam[l.r.teamAbbr||'UNK']=(sameTeam[l.r.teamAbbr||'UNK']||0)+1; market[l.type]=(market[l.type]||0)+1;});
-    var c=50;
-    Object.keys(sameTeam).forEach(function(k){if(sameTeam[k]>1)c+=8*(sameTeam[k]-1)});
-    Object.keys(sameGame).forEach(function(k){if(sameGame[k]>1)c+=5*(sameGame[k]-1)});
-    if(market.sb)c-=6; if(market.hr)c-=10; if(style==='safe')c+=6; if(style==='lotto')c+=10;
-    return pct(clamp(c,35,88));
-  }
-  function combinedProb(legs,style){
-    if(!legs.length) return 0;
-    var product=legs.reduce(function(a,l){return a*legProb(l.type,l.r,style);},1);
-    var corr=correlation(legs,style)/100;
-    var adj=product*(1+(corr-.50)*0.35);
-    var caps={2:.72,4:.42,6:.24};
-    var cap=caps[legs.length]||.30;
-    if(style==='lotto') cap=Math.min(cap,.18);
-    if(style==='normal') cap=Math.min(cap,.36);
-    return clamp(adj,.01,cap);
-  }
-  function riskName(style,legs,prob){
-    if(style==='lotto') return 'High';
-    if(style==='normal') return legs>=4?'Medium-High':'Medium';
-    return legs>=6?'Medium':'Low';
-  }
-  function pool(){
-    var types=['hits','rbis','tb','sb','hrrbi'];
-    var out=[]; rows().forEach(function(r){types.forEach(function(t){out.push({r:r,type:t,grade:legGrade(t,r),prob:legProb(t,r,window.__DR_PARLAY_STYLE__||'safe')})})});
-    return out.sort(function(a,b){return (b.prob*100+b.grade/100)-(a.prob*100+a.grade/100)});
-  }
-  function buildCards(pool,style,legsCount){
-    var minProb=style==='safe'?.58:style==='normal'?.50:.34;
-    var source=pool.filter(function(p){return legProb(p.type,p.r,style)>=minProb}); if(source.length<legsCount) source=pool;
-    var cards=[];
-    for(var c=0;c<3;c++){
-      var legs=[],seenPlayer={},seenMarket={};
-      for(var i=c;i<source.length&&legs.length<legsCount;i++){
-        var p=source[i], name=p.r.name||('p'+i), m=p.type;
-        if(seenPlayer[name]) continue;
-        if(style==='safe' && seenMarket[m]>=2) continue;
-        if(style!=='lotto' && m==='sb' && legs.some(function(x){return x.type==='sb'})) continue;
-        seenPlayer[name]=1; seenMarket[m]=(seenMarket[m]||0)+1; legs.push(p);
-      }
-      cards.push(legs);
-    }
-    return cards;
-  }
-  function render(){
-    var el=document.getElementById('parlay-builds-content'); if(!el) return;
-    var stateType=(document.querySelector('[data-parlay-type].active')||{}).dataset?.parlayType || (window.parlayState&&window.parlayState.type)||'safe';
-    var stateLegs=parseInt((document.querySelector('[data-parlay-legs].active')||{}).dataset?.parlayLegs||((window.parlayState&&window.parlayState.legs)||2),10)||2;
-    window.__DR_PARLAY_STYLE__=stateType;
-    var p=pool(); if(!p.length){el.innerHTML='<div class="mu-empty">Loading parlay probability engine…</div>'; return;}
-    var cards=buildCards(p,stateType,stateLegs);
-    var risk=stateType==='safe'?'Low':stateType==='normal'?'Medium':'High';
-    el.innerHTML='<div class="dr109-summary"><div class="dr109-title">🧾 Parlay Probability Engine</div><p class="dr109-copy">Percentages now use each leg’s model probability, then calculate the full parlay hit probability. 6-leg cards will no longer show inflated 99% values.</p><div class="dr109-grid"><div class="dr109-metric '+(stateType==='safe'?'good':stateType==='lotto'?'warn':'')+'"><b>'+esc(stateType.toUpperCase())+'</b><span>Build Type</span></div><div class="dr109-metric"><b>'+stateLegs+'</b><span>Leg Count</span></div><div class="dr109-metric '+(risk==='Low'?'good':risk==='High'?'warn':'')+'"><b>'+risk+'</b><span>Risk Style</span></div><div class="dr109-metric warn"><b>Realistic</b><span>Combined Hit %</span></div></div><div class="dr111-formula"><b>Formula:</b> leg probability = model grade + market difficulty + player/stat support. Parlay probability = multiplied leg probabilities with a small correlation adjustment and realistic caps by leg count.</div></div>'+cards.map(function(legs,idx){
-      var cp=combinedProb(legs,stateType), corr=correlation(legs,stateType), avg=legs.reduce(function(a,l){return a+legProb(l.type,l.r,stateType);},0)/Math.max(1,legs.length), odds=estParlayOdds(legs,stateType), rk=riskName(stateType,legs.length,cp), cls=cp>=.45?'':cp>=.18?'warn':'low';
-      return '<div class="dr109-parlay"><div class="dr109-card-head"><div><span class="dr109-badge '+stateType+'">'+esc(stateType)+' · Option '+(idx+1)+'</span><div class="dr109-title" style="margin-top:8px">'+stateLegs+'-Leg '+esc(stateType.toUpperCase())+' Card</div></div><div class="dr111-prob '+cls+'">'+pct(cp*100)+'%<small>Est. Hit Chance</small></div></div><div class="dr109-grid"><div class="dr109-metric"><b>'+odds+'</b><span>Estimated Fair Odds</span></div><div class="dr109-metric"><b>'+pct(avg*100)+'%</b><span>Avg Leg Prob.</span></div><div class="dr109-metric"><b>'+corr+'%</b><span>Correlation</span></div><div class="dr109-metric '+(rk==='Low'?'good':rk==='High'?'warn':'')+'"><b>'+rk+'</b><span>Volatility</span></div></div>'+legs.map(function(l){var lp=legProb(l.type,l.r,stateType), lg=legGrade(l.type,l.r); return '<div class="dr109-leg"><div><b>'+esc(l.r.name||'Player')+'</b><br><span>'+esc(marketLabel(l.type))+' · '+esc(l.r.teamAbbr||'')+' vs '+esc(l.r.oppAbbr||'')+'</span><div class="dr111-note"><span class="dr111-pill good">Leg '+pct(lp*100)+'%</span> <span class="dr111-pill">Model '+lg+'%</span> <span class="dr111-pill warn">'+esc(l.type.toUpperCase())+'</span></div></div><strong>'+pct(lp*100)+'%</strong></div>'}).join('')+'<div class="dr109-ai"><b>Why this parlay works:</b> This card is built from the highest available model probabilities for the selected risk style, then adjusted for market volatility and same-team/game correlation. <b>Important:</b> The large number is now the realistic full-parlay hit chance, not an average of leg grades.</div></div>'
-    }).join('');
-    var r=document.getElementById('parlay-build-refresh'); if(r) r.textContent='Probability updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
-  }
-  window.renderParlayBuilds=render;
-  var oldType=window.setParlayBuildType, oldLegs=window.setParlayLegCount;
-  window.setParlayBuildType=function(t){document.querySelectorAll('[data-parlay-type]').forEach(function(b){b.classList.toggle('active',b.dataset.parlayType===(t||'safe'))}); setTimeout(render,0);};
-  window.setParlayLegCount=function(nm){nm=parseInt(nm,10)||2;document.querySelectorAll('[data-parlay-legs]').forEach(function(b){b.classList.toggle('active',String(nm)===b.dataset.parlayLegs)}); setTimeout(render,0);};
-  document.addEventListener('DOMContentLoaded',function(){setTimeout(render,1200);});
 })();
 
 /* ---- from <script id="prod-v10-15-mobile-horizontal-containment-js"> ---- */
@@ -11972,39 +11534,6 @@ function showPremiumGate(feature){
   }
   document.addEventListener('DOMContentLoaded',function(){setTimeout(markExternalDragSafe,300);setTimeout(markExternalDragSafe,1600);});
   document.addEventListener('click',function(){setTimeout(markExternalDragSafe,80);},true);
-})();
-
-/* ---- from <script id="prod-v1119-team-performance-visible-analytics"> ---- */
-(function(){
- if(window.__DR_V1119_TP_ANALYTICS__) return;
- window.__DR_V1119_TP_ANALYTICS__=true;
- function block(title,items){
-  return '<div class="tp-analytics-section"><div class="tp-analytics-title">'+title+'</div><div class="tp-analytics-grid">'+items.map(function(x){return '<div class="tp-analytics-item"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>'}).join('')+'</div></div>';
- }
- function expansion(){
-  return '<div class="tp-analytics-expansion">'+
-  block('🆚 Team Overview',[['Record','--'],['Run Differential','--'],['Home/Away Record','--'],['Last 10','--'],['Streak','--']])+
-  block('⚾ Offensive Comparison',[['Runs/Game','--'],['AVG','--'],['OBP','--'],['SLG','--'],['OPS','--'],['ISO','--'],['HR','--'],['HR/Game','--'],['Barrel %','--'],['Hard Hit %','--'],['wOBA','--'],['wRC+','--']])+
-  block('🎯 Starting Pitching',[['ERA','--'],['WHIP','--'],['K%','--'],['BB%','--'],['HR Allowed','--'],['Barrel Allowed','--'],['Hard Hit Allowed','--'],['xERA','--'],['FIP','--']])+
-  block('🔥 Bullpen',[['Bullpen ERA','--'],['WHIP','--'],['K%','--'],['HR Allowed','--'],['Last 7 Days ERA','--'],['Fatigue/Usage','--']])+
-  block('📊 Situational Splits',[['vs RHP','--'],['vs LHP','--'],['Handedness Advantage','--']])+
-  block('🧠 Diamond Intelligence',[['Team Edge Score','--'],['Offensive Advantage','--'],['Pitching Advantage','--'],['Bullpen Advantage','--'],['Recent Form Advantage','--'],['AI Matchup Summary','Loading matchup analysis...']])+
-  '</div>';
- }
- function hook(){
-  if(!window.renderTeamPerformanceTab || window.__DR_V1119_TP_WRAPPED__) return;
-  var old=window.renderTeamPerformanceTab;
-  window.renderTeamPerformanceTab=function(){
-    var r=old.apply(this,arguments);
-    Promise.resolve(r).then(function(){
-      var el=document.getElementById('team-performance-content');
-      if(el && !el.querySelector('.tp-analytics-expansion')) el.insertAdjacentHTML('beforeend', expansion());
-    });
-    return r;
-  };
-  window.__DR_V1119_TP_WRAPPED__=true;
- }
- if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',hook); else hook();
 })();
 
 /* v11.31: Pause infinite CSS animations when the tab is hidden or the
@@ -12052,162 +11581,6 @@ function showPremiumGate(feature){
   setInterval(function(){
     if (document.visibilityState === 'visible') observeAnimatedElements();
   }, 5000);
-})();
-
-/* ---- Premium: Elite Picks (server-locked, per-game HR / pooled top 5s) ---- */
-(function(){
-  if (window.__DR_PREMIUM_ELITE__) return; window.__DR_PREMIUM_ELITE__ = true;
-
-  var MARKETS = [
-    { key:'hr',    label:'🔥 Home Runs' },
-    { key:'hits',  label:'⚾ Hits' },
-    { key:'rbis',  label:'💰 RBIs' },
-    { key:'tb',    label:'💎 Total Bases' },
-    { key:'sb',    label:'🏃 Stolen Bases' },
-    { key:'hrrbi', label:'📈 Hits+Runs+RBI' },
-  ];
-
-  function n(v){ v = parseFloat(v); return Number.isFinite(v) ? v : 0; }
-  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
-
-  // Elite Picks are selected, scored, and locked in server-side (scripts/update-tracker.mjs,
-  // captureEliteToday), the same way the Diamond Report Pick and K Props already are, and
-  // published in data/tracker.json (window.__premiumTodayPicksRaw, set by
-  // loadAllTimeTrackerRecord). Every visitor — and the graded accuracy record — therefore
-  // sees the exact same picks with the exact same score, instead of each browser
-  // independently recomputing and locking its own copy. This file only joins those locked
-  // picks against today's live row data for display (photo, live "why" chips, first-pitch
-  // lock badge) — it no longer selects or scores anything itself.
-  function rows(){
-    try {
-      var src = (typeof window.getProductionPropRows === 'function') ? window.getProductionPropRows() : (window.hrpRows || []);
-      return (src || []).filter(function(r){ return r && r.name && r.id != null; });
-    } catch(e) { return []; }
-  }
-
-  function isRowLocked(row){
-    var tl = String(row.timeLabel || '').toUpperCase();
-    return tl.indexOf('LIVE') >= 0 || tl === 'FINAL';
-  }
-
-  // Joins a locked server-side pick record against today's live row data (for photo,
-  // pitcher name, current "why" chips, lock badge). Falls back to a minimal row built
-  // from the tracker record itself when no live match is found (e.g. the site's live
-  // row data hasn't loaded yet), so the pick still displays instead of silently vanishing.
-  function liveRowFor(pick, liveRows){
-    for (var i = 0; i < liveRows.length; i++) {
-      if (String(liveRows[i].id) === String(pick.playerId)) return liveRows[i];
-    }
-    return { id: pick.playerId, name: pick.playerName, teamAbbr: pick.team, oppAbbr: pick.opp, pitcherName: null, timeLabel: '', gamePk: pick.gamePk };
-  }
-
-  function buildEliteLists(){
-    var todayPicks = window.__premiumTodayPicksRaw || [];
-    var liveRows = rows();
-    var out = {};
-    MARKETS.forEach(function(m){ out[m.key] = []; });
-    todayPicks.forEach(function(p){
-      if (!out[p.market]) return;
-      out[p.market].push({ row: liveRowFor(p, liveRows), score: p.score, quality: p.quality, rank: p.rank || 99 });
-    });
-    MARKETS.forEach(function(m){ out[m.key].sort(function(a,b){ return a.rank - b.rank; }); });
-    return out;
-  }
-
-  function hs(id){ return id ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_72,q_auto:best/v1/people/'+id+'/headshot/67/current' : ''; }
-  function tl(abbr){ var id = (window.teamIds||{})[abbr]; return id ? '<img class="premium-team-logo" src="https://www.mlbstatic.com/team-logos/'+id+'.svg" alt="" loading="lazy" decoding="async">' : ''; }
-
-  // Ballpark Pal only publishes per-hitter homeRuns/doublesTriples/singles
-  // multipliers (see sync-ballparkpal.mjs) — RBIs/Stolen Bases/Hits+Runs+RBI
-  // have no honest direct mapping, so those markets simply don't get a badge.
-  function bpStatKeyForMarket(marketKey){
-    if (marketKey === 'hr') return 'homeRuns';
-    if (marketKey === 'tb') return 'doublesTriples';
-    if (marketKey === 'hits') return 'singles';
-    return null;
-  }
-  function bpBadgeHTML(marketKey, row){
-    var statKey = bpStatKeyForMarket(marketKey);
-    if (!statKey || typeof ballparkPalStatFactorForPlayer !== 'function') return '';
-    var pct = ballparkPalStatFactorForPlayer(row.gamePk, row.id, statKey);
-    if (pct == null) return '';
-    var color = pct > 0 ? '#2ee6a6' : pct < 0 ? '#ff4d6d' : 'var(--muted)';
-    return ' · <span style="color:'+color+'" title="Ballpark Pal cross-check, informational only">🌐 '+(pct>0?'+':'')+pct+'%</span>';
-  }
-
-  function cardHTML(entry, rank, marketKey){
-    var r = entry.row, p = Math.round(entry.score);
-    var lockBadge = isRowLocked(r) ? '<span class="premium-lock" title="Locked at first pitch — this pick no longer changes">🔒</span>' : '';
-    return '<div class="premium-card">' +
-      '<div class="premium-rank">#'+(rank+1)+'</div>' +
-      '<img class="premium-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt="">' +
-      '<div class="premium-info">' +
-        '<div class="premium-name">'+esc(r.name||'–')+lockBadge+'</div>' +
-        '<div class="premium-meta">'+tl(r.teamAbbr)+esc(r.teamAbbr||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+bpBadgeHTML(marketKey, r)+'</div>' +
-        '<div class="premium-quality">'+esc('★'.repeat(Math.max(1,entry.quality)))+'</div>' +
-      '</div>' +
-      '<div class="premium-score">'+p+'%</div>' +
-    '</div>';
-  }
-
-  // Home Runs is selected per game server-side — group its cards under a small per-game
-  // header (rank restarts at #1 for each game) instead of one flat cross-game list, so
-  // the display matches how the picks are actually scoped.
-  function groupByGameForDisplay(picks){
-    var byGame = {}, order = [];
-    picks.forEach(function(entry){
-      var gp = entry.row.gamePk;
-      if (!byGame[gp]) { byGame[gp] = []; order.push(gp); }
-      byGame[gp].push(entry);
-    });
-    return order.map(function(gp){ return byGame[gp]; });
-  }
-
-  function sectionHTML(m, picks){
-    if (!picks.length) {
-      return '<div class="premium-section">' +
-        '<div class="premium-section-head">'+esc(m.label)+'</div>' +
-        '<div class="premium-card-list"><div class="mu-empty" style="padding:16px">No elite picks clear the bar for this market yet today — check back once boards have loaded.</div></div>' +
-      '</div>';
-    }
-    var body;
-    if (m.key === 'hr') {
-      body = groupByGameForDisplay(picks).map(function(entries){
-        var top = entries[0].row;
-        var head = esc(top.teamAbbr||'–') + ' vs ' + esc(top.oppAbbr||'–');
-        var cards = entries.map(function(entry, rank){ return cardHTML(entry, rank, m.key); }).join('');
-        return '<div class="premium-game-group">' +
-          '<div class="premium-game-head">'+head+'</div>' +
-          '<div class="premium-card-list">'+cards+'</div>' +
-        '</div>';
-      }).join('');
-    } else {
-      body = '<div class="premium-card-list">'+picks.map(function(entry, rank){ return cardHTML(entry, rank, m.key); }).join('')+'</div>';
-    }
-    return '<div class="premium-section">' +
-      '<div class="premium-section-head">'+esc(m.label)+'</div>' +
-      body +
-    '</div>';
-  }
-
-  function render(){
-    var el = document.getElementById('premium-content');
-    if (!el) return;
-    if (!window.__premiumTodayPicksRaw) {
-      el.innerHTML = '<div class="mu-empty" style="padding:16px">Loading today’s Elite Picks…</div>';
-      return;
-    }
-    var lists = buildEliteLists();
-    el.innerHTML = MARKETS.map(function(m){ return sectionHTML(m, lists[m.key] || []); }).join('');
-  }
-  window.renderPremiumPicks = render;
-
-  var oldPane = window.showGamePickPane;
-  if (typeof oldPane === 'function' && !oldPane.__drPremium) {
-    var wrap = function(p){ var out = oldPane.apply(this, arguments); if (p === 'premium') { setTimeout(render, 80); setTimeout(render, 800); } return out; };
-    wrap.__drPremium = true;
-    window.showGamePickPane = wrap;
-  }
 })();
 
 // Desktop collapsible sidebar nav — separate element from the mobile hamburger
@@ -12297,11 +11670,10 @@ function showPremiumGate(feature){
 
 // Landing hub ("The Sports Desk") — default view for a fresh visit with no
 // #gamepick= hash; hidden once a sport is entered. Every route into a pane
-// (the static desktop tabs' onclick, the mobile drawer, the desktop sidebar,
-// and the premium gate) ultimately calls window.showGamePickPane or
-// window.showPremiumGate, so wrapping those two is enough to hide the hub
-// from any entry point without touching either nav's own code — same
-// non-invasive wrap pattern already used elsewhere in this file (see
+// (the static desktop tabs' onclick, the mobile drawer, the desktop sidebar)
+// ultimately calls window.showGamePickPane, so wrapping that is enough to
+// hide the hub from any entry point without touching the nav's own code —
+// same non-invasive wrap pattern already used elsewhere in this file (see
 // window.showGamePickPane wraps above).
 (function(){
   var newsLoaded = false;
@@ -13212,12 +12584,6 @@ function showPremiumGate(feature){
       window.showGamePickPane = wrapShowPane;
     }
 
-    var oldShowGate = window.showPremiumGate;
-    if (typeof oldShowGate === 'function' && !oldShowGate.__drHub) {
-      var wrapShowGate = function(f){ hideHub(); return oldShowGate.apply(this, arguments); };
-      wrapShowGate.__drHub = true;
-      window.showPremiumGate = wrapShowGate;
-    }
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind, { once:true });

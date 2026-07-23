@@ -2172,8 +2172,9 @@ async function captureToday(store, compStore, drpSimCompStore) {
   // which is the single most expensive part of this script (per-batter API calls).
   const pool = previewGames.length ? await buildEliteBatterPool(previewGames, season) : [];
 
-  const eliteAdded = await captureEliteToday(store, pool, oddsLookup);
-  console.log(`Captured ${eliteAdded} new pending Elite Pick(s) for ${today}.`);
+  // Elite Picks (Premium) was removed from the site -- no new picks are captured,
+  // but gradePending() below still grades any that were already pending so the
+  // historical record finishes cleanly instead of being left stuck mid-grade.
 
   const hrThreatAdded = await captureHRThreatToday(store, pool);
   console.log(`Captured ${hrThreatAdded} new pending HR Threat pool entry(ies) for ${today}.`);
