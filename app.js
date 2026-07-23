@@ -2335,6 +2335,10 @@ function renderPRTable() {
             <div class="pr-mobile-name">${p.name}</div>
             <div class="pr-mobile-sub">${p.teamAbbr} · ${r.wl} · vs ${p.oppAbbr}</div>
             <div class="pr-mobile-time" style="color:${p.timeColor};font-weight:${p.timeLabel.includes('LIVE')?700:400}">${p.timeLabel}</div>
+            <div class="pr-lineup-hint" style="display:inline-flex;align-items:center;gap:4px;margin-top:5px;padding:3px 8px;border-radius:999px;background:rgba(47,107,255,.12);border:1px solid rgba(47,107,255,.35);color:var(--accent2);font-size:9px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap">
+              <svg width="10" height="10" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M6.5 7.5h7M6.5 10h7M6.5 12.5h4"/></svg>
+              View ${p.oppAbbr || 'Opponent'} Lineup
+            </div>
           </div>
         </td>
         ${plainCell(r.ip!=null?r.ip.toFixed(1):'–', 'Innings Pitched', 'IP')}
@@ -2437,6 +2441,38 @@ async function fetchBatterSeasonBundle(playerId, preferredSeason, fallbackStats 
   }
   return { seasonStats: bestStat, logs: bestLogs, season: String(preferredSeason || '') };
 }
+// Best-effort "expected lineup" fallback for when MLB hasn't posted today's official
+// batting order yet -- pulls the team's most recent completed game's actual batting
+// order as a reasonable placeholder (not a roster/depth-chart guess, which would be
+// far less reliable), clearly labeled as unconfirmed for today by the caller.
+async function fetchExpectedLineup(teamId) {
+  if (!teamId) return null;
+  try {
+    const season = new Date().getFullYear();
+    const sched = await fetchJSON(`https://diamondreport.app/api/v1/schedule?sportId=1&season=${season}&teamId=${teamId}&hydrate=team&language=en`);
+    const games = [];
+    (sched.dates || []).forEach(d => (d.games || []).forEach(g => games.push(g)));
+    const now = Date.now();
+    const priorFinals = games
+      .filter(g => g.status?.abstractGameState === 'Final' && new Date(g.gameDate).getTime() < now)
+      .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate));
+    if (!priorFinals.length) return null;
+    const lastGame = priorFinals[0];
+    const side = String(lastGame.teams?.away?.team?.id) === String(teamId) ? 'away' : 'home';
+    const box = await fetchJSON(`https://diamondreport.app/api/v1/game/${lastGame.gamePk}/boxscore`);
+    const teamBox = box.teams?.[side];
+    let batters = (teamBox?.batters || []).map(id => teamBox.players[`ID${id}`]).filter(Boolean);
+    batters = batters.filter(b => {
+      const bo = Number(b.battingOrder || b.stats?.batting?.battingOrder || NaN);
+      return Number.isFinite(bo) && bo % 100 === 0;
+    }).sort((a, b) => (parseInt(a.battingOrder || a.stats?.batting?.battingOrder || 9999) - parseInt(b.battingOrder || b.stats?.batting?.battingOrder || 9999)));
+    if (!batters.length) return null;
+    return { batters, gameDate: lastGame.gameDate };
+  } catch (e) {
+    return null;
+  }
+}
+
 async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp, skipEnrichment = false, bypassPRGuards = false) {
   const pid = normalizePitcherId(pitcherId);
   const panel = document.getElementById(`panel-${pid}`);
@@ -2478,17 +2514,30 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
       batters = batters.sort((a,b) => (parseInt(a.battingOrder || a.stats?.batting?.battingOrder || 9999) - parseInt(b.battingOrder || b.stats?.batting?.battingOrder || 9999)));
     }
 
-    if (!hasOfficialBattingOrder || !batters.length) {
-      const cacheKey = `${gamePk}-${side}`;
-      lineupCache[cacheKey] = { lineup: [], oppSide, teamAbbr: teamBox?.team?.abbreviation || '', confirmed: false, lineupStatus: 'pending', source: 'MLB official lineup pending', updatedAt: new Date().toISOString() };
-      if (lineupRequestTokens[pid] !== token) return;
-      renderLineupPending(`panel-${pid}`, lineupCache[cacheKey].teamAbbr);
-      return;
-    }
+    let lineupConfirmed = true;
+    let lineupSource = 'MLB official batting order';
+    let lineupStatus = 'confirmed';
+    let expectedFromDate = null;
 
-    const lineupConfirmed = true;
-    const lineupSource = 'MLB official batting order';
-    const lineupStatus = 'confirmed';
+    if (!hasOfficialBattingOrder || !batters.length) {
+      // Today's official order isn't posted yet -- fall back to this team's most
+      // recent completed game's actual batting order as a reasonable placeholder,
+      // clearly labeled as unconfirmed for today rather than presented as real.
+      const expected = await fetchExpectedLineup(oppTeamId).catch(() => null);
+      if (expected && expected.batters.length) {
+        batters = expected.batters;
+        lineupConfirmed = false;
+        lineupStatus = 'expected';
+        expectedFromDate = expected.gameDate;
+        lineupSource = 'Expected lineup — from ' + new Date(expected.gameDate).toLocaleDateString('en-US', {month:'short', day:'numeric'}) + ", not yet confirmed for today";
+      } else {
+        const cacheKey = `${gamePk}-${side}`;
+        lineupCache[cacheKey] = { lineup: [], oppSide, teamAbbr: teamBox?.team?.abbreviation || '', confirmed: false, lineupStatus: 'pending', source: 'MLB official lineup pending', updatedAt: new Date().toISOString() };
+        if (lineupRequestTokens[pid] !== token) return;
+        renderLineupPending(`panel-${pid}`, lineupCache[cacheKey].teamAbbr);
+        return;
+      }
+    }
 
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
 
@@ -2544,6 +2593,7 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
       confirmed: lineupConfirmed,
       lineupStatus,
       source: lineupSource,
+      expectedFromDate,
       updatedAt: new Date().toISOString()
     };
 
@@ -2850,14 +2900,19 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
   if (!panel) return;
   const { lineup, teamAbbr } = data || {};
   const lineupIsOfficial = data?.confirmed === true || (lineup || []).some(b => b.confirmed === true);
-  if (!lineupIsOfficial || !(lineup || []).length) {
+  const lineupIsExpected = !lineupIsOfficial && data?.lineupStatus === 'expected';
+  if ((!lineupIsOfficial && !lineupIsExpected) || !(lineup || []).length) {
     renderLineupPending(panelId, teamAbbr || oppAbbr || '');
     return;
   }
   const lineupBadge = lineupIsOfficial
     ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#0d2a1a;border:1px solid #2ecc71;color:#2ecc71;border-radius:999px;padding:2px 8px;font-size:9px;font-weight:800;letter-spacing:.6px">✅ CONFIRMED LINEUP</span>'
-    : '<span style="display:inline-flex;align-items:center;gap:4px;background:#2a1800;border:1px solid #f4a261;color:#f4a261;border-radius:999px;padding:2px 8px;font-size:9px;font-weight:800;letter-spacing:.6px">⚠ LINEUP NOT CONFIRMED</span>';
-  const lineupNotice = '';
+    : lineupIsExpected
+      ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#0d1a30;border:1px solid #2f6bff;color:#7aa6ff;border-radius:999px;padding:2px 8px;font-size:9px;font-weight:800;letter-spacing:.6px">🔮 EXPECTED LINEUP</span>'
+      : '<span style="display:inline-flex;align-items:center;gap:4px;background:#2a1800;border:1px solid #f4a261;color:#f4a261;border-radius:999px;padding:2px 8px;font-size:9px;font-weight:800;letter-spacing:.6px">⚠ LINEUP NOT CONFIRMED</span>';
+  const lineupNotice = lineupIsExpected
+    ? `<div style="margin:8px 0;padding:8px 12px;background:#0d1a30;border:1px solid rgba(47,107,255,.4);border-radius:8px;font-size:11px;color:#9fbdff;line-height:1.5">🔮 <strong>Not yet confirmed for today.</strong> Showing ${teamAbbr || oppAbbr || 'this team'}'s lineup from ${data?.expectedFromDate ? new Date(data.expectedFromDate).toLocaleDateString('en-US', {month:'short', day:'numeric'}) : 'their last game'} as a placeholder — swaps to the real batting order the moment MLB posts it.</div>`
+    : '';
 
   function hrProb(s) {
     const ab = parseInt(s.atBats) || 0;
@@ -2880,9 +2935,21 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
   const withProbs = applyHotHitterBoosts(lineup.map(b => ({ ...b, todayHR: (data?.gameHasStarted ? (b.todayHR || 0) : 0), hrProb: hrProb(b.stats), baseHrProb: hrProb(b.stats) })));
   const maxProb = Math.max(...withProbs.map(b => b.hrProb), 0.01);
   const topIdx = withProbs.reduce((best, b, i) => b.hrProb > withProbs[best].hrProb ? i : best, 0);
+  // HR Threats' inclusion rule (getHRRows in the v10.32 IIFE) only lets the
+  // single best batter per pitcher matchup in at the lower topHrThreat
+  // probability bar -- with one qualifying per matchup side, the whole board
+  // was hard-capped at roughly (games today x 2) players regardless of how
+  // many other batters had a real case. Widened to the top 2 by hrProb here.
+  // Deliberately a separate variable from topIdx, which stays single-winner
+  // for this lineup panel's own "top" highlight/bar-color below.
+  const topTwoIdx = new Set(withProbs.map((b, i) => i).sort((a, b) => withProbs[b].hrProb - withProbs[a].hrProb).slice(0, 2));
 
   // ── Feed into HR Potential if it's empty (lineups not posted via API yet) ──
-  if (pitcherId && pitcherName) {
+  // Only for a truly confirmed lineup — an "expected" lineup is borrowed from a prior
+  // game and isn't a reliable signal that this batter is even in today's game (bench day,
+  // platoon, injury, roster move since that game), so it shouldn't show up as an HR
+  // Threat, just as a placeholder in this lineup panel until the real order posts.
+  if (pitcherId && pitcherName && lineupIsOfficial) {
     const prRow = prRows.find(r => r.pitcher.id == pitcherId);
     const timeLabel = prRow?.pitcher.timeLabel || '–';
     const timeColor = prRow?.pitcher.timeColor || 'var(--text)';
@@ -2892,7 +2959,7 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
 
     withProbs.forEach((b, i) => {
       if (!b.id || !isActiveForHRThreat(b)) return;
-      const isTopThreat = i === topIdx;
+      const isTopThreat = topTwoIdx.has(i);
       // Only add if not already in hrpRows; if it exists, preserve/upgrade TOP HR THREAT status
       const existing = hrpRows.find(r => r.id === b.id && r.pitcherId == pitcherId);
       if (existing) {
@@ -6874,9 +6941,15 @@ async function loadHRPotential() {
 
         if (batterRowsForPitcher.length) {
           applyHotHitterBoosts(batterRowsForPitcher);
-          const topRow = batterRowsForPitcher.reduce((best, row) => row.hrProb > best.hrProb ? row : best, batterRowsForPitcher[0]);
+          // Top 2 by hrProb (not just the single best) so more than one batter
+          // per pitcher matchup can qualify for HR Threats' lower topHrThreat
+          // probability bar (see getHRRows in the v10.32 IIFE) -- with only
+          // one qualifying per matchup side, the whole board was hard-capped
+          // at roughly (games today x 2) players no matter how many other
+          // batters had a real case.
+          const topTwoIds = new Set(batterRowsForPitcher.slice().sort((a, b) => b.hrProb - a.hrProb).slice(0, 2).map(r => r.id));
           batterRowsForPitcher.forEach(row => {
-            row.topHrThreat = row.id === topRow.id;
+            row.topHrThreat = topTwoIds.has(row.id);
             addBatter(row);
           });
         }
@@ -6920,11 +6993,16 @@ function renderHRPTable() {
         return false;
       })
     : [...hrpRows]
-  // HRP_BOARD_MIN_PROB: bare inclusion floor, raised from 8% to 10% to cut weaker signals.
-  // topHrThreat no longer bypasses the floor outright — it used to guarantee one hitter per
-  // pitcher matchup regardless of how weak that "best of a bad lineup" pick actually was;
-  // now it only lowers the bar to 5% instead of waiving it completely.
-  ).filter(isActiveForHRThreat).filter(r => (r.topHrThreat && r.hrProb >= 5) || r.hrProb >= 10);
+  // HRP_BOARD_MIN_PROB: bare inclusion floor. hrProb here is a single-PA batter/pitcher
+  // rate blend (see hrProb() above), not a full-game simulation — realistic values run
+  // more like a 2-6% league-average range than double digits, so the prior 10%/5% bars
+  // (raised from 8% to cut weak signals) required a player be several times better than
+  // average just to clear the flat floor. Combined with topHrThreat only flagging the
+  // single best hitter per pitcher matchup, the board was landing around ~18 players on
+  // a normal slate regardless of how many other batters had a real case. Eased to 7%/3%
+  // and topHrThreat now covers the top 2 per matchup (see where it's set, above) to
+  // widen the shortlist without dropping the floor back to "everyone clears it."
+  ).filter(isActiveForHRThreat).filter(r => (r.topHrThreat && r.hrProb >= 3) || r.hrProb >= 7);
 
   // Update button active states
   const allActive = !hasFilter;
@@ -10629,12 +10707,14 @@ if (document.readyState === 'loading') {
   function statSlug(k){ return String(k).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
   function hrChip(k,v,cls){ var c=cls||('stat-'+statSlug(k)); return '<span class="dr1027-chip '+c+'"><b>'+esc(k)+'</b> '+esc(v)+'</span>'; }
   function labelChip(k,v,cls){ return '<span class="dr1027-chip '+(cls||'')+'"><b>'+esc(k)+'</b> '+esc(v)+'</span>'; }
-  // Inclusion floor rescaled for the Monte Carlo-simulated hrProb. Switching HR Threats
-  // to a genuine full-game simulation (real ~4-5 PA, not one PA) roughly quadrupled the
-  // typical player's hrProb (league-average sits around 12-14% now, not 3-4%), so the old
-  // 10%/5% bars stopped filtering almost anything — nearly the entire scanned slate (~230+
-  // players) was clearing them. Raised to preserve the same curated-shortlist intent.
-  function getHRRows(){ return rows().filter(function(r){return n(r.hrProb)>0 && ((r.topHrThreat && n(r.hrProb)>=14) || n(r.hrProb)>=18);}); }
+  // Inclusion floor. hrProb here is a single-PA batter/pitcher rate blend (see hrProb()
+  // near fetchAndRenderLineup), not a full-game simulation -- realistic values run more
+  // like a 2-6% league-average range than double digits. Matches the same 7%/3% floor
+  // renderHRPTable uses (the board's actual default renderer; this getHRRows path only
+  // runs when the "All Games" filter select is touched) so switching that filter doesn't
+  // suddenly shrink or balloon the list. topHrThreat covers the top 2 batters per pitcher
+  // matchup, not just the single best (see where it's set, in loadHRPotential).
+  function getHRRows(){ return rows().filter(function(r){return n(r.hrProb)>0 && ((r.topHrThreat && n(r.hrProb)>=3) || n(r.hrProb)>=7);}); }
   function getFilters(){ if(!window.__hrpFilterSet) window.__hrpFilterSet=new Set(); return window.__hrpFilterSet; }
   function getHRGameFilter(){ return window.__hrpGameFilter||''; }
   window.setHRGameFilter=function(val){ window.__hrpGameFilter=val||''; renderHRPTableV1032(); };
