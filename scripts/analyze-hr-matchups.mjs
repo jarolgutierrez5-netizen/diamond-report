@@ -13,7 +13,11 @@
 // only present on picks captured after that change shipped, so the
 // pitcher-side breakdowns below will be empty/thin until enough of those
 // accumulate; the score-calibration and tag breakdowns work on the full
-// history immediately.
+// history immediately. Also tracks pitcher2kSuppressionDelta, the exploratory
+// "Pitcher IQ" / 2-strike hard-hit suppression signal (see
+// scripts/sync-pitcher-2k-suppression.mjs) — recorded purely for this report
+// to eventually judge whether it's worth wiring into HR Probability itself;
+// it isn't used in scoring anywhere yet.
 // ─────────────────────────────────────────────────────────────────────────
 
 import { readFile } from 'node:fs/promises';
@@ -153,6 +157,21 @@ async function main() {
     printTable('By park factor:', bucketStats(withPitcher, parkBucket, ['Pitcher park (<97)', 'Neutral park', 'Hitter park (103+)']));
   } else {
     console.log('  (need at least 20 graded picks with pitcher data for a meaningful breakdown — check back after more picks are captured and graded)');
+  }
+
+  // ── Exploratory "2-strike contact suppression" ("Pitcher IQ") breakdown —
+  // see scripts/sync-pitcher-2k-suppression.mjs for what this measures. Only
+  // covers today's probable starters at capture time, so this fills in much
+  // slower than the pitcherHr9/WHIP breakdowns above; a real read on whether
+  // it's worth wiring into HR Probability needs this section past its sample
+  // floor, not just the overall win rate. Not used by scoreForMarket yet.
+  const withSuppression = graded.filter(r => r.pitcher2kSuppressionDelta != null);
+  console.log(`\nPicks with 2-strike suppression data: ${withSuppression.length}/${graded.length}`);
+  if (withSuppression.length >= 20) {
+    const suppressionBucket = r => r.pitcher2kSuppressionDelta <= -5 ? 'Suppresses hard (<=-5pp)' : r.pitcher2kSuppressionDelta < 5 ? 'Neutral (-5 to +5pp)' : 'Gets hit harder (5pp+)';
+    printTable('By opposing pitcher 2-strike hard-hit suppression:', bucketStats(withSuppression, suppressionBucket, ['Suppresses hard (<=-5pp)', 'Neutral (-5 to +5pp)', 'Gets hit harder (5pp+)']));
+  } else {
+    console.log('  (need at least 20 graded picks with 2-strike suppression data for a meaningful breakdown — check back after more picks are captured and graded)');
   }
 
   console.log('\n' + '═'.repeat(70));
