@@ -1690,6 +1690,13 @@ let batterPitchTypeSeason = {};
 let batterPitchTypeSeasonLoaded = false;
 let batterPitchTypeSeasonPromise = null;
 
+// Batter per-location (byZone) production, keyed by id/lowercased name — populated
+// alongside batterPitchTypeSeason from the same payload (see ingestBatterPitchTypeSeasonPayload)
+// but kept in its own store since batterPitchTypeSeason's normalization strips any field
+// that isn't a per-pitch-type row. Powers the Strike Zone Matchup heatmap's batter side
+// (sync-batter-zone-hr.mjs's byZone), same raw-object-keyed-by-id pattern as pitcherStatcast.
+let batterZoneProfiles = {};
+
 function normalizePitchTypeKey(name) {
   const n = String(name || '').toLowerCase();
   if (n.includes('four') || n.includes('4-seam') || n.includes('fastball')) return 'fastball';
@@ -1912,6 +1919,13 @@ function ingestBatterPitchTypeSeasonPayload(data) {
   if (!data) return;
   const upsert = (id, name, payload) => {
     if (!payload) return;
+    // Captured before the seasonPitchTypeStats-only early return below, since a batter
+    // can have real zone rows from sync-batter-zone-hr.mjs without having enough tracked
+    // pitches for the pitch-arsenal leaderboard yet.
+    if (payload.byZone) {
+      if (id) batterZoneProfiles[String(id)] = payload.byZone;
+      if (name) batterZoneProfiles[String(name).toLowerCase()] = payload.byZone;
+    }
     const record = payload.seasonPitchTypeStats || payload.pitchTypeSeason || payload.byPitch || payload.pitchTypes || payload;
     const normalized = {};
     const normalizeRow = (rawKey, row) => {
@@ -4712,6 +4726,32 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     </div>`;
   }).join('') : '';
 
+  // ── Batter's own hot/cold zone heatmap (real production, not the pitcher's) ──
+  // Same 9-zone grid, same wOBA scale and color tiers as the pitcher's Strike Zone
+  // above, so the two can sit side by side and actually be compared visually instead
+  // of only trusting the heuristic Zone Fit score below. Sourced from
+  // sync-batter-zone-hr.mjs's byZone (data/batter-pitch-type-season.json).
+  const batterZoneProfile = batterZoneProfiles[String(batterId)] || batterZoneProfiles[String(batterName || '').toLowerCase()] || null;
+  const hasRealBatterZones = !!batterZoneProfile;
+  let batterZoneVals = null;
+  if (hasRealBatterZones) {
+    batterZoneVals = [1,2,3,4,5,6,7,8,9].map(z => {
+      const cell = batterZoneProfile[z];
+      if (!cell) return null;
+      const val = cell.xwobaContact ?? cell.woba ?? cell.xwoba ?? cell.wobaAgainst;
+      return val != null ? Math.min(val / 0.640, 1.0) : null;
+    });
+    if (batterZoneVals.every(v => v == null)) batterZoneVals = null;
+  }
+  const batterZoneCells = batterZoneVals ? batterZoneVals.map((v, i) => {
+    if (v == null) return `<div class="sz-cell" style="background:#0d1220;color:var(--muted)" title="${zoneLabels[i]}: no data">–</div>`;
+    const c = zoneColor(v);
+    const pct = Math.round(v * 100);
+    return `<div class="sz-cell" style="background:${c.bg};color:${c.text}" title="${zoneLabels[i]}: ${pct}% production">
+      ${pct}%
+    </div>`;
+  }).join('') : '';
+
   function buildZoneFit() {
     if (!zoneVals) return null;
     const weights = zoneVals.map((v, i) => ({ i, v: v ?? 0 })).sort((a,b) => b.v - a.v);
@@ -5699,10 +5739,11 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <!-- Strike Zone + Attack Zone by Pitch, side by side -->
       <div class="dr1041-zone-grid">
       <div class="zone-section">
-        <div class="zone-title">${hasRealZones ? 'STRIKE ZONE · REAL wOBA AGAINST BY LOCATION' : 'STRIKE ZONE · NO REAL DATA YET'}</div>
+        <div class="zone-title">${hasRealZones ? 'STRIKE ZONE MATCHUP · REAL wOBA BY LOCATION' : 'STRIKE ZONE · NO REAL DATA YET'}</div>
       ${hasRealZones ? `
       <div class="zone-wrap">
         <div class="zone-grid-outer">
+          <span class="zone-label" style="font-weight:700;color:var(--fg,#fff)">${pitcherName.split(' ').pop().toUpperCase()} · WEAK ZONES</span>
           <span class="zone-label">OUTSIDE ←&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ INSIDE</span>
           <div style="display:flex;align-items:center;gap:6px">
             <div style="display:flex;flex-direction:column;gap:2px;font-size:9px;color:var(--muted);text-align:right;padding-right:4px">
@@ -5714,15 +5755,28 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
           </div>
           <span class="zone-label" style="margin-top:4px">% = Batter opportunity score per zone</span>
         </div>
+        <div class="zone-grid-outer">
+          <span class="zone-label" style="font-weight:700;color:var(--fg,#fff)">${batterName.split(' ').pop().toUpperCase()} · HOT ZONES</span>
+          <span class="zone-label">OUTSIDE ←&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ INSIDE</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="display:flex;flex-direction:column;gap:2px;font-size:9px;color:var(--muted);text-align:right;padding-right:4px">
+              <div style="height:40px;display:flex;align-items:center">HIGH</div>
+              <div style="height:40px;display:flex;align-items:center">MID</div>
+              <div style="height:40px;display:flex;align-items:center">LOW</div>
+            </div>
+            ${hasRealBatterZones ? `<div class="strike-zone">${batterZoneCells}</div>` : `<div class="strike-zone" style="display:flex;align-items:center;justify-content:center;height:134px;padding:8px;text-align:center"><span class="zone-note" style="margin:0">No real per-location data yet for ${batterName}.</span></div>`}
+          </div>
+          <span class="zone-label" style="margin-top:4px">% = ${batterName.split(' ').pop()}'s own wOBA per zone</span>
+        </div>
         <div>
           <div class="zone-legend">
             <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#4a1010"></div><span style="color:#ff6b6b">Hot zone (85%+) — prime HR location</span></div>
             <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#3a2010"></div><span style="color:#f4a261">Warm zone (65–84%) — extra-base threat</span></div>
             <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#1a2a10"></div><span style="color:#90ee60">Neutral (45–64%) — contact likely</span></div>
-            <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#0d1a0d"></div><span style="color:#3a6a3a">Cold zone (&lt;45%) — pitcher's advantage</span></div>
+            <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#0d1a0d"></div><span style="color:#3a6a3a">Cold zone (&lt;45%) — favors the pitcher</span></div>
           </div>
           <div class="zone-note" style="margin-top:10px;max-width:220px">
-            Zones based on the quality of contact ${pitcherName.split(' ').pop()} ${usingExpected ? 'should be allowing (luck removed)' : 'has allowed'} (${fv(pitcherVuln,3)}), his HR/9 (${pHR9}), and the batter's power profile. Higher scores = more damage opportunity.
+            Left grid: quality of contact ${pitcherName.split(' ').pop()} ${usingExpected ? 'should be allowing (luck removed)' : 'has allowed'} (${fv(pitcherVuln,3)}), his HR/9 (${pHR9}), and the batter's power profile. Right grid: ${batterName.split(' ').pop()}'s own real per-zone production${hasRealBatterZones ? '' : ' (not synced yet)'}. Overlapping hot zones on both = the clearest damage opportunity.
           </div>
         </div>
       </div>` : `

@@ -10,6 +10,12 @@
 // the UI — this replaces that estimate with a real per-pitch count wherever the
 // Statcast Search data covers it.
 //
+// Also now computes real per-location wOBA (byZone), the batter-side counterpart to
+// sync-pitcher-zone-hr.mjs's byZone — the Pitcher Matchup modal's Strike Zone heatmap
+// used to only be able to show where the PITCHER is weak; this lets it show where the
+// BATTER actually does damage too, so the two heatmaps can be compared side by side
+// instead of relying on the heuristic Zone Fit score alone.
+//
 // Same Statcast Search CSV source as the pitcher script (one row per pitch, not
 // pre-aggregated), just player_type=batter/batters_lookup[] instead of pitcher.
 // Scope: today's active-roster position players across every team playing today,
@@ -124,29 +130,42 @@ function batterSearchURL(batterId) {
   return `${SEARCH_BASE}?${params.toString()}`;
 }
 
-// Real per-pitch-type HR count only -- unlike sync-pitcher-zone-hr.mjs this doesn't
-// also compute strike-zone location data, since nothing in the UI currently reads a
-// batter-side zone breakdown (the Strike Zone heatmap is pitcher-scoped). Keeping
-// this script to just what's actually consumed avoids the extra per-pitch zone/wOBA
-// aggregation work for a result nothing uses yet.
-async function buildBatterHRByPitch(batterId, name) {
+// Real per-pitch-type HR count, plus real per-location wOBA (byZone) -- the batter-side
+// counterpart to sync-pitcher-zone-hr.mjs's byZone, which the Pitcher Matchup modal's
+// Strike Zone heatmap used to only be able to show for the PITCHER. Same aggregation
+// (woba_value/woba_denom summed per zone), just scoped to this batter's own at-bats
+// instead of what he allowed.
+async function buildBatterZoneHR(batterId, name) {
   const csv = await fetchText(batterSearchURL(batterId));
   const rows = parseCSV(csv);
   if (!rows.length) return null;
   const sample = rows[0];
-  if (!('pitch_type' in sample) || !('events' in sample)) {
+  if (!('pitch_type' in sample) || !('events' in sample) || !('zone' in sample)) {
     throw new Error(`unexpected CSV columns for ${name} (${batterId}) — got [${Object.keys(sample).join(', ')}]`);
   }
   // Every pitch type that shows up at all gets an entry (starting at 0), so a genuine
   // zero-HR pitch type is recorded as a confirmed 0, not left looking like unknown data.
   const hrByPitch = {};
+  const zoneAgg = {}; // zone -> { wobaSum, denomSum }
   for (const raw of rows) {
     const p = extractPitchRow(raw);
     if (!p) continue;
     if (!(p.pitchName in hrByPitch)) hrByPitch[p.pitchName] = 0;
     if (p.isHomeRun) hrByPitch[p.pitchName]++;
+    if (p.zone && p.wobaValue != null && p.wobaDenom != null) {
+      if (!zoneAgg[p.zone]) zoneAgg[p.zone] = { wobaSum: 0, denomSum: 0 };
+      zoneAgg[p.zone].wobaSum += p.wobaValue;
+      zoneAgg[p.zone].denomSum += p.wobaDenom;
+    }
   }
-  return hrByPitch;
+  // Named `woba` (not `wobaAgainst`, which sync-pitcher-zone-hr.mjs uses) since this is
+  // the batter's OWN production in that zone, not something happening "against" him.
+  const byZone = {};
+  for (const z of Object.keys(zoneAgg)) {
+    const { wobaSum, denomSum } = zoneAgg[z];
+    if (denomSum > 0) byZone[z] = { woba: +(wobaSum / denomSum).toFixed(3) };
+  }
+  return { hrByPitch, byZone: Object.keys(byZone).length ? byZone : null };
 }
 
 async function main() {
@@ -168,8 +187,8 @@ async function main() {
   let updated = 0, failed = 0;
   for (const [id, name] of ids) {
     try {
-      const hrByPitch = await buildBatterHRByPitch(id, name);
-      if (!hrByPitch) { console.warn(`No Statcast rows for ${name} (${id}) — skipping.`); continue; }
+      const result = await buildBatterZoneHR(id, name);
+      if (!result) { console.warn(`No Statcast rows for ${name} (${id}) — skipping.`); continue; }
       const entry = batterStatcast.players[id];
       if (entry?.seasonPitchTypeStats?.length) {
         entry.seasonPitchTypeStats.forEach(p => {
@@ -177,14 +196,23 @@ async function main() {
           // overwrite it when this pitch type actually showed up in the search results
           // -- same "absent stays unknown, present-with-zero becomes a confirmed 0"
           // distinction as sync-pitcher-zone-hr.mjs.
-          const hr = hrByPitch[p.name];
+          const hr = result.hrByPitch[p.name];
           if (hr != null) p.homeRuns = hr;
         });
         updated++;
       }
-      // No entry / no seasonPitchTypeStats means this player isn't in the pitch-arsenal
-      // leaderboard at all yet (too few tracked pitches this season) -- nothing to merge
-      // the HR counts into, so skip rather than fabricate a row.
+      // Unlike the HR-by-pitch merge above, byZone doesn't need an existing leaderboard
+      // entry to attach to -- same "create the entry if it's missing" pattern as
+      // sync-pitcher-zone-hr.mjs's byZone merge, so a batter with too few tracked pitches
+      // for the pitch-arsenal leaderboard can still get a zone heatmap.
+      if (result.byZone) {
+        batterStatcast.players[id] = batterStatcast.players[id] || { seasonPitchTypeStats: [] };
+        batterStatcast.players[id].byZone = result.byZone;
+        if (!entry?.seasonPitchTypeStats?.length) updated++;
+      }
+      // No entry / no seasonPitchTypeStats and no byZone means this player isn't in the
+      // pitch-arsenal leaderboard at all yet and had no usable zone rows either --
+      // nothing to merge, so skip rather than fabricate a row.
     } catch (e) {
       failed++;
       console.error(`Batter zone/HR sync failed for ${name} (${id}):`, e.message);
@@ -207,4 +235,4 @@ if (isMain) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { batterSearchURL, buildBatterHRByPitch, todaysActiveBatterIds, main };
+export { batterSearchURL, buildBatterZoneHR, todaysActiveBatterIds, main };
