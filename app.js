@@ -5470,7 +5470,15 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
 
     const chronological = combined.slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
     const mostRecentFirst = combined.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    const maxDist = Math.max(...combined.map(n => n.distance || 0), 1);
+    // Every event here is already 375+ ft (near-misses) or a real HR, so real
+    // distances cluster tightly (usually 375-430ft) -- scaling bar height off a
+    // fixed 0-to-max ratio made every bar land within a few px of full height,
+    // barely readable as a "chart". Scaling off this list's own min-max range
+    // instead spreads the same real distances across the full 14-56px height,
+    // so the shortest/longest actually look shortest/longest.
+    const distances = combined.map(n => n.distance || 0);
+    const minDist = Math.min(...distances), maxDist = Math.max(...distances);
+    const distRange = maxDist - minDist;
 
     // Left-to-right strip: one bar per event, height scaled to distance (taller
     // = further), gold for a real HR and blue-gray for a near-miss. Hovering a
@@ -5478,7 +5486,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     const timeline = `
       <div style="display:flex;align-items:flex-end;gap:5px;height:64px;padding:4px 2px;overflow-x:auto">
         ${chronological.map(n => {
-          const h = Math.max(14, Math.round((n.distance / maxDist) * 56));
+          const h = distRange > 0 ? Math.round(14 + ((n.distance - minDist) / distRange) * 42) : 56;
           const color = n.kind === 'hr' ? '#f6c343' : '#5b8def';
           const title = `${n.kind === 'hr' ? 'HR' : 'Near-miss'} — ${Math.round(n.distance)} ft, ${n.date}${n.matchup ? ` (${n.matchup})` : ''}`;
           return `<div style="flex:0 0 auto;width:14px;height:${h}px;border-radius:3px 3px 1px 1px;background:${color};opacity:${n.kind === 'hr' ? 1 : 0.6}" title="${title}"></div>`;
