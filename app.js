@@ -11439,8 +11439,23 @@ if (document.readyState === 'loading') {
   window.toggleHRPFilterMenu = function(ev){
     if(ev) ev.stopPropagation();
     var menu=document.getElementById('hrp-filters-menu');
+    var trigger=document.getElementById('hrp-filters-btn');
     if(!menu) return;
     var opening = menu.style.display==='none' || !menu.style.display;
+    if(opening && trigger){
+      // position:fixed (set in index.html), positioned here in JS off the trigger's
+      // real screen rect -- .dr-filter-row has overflow-x:auto for its mobile
+      // horizontal scroll, which per spec also forces overflow-y to compute as
+      // auto. A position:absolute child extending below the row's own box was
+      // being clipped from hit-testing there, so on mobile the menu looked open
+      // but taps on it landed on whatever was underneath instead. position:fixed
+      // escapes that ancestor's overflow clipping entirely.
+      var rect = trigger.getBoundingClientRect();
+      var menuWidth = 220;
+      var left = Math.min(rect.left, window.innerWidth - menuWidth - 8);
+      menu.style.top = (rect.bottom + 6) + 'px';
+      menu.style.left = Math.max(8, left) + 'px';
+    }
     menu.style.display = opening ? 'block' : 'none';
   };
   // Single persistent listener (installed once, not per-open) closes the
