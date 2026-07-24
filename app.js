@@ -1663,6 +1663,15 @@ let recentHRs = {};
 let recentHRsLoaded = false;
 let recentHRsPromise = null;
 
+// Real home-run landing spots (feet from home plate) for this season, written
+// by scripts/sync-batter-zone-hr.mjs off the same per-batter Statcast Search CSV
+// it already fetches (hc_x/hc_y columns, converted via the community-standard
+// hit-coordinate transform). Keyed by batter MLB ID (string). Powers the
+// matchup modal's Home Run Spray Chart section.
+let batterHRSpray = {};
+let batterHRSprayLoaded = false;
+let batterHRSprayPromise = null;
+
 // Rolling pitch metrics (velocity/usage/whiff, last 3 starts vs season) — loaded
 // from data/pitcher-rolling.json, written by scripts/sync-pitcher-rolling.mjs.
 // Keyed by pitcher MLB ID (string). Empty object = file not yet synced or this
@@ -3581,6 +3590,49 @@ const stadiumCoords = {
   WSH:{lat:38.873,lon:-77.007,name:'Nationals Park',dome:false},
 };
 
+// Real, publicly-listed outfield wall distances (feet), 5-point convention
+// (LF line / LF-CF gap / straightaway CF / CF-RF gap / RF line) -- powers the
+// Home Run Spray Chart's per-park field shape. Same keys as stadiumCoords
+// above. From general knowledge of widely-published team-listed dimensions,
+// not something this sandbox can live-verify against an official source, and
+// a team can adjust its fences between seasons -- treat as "best known," not
+// guaranteed exact. The chart draws a smooth curve through these 5 points, a
+// schematic approximation, not a traced outline of quirky real wall jogs
+// (the Green Monster's exact notch, Minute Maid's hill, etc.).
+const PARK_DIMENSIONS = {
+  ARI:{lf:330,lfcf:376,cf:407,cfrf:376,rf:335},
+  ATL:{lf:335,lfcf:375,cf:400,cfrf:375,rf:325},
+  BAL:{lf:333,lfcf:364,cf:410,cfrf:373,rf:318},
+  BOS:{lf:310,lfcf:379,cf:390,cfrf:420,rf:302},
+  CHC:{lf:355,lfcf:368,cf:400,cfrf:368,rf:353},
+  CWS:{lf:330,lfcf:375,cf:400,cfrf:375,rf:335},
+  CIN:{lf:328,lfcf:379,cf:404,cfrf:370,rf:325},
+  CLE:{lf:325,lfcf:370,cf:405,cfrf:375,rf:325},
+  COL:{lf:347,lfcf:390,cf:415,cfrf:375,rf:350},
+  DET:{lf:345,lfcf:370,cf:420,cfrf:365,rf:330},
+  HOU:{lf:315,lfcf:362,cf:409,cfrf:373,rf:326},
+  KC: {lf:330,lfcf:375,cf:410,cfrf:375,rf:330},
+  LAA:{lf:330,lfcf:374,cf:396,cfrf:372,rf:330},
+  LAD:{lf:330,lfcf:375,cf:395,cfrf:375,rf:330},
+  MIA:{lf:344,lfcf:386,cf:400,cfrf:386,rf:335},
+  MIL:{lf:344,lfcf:371,cf:400,cfrf:374,rf:345},
+  MIN:{lf:339,lfcf:377,cf:404,cfrf:367,rf:328},
+  NYM:{lf:335,lfcf:358,cf:408,cfrf:375,rf:330},
+  NYY:{lf:318,lfcf:399,cf:408,cfrf:385,rf:314},
+  ATH:{lf:330,lfcf:388,cf:400,cfrf:388,rf:330},
+  OAK:{lf:330,lfcf:388,cf:400,cfrf:388,rf:330},
+  PHI:{lf:329,lfcf:374,cf:401,cfrf:369,rf:330},
+  PIT:{lf:325,lfcf:389,cf:399,cfrf:375,rf:320},
+  SD: {lf:336,lfcf:390,cf:396,cfrf:391,rf:322},
+  SF: {lf:339,lfcf:364,cf:399,cfrf:415,rf:309},
+  SEA:{lf:331,lfcf:378,cf:401,cfrf:381,rf:326},
+  STL:{lf:336,lfcf:375,cf:400,cfrf:375,rf:335},
+  TB: {lf:315,lfcf:370,cf:404,cfrf:370,rf:322},
+  TEX:{lf:329,lfcf:372,cf:407,cfrf:374,rf:326},
+  TOR:{lf:328,lfcf:375,cf:400,cfrf:375,rf:328},
+  WSH:{lf:336,lfcf:377,cf:402,cfrf:370,rf:335},
+};
+
 // Team primary brand colors — purely cosmetic (a thin accent edge on each Game
 // Projections card so the list reads faster at a glance), not tied to any stat.
 const teamColors = {
@@ -4571,7 +4623,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
       fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}/stats?stats=statSplits&group=pitching&sitCodes=vl,vr&season=2026`).catch(() => null)
     ]);
     const todayCDT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadPitcherRolling(), loadSituationalProps(), loadPropMarketOdds(todayCDT), loadBullpenFatigue(), loadParkFactors(), getTodaySchedule('team').catch(() => [])]);
+    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadBatterHRSpray(), loadPitcherRolling(), loadSituationalProps(), loadPropMarketOdds(todayCDT), loadBullpenFatigue(), loadParkFactors(), getTodaySchedule('team').catch(() => [])]);
     const todayGames = preloadResults[preloadResults.length - 1];
 
     const batterPerson = batterData.people?.[0] || {};
@@ -4587,6 +4639,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
     const pitcherProfile = pitcherStatcast[String(pitcherId)] || null;
     const nearHRList = nearHRs[String(batterId)] || null;
     const recentHRList = recentHRs[String(batterId)] || null;
+    const hrSprayList = batterHRSpray[String(batterId)] || null;
     const rollingProfile = pitcherRolling[String(pitcherId)] || null;
     const situationalProfile = situationalProps[String(batterId)] || null;
 
@@ -4599,16 +4652,25 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
     const pitcherTeamAbbr = pitcherPerson.currentTeam?.abbreviation || null;
     const bullpenInfo = pitcherTeamAbbr ? (bullpenFatigue[pitcherTeamAbbr] || null) : null;
     let parkHrIndex = null;
+    // Also drives the Home Run Spray Chart's field shape -- whichever team is
+    // hosting today's actual matchup between these two teams, same lookup as
+    // the park HR factor above. Falls back to the batter's own team (his home
+    // park) when there's no confirmed game today between these two teams, so
+    // the spray chart still has a real park shape to draw rather than none.
+    let todayParkAbbr = batterTeamAbbr;
     if (batterTeamAbbr && pitcherTeamAbbr && Array.isArray(todayGames)) {
       const game = todayGames.find(g => {
         const away = g.teams?.away?.team?.abbreviation, home = g.teams?.home?.team?.abbreviation;
         return (away === batterTeamAbbr && home === pitcherTeamAbbr) || (away === pitcherTeamAbbr && home === batterTeamAbbr);
       });
       const homeAbbr = game?.teams?.home?.team?.abbreviation;
-      if (homeAbbr && Number.isFinite(parkFactors[homeAbbr])) parkHrIndex = parkFactors[homeAbbr];
+      if (homeAbbr) {
+        todayParkAbbr = homeAbbr;
+        if (Number.isFinite(parkFactors[homeAbbr])) parkHrIndex = parkFactors[homeAbbr];
+      }
     }
 
-    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, rollingProfile, situationalProfile, bullpenInfo, parkHrIndex });
+    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, hrSprayList, todayParkAbbr, rollingProfile, situationalProfile, bullpenInfo, parkHrIndex });
   } catch(e) {
     body.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
@@ -4632,7 +4694,7 @@ function animateCountUp(el, endValue, decimals = 0, duration = 700) {
   requestAnimationFrame(step);
 }
 
-function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, rollingProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null }) {
+function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, hrSprayList=null, todayParkAbbr=null, rollingProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null }) {
   function fv(v, dec=3) {
     if (v==null||v===''||v==='---') return '–';
     const n = parseFloat(v); return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0(\.)/, '$1');
@@ -5560,6 +5622,82 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       </div>`;
   })();
 
+  // ── Home run spray chart — real landing spots for the season ────────────
+  // hc_x/hc_y (Statcast hit-coordinate columns) converted to approximate feet
+  // from home plate by sync-batter-zone-hr.mjs, off the same per-batter CSV it
+  // already fetches. Field shape drawn from PARK_DIMENSIONS[todayParkAbbr] --
+  // real, publicly-listed wall distances for today's actual host park (falls
+  // back to the batter's own home park when there's no confirmed game today,
+  // and to a generic wedge if neither is known) -- a straight-line pentagon
+  // through 5 known real points (LF/LF-CF/CF/CF-RF/RF), not a traced outline
+  // of quirky real wall jogs. See PARK_DIMENSIONS's own comment for sourcing.
+  const hrSprayChartHTML = (() => {
+    const shortName = batterName.split(' ').pop();
+    if (hrSprayList == null) return `
+      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">Home run spray chart for ${shortName} hasn't synced yet.</div>`;
+    if (!hrSprayList.length) return `
+      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">No real home runs tracked yet for ${shortName} this season.</div>`;
+
+    const W = 400, H = 300;
+    const plateX = W / 2, plateY = H - 18;
+    const dims = PARK_DIMENSIONS[todayParkAbbr] || null;
+
+    // Scale to fit whichever needs more room: the real wall's deepest point,
+    // or the batter's own longest real HR (so a shot that would clear this
+    // park's fence visually reads as clearing it, not clipped inside it).
+    const wallMax = dims ? Math.max(dims.lf, dims.lfcf, dims.cf, dims.cfrf, dims.rf) : 420;
+    const hrMax = hrSprayList.reduce((m, s) => Math.max(m, s.distance || 0, s.yFt || 0), 0);
+    const scale = (plateY - 32) / Math.max(wallMax, hrMax, 350);
+    const toXY = (angleDeg, distFt) => {
+      const rad = angleDeg * Math.PI / 180;
+      return { x: plateX + Math.sin(rad) * distFt * scale, y: plateY - Math.cos(rad) * distFt * scale };
+    };
+
+    let wallPath, wallLabels = '', foulLineLabels = '';
+    if (dims) {
+      const pts = [
+        { a: -45, d: dims.lf }, { a: -22.5, d: dims.lfcf }, { a: 0, d: dims.cf },
+        { a: 22.5, d: dims.cfrf }, { a: 45, d: dims.rf },
+      ].map(p => ({ ...toXY(p.a, p.d), d: p.d }));
+      wallPath = `M ${plateX},${plateY} L ${pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L ')} Z`;
+      wallLabels = pts.map(p => `<text x="${p.x.toFixed(1)}" y="${(p.y - 6).toFixed(1)}" font-size="9" fill="var(--muted)" text-anchor="middle">${p.d}</text>`).join('');
+      foulLineLabels = `
+        <text x="${(pts[0].x - 6).toFixed(1)}" y="${(pts[0].y + 10).toFixed(1)}" font-size="9" fill="var(--muted)" text-anchor="end">LF</text>
+        <text x="${(pts[4].x + 6).toFixed(1)}" y="${(pts[4].y + 10).toFixed(1)}" font-size="9" fill="var(--muted)" text-anchor="start">RF</text>`;
+    } else {
+      wallPath = `M ${plateX},${plateY} L 45,75 Q ${plateX},18 ${W - 45},75 Z`;
+      foulLineLabels = `
+        <text x="35" y="68" font-size="10" fill="var(--muted)" text-anchor="end">LF</text>
+        <text x="${W - 35}" y="68" font-size="10" fill="var(--muted)" text-anchor="start">RF</text>`;
+    }
+
+    const dots = hrSprayList.map(s => {
+      const rawX = plateX + (s.xFt || 0) * scale;
+      const rawY = plateY - (s.yFt || 0) * scale;
+      const cx = Math.max(8, Math.min(W - 8, rawX));
+      const cy = Math.max(8, Math.min(plateY - 4, rawY));
+      const title = `${Math.round(s.distance || 0)} ft${s.exitVelo != null ? ` · ${s.exitVelo.toFixed(1)} mph` : ''}${s.launchAngle != null ? ` · ${Math.round(s.launchAngle)}° launch` : ''}${s.date ? ` — ${s.date}` : ''}${s.matchup ? ` (${s.matchup})` : ''}`;
+      return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5.5" fill="#f6c343" fill-opacity=".88" stroke="#0a0e1a" stroke-width="1.25"><title>${title}</title></circle>`;
+    }).join('');
+
+    const longest = hrSprayList.slice().sort((a, b) => (b.distance || 0) - (a.distance || 0))[0];
+    const avgDist = Math.round(hrSprayList.reduce((s, n) => s + (n.distance || 0), 0) / hrSprayList.filter(n => n.distance != null).length) || null;
+    const parkName = dims ? (stadiumCoords[todayParkAbbr]?.name || todayParkAbbr) : null;
+
+    return `
+      <div class="vuln-box" style="margin-top:10px">
+        <div class="vuln-title">🎯 HOME RUN SPRAY CHART <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(${hrSprayList.length} real HR${hrSprayList.length === 1 ? '' : 's'} this season${parkName ? ` · ${parkName}` : ''})</span></div>
+        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%;max-width:360px;display:block;margin:6px auto;overflow:visible">
+          <path d="${wallPath}" fill="#0d1a12" stroke="rgba(90,180,120,.32)" stroke-width="1.5"/>
+          ${wallLabels}
+          ${foulLineLabels}
+          <rect x="${plateX - 4}" y="${plateY - 3}" width="8" height="7" fill="#e8e8e8" transform="rotate(45 ${plateX} ${plateY})"/>
+          ${dots}
+        </svg>
+        <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:-2px">${longest ? `Longest: ${Math.round(longest.distance || 0)} ft` : ''}${avgDist ? ` · Avg: ${avgDist} ft` : ''} · ${dims ? `real ${parkName} wall distances (ft), best-known listed values` : 'field shape simplified — no park data for this matchup'}</div>
+      </div>`;
+  })();
+
   // ── Situational true probability vs market implied probability ──────────
   // "True probability" here is deliberately NOT the same number as hrProb
   // elsewhere on the site (that's a blended-season-rate formula) — this is
@@ -5651,6 +5789,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         <strong style="color:var(--text)">How to read this:</strong> batting average can lie — a hitter can smash the ball all week straight into gloves, or bloop his way to a lucky hot streak. These numbers look at the swings themselves: how hard he's hitting the ball and where it's going. A green <strong style="color:var(--green)">▲ due</strong> tag means his swings have been better than his results — good things may be coming. An orange <strong style="color:var(--accent2)">▼ running hot</strong> tag means the opposite: the results have been better than the swings, and he may cool off.
       </div>
       ${recentContactHTML}
+      ${hrSprayChartHTML}
       ${edgeHTML}
     </div>`;
 
@@ -5939,6 +6078,25 @@ async function loadRecentHRs(force=false) {
     return recentHRs;
   })();
   return recentHRsPromise;
+}
+// Same pattern as loadNearHRs()/loadRecentHRs() above — data/batter-hr-spray.json,
+// written by scripts/sync-batter-zone-hr.mjs.
+async function loadBatterHRSpray(force=false) {
+  if (batterHRSprayLoaded && !force) return batterHRSpray;
+  if (batterHRSprayPromise && !force) return batterHRSprayPromise;
+  batterHRSprayPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/batter-hr-spray.json`);
+      const players = data.players || {};
+      batterHRSpray = {};
+      Object.keys(players).forEach(id => { batterHRSpray[String(id)] = players[id]; });
+    } catch(e) {
+      batterHRSpray = {};
+    }
+    batterHRSprayLoaded = true;
+    return batterHRSpray;
+  })();
+  return batterHRSprayPromise;
 }
 
 // "Last, First" (Baseball Savant's format, the only name source available for

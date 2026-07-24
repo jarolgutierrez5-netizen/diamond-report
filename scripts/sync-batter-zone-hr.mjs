@@ -16,6 +16,17 @@
 // BATTER actually does damage too, so the two heatmaps can be compared side by side
 // instead of relying on the heuristic Zone Fit score alone.
 //
+// Also now extracts a real home-run spray chart (hc_x/hc_y hit-coordinate columns,
+// present on every row of this same CSV, home_run events only) off the exact same
+// fetch — data/batter-hr-spray.json, read by the matchup modal. hc_x/hc_y are
+// converted to approximate feet-from-home-plate via the community-standard transform
+// (x_ft=(hc_x-125.42)*2.5, y_ft=(198.27-hc_y)*2.5 — the same one pybaseball/baseballr
+// and most public Statcast spray-chart tooling use), not something this script can
+// verify against a live response in this sandbox. Written to its own file (not merged
+// into batter-pitch-type-season.json like byZone) and read+merged across runs, since
+// this only ever covers TODAY's active batters but a season's worth of home runs
+// shouldn't disappear from a player's chart on a day he isn't in a lineup.
+//
 // Same Statcast Search CSV source as the pitcher script (one row per pitch, not
 // pre-aggregated), just player_type=batter/batters_lookup[] instead of pitcher.
 // Scope: today's active-roster position players across every team playing today,
@@ -45,6 +56,7 @@ import { extractPitchRow } from './sync-pitcher-zone-hr.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const BATTER_STATCAST_PATH = path.join(DATA_DIR, 'batter-pitch-type-season.json');
+const HR_SPRAY_PATH = path.join(DATA_DIR, 'batter-hr-spray.json');
 const SEASON = new Date().getFullYear();
 const MLB_API = 'https://statsapi.mlb.com/api/v1';
 const SEARCH_BASE = 'https://baseballsavant.mlb.com/statcast_search/csv';
@@ -147,6 +159,8 @@ async function buildBatterZoneHR(batterId, name) {
   // zero-HR pitch type is recorded as a confirmed 0, not left looking like unknown data.
   const hrByPitch = {};
   const zoneAgg = {}; // zone -> { wobaSum, denomSum }
+  const hrSpray = [];
+  const hasHitCoords = 'hc_x' in sample && 'hc_y' in sample;
   for (const raw of rows) {
     const p = extractPitchRow(raw);
     if (!p) continue;
@@ -157,6 +171,27 @@ async function buildBatterZoneHR(batterId, name) {
       zoneAgg[p.zone].wobaSum += p.wobaValue;
       zoneAgg[p.zone].denomSum += p.wobaDenom;
     }
+    // hc_x/hc_y (hit-coordinate columns) are on every row of this same CSV, not just
+    // extractPitchRow()'s subset -- read them straight off the raw row. Skipped
+    // entirely (not just per-row) if the CSV doesn't carry these columns at all,
+    // rather than silently writing an empty spray chart for every batter.
+    if (hasHitCoords && raw.events === 'home_run') {
+      const hcX = Number(raw.hc_x), hcY = Number(raw.hc_y);
+      if (Number.isFinite(hcX) && Number.isFinite(hcY)) {
+        // Community-standard hc_x/hc_y -> feet-from-home-plate transform (used by
+        // pybaseball, baseballr, and most public Statcast spray-chart tooling) --
+        // not something this script can verify against a live response here.
+        hrSpray.push({
+          date: raw.game_date || null,
+          xFt: +(((hcX - 125.42) * 2.5).toFixed(1)),
+          yFt: +(((198.27 - hcY) * 2.5).toFixed(1)),
+          distance: Number.isFinite(Number(raw.hit_distance_sc)) ? Number(raw.hit_distance_sc) : null,
+          exitVelo: Number.isFinite(Number(raw.launch_speed)) ? Number(raw.launch_speed) : null,
+          launchAngle: Number.isFinite(Number(raw.launch_angle)) ? Number(raw.launch_angle) : null,
+          matchup: [raw.away_team, raw.home_team].filter(Boolean).join(' @ ') || null,
+        });
+      }
+    }
   }
   // Named `woba` (not `wobaAgainst`, which sync-pitcher-zone-hr.mjs uses) since this is
   // the batter's OWN production in that zone, not something happening "against" him.
@@ -165,7 +200,11 @@ async function buildBatterZoneHR(batterId, name) {
     const { wobaSum, denomSum } = zoneAgg[z];
     if (denomSum > 0) byZone[z] = { woba: +(wobaSum / denomSum).toFixed(3) };
   }
-  return { hrByPitch, byZone: Object.keys(byZone).length ? byZone : null };
+  return {
+    hrByPitch,
+    byZone: Object.keys(byZone).length ? byZone : null,
+    hrSpray: hasHitCoords ? hrSpray : null,
+  };
 }
 
 async function main() {
@@ -181,10 +220,23 @@ async function main() {
   }
   batterStatcast.players = batterStatcast.players || {};
 
+  // Read+merge, not overwrite -- this run only ever covers today's active batters,
+  // but a season's worth of home runs shouldn't disappear from a player's spray
+  // chart on a day he isn't in a lineup. Each batter's entry IS fully replaced when
+  // he does get re-fetched (a batch of home_run rows straight from this season's
+  // real data, not something to merge event-by-event).
+  let hrSprayData;
+  try {
+    hrSprayData = JSON.parse(await readFile(HR_SPRAY_PATH, 'utf8'));
+  } catch (e) {
+    hrSprayData = { season: SEASON, players: {} };
+  }
+  hrSprayData.players = hrSprayData.players || {};
+
   const ids = await todaysActiveBatterIds();
   console.log(`Found ${ids.size} active-roster position player(s) for today's games.`);
 
-  let updated = 0, failed = 0;
+  let updated = 0, failed = 0, spraySynced = 0;
   for (const [id, name] of ids) {
     try {
       const result = await buildBatterZoneHR(id, name);
@@ -213,6 +265,10 @@ async function main() {
       // No entry / no seasonPitchTypeStats and no byZone means this player isn't in the
       // pitch-arsenal leaderboard at all yet and had no usable zone rows either --
       // nothing to merge, so skip rather than fabricate a row.
+      if (result.hrSpray != null) {
+        hrSprayData.players[id] = result.hrSpray;
+        if (result.hrSpray.length) spraySynced++;
+      }
     } catch (e) {
       failed++;
       console.error(`Batter zone/HR sync failed for ${name} (${id}):`, e.message);
@@ -222,10 +278,15 @@ async function main() {
     await new Promise(r => setTimeout(r, 500));
   }
 
-  console.log(`Updated ${updated} batter(s), ${failed} failed, out of ${ids.size} active-roster position players.`);
+  console.log(`Updated ${updated} batter(s), ${failed} failed, out of ${ids.size} active-roster position players. ${spraySynced} with at least one real home-run spray point today.`);
   if (updated > 0) {
     batterStatcast.generatedAt = new Date().toISOString();
     await writeFile(BATTER_STATCAST_PATH, JSON.stringify(batterStatcast, null, 2) + '\n');
+  }
+  if (spraySynced > 0 || Object.keys(hrSprayData.players).length) {
+    hrSprayData.generatedAt = new Date().toISOString();
+    hrSprayData.season = SEASON;
+    await writeFile(HR_SPRAY_PATH, JSON.stringify(hrSprayData, null, 2) + '\n');
   }
   if (failed > 0 && updated === 0) process.exitCode = 1;
 }

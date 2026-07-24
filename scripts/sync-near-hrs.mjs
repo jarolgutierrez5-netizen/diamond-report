@@ -129,6 +129,18 @@ function savantVideoURL(playId) {
 const GF_BASE = 'https://baseballsavant.mlb.com/gf';
 const gfCache = new Map(); // game_pk -> Promise<candidate[]>
 
+// Every real run so far has resolved 0 video links out of hundreds of events,
+// with the "no play_id-bearing objects found" warning below never firing --
+// meaning candidates ARE being found (the fetch, JSON.parse, and play_id walk
+// all work), but the inning+abNumber+batter match in resolveEventVideo() never
+// lands on exactly one. That points at a field-shape mismatch, most likely
+// `batter`: this sandbox cannot reach baseballsavant.mlb.com to confirm live
+// (same restriction noted throughout this file), so rather than keep guessing
+// blind, log the raw shape of one real candidate the first time a run finds
+// any -- the GitHub Actions runner CAN reach Savant, so its own log output
+// becomes the live verification this sandbox can't do.
+let sampleCandidateLogged = false;
+
 // context carries inning/abNumber/batter down from an ancestor node (e.g. a
 // plate-appearance object) to descendants that don't repeat those fields on
 // the exact object the play_id lives on (e.g. a nested pitch/event entry) --
@@ -140,9 +152,16 @@ function collectPlayIdEntries(node, out, depth = 0, context = {}) {
     for (const item of node) collectPlayIdEntries(item, out, depth + 1, context);
     return;
   }
+  // at_bat_number added alongside ab_number/atBatIndex -- the Statcast Search
+  // CSV this script's own events come from uses that exact snake_case name,
+  // so it's a reasonable guess the gf feed might too, not just MLB StatsAPI's
+  // atBatIndex convention.
   const inning = node.inning ?? node.about?.inning ?? context.inning ?? null;
-  const abNumber = node.ab_number ?? node.atBatIndex ?? node.about?.atBatIndex ?? context.abNumber ?? null;
-  const batter = node.batter ?? node.matchup?.batter?.id ?? context.batter ?? null;
+  const abNumber = node.ab_number ?? node.at_bat_number ?? node.atBatIndex ?? node.about?.atBatIndex ?? context.abNumber ?? null;
+  // batter kept RAW here (not normalized) so context propagation and the
+  // logged sample both show exactly what the feed actually sent -- shape
+  // normalization happens once, at compare time, in normalizedBatterId().
+  const batter = node.batter ?? node.batter_id ?? node.matchup?.batter?.id ?? context.batter ?? null;
   const nextContext = { inning, abNumber, batter };
 
   const playId = node.play_id || node.playId;
@@ -161,6 +180,9 @@ async function fetchGameVideoCandidates(gamePk) {
         collectPlayIdEntries(data, candidates, 0);
         if (!candidates.length) {
           console.error(`gf feed for game_pk=${gamePk}: no play_id-bearing objects found — schema may differ from what this script assumes. Top-level keys: [${Object.keys(data).join(', ')}]`);
+        } else if (!sampleCandidateLogged) {
+          sampleCandidateLogged = true;
+          console.error(`[diagnostic] sample gf candidate (game_pk=${gamePk}): ${JSON.stringify(candidates[0])}`);
         }
         return candidates;
       } catch (e) {
@@ -172,18 +194,36 @@ async function fetchGameVideoCandidates(gamePk) {
   return gfCache.get(gamePk);
 }
 
+// Normalizes a candidate's raw batter field (which the real gf feed might
+// represent as a plain numeric id, a {id, ...} object, or possibly a name
+// string) down to a comparable numeric-id string, or null if it doesn't look
+// like an id at all. A non-null-but-unusable value (e.g. a name string, where
+// Number(raw) is NaN) is treated the same as null -- unknown, not a
+// disqualifying mismatch -- since a wrongly-shaped field silently vetoing an
+// otherwise-correct inning+abNumber match is exactly how this could produce
+// zero matches across hundreds of real events despite candidates existing.
+function normalizedBatterId(raw) {
+  if (raw == null) return null;
+  const val = (typeof raw === 'object') ? (raw.id ?? null) : raw;
+  if (val == null) return null;
+  const n = Number(val);
+  return Number.isFinite(n) ? String(n) : null;
+}
+
 // Resolves a videoUrl for one near-HR event in place, only when the
-// inning+at-bat+batter combination matches exactly one candidate from the
-// game's feed. Silent no-op (event keeps videoUrl:null) on anything less
-// than a certain match.
+// inning+at-bat combination matches exactly one candidate from the game's
+// feed (batter id, when it's usable, narrows further but never disqualifies
+// a match on its own -- see normalizedBatterId()). Silent no-op (event keeps
+// videoUrl:null) on anything less than a certain match.
 async function resolveEventVideo(event) {
   if (event._gamePk == null || event._inning == null || event._abNumber == null || event._batterId == null) return;
   const candidates = await fetchGameVideoCandidates(event._gamePk);
-  const matches = candidates.filter(c =>
-    String(c.inning) === String(event._inning) &&
-    String(c.abNumber) === String(event._abNumber) &&
-    (c.batter == null || String(c.batter) === String(event._batterId))
-  );
+  const matches = candidates.filter(c => {
+    if (String(c.inning) !== String(event._inning)) return false;
+    if (String(c.abNumber) !== String(event._abNumber)) return false;
+    const cBatter = normalizedBatterId(c.batter);
+    return cBatter == null || cBatter === String(event._batterId);
+  });
   if (matches.length === 1) event.videoUrl = savantVideoURL(matches[0].playId);
 }
 
@@ -359,4 +399,4 @@ if (isMain) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { batterSearchURL, buildNearHRs, buildRecentHRs, savantVideoURL, collectPlayIdEntries, resolveEventVideo, resolveVideosAndStrip, main };
+export { batterSearchURL, buildNearHRs, buildRecentHRs, savantVideoURL, collectPlayIdEntries, resolveEventVideo, resolveVideosAndStrip, normalizedBatterId, main };
