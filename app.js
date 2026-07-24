@@ -5771,6 +5771,87 @@ async function loadNearHRs(force=false) {
   })();
   return nearHRsPromise;
 }
+
+// "Last, First" (Baseball Savant's format, the only name source available for
+// the near-HR board since data/near-hrs.json itself has no name field) ->
+// "First Last" for display consistency with every other name on the site.
+function drFormatNearHRName(rawName) {
+  if (!rawName) return '';
+  const parts = String(rawName).split(',');
+  if (parts.length < 2) return rawName;
+  return `${parts[1].trim()} ${parts[0].trim()}`;
+}
+
+// Renders the Near HRs board (Home Runs pane, third panel) — one card per
+// batter with 1+ warning-track fly outs in their last 10 games, sorted by
+// event count (most near-misses first) then longest single distance.
+// Reuses the same .vuln-item row markup as the matchup modal's nearHRHTML
+// block, including the conditional "Watch ▸" video link.
+function renderNearHRs() {
+  const el = document.getElementById('near-hrs-content');
+  if (!el) return;
+  const countEl = document.getElementById('near-hrs-count');
+  const ids = Object.keys(nearHRs || {}).filter(id => Array.isArray(nearHRs[id]) && nearHRs[id].length);
+
+  if (!ids.length) {
+    el.innerHTML = `<div class="mu-empty" style="color:var(--muted)">No warning-track fly outs (375+ ft) in the last 10 games for tracked batters.</div>`;
+    if (countEl) countEl.style.display = 'none';
+    return;
+  }
+
+  const players = ids.map(id => {
+    const info = statcastHotHitters[id] || {};
+    return {
+      id,
+      name: drFormatNearHRName(info.name) || `Player ${id}`,
+      events: nearHRs[id].slice().sort((a, b) => (b.distance || 0) - (a.distance || 0))
+    };
+  }).filter(p => drMatchesSearch('nearhr', p.name));
+
+  players.sort((a, b) => b.events.length - a.events.length || (b.events[0]?.distance || 0) - (a.events[0]?.distance || 0));
+
+  if (!players.length) {
+    el.innerHTML = `<div class="mu-empty" style="color:var(--muted)">No players match your search.</div>`;
+    if (countEl) countEl.style.display = 'none';
+    return;
+  }
+
+  if (countEl) {
+    countEl.textContent = `${players.length} Player${players.length !== 1 ? 's' : ''}`;
+    countEl.style.cssText = 'background:var(--accent);color:white;font-family:Manrope,sans-serif;font-size:12px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;letter-spacing:.5px;flex-shrink:0';
+  }
+
+  const hs = id => id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_32,q_auto:best/v1/people/${id}/headshot/67/current` : '';
+
+  el.innerHTML = players.map(p => {
+    const rows = p.events.map(n => `
+      <div class="vuln-item">
+        <span class="vuln-icon">🚀</span>
+        <span style="color:var(--text)">
+          <strong>${Math.round(n.distance)} ft</strong>${n.exitVelo != null ? ` · ${n.exitVelo.toFixed(1)} mph` : ''}${n.launchAngle != null ? ` · ${Math.round(n.launchAngle)}° launch` : ''} — ${n.date}${n.matchup ? ` (${n.matchup})` : ''}${n.videoUrl ? ` · <a href="${n.videoUrl}" target="_blank" rel="noopener" style="color:var(--accent2)">Watch ▸</a>` : ''}
+        </span>
+      </div>`).join('');
+    return `<div class="stat-row" style="align-items:flex-start;flex-wrap:wrap">
+      <img src="${hs(p.id)}" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" alt="" loading="lazy" decoding="async">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">${p.name}</span>
+          <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">${p.events.length} near HR${p.events.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div style="margin-top:4px;display:flex;flex-direction:column;gap:2px">${rows}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+window.renderNearHRs = renderNearHRs;
+
+async function loadNearHRsBoard() {
+  try {
+    await Promise.all([loadNearHRs(), loadStatcastHotHitters()]);
+    renderNearHRs();
+  } catch(e) {}
+}
+window.loadNearHRsBoard = loadNearHRsBoard;
 // Same repo-fed-JSON-with-graceful-fallback pattern as loadNearHRs() above —
 // data/pitcher-rolling.json is keyed by pitcher ID already, so this just
 // normalizes the ID to a string for lookup consistency with the rest of the app.
@@ -10447,7 +10528,8 @@ if (document.readyState === 'loading') {
         loaded.hr = true;
         Promise.allSettled([
           (async()=>{ try { if (typeof window.loadHRPotentialWithRetry === 'function') return window.loadHRPotentialWithRetry(); } catch(e) {} })(),
-          (async()=>{ try { if (typeof window.loadHRsToday === 'function') return window.loadHRsToday(); } catch(e) {} })()
+          (async()=>{ try { if (typeof window.loadHRsToday === 'function') return window.loadHRsToday(); } catch(e) {} })(),
+          (async()=>{ try { if (typeof window.loadNearHRsBoard === 'function') return window.loadNearHRsBoard(); } catch(e) {} })()
         ]);
         return;
       }

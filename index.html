@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026072468">
+<link rel="stylesheet" href="styles.min.css?v=2026072469">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -503,6 +503,26 @@
         <div class="mu-empty" style="color:var(--muted)">Loading HRs from Projection…</div>
       </div>
     </div>
+
+    <div class="dr-panel dr-panel-fresh">
+      <div class="dr-panel-head">
+        <div>
+          <p class="section-title">🚀 Near <span>HRs</span></p>
+          <small>Warning-track fly outs (375+ ft) in each batter's last 10 games.</small>
+        </div>
+        <span id="near-hrs-count" class="dr-count-pill"></span>
+      </div>
+      <div class="dr-filter-row" style="padding:8px 12px 0">
+        <div class="dr-board-search-wrap">
+          <svg class="dr-icon dr-board-search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16 16l-3.8-3.8"/></svg>
+          <input type="text" id="nearhr-search-input" class="dr-board-search" placeholder="Search players…" oninput="drSetBoardSearch('nearhr',this.value,renderNearHRs)">
+          <button type="button" class="dr-board-search-clear" onclick="document.getElementById('nearhr-search-input').value='';drSetBoardSearch('nearhr','',renderNearHRs)" aria-label="Clear search">✕</button>
+        </div>
+      </div>
+      <div id="near-hrs-content" class="dr-panel-body dr-scroll-tall">
+        <div class="mu-empty"><span class="spin"></span>Loading near HRs…</div>
+      </div>
+    </div>
   </div>
 
   <div id="hr-compare-bar" style="display:none">
@@ -822,7 +842,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026072468" defer></script>
+<script src="app.min.js?v=2026072469" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
