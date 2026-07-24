@@ -950,15 +950,25 @@ function aggregateStatcastRows(rows) {
 }
 
 let statcastPowerCache = null;
+// Raw (non-aggregated) per-pitch-type rows, keyed the same way as statcastPowerCache --
+// built in the same read/parse pass as the aggregate above so this doesn't cost a second
+// file read. Needed by computeMatchupEdgeScore below, which (unlike battedBallPowerIndex)
+// needs the individual per-pitch-type AVG/SLG/xSLG rows, not a single pitches-weighted
+// blend across all of them.
+let batterPitchTypeRawCache = null;
 async function loadStatcastPowerIndex() {
   if (statcastPowerCache) return statcastPowerCache;
   statcastPowerCache = new Map();
+  batterPitchTypeRawCache = new Map();
   try {
     const raw = await readFile(STATCAST_PATH, 'utf8');
     const data = JSON.parse(raw);
     for (const [id, player] of Object.entries(data?.players || {})) {
       const agg = aggregateStatcastRows(player?.seasonPitchTypeStats);
       if (agg) statcastPowerCache.set(String(id), agg);
+      if (Array.isArray(player?.seasonPitchTypeStats) && player.seasonPitchTypeStats.length) {
+        batterPitchTypeRawCache.set(String(id), player.seasonPitchTypeStats);
+      }
     }
   } catch (e) {
     console.warn('Statcast power index: failed to load, HR scoring will use box-score rates only:', e.message);
@@ -987,20 +997,103 @@ async function loadStatcastHotHittersIndex() {
 }
 
 let pitcherStatcastPowerCache = null;
+// Raw byPitch arrays (name + usagePct per pitch type thrown) -- same "cache alongside the
+// aggregate, no second read" reasoning as batterPitchTypeRawCache above.
+let pitcherByPitchRawCache = null;
 async function loadPitcherStatcastPowerIndex() {
   if (pitcherStatcastPowerCache) return pitcherStatcastPowerCache;
   pitcherStatcastPowerCache = new Map();
+  pitcherByPitchRawCache = new Map();
   try {
     const raw = await readFile(PITCHER_STATCAST_PATH, 'utf8');
     const data = JSON.parse(raw);
     for (const [id, pitcher] of Object.entries(data?.pitchers || {})) {
       const agg = aggregateStatcastRows(pitcher?.byPitch);
       if (agg) pitcherStatcastPowerCache.set(String(id), agg);
+      if (Array.isArray(pitcher?.byPitch) && pitcher.byPitch.length) {
+        pitcherByPitchRawCache.set(String(id), pitcher.byPitch);
+      }
     }
   } catch (e) {
     console.warn('Pitcher Statcast power index: failed to load, HR scoring will use box-score rates only:', e.message);
   }
   return pitcherStatcastPowerCache;
+}
+
+// ── Matchup Edge (exact server-side port of app.js's computeMatchupEdgeScore) ──────
+// Usage-weighted average of how well a batter performs against each pitch type today's
+// opposing pitcher actually throws, hand-adjusted by the batter's real split vs that
+// pitcher's throwing hand -- the same 0-99 score shown as "MATCHUP EDGE" in the live
+// site's Pitcher Matchup modal and as a sortable stat on the HR Threats board. Not used
+// in scoreForMarket/eliteQualityScore -- snapshotted onto captured HR Threat picks below
+// purely so analyze-hr-matchups.mjs can check later whether it actually predicts real
+// outcomes, same "measure before it's a scoring input" treatment as platoonFavorable.
+function normalizePitchTypeKeyMatchupEdge(name) {
+  const n2 = String(name || '').toLowerCase();
+  if (n2.includes('four') || n2.includes('4-seam') || n2.includes('fastball')) return 'fastball';
+  if (n2.includes('sinker') || n2.includes('2-seam') || n2.includes('two-seam')) return 'sinker';
+  if (n2.includes('slider')) return 'slider';
+  if (n2.includes('change')) return 'changeup';
+  if (n2.includes('curve')) return 'curveball';
+  if (n2.includes('cutter')) return 'cutter';
+  if (n2.includes('split')) return 'splitter';
+  if (n2.includes('sweep')) return 'sweeper';
+  if (n2.includes('knuckle')) return 'knuckleball';
+  return n2.replace(/[^a-z0-9]/g, '');
+}
+function gradePitchAdvantageServer(stat, usagePct) {
+  if (!stat) return null;
+  const xslg = stat.xslg ?? stat.xSLG ?? stat.expectedSlugging ?? null;
+  const slg = stat.slg ?? stat.slugging ?? null;
+  const avg = stat.avg ?? stat.battingAverage ?? null;
+  const hr = n(stat.homeRuns ?? stat.hr ?? stat.hrs ?? 0);
+  const hard = stat.hardHitPct ?? stat.hardHitRate ?? null;
+  const barrel = stat.barrelPct ?? stat.barrelRate ?? null;
+  let raw = 45;
+  if (xslg != null) raw += (xslg - 0.400) * 75;
+  else if (slg != null) raw += (slg - 0.400) * 60;
+  if (avg != null) raw += (avg - 0.250) * 35;
+  raw += Math.min(hr, 8) * 2.5;
+  if (hard != null) raw += (hard - 38) * 0.45;
+  if (barrel != null) raw += (barrel - 7) * 1.2;
+  const usageBoost = Math.max(0, n(usagePct) - 15) * 0.15;
+  return clamp(Math.round(raw + usageBoost), 1, 99);
+}
+// `split` here is battingSplitVsHand's return ({ab, avg, obp, slg} or null) -- already
+// resolved to the right pitcher-hand split by the caller, unlike the client's version
+// which searches an array of all splits by hand code. Same math either way.
+function handAdjustedPitchStatServer(stat, splitHand, seasonAvg, seasonSlg, split) {
+  const base = Object.assign({}, stat || {});
+  if (!split || (splitHand !== 'L' && splitHand !== 'R')) return base;
+  const splitAvg = split.avg, splitSlg = split.slg;
+  const baseAvg = base.avg ?? base.battingAverage ?? null;
+  const baseSlg = base.slg ?? base.slugging ?? null;
+  const baseXslg = base.xslg ?? base.xSLG ?? base.expectedSlugging ?? null;
+  const avgRatio = seasonAvg && splitAvg ? clamp(splitAvg / seasonAvg, 0.55, 1.55) : 1;
+  const slgRatio = seasonSlg && splitSlg ? clamp(splitSlg / seasonSlg, 0.55, 1.65) : 1;
+  if (baseAvg != null) base.avg = clamp(baseAvg * avgRatio, 0.050, 0.500);
+  else if (splitAvg != null) base.avg = splitAvg;
+  if (baseSlg != null) base.slg = clamp(baseSlg * slgRatio, 0.120, 1.050);
+  else if (splitSlg != null) base.slg = splitSlg;
+  if (baseXslg != null) base.xslg = clamp(baseXslg * slgRatio, 0.120, 1.100);
+  return base;
+}
+function computeMatchupEdgeScore(pid, pitcherId, pitcherHand, seasonAvg, seasonSlg, split) {
+  const pitches = pitcherByPitchRawCache?.get(String(pitcherId));
+  const batterRows = batterPitchTypeRawCache?.get(String(pid));
+  if (!pitches || !pitches.length || !batterRows || !batterRows.length) return null;
+  let weighted = 0, weight = 0;
+  pitches.forEach(p => {
+    const usage = n(p.usagePct ?? p.usage ?? 0);
+    if (usage <= 0) return;
+    const key = normalizePitchTypeKeyMatchupEdge(p.name);
+    const exact = batterRows.find(r => normalizePitchTypeKeyMatchupEdge(r.name) === key);
+    if (!exact) return;
+    const stat = handAdjustedPitchStatServer(exact, pitcherHand, seasonAvg, seasonSlg, split);
+    const score = gradePitchAdvantageServer(stat, usage);
+    if (score != null) { weighted += score * usage; weight += usage; }
+  });
+  return weight ? Math.round(weighted / weight) : null;
 }
 
 // Recording-only — see PITCHER_2K_SUPPRESSION_PATH comment above. Missing/unparseable
@@ -2042,6 +2135,11 @@ async function buildEliteBatterPool(games, season) {
         const platoonAB = split?.ab ?? null;
         const platoonOps = (split && split.obp != null && split.slg != null) ? +(split.obp + split.slg).toFixed(3) : null;
         const platoonFavorable = platoonOps != null ? platoonOps >= 0.800 : null;
+        // Same live-client Matchup Edge score as app.js's computeMatchupEdgeScore/HR
+        // Threats board (see that function's header comment above) -- reuses the
+        // pitcherHand/seasonAvg/seasonSlg/split already resolved above for the platoon
+        // blend, so this is a zero-extra-fetch snapshot, same as platoonAB/platoonOps.
+        const matchupEdge = computeMatchupEdgeScore(pid, pitcher.id, pitcherHand, seasonAvg, seasonSlg, split);
         // Snapshot of the live client's own HR score (see computeLiveHRScore's header
         // comment) -- only meaningful for the 'hr' market; harmless (just unused) on the
         // other five Elite Picks markets this same pool feeds.
@@ -2063,7 +2161,7 @@ async function buildEliteBatterPool(games, season) {
           fatigueFactor: battingTeamFatigue,
           pitcherStatcast, homeRoadFactor,
           pitcher2kSuppressionDelta: pitcher2kSuppressionIndex.get(String(pitcher.id)) ?? null,
-          liveScore, platoonAB, platoonOps, platoonFavorable,
+          liveScore, platoonAB, platoonOps, platoonFavorable, matchupEdge,
           // Same per-game weather multiplier computeLiveHRScore above already used —
           // stored on the row too so buildBatterModel's own HR rate (used by
           // simulatePropOdds for hits/tb/rbis/hrrbi grading, not just the 'hr' market)
@@ -2304,6 +2402,10 @@ async function captureHRThreatToday(store, pool) {
       // 15+ AB against this specific pitcher hand this season (battingSplitVsHand's own
       // sample floor).
       platoonAB: r.platoonAB ?? null, platoonOps: r.platoonOps ?? null, platoonFavorable: r.platoonFavorable ?? null,
+      // Same "measure before it's a scoring input" treatment as platoonAB/platoonOps
+      // above -- see computeMatchupEdgeScore's header comment. Null until both this
+      // pitcher's and this batter's Statcast pitch-mix sync have landed.
+      matchupEdge: r.matchupEdge ?? null,
     });
     already.add(r.id);
     added++;
@@ -2571,6 +2673,7 @@ export {
   simulatePropOdds, simulateSBOdds, simulateHRGameOdds, scoreForMarket, eliteQualityScore,
   eliteHit, fetchOddsLookup, normalizeName,
   loadStatcastPowerIndex, loadPitcherStatcastPowerIndex, loadPitcher2kSuppressionIndex, battedBallPowerIndex,
+  computeMatchupEdgeScore, battingSplitVsHand,
   parseInningsPitched, pitcherBattersFacedPer9,
   windPowerFactor, temperaturePowerFactor, isDayGameCT, doubleheaderFatigueFactor, teamRestFatigueFactor,
   battingSplitHomeAway, homeRoadPowerFactor,
