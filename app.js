@@ -10535,7 +10535,15 @@ if (document.readyState === 'loading') {
         loaded.hr = true;
         Promise.allSettled([
           (async()=>{ try { if (typeof window.loadHRPotentialWithRetry === 'function') return window.loadHRPotentialWithRetry(); } catch(e) {} })(),
-          (async()=>{ try { if (typeof window.loadHRsToday === 'function') return window.loadHRsToday(); } catch(e) {} })()
+          (async()=>{ try { if (typeof window.loadHRsToday === 'function') return window.loadHRsToday(); } catch(e) {} })(),
+          // Quietly prefetches the same near-HR data the dedicated Near HRs tab
+          // uses (cached, so visiting that tab too doesn't refetch) -- needed
+          // here so the "NEAR HR" filter chip has data to filter on even if the
+          // user never opens the Near HRs tab first. Only forces a re-render if
+          // that filter is already active by the time this resolves, so a user
+          // who applies it before the fetch lands doesn't get stuck on a stale
+          // "no players match" result.
+          (async()=>{ try { if (typeof window.loadNearHRs === 'function') { await window.loadNearHRs(); if (window.__hrpFilterSet && window.__hrpFilterSet.has('nearhr') && typeof window.renderHRPTable === 'function') window.renderHRPTable(); } } catch(e) {} })()
         ]);
         return;
       }
@@ -11244,8 +11252,9 @@ if (document.readyState === 'loading') {
     sel.innerHTML='<option value="">All Games</option>'+games.map(function(g){ return '<option value="'+g.pk+'"'+(cur===g.pk?' selected':'')+'>'+esc(g.label)+'</option>'; }).join('');
     sel.value=cur;
   }
-  function applyHRFilters(arr){ var s=getFilters(); var gf=getHRGameFilter(); if(gf) arr=arr.filter(function(r){ return String(r.gamePk)===gf; }); if(!s.size)return arr; return arr.filter(function(r){ if(s.has('onfire')&&!r.isOnFire)return false; if(s.has('top')&&!((r.topHrThreat&&n(r.hrProb)>=14)||n(r.hrProb)>=18))return false; if(s.has('drought')&&!r.isDrought)return false; if(s.has('due')&&!r.isDue)return false; if(s.has('favorable')&&!r.isFavorable)return false; if(s.has('watchlist')&&!window.drIsWatchlisted(r.id))return false; return true; }); }
-  function setButtons(){ syncHRSortSelect(); var s=getFilters(); ['all','onfire','top','drought','due','favorable','watchlist'].forEach(function(f){ var b=document.getElementById('filter-'+f+'-btn'); if(!b)return; b.classList.toggle('active', f==='all'?s.size===0:s.has(f)); });
+  function hasNearHR(id){ var evs=nearHRs&&nearHRs[String(id)]; return !!(evs&&evs.length); }
+  function applyHRFilters(arr){ var s=getFilters(); var gf=getHRGameFilter(); if(gf) arr=arr.filter(function(r){ return String(r.gamePk)===gf; }); if(!s.size)return arr; return arr.filter(function(r){ if(s.has('onfire')&&!r.isOnFire)return false; if(s.has('top')&&!((r.topHrThreat&&n(r.hrProb)>=14)||n(r.hrProb)>=18))return false; if(s.has('drought')&&!r.isDrought)return false; if(s.has('due')&&!r.isDue)return false; if(s.has('favorable')&&!r.isFavorable)return false; if(s.has('watchlist')&&!window.drIsWatchlisted(r.id))return false; if(s.has('nearhr')&&!hasNearHR(r.id))return false; return true; }); }
+  function setButtons(){ syncHRSortSelect(); var s=getFilters(); ['all','onfire','top','drought','due','favorable','watchlist','nearhr'].forEach(function(f){ var b=document.getElementById('filter-'+f+'-btn'); if(!b)return; b.classList.toggle('active', f==='all'?s.size===0:s.has(f)); });
     var cb=document.getElementById('hrp-completed-toggle-btn');
     if(cb){ var on=!!window.__hrpShowCompletedOnly; cb.classList.toggle('active',on); cb.textContent = on ? '↩ BACK TO PROJECTIONS' : '✅ COMPLETED HITS ONLY'; }
   }

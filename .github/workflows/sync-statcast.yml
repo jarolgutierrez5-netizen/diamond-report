@@ -183,11 +183,15 @@ jobs:
       # this scopes to). Morning-run only, like the other batter-pool steps — this
       # walks the whole ~250-player tracked pool at a polite per-request delay, so it
       # takes meaningfully longer than the bounded probable-starters step above.
+      # Now does a second pass resolving video links via a per-game Baseball
+      # Savant feed (baseballsavant.mlb.com/gf) after the main near-HR pass —
+      # bumped from 20 to 25 minutes to give that extra ~1 request-per-unique-game
+      # pass (cached across batters sharing a game) room to finish.
       - name: Run near-HR (warning-track fly-out) sync for tracked batters
         if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-near-hrs.mjs
         continue-on-error: true
-        timeout-minutes: 20
+        timeout-minutes: 25
 
       - name: Commit and push if changed
         run: |
