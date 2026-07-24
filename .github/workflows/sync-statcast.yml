@@ -227,4 +227,25 @@ jobs:
           git config user.name "diamond-report-bot"
           git config user.email "actions@users.noreply.github.com"
           git commit -m "Sync real pitch-arsenal, hot-hitter, and zone/HR-by-pitch data from Baseball Savant"
-          git push
+
+          # main can move during this ~30-40min run (a PR merging mid-run), which
+          # rejects a plain `git push` and silently drops this run's already-computed
+          # data — hit twice in a row on 2026-07-24. This job is the only writer of
+          # data/*.json (see the concurrency group above), and human commits never
+          # touch those paths, so rebasing onto a moved main is conflict-free in
+          # practice. Retry with fetch+rebase instead of failing the whole run.
+          for attempt in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push rejected (attempt $attempt/5) — main moved during this run. Fetching and rebasing..."
+            git fetch origin main
+            if ! git rebase origin/main; then
+              echo "::error::Rebase onto origin/main hit a real conflict, not just a race — aborting. This run's data was NOT pushed."
+              git rebase --abort
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "::error::Push still rejected after 5 attempts."
+          exit 1
