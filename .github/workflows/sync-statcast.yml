@@ -216,6 +216,7 @@ jobs:
           [ -f data/injury-history.json ] && git add data/injury-history.json
           [ -f data/near-hrs.json ] && git add data/near-hrs.json
           [ -f data/recent-hrs.json ] && git add data/recent-hrs.json
+          [ -f data/batter-hr-spray.json ] && git add data/batter-hr-spray.json
           [ -f data/pitcher-rolling.json ] && git add data/pitcher-rolling.json
           [ -f data/pitcher-2k-suppression.json ] && git add data/pitcher-2k-suppression.json
           [ -f data/batter-situational-props.json ] && git add data/batter-situational-props.json

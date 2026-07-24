@@ -210,6 +210,19 @@ function normalizedBatterId(raw) {
   return Number.isFinite(n) ? String(n) : null;
 }
 
+// A prior run's [diagnostic] sample candidate showed a real gf entry --
+// {playId, inning:9, abNumber:76, batter:572233} -- exactly the plain-
+// numeric shape resolveEventVideo() already expects, disproving the
+// batter-field-shape hypothesis normalizedBatterId() targeted (it's a
+// harmless generalization to keep, just not the actual fix). Still 0/N
+// matches after that fix shipped, so the mismatch is most likely in
+// inning/abNumber themselves -- e.g. Statcast Search CSV's at_bat_number
+// using a different scope/counting convention than the gf feed's
+// abNumber. Logged once, comparing one real zero-match event's own
+// inning/abNumber against the full shape of its game's candidate pool,
+// to see the actual discrepancy directly instead of guessing again.
+let sampleMismatchLogged = false;
+
 // Resolves a videoUrl for one near-HR event in place, only when the
 // inning+at-bat combination matches exactly one candidate from the game's
 // feed (batter id, when it's usable, narrows further but never disqualifies
@@ -224,7 +237,14 @@ async function resolveEventVideo(event) {
     const cBatter = normalizedBatterId(c.batter);
     return cBatter == null || cBatter === String(event._batterId);
   });
-  if (matches.length === 1) event.videoUrl = savantVideoURL(matches[0].playId);
+  if (matches.length === 1) {
+    event.videoUrl = savantVideoURL(matches[0].playId);
+  } else if (!sampleMismatchLogged && candidates.length) {
+    sampleMismatchLogged = true;
+    const sameInning = candidates.filter(c => String(c.inning) === String(event._inning));
+    const abNums = candidates.map(c => Number(c.abNumber)).filter(Number.isFinite);
+    console.error(`[diagnostic] zero-match example: event wants gamePk=${event._gamePk} inning=${event._inning} abNumber=${event._abNumber} batter=${event._batterId} (${matches.length} matches). Game has ${candidates.length} candidate(s), ${sameInning.length} sharing that exact inning, abNumber range ${abNums.length ? Math.min(...abNums) : 'n/a'}-${abNums.length ? Math.max(...abNums) : 'n/a'}. abNumbers seen for this same inning: [${sameInning.map(c => c.abNumber).join(', ')}]`);
+  }
 }
 
 // Runs resolveEventVideo() over every event in a {batterId: event[]} map and
