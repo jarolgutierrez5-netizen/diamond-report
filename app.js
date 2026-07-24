@@ -849,6 +849,44 @@ function _cacheTTL(url) {
   return CACHE_TTL_STATIC;
 }
 
+// Best-effort localStorage write that self-heals from quota exhaustion instead of just
+// silently failing. dr-json-cache:* (fetchJSON's response cache, see below) is the one
+// unbounded-growing localStorage consumer in this app -- every unique URL ever fetched
+// gets its own entry, checked for staleness only on read, never proactively pruned. Over
+// enough page loads/refreshes in a day this can quietly fill the shared 5-10MB-per-origin
+// quota, and once that happens EVERY OTHER localStorage write in the app -- the watchlist
+// star, the DRP per-game lock snapshot, etc. -- starts throwing, and every one of those
+// call sites already wraps its own write in a bare try/catch that swallows the error. The
+// visible symptom: a star fills in immediately (that's a DOM update, not a storage read)
+// but never actually persists, so a later read (e.g. the WATCHLIST filter, which re-reads
+// fresh from localStorage) doesn't find it -- confirmed directly: filling localStorage to
+// the real quota with dr-json-cache:-shaped entries makes the watchlist's own setItem call
+// fail exactly the same way. This wraps any localStorage write with one self-heal pass:
+// on failure, evict the oldest dr-json-cache: entries and retry, escalating how much gets
+// evicted each attempt, before giving up.
+function drSafeLocalStorageSet(key, value) {
+  try { localStorage.setItem(key, value); return true; } catch (e) {}
+  try {
+    const entries = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf('dr-json-cache:') === 0 && k !== key) {
+        let ts = 0;
+        try { ts = JSON.parse(localStorage.getItem(k) || '{}').ts || 0; } catch (e) {}
+        entries.push({ k, ts });
+      }
+    }
+    entries.sort((a, b) => a.ts - b.ts); // oldest first
+    let cut = Math.max(1, Math.ceil(entries.length / 4));
+    while (entries.length) {
+      entries.splice(0, cut).forEach(e => { try { localStorage.removeItem(e.k); } catch (e2) {} });
+      try { localStorage.setItem(key, value); return true; } catch (e) {}
+      cut = Math.max(1, Math.ceil(entries.length / 2));
+    }
+  } catch (e) {}
+  return false;
+}
+
 // Concurrency limiter — max 8 simultaneous API requests
 // Without this, loading HR Potential fires ~400 requests at once, overwhelming the proxy
 let _inflight = 0;
@@ -937,7 +975,7 @@ async function fetchJSON(url) {
             const data = JSON.parse(text);
             const record = { data, ts: Date.now() };
             _fetchCache.set(url, record);
-            try { localStorage.setItem(lsKey, JSON.stringify(record)); } catch (e) {}
+            drSafeLocalStorageSet(lsKey, JSON.stringify(record));
             if (DR_STATIC_DAILY_DUMP && !drIsLiveScoreURL(url)) { try { localStorage.setItem(drStaticKey(url), JSON.stringify({ ts: record.ts, date: drStaticDateKey(), data })); } catch(e) {} }
             return data;
           } catch(e) {
@@ -3535,7 +3573,7 @@ function drToggleWatchlist(id, name) {
   const nowActive = !wl[key];
   if (nowActive) wl[key] = { name: name || '', addedAt: Date.now() };
   else delete wl[key];
-  try { localStorage.setItem(DR_WATCHLIST_KEY, JSON.stringify(wl)); } catch (e) {}
+  drSafeLocalStorageSet(DR_WATCHLIST_KEY, JSON.stringify(wl));
   document.querySelectorAll(`[data-watch-id="${CSS.escape(key)}"]`).forEach(btn => {
     btn.classList.toggle('dr-watch-active', nowActive);
     btn.textContent = nowActive ? '★' : '☆';
@@ -4219,7 +4257,33 @@ async function loadGameProps() {
         <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">${totalFinal>0?Math.round(correctCount/totalFinal*100)+'% accuracy':''}</span>
       </div>` : '';
 
-    el.innerHTML = tallyHTML + (gameCards.filter(Boolean).map(c=>c.html).join('') || `<div class="mu-empty">No game data available.</div>`);
+    // Skip the DOM write entirely when nothing actually changed since the last render --
+    // this fires on a flat 2-minute interval (see the setInterval call below) regardless
+    // of whether any pick, score, or factor moved, and previously did an unconditional
+    // full innerHTML replace every single cycle. That tore down and rebuilt every card
+    // (closing any open PARK & WEATHER DETAILS panel, resetting scroll position, forcing
+    // every team logo/headshot to redecode) even when the output was byte-identical to
+    // what was already on screen -- read by a user who'd left the tab open and idle as a
+    // periodic flicker/resize with no apparent trigger. Scroll position is still
+    // preserved around the cases that DO write, since a genuine content change still
+    // replaces the whole subtree here (same pattern already used by HR Threats/the prop
+    // boards' own render functions).
+    const newContentHTML = tallyHTML + (gameCards.filter(Boolean).map(c=>c.html).join('') || `<div class="mu-empty">No game data available.</div>`);
+    // Comparing the freshly-built string directly against el.innerHTML doesn't work --
+    // the DOM serializer re-encodes special characters when innerHTML is read back (e.g.
+    // the onclick attributes' raw "&&" round-trips as "&amp;&amp;"), so a plain string
+    // compare would report a difference on every single refresh even when nothing
+    // changed, silently defeating this check. Routing the new string through a detached
+    // element first runs it through the same serializer as el.innerHTML, so both sides
+    // are normalized the same way before comparing.
+    const __drGamePropsProbe = document.createElement('div');
+    __drGamePropsProbe.innerHTML = newContentHTML;
+    if (__drGamePropsProbe.innerHTML !== el.innerHTML) {
+      const scrollTop = el.scrollTop, pageY = window.scrollY;
+      el.innerHTML = newContentHTML;
+      el.scrollTop = scrollTop;
+      window.scrollTo(window.scrollX, pageY);
+    }
     const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
     if (refreshEl) refreshEl.textContent = `Last updated ${now}`;
     gamePropsLoaded = true;
@@ -6322,7 +6386,7 @@ window.renderFantasyBoard = renderFantasyBoard;
 const HR_POTENTIAL_STORAGE_KEY = 'hrp_last_loaded_date';
 
 function setHRPLastLoadedDate(dateStr) {
-  try { localStorage.setItem(HR_POTENTIAL_STORAGE_KEY, dateStr); } catch {}
+  drSafeLocalStorageSet(HR_POTENTIAL_STORAGE_KEY, dateStr);
 }
 
 function loadHRPotentialWithRetry() {
@@ -11454,7 +11518,7 @@ if (document.readyState === 'loading') {
     } catch(e){ return { date: centralDateKey(), games: {} }; }
   }
   function writeStore(store){
-    try { localStorage.setItem(lockKey(), JSON.stringify(store)); } catch(e){}
+    drSafeLocalStorageSet(lockKey(), JSON.stringify(store));
   }
 
   // Runs after every fresh render. Any card whose game has started and isn't frozen
@@ -11487,9 +11551,17 @@ if (document.readyState === 'loading') {
       }
     });
     if (changed) writeStore(store);
+    // Same "only touch the DOM when something's actually different" fix as the render
+    // this runs after (see loadGameProps' own comment) -- this used to remove+reinsert
+    // the banner unconditionally on every ~2-minute cycle once any game had locked, even
+    // when the locked count hadn't moved since the last check, which is by far the
+    // common case for most of a live slate's runtime.
     var banner = el.querySelector('[data-dr-lock-banner="1"]');
-    if (banner) banner.remove();
-    if (lockedCount > 0) el.insertAdjacentHTML('afterbegin', lockBannerHTML(lockedCount));
+    var bannerCount = banner ? parseInt(banner.getAttribute('data-count'), 10) : null;
+    if (bannerCount !== lockedCount) {
+      if (banner) banner.remove();
+      if (lockedCount > 0) el.insertAdjacentHTML('afterbegin', lockBannerHTML(lockedCount).replace('<div class="dr-daily-lock-banner"', '<div class="dr-daily-lock-banner" data-count="' + lockedCount + '"'));
+    }
     var refreshEl = document.getElementById('gameprops-refresh');
     if (refreshEl && lockedCount > 0) refreshEl.textContent = lockedCount + ' game' + (lockedCount===1?'':'s') + ' locked at first pitch';
     return lockedCount;
@@ -11870,7 +11942,7 @@ if (document.readyState === 'loading') {
   var celebrated = new Set();
   try { (JSON.parse(localStorage.getItem(STORE_KEY) || '[]')).forEach(function(pk){ celebrated.add(pk); }); } catch(e) {}
   function persist() {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(Array.from(celebrated).slice(-300))); } catch(e) {}
+    drSafeLocalStorageSet(STORE_KEY, JSON.stringify(Array.from(celebrated).slice(-300)));
   }
   function scan() {
     var root = document.getElementById('gameprops-content');
