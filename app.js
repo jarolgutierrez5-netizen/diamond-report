@@ -717,8 +717,15 @@ function diamondApiFallbackUrl(url) {
 // for that day. Reloads display the same cached dump immediately instead of
 // rebuilding different live data on every refresh. A new daily dump is allowed
 // automatically when the local date changes.
+//
+// v8.73: bumping this alone (without waiting for the date to roll over) is the
+// escape hatch for exactly this situation -- a same-day manual re-sync (e.g. via
+// workflow_dispatch) landing real new data (like sync-batter-zone-hr.mjs's byZone)
+// after a browser already cached that day's "first response." The version is part
+// of the cache key, so a bump makes every existing cached entry unreachable and
+// forces one fresh fetch, without needing to wait until midnight Central.
 const DR_STATIC_DAILY_DUMP = true;
-const DR_STATIC_DUMP_VERSION = 'v8.72';
+const DR_STATIC_DUMP_VERSION = 'v8.73';
 function drStaticDateKey(){
   try { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }); }
   catch(e) { return new Date().toISOString().slice(0,10); }
