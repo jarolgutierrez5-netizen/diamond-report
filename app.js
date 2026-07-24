@@ -10553,7 +10553,7 @@ if (document.readyState === 'loading') {
 // from elsewhere in this file (the Hits/RBI/TB/SB/HRRBI board's score(), HR Threats'
 // loadHRPotential, K Props' over-probability calc, the matchup modal's sim-odds chips).
 // With this block missing, every one of those callers silently fell through to its
-// `window.X ? window.X(...) : <fallback>` guard -- Hits/RBI/TB/HRRBI showed a flat,
+// existence-guarded fallback -- Hits/RBI/TB/HRRBI showed a flat,
 // meaningless ~50% for every player (score() never actually differentiated anyone),
 // SB did the same, and HR Threats silently reverted to the old pre-simulation formula
 // (hard-capped at 25%, no real multi-PA calculation). Restored verbatim from git

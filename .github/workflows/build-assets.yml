@@ -54,6 +54,9 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Audit window.* references (catches the exact regression class in scripts/audit-window-refs.mjs's header comment — a "dead code" cleanup once deleted a live function alongside a genuinely dead one, and every caller's existence-guard silently swallowed it instead of throwing)
+        run: node scripts/audit-window-refs.mjs
+
       - name: Minify app.js (compress + mangle, non-toplevel — see comment above)
         run: npx --yes terser@5.49.0 app.js -c -m --comments false -o app.min.js
 
