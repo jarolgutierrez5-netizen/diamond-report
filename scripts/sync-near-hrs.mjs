@@ -108,6 +108,84 @@ function savantVideoURL(playId) {
   return playId ? `https://baseballsavant.mlb.com/sporty-videos?playId=${playId}` : null;
 }
 
+// ── Video lookup ────────────────────────────────────────────────────────
+// The Statcast Search CSV export used above has no play_id / video column at
+// all (confirmed against the well-documented public CSV schema — this is why
+// every near-HR event synced before this always got videoUrl:null, not a
+// transient bug). Baseball Savant's own site resolves each pitch's clip from
+// a separate per-game feed instead: https://baseballsavant.mlb.com/gf?game_pk=N
+//
+// This feed's exact JSON shape has NOT been verified live (same sandbox
+// network restriction noted at the top of this file), so rather than assume
+// one specific nesting path (which would silently produce zero matches if
+// wrong), collectPlayIdEntries() below walks the whole response recursively
+// and pulls out every object that carries a play_id/playId field alongside
+// whatever inning/at-bat/batter identifiers sit next to it. Matching against
+// our known event (inning + at_bat_number + batter id, all real Statcast CSV
+// columns) then only accepts an UNAMBIGUOUS single hit — a video link with
+// even a small chance of being the wrong play is worse than no link, so any
+// 0-match or multi-match case just leaves videoUrl null instead of guessing.
+const GF_BASE = 'https://baseballsavant.mlb.com/gf';
+const gfCache = new Map(); // game_pk -> Promise<candidate[]>
+
+// context carries inning/abNumber/batter down from an ancestor node (e.g. a
+// plate-appearance object) to descendants that don't repeat those fields on
+// the exact object the play_id lives on (e.g. a nested pitch/event entry) --
+// without this, a play_id nested a level or two below its identifying fields
+// would never get matched to anything.
+function collectPlayIdEntries(node, out, depth = 0, context = {}) {
+  if (!node || typeof node !== 'object' || depth > 14) return;
+  if (Array.isArray(node)) {
+    for (const item of node) collectPlayIdEntries(item, out, depth + 1, context);
+    return;
+  }
+  const inning = node.inning ?? node.about?.inning ?? context.inning ?? null;
+  const abNumber = node.ab_number ?? node.atBatIndex ?? node.about?.atBatIndex ?? context.abNumber ?? null;
+  const batter = node.batter ?? node.matchup?.batter?.id ?? context.batter ?? null;
+  const nextContext = { inning, abNumber, batter };
+
+  const playId = node.play_id || node.playId;
+  if (playId) out.push({ playId, inning, abNumber, batter });
+
+  for (const key of Object.keys(node)) collectPlayIdEntries(node[key], out, depth + 1, nextContext);
+}
+
+async function fetchGameVideoCandidates(gamePk) {
+  if (!gfCache.has(gamePk)) {
+    gfCache.set(gamePk, (async () => {
+      try {
+        const text = await fetchText(`${GF_BASE}?game_pk=${gamePk}`, 2);
+        const data = JSON.parse(text);
+        const candidates = [];
+        collectPlayIdEntries(data, candidates, 0);
+        if (!candidates.length) {
+          console.error(`gf feed for game_pk=${gamePk}: no play_id-bearing objects found — schema may differ from what this script assumes. Top-level keys: [${Object.keys(data).join(', ')}]`);
+        }
+        return candidates;
+      } catch (e) {
+        console.error(`gf feed fetch failed for game_pk=${gamePk}:`, e.message);
+        return [];
+      }
+    })());
+  }
+  return gfCache.get(gamePk);
+}
+
+// Resolves a videoUrl for one near-HR event in place, only when the
+// inning+at-bat+batter combination matches exactly one candidate from the
+// game's feed. Silent no-op (event keeps videoUrl:null) on anything less
+// than a certain match.
+async function resolveEventVideo(event) {
+  if (event._gamePk == null || event._inning == null || event._abNumber == null || event._batterId == null) return;
+  const candidates = await fetchGameVideoCandidates(event._gamePk);
+  const matches = candidates.filter(c =>
+    String(c.inning) === String(event._inning) &&
+    String(c.abNumber) === String(event._abNumber) &&
+    (c.batter == null || String(c.batter) === String(event._batterId))
+  );
+  if (matches.length === 1) event.videoUrl = savantVideoURL(matches[0].playId);
+}
+
 async function loadTrackedBatters() {
   const raw = await readFile(HOT_HITTERS_PATH, 'utf8');
   const data = JSON.parse(raw);
@@ -116,7 +194,12 @@ async function loadTrackedBatters() {
 
 // Returns an array of near-HR events for this batter's real last 10 games
 // (by distinct game_date, not a fixed calendar window), sorted longest first.
-function buildNearHRs(csv, batterName) {
+// videoUrl starts out null on every event -- resolveEventVideo() (called from
+// main(), after this returns) fills it in via the separate gf-feed lookup
+// above when it can find an unambiguous match. The _gamePk/_inning/_abNumber/
+// _batterId fields are internal matching keys for that lookup only and are
+// stripped before the result is written to data/near-hrs.json.
+function buildNearHRs(csv, batterName, batterId) {
   const rows = parseCSV(csv);
   if (!rows.length) return [];
   const sample = rows[0];
@@ -141,7 +224,11 @@ function buildNearHRs(csv, batterName) {
       event: r.events,
       description: r.des || null,
       matchup: [r.away_team, r.home_team].filter(Boolean).join(' @ ') || null,
-      videoUrl: savantVideoURL(r.play_id),
+      videoUrl: null,
+      _gamePk: r.game_pk || null,
+      _inning: r.inning || null,
+      _abNumber: r.at_bat_number || null,
+      _batterId: batterId,
     }))
     .filter(r => Number.isFinite(r.distance) && r.distance >= NEAR_HR_MIN_DISTANCE_FT)
     .sort((a, b) => b.distance - a.distance);
@@ -171,7 +258,7 @@ async function main() {
   for (const { id, name } of batters) {
     try {
       const csv = await fetchText(batterSearchURL(id));
-      out.players[id] = buildNearHRs(csv, name);
+      out.players[id] = buildNearHRs(csv, name, id);
       updated++;
       if (out.players[id].length) withNearHRs++;
     } catch (e) {
@@ -186,6 +273,32 @@ async function main() {
   }
 
   console.log(`Checked ${updated}/${batters.length} batters (${failed} failed), ${withNearHRs} with at least one near-HR in their last ${GAMES_TO_KEEP} games.`);
+
+  // Second pass: resolve video links via the gf-feed lookup, then strip the
+  // internal matching keys before writing. Kept as its own pass (rather than
+  // folded into the loop above) so a broken/absent gf feed only ever costs
+  // missing video links, never a missing near-HR event -- the feature works
+  // the same either way, video is strictly additive.
+  let withVideo = 0, videoAttempted = 0;
+  for (const id of Object.keys(out.players)) {
+    for (const event of out.players[id]) {
+      if (event._gamePk) {
+        videoAttempted++;
+        const isNewGame = !gfCache.has(event._gamePk);
+        try { await resolveEventVideo(event); } catch (e) { console.error(`video lookup failed for batter ${id} on ${event.date}:`, e.message); }
+        if (event.videoUrl) withVideo++;
+        // Only pace ourselves on an actual new request to baseballsavant.mlb.com/gf
+        // — repeat hits on an already-cached game_pk are free.
+        if (isNewGame) await new Promise(r => setTimeout(r, 300));
+      }
+      delete event._gamePk;
+      delete event._inning;
+      delete event._abNumber;
+      delete event._batterId;
+    }
+  }
+  console.log(`Resolved ${withVideo}/${videoAttempted} near-HR events to a video link (${gfCache.size} unique games checked).`);
+
   if (updated > 0) {
     await writeFile(NEAR_HR_PATH, JSON.stringify(out, null, 2) + '\n');
   }
@@ -197,4 +310,4 @@ if (isMain) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { batterSearchURL, buildNearHRs, savantVideoURL, main };
+export { batterSearchURL, buildNearHRs, savantVideoURL, collectPlayIdEntries, resolveEventVideo, main };
