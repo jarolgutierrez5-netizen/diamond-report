@@ -11254,10 +11254,38 @@ if (document.readyState === 'loading') {
   }
   function hasNearHR(id){ var evs=nearHRs&&nearHRs[String(id)]; return !!(evs&&evs.length); }
   function applyHRFilters(arr){ var s=getFilters(); var gf=getHRGameFilter(); if(gf) arr=arr.filter(function(r){ return String(r.gamePk)===gf; }); if(!s.size)return arr; return arr.filter(function(r){ if(s.has('onfire')&&!r.isOnFire)return false; if(s.has('top')&&!((r.topHrThreat&&n(r.hrProb)>=14)||n(r.hrProb)>=18))return false; if(s.has('drought')&&!r.isDrought)return false; if(s.has('due')&&!r.isDue)return false; if(s.has('favorable')&&!r.isFavorable)return false; if(s.has('watchlist')&&!window.drIsWatchlisted(r.id))return false; if(s.has('nearhr')&&!hasNearHR(r.id))return false; return true; }); }
-  function setButtons(){ syncHRSortSelect(); var s=getFilters(); ['all','onfire','top','drought','due','favorable','watchlist','nearhr'].forEach(function(f){ var b=document.getElementById('filter-'+f+'-btn'); if(!b)return; b.classList.toggle('active', f==='all'?s.size===0:s.has(f)); });
-    var cb=document.getElementById('hrp-completed-toggle-btn');
-    if(cb){ var on=!!window.__hrpShowCompletedOnly; cb.classList.toggle('active',on); cb.textContent = on ? '↩ BACK TO PROJECTIONS' : '✅ COMPLETED HITS ONLY'; }
+  function setButtons(){
+    syncHRSortSelect();
+    var s=getFilters();
+    var completedOn=!!window.__hrpShowCompletedOnly;
+    document.querySelectorAll('#hrp-filters-menu [data-hrp-filter]').forEach(function(cb){ cb.checked = s.has(cb.getAttribute('data-hrp-filter')); });
+    var completedCb=document.getElementById('hrp-completed-checkbox');
+    if(completedCb) completedCb.checked = completedOn;
+    var activeCount = s.size + (completedOn?1:0);
+    var trigger=document.getElementById('hrp-filters-btn');
+    if(trigger) trigger.classList.toggle('active', activeCount>0);
+    var badge=document.getElementById('hrp-filters-badge');
+    if(badge){ if(activeCount>0){ badge.textContent=String(activeCount); badge.style.display='inline-block'; } else { badge.style.display='none'; } }
   }
+  window.toggleHRPFilterMenu = function(ev){
+    if(ev) ev.stopPropagation();
+    var menu=document.getElementById('hrp-filters-menu');
+    if(!menu) return;
+    var opening = menu.style.display==='none' || !menu.style.display;
+    menu.style.display = opening ? 'block' : 'none';
+  };
+  // Single persistent listener (installed once, not per-open) closes the
+  // filter dropdown on any outside click. Checked in bubble phase, so the
+  // trigger button's own onclick (which flips menu.style.display) always
+  // runs first -- this only ever sees the post-toggle state, so it can't
+  // race with or immediately undo the open/close it just caused.
+  document.addEventListener('click', function(e){
+    var menu=document.getElementById('hrp-filters-menu');
+    if(!menu || menu.style.display==='none' || !menu.style.display) return;
+    var trigger=document.getElementById('hrp-filters-btn');
+    if(menu.contains(e.target) || (trigger && trigger.contains(e.target))) return;
+    menu.style.display='none';
+  });
   // Toggle between the normal "still projected, hasn't homered yet" board and a
   // completed-only view showing just the players who have actually gone deep today
   // (live or final box score, real stat(r,'hr')>0 via isHit) — same underlying rows
