@@ -308,7 +308,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
   .dr1044-odds-chip.neutral{border-color:rgba(251,191,36,.4)}.dr1044-odds-chip.neutral strong{color:#fbbf24}
   .dr1044-odds-chip.weak strong{color:#94a3b8}
   @media(max-width:520px){.dr1044-odds-grid{grid-template-columns:repeat(auto-fit,minmax(92px,1fr))}}
-  @media(max-width:900px){.dr1041-pitch-head{flex-direction:column}.dr1041-score-card{width:100%}.dr1041-zone-grid{grid-template-columns:1fr}.dr1041-pitch-table{min-width:760px}.dr1041-table-wrap{overflow-x:auto}.dr1041-bottom-strip{justify-content:flex-start;gap:14px}.dr1041-bottom-split{display:none}}
+  @media(max-width:900px){.dr1041-pitch-head{flex-direction:column}.dr1041-score-card{width:100%}.dr1041-zone-grid{grid-template-columns:1fr}.dr1041-pitch-table{min-width:760px}.dr1041-table-wrap{overflow-x:auto}.dr1041-bottom-strip{justify-content:flex-start;gap:14px}.dr1041-bottom-split{display:none}.zone-wrap{flex-direction:column;align-items:center}.zone-grid-outer{width:100%}}
 
 /* ---- from <style id="prod-v11-css-architecture-cleanup"> ---- */
 /* Diamond Report v11.0 desktop architecture
