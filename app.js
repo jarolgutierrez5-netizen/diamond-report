@@ -4539,15 +4539,19 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
     // Savant-only aggregates (Hard-Hit%, Sweet-Spot%, Barrel%, bat speed, blasts).
     const [h2hData, batterData, pitcherData, bxData, pxData, batterSplitData, pitcherSplitData] = await Promise.all([
       fetchJSON(`https://diamondreport.app/api/v1/people/${batterId}/stats?stats=vsPlayer&opposingPlayerId=${pitcherId}&group=hitting&season=2026`),
-      fetchJSON(`https://diamondreport.app/api/v1/people/${batterId}?hydrate=stats(group=hitting,type=season,season=2026)`),
-      fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}?hydrate=stats(group=pitching,type=season,season=2026)`),
+      // currentTeam added so the modal can show today's park HR factor + the
+      // pitcher's bullpen fatigue without any extra round trip -- a single
+      // extra hydrate clause on a fetch already being made, not a new fetch.
+      fetchJSON(`https://diamondreport.app/api/v1/people/${batterId}?hydrate=stats(group=hitting,type=season,season=2026),currentTeam`),
+      fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}?hydrate=stats(group=pitching,type=season,season=2026),currentTeam`),
       fetchJSON(`https://diamondreport.app/api/v1/people/${batterId}/stats?stats=expectedStatistics&group=hitting&season=2026`).catch(() => null),
       fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}/stats?stats=expectedStatistics&group=pitching&season=2026`).catch(() => null),
       fetchJSON(`https://diamondreport.app/api/v1/people/${batterId}/stats?stats=statSplits&group=hitting&sitCodes=vl,vr&season=2026`).catch(() => null),
       fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}/stats?stats=statSplits&group=pitching&sitCodes=vl,vr&season=2026`).catch(() => null)
     ]);
     const todayCDT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-    await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadPitcherRolling(), loadSituationalProps(), loadPropMarketOdds(todayCDT)]);
+    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadPitcherRolling(), loadSituationalProps(), loadPropMarketOdds(todayCDT), loadBullpenFatigue(), loadParkFactors(), getTodaySchedule('team').catch(() => [])]);
+    const todayGames = preloadResults[preloadResults.length - 1];
 
     const batterPerson = batterData.people?.[0] || {};
     const pitcherPerson = pitcherData.people?.[0] || {};
@@ -4565,7 +4569,25 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
     const rollingProfile = pitcherRolling[String(pitcherId)] || null;
     const situationalProfile = situationalProps[String(batterId)] || null;
 
-    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, rollingProfile, situationalProfile });
+    // Bullpen fatigue is keyed to the PITCHER's own team (that's who the batter
+    // would actually face in relief), so no home/away lookup needed for it.
+    // Park HR factor needs today's specific venue though -- batter and pitcher
+    // are always on different teams, so whichever one is playing at home in
+    // today's actual matchup between these two teams determines the park.
+    const batterTeamAbbr = batterPerson.currentTeam?.abbreviation || null;
+    const pitcherTeamAbbr = pitcherPerson.currentTeam?.abbreviation || null;
+    const bullpenInfo = pitcherTeamAbbr ? (bullpenFatigue[pitcherTeamAbbr] || null) : null;
+    let parkHrIndex = null;
+    if (batterTeamAbbr && pitcherTeamAbbr && Array.isArray(todayGames)) {
+      const game = todayGames.find(g => {
+        const away = g.teams?.away?.team?.abbreviation, home = g.teams?.home?.team?.abbreviation;
+        return (away === batterTeamAbbr && home === pitcherTeamAbbr) || (away === pitcherTeamAbbr && home === batterTeamAbbr);
+      });
+      const homeAbbr = game?.teams?.home?.team?.abbreviation;
+      if (homeAbbr && Number.isFinite(parkFactors[homeAbbr])) parkHrIndex = parkFactors[homeAbbr];
+    }
+
+    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, rollingProfile, situationalProfile, bullpenInfo, parkHrIndex });
   } catch(e) {
     body.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
@@ -4589,7 +4611,7 @@ function animateCountUp(el, endValue, decimals = 0, duration = 700) {
   requestAnimationFrame(step);
 }
 
-function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, rollingProfile=null, situationalProfile=null }) {
+function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, rollingProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null }) {
   function fv(v, dec=3) {
     if (v==null||v===''||v==='---') return '–';
     const n = parseFloat(v); return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0(\.)/, '$1');
@@ -5410,51 +5432,75 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     </div>`;
   };
 
-  // ── Near HRs · last 10 games (warning-track fly-outs) ──
-  // nearHRList is null when data/near-hrs.json hasn't synced yet or this batter
-  // isn't in the tracked pool (distinct from an empty array, which means it DID
-  // sync and genuinely found none) — same three-state pattern as hasRealZones.
-  const nearHRHTML = (() => {
-    const shortName = batterName.split(' ').pop();
-    if (nearHRList == null) return `
-      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">Warning-track power tracking for ${shortName} hasn't synced yet.</div>`;
-    if (!nearHRList.length) return `
-      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">No warning-track fly outs (375+ ft, stayed in the park) for ${shortName} in his last 10 games.</div>`;
-    const rows = nearHRList.map(n => `
-      <div class="vuln-item">
-        <span class="vuln-icon">🚀</span>
-        <span style="color:var(--text)">
-          <strong>${Math.round(n.distance)} ft</strong>${n.exitVelo != null ? ` · ${n.exitVelo.toFixed(1)} mph` : ''}${n.launchAngle != null ? ` · ${Math.round(n.launchAngle)}° launch` : ''} — ${n.date}${n.matchup ? ` (${n.matchup})` : ''}${n.videoUrl ? ` · <a href="${n.videoUrl}" target="_blank" rel="noopener" style="color:var(--accent2)">Watch ▸</a>` : ''}
-        </span>
-      </div>`).join('');
-    return `
-      <div class="vuln-box" style="margin-top:10px">
-        <div class="vuln-title">🚀 NEAR HRs · LAST 10 GAMES <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(375+ ft fly outs — warning-track power)</span></div>
-        ${rows}
-      </div>`;
+  // ── Recent Contact · last 10 games (confirmed HRs + near-miss fly outs) ──
+  // Combines what used to be two separate stacked boxes (near-HRs and confirmed
+  // HRs) into one section: a compact left-to-right timeline of every notable
+  // batted ball (oldest to most recent), then the same detail rows as before
+  // underneath (most-recent-first), each tagged 💥 HR or 🚀 near-miss. Three-
+  // state per source (null = not synced yet, [] = synced with nothing found) —
+  // shows a combined "hasn't synced" message only when BOTH sources are null,
+  // and a combined "nothing found" message only when both are empty, so a
+  // batter with real data in only one of the two still renders that data.
+  const gameContextHTML = (() => {
+    const parts = [];
+    if (parkHrIndex != null) {
+      const pct = Math.round(parkHrIndex - 100);
+      const cls = parkHrIndex > 107 ? '#f87171' : parkHrIndex < 93 ? '#60a5fa' : 'var(--text)';
+      const label = parkHrIndex > 107 ? 'HR-Friendly' : parkHrIndex < 93 ? 'Pitcher-Friendly' : 'Neutral';
+      parts.push(`<span class="dr1041-bottom-item" title="Statcast HR park factor for today's venue — 100 = league average">🏟️ Park HR Factor: <strong style="color:${cls}">${pct > 0 ? '+' : ''}${pct}% · ${label}</strong></span>`);
+    }
+    if (bullpenInfo && (bullpenInfo.tier === 'Taxed' || bullpenInfo.tier === 'Gassed')) {
+      const cls = bullpenInfo.tier === 'Gassed' ? '#f87171' : '#fbbf24';
+      parts.push(`<span class="dr1041-bottom-item" title="${bullpenInfo.totalRelieverPitches} reliever pitches and ${bullpenInfo.backToBackArms} arm(s) used on both of the last two days — real recent workload, not a season average">🧯 ${pitcherName.split(' ').pop()}'s Bullpen: <strong style="color:${cls}">${bullpenInfo.tier}</strong></span>`);
+    }
+    if (!parts.length) return '';
+    return `<div class="dr1041-bottom-strip" style="margin-bottom:8px">${parts.join('<span class="dr1041-bottom-split"></span>')}</div>`;
   })();
 
-  // ── HRs · last 10 games (confirmed home runs) ──
-  // Same three-state (null/empty/list) pattern and data source as nearHRHTML
-  // above -- recentHRList is null when data/recent-hrs.json hasn't synced yet
-  // or this batter isn't in the tracked pool, distinct from an empty array
-  // (synced, genuinely none in the window).
-  const recentHRHTML = (() => {
+  const recentContactHTML = (() => {
     const shortName = batterName.split(' ').pop();
-    if (recentHRList == null) return `
-      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">Confirmed HR tracking for ${shortName} hasn't synced yet.</div>`;
-    if (!recentHRList.length) return `
-      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">No home runs for ${shortName} in his last 10 games.</div>`;
-    const rows = recentHRList.map(n => `
+    if (nearHRList == null && recentHRList == null) return `
+      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">Recent-contact tracking for ${shortName} hasn't synced yet.</div>`;
+    const combined = [
+      ...(recentHRList || []).map(n => ({ ...n, kind: 'hr' })),
+      ...(nearHRList || []).map(n => ({ ...n, kind: 'near' })),
+    ];
+    if (!combined.length) return `
+      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">No home runs or warning-track (375+ ft) fly outs for ${shortName} in his last 10 games.</div>`;
+
+    const chronological = combined.slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    const mostRecentFirst = combined.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const maxDist = Math.max(...combined.map(n => n.distance || 0), 1);
+
+    // Left-to-right strip: one bar per event, height scaled to distance (taller
+    // = further), gold for a real HR and blue-gray for a near-miss. Hovering a
+    // bar shows the full detail line the same as its row below.
+    const timeline = `
+      <div style="display:flex;align-items:flex-end;gap:5px;height:64px;padding:4px 2px;overflow-x:auto">
+        ${chronological.map(n => {
+          const h = Math.max(14, Math.round((n.distance / maxDist) * 56));
+          const color = n.kind === 'hr' ? '#f6c343' : '#5b8def';
+          const title = `${n.kind === 'hr' ? 'HR' : 'Near-miss'} — ${Math.round(n.distance)} ft, ${n.date}${n.matchup ? ` (${n.matchup})` : ''}`;
+          return `<div style="flex:0 0 auto;width:14px;height:${h}px;border-radius:3px 3px 1px 1px;background:${color};opacity:${n.kind === 'hr' ? 1 : 0.6}" title="${title}"></div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;gap:14px;font-size:9px;color:var(--muted);padding:0 2px 8px">
+        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#f6c343;margin-right:4px"></span>Home run</span>
+        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#5b8def;opacity:.6;margin-right:4px"></span>Near-miss (375+ ft)</span>
+      </div>`;
+
+    const rows = mostRecentFirst.map(n => `
       <div class="vuln-item">
-        <span class="vuln-icon">💥</span>
+        <span class="vuln-icon">${n.kind === 'hr' ? '💥' : '🚀'}</span>
         <span style="color:var(--text)">
           <strong>${Math.round(n.distance)} ft</strong>${n.exitVelo != null ? ` · ${n.exitVelo.toFixed(1)} mph` : ''}${n.launchAngle != null ? ` · ${Math.round(n.launchAngle)}° launch` : ''} — ${n.date}${n.matchup ? ` (${n.matchup})` : ''}${n.videoUrl ? ` · <a href="${n.videoUrl}" target="_blank" rel="noopener" style="color:var(--accent2)">Watch ▸</a>` : ''}
         </span>
       </div>`).join('');
+
     return `
       <div class="vuln-box" style="margin-top:10px">
-        <div class="vuln-title">💥 HRs · LAST 10 GAMES <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(confirmed home runs)</span></div>
+        <div class="vuln-title">📍 RECENT CONTACT · LAST 10 GAMES <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(confirmed HRs + 375+ ft near-misses)</span></div>
+        ${timeline}
         ${rows}
       </div>`;
   })();
@@ -5549,8 +5595,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <div style="font-size:11px;color:var(--muted);line-height:1.6">
         <strong style="color:var(--text)">How to read this:</strong> batting average can lie — a hitter can smash the ball all week straight into gloves, or bloop his way to a lucky hot streak. These numbers look at the swings themselves: how hard he's hitting the ball and where it's going. A green <strong style="color:var(--green)">▲ due</strong> tag means his swings have been better than his results — good things may be coming. An orange <strong style="color:var(--accent2)">▼ running hot</strong> tag means the opposite: the results have been better than the swings, and he may cool off.
       </div>
-      ${recentHRHTML}
-      ${nearHRHTML}
+      ${recentContactHTML}
       ${edgeHTML}
     </div>`;
 
@@ -5679,6 +5724,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       </div>
       ${zoneFitPanelHTML}
 
+      ${gameContextHTML}
       <div class="dr1041-bottom-strip">
         <span class="dr1041-bottom-item">Pitcher Throws: <strong>${handLabel(pitcherHand,'pitcher')}</strong></span>
         <span class="dr1041-bottom-item">Batter Stance: <strong>${handLabel(batterHand,'batter')}</strong></span>
