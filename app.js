@@ -10545,6 +10545,240 @@ if (document.readyState === 'loading') {
   window.closeTeamMatchup=closeTeamMatchup;
 })();
 
+/* ---- Monte Carlo prop-line simulator ---- */
+// RESTORED: an earlier "dead code" audit this session (see the commit removing
+// "prod-v10-9-expanded-analytics-js") mistakenly bundled this IIFE in with a genuinely
+// dead one and deleted both. This one was never dead -- window.simulatePropOdds/
+// simulateSBOdds/simulateHRGameOdds/simulateKOdds/estimateGamePA are all still called
+// from elsewhere in this file (the Hits/RBI/TB/SB/HRRBI board's score(), HR Threats'
+// loadHRPotential, K Props' over-probability calc, the matchup modal's sim-odds chips).
+// With this block missing, every one of those callers silently fell through to its
+// `window.X ? window.X(...) : <fallback>` guard -- Hits/RBI/TB/HRRBI showed a flat,
+// meaningless ~50% for every player (score() never actually differentiated anyone),
+// SB did the same, and HR Threats silently reverted to the old pre-simulation formula
+// (hard-capped at 25%, no real multi-PA calculation). Restored verbatim from git
+// history (commit 785a079's parent) -- not rewritten, so this is exactly what was
+// live and tested before the mistaken removal.
+//
+// Simulates a player's plate appearances for a single game using their real,
+// sample-size-shrunk season rate stats, then reports what fraction of simulated games
+// actually clear the market's line - a genuine simulated probability instead of a
+// hand-tuned points formula. Runs entirely client-side against data already on the
+// row object; no extra network calls.
+(function(){
+  if (window.__DR_MONTE_CARLO__) return; window.__DR_MONTE_CARLO__ = true;
+
+  var TRIALS = 3000;
+  var AB_PER_PA = 0.88; // roughly what share of a plate appearance ends as an official at-bat (rest are BB/HBP/SF)
+
+  function n(v, fallback) { v = parseFloat(v); return Number.isFinite(v) ? v : (fallback == null ? 0 : fallback); }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  // Estimated plate appearances for one game from lineup slot - leadoff hitters get
+  // meaningfully more trips than the bottom of the order. Falls back to a league-
+  // average estimate before the lineup posts.
+  function estimatePA(battingOrder) {
+    if (!battingOrder) return 4.2;
+    return clamp(4.75 - (battingOrder - 1) * 0.11, 3.6, 4.75);
+  }
+  window.estimateGamePA = estimatePA;
+
+  // Builds a per-plate-appearance outcome model (out / walk-or-HBP / single / double /
+  // triple / HR) from real season rate stats. avg/obp/slg here are already the sample-
+  // size-shrunk values set on the row by loadHRPotential, so a hot 3-game stretch on a
+  // handful of AB can't produce an unrealistically high simulated probability.
+  function buildBatterModel(row) {
+    var s = row.stats || {};
+    var avg = clamp(n(row.avg, 0.245), 0.120, 0.400);
+    var obp = clamp(n(row.obp, avg + 0.065), avg, 0.500);
+    var slg = clamp(n(row.slg, avg + 0.155), avg, 0.800);
+
+    // Opposing pitcher quality — previously only the standalone HR market blended in a
+    // pitcher signal; Hits/RBI/TB/H+R+RBI simulated purely off the batter's own numbers
+    // with zero matchup awareness (a batter facing a Cy Young candidate and the same
+    // batter facing a last-place bullpen arm got identical odds). Blends the pitcher's
+    // real AVG/SLG allowed into the per-PA model, batter weighted higher since it's the
+    // larger, more reliable sample.
+    var PITCHER_WEIGHT = 0.35;
+    var pitcherAvgAllowed = clamp(n(row.pitcherAvgAllowed, avg), 0.180, 0.320);
+    var pitcherSlgAllowed = clamp(n(row.pitcherSlgAllowed, slg), 0.300, 0.550);
+    var bAvg = avg * (1 - PITCHER_WEIGHT) + pitcherAvgAllowed * PITCHER_WEIGHT;
+    var obpGap = Math.max(0, obp - avg); // preserve the batter's own walk-driven OBP lift
+    var bObp = clamp(bAvg + obpGap, bAvg, 0.5);
+    var bSlg = slg * (1 - PITCHER_WEIGHT) + pitcherSlgAllowed * PITCHER_WEIGHT;
+
+    // Park factor — previously only the standalone HR market accounted for this.
+    // Applied to the extra-base portion of the profile (park effects show up far more in
+    // XBH/HR than in raw contact rate), scaled to half the park factor's deviation from
+    // 100 so an extreme park like Coors' 145 doesn't overwhelm the batter's own profile.
+    var parkAdj = 1 + ((n(row.parkFactor, 100) - 100) / 100) * 0.5;
+    var pSlg = clamp(bAvg + (bSlg - bAvg) * parkAdj, bAvg, 0.9);
+
+    var pHit = bAvg * AB_PER_PA;
+    var pWalk = Math.max(0, bObp - pHit);
+    var seasonAB = n(s.atBats, 0);
+    var seasonHR = n(row.hrSeason, 0);
+    var hrRatePerPA = seasonAB > 0 ? (seasonHR / seasonAB) * AB_PER_PA : pHit * 0.11;
+    var pHR = clamp(hrRatePerPA * parkAdj, 0, pHit * 0.55);
+    var hitBudget = Math.max(0, pHit - pHR);
+    var extraBaseBudget = Math.max(0, (pSlg - bAvg) * AB_PER_PA - pHR * 3);
+    var p3B = hitBudget * 0.025;
+    var p2B = clamp(extraBaseBudget - p3B * 2, 0, hitBudget - p3B);
+    var p1B = Math.max(0, hitBudget - p2B - p3B);
+    var pOut = Math.max(0, 1 - pHit - pWalk);
+    return { pOut: pOut, pWalk: pWalk, p1B: p1B, p2B: p2B, p3B: p3B, pHR: pHR };
+  }
+
+  function simulateGame(model, pa) {
+    var hits = 0, tb = 0, hr = 0;
+    for (var i = 0; i < pa; i++) {
+      var r = Math.random(), c = model.pOut;
+      if (r < c) continue;
+      c += model.pWalk; if (r < c) continue;
+      c += model.p1B; if (r < c) { hits++; tb += 1; continue; }
+      c += model.p2B; if (r < c) { hits++; tb += 2; continue; }
+      c += model.p3B; if (r < c) { hits++; tb += 3; continue; }
+      hits++; tb += 4; hr++;
+    }
+    return { hits: hits, tb: tb, hr: hr };
+  }
+
+  // RBI and Hits+Runs+RBI need more than the batter's own bat - RBI depends on
+  // teammates being on base ahead of them. Rather than fabricate a full lineup
+  // simulation (no real data for the other 8 hitters' game-state), this derives a
+  // per-PA "drives in a run" / "scores a run" rate from the batter's own real power
+  // and contact profile, scaled by the same real lineup-slot opportunity factors this
+  // board already used (2-3-4-5 hitters see far more traffic on base than the top or
+  // bottom of the order).
+  function estimateRBIRatePerPA(row, model) {
+    var slotFactor = ({ 2: 1.15, 3: 1.55, 4: 1.70, 5: 1.40, 6: 1.10 })[row.battingOrder] || 0.85;
+    var base = model.pHR * 1.35 + (model.p2B + model.p3B) * 0.55 + model.p1B * 0.16 + model.pOut * 0.05;
+    return clamp(base * slotFactor, 0.02, 0.42);
+  }
+  function estimateRunRatePerPA(row, model) {
+    var slotFactor = ({ 1: 1.35, 2: 1.25, 3: 1.15, 4: 1.05, 5: 1.0 })[row.battingOrder] || 0.85;
+    return clamp((model.pWalk + model.p1B + model.p2B + model.p3B + model.pHR) * 0.42 * slotFactor, 0.02, 0.45);
+  }
+
+  function poissonSample(lambda) {
+    var L = Math.exp(-lambda), k = 0, p = 1;
+    do { k++; p *= Math.random(); } while (p > L);
+    return k - 1;
+  }
+
+  // Public entry point for Hits / RBI / Total Bases / H+R+RBI / HR: returns a 1-99
+  // probability that this player's simulated per-game output clears the market's line.
+  // Memoized on the row object itself so the same row+market only gets simulated once
+  // per fresh data load, no matter how many times score() is called during a single
+  // render (filter pass, sort comparator, top-N average, card build all call it).
+  window.simulatePropOdds = function(marketType, row) {
+    row.__mcCache = row.__mcCache || {};
+    if (row.__mcCache[marketType] != null) return row.__mcCache[marketType];
+
+    var model = buildBatterModel(row);
+    var pa = estimatePA(row.battingOrder);
+    var rbiRate = estimateRBIRatePerPA(row, model);
+    var runRate = estimateRunRatePerPA(row, model);
+    var successes = 0;
+    for (var t = 0; t < TRIALS; t++) {
+      var gamePA = Math.max(1, Math.round(pa + (Math.random() - 0.5) * 1.6));
+      var g = simulateGame(model, gamePA);
+      var success = false;
+      if (marketType === 'hits') success = g.hits >= 1;
+      else if (marketType === 'tb') success = g.tb >= 2;
+      else if (marketType === 'hr') success = g.hr >= 1;
+      else if (marketType === 'rbis' || marketType === 'hrrbi') {
+        var rbi = 0, runs = 0;
+        for (var i = 0; i < gamePA; i++) {
+          if (Math.random() < rbiRate) rbi++;
+          if (Math.random() < runRate) runs++;
+        }
+        success = marketType === 'rbis' ? rbi >= 1 : (g.hits + runs + rbi) >= 2;
+      }
+      if (success) successes++;
+    }
+    var result = Math.max(1, Math.min(99, Math.round((successes / TRIALS) * 100)));
+    row.__mcCache[marketType] = result;
+    return result;
+  };
+
+  // Stolen bases are opportunity-driven (times reaching base, then an attempt) rather
+  // than a per-PA batting outcome, so this models it as a Poisson process using the
+  // batter's real season SB rate per game, adjusted by the opposing pitcher/catcher's
+  // own running-game suppression (already computed elsewhere on this board) instead of
+  // reusing the per-PA batter model above.
+  window.simulateSBOdds = function(row) {
+    row.__mcCache = row.__mcCache || {};
+    if (row.__mcCache.sb != null) return row.__mcCache.sb;
+
+    var s = row.stats || {};
+    var sb = n(s.stolenBases, 0), cs = n(s.caughtStealing, 0);
+    var att = sb + cs;
+    var successRate = att >= 5 ? sb / att : (sb > 0 ? 0.70 : 0.60);
+    var seasonAB = n(s.atBats, 0);
+    var gamesPlayed = seasonAB > 0 ? Math.max(1, seasonAB / 3.8) : 1; // ~3.8 AB/game typical
+    var sbPerGame = seasonAB > 0 ? (sb / gamesPlayed) : 0;
+    var pAtt = n(row.pitcherSbAllowed, 0) + n(row.pitcherCsAllowed, 0);
+    var batterySuppression = pAtt >= 5 ? clamp(1 - ((n(row.pitcherSbAllowed, 0) / pAtt) - 0.72) * 0.6, 0.7, 1.3) : 1;
+    var lambda = clamp(sbPerGame * batterySuppression, 0.01, 1.2);
+
+    var successes = 0;
+    for (var t = 0; t < TRIALS; t++) {
+      var attempts = poissonSample(lambda);
+      var stolen = 0;
+      for (var i = 0; i < attempts; i++) if (Math.random() < successRate) stolen++;
+      if (stolen >= 1) successes++;
+    }
+    var result = Math.max(1, Math.min(99, Math.round((successes / TRIALS) * 100)));
+    row.__mcCache.sb = result;
+    return result;
+  };
+  // "At least one HR across N independent plate appearances at a constant per-PA
+  // rate" has an exact closed-form probability (1 - (1-p)^N) — no need to simulate
+  // it. This used to run a fresh Math.random()-driven Monte Carlo on every call
+  // (including every periodic background refresh), so the same batter with
+  // identical stats could show a visibly different % every few minutes for no
+  // real reason. gamePA itself was randomized around the base PA estimate
+  // (pa ± 0.8, uniform), so paDistribution() computes the exact probability of
+  // each possible PA count instead of sampling it, and the final probability is
+  // the weighted average of 1-(1-p)^PA across that distribution. Verified against
+  // the old 50,000-trial Monte Carlo output — matches exactly.
+  function paDistribution(pa) {
+    var lo = pa - 0.8, hi = pa + 0.8;
+    var kMin = Math.floor(lo - 0.5), kMax = Math.ceil(hi + 0.5);
+    var dist = {};
+    for (var k = Math.max(1, kMin); k <= kMax; k++) {
+      var segLo = Math.max(lo, k - 0.5);
+      var segHi = Math.min(hi, k + 0.5);
+      var overlap = Math.max(0, segHi - segLo);
+      if (overlap > 0) {
+        var kk = Math.max(1, k);
+        dist[kk] = (dist[kk] || 0) + overlap / 1.6;
+      }
+    }
+    return dist;
+  }
+  window.simulateHRGameOdds = function(pPerPA, battingOrder) {
+    pPerPA = clamp(n(pPerPA, 0.03), 0, 0.5);
+    var dist = paDistribution(estimatePA(battingOrder));
+    var prob = 0;
+    for (var k in dist) { prob += dist[k] * (1 - Math.pow(1 - pPerPA, Number(k))); }
+    // Was hard-capped at 25 with no floor, unlike every other market's 1-99 range —
+    // real per-game HR probability for a genuinely elite matchup can exceed 25%, so
+    // the old cap flattened great and mediocre matchups into the same narrow band
+    // and made ranking/selection nearly meaningless. See Elite Picks HR record audit.
+    return Math.max(1, Math.min(99, Math.round(prob * 100)));
+  };
+  window.simulateKOdds = function(projK, line) {
+    var lambda = clamp(n(projK, 4.5), 0.3, 15);
+    var threshold = n(line, Math.floor(lambda));
+    var successes = 0;
+    for (var t = 0; t < TRIALS; t++) {
+      if (poissonSample(lambda) > threshold) successes++;
+    }
+    return Math.max(1, Math.min(99, Math.round((successes / TRIALS) * 100)));
+  };
+})();
 
 /* ---- from <script id="prod-v10-30-prop-hit-highlight-js"> ---- */
 (function(){
