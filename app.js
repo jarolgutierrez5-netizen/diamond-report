@@ -1715,22 +1715,87 @@ function getBatterSeasonPitchStat(pid, name, pitchName) {
   if (!src || typeof src !== 'object') return null;
   return src[key] || null;
 }
+// Moved here (top-level, was previously nested inside renderMatchupModal) for the same
+// reason as gradePitchAdvantage above -- pure functions, needed by both the modal and
+// the board-wide Matchup Edge computation.
+function handCode(obj, key) {
+  const raw = obj?.[key]?.code || obj?.[key]?.description || obj?.[key] || '';
+  const s = String(raw || '').toUpperCase();
+  if (s.startsWith('L') || s.includes('LEFT')) return 'L';
+  if (s.startsWith('R') || s.includes('RIGHT')) return 'R';
+  if (s.startsWith('S') || s.includes('SWITCH')) return 'S';
+  return '–';
+}
+function splitStat(splits, codes) {
+  const wanted = new Set(codes.map(c => String(c).toLowerCase()));
+  return (splits || []).find(sp => {
+    const c = String(sp?.split?.code || sp?.split?.description || sp?.split || '').toLowerCase();
+    return [...wanted].some(w => c === w || c.includes(w));
+  })?.stat || null;
+}
+function batterSplitForHand(batterSplits, splitHand) {
+  if (splitHand === 'L') return splitStat(batterSplits, ['vl', 'vs left', 'left', 'lhp', 'vs lhp']);
+  if (splitHand === 'R') return splitStat(batterSplits, ['vr', 'vs right', 'right', 'rhp', 'vs rhp']);
+  return null;
+}
+// Moved here (top-level, was previously nested inside renderMatchupModal as
+// handAdjustedPitchProfile, reading bs/batterSplits off its closure) -- now takes
+// seasonAvg/seasonSlg/batterSplits as explicit params instead, so loadHRPotential's
+// board-wide computeMatchupEdgeScore can call the exact same hand-adjustment logic the
+// modal uses, not an approximation that skips it. The modal's own
+// handAdjustedPitchProfile is now a thin wrapper delegating to this (see its call site).
+function handAdjustedPitchStat(stat, usagePct, splitHand, seasonAvg, seasonSlg, batterSplits) {
+  const base = Object.assign({}, stat || {});
+  const split = batterSplitForHand(batterSplits, splitHand);
+  if (!split || (splitHand !== 'L' && splitHand !== 'R')) return base;
+  const splitAvg = parseDecVal(split.avg);
+  const splitSlg = parseDecVal(split.slg);
+  const splitXslg = parseDecVal(split.xslg ?? split.xSLG ?? split.expectedSlugging);
+  const baseAvg = parseDecVal(base.avg ?? base.battingAverage);
+  const baseSlg = parseDecVal(base.slg ?? base.slugging);
+  const baseXslg = parseDecVal(base.xslg ?? base.xSLG ?? base.expectedSlugging);
+  const avgRatio = seasonAvg && splitAvg ? Math.max(.55, Math.min(1.55, splitAvg / seasonAvg)) : 1;
+  const slgRatio = seasonSlg && splitSlg ? Math.max(.55, Math.min(1.65, splitSlg / seasonSlg)) : 1;
+  if (baseAvg !== null) base.avg = Math.max(.050, Math.min(.500, baseAvg * avgRatio));
+  else if (splitAvg !== null) base.avg = splitAvg;
+  if (baseSlg !== null) base.slg = Math.max(.120, Math.min(1.050, baseSlg * slgRatio));
+  else if (splitSlg !== null) base.slg = splitSlg;
+  if (baseXslg !== null) base.xslg = Math.max(.120, Math.min(1.100, baseXslg * slgRatio));
+  else if (splitXslg !== null) base.xslg = splitXslg;
+  const handHr = parseInt(split.homeRuns ?? split.hr ?? split.hrs ?? 0) || 0;
+  const exactPitchHr = parseInt(base.homeRuns ?? base.hr ?? base.hrs);
+  // Baseball Savant's batter pitch-arsenal endpoint never actually exposes a raw
+  // per-pitch-type HR count (confirmed: every one of 4,811 pitch-type rows across
+  // all 601 tracked batters comes back null) — this branch always fires whenever a
+  // hand is known, silently replacing "unknown" with an estimate (his overall HR
+  // total vs this pitcher hand, redistributed by this pitch's usage share).
+  if (!Number.isFinite(exactPitchHr) || exactPitchHr <= 0) {
+    base.homeRuns = Math.max(0, Math.round(handHr * ((parseFloat(usagePct) || 0) / 100)));
+    base.__hrEstimated = true;
+  }
+  base.__splitHand = splitHand;
+  return base;
+}
 // Matchup Edge — the exact same 0-99 score shown as "MATCHUP EDGE" in the Pitcher
 // Matchup modal (pitchMixDashboard.score there), computed here per-row so it can be a
 // sortable board stat instead of something only visible one matchup at a time. Usage-
 // weighted average of gradePitchAdvantage's per-pitch score across every pitch type
 // today's opposing pitcher throws, graded against this batter's own real season
-// performance against that pitch type. Returns null (displayed as "–") when the
-// Statcast sync hasn't produced pitch-level data for this pitcher or batter yet — same
-// graceful degradation as the modal's own "Pending" state, never a fabricated number.
-function computeMatchupEdgeScore(pid, name, pitcherId) {
+// performance against that pitch type, hand-adjusted the exact same way the modal does
+// (handAdjustedPitchStat) using the pitcher's throwing hand and the batter's own real
+// vs-hand split — not a simplified/unadjusted approximation, so this genuinely matches
+// what a user sees when they open the matchup modal for the same pair. Returns null
+// (displayed as "–") when the Statcast sync hasn't produced pitch-level data for this
+// pitcher or batter yet — same graceful degradation as the modal's own "Pending" state.
+function computeMatchupEdgeScore(pid, name, pitcherId, pitcherHand, seasonAvg, seasonSlg, batterSplits) {
   const pitcherProfile = pitcherStatcast[String(pitcherId)] || null;
   if (!pitcherProfile || !Array.isArray(pitcherProfile.byPitch) || !pitcherProfile.byPitch.length) return null;
   let weighted = 0, weight = 0;
   pitcherProfile.byPitch.forEach(p => {
     const usage = parseFloat(p.usagePct ?? p.usage ?? 0) || 0;
-    const stat = getBatterSeasonPitchStat(pid, name, p.name);
-    if (!stat || usage <= 0) return;
+    const exact = getBatterSeasonPitchStat(pid, name, p.name);
+    if (!exact || usage <= 0) return;
+    const stat = handAdjustedPitchStat(exact, usage, pitcherHand, seasonAvg, seasonSlg, batterSplits);
     const grade = gradePitchAdvantage(stat, usage);
     if (grade.score !== null) { weighted += grade.score * usage; weight += usage; }
   });
@@ -4448,24 +4513,9 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     const n = parseFloat(v); return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0(\.)/, '$1');
   }
   function fi(v) { const n=parseInt(v); return isNaN(n)?'–':String(n); }
-  function handCode(obj, key) {
-    const raw = obj?.[key]?.code || obj?.[key]?.description || obj?.[key] || '';
-    const s = String(raw || '').toUpperCase();
-    if (s.startsWith('L') || s.includes('LEFT')) return 'L';
-    if (s.startsWith('R') || s.includes('RIGHT')) return 'R';
-    if (s.startsWith('S') || s.includes('SWITCH')) return 'S';
-    return '–';
-  }
   function handLabel(code, type) {
     if (type === 'pitcher') return code === 'L' ? 'LHP' : code === 'R' ? 'RHP' : 'Pitch hand N/A';
     return code === 'L' ? 'LHB' : code === 'R' ? 'RHB' : code === 'S' ? 'SHB' : 'Bat hand N/A';
-  }
-  function splitStat(splits, codes) {
-    const wanted = new Set(codes.map(c => String(c).toLowerCase()));
-    return (splits || []).find(sp => {
-      const c = String(sp?.split?.code || sp?.split?.description || sp?.split || '').toLowerCase();
-      return [...wanted].some(w => c === w || c.includes(w));
-    })?.stat || null;
   }
   function firstStat(...vals) {
     for (const v of vals) if (v !== null && v !== undefined && v !== '' && v !== '–' && v !== '---') return v;
@@ -4792,46 +4842,13 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     }
     return null;
   }
-  function getBatterOverallSplitForPitcherHand(splitHand) {
-    if (splitHand === 'L') return splitStat(batterSplits, ['vl', 'vs left', 'left', 'lhp', 'vs lhp']);
-    if (splitHand === 'R') return splitStat(batterSplits, ['vr', 'vs right', 'right', 'rhp', 'vs rhp']);
-    return null;
-  }
+  // Delegates to the top-level, shared handAdjustedPitchStat (see its own header comment
+  // for why this moved) -- passes this modal's own closure vars (bs, batterSplits)
+  // explicitly instead of the function reading them off the closure directly, so the
+  // exact same hand-adjustment logic works identically for loadHRPotential's board-wide
+  // Matchup Edge computation, which has no such closure to read from.
   function handAdjustedPitchProfile(stat, pitchName, usagePct, splitHand) {
-    const base = Object.assign({}, stat || {});
-    const split = getBatterOverallSplitForPitcherHand(splitHand);
-    if (!split || (splitHand !== 'L' && splitHand !== 'R')) return base;
-    const seasonAvg = parseDecVal(bs.avg);
-    const seasonSlg = parseDecVal(bs.slg);
-    const splitAvg = parseDecVal(split.avg);
-    const splitSlg = parseDecVal(split.slg);
-    const splitXslg = parseDecVal(split.xslg ?? split.xSLG ?? split.expectedSlugging);
-    const baseAvg = parseDecVal(base.avg ?? base.battingAverage);
-    const baseSlg = parseDecVal(base.slg ?? base.slugging);
-    const baseXslg = parseDecVal(base.xslg ?? base.xSLG ?? base.expectedSlugging);
-    const avgRatio = seasonAvg && splitAvg ? Math.max(.55, Math.min(1.55, splitAvg / seasonAvg)) : 1;
-    const slgRatio = seasonSlg && splitSlg ? Math.max(.55, Math.min(1.65, splitSlg / seasonSlg)) : 1;
-    if (baseAvg !== null) base.avg = Math.max(.050, Math.min(.500, baseAvg * avgRatio));
-    else if (splitAvg !== null) base.avg = splitAvg;
-    if (baseSlg !== null) base.slg = Math.max(.120, Math.min(1.050, baseSlg * slgRatio));
-    else if (splitSlg !== null) base.slg = splitSlg;
-    if (baseXslg !== null) base.xslg = Math.max(.120, Math.min(1.100, baseXslg * slgRatio));
-    else if (splitXslg !== null) base.xslg = splitXslg;
-    const handHr = parseInt(split.homeRuns ?? split.hr ?? split.hrs ?? 0) || 0;
-    const exactPitchHr = parseInt(base.homeRuns ?? base.hr ?? base.hrs);
-    // Baseball Savant's batter pitch-arsenal endpoint never actually exposes a raw
-    // per-pitch-type HR count (confirmed: every one of 4,811 pitch-type rows across
-    // all 601 tracked batters comes back null) — this branch always fires whenever a
-    // hand is known, silently replacing "unknown" with an estimate (his overall HR
-    // total vs this pitcher hand, redistributed by this pitch's usage share). Flagged
-    // so callers can visibly mark it as estimated rather than showing a bare number
-    // indistinguishable from a real per-pitch count.
-    if (!Number.isFinite(exactPitchHr) || exactPitchHr <= 0) {
-      base.homeRuns = Math.max(0, Math.round(handHr * ((parseFloat(usagePct) || 0) / 100)));
-      base.__hrEstimated = true;
-    }
-    base.__splitHand = splitHand;
-    return base;
+    return handAdjustedPitchStat(stat, usagePct, splitHand, parseDecVal(bs.avg), parseDecVal(bs.slg), batterSplits);
   }
   function buildPitchMixAdvantageSection(pitchList) {
     function pitchAbbr(name) {
@@ -6895,7 +6912,7 @@ async function loadHRPotential() {
         const teamAbbr = g.teams[side].team.abbreviation;
         const oppAbbr  = g.teams[opp].team.abbreviation;
 
-        let pitcherHr9=0, pitcherAvg=.240, pitcherSlg=.380, pitcherWhip=1.25, pitcherK9=8, pitcherSbAllowed=0, pitcherCsAllowed=0;
+        let pitcherHr9=0, pitcherAvg=.240, pitcherSlg=.380, pitcherWhip=1.25, pitcherK9=8, pitcherSbAllowed=0, pitcherCsAllowed=0, pitcherHandForEdge=null;
         try {
           // Same zero-retry problem as the roster/boxscore/batter-stats fetches fixed
           // earlier: pitcherHr9 feeds hrProb at a real 40% weight (see baseHrProb below),
@@ -6914,6 +6931,11 @@ async function loadHRPotential() {
             }
           }
           if (lastErr) throw lastErr;
+          // pitchHand is a top-level field on the person object already returned by this
+          // same hydrate call — no extra fetch needed, unlike the modal (see handCode's
+          // other caller, openMatchup, which fetches a separate pitcher-person payload
+          // purely for its own convenience, not because pitchHand needs its own request).
+          pitcherHandForEdge = handCode(pd.people?.[0], 'pitchHand');
           const ps = pd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||{};
           pitcherHr9=parseFloat(ps.homeRunsPer9)||0; pitcherAvg=parseFloat(ps.avg)||.240;
           pitcherSlg=parseFloat(ps.slg)||.380; pitcherWhip=parseFloat(ps.whip)||1.25;
@@ -7054,9 +7076,18 @@ async function loadHRPotential() {
                 }
               }
               if (ldErr) ld = { stats: [] };
-              batterStatCache[pid]={sd,ld};
+              // Batter's real AVG/SLG split vs LHP/RHP -- feeds Matchup Edge's hand
+              // adjustment (handAdjustedPitchStat), the same signal the Pitcher Matchup
+              // modal fetches per-matchup (see openMatchup's batterSplitData). Unlike
+              // sd/ld above, a failure here only degrades one optional display stat
+              // (Matchup Edge falls back to its unadjusted form), not the core hrProb
+              // ranking every other fetch in this loop feeds -- so a single attempt with
+              // a plain catch is enough, not the full 3x-retry treatment.
+              const spd = await fetchJSON(`https://diamondreport.app/api/v1/people/${pid}/stats?stats=statSplits&group=hitting&sitCodes=vl,vr&season=2026`).catch(() => null);
+              batterStatCache[pid]={sd,ld,spd};
             }
-            const {sd,ld}=batterStatCache[pid];
+            const {sd,ld,spd}=batterStatCache[pid];
+            const batterSplitsForEdge = spd?.stats?.[0]?.splits || [];
             s=sd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||s;
             // Not documented as guaranteed most-recent-first, so sort by date explicitly --
             // every slice(0,N) below (last10HR, hrInLast8/isDrought, the recency blend) means
@@ -7167,7 +7198,7 @@ async function loadHRPotential() {
           // available as a board stat/sort key, not just something visible one matchup at
           // a time. null (shown as "–") until the Statcast pitch-mix sync has data for
           // this specific pitcher/batter pair.
-          const matchupEdge = computeMatchupEdgeScore(pid, b.player.person?.fullName || '', pitcher.id);
+          const matchupEdge = computeMatchupEdgeScore(pid, b.player.person?.fullName || '', pitcher.id, pitcherHandForEdge, parseDecVal(s.avg), parseDecVal(s.slg), batterSplitsForEdge);
           // Recency blend — last 10 games, from the same lastXGames log already fetched
           // above for last10HR/streakDays (zero extra API calls). Same idea as the
           // pitcher ERA/WHIP/K9 recent-form blend: a real hot or cold two-week stretch
