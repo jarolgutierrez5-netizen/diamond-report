@@ -1658,6 +1658,85 @@ function normalizePitchTypeKey(name) {
   return n.replace(/[^a-z0-9]/g,'');
 }
 
+// Moved here (top-level, was previously nested inside renderMatchupModal) so both the
+// Pitcher Matchup modal's Pitch Mix Advantage table AND loadHRPotential's board-wide
+// Matchup Edge stat (see computeMatchupEdgeScore below) call the exact same scoring
+// function -- one definition of "how good is this matchup on this pitch," not two that
+// could drift apart. Pure functions (only ever read their own params), so relocating
+// them out of that closure changes nothing about how renderMatchupModal's own calls to
+// them behave.
+function parsePctVal(v) {
+  // Every caller here (usagePct, hardHitPct, barrelPct, whiffPct) comes from the
+  // repo-synced data files, which already store plain 0-100 percent numbers — the
+  // same convention used successfully elsewhere in the app (see pctNum()). This used
+  // to guess that any value <= 1 must be a fraction and multiply it by 100, which
+  // silently turned a genuine low rate like a 1% barrel rate into a fabricated 100%.
+  if (v === null || v === undefined || v === '' || v === '–') return null;
+  if (typeof v === 'string' && v.trim().endsWith('%')) return parseFloat(v);
+  const n = parseFloat(v);
+  if (Number.isNaN(n)) return null;
+  return n;
+}
+function parseDecVal(v) {
+  if (v === null || v === undefined || v === '' || v === '–') return null;
+  const n = parseFloat(v);
+  return Number.isNaN(n) ? null : n;
+}
+function gradePitchAdvantage(stat, usagePct) {
+  if (!stat) return { score:null, cls:'neutral', label:'Pending' };
+  const xslg = parseDecVal(stat.xslg ?? stat.xSLG ?? stat.expectedSlugging);
+  const slg = parseDecVal(stat.slg ?? stat.slugging);
+  const avg = parseDecVal(stat.avg ?? stat.battingAverage);
+  const hr = +(stat.homeRuns ?? stat.hr ?? stat.hrs ?? 0) || 0;
+  const hard = parsePctVal(stat.hardHitPct ?? stat.hardHitRate);
+  const barrel = parsePctVal(stat.barrelPct ?? stat.barrelRate);
+  let raw = 45;
+  if (xslg !== null) raw += (xslg - .400) * 75;
+  else if (slg !== null) raw += (slg - .400) * 60;
+  if (avg !== null) raw += (avg - .250) * 35;
+  raw += Math.min(hr, 8) * 2.5;
+  if (hard !== null) raw += (hard - 38) * .45;
+  if (barrel !== null) raw += (barrel - 7) * 1.2;
+  const usageBoost = Math.max(0, (parseFloat(usagePct) || 0) - 15) * .15;
+  const score = Math.max(1, Math.min(99, Math.round(raw + usageBoost)));
+  const cls = score >= 78 ? 'elite' : score >= 64 ? 'good' : score >= 45 ? 'neutral' : 'weak';
+  const label = score >= 78 ? 'Excellent' : score >= 64 ? 'Strong' : score >= 45 ? 'Neutral' : 'Weak';
+  return { score, cls, label };
+}
+// Simplified, board-wide version of the modal's getBatterSeasonPitchProfile — reads
+// only the primary batterPitchTypeSeason store (flat, keyed by normalized pitch type;
+// see ingestBatterPitchTypeSeasonPayload), skipping the modal's extra hand-split-nested
+// fallback sources, which need a live per-batter split fetch loadHRPotential doesn't
+// make for every row on the board (that fetch is only worth paying for the one batter a
+// user actually opens a matchup modal for). Same primary data path either way.
+function getBatterSeasonPitchStat(pid, name, pitchName) {
+  const key = normalizePitchTypeKey(pitchName);
+  const src = batterPitchTypeSeason[String(pid)] || batterPitchTypeSeason[String(name || '').toLowerCase()];
+  if (!src || typeof src !== 'object') return null;
+  return src[key] || null;
+}
+// Matchup Edge — the exact same 0-99 score shown as "MATCHUP EDGE" in the Pitcher
+// Matchup modal (pitchMixDashboard.score there), computed here per-row so it can be a
+// sortable board stat instead of something only visible one matchup at a time. Usage-
+// weighted average of gradePitchAdvantage's per-pitch score across every pitch type
+// today's opposing pitcher throws, graded against this batter's own real season
+// performance against that pitch type. Returns null (displayed as "–") when the
+// Statcast sync hasn't produced pitch-level data for this pitcher or batter yet — same
+// graceful degradation as the modal's own "Pending" state, never a fabricated number.
+function computeMatchupEdgeScore(pid, name, pitcherId) {
+  const pitcherProfile = pitcherStatcast[String(pitcherId)] || null;
+  if (!pitcherProfile || !Array.isArray(pitcherProfile.byPitch) || !pitcherProfile.byPitch.length) return null;
+  let weighted = 0, weight = 0;
+  pitcherProfile.byPitch.forEach(p => {
+    const usage = parseFloat(p.usagePct ?? p.usage ?? 0) || 0;
+    const stat = getBatterSeasonPitchStat(pid, name, p.name);
+    if (!stat || usage <= 0) return;
+    const grade = gradePitchAdvantage(stat, usage);
+    if (grade.score !== null) { weighted += grade.score * usage; weight += usage; }
+  });
+  return weight ? Math.round(weighted / weight) : null;
+}
+
 function ingestBatterPitchTypeHrPayload(data) {
   if (!data) return;
   const upsert = (id, name, payload) => {
@@ -4652,24 +4731,6 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     return '';
   }
 
-
-  function parsePctVal(v) {
-    // Every caller here (usagePct, hardHitPct, barrelPct, whiffPct) comes from the
-    // repo-synced data files, which already store plain 0-100 percent numbers — the
-    // same convention used successfully elsewhere in the app (see pctNum()). This used
-    // to guess that any value <= 1 must be a fraction and multiply it by 100, which
-    // silently turned a genuine low rate like a 1% barrel rate into a fabricated 100%.
-    if (v === null || v === undefined || v === '' || v === '–') return null;
-    if (typeof v === 'string' && v.trim().endsWith('%')) return parseFloat(v);
-    const n = parseFloat(v);
-    if (Number.isNaN(n)) return null;
-    return n;
-  }
-  function parseDecVal(v) {
-    if (v === null || v === undefined || v === '' || v === '–') return null;
-    const n = parseFloat(v);
-    return Number.isNaN(n) ? null : n;
-  }
   function fmtDec(v, d=3, kind=null) {
     const n = parseDecVal(v);
     if (n === null) return '–';
@@ -4771,27 +4832,6 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     }
     base.__splitHand = splitHand;
     return base;
-  }
-  function gradePitchAdvantage(stat, usagePct) {
-    if (!stat) return { score:null, cls:'neutral', label:'Pending' };
-    const xslg = parseDecVal(stat.xslg ?? stat.xSLG ?? stat.expectedSlugging);
-    const slg = parseDecVal(stat.slg ?? stat.slugging);
-    const avg = parseDecVal(stat.avg ?? stat.battingAverage);
-    const hr = +(stat.homeRuns ?? stat.hr ?? stat.hrs ?? 0) || 0;
-    const hard = parsePctVal(stat.hardHitPct ?? stat.hardHitRate);
-    const barrel = parsePctVal(stat.barrelPct ?? stat.barrelRate);
-    let raw = 45;
-    if (xslg !== null) raw += (xslg - .400) * 75;
-    else if (slg !== null) raw += (slg - .400) * 60;
-    if (avg !== null) raw += (avg - .250) * 35;
-    raw += Math.min(hr, 8) * 2.5;
-    if (hard !== null) raw += (hard - 38) * .45;
-    if (barrel !== null) raw += (barrel - 7) * 1.2;
-    const usageBoost = Math.max(0, (parseFloat(usagePct) || 0) - 15) * .15;
-    const score = Math.max(1, Math.min(99, Math.round(raw + usageBoost)));
-    const cls = score >= 78 ? 'elite' : score >= 64 ? 'good' : score >= 45 ? 'neutral' : 'weak';
-    const label = score >= 78 ? 'Excellent' : score >= 64 ? 'Strong' : score >= 45 ? 'Neutral' : 'Weak';
-    return { score, cls, label };
   }
   function buildPitchMixAdvantageSection(pitchList) {
     function pitchAbbr(name) {
@@ -6756,6 +6796,13 @@ async function loadHRPotential() {
     await loadBallparkPalFactors().catch(() => {});
     await loadHRModelParams().catch(() => {});
     await loadBatterPowerIndex().catch(() => {});
+    // Needed for the Matchup Edge stat (computeMatchupEdgeScore) — batter-pitch-type-season.json
+    // is a real ~1.6MB file, previously deliberately kept lazy (only loaded when a user opens a
+    // specific matchup modal, see its loader's own comment) since nothing on the board itself
+    // needed it. Now something does: Matchup Edge has to be computed for every row up front so
+    // the board can sort by it, not just the one matchup a user happens to click into.
+    await loadPitcherStatcast().catch(() => {});
+    await loadBatterPitchTypeSeason().catch(() => {});
     const games = await getTodaySchedule('team,probablePitcher');
     await loadActivePlayerIdsForGames(games).catch(() => {});
 
@@ -7115,15 +7162,12 @@ async function loadHRPotential() {
           const shrunkObp = (rawObp*hrpSampleWeight) + (LEAGUE_AVG_OBP*(1-hrpSampleWeight));
           const shrunkSlg = (rawSlg*hrpSampleWeight) + (LEAGUE_AVG_SLG*(1-hrpSampleWeight));
           const isFavorable=shrunkOps>=.800&&(pitcherWhip>=1.25||pitcherAvg>=.260);
-          // Matchup Edge — the batter's own shrunk OPS minus this specific opposing
-          // pitcher's AVG+SLG allowed (a real proxy for OPS-against, missing only the
-          // walk component of OBP; the same two fields buildBatterModel already blends
-          // in as its pitcher-quality signal, see PITCHER_WEIGHT there). Positive means
-          // the batter's real production outpaces what this pitcher typically allows;
-          // negative means the pitcher's been tougher on hitters than this batter's own
-          // numbers. A continuous, sortable version of the same batter-vs-pitcher signal
-          // isFavorable already gates on a threshold.
-          const matchupEdge = shrunkOps - (pitcherAvg + pitcherSlg);
+          // Matchup Edge — same 0-99 score as the Pitcher Matchup modal's "MATCHUP EDGE"
+          // figure (see computeMatchupEdgeScore's header comment), computed here so it's
+          // available as a board stat/sort key, not just something visible one matchup at
+          // a time. null (shown as "–") until the Statcast pitch-mix sync has data for
+          // this specific pitcher/batter pair.
+          const matchupEdge = computeMatchupEdgeScore(pid, b.player.person?.fullName || '', pitcher.id);
           // Recency blend — last 10 games, from the same lastXGames log already fetched
           // above for last10HR/streakDays (zero extra API calls). Same idea as the
           // pitcher ERA/WHIP/K9 recent-form blend: a real hot or cold two-week stretch
@@ -10899,11 +10943,6 @@ if (document.readyState === 'loading') {
   function pct(v){ return Math.max(1,Math.min(99,Math.round(v))); }
   function fmt3(v){ v=n(v); return v>0?v.toFixed(3).replace(/^0/,''):'—'; }
   function fmt1(v){ return (Math.round(n(v)*10)/10).toFixed(1); }
-  // Signed variant of fmt3 -- Matchup Edge is meaningfully negative as often as
-  // positive (pitcher tougher than the batter's own numbers), unlike OPS/ISO/AVG
-  // which are never negative, so fmt3's "— for non-positive" behavior would hide
-  // exactly the values a user sorting by this stat most wants to see.
-  function fmtEdge(v){ v=n(v); return (v>=0?'+':'-')+Math.abs(v).toFixed(3).replace(/^0/,''); }
   function hs(id){ return id ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_72,q_auto:best/v1/people/'+id+'/headshot/67/current' : ''; }
   function stats(r){ return r.todayStats || r.stats || r.seasonStats || {}; }
   function rows(){
@@ -11016,7 +11055,7 @@ if (document.readyState === 'loading') {
     if (s.last10HomeRuns != null && s.last10HomeRuns !== '') return s.last10HomeRuns;
     return null;
   }
-  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); populateHRGameSelect(base); if(!base.length){el.innerHTML='<div class="mu-empty">No HR potential data yet — check back once lineups are posted.</div>';return;} var completedOnly=!!window.__hrpShowCompletedOnly; var arr=applyHRFilters(base).filter(function(r){return completedOnly ? isHit('hr',r) : (!isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL');}).sort(function(a,b){return hrSortValue(b)-hrSortValue(a);}); arr.forEach(function(r){window.__hrCompareRows[String(r.id)]=r;}); if(!arr.length){el.innerHTML='<div class="mu-empty" style="padding:24px">'+(completedOnly?'No completed home runs yet today. Check back once games are underway.':'No players match the selected filters. Try fewer filters, or select ALL to reset.')+'</div>';return;} var cards=arr.map(function(r){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); var l10=dr113Last10HRValue(r); var bpPct=ballparkPalFactorForPlayer(r.gamePk,r.id); var stats=[hrChip('HR Prob',p.toFixed(1)+'%','green'),hrChip('Matchup Edge',fmtEdge(r.matchupEdge),n(r.matchupEdge)>=.05?'green':n(r.matchupEdge)<=-.05?'red':''),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1),'gold'):'',bpPct!=null?hrChip('Ballpark Pal',(bpPct>0?'+':'')+bpPct+'%',bpPct>0?'green':bpPct<0?'red':''):''].filter(Boolean); return '<div class="dr1027-hr-card '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="cursor:pointer" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="if(!event.target.closest(\'button,a\')){var d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName);}">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-why" id="hrp-scout-'+esc(r.id)+'-'+esc(r.pitcherId||0)+'">'+(r.pitcherId?'<span class="spin"></span> Loading scouting report\u2026':'<span style="color:var(--muted)">No opposing pitcher assigned yet \u2014 scouting report unavailable.</span>')+'</div><label class="dr1027-hr-compare" onclick="event.stopPropagation()" title="Add to Compare"><input type="checkbox" '+(window.drHRCompareHas&&window.drHRCompareHas(r.id)?'checked':'')+' onchange="drHRCompareToggle(\''+esc(r.id)+'\',this.checked)"><span>Add to Compare</span></label>'+'</div>'; }).join(''); el.innerHTML=hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; arr.forEach(function(r){ if(!r.pitcherId) return; loadHRScoutingReport(r.id,r.name,r.pitcherId,r.pitcherName).then(function(html){ var t=document.getElementById('hrp-scout-'+r.id+'-'+r.pitcherId); if(t) t.innerHTML=html; }); }); hrCompareUpdateBar(); }
+  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); populateHRGameSelect(base); if(!base.length){el.innerHTML='<div class="mu-empty">No HR potential data yet — check back once lineups are posted.</div>';return;} var completedOnly=!!window.__hrpShowCompletedOnly; var arr=applyHRFilters(base).filter(function(r){return completedOnly ? isHit('hr',r) : (!isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL');}).sort(function(a,b){return hrSortValue(b)-hrSortValue(a);}); arr.forEach(function(r){window.__hrCompareRows[String(r.id)]=r;}); if(!arr.length){el.innerHTML='<div class="mu-empty" style="padding:24px">'+(completedOnly?'No completed home runs yet today. Check back once games are underway.':'No players match the selected filters. Try fewer filters, or select ALL to reset.')+'</div>';return;} var cards=arr.map(function(r){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); var l10=dr113Last10HRValue(r); var bpPct=ballparkPalFactorForPlayer(r.gamePk,r.id); var stats=[hrChip('HR Prob',p.toFixed(1)+'%','green'),hrChip('Matchup Edge',r.matchupEdge==null?'–':r.matchupEdge,r.matchupEdge==null?'':r.matchupEdge>=64?'green':r.matchupEdge<45?'red':'gold'),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1),'gold'):'',bpPct!=null?hrChip('Ballpark Pal',(bpPct>0?'+':'')+bpPct+'%',bpPct>0?'green':bpPct<0?'red':''):''].filter(Boolean); return '<div class="dr1027-hr-card '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="cursor:pointer" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="if(!event.target.closest(\'button,a\')){var d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName);}">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-why" id="hrp-scout-'+esc(r.id)+'-'+esc(r.pitcherId||0)+'">'+(r.pitcherId?'<span class="spin"></span> Loading scouting report\u2026':'<span style="color:var(--muted)">No opposing pitcher assigned yet \u2014 scouting report unavailable.</span>')+'</div><label class="dr1027-hr-compare" onclick="event.stopPropagation()" title="Add to Compare"><input type="checkbox" '+(window.drHRCompareHas&&window.drHRCompareHas(r.id)?'checked':'')+' onchange="drHRCompareToggle(\''+esc(r.id)+'\',this.checked)"><span>Add to Compare</span></label>'+'</div>'; }).join(''); el.innerHTML=hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; arr.forEach(function(r){ if(!r.pitcherId) return; loadHRScoutingReport(r.id,r.name,r.pitcherId,r.pitcherName).then(function(html){ var t=document.getElementById('hrp-scout-'+r.id+'-'+r.pitcherId); if(t) t.innerHTML=html; }); }); hrCompareUpdateBar(); }
 
   // ── HR Threats compare tray ─────────────────────────────────────────────
   // Lets a user shortlist up to HR_COMPARE_MAX cards (checkbox per card, added
