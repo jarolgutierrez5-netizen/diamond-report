@@ -103,6 +103,22 @@ jobs:
         continue-on-error: true
         timeout-minutes: 8
 
+      # Batter-side counterpart to the step above -- fills in real per-pitch-type HR
+      # counts for batters (including real confirmed zeros), which the Pitcher Matchup
+      # modal's Pitch Mix Advantage table otherwise has to estimate by redistributing a
+      # batter's overall HR total by pitch usage share (flagged "est" in the UI). Scoped
+      # to today's active-roster position players across every team playing today, not
+      # the full ~600-player tracked universe -- meaningfully more requests than the
+      # pitcher step's ~15-30 probable starters (roughly 250-400 depending on the day's
+      # slate), so this is morning-only, not repeated on every intraday trigger like the
+      # pitcher step above (a roster doesn't "fill in through the day" the way probable-
+      # pitcher assignments do, so there's nothing to gain from re-running it).
+      - name: Run per-pitch-type HR sync for today's active batters
+        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
+        run: node scripts/sync-batter-zone-hr.mjs
+        continue-on-error: true
+        timeout-minutes: 25
+
       # Same bounded per-probable-starter scope as the zone/HR step above (reuses its
       # todaysProbablePitcherIds/pitcherSearchURL), so it re-runs on every intraday
       # trigger too — a pitcher's last-3-starts velocity/usage/whiff trend doesn't

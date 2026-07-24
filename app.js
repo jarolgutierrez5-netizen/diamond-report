@@ -1801,13 +1801,17 @@ function handAdjustedPitchStat(stat, usagePct, splitHand, seasonAvg, seasonSlg, 
   if (baseXslg !== null) base.xslg = Math.max(.120, Math.min(1.100, baseXslg * slgRatio));
   else if (splitXslg !== null) base.xslg = splitXslg;
   const handHr = parseInt(split.homeRuns ?? split.hr ?? split.hrs ?? 0) || 0;
-  const exactPitchHr = parseInt(base.homeRuns ?? base.hr ?? base.hrs);
-  // Baseball Savant's batter pitch-arsenal endpoint never actually exposes a raw
-  // per-pitch-type HR count (confirmed: every one of 4,811 pitch-type rows across
-  // all 601 tracked batters comes back null) — this branch always fires whenever a
-  // hand is known, silently replacing "unknown" with an estimate (his overall HR
-  // total vs this pitcher hand, redistributed by this pitch's usage share).
-  if (!Number.isFinite(exactPitchHr) || exactPitchHr <= 0) {
+  const rawExactPitchHr = base.homeRuns ?? base.hr ?? base.hrs;
+  const exactPitchHr = rawExactPitchHr != null ? parseInt(rawExactPitchHr) : NaN;
+  // The pitch-arsenal leaderboard itself never carries a per-pitch-type HR count (it's
+  // pre-aggregated with no HR column at all), but sync-batter-zone-hr.mjs now separately
+  // fills in real counts from Statcast Search for today's active-roster batters,
+  // including real confirmed zeros (see ingestBatterPitchTypeSeasonPayload's homeRuns
+  // comment for why those stay null instead of coercing to 0 upstream). Only fall back
+  // to the redistributed estimate when the real count is genuinely missing (never
+  // synced, or this batter/pitch combo fell outside the sync's bounded scope) -- a real
+  // 0 must not be silently overwritten by an estimate.
+  if (!Number.isFinite(exactPitchHr)) {
     base.homeRuns = Math.max(0, Math.round(handHr * ((parseFloat(usagePct) || 0) / 100)));
     base.__hrEstimated = true;
   }
@@ -1911,7 +1915,12 @@ function ingestBatterPitchTypeSeasonPayload(data) {
         pitches: +(row?.pitches ?? row?.pitchCount ?? row?.seen ?? 0) || 0,
         atBats: +(row?.atBats ?? row?.ab ?? 0) || 0,
         hits: +(row?.hits ?? row?.h ?? 0) || 0,
-        homeRuns: +(row?.homeRuns ?? row?.hr ?? row?.hrs ?? 0) || 0,
+        // Preserved as null when genuinely absent, not coerced to 0 -- sync-batter-zone-hr.mjs
+        // now writes a real, confirmed 0 for a pitch type it actually found zero HR on
+        // (distinct from a pitch type it never got real data for at all), and
+        // handAdjustedPitchStat below needs to tell those two cases apart to avoid
+        // overwriting a real zero with an estimate.
+        homeRuns: (() => { const v = row?.homeRuns ?? row?.hr ?? row?.hrs; return v != null ? +v : null; })(),
         avg: row?.avg ?? row?.battingAverage ?? null,
         // xba/woba were dropped here even though every record in
         // data/batter-pitch-type-season.json carries them (see rowToPitchStat in
