@@ -206,6 +206,40 @@ async function main() {
     console.log('  (no graded picks with platoon-split data yet — check back after more picks are captured and graded under the new field)');
   }
 
+  // ── Matchup Edge breakdown (exploratory) — the same 0-99 pitch-mix-vs-batter score
+  // shown on the live HR Threats board and its sort control, and in the Pitcher Matchup
+  // modal as "MATCHUP EDGE" (see update-tracker.mjs's computeMatchupEdgeScore comment).
+  // Not used by any live scoring for the HR market -- recorded purely to check whether
+  // it actually predicts real outcomes before it's ever wired into scoreForMarket/
+  // eliteQualityScore, same "measure before we build" approach as every other signal
+  // here. Bucket thresholds mirror gradePitchAdvantage's own Weak/Neutral/Strong/
+  // Excellent labels so a bucket here reads the same as the board's own chip color.
+  // Null until both this pitcher's and this batter's Statcast pitch-mix sync have
+  // landed, so this fills in slower than the box-score-only signals. ──
+  const withMatchupEdge = graded.filter(r => Number.isFinite(r.matchupEdge));
+  console.log(`\nPicks with Matchup Edge data: ${withMatchupEdge.length}/${graded.length}`);
+  if (withMatchupEdge.length >= 20) {
+    const matchupEdgeBucket = r => {
+      const s = r.matchupEdge;
+      if (s < 45) return 'Weak (<45)';
+      if (s < 64) return 'Neutral (45-63)';
+      if (s < 78) return 'Strong (64-77)';
+      return 'Excellent (78+)';
+    };
+    printTable('Matchup Edge calibration (predicted grade vs actual hit rate):', bucketStats(withMatchupEdge, matchupEdgeBucket, ['Weak (<45)', 'Neutral (45-63)', 'Strong (64-77)', 'Excellent (78+)'], 'matchupEdge'), true);
+    const edgeLow = withMatchupEdge.filter(r => r.matchupEdge < 64);
+    const edgeHigh = withMatchupEdge.filter(r => r.matchupEdge >= 64);
+    if (edgeLow.length && edgeHigh.length) {
+      const lw = edgeLow.filter(r => r.result === 'win').length;
+      const hw = edgeHigh.filter(r => r.result === 'win').length;
+      const z = twoPropZ(lw, edgeLow.length, hw, edgeHigh.length);
+      console.log(`\n  Matchup Edge < 64: ${pct(lw / edgeLow.length)} actual (n=${edgeLow.length})  vs  Matchup Edge >= 64: ${pct(hw / edgeHigh.length)} actual (n=${edgeHigh.length})`);
+      if (z != null) console.log(`  z = ${z.toFixed(2)} ${Math.abs(z) > 1.96 ? '(statistically significant difference, p<0.05)' : '(not conventionally significant at this sample size)'}`);
+    }
+  } else {
+    console.log('  (need at least 20 graded picks with Matchup Edge data for a meaningful breakdown — check back after more picks are captured and graded under the new field)');
+  }
+
   // ── Pitcher-matchup breakdowns — only present on picks captured after the
   // pitcher-snapshot fields were added; will be thin/empty at first. ──
   const withPitcher = graded.filter(r => r.pitcherHr9 != null);
