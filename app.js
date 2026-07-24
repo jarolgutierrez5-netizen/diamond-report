@@ -7047,7 +7047,8 @@ async function loadHRPotential() {
           // server-side correction scoreForMarket already applies (see
           // scripts/update-tracker.mjs). Neutral (1x) with no coverage, same graceful
           // degradation as every other optional signal here.
-          const batterRate = boxScoreBatterRate * shrinkMult(battedBallPowerIndex(batterPowerIndex[String(pid)]));
+          const battedBallMult = shrinkMult(battedBallPowerIndex(batterPowerIndex[String(pid)]));
+          const batterRate = boxScoreBatterRate * battedBallMult;
           // homeRunsPer9 is allowed-per-9-innings (27 outs); a pitcher actually faces
           // ~38 batters per 9 innings once baserunners allowed are counted, so dividing
           // by 27 overstated the pitcher's true HR-per-batter rate.
@@ -7152,6 +7153,13 @@ async function loadHRPotential() {
             battingOrder,
             pitcherAvgAllowed: pitcherAvg, pitcherSlgAllowed: pitcherSlg, pitcherWhipAllowed: pitcherWhip,
             pitcherSbAllowed, pitcherCsAllowed, parkFactor: gameParkFactor,
+            // Precomputed here (weather needs the async fetchGameWeather call already made
+            // above; battedBallMult needs the batterPowerIndex lookup already made above) so
+            // Hits/RBI/TB/SB/HRRBI's buildBatterModel — which runs synchronously off this same
+            // row object during render — can reuse both without a second async weather fetch
+            // or duplicating the Statcast lookup. Same values HR Threats' own hrPerPA above
+            // already applies, just also stored on the row instead of staying local-only.
+            weatherHRMult, battedBallMult,
             // Same sample-size shrinkage as avg/ops/obp/slg above — a raw ISO from a
             // handful of AB (e.g. a 1-for-1 season debut with a HR) can exceed 3.000,
             // which isn't a real power signal and used to inflate the TB/RBI/H+R+RBI
@@ -10619,7 +10627,13 @@ if (document.readyState === 'loading') {
     var seasonAB = n(s.atBats, 0);
     var seasonHR = n(row.hrSeason, 0);
     var hrRatePerPA = seasonAB > 0 ? (seasonHR / seasonAB) * AB_PER_PA : pHit * 0.11;
-    var pHR = clamp(hrRatePerPA * parkAdj, 0, pHit * 0.55);
+    // weatherHRMult/battedBallMult — same weather (air density + wind) and quality-of-
+    // contact (xSLG/hard-hit%) corrections HR Threats' own hrPerPA already applies,
+    // precomputed onto the row by loadHRPotential (see its comment there) since both
+    // need data this synchronous call can't fetch itself. Default to neutral (1) so a
+    // row from any other source (e.g. before loadHRPotential has populated these) still
+    // behaves exactly as it did before this correction existed.
+    var pHR = clamp(hrRatePerPA * n(row.battedBallMult, 1) * parkAdj * n(row.weatherHRMult, 1), 0, pHit * 0.55);
     var hitBudget = Math.max(0, pHit - pHR);
     var extraBaseBudget = Math.max(0, (pSlg - bAvg) * AB_PER_PA - pHR * 3);
     var p3B = hitBudget * 0.025;
