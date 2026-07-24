@@ -247,7 +247,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
   .dr1043-edge-card{min-width:126px;border:1px solid rgba(74,158,255,.46);border-radius:12px;background:rgba(7,20,38,.74);padding:11px 12px;text-align:center}
   .dr1043-edge-card strong{display:block;color:#fff;font-family:'JetBrains Mono',monospace;font-size:28px;line-height:1;font-weight:950}
   .dr1043-edge-card span{display:block;color:#bfdbfe;font-size:10px;font-weight:850;margin-top:7px;text-transform:uppercase;letter-spacing:.04em}
-  .dr1043-grid{display:grid;grid-template-columns:1.05fr 1fr 1fr;gap:12px}
+  .dr1043-grid{display:grid;grid-template-columns:1.05fr 1fr 1fr;gap:12px;align-items:start}
   .dr1043-panel{border:1px solid var(--border);border-radius:10px;background:rgba(3,8,16,.72);padding:12px;min-width:0}
   .dr1043-panel-title{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#fff;font-size:12px;font-weight:950;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
   .dr1043-badge{display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(46,230,166,.72);background:rgba(6,78,59,.45);color:#22e06f;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:900;white-space:nowrap}
@@ -3762,7 +3762,13 @@ select:focus-visible {
   }
 }
 .mu-modal-head {
-  background: linear-gradient(180deg, rgba(47,107,255,.10), transparent) !important;
+  /* Must stay fully opaque top-to-bottom, not fade through any translucent
+     step -- this header is position:sticky (see the base .mu-modal-head
+     rule), so any alpha < 1 anywhere in the gradient let scrolled content
+     show/overlap through it underneath the title once the modal body
+     scrolled. #0a1027 is rgba(47,107,255,.10) pre-blended onto the real
+     --bg (#06060f) at alpha 1 -- same visual blue tint, zero transparency. */
+  background: linear-gradient(180deg, #0a1027, var(--bg)) !important;
   border-bottom: 1px solid rgba(47,107,255,.2) !important;
 }
 .mu-close {
