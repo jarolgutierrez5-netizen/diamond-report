@@ -3590,6 +3590,49 @@ const stadiumCoords = {
   WSH:{lat:38.873,lon:-77.007,name:'Nationals Park',dome:false},
 };
 
+// Real, publicly-listed outfield wall distances (feet), 5-point convention
+// (LF line / LF-CF gap / straightaway CF / CF-RF gap / RF line) -- powers the
+// Home Run Spray Chart's per-park field shape. Same keys as stadiumCoords
+// above. From general knowledge of widely-published team-listed dimensions,
+// not something this sandbox can live-verify against an official source, and
+// a team can adjust its fences between seasons -- treat as "best known," not
+// guaranteed exact. The chart draws a smooth curve through these 5 points, a
+// schematic approximation, not a traced outline of quirky real wall jogs
+// (the Green Monster's exact notch, Minute Maid's hill, etc.).
+const PARK_DIMENSIONS = {
+  ARI:{lf:330,lfcf:376,cf:407,cfrf:376,rf:335},
+  ATL:{lf:335,lfcf:375,cf:400,cfrf:375,rf:325},
+  BAL:{lf:333,lfcf:364,cf:410,cfrf:373,rf:318},
+  BOS:{lf:310,lfcf:379,cf:390,cfrf:420,rf:302},
+  CHC:{lf:355,lfcf:368,cf:400,cfrf:368,rf:353},
+  CWS:{lf:330,lfcf:375,cf:400,cfrf:375,rf:335},
+  CIN:{lf:328,lfcf:379,cf:404,cfrf:370,rf:325},
+  CLE:{lf:325,lfcf:370,cf:405,cfrf:375,rf:325},
+  COL:{lf:347,lfcf:390,cf:415,cfrf:375,rf:350},
+  DET:{lf:345,lfcf:370,cf:420,cfrf:365,rf:330},
+  HOU:{lf:315,lfcf:362,cf:409,cfrf:373,rf:326},
+  KC: {lf:330,lfcf:375,cf:410,cfrf:375,rf:330},
+  LAA:{lf:330,lfcf:374,cf:396,cfrf:372,rf:330},
+  LAD:{lf:330,lfcf:375,cf:395,cfrf:375,rf:330},
+  MIA:{lf:344,lfcf:386,cf:400,cfrf:386,rf:335},
+  MIL:{lf:344,lfcf:371,cf:400,cfrf:374,rf:345},
+  MIN:{lf:339,lfcf:377,cf:404,cfrf:367,rf:328},
+  NYM:{lf:335,lfcf:358,cf:408,cfrf:375,rf:330},
+  NYY:{lf:318,lfcf:399,cf:408,cfrf:385,rf:314},
+  ATH:{lf:330,lfcf:388,cf:400,cfrf:388,rf:330},
+  OAK:{lf:330,lfcf:388,cf:400,cfrf:388,rf:330},
+  PHI:{lf:329,lfcf:374,cf:401,cfrf:369,rf:330},
+  PIT:{lf:325,lfcf:389,cf:399,cfrf:375,rf:320},
+  SD: {lf:336,lfcf:390,cf:396,cfrf:391,rf:322},
+  SF: {lf:339,lfcf:364,cf:399,cfrf:415,rf:309},
+  SEA:{lf:331,lfcf:378,cf:401,cfrf:381,rf:326},
+  STL:{lf:336,lfcf:375,cf:400,cfrf:375,rf:335},
+  TB: {lf:315,lfcf:370,cf:404,cfrf:370,rf:322},
+  TEX:{lf:329,lfcf:372,cf:407,cfrf:374,rf:326},
+  TOR:{lf:328,lfcf:375,cf:400,cfrf:375,rf:328},
+  WSH:{lf:336,lfcf:377,cf:402,cfrf:370,rf:335},
+};
+
 // Team primary brand colors — purely cosmetic (a thin accent edge on each Game
 // Projections card so the list reads faster at a glance), not tied to any stat.
 const teamColors = {
@@ -4609,16 +4652,25 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
     const pitcherTeamAbbr = pitcherPerson.currentTeam?.abbreviation || null;
     const bullpenInfo = pitcherTeamAbbr ? (bullpenFatigue[pitcherTeamAbbr] || null) : null;
     let parkHrIndex = null;
+    // Also drives the Home Run Spray Chart's field shape -- whichever team is
+    // hosting today's actual matchup between these two teams, same lookup as
+    // the park HR factor above. Falls back to the batter's own team (his home
+    // park) when there's no confirmed game today between these two teams, so
+    // the spray chart still has a real park shape to draw rather than none.
+    let todayParkAbbr = batterTeamAbbr;
     if (batterTeamAbbr && pitcherTeamAbbr && Array.isArray(todayGames)) {
       const game = todayGames.find(g => {
         const away = g.teams?.away?.team?.abbreviation, home = g.teams?.home?.team?.abbreviation;
         return (away === batterTeamAbbr && home === pitcherTeamAbbr) || (away === pitcherTeamAbbr && home === batterTeamAbbr);
       });
       const homeAbbr = game?.teams?.home?.team?.abbreviation;
-      if (homeAbbr && Number.isFinite(parkFactors[homeAbbr])) parkHrIndex = parkFactors[homeAbbr];
+      if (homeAbbr) {
+        todayParkAbbr = homeAbbr;
+        if (Number.isFinite(parkFactors[homeAbbr])) parkHrIndex = parkFactors[homeAbbr];
+      }
     }
 
-    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, hrSprayList, rollingProfile, situationalProfile, bullpenInfo, parkHrIndex });
+    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, hrSprayList, todayParkAbbr, rollingProfile, situationalProfile, bullpenInfo, parkHrIndex });
   } catch(e) {
     body.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
@@ -4642,7 +4694,7 @@ function animateCountUp(el, endValue, decimals = 0, duration = 700) {
   requestAnimationFrame(step);
 }
 
-function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, hrSprayList=null, rollingProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null }) {
+function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, hrSprayList=null, todayParkAbbr=null, rollingProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null }) {
   function fv(v, dec=3) {
     if (v==null||v===''||v==='---') return '–';
     const n = parseFloat(v); return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0(\.)/, '$1');
@@ -5573,10 +5625,12 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   // ── Home run spray chart — real landing spots for the season ────────────
   // hc_x/hc_y (Statcast hit-coordinate columns) converted to approximate feet
   // from home plate by sync-batter-zone-hr.mjs, off the same per-batter CSV it
-  // already fetches. The field shape drawn here is a simplified generic wedge,
-  // not this specific park's real wall geometry (that'd need a whole separate
-  // per-park dimensions dataset this app doesn't have) -- it's there purely for
-  // spatial context around real dots, not a claim about any actual fence.
+  // already fetches. Field shape drawn from PARK_DIMENSIONS[todayParkAbbr] --
+  // real, publicly-listed wall distances for today's actual host park (falls
+  // back to the batter's own home park when there's no confirmed game today,
+  // and to a generic wedge if neither is known) -- a straight-line pentagon
+  // through 5 known real points (LF/LF-CF/CF/CF-RF/RF), not a traced outline
+  // of quirky real wall jogs. See PARK_DIMENSIONS's own comment for sourcing.
   const hrSprayChartHTML = (() => {
     const shortName = batterName.split(' ').pop();
     if (hrSprayList == null) return `
@@ -5586,33 +5640,61 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
 
     const W = 400, H = 300;
     const plateX = W / 2, plateY = H - 18;
-    // Scale so a real ~420ft shot (a good, not extreme, HR) lands near the
-    // simplified wall's shallowest point -- longer real shots push further up
-    // into the curve toward the CF peak, shorter ones stay well inside it.
-    const scale = (plateY - 65) / 420;
+    const dims = PARK_DIMENSIONS[todayParkAbbr] || null;
+
+    // Scale to fit whichever needs more room: the real wall's deepest point,
+    // or the batter's own longest real HR (so a shot that would clear this
+    // park's fence visually reads as clearing it, not clipped inside it).
+    const wallMax = dims ? Math.max(dims.lf, dims.lfcf, dims.cf, dims.cfrf, dims.rf) : 420;
+    const hrMax = hrSprayList.reduce((m, s) => Math.max(m, s.distance || 0, s.yFt || 0), 0);
+    const scale = (plateY - 32) / Math.max(wallMax, hrMax, 350);
+    const toXY = (angleDeg, distFt) => {
+      const rad = angleDeg * Math.PI / 180;
+      return { x: plateX + Math.sin(rad) * distFt * scale, y: plateY - Math.cos(rad) * distFt * scale };
+    };
+
+    let wallPath, wallLabels = '', foulLineLabels = '';
+    if (dims) {
+      const pts = [
+        { a: -45, d: dims.lf }, { a: -22.5, d: dims.lfcf }, { a: 0, d: dims.cf },
+        { a: 22.5, d: dims.cfrf }, { a: 45, d: dims.rf },
+      ].map(p => ({ ...toXY(p.a, p.d), d: p.d }));
+      wallPath = `M ${plateX},${plateY} L ${pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L ')} Z`;
+      wallLabels = pts.map(p => `<text x="${p.x.toFixed(1)}" y="${(p.y - 6).toFixed(1)}" font-size="9" fill="var(--muted)" text-anchor="middle">${p.d}</text>`).join('');
+      foulLineLabels = `
+        <text x="${(pts[0].x - 6).toFixed(1)}" y="${(pts[0].y + 10).toFixed(1)}" font-size="9" fill="var(--muted)" text-anchor="end">LF</text>
+        <text x="${(pts[4].x + 6).toFixed(1)}" y="${(pts[4].y + 10).toFixed(1)}" font-size="9" fill="var(--muted)" text-anchor="start">RF</text>`;
+    } else {
+      wallPath = `M ${plateX},${plateY} L 45,75 Q ${plateX},18 ${W - 45},75 Z`;
+      foulLineLabels = `
+        <text x="35" y="68" font-size="10" fill="var(--muted)" text-anchor="end">LF</text>
+        <text x="${W - 35}" y="68" font-size="10" fill="var(--muted)" text-anchor="start">RF</text>`;
+    }
+
     const dots = hrSprayList.map(s => {
       const rawX = plateX + (s.xFt || 0) * scale;
       const rawY = plateY - (s.yFt || 0) * scale;
-      const cx = Math.max(12, Math.min(W - 12, rawX));
-      const cy = Math.max(12, Math.min(plateY - 4, rawY));
+      const cx = Math.max(8, Math.min(W - 8, rawX));
+      const cy = Math.max(8, Math.min(plateY - 4, rawY));
       const title = `${Math.round(s.distance || 0)} ft${s.exitVelo != null ? ` · ${s.exitVelo.toFixed(1)} mph` : ''}${s.launchAngle != null ? ` · ${Math.round(s.launchAngle)}° launch` : ''}${s.date ? ` — ${s.date}` : ''}${s.matchup ? ` (${s.matchup})` : ''}`;
       return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5.5" fill="#f6c343" fill-opacity=".88" stroke="#0a0e1a" stroke-width="1.25"><title>${title}</title></circle>`;
     }).join('');
 
     const longest = hrSprayList.slice().sort((a, b) => (b.distance || 0) - (a.distance || 0))[0];
     const avgDist = Math.round(hrSprayList.reduce((s, n) => s + (n.distance || 0), 0) / hrSprayList.filter(n => n.distance != null).length) || null;
+    const parkName = dims ? (stadiumCoords[todayParkAbbr]?.name || todayParkAbbr) : null;
 
     return `
       <div class="vuln-box" style="margin-top:10px">
-        <div class="vuln-title">🎯 HOME RUN SPRAY CHART <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(${hrSprayList.length} real HR${hrSprayList.length === 1 ? '' : 's'} this season)</span></div>
+        <div class="vuln-title">🎯 HOME RUN SPRAY CHART <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(${hrSprayList.length} real HR${hrSprayList.length === 1 ? '' : 's'} this season${parkName ? ` · ${parkName}` : ''})</span></div>
         <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%;max-width:360px;display:block;margin:6px auto;overflow:visible">
-          <path d="M ${plateX},${plateY} L 45,75 Q ${plateX},18 ${W - 45},75 Z" fill="#0d1a12" stroke="rgba(90,180,120,.32)" stroke-width="1.5"/>
-          <text x="35" y="68" font-size="10" fill="var(--muted)" text-anchor="end">LF</text>
-          <text x="${W - 35}" y="68" font-size="10" fill="var(--muted)" text-anchor="start">RF</text>
+          <path d="${wallPath}" fill="#0d1a12" stroke="rgba(90,180,120,.32)" stroke-width="1.5"/>
+          ${wallLabels}
+          ${foulLineLabels}
           <rect x="${plateX - 4}" y="${plateY - 3}" width="8" height="7" fill="#e8e8e8" transform="rotate(45 ${plateX} ${plateY})"/>
           ${dots}
         </svg>
-        <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:-2px">${longest ? `Longest: ${Math.round(longest.distance || 0)} ft` : ''}${avgDist ? ` · Avg: ${avgDist} ft` : ''} · field shape simplified, not this park's real wall</div>
+        <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:-2px">${longest ? `Longest: ${Math.round(longest.distance || 0)} ft` : ''}${avgDist ? ` · Avg: ${avgDist} ft` : ''} · ${dims ? `real ${parkName} wall distances (ft), best-known listed values` : 'field shape simplified — no park data for this matchup'}</div>
       </div>`;
   })();
 
