@@ -1223,7 +1223,12 @@ function buildBatterModel(row) {
   const seasonAB = row.atBats || 0;
   const seasonHR = row.hrSeason || 0;
   const hrRatePerPA = seasonAB > 0 ? (seasonHR / seasonAB) * MC_AB_PER_PA : pHit * 0.11;
-  const pHR = clamp(hrRatePerPA * parkAdj, 0, pHit * 0.55);
+  // Same weather (row.weatherHRMult, set by buildEliteBatterPool) and quality-of-contact
+  // (battedBallPowerIndex/shrinkMult off row.statcast, already used by scoreForMarket('hr')
+  // and computeLiveHRScore) corrections app.js's buildBatterModel now applies client-side —
+  // kept in sync per this function's own header comment. Both default to neutral (1).
+  const battedBallMult = shrinkMult(battedBallPowerIndex(row.statcast));
+  const pHR = clamp(hrRatePerPA * battedBallMult * parkAdj * (row.weatherHRMult ?? 1), 0, pHit * 0.55);
   const hitBudget = Math.max(0, pHit - pHR);
   const extraBaseBudget = Math.max(0, (pSlg - bAvg) * MC_AB_PER_PA - pHR * 3);
   const p3B = hitBudget * 0.025;
@@ -2059,6 +2064,12 @@ async function buildEliteBatterPool(games, season) {
           pitcherStatcast, homeRoadFactor,
           pitcher2kSuppressionDelta: pitcher2kSuppressionIndex.get(String(pitcher.id)) ?? null,
           liveScore, platoonAB, platoonOps, platoonFavorable,
+          // Same per-game weather multiplier computeLiveHRScore above already used —
+          // stored on the row too so buildBatterModel's own HR rate (used by
+          // simulatePropOdds for hits/tb/rbis/hrrbi grading, not just the 'hr' market)
+          // gets the same weather correction the live client site's Hits/RBI/TB/SB/HRRBI
+          // board now applies (see app.js buildBatterModel).
+          weatherHRMult,
         };
       });
       sideRows.filter(Boolean).forEach(r => rows.push(r));
