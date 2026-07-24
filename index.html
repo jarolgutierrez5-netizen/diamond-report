@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026072471">
+<link rel="stylesheet" href="styles.min.css?v=2026072473">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -464,14 +464,21 @@
         <input type="text" id="hr-search-input" class="dr-board-search" placeholder="Search players…" oninput="drSetBoardSearch('hr',this.value,renderHRPTable)">
         <button type="button" class="dr-board-search-clear" onclick="document.getElementById('hr-search-input').value='';drSetBoardSearch('hr','',renderHRPTable)" aria-label="Clear search">✕</button>
       </div>
-      <button id="filter-onfire-btn" class="hrp-filter-btn hrp-filter-onfire" onclick="filterHRP('onfire')">🔥 ON FIRE</button>
-      <button id="filter-favorable-btn" class="hrp-filter-btn hrp-filter-favorable" onclick="filterHRP('favorable')">🟢 FAVORABLE</button>
-      <button id="filter-drought-btn" class="hrp-filter-btn hrp-filter-drought" onclick="filterHRP('drought')">🔴 DROUGHT</button>
-      <button id="filter-due-btn" class="hrp-filter-btn hrp-filter-due" onclick="filterHRP('due')">⚠️ DUE</button>
-      <button id="hrp-completed-toggle-btn" class="hrp-filter-btn" onclick="window.toggleHRPCompletedView && window.toggleHRPCompletedView()">✅ COMPLETED HITS ONLY</button>
-      <button id="filter-nearhr-btn" class="hrp-filter-btn" onclick="filterHRP('nearhr')">🚀 NEAR HR</button>
-      <button id="filter-watchlist-btn" class="hrp-filter-btn hrp-filter-watchlist" onclick="filterHRP('watchlist')">★ WATCHLIST</button>
-      <button id="filter-all-btn" class="hrp-filter-btn hrp-filter-all active" onclick="filterHRP('all')">ALL</button>
+      <div class="dr-filter-dropdown" style="position:relative;display:inline-block">
+        <button type="button" id="hrp-filters-btn" class="hrp-filter-btn" onclick="window.toggleHRPFilterMenu && window.toggleHRPFilterMenu(event)">☰ FILTERS<span id="hrp-filters-badge" class="dr-count-pill" style="display:none;margin-left:6px"></span> ▾</button>
+        <div id="hrp-filters-menu" class="dr-filter-dropdown-menu" style="display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:60;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;min-width:220px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
+          <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px"><input type="checkbox" data-hrp-filter="onfire" onchange="filterHRP('onfire')"> 🔥 ON FIRE</label>
+          <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px"><input type="checkbox" data-hrp-filter="favorable" onchange="filterHRP('favorable')"> 🟢 FAVORABLE</label>
+          <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px"><input type="checkbox" data-hrp-filter="drought" onchange="filterHRP('drought')"> 🔴 DROUGHT</label>
+          <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px"><input type="checkbox" data-hrp-filter="due" onchange="filterHRP('due')"> ⚠️ DUE</label>
+          <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px"><input type="checkbox" data-hrp-filter="nearhr" onchange="filterHRP('nearhr')"> 🚀 NEAR HR</label>
+          <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px"><input type="checkbox" id="hrp-completed-checkbox" onchange="window.toggleHRPCompletedView && window.toggleHRPCompletedView()"> ✅ COMPLETED HITS ONLY</label>
+          <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px"><input type="checkbox" data-hrp-filter="watchlist" onchange="filterHRP('watchlist')"> ★ WATCHLIST</label>
+          <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px">
+            <button type="button" id="filter-all-btn" class="hrp-filter-btn hrp-filter-all" style="width:100%" onclick="filterHRP('all')">Clear All</button>
+          </div>
+        </div>
+      </div>
       <select id="hrp-game-filter" onchange="window.setHRGameFilter && window.setHRGameFilter(this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:10px;font-weight:700"><option value="">All Games</option></select>
       <select id="hrp-sort-select" onchange="window.setHRSort && window.setHRSort(this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:10px;font-weight:700"><option value="hrProb">Sort: HR Probability</option><option value="matchupEdge">Sort: Matchup Edge</option></select>
     </div>
@@ -850,7 +857,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026072471" defer></script>
+<script src="app.min.js?v=2026072473" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->

@@ -1648,6 +1648,14 @@ let nearHRs = {};
 let nearHRsLoaded = false;
 let nearHRsPromise = null;
 
+// Confirmed home runs (not near-misses) in a batter's real last 10 games,
+// written by the same scripts/sync-near-hrs.mjs run as nearHRs above (one
+// Statcast Search fetch per batter feeds both). Keyed by batter MLB ID
+// (string), same empty-object/not-yet-synced convention as nearHRs.
+let recentHRs = {};
+let recentHRsLoaded = false;
+let recentHRsPromise = null;
+
 // Rolling pitch metrics (velocity/usage/whiff, last 3 starts vs season) — loaded
 // from data/pitcher-rolling.json, written by scripts/sync-pitcher-rolling.mjs.
 // Keyed by pitcher MLB ID (string). Empty object = file not yet synced or this
@@ -4539,7 +4547,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
       fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}/stats?stats=statSplits&group=pitching&sitCodes=vl,vr&season=2026`).catch(() => null)
     ]);
     const todayCDT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-    await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadPitcherRolling(), loadSituationalProps(), loadPropMarketOdds(todayCDT)]);
+    await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadPitcherRolling(), loadSituationalProps(), loadPropMarketOdds(todayCDT)]);
 
     const batterPerson = batterData.people?.[0] || {};
     const pitcherPerson = pitcherData.people?.[0] || {};
@@ -4553,10 +4561,11 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
     const hotHitter = getStatcastHotHitterProfile({ id: batterId, name: batterName, ops: bs.ops, stats: { slg: bs.slg, avg: bs.avg } });
     const pitcherProfile = pitcherStatcast[String(pitcherId)] || null;
     const nearHRList = nearHRs[String(batterId)] || null;
+    const recentHRList = recentHRs[String(batterId)] || null;
     const rollingProfile = pitcherRolling[String(pitcherId)] || null;
     const situationalProfile = situationalProps[String(batterId)] || null;
 
-    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, rollingProfile, situationalProfile });
+    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, rollingProfile, situationalProfile });
   } catch(e) {
     body.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
@@ -4580,7 +4589,7 @@ function animateCountUp(el, endValue, decimals = 0, duration = 700) {
   requestAnimationFrame(step);
 }
 
-function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, rollingProfile=null, situationalProfile=null }) {
+function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, rollingProfile=null, situationalProfile=null }) {
   function fv(v, dec=3) {
     if (v==null||v===''||v==='---') return '–';
     const n = parseFloat(v); return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0(\.)/, '$1');
@@ -5425,6 +5434,31 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       </div>`;
   })();
 
+  // ── HRs · last 10 games (confirmed home runs) ──
+  // Same three-state (null/empty/list) pattern and data source as nearHRHTML
+  // above -- recentHRList is null when data/recent-hrs.json hasn't synced yet
+  // or this batter isn't in the tracked pool, distinct from an empty array
+  // (synced, genuinely none in the window).
+  const recentHRHTML = (() => {
+    const shortName = batterName.split(' ').pop();
+    if (recentHRList == null) return `
+      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">Confirmed HR tracking for ${shortName} hasn't synced yet.</div>`;
+    if (!recentHRList.length) return `
+      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">No home runs for ${shortName} in his last 10 games.</div>`;
+    const rows = recentHRList.map(n => `
+      <div class="vuln-item">
+        <span class="vuln-icon">💥</span>
+        <span style="color:var(--text)">
+          <strong>${Math.round(n.distance)} ft</strong>${n.exitVelo != null ? ` · ${n.exitVelo.toFixed(1)} mph` : ''}${n.launchAngle != null ? ` · ${Math.round(n.launchAngle)}° launch` : ''} — ${n.date}${n.matchup ? ` (${n.matchup})` : ''}${n.videoUrl ? ` · <a href="${n.videoUrl}" target="_blank" rel="noopener" style="color:var(--accent2)">Watch ▸</a>` : ''}
+        </span>
+      </div>`).join('');
+    return `
+      <div class="vuln-box" style="margin-top:10px">
+        <div class="vuln-title">💥 HRs · LAST 10 GAMES <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(confirmed home runs)</span></div>
+        ${rows}
+      </div>`;
+  })();
+
   // ── Situational true probability vs market implied probability ──────────
   // "True probability" here is deliberately NOT the same number as hrProb
   // elsewhere on the site (that's a blended-season-rate formula) — this is
@@ -5515,6 +5549,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <div style="font-size:11px;color:var(--muted);line-height:1.6">
         <strong style="color:var(--text)">How to read this:</strong> batting average can lie — a hitter can smash the ball all week straight into gloves, or bloop his way to a lucky hot streak. These numbers look at the swings themselves: how hard he's hitting the ball and where it's going. A green <strong style="color:var(--green)">▲ due</strong> tag means his swings have been better than his results — good things may be coming. An orange <strong style="color:var(--accent2)">▼ running hot</strong> tag means the opposite: the results have been better than the swings, and he may cool off.
       </div>
+      ${recentHRHTML}
       ${nearHRHTML}
       ${edgeHTML}
     </div>`;
@@ -5770,6 +5805,25 @@ async function loadNearHRs(force=false) {
     return nearHRs;
   })();
   return nearHRsPromise;
+}
+// Same pattern as loadNearHRs() above — data/recent-hrs.json is the confirmed-
+// HR mirror written by the same sync run.
+async function loadRecentHRs(force=false) {
+  if (recentHRsLoaded && !force) return recentHRs;
+  if (recentHRsPromise && !force) return recentHRsPromise;
+  recentHRsPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/recent-hrs.json`);
+      const players = data.players || {};
+      recentHRs = {};
+      Object.keys(players).forEach(id => { recentHRs[String(id)] = players[id]; });
+    } catch(e) {
+      recentHRs = {};
+    }
+    recentHRsLoaded = true;
+    return recentHRs;
+  })();
+  return recentHRsPromise;
 }
 
 // "Last, First" (Baseball Savant's format, the only name source available for
@@ -11254,10 +11308,38 @@ if (document.readyState === 'loading') {
   }
   function hasNearHR(id){ var evs=nearHRs&&nearHRs[String(id)]; return !!(evs&&evs.length); }
   function applyHRFilters(arr){ var s=getFilters(); var gf=getHRGameFilter(); if(gf) arr=arr.filter(function(r){ return String(r.gamePk)===gf; }); if(!s.size)return arr; return arr.filter(function(r){ if(s.has('onfire')&&!r.isOnFire)return false; if(s.has('top')&&!((r.topHrThreat&&n(r.hrProb)>=14)||n(r.hrProb)>=18))return false; if(s.has('drought')&&!r.isDrought)return false; if(s.has('due')&&!r.isDue)return false; if(s.has('favorable')&&!r.isFavorable)return false; if(s.has('watchlist')&&!window.drIsWatchlisted(r.id))return false; if(s.has('nearhr')&&!hasNearHR(r.id))return false; return true; }); }
-  function setButtons(){ syncHRSortSelect(); var s=getFilters(); ['all','onfire','top','drought','due','favorable','watchlist','nearhr'].forEach(function(f){ var b=document.getElementById('filter-'+f+'-btn'); if(!b)return; b.classList.toggle('active', f==='all'?s.size===0:s.has(f)); });
-    var cb=document.getElementById('hrp-completed-toggle-btn');
-    if(cb){ var on=!!window.__hrpShowCompletedOnly; cb.classList.toggle('active',on); cb.textContent = on ? '↩ BACK TO PROJECTIONS' : '✅ COMPLETED HITS ONLY'; }
+  function setButtons(){
+    syncHRSortSelect();
+    var s=getFilters();
+    var completedOn=!!window.__hrpShowCompletedOnly;
+    document.querySelectorAll('#hrp-filters-menu [data-hrp-filter]').forEach(function(cb){ cb.checked = s.has(cb.getAttribute('data-hrp-filter')); });
+    var completedCb=document.getElementById('hrp-completed-checkbox');
+    if(completedCb) completedCb.checked = completedOn;
+    var activeCount = s.size + (completedOn?1:0);
+    var trigger=document.getElementById('hrp-filters-btn');
+    if(trigger) trigger.classList.toggle('active', activeCount>0);
+    var badge=document.getElementById('hrp-filters-badge');
+    if(badge){ if(activeCount>0){ badge.textContent=String(activeCount); badge.style.display='inline-block'; } else { badge.style.display='none'; } }
   }
+  window.toggleHRPFilterMenu = function(ev){
+    if(ev) ev.stopPropagation();
+    var menu=document.getElementById('hrp-filters-menu');
+    if(!menu) return;
+    var opening = menu.style.display==='none' || !menu.style.display;
+    menu.style.display = opening ? 'block' : 'none';
+  };
+  // Single persistent listener (installed once, not per-open) closes the
+  // filter dropdown on any outside click. Checked in bubble phase, so the
+  // trigger button's own onclick (which flips menu.style.display) always
+  // runs first -- this only ever sees the post-toggle state, so it can't
+  // race with or immediately undo the open/close it just caused.
+  document.addEventListener('click', function(e){
+    var menu=document.getElementById('hrp-filters-menu');
+    if(!menu || menu.style.display==='none' || !menu.style.display) return;
+    var trigger=document.getElementById('hrp-filters-btn');
+    if(menu.contains(e.target) || (trigger && trigger.contains(e.target))) return;
+    menu.style.display='none';
+  });
   // Toggle between the normal "still projected, hasn't homered yet" board and a
   // completed-only view showing just the players who have actually gone deep today
   // (live or final box score, real stat(r,'hr')>0 via isHit) — same underlying rows
@@ -11276,7 +11358,7 @@ if (document.readyState === 'loading') {
     if (s.last10HomeRuns != null && s.last10HomeRuns !== '') return s.last10HomeRuns;
     return null;
   }
-  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); populateHRGameSelect(base); if(!base.length){el.innerHTML='<div class="mu-empty">No HR potential data yet — check back once lineups are posted.</div>';return;} var completedOnly=!!window.__hrpShowCompletedOnly; var arr=applyHRFilters(base).filter(function(r){return completedOnly ? isHit('hr',r) : (!isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL');}).sort(function(a,b){return hrSortValue(b)-hrSortValue(a);}); arr.forEach(function(r){window.__hrCompareRows[String(r.id)]=r;}); if(!arr.length){el.innerHTML='<div class="mu-empty" style="padding:24px">'+(completedOnly?'No completed home runs yet today. Check back once games are underway.':'No players match the selected filters. Try fewer filters, or select ALL to reset.')+'</div>';return;} var cards=arr.map(function(r){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); var l10=dr113Last10HRValue(r); var bpPct=ballparkPalFactorForPlayer(r.gamePk,r.id); var stats=[hrChip('HR Prob',p.toFixed(1)+'%','green'),hrChip('Matchup Edge',r.matchupEdge==null?'–':r.matchupEdge,r.matchupEdge==null?'':r.matchupEdge>=64?'green':r.matchupEdge<45?'red':'gold'),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1),'gold'):'',bpPct!=null?hrChip('Ballpark Pal',(bpPct>0?'+':'')+bpPct+'%',bpPct>0?'green':bpPct<0?'red':''):''].filter(Boolean); return '<div class="dr1027-hr-card '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="cursor:pointer" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="if(!event.target.closest(\'button,a\')){var d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName);}">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-why" id="hrp-scout-'+esc(r.id)+'-'+esc(r.pitcherId||0)+'">'+(r.pitcherId?'<span class="spin"></span> Loading scouting report\u2026':'<span style="color:var(--muted)">No opposing pitcher assigned yet \u2014 scouting report unavailable.</span>')+'</div><label class="dr1027-hr-compare" onclick="event.stopPropagation()" title="Add to Compare"><input type="checkbox" '+(window.drHRCompareHas&&window.drHRCompareHas(r.id)?'checked':'')+' onchange="drHRCompareToggle(\''+esc(r.id)+'\',this.checked)"><span>Add to Compare</span></label>'+'</div>'; }).join(''); el.innerHTML=hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; arr.forEach(function(r){ if(!r.pitcherId) return; loadHRScoutingReport(r.id,r.name,r.pitcherId,r.pitcherName).then(function(html){ var t=document.getElementById('hrp-scout-'+r.id+'-'+r.pitcherId); if(t) t.innerHTML=html; }); }); hrCompareUpdateBar(); }
+  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); populateHRGameSelect(base); if(!base.length){el.innerHTML='<div class="mu-empty">No HR potential data yet — check back once lineups are posted.</div>';return;} var completedOnly=!!window.__hrpShowCompletedOnly; var arr=applyHRFilters(base).filter(function(r){return completedOnly ? isHit('hr',r) : (!isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL');}).sort(function(a,b){return hrSortValue(b)-hrSortValue(a);}); arr.forEach(function(r){window.__hrCompareRows[String(r.id)]=r;}); if(!arr.length){el.innerHTML='<div class="mu-empty" style="padding:24px">'+(completedOnly?'No completed home runs yet today. Check back once games are underway.':'No players match the selected filters. Try fewer filters, or select ALL to reset.')+'</div>';return;} var cards=arr.map(function(r){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); if(hasNearHR(r.id))labels.push(labelChip('🚀 NEAR HR',nearHRs[String(r.id)].length,'gold')); var l10=dr113Last10HRValue(r); var bpPct=ballparkPalFactorForPlayer(r.gamePk,r.id); var stats=[hrChip('HR Prob',p.toFixed(1)+'%','green'),hrChip('Matchup Edge',r.matchupEdge==null?'–':r.matchupEdge,r.matchupEdge==null?'':r.matchupEdge>=64?'green':r.matchupEdge<45?'red':'gold'),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1),'gold'):'',bpPct!=null?hrChip('Ballpark Pal',(bpPct>0?'+':'')+bpPct+'%',bpPct>0?'green':bpPct<0?'red':''):''].filter(Boolean); return '<div class="dr1027-hr-card '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="cursor:pointer" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="if(!event.target.closest(\'button,a\')){var d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName);}">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-why" id="hrp-scout-'+esc(r.id)+'-'+esc(r.pitcherId||0)+'">'+(r.pitcherId?'<span class="spin"></span> Loading scouting report\u2026':'<span style="color:var(--muted)">No opposing pitcher assigned yet \u2014 scouting report unavailable.</span>')+'</div><label class="dr1027-hr-compare" onclick="event.stopPropagation()" title="Add to Compare"><input type="checkbox" '+(window.drHRCompareHas&&window.drHRCompareHas(r.id)?'checked':'')+' onchange="drHRCompareToggle(\''+esc(r.id)+'\',this.checked)"><span>Add to Compare</span></label>'+'</div>'; }).join(''); el.innerHTML=hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; arr.forEach(function(r){ if(!r.pitcherId) return; loadHRScoutingReport(r.id,r.name,r.pitcherId,r.pitcherName).then(function(html){ var t=document.getElementById('hrp-scout-'+r.id+'-'+r.pitcherId); if(t) t.innerHTML=html; }); }); hrCompareUpdateBar(); }
 
   // ── HR Threats compare tray ─────────────────────────────────────────────
   // Lets a user shortlist up to HR_COMPARE_MAX cards (checkbox per card, added

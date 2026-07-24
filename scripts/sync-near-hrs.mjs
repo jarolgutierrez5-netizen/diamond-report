@@ -39,6 +39,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const HOT_HITTERS_PATH = path.join(DATA_DIR, 'statcast-hot-hitters.json');
 const NEAR_HR_PATH = path.join(DATA_DIR, 'near-hrs.json');
+const RECENT_HR_PATH = path.join(DATA_DIR, 'recent-hrs.json');
 const SEASON = new Date().getFullYear();
 const SEARCH_BASE = 'https://baseballsavant.mlb.com/statcast_search/csv';
 
@@ -186,102 +187,14 @@ async function resolveEventVideo(event) {
   if (matches.length === 1) event.videoUrl = savantVideoURL(matches[0].playId);
 }
 
-async function loadTrackedBatters() {
-  const raw = await readFile(HOT_HITTERS_PATH, 'utf8');
-  const data = JSON.parse(raw);
-  return (data.players || []).filter(p => p.playerId).map(p => ({ id: p.playerId, name: p.name }));
-}
-
-// Returns an array of near-HR events for this batter's real last 10 games
-// (by distinct game_date, not a fixed calendar window), sorted longest first.
-// videoUrl starts out null on every event -- resolveEventVideo() (called from
-// main(), after this returns) fills it in via the separate gf-feed lookup
-// above when it can find an unambiguous match. The _gamePk/_inning/_abNumber/
-// _batterId fields are internal matching keys for that lookup only and are
-// stripped before the result is written to data/near-hrs.json.
-function buildNearHRs(csv, batterName, batterId) {
-  const rows = parseCSV(csv);
-  if (!rows.length) return [];
-  const sample = rows[0];
-  if (!('events' in sample) || !('bb_type' in sample) || !('hit_distance_sc' in sample) || !('game_date' in sample)) {
-    throw new Error(`unexpected CSV columns for ${batterName} — got [${Object.keys(sample).join(', ')}]`);
-  }
-
-  // Statcast Search returns one row per PITCH; only the pitch that ended the
-  // plate appearance in a ball in play carries a non-empty events value.
-  const battedBalls = rows.filter(r => r.events && r.events !== '');
-  const dates = [...new Set(battedBalls.map(r => r.game_date).filter(Boolean))].sort().reverse();
-  const last10 = new Set(dates.slice(0, GAMES_TO_KEEP));
-
-  return battedBalls
-    .filter(r => last10.has(r.game_date))
-    .filter(r => r.bb_type === 'fly_ball' && r.events !== 'home_run')
-    .map(r => ({
-      date: r.game_date,
-      distance: Number(r.hit_distance_sc),
-      exitVelo: Number.isFinite(Number(r.launch_speed)) ? Number(r.launch_speed) : null,
-      launchAngle: Number.isFinite(Number(r.launch_angle)) ? Number(r.launch_angle) : null,
-      event: r.events,
-      description: r.des || null,
-      matchup: [r.away_team, r.home_team].filter(Boolean).join(' @ ') || null,
-      videoUrl: null,
-      _gamePk: r.game_pk || null,
-      _inning: r.inning || null,
-      _abNumber: r.at_bat_number || null,
-      _batterId: batterId,
-    }))
-    .filter(r => Number.isFinite(r.distance) && r.distance >= NEAR_HR_MIN_DISTANCE_FT)
-    .sort((a, b) => b.distance - a.distance);
-}
-
-async function main() {
-  await mkdir(DATA_DIR, { recursive: true });
-
-  let batters;
-  try {
-    batters = await loadTrackedBatters();
-  } catch (e) {
-    console.error('statcast-hot-hitters.json not found/unreadable — run sync-statcast-hot-hitters.mjs first:', e.message);
-    process.exitCode = 1;
-    return;
-  }
-  console.log(`Checking ${batters.length} tracked batter(s) for near-HRs in their last ${GAMES_TO_KEEP} games.`);
-
-  const out = {
-    generatedAt: new Date().toISOString(),
-    windowStart: WINDOW_START,
-    windowEnd: WINDOW_END,
-    minDistanceFt: NEAR_HR_MIN_DISTANCE_FT,
-    players: {},
-  };
-  let updated = 0, failed = 0, withNearHRs = 0;
-  for (const { id, name } of batters) {
-    try {
-      const csv = await fetchText(batterSearchURL(id));
-      out.players[id] = buildNearHRs(csv, name, id);
-      updated++;
-      if (out.players[id].length) withNearHRs++;
-    } catch (e) {
-      failed++;
-      console.error(`Near-HR sync failed for ${name} (${id}):`, e.message);
-    }
-    // Polite bounded-scope delay, same spirit as the other Statcast Search
-    // scripts — a public, unauthenticated endpoint with no documented rate
-    // limit, and this runs against the whole ~250-player tracked pool rather
-    // than a short per-day list, so this errs a little longer than theirs.
-    await new Promise(r => setTimeout(r, 600));
-  }
-
-  console.log(`Checked ${updated}/${batters.length} batters (${failed} failed), ${withNearHRs} with at least one near-HR in their last ${GAMES_TO_KEEP} games.`);
-
-  // Second pass: resolve video links via the gf-feed lookup, then strip the
-  // internal matching keys before writing. Kept as its own pass (rather than
-  // folded into the loop above) so a broken/absent gf feed only ever costs
-  // missing video links, never a missing near-HR event -- the feature works
-  // the same either way, video is strictly additive.
+// Runs resolveEventVideo() over every event in a {batterId: event[]} map and
+// strips the internal matching keys afterward -- shared by both the near-HR
+// and confirmed-HR outputs below, since gfCache already dedupes fetches
+// across whichever of the two runs against a given game_pk first.
+async function resolveVideosAndStrip(playersMap) {
   let withVideo = 0, videoAttempted = 0;
-  for (const id of Object.keys(out.players)) {
-    for (const event of out.players[id]) {
+  for (const id of Object.keys(playersMap)) {
+    for (const event of playersMap[id]) {
       if (event._gamePk) {
         videoAttempted++;
         const isNewGame = !gfCache.has(event._gamePk);
@@ -297,10 +210,146 @@ async function main() {
       delete event._batterId;
     }
   }
-  console.log(`Resolved ${withVideo}/${videoAttempted} near-HR events to a video link (${gfCache.size} unique games checked).`);
+  return { withVideo, videoAttempted };
+}
+
+async function loadTrackedBatters() {
+  const raw = await readFile(HOT_HITTERS_PATH, 'utf8');
+  const data = JSON.parse(raw);
+  return (data.players || []).filter(p => p.playerId).map(p => ({ id: p.playerId, name: p.name }));
+}
+
+// Shared parse + "real last 10 games" windowing for both buildNearHRs() and
+// buildRecentHRs() below -- both read off the exact same per-batter CSV
+// fetch (one Statcast Search request already covers both datasets, so
+// there's no reason to fetch or reparse twice for what's really one pull).
+function computeLast10BattedBalls(csv, batterName) {
+  const rows = parseCSV(csv);
+  if (!rows.length) return [];
+  const sample = rows[0];
+  if (!('events' in sample) || !('bb_type' in sample) || !('hit_distance_sc' in sample) || !('game_date' in sample)) {
+    throw new Error(`unexpected CSV columns for ${batterName} — got [${Object.keys(sample).join(', ')}]`);
+  }
+
+  // Statcast Search returns one row per PITCH; only the pitch that ended the
+  // plate appearance in a ball in play carries a non-empty events value.
+  const battedBalls = rows.filter(r => r.events && r.events !== '');
+  const dates = [...new Set(battedBalls.map(r => r.game_date).filter(Boolean))].sort().reverse();
+  const last10 = new Set(dates.slice(0, GAMES_TO_KEEP));
+  return battedBalls.filter(r => last10.has(r.game_date));
+}
+
+function battedBallEvent(r, batterId) {
+  return {
+    date: r.game_date,
+    distance: Number(r.hit_distance_sc),
+    exitVelo: Number.isFinite(Number(r.launch_speed)) ? Number(r.launch_speed) : null,
+    launchAngle: Number.isFinite(Number(r.launch_angle)) ? Number(r.launch_angle) : null,
+    event: r.events,
+    description: r.des || null,
+    matchup: [r.away_team, r.home_team].filter(Boolean).join(' @ ') || null,
+    videoUrl: null,
+    _gamePk: r.game_pk || null,
+    _inning: r.inning || null,
+    _abNumber: r.at_bat_number || null,
+    _batterId: batterId,
+  };
+}
+
+// Returns an array of near-HR events for this batter's real last 10 games
+// (by distinct game_date, not a fixed calendar window), sorted longest first.
+// videoUrl starts out null on every event -- resolveEventVideo() (called from
+// main(), after this returns) fills it in via the separate gf-feed lookup
+// above when it can find an unambiguous match. The _gamePk/_inning/_abNumber/
+// _batterId fields are internal matching keys for that lookup only and are
+// stripped before the result is written to data/near-hrs.json.
+function buildNearHRs(csv, batterName, batterId) {
+  return computeLast10BattedBalls(csv, batterName)
+    .filter(r => r.bb_type === 'fly_ball' && r.events !== 'home_run')
+    .map(r => battedBallEvent(r, batterId))
+    .filter(r => Number.isFinite(r.distance) && r.distance >= NEAR_HR_MIN_DISTANCE_FT)
+    .sort((a, b) => b.distance - a.distance);
+}
+
+// Same source data as buildNearHRs() (the "wall ball" near-misses), but the
+// mirror-image query: real, confirmed home runs from the same real-last-10-
+// games window -- the "HRs · Last 10 Games" section in the Pitcher Matchup
+// modal, alongside the existing Near HRs section. Sorted most-recent-first
+// (near-misses read better longest-first; confirmed homers read better in
+// the order they actually happened).
+function buildRecentHRs(csv, batterName, batterId) {
+  return computeLast10BattedBalls(csv, batterName)
+    .filter(r => r.events === 'home_run')
+    .map(r => battedBallEvent(r, batterId))
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+}
+
+async function main() {
+  await mkdir(DATA_DIR, { recursive: true });
+
+  let batters;
+  try {
+    batters = await loadTrackedBatters();
+  } catch (e) {
+    console.error('statcast-hot-hitters.json not found/unreadable — run sync-statcast-hot-hitters.mjs first:', e.message);
+    process.exitCode = 1;
+    return;
+  }
+  console.log(`Checking ${batters.length} tracked batter(s) for near-HRs and confirmed HRs in their last ${GAMES_TO_KEEP} games.`);
+
+  const out = {
+    generatedAt: new Date().toISOString(),
+    windowStart: WINDOW_START,
+    windowEnd: WINDOW_END,
+    minDistanceFt: NEAR_HR_MIN_DISTANCE_FT,
+    players: {},
+  };
+  // Same batter pool, same real-last-10-games window as `out` above, and
+  // built from the exact same CSV fetch per batter in the loop below --
+  // this is the confirmed-HR mirror of the near-HR data, feeding the
+  // Pitcher Matchup modal's "HRs · Last 10 Games" section.
+  const outRecent = {
+    generatedAt: new Date().toISOString(),
+    windowStart: WINDOW_START,
+    windowEnd: WINDOW_END,
+    players: {},
+  };
+  let updated = 0, failed = 0, withNearHRs = 0, withRecentHRs = 0;
+  for (const { id, name } of batters) {
+    try {
+      const csv = await fetchText(batterSearchURL(id));
+      out.players[id] = buildNearHRs(csv, name, id);
+      outRecent.players[id] = buildRecentHRs(csv, name, id);
+      updated++;
+      if (out.players[id].length) withNearHRs++;
+      if (outRecent.players[id].length) withRecentHRs++;
+    } catch (e) {
+      failed++;
+      console.error(`Near-HR sync failed for ${name} (${id}):`, e.message);
+    }
+    // Polite bounded-scope delay, same spirit as the other Statcast Search
+    // scripts — a public, unauthenticated endpoint with no documented rate
+    // limit, and this runs against the whole ~250-player tracked pool rather
+    // than a short per-day list, so this errs a little longer than theirs.
+    await new Promise(r => setTimeout(r, 600));
+  }
+
+  console.log(`Checked ${updated}/${batters.length} batters (${failed} failed), ${withNearHRs} with at least one near-HR and ${withRecentHRs} with at least one confirmed HR in their last ${GAMES_TO_KEEP} games.`);
+
+  // Video resolution is a separate pass (rather than folded into the loop
+  // above) so a broken/absent gf feed only ever costs missing video links,
+  // never a missing near-HR/confirmed-HR event -- both features work the
+  // same either way, video is strictly additive. gfCache is shared across
+  // both calls, so a game_pk fetched while resolving near-HR video is free
+  // the second time it's needed for a confirmed-HR event in the same game.
+  const nearVideo = await resolveVideosAndStrip(out.players);
+  console.log(`Resolved ${nearVideo.withVideo}/${nearVideo.videoAttempted} near-HR events to a video link (${gfCache.size} unique games checked so far).`);
+  const recentVideo = await resolveVideosAndStrip(outRecent.players);
+  console.log(`Resolved ${recentVideo.withVideo}/${recentVideo.videoAttempted} confirmed-HR events to a video link (${gfCache.size} unique games checked total).`);
 
   if (updated > 0) {
     await writeFile(NEAR_HR_PATH, JSON.stringify(out, null, 2) + '\n');
+    await writeFile(RECENT_HR_PATH, JSON.stringify(outRecent, null, 2) + '\n');
   }
   if (failed > 0 && updated === 0) process.exitCode = 1;
 }
@@ -310,4 +359,4 @@ if (isMain) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { batterSearchURL, buildNearHRs, savantVideoURL, collectPlayIdEntries, resolveEventVideo, main };
+export { batterSearchURL, buildNearHRs, buildRecentHRs, savantVideoURL, collectPlayIdEntries, resolveEventVideo, resolveVideosAndStrip, main };
