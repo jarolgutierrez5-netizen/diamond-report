@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026072461">
+<link rel="stylesheet" href="styles.min.css?v=2026072463">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -464,6 +464,7 @@
       <button id="filter-watchlist-btn" class="hrp-filter-btn hrp-filter-watchlist" onclick="filterHRP('watchlist')">★ WATCHLIST</button>
       <button id="filter-all-btn" class="hrp-filter-btn hrp-filter-all active" onclick="filterHRP('all')">ALL</button>
       <select id="hrp-game-filter" onchange="window.setHRGameFilter && window.setHRGameFilter(this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:10px;font-weight:700"><option value="">All Games</option></select>
+      <select id="hrp-sort-select" onchange="window.setHRSort && window.setHRSort(this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:10px;font-weight:700"><option value="hrProb">Sort: HR Probability</option><option value="matchupEdge">Sort: Matchup Edge</option></select>
       <button id="hrp-completed-toggle-btn" class="hrp-filter-btn" style="margin-left:6px" onclick="window.toggleHRPCompletedView && window.toggleHRPCompletedView()">✅ COMPLETED HITS ONLY</button>
       <div class="dr-board-search-wrap">
         <svg class="dr-icon dr-board-search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16 16l-3.8-3.8"/></svg>
@@ -821,7 +822,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026072461" defer></script>
+<script src="app.min.js?v=2026072463" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
