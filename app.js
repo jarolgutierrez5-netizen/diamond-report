@@ -11050,7 +11050,14 @@ if (document.readyState === 'loading') {
   // in sync with the same 7%/3% floor the original renderHRPTable function above also
   // uses in case that path is ever reactivated. topHrThreat covers the top 2 batters
   // per pitcher matchup, not just the single best (see where it's set, in loadHRPotential).
-  function getHRRows(){ return rows().filter(function(r){return n(r.hrProb)>0 && ((r.topHrThreat && n(r.hrProb)>=3) || n(r.hrProb)>=7) && drMatchesSearch('hr', r.name);}); }
+  // A watchlisted player also bypasses the floor, same carve-out as topHrThreat -- this
+  // filter runs before applyHRFilters' own watchlist check even sees the row, so without
+  // this, starring a player whose current hrProb sits below the floor made them
+  // permanently invisible everywhere on the board, including under the WATCHLIST filter
+  // itself. With multiple players starred, whichever one still cleared the floor was the
+  // only one that could ever show, which read as "only one shows up" even though every
+  // star had registered correctly in localStorage.
+  function getHRRows(){ return rows().filter(function(r){return n(r.hrProb)>0 && (window.drIsWatchlisted(r.id) || (r.topHrThreat && n(r.hrProb)>=3) || n(r.hrProb)>=7) && drMatchesSearch('hr', r.name);}); }
   function getFilters(){ if(!window.__hrpFilterSet) window.__hrpFilterSet=new Set(); return window.__hrpFilterSet; }
   function getHRGameFilter(){ return window.__hrpGameFilter||''; }
   window.setHRGameFilter=function(val){ window.__hrpGameFilter=val||''; renderHRPTableV1032(); };
