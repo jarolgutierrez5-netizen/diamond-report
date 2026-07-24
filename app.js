@@ -5822,23 +5822,30 @@ function renderNearHRs() {
   }
 
   const hs = id => id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_32,q_auto:best/v1/people/${id}/headshot/67/current` : '';
-
-  el.innerHTML = players.map(p => {
-    const rows = p.events.map(n => `
+  const eventRowHTML = n => `
       <div class="vuln-item">
         <span class="vuln-icon">🚀</span>
         <span style="color:var(--text)">
           <strong>${Math.round(n.distance)} ft</strong>${n.exitVelo != null ? ` · ${n.exitVelo.toFixed(1)} mph` : ''}${n.launchAngle != null ? ` · ${Math.round(n.launchAngle)}° launch` : ''} — ${n.date}${n.matchup ? ` (${n.matchup})` : ''}${n.videoUrl ? ` · <a href="${n.videoUrl}" target="_blank" rel="noopener" style="color:var(--accent2)">Watch ▸</a>` : ''}
         </span>
-      </div>`).join('');
+      </div>`;
+
+  // Card shows a clickable stat label ("N Near HRs") collapsed by default —
+  // clicking it (native <details>/<summary>, no extra JS needed) reveals just
+  // the single most recent event, not the full last-10-games list, per the
+  // "shows the last near home run" request.
+  el.innerHTML = players.map(p => {
+    const lastEvent = p.events.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
     return `<div class="stat-row" style="align-items:flex-start;flex-wrap:wrap">
       <img src="${hs(p.id)}" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" alt="" loading="lazy" decoding="async">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span style="font-size:13px;font-weight:600;color:var(--text)">${p.name}</span>
-          <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">${p.events.length} near HR${p.events.length !== 1 ? 's' : ''}</span>
         </div>
-        <div style="margin-top:4px;display:flex;flex-direction:column;gap:2px">${rows}</div>
+        <details style="margin-top:4px">
+          <summary style="cursor:pointer;font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;padding:2px 8px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);display:inline-block">🚀 ${p.events.length} Near HR${p.events.length !== 1 ? 's' : ''}</summary>
+          <div style="margin-top:4px">${eventRowHTML(lastEvent)}</div>
+        </details>
       </div>
     </div>`;
   }).join('');
@@ -10505,7 +10512,7 @@ if (document.readyState === 'loading') {
 
 /* ---- from <script id="prod-v8-70-performance-loader"> ---- */
 (function(){
-  const loaded = { game:false, pr:false, hr:false, k:false, props:false, deep:false, fantasy:false };
+  const loaded = { game:false, pr:false, hr:false, k:false, props:false, deep:false, fantasy:false, nearhr:false };
   const idle = window.requestIdleCallback || function(cb){ return setTimeout(cb, 900); };
 
   window.__drLoadGamePickPaneData = function(pane){
@@ -10528,9 +10535,14 @@ if (document.readyState === 'loading') {
         loaded.hr = true;
         Promise.allSettled([
           (async()=>{ try { if (typeof window.loadHRPotentialWithRetry === 'function') return window.loadHRPotentialWithRetry(); } catch(e) {} })(),
-          (async()=>{ try { if (typeof window.loadHRsToday === 'function') return window.loadHRsToday(); } catch(e) {} })(),
-          (async()=>{ try { if (typeof window.loadNearHRsBoard === 'function') return window.loadNearHRsBoard(); } catch(e) {} })()
+          (async()=>{ try { if (typeof window.loadHRsToday === 'function') return window.loadHRsToday(); } catch(e) {} })()
         ]);
+        return;
+      }
+      if (pane === 'nearhr') {
+        if (loaded.nearhr) return;
+        loaded.nearhr = true;
+        try { if (typeof window.loadNearHRsBoard === 'function') window.loadNearHRsBoard(); } catch(e) {}
         return;
       }
       if (pane === 'k') {
@@ -10571,7 +10583,7 @@ if (document.readyState === 'loading') {
 /* ---- from <script id="anonymous"> ---- */
 // PROD v8.44 — Game Picks inner tab controller with persistent state
 (function(){
-  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, fantasy: true };
+  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, fantasy: true, nearhr: true };
 
   // Only the URL hash decides the pane on load (e.g. a shared #gamepick=premium
   // link). No localStorage fallback — a plain refresh/revisit with no hash

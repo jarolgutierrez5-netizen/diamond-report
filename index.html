@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026072469">
+<link rel="stylesheet" href="styles.min.css?v=2026072470">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -148,6 +148,7 @@
      inline left/top set in app.js on open, relative to .header (the nearest
      positioned ancestor now that this lives inside it). -->
 <div class="dr-top-nav-menu" id="dr-top-nav-baseball-menu" aria-hidden="true">
+  <button type="button" data-gamepick-pane="nearhr" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15.5l4.5-9 3 4 2.5-5.5L17 12"/><circle cx="16.5" cy="3.5" r="1.2"/></svg><span>Near HRs</span></button>
   <button type="button" data-gamepick-pane="game" class="dr-top-nav-tab active"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="15" height="13" rx="2.5"/><path d="M2.5 8h15"/><path d="M6.5 2.5v3M13.5 2.5v3"/></svg><span>Games Today</span></button>
   <button type="button" data-gamepick-pane="hr" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8c.9 2.7-2.4 3.7-2.4 6.8a2.4 2.4 0 0 0 4.8 0c0-.8-.4-1.5-.8-2 .2 1.2-.8 1.6-1 .8-.4-1.1.8-1.7.6-3.7-.1-1.6-1.2-1.9-1.2-1.9z"/><path d="M7.2 11.5A3.4 3.4 0 0 0 10 17a3.4 3.4 0 0 0 3.3-4.3"/></svg><span>Home Runs</span></button>
   <button type="button" data-gamepick-pane="k" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2.5L4.5 11h4.2L8 17.5l6.5-9h-4.2z"/></svg><span>Strikeouts</span></button>
@@ -423,6 +424,7 @@
      active-state syncing (activateGamePickPane/setDesktopTabState). -->
 <div class="gamepick-tabs-wrap" aria-label="Game Picks section navigation">
   <div class="gamepick-tabs" role="tablist" aria-label="Game Picks Centers">
+    <button class="gamepick-tab" id="gamepick-tab-nearhr" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-nearhr" data-gamepick-pane="nearhr" onclick="showGamePickPane('nearhr')">🚀 Near HRs</button>
     <button class="gamepick-tab active" id="gamepick-tab-game" type="button" role="tab" aria-selected="true" aria-controls="gamepick-pane-game" data-gamepick-pane="game" onclick="showGamePickPane('game')">📊 Games Today</button>
     <button class="gamepick-tab" id="gamepick-tab-hr" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-hr" data-gamepick-pane="hr" onclick="showGamePickPane('hr')">🔥 Home Runs</button>
     <button class="gamepick-tab" id="gamepick-tab-k" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-k" data-gamepick-pane="k" onclick="showGamePickPane('k')">🎯 Strikeouts</button>
@@ -457,20 +459,20 @@
   <div class="dr-filter-row">
     <span class="dr-filter-label">Filter:</span>
     <div class="dr-filter-buttons">
-      <button id="filter-onfire-btn" class="hrp-filter-btn hrp-filter-onfire" onclick="filterHRP('onfire')">🔥 ON FIRE</button>
-      <button id="filter-favorable-btn" class="hrp-filter-btn hrp-filter-favorable" onclick="filterHRP('favorable')">🟢 FAVORABLE</button>
-      <button id="filter-drought-btn" class="hrp-filter-btn hrp-filter-drought" onclick="filterHRP('drought')">🔴 DROUGHT</button>
-      <button id="filter-due-btn" class="hrp-filter-btn hrp-filter-due" onclick="filterHRP('due')">⚠️ DUE</button>
-      <button id="filter-watchlist-btn" class="hrp-filter-btn hrp-filter-watchlist" onclick="filterHRP('watchlist')">★ WATCHLIST</button>
-      <button id="filter-all-btn" class="hrp-filter-btn hrp-filter-all active" onclick="filterHRP('all')">ALL</button>
-      <select id="hrp-game-filter" onchange="window.setHRGameFilter && window.setHRGameFilter(this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:10px;font-weight:700"><option value="">All Games</option></select>
-      <select id="hrp-sort-select" onchange="window.setHRSort && window.setHRSort(this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:10px;font-weight:700"><option value="hrProb">Sort: HR Probability</option><option value="matchupEdge">Sort: Matchup Edge</option></select>
-      <button id="hrp-completed-toggle-btn" class="hrp-filter-btn" style="margin-left:6px" onclick="window.toggleHRPCompletedView && window.toggleHRPCompletedView()">✅ COMPLETED HITS ONLY</button>
       <div class="dr-board-search-wrap">
         <svg class="dr-icon dr-board-search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16 16l-3.8-3.8"/></svg>
         <input type="text" id="hr-search-input" class="dr-board-search" placeholder="Search players…" oninput="drSetBoardSearch('hr',this.value,renderHRPTable)">
         <button type="button" class="dr-board-search-clear" onclick="document.getElementById('hr-search-input').value='';drSetBoardSearch('hr','',renderHRPTable)" aria-label="Clear search">✕</button>
       </div>
+      <button id="filter-onfire-btn" class="hrp-filter-btn hrp-filter-onfire" onclick="filterHRP('onfire')">🔥 ON FIRE</button>
+      <button id="filter-favorable-btn" class="hrp-filter-btn hrp-filter-favorable" onclick="filterHRP('favorable')">🟢 FAVORABLE</button>
+      <button id="filter-drought-btn" class="hrp-filter-btn hrp-filter-drought" onclick="filterHRP('drought')">🔴 DROUGHT</button>
+      <button id="filter-due-btn" class="hrp-filter-btn hrp-filter-due" onclick="filterHRP('due')">⚠️ DUE</button>
+      <button id="hrp-completed-toggle-btn" class="hrp-filter-btn" onclick="window.toggleHRPCompletedView && window.toggleHRPCompletedView()">✅ COMPLETED HITS ONLY</button>
+      <button id="filter-watchlist-btn" class="hrp-filter-btn hrp-filter-watchlist" onclick="filterHRP('watchlist')">★ WATCHLIST</button>
+      <button id="filter-all-btn" class="hrp-filter-btn hrp-filter-all active" onclick="filterHRP('all')">ALL</button>
+      <select id="hrp-game-filter" onchange="window.setHRGameFilter && window.setHRGameFilter(this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:10px;font-weight:700"><option value="">All Games</option></select>
+      <select id="hrp-sort-select" onchange="window.setHRSort && window.setHRSort(this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:10px;font-weight:700"><option value="hrProb">Sort: HR Probability</option><option value="matchupEdge">Sort: Matchup Edge</option></select>
     </div>
     <div id="props-refresh" class="dr-refresh"></div>
   </div>
@@ -503,26 +505,6 @@
         <div class="mu-empty" style="color:var(--muted)">Loading HRs from Projection…</div>
       </div>
     </div>
-
-    <div class="dr-panel dr-panel-fresh">
-      <div class="dr-panel-head">
-        <div>
-          <p class="section-title">🚀 Near <span>HRs</span></p>
-          <small>Warning-track fly outs (375+ ft) in each batter's last 10 games.</small>
-        </div>
-        <span id="near-hrs-count" class="dr-count-pill"></span>
-      </div>
-      <div class="dr-filter-row" style="padding:8px 12px 0">
-        <div class="dr-board-search-wrap">
-          <svg class="dr-icon dr-board-search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16 16l-3.8-3.8"/></svg>
-          <input type="text" id="nearhr-search-input" class="dr-board-search" placeholder="Search players…" oninput="drSetBoardSearch('nearhr',this.value,renderNearHRs)">
-          <button type="button" class="dr-board-search-clear" onclick="document.getElementById('nearhr-search-input').value='';drSetBoardSearch('nearhr','',renderNearHRs)" aria-label="Clear search">✕</button>
-        </div>
-      </div>
-      <div id="near-hrs-content" class="dr-panel-body dr-scroll-tall">
-        <div class="mu-empty"><span class="spin"></span>Loading near HRs…</div>
-      </div>
-    </div>
   </div>
 
   <div id="hr-compare-bar" style="display:none">
@@ -530,6 +512,31 @@
     <div class="hr-compare-bar-actions">
       <button type="button" id="hr-compare-open-btn" onclick="drHRCompareOpen()" disabled>Compare</button>
       <button type="button" class="hr-compare-clear-btn" onclick="drHRCompareClear()">Clear</button>
+    </div>
+  </div>
+</div>
+
+<div class="gamepick-pane" id="gamepick-pane-nearhr" role="tabpanel" aria-labelledby="gamepick-tab-nearhr" data-gamepick-pane="nearhr" hidden>
+  <div class="dr-filter-row">
+    <div class="dr-board-search-wrap">
+      <svg class="dr-icon dr-board-search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16 16l-3.8-3.8"/></svg>
+      <input type="text" id="nearhr-search-input" class="dr-board-search" placeholder="Search players…" oninput="drSetBoardSearch('nearhr',this.value,renderNearHRs)">
+      <button type="button" class="dr-board-search-clear" onclick="document.getElementById('nearhr-search-input').value='';drSetBoardSearch('nearhr','',renderNearHRs)" aria-label="Clear search">✕</button>
+    </div>
+  </div>
+  <div class="dr-center-label">🚀 Near HRs</div>
+  <div class="dr-dashboard-grid">
+    <div class="dr-panel dr-panel-large dr-panel-fresh">
+      <div class="dr-panel-head">
+        <div>
+          <p class="section-title">Near <span>HRs</span></p>
+          <small>Warning-track fly outs (375+ ft) in each batter's last 10 games.</small>
+        </div>
+        <span id="near-hrs-count" class="dr-count-pill"></span>
+      </div>
+      <div id="near-hrs-content" class="dr-panel-body dr-scroll-tall">
+        <div class="mu-empty"><span class="spin"></span>Loading near HRs…</div>
+      </div>
     </div>
   </div>
 </div>
@@ -842,7 +849,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026072469" defer></script>
+<script src="app.min.js?v=2026072470" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
