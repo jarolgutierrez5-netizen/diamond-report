@@ -11599,15 +11599,19 @@ if (document.readyState === 'loading') {
     var menu=document.getElementById('hrp-filters-menu');
     var trigger=document.getElementById('hrp-filters-btn');
     if(!menu) return;
+    // iOS Safari has a long-documented bug where a position:fixed element nested
+    // inside an ancestor with -webkit-overflow-scrolling:touch (.dr-filter-row has
+    // this for its mobile horizontal scroll) doesn't actually fix to the viewport
+    // -- it gets trapped relative to that scrolling ancestor instead, a behavior
+    // Chromium's own mobile emulation doesn't reproduce, which is why this looked
+    // fixed in testing but stayed broken on a real iPhone. Moving the menu to be a
+    // direct child of <body> (once, the first time it's ever opened) takes it out
+    // of that scrolling ancestor's DOM subtree entirely, sidestepping the bug
+    // rather than fighting it with more CSS.
+    if (menu.parentElement !== document.body) document.body.appendChild(menu);
     var opening = menu.style.display==='none' || !menu.style.display;
     if(opening && trigger){
-      // position:fixed (set in index.html), positioned here in JS off the trigger's
-      // real screen rect -- .dr-filter-row has overflow-x:auto for its mobile
-      // horizontal scroll, which per spec also forces overflow-y to compute as
-      // auto. A position:absolute child extending below the row's own box was
-      // being clipped from hit-testing there, so on mobile the menu looked open
-      // but taps on it landed on whatever was underneath instead. position:fixed
-      // escapes that ancestor's overflow clipping entirely.
+      // position:fixed, positioned here in JS off the trigger's real screen rect.
       var rect = trigger.getBoundingClientRect();
       var menuWidth = 220;
       var left = Math.min(rect.left, window.innerWidth - menuWidth - 8);
