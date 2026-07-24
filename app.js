@@ -1663,6 +1663,15 @@ let recentHRs = {};
 let recentHRsLoaded = false;
 let recentHRsPromise = null;
 
+// Real home-run landing spots (feet from home plate) for this season, written
+// by scripts/sync-batter-zone-hr.mjs off the same per-batter Statcast Search CSV
+// it already fetches (hc_x/hc_y columns, converted via the community-standard
+// hit-coordinate transform). Keyed by batter MLB ID (string). Powers the
+// matchup modal's Home Run Spray Chart section.
+let batterHRSpray = {};
+let batterHRSprayLoaded = false;
+let batterHRSprayPromise = null;
+
 // Rolling pitch metrics (velocity/usage/whiff, last 3 starts vs season) — loaded
 // from data/pitcher-rolling.json, written by scripts/sync-pitcher-rolling.mjs.
 // Keyed by pitcher MLB ID (string). Empty object = file not yet synced or this
@@ -4571,7 +4580,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
       fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}/stats?stats=statSplits&group=pitching&sitCodes=vl,vr&season=2026`).catch(() => null)
     ]);
     const todayCDT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadPitcherRolling(), loadSituationalProps(), loadPropMarketOdds(todayCDT), loadBullpenFatigue(), loadParkFactors(), getTodaySchedule('team').catch(() => [])]);
+    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadBatterHRSpray(), loadPitcherRolling(), loadSituationalProps(), loadPropMarketOdds(todayCDT), loadBullpenFatigue(), loadParkFactors(), getTodaySchedule('team').catch(() => [])]);
     const todayGames = preloadResults[preloadResults.length - 1];
 
     const batterPerson = batterData.people?.[0] || {};
@@ -4587,6 +4596,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
     const pitcherProfile = pitcherStatcast[String(pitcherId)] || null;
     const nearHRList = nearHRs[String(batterId)] || null;
     const recentHRList = recentHRs[String(batterId)] || null;
+    const hrSprayList = batterHRSpray[String(batterId)] || null;
     const rollingProfile = pitcherRolling[String(pitcherId)] || null;
     const situationalProfile = situationalProps[String(batterId)] || null;
 
@@ -4608,7 +4618,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
       if (homeAbbr && Number.isFinite(parkFactors[homeAbbr])) parkHrIndex = parkFactors[homeAbbr];
     }
 
-    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, rollingProfile, situationalProfile, bullpenInfo, parkHrIndex });
+    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, hrSprayList, rollingProfile, situationalProfile, bullpenInfo, parkHrIndex });
   } catch(e) {
     body.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
@@ -4632,7 +4642,7 @@ function animateCountUp(el, endValue, decimals = 0, duration = 700) {
   requestAnimationFrame(step);
 }
 
-function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, rollingProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null }) {
+function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, hrSprayList=null, rollingProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null }) {
   function fv(v, dec=3) {
     if (v==null||v===''||v==='---') return '–';
     const n = parseFloat(v); return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0(\.)/, '$1');
@@ -5560,6 +5570,52 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       </div>`;
   })();
 
+  // ── Home run spray chart — real landing spots for the season ────────────
+  // hc_x/hc_y (Statcast hit-coordinate columns) converted to approximate feet
+  // from home plate by sync-batter-zone-hr.mjs, off the same per-batter CSV it
+  // already fetches. The field shape drawn here is a simplified generic wedge,
+  // not this specific park's real wall geometry (that'd need a whole separate
+  // per-park dimensions dataset this app doesn't have) -- it's there purely for
+  // spatial context around real dots, not a claim about any actual fence.
+  const hrSprayChartHTML = (() => {
+    const shortName = batterName.split(' ').pop();
+    if (hrSprayList == null) return `
+      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">Home run spray chart for ${shortName} hasn't synced yet.</div>`;
+    if (!hrSprayList.length) return `
+      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">No real home runs tracked yet for ${shortName} this season.</div>`;
+
+    const W = 400, H = 300;
+    const plateX = W / 2, plateY = H - 18;
+    // Scale so a real ~420ft shot (a good, not extreme, HR) lands near the
+    // simplified wall's shallowest point -- longer real shots push further up
+    // into the curve toward the CF peak, shorter ones stay well inside it.
+    const scale = (plateY - 65) / 420;
+    const dots = hrSprayList.map(s => {
+      const rawX = plateX + (s.xFt || 0) * scale;
+      const rawY = plateY - (s.yFt || 0) * scale;
+      const cx = Math.max(12, Math.min(W - 12, rawX));
+      const cy = Math.max(12, Math.min(plateY - 4, rawY));
+      const title = `${Math.round(s.distance || 0)} ft${s.exitVelo != null ? ` · ${s.exitVelo.toFixed(1)} mph` : ''}${s.launchAngle != null ? ` · ${Math.round(s.launchAngle)}° launch` : ''}${s.date ? ` — ${s.date}` : ''}${s.matchup ? ` (${s.matchup})` : ''}`;
+      return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5.5" fill="#f6c343" fill-opacity=".88" stroke="#0a0e1a" stroke-width="1.25"><title>${title}</title></circle>`;
+    }).join('');
+
+    const longest = hrSprayList.slice().sort((a, b) => (b.distance || 0) - (a.distance || 0))[0];
+    const avgDist = Math.round(hrSprayList.reduce((s, n) => s + (n.distance || 0), 0) / hrSprayList.filter(n => n.distance != null).length) || null;
+
+    return `
+      <div class="vuln-box" style="margin-top:10px">
+        <div class="vuln-title">🎯 HOME RUN SPRAY CHART <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(${hrSprayList.length} real HR${hrSprayList.length === 1 ? '' : 's'} this season)</span></div>
+        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%;max-width:360px;display:block;margin:6px auto;overflow:visible">
+          <path d="M ${plateX},${plateY} L 45,75 Q ${plateX},18 ${W - 45},75 Z" fill="#0d1a12" stroke="rgba(90,180,120,.32)" stroke-width="1.5"/>
+          <text x="35" y="68" font-size="10" fill="var(--muted)" text-anchor="end">LF</text>
+          <text x="${W - 35}" y="68" font-size="10" fill="var(--muted)" text-anchor="start">RF</text>
+          <rect x="${plateX - 4}" y="${plateY - 3}" width="8" height="7" fill="#e8e8e8" transform="rotate(45 ${plateX} ${plateY})"/>
+          ${dots}
+        </svg>
+        <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:-2px">${longest ? `Longest: ${Math.round(longest.distance || 0)} ft` : ''}${avgDist ? ` · Avg: ${avgDist} ft` : ''} · field shape simplified, not this park's real wall</div>
+      </div>`;
+  })();
+
   // ── Situational true probability vs market implied probability ──────────
   // "True probability" here is deliberately NOT the same number as hrProb
   // elsewhere on the site (that's a blended-season-rate formula) — this is
@@ -5651,6 +5707,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         <strong style="color:var(--text)">How to read this:</strong> batting average can lie — a hitter can smash the ball all week straight into gloves, or bloop his way to a lucky hot streak. These numbers look at the swings themselves: how hard he's hitting the ball and where it's going. A green <strong style="color:var(--green)">▲ due</strong> tag means his swings have been better than his results — good things may be coming. An orange <strong style="color:var(--accent2)">▼ running hot</strong> tag means the opposite: the results have been better than the swings, and he may cool off.
       </div>
       ${recentContactHTML}
+      ${hrSprayChartHTML}
       ${edgeHTML}
     </div>`;
 
@@ -5939,6 +5996,25 @@ async function loadRecentHRs(force=false) {
     return recentHRs;
   })();
   return recentHRsPromise;
+}
+// Same pattern as loadNearHRs()/loadRecentHRs() above — data/batter-hr-spray.json,
+// written by scripts/sync-batter-zone-hr.mjs.
+async function loadBatterHRSpray(force=false) {
+  if (batterHRSprayLoaded && !force) return batterHRSpray;
+  if (batterHRSprayPromise && !force) return batterHRSprayPromise;
+  batterHRSprayPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/batter-hr-spray.json`);
+      const players = data.players || {};
+      batterHRSpray = {};
+      Object.keys(players).forEach(id => { batterHRSpray[String(id)] = players[id]; });
+    } catch(e) {
+      batterHRSpray = {};
+    }
+    batterHRSprayLoaded = true;
+    return batterHRSpray;
+  })();
+  return batterHRSprayPromise;
 }
 
 // "Last, First" (Baseball Savant's format, the only name source available for
