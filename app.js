@@ -7033,6 +7033,13 @@ async function loadHRPotential() {
           if (!pid) return null;
           let s=b.player.seasonStats?.batting||{};
           let last10HR=null, todayHR=0, streakDays=1, hrVsPitcher=null, logs=[];
+          // Declared here (not `const` inside the try block below) so it's still in
+          // scope down at matchupEdge's computation, which runs after the try/catch
+          // closes -- a `const` declared inside that block's braces would throw
+          // "batterSplitsForEdge is not defined" there instead, which is exactly the
+          // regression that shipped: it crashed every batter on every refresh, so
+          // hrpRows never got assigned and the board stayed permanently empty.
+          let batterSplitsForEdge = [];
           try {
             if (!batterStatCache[pid]) {
               // Use last5 game type for streak detection instead of full season gameLog —
@@ -7087,7 +7094,7 @@ async function loadHRPotential() {
               batterStatCache[pid]={sd,ld,spd};
             }
             const {sd,ld,spd}=batterStatCache[pid];
-            const batterSplitsForEdge = spd?.stats?.[0]?.splits || [];
+            batterSplitsForEdge = spd?.stats?.[0]?.splits || [];
             s=sd.people?.[0]?.stats?.[0]?.splits?.[0]?.stat||s;
             // Not documented as guaranteed most-recent-first, so sort by date explicitly --
             // every slice(0,N) below (last10HR, hrInLast8/isDrought, the recency blend) means
