@@ -1713,6 +1713,11 @@ let batterPitchTypeSeasonPromise = null;
 // (sync-batter-zone-hr.mjs's byZone), same raw-object-keyed-by-id pattern as pitcherStatcast.
 let batterZoneProfiles = {};
 
+// Batter per-location HOME RUN share (hrByZone), keyed the same way as batterZoneProfiles
+// but distinct from it -- byZone is quality-of-contact (wOBA) per zone, hrByZone is what
+// % of this batter's own home runs came from each of the 9 zones (sync-batter-zone-hr.mjs).
+let batterHRZoneProfiles = {};
+
 function normalizePitchTypeKey(name) {
   const n = String(name || '').toLowerCase();
   if (n.includes('four') || n.includes('4-seam') || n.includes('fastball')) return 'fastball';
@@ -1941,6 +1946,10 @@ function ingestBatterPitchTypeSeasonPayload(data) {
     if (payload.byZone) {
       if (id) batterZoneProfiles[String(id)] = payload.byZone;
       if (name) batterZoneProfiles[String(name).toLowerCase()] = payload.byZone;
+    }
+    if (payload.hrByZone) {
+      if (id) batterHRZoneProfiles[String(id)] = payload.hrByZone;
+      if (name) batterHRZoneProfiles[String(name).toLowerCase()] = payload.hrByZone;
     }
     const record = payload.seasonPitchTypeStats || payload.pitchTypeSeason || payload.byPitch || payload.pitchTypes || payload;
     const normalized = {};
@@ -4821,6 +4830,72 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     </div>`;
   }).join('') : '';
 
+  // ── HR Zones: real share of each player's home runs by pitch location ──
+  // Distinct from the wOBA-based Strike Zone Matchup grids above -- this is a straight
+  // count-share (what % of ALL his home runs came from each of the 9 zones), the
+  // HR-specific counterpart sourced from sync-pitcher-zone-hr.mjs/sync-batter-zone-hr.mjs's
+  // hrByZone. Same 9-cell layout/labels so it reads as a direct companion to those grids.
+  function hrZoneColor(pct) {
+    if (pct == null) return { bg:'#0d1220', text:'var(--muted)' };
+    if (pct >= 25) return { bg:'#4a1010', text:'#ff6b6b' };
+    if (pct >= 15) return { bg:'#3a2010', text:'#f4a261' };
+    if (pct >= 8)  return { bg:'#1a2a10', text:'#90ee60' };
+    return { bg:'#0d1a0d', text:'#3a6a3a' };
+  }
+  function buildHRZoneCells(hrZoneMap, subjectLabel) {
+    if (!hrZoneMap) return null;
+    const vals = [1,2,3,4,5,6,7,8,9].map(z => hrZoneMap[z]?.pct ?? null);
+    if (vals.every(v => v == null)) return null;
+    return vals.map((pct, i) => {
+      if (pct == null) return `<div class="sz-cell" style="background:#0d1220;color:var(--muted)" title="${zoneLabels[i]}: no HRs here">–</div>`;
+      const c = hrZoneColor(pct);
+      const count = hrZoneMap[i+1]?.count;
+      return `<div class="sz-cell" style="background:${c.bg};color:${c.text}" title="${zoneLabels[i]}: ${pct}% of ${subjectLabel}'s home runs (${count})">${pct}%</div>`;
+    }).join('');
+  }
+  const pitcherHRZoneMap = pitcherProfile?.hrByZone || null;
+  const batterHRZoneMap = batterHRZoneProfiles[String(batterId)] || batterHRZoneProfiles[String(batterName || '').toLowerCase()] || null;
+  const pitcherHRZoneCells = buildHRZoneCells(pitcherHRZoneMap, pitcherName.split(' ').pop());
+  const batterHRZoneCells = buildHRZoneCells(batterHRZoneMap, batterName.split(' ').pop());
+  let hrZoneGridHTML = '';
+  if (pitcherHRZoneCells || batterHRZoneCells) {
+    hrZoneGridHTML = `
+    <div class="zone-section">
+      <div class="zone-title">HR ZONES · REAL LOCATION DATA</div>
+      <div class="zone-wrap">
+        <div class="zone-grid-outer">
+          <span class="zone-label" style="font-weight:700;color:var(--fg,#fff)">${pitcherName.split(' ').pop().toUpperCase()} · HR-ALLOWED ZONES</span>
+          <span class="zone-label">OUTSIDE ←&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ INSIDE</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="display:flex;flex-direction:column;gap:2px;font-size:9px;color:var(--muted);text-align:right;padding-right:4px">
+              <div style="height:40px;display:flex;align-items:center">HIGH</div>
+              <div style="height:40px;display:flex;align-items:center">MID</div>
+              <div style="height:40px;display:flex;align-items:center">LOW</div>
+            </div>
+            ${pitcherHRZoneCells ? `<div class="strike-zone">${pitcherHRZoneCells}</div>` : `<div class="strike-zone" style="display:flex;align-items:center;justify-content:center;height:134px;padding:8px;text-align:center"><span class="zone-note" style="margin:0">No real HR-location data yet for ${pitcherName}.</span></div>`}
+          </div>
+          <span class="zone-label" style="margin-top:4px">% = share of ${pitcherName.split(' ').pop()}'s HRs allowed by zone</span>
+        </div>
+        <div class="zone-grid-outer">
+          <span class="zone-label" style="font-weight:700;color:var(--fg,#fff)">${batterName.split(' ').pop().toUpperCase()} · HR ZONES</span>
+          <span class="zone-label">OUTSIDE ←&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ INSIDE</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="display:flex;flex-direction:column;gap:2px;font-size:9px;color:var(--muted);text-align:right;padding-right:4px">
+              <div style="height:40px;display:flex;align-items:center">HIGH</div>
+              <div style="height:40px;display:flex;align-items:center">MID</div>
+              <div style="height:40px;display:flex;align-items:center">LOW</div>
+            </div>
+            ${batterHRZoneCells ? `<div class="strike-zone">${batterHRZoneCells}</div>` : `<div class="strike-zone" style="display:flex;align-items:center;justify-content:center;height:134px;padding:8px;text-align:center"><span class="zone-note" style="margin:0">No real HR-location data yet for ${batterName}.</span></div>`}
+          </div>
+          <span class="zone-label" style="margin-top:4px">% = share of ${batterName.split(' ').pop()}'s own HRs by zone</span>
+        </div>
+        <div>
+          <div class="zone-note" style="max-width:220px">Where each player's home runs actually come from by pitch location — not damage potential like the Strike Zone grid above, but the real count-share of confirmed home runs in each zone this season. Overlap between the two grids is where ${batterName.split(' ').pop()}'s own power zone matches ${pitcherName.split(' ').pop()}'s biggest HR-allowed zone.</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
   function buildZoneFit() {
     if (!zoneVals) return null;
     const weights = zoneVals.map((v, i) => ({ i, v: v ?? 0 })).sort((a,b) => b.v - a.v);
@@ -5928,6 +6003,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       </div>` : `
       <div class="zone-note" style="padding:10px 0;color:var(--muted);font-size:12px">No real per-location Statcast data available for ${pitcherName} yet — this requires a separate pitch-location sync that hasn't been built.</div>`}
       </div>
+      ${hrZoneGridHTML}
       ${attackZoneHTML}
       </div>
       ${zoneFitPanelHTML}
