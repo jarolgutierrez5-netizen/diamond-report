@@ -210,8 +210,8 @@ async function main() {
   // shown on the live HR Threats board and its sort control, and in the Pitcher Matchup
   // modal as "MATCHUP EDGE" (see update-tracker.mjs's computeMatchupEdgeScore comment).
   // Not used by any live scoring for the HR market -- recorded purely to check whether
-  // it actually predicts real outcomes before it's ever wired into scoreForMarket/
-  // eliteQualityScore, same "measure before we build" approach as every other signal
+  // it actually predicts real outcomes before it's ever wired into scoreForMarket,
+  // same "measure before we build" approach as every other signal
   // here. Bucket thresholds mirror gradePitchAdvantage's own Weak/Neutral/Strong/
   // Excellent labels so a bucket here reads the same as the board's own chip color.
   // Null until both this pitcher's and this batter's Statcast pitch-mix sync have

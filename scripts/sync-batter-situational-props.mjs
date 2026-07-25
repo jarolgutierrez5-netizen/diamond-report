@@ -13,7 +13,7 @@
 // (MLB Stats API per-game logs) backs a real version.
 //
 // Every existing probability on this site for these markets (hrProb, the
-// Elite Picks score, etc.) is built from BLENDED SEASON-WIDE RATES: the
+// HR Threats score, etc.) is built from BLENDED SEASON-WIDE RATES: the
 // batter's overall rate and the pitcher's overall rate allowed, multiplied
 // together with a park adjustment. That's a reasonable model, but it isn't
 // what "true probability" means to a sharp bettor — this instead asks: out of

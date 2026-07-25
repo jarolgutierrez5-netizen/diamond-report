@@ -10,8 +10,8 @@
 // safeguard below exists because of a specific failure mode a naive
 // "auto-tune from data" script would otherwise have:
 //   - Minimum sample size gate (both the low-score and high-score bucket
-//     need enough graded picks) -- analyze-elite-matchups.mjs's SB market
-//     found a striking-looking split on just 26 graded picks (3 total
+//     need enough graded picks) -- an earlier calibration pass on the SB
+//     market found a striking-looking split on just 26 graded picks (3 total
 //     stolen bases); tuning a live parameter off a sample that thin would
 //     be reacting to noise, not signal.
 //   - Statistical significance bar stricter than the report's own (z > 2.0

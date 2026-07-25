@@ -3,7 +3,7 @@
 // Generates data/daily-insights.json — genuine written analysis (a recap
 // paragraph of yesterday's graded picks, plus several storyline blurbs about
 // today's most notable matchups), grounded entirely in real numbers already
-// computed by buildEliteBatterPool/scoreForMarket. Not a template that spins
+// computed by buildBatterPool/scoreForMarket. Not a template that spins
 // generic filler text: every sentence below references a specific stat this
 // script actually read for that specific player.
 //
@@ -18,7 +18,7 @@ import { writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import {
-  buildEliteBatterPool, loadTracker, cdtDateString, scoreForMarket,
+  buildBatterPool, loadTracker, cdtDateString, scoreForMarket,
 } from './update-tracker.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -46,7 +46,7 @@ function pct(wins, total) {
 }
 
 // ── Yesterday's recap paragraph ────────────────────────────────────────────
-// Pulls every graded (win/loss) pick across all four markets dated exactly
+// Pulls every graded (win/loss) pick across all three markets dated exactly
 // "yesterday" (CDT) and writes the combined record as a single grounded
 // sentence. Used to also name a specific standout hit and a specific miss,
 // but those two sentences were dropped by request — just the aggregate
@@ -56,7 +56,6 @@ function buildRecap(tracker, yesterdayStr) {
     { key: 'drp', label: 'Game Picks' },
     { key: 'kprop', label: 'Strikeout Props' },
     { key: 'hrThreat', label: 'HR Threats' },
-    { key: 'premium', label: 'Elite Picks' },
   ];
 
   let wins = 0, losses = 0;
@@ -157,7 +156,7 @@ async function main() {
     const games = sched?.dates?.find(d => d.date === today)?.games || [];
     const previewGames = games.filter(g => g.status?.abstractGameState === 'Preview');
     if (previewGames.length) {
-      const pool = await buildEliteBatterPool(previewGames, season);
+      const pool = await buildBatterPool(previewGames, season);
       storylines = buildStorylines(pool);
     }
     console.log(`Built ${storylines.length} storyline(s) for ${today} from a pool of ${previewGames.length} preview game(s).`);
