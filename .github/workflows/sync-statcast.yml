@@ -229,20 +229,32 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git commit -m "Sync real pitch-arsenal, hot-hitter, and zone/HR-by-pitch data from Baseball Savant"
 
-          # main can move during this ~30-40min run (a PR merging mid-run), which
-          # rejects a plain `git push` and silently drops this run's already-computed
-          # data — hit twice in a row on 2026-07-24. This job is the only writer of
-          # data/*.json (see the concurrency group above), and human commits never
-          # touch those paths, so rebasing onto a moved main is conflict-free in
-          # practice. Retry with fetch+rebase instead of failing the whole run.
+          # main can move during this ~30-40min run (a PR merging mid-run, OR another
+          # run of this exact workflow overlapping it -- a manual workflow_dispatch and
+          # a scheduled intraday rerun landed close enough together on 2026-07-25 that
+          # the concurrency group's queueing didn't fully prevent overlap, and both
+          # independently recomputed pitcher-statcast.json/pitcher-rolling.json/
+          # pitcher-2k-suppression.json with genuinely different content -- a real
+          # rebase conflict, not just a race, since this job is NOT always the only
+          # writer in practice like previously assumed here).
+          #
+          # -X theirs resolves any such conflict by keeping OUR side -- note git's
+          # rebase --ours/--theirs naming is notoriously backwards from merge: during a
+          # rebase, "theirs" means the commit being replayed (this run's own freshly
+          # computed data), and "ours" means the target we're rebasing onto (origin/
+          # main). Safe here specifically because every file this step ever stages is a
+          # complete, self-contained snapshot fully recomputed from a live API pull each
+          # run, never an incremental/partial update -- there's no real merge to do
+          # between two competing full snapshots, and the fresher one (this run's) is
+          # always the one we want to keep, not a line-based Frankenstein of both.
           for attempt in 1 2 3 4 5; do
             if git push; then
               exit 0
             fi
             echo "Push rejected (attempt $attempt/5) — main moved during this run. Fetching and rebasing..."
             git fetch origin main
-            if ! git rebase origin/main; then
-              echo "::error::Rebase onto origin/main hit a real conflict, not just a race — aborting. This run's data was NOT pushed."
+            if ! git rebase -X theirs origin/main; then
+              echo "::error::Rebase onto origin/main failed even preferring our own side — aborting. This run's data was NOT pushed."
               git rebase --abort
               exit 1
             fi
