@@ -4916,8 +4916,8 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <div class="zone-wrap">
         ${hrZoneScatterColumn(pitcherHRZoneScatter, pitcherName, `${pitcherName.split(' ').pop().toUpperCase()} · HRs ALLOWED`, 'no data')}
         ${hrZoneScatterColumn(batterHRZoneScatter, batterName, `${batterName.split(' ').pop().toUpperCase()} · OWN HRs`, 'no data')}
-        <div>
-          <div class="zone-note" style="max-width:220px">Where each player's home runs actually come from by pitch location — every dot is one real home run, plotted at the pitch's exact strike-zone coordinate. Not damage potential like the Strike Zone grid above, the real thing that happened.</div>
+        <div style="flex-basis:100%">
+          <div class="zone-note" style="max-width:480px;margin-top:2px">Where each player's home runs actually come from by pitch location — every dot is one real home run, plotted at the pitch's exact strike-zone coordinate. Not damage potential like the Strike Zone grid above, the real thing that happened.</div>
         </div>
       </div>
     </div>`;
