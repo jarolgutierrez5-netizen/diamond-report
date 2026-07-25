@@ -4694,6 +4694,19 @@ function animateCountUp(el, endValue, decimals = 0, duration = 700) {
   requestAnimationFrame(step);
 }
 
+// Collapsible zone-grid sections (Attack Zone by Pitch, HR Zones) in the Pitcher
+// Matchup modal -- lets Strike Zone Matchup stay the primary at-a-glance view while
+// the other two, more detailed grids stay one tap away instead of forcing a scroll
+// past all three every time. Nothing is removed, just collapsed by default.
+window.toggleZoneSection = function(headerEl, contentId) {
+  const contentEl = document.getElementById(contentId);
+  if (!contentEl) return;
+  const isOpen = contentEl.style.display !== 'none';
+  contentEl.style.display = isOpen ? 'none' : '';
+  const arrow = headerEl.querySelector('.zone-toggle-arrow');
+  if (arrow) arrow.textContent = isOpen ? '▸' : '▾';
+};
+
 function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, hrSprayList=null, todayParkAbbr=null, rollingProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null }) {
   function fv(v, dec=3) {
     if (v==null||v===''||v==='---') return '–';
@@ -4910,15 +4923,18 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   }
   let hrZoneGridHTML = '';
   if (pitcherHRZoneScatter || batterHRZoneScatter) {
+    const hzuid = `hrzone-${String(pitcherId||'p')}-${Math.random().toString(36).slice(2,8)}`;
     hrZoneGridHTML = `
     <div class="zone-section">
-      <div class="zone-title">HR ZONES · REAL PITCH-LOCATION DATA</div>
+      <div class="zone-title" style="cursor:pointer;user-select:none" onclick="toggleZoneSection(this,'${hzuid}-body')"><span class="zone-toggle-arrow">▸</span> HR ZONES · REAL PITCH-LOCATION DATA</div>
+      <div id="${hzuid}-body" style="display:none">
       <div class="zone-wrap">
         ${hrZoneScatterColumn(pitcherHRZoneScatter, pitcherName, `${pitcherName.split(' ').pop().toUpperCase()} · HRs ALLOWED`, 'no data')}
         ${hrZoneScatterColumn(batterHRZoneScatter, batterName, `${batterName.split(' ').pop().toUpperCase()} · OWN HRs`, 'no data')}
         <div style="flex-basis:100%">
           <div class="zone-note" style="max-width:480px;margin-top:2px">Where each player's home runs actually come from by pitch location — every dot is one real home run, plotted at the pitch's exact strike-zone coordinate. Not damage potential like the Strike Zone grid above, the real thing that happened.</div>
         </div>
+      </div>
       </div>
     </div>`;
   }
@@ -4976,7 +4992,8 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     }).join('');
     attackZoneHTML = `
     <div class="zone-section" id="${auid}" data-attack-zone-toggle>
-      <div class="zone-title">ATTACK ZONE BY PITCH · REAL LOCATION DATA</div>
+      <div class="zone-title" style="cursor:pointer;user-select:none" onclick="toggleZoneSection(this,'${auid}-body')"><span class="zone-toggle-arrow">▸</span> ATTACK ZONE BY PITCH · REAL LOCATION DATA</div>
+      <div id="${auid}-body" style="display:none">
       <div class="zone-wrap">
         <div class="zone-grid-outer">
           <span class="zone-label">OUTSIDE ←&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ INSIDE</span>
@@ -4994,6 +5011,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
           <div class="dr1042-split-toggle" role="tablist" aria-label="Attack zone pitch toggle" style="flex-wrap:wrap;height:auto">${tabs}</div>
           <div class="zone-note" style="margin-top:10px;max-width:220px">Where ${pitcherName.split(' ').pop()} actually locates each individual pitch — his real location tendency pitch by pitch, not just the blended zone profile above.</div>
         </div>
+      </div>
       </div>
     </div>`;
   }
@@ -5987,7 +6005,8 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <!-- Strike Zone + Attack Zone by Pitch, side by side -->
       <div class="dr1041-zone-grid">
       <div class="zone-section">
-        <div class="zone-title">${hasRealZones ? 'STRIKE ZONE MATCHUP · REAL wOBA BY LOCATION' : 'STRIKE ZONE · NO REAL DATA YET'}</div>
+        <div class="zone-title" style="cursor:pointer;user-select:none" onclick="toggleZoneSection(this,'sz-matchup-body')"><span class="zone-toggle-arrow">▾</span> ${hasRealZones ? 'STRIKE ZONE MATCHUP · REAL wOBA BY LOCATION' : 'STRIKE ZONE · NO REAL DATA YET'}</div>
+        <div id="sz-matchup-body">
       ${hasRealZones ? `
       <div class="zone-wrap">
         <div class="zone-grid-outer">
@@ -6029,6 +6048,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         </div>
       </div>` : `
       <div class="zone-note" style="padding:10px 0;color:var(--muted);font-size:12px">No real per-location Statcast data available for ${pitcherName} yet — this requires a separate pitch-location sync that hasn't been built.</div>`}
+        </div>
       </div>
       ${attackZoneHTML}
       </div>
