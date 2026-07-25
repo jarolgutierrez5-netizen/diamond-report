@@ -4830,7 +4830,11 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   // below, just plotting pitch location instead of ball landing spot.
   const ZONE_HALF_W = 0.83; // ft -- standard 17" plate, community-standard strike-zone half-width
   const ZONE_BOT = 1.5, ZONE_TOP = 3.5; // ft -- typical league-average zone (batter-specific sz_top/sz_bot not available here)
-  function buildHRZoneScatterSVG(locations, subjectLabel) {
+  // Same 144x134 footprint as the Attack Zone by Pitch / Strike Zone Matchup grids'
+  // .strike-zone box (see styles.css), so all three grids in this modal read as the
+  // same size instead of this one looking like a smaller, different-scale widget.
+  const SCATTER_W = 144, SCATTER_H = 134;
+  function buildHRZoneScatterSVG(locations) {
     if (locations == null) return null;
     if (!locations.length) return { empty: true };
     // Real home runs exist, but none carry a plate_x/plate_z coordinate yet -- distinct
@@ -4838,11 +4842,11 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     // captioned "0 real home runs plotted" here would be actively misleading for a player
     // who clearly has home runs, just not pitch-location data for them yet.
     if (!locations.some(l => l.plateX != null && l.plateZ != null)) return { noCoords: true };
-    const W = 220, H = 190;
+    const W = SCATTER_W, H = SCATTER_H;
     const X_MIN = -1.5, X_MAX = 1.5, Z_MIN = 0.4, Z_MAX = 4.6;
     const toXY = (px, pz) => ({
-      x: 10 + ((px - X_MIN) / (X_MAX - X_MIN)) * (W - 20),
-      y: H - 10 - ((pz - Z_MIN) / (Z_MAX - Z_MIN)) * (H - 20),
+      x: 7 + ((px - X_MIN) / (X_MAX - X_MIN)) * (W - 14),
+      y: H - 7 - ((pz - Z_MIN) / (Z_MAX - Z_MIN)) * (H - 14),
     });
     const zoneTL = toXY(-ZONE_HALF_W, ZONE_TOP), zoneBR = toXY(ZONE_HALF_W, ZONE_BOT);
     const zoneW = zoneBR.x - zoneTL.x, zoneH = zoneBR.y - zoneTL.y;
@@ -4856,32 +4860,53 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       const px = loc.plateX, pz = loc.plateZ;
       if (px == null || pz == null) return '';
       const raw = toXY(px, pz);
-      const cx = Math.max(6, Math.min(W - 6, raw.x));
-      const cy = Math.max(6, Math.min(H - 6, raw.y));
+      const cx = Math.max(4, Math.min(W - 4, raw.x));
+      const cy = Math.max(4, Math.min(H - 4, raw.y));
       const title = `${px.toFixed(2)}, ${pz.toFixed(2)} ft${loc.exitVelo != null ? ` · ${loc.exitVelo.toFixed(1)} mph` : ''}${loc.date ? ` — ${loc.date}` : ''}${loc.matchup ? ` (${loc.matchup})` : ''}`;
-      return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="#f6c343" fill-opacity=".88" stroke="#0a0e1a" stroke-width="1.25"><title>${title}</title></circle>`;
+      return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4" fill="#f6c343" fill-opacity=".88" stroke="#0a0e1a" stroke-width="1.1"><title>${title}</title></circle>`;
     }).join('');
     const withCoords = locations.filter(l => l.plateX != null && l.plateZ != null);
     return {
-      count: locations.length,
-      html: `
-        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%;max-width:220px;display:block;margin:6px auto;overflow:visible">
+      count: withCoords.length,
+      html: `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:${W}px;height:${H}px;display:block;overflow:visible">
           <rect x="${zoneTL.x.toFixed(1)}" y="${zoneTL.y.toFixed(1)}" width="${zoneW.toFixed(1)}" height="${zoneH.toFixed(1)}" fill="rgba(120,150,200,.08)" stroke="rgba(255,255,255,.35)" stroke-width="1.5"/>
           ${gridLines}
           ${dots}
-        </svg>
-        <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:-2px">${subjectLabel} · ${withCoords.length} real home run${withCoords.length === 1 ? '' : 's'} plotted by pitch location · box = strike zone</div>`,
+        </svg>`,
     };
   }
   const pitcherHRLocations = pitcherProfile?.hrLocations || null;
   const batterHRLocations = hrSprayList; // same per-HR event list the field Spray Chart uses below -- now carries plateX/plateZ too
-  const pitcherHRZoneScatter = buildHRZoneScatterSVG(pitcherHRLocations, pitcherName.split(' ').pop());
-  const batterHRZoneScatter = buildHRZoneScatterSVG(batterHRLocations, batterName.split(' ').pop());
-  function hrZoneScatterCell(scatter, subjectName) {
-    if (!scatter) return `<div class="zone-note" style="padding:8px 0">No real HR-location data yet for ${subjectName}.</div>`;
-    if (scatter.empty) return `<div class="zone-note" style="padding:8px 0">No real home runs tracked yet for ${subjectName} this season.</div>`;
-    if (scatter.noCoords) return `<div class="zone-note" style="padding:8px 0">${subjectName} has real home runs tracked, but pitch-location coordinates for them haven't synced yet.</div>`;
-    return scatter.html;
+  const pitcherHRZoneScatter = buildHRZoneScatterSVG(pitcherHRLocations);
+  const batterHRZoneScatter = buildHRZoneScatterSVG(batterHRLocations);
+  // Same OUTSIDE/INSIDE + HIGH/MID/LOW framing as the Strike Zone Matchup and Attack
+  // Zone by Pitch grids above, so this box reads as a third instance of the same
+  // widget instead of a visually different one-off.
+  function hrZoneScatterColumn(scatter, subjectName, nameLabel, captionSuffix) {
+    const boxInner = !scatter
+      ? `<div class="zone-note" style="margin:0;text-align:center;padding:0 4px">No real HR-location data yet for ${subjectName}.</div>`
+      : scatter.empty
+      ? `<div class="zone-note" style="margin:0;text-align:center;padding:0 4px">No real home runs tracked yet for ${subjectName} this season.</div>`
+      : scatter.noCoords
+      ? `<div class="zone-note" style="margin:0;text-align:center;padding:0 4px">Real home runs tracked, but pitch-location coordinates haven't synced yet.</div>`
+      : scatter.html;
+    const caption = scatter && !scatter.empty && !scatter.noCoords
+      ? `${scatter.count} real home run${scatter.count === 1 ? '' : 's'} plotted by pitch location`
+      : captionSuffix;
+    return `
+        <div class="zone-grid-outer">
+          <span class="zone-label" style="font-weight:700;color:var(--fg,#fff)">${nameLabel}</span>
+          <span class="zone-label">OUTSIDE ←&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ INSIDE</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="display:flex;flex-direction:column;gap:2px;font-size:9px;color:var(--muted);text-align:right;padding-right:4px">
+              <div style="height:${(SCATTER_H / 3).toFixed(0)}px;display:flex;align-items:center">HIGH</div>
+              <div style="height:${(SCATTER_H / 3).toFixed(0)}px;display:flex;align-items:center">MID</div>
+              <div style="height:${(SCATTER_H / 3).toFixed(0)}px;display:flex;align-items:center">LOW</div>
+            </div>
+            <div style="width:${SCATTER_W}px;height:${SCATTER_H}px;display:flex;align-items:center;justify-content:center">${boxInner}</div>
+          </div>
+          <span class="zone-label" style="margin-top:4px">${caption}</span>
+        </div>`;
   }
   let hrZoneGridHTML = '';
   if (pitcherHRZoneScatter || batterHRZoneScatter) {
@@ -4889,14 +4914,8 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     <div class="zone-section">
       <div class="zone-title">HR ZONES · REAL PITCH-LOCATION DATA</div>
       <div class="zone-wrap">
-        <div class="zone-grid-outer">
-          <span class="zone-label" style="font-weight:700;color:var(--fg,#fff)">${pitcherName.split(' ').pop().toUpperCase()} · HRs ALLOWED</span>
-          ${hrZoneScatterCell(pitcherHRZoneScatter, pitcherName)}
-        </div>
-        <div class="zone-grid-outer">
-          <span class="zone-label" style="font-weight:700;color:var(--fg,#fff)">${batterName.split(' ').pop().toUpperCase()} · OWN HRs</span>
-          ${hrZoneScatterCell(batterHRZoneScatter, batterName)}
-        </div>
+        ${hrZoneScatterColumn(pitcherHRZoneScatter, pitcherName, `${pitcherName.split(' ').pop().toUpperCase()} · HRs ALLOWED`, 'no data')}
+        ${hrZoneScatterColumn(batterHRZoneScatter, batterName, `${batterName.split(' ').pop().toUpperCase()} · OWN HRs`, 'no data')}
         <div>
           <div class="zone-note" style="max-width:220px">Where each player's home runs actually come from by pitch location — every dot is one real home run, plotted at the pitch's exact strike-zone coordinate. Not damage potential like the Strike Zone grid above, the real thing that happened.</div>
         </div>
