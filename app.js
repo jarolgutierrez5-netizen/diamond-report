@@ -1712,6 +1712,10 @@ let batterPitchTypeSeasonPromise = null;
 // that isn't a per-pitch-type row. Powers the Strike Zone Matchup heatmap's batter side
 // (sync-batter-zone-hr.mjs's byZone), same raw-object-keyed-by-id pattern as pitcherStatcast.
 let batterZoneProfiles = {};
+// Same store, split by opposing pitcher hand (sync-batter-zone-hr.mjs's byZoneByHand)
+// -- powers the Strike Zone Matchup / HR Zones AUTO/vs RHP/vs LHP toggle on the
+// batter's side, the same toggle mechanism the Pitch Mix Advantage table already has.
+let batterZoneProfilesByHand = {};
 
 function normalizePitchTypeKey(name) {
   const n = String(name || '').toLowerCase();
@@ -1941,6 +1945,10 @@ function ingestBatterPitchTypeSeasonPayload(data) {
     if (payload.byZone) {
       if (id) batterZoneProfiles[String(id)] = payload.byZone;
       if (name) batterZoneProfiles[String(name).toLowerCase()] = payload.byZone;
+    }
+    if (payload.byZoneByHand) {
+      if (id) batterZoneProfilesByHand[String(id)] = payload.byZoneByHand;
+      if (name) batterZoneProfilesByHand[String(name).toLowerCase()] = payload.byZoneByHand;
     }
     const record = payload.seasonPitchTypeStats || payload.pitchTypeSeason || payload.byPitch || payload.pitchTypes || payload;
     const normalized = {};
@@ -4799,6 +4807,25 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   }
 
   const zoneLabels = ['In/High','High','Out/High','Inside','Middle','Away','In/Low','Low','Out/Low'];
+  // Shared cell-builder so the AUTO grid and the vs-RHB/vs-RHP / vs-LHB/vs-LHP hand-split
+  // grids (below) all render identically -- only the source zone map and the "% = ..."
+  // wording differ.
+  function zoneCellsFromMap(zMap, valueFn, titleSuffix) {
+    if (!zMap) return null;
+    const vals = [1,2,3,4,5,6,7,8,9].map(z => {
+      const cell = zMap[z];
+      if (!cell) return null;
+      const val = valueFn(cell);
+      return val != null ? Math.min(val / 0.640, 1.0) : null;
+    });
+    if (vals.every(v => v == null)) return null;
+    return vals.map((v, i) => {
+      if (v == null) return `<div class="sz-cell" style="background:#0d1220;color:var(--muted)" title="${zoneLabels[i]}: no data">–</div>`;
+      const c = zoneColor(v);
+      const pct = Math.round(v * 100);
+      return `<div class="sz-cell" style="background:${c.bg};color:${c.text}" title="${zoneLabels[i]}: ${pct}% ${titleSuffix}">${pct}%</div>`;
+    }).join('');
+  }
   const zoneCells = zoneVals ? zoneVals.map((v, i) => {
     if (v == null) return `<div class="sz-cell" style="background:#0d1220;color:var(--muted)" title="${zoneLabels[i]}: no data">–</div>`;
     const c = zoneColor(v);
@@ -4807,6 +4834,13 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       ${pct}%
     </div>`;
   }).join('') : '';
+  // Pitcher's WEAK ZONES split by the OPPOSING BATTER's stand (sync-pitcher-zone-hr.mjs's
+  // byZoneByHand) -- independent AUTO/vs RHB/vs LHB toggle, same mechanism as the Pitch
+  // Mix Advantage table's AUTO/vs RHP/vs LHP toggle. Null (no toggle rendered) until a
+  // pitcher has real hand-split rows synced.
+  const pitcherZoneCellsR = zoneCellsFromMap(pitcherProfile?.byZoneByHand?.R, c => c.woba, 'opportunity vs RHB');
+  const pitcherZoneCellsL = zoneCellsFromMap(pitcherProfile?.byZoneByHand?.L, c => c.woba, 'opportunity vs LHB');
+  const hasPitcherZoneHandSplit = !!(pitcherZoneCellsR || pitcherZoneCellsL);
 
   // ── Batter's own hot/cold zone heatmap (real production, not the pitcher's) ──
   // Same 9-zone grid, same wOBA scale and color tiers as the pitcher's Strike Zone
@@ -4833,6 +4867,32 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       ${pct}%
     </div>`;
   }).join('') : '';
+  // Batter's HOT ZONES split by the OPPOSING PITCHER's throwing hand (sync-batter-zone-hr.mjs's
+  // byZoneByHand) -- the independent batter-side counterpart to pitcherZoneCellsR/L above.
+  const batterZoneProfileByHand = batterZoneProfilesByHand[String(batterId)] || batterZoneProfilesByHand[String(batterName || '').toLowerCase()] || null;
+  const batterZoneCellsR = zoneCellsFromMap(batterZoneProfileByHand?.R, c => c.woba, 'production vs RHP');
+  const batterZoneCellsL = zoneCellsFromMap(batterZoneProfileByHand?.L, c => c.woba, 'production vs LHP');
+  const hasBatterZoneHandSplit = !!(batterZoneCellsR || batterZoneCellsL);
+  // Small shared pill-toggle builder for the hand splits below -- same visual/interaction
+  // pattern as .dr1042-split-toggle (Pitch Mix Advantage's AUTO/vs RHP/vs LHP), reusing its
+  // CSS classes, but toggling plain <div> mode bodies (.dr-hand-mode-body) instead of
+  // <tbody> rows, the same generalization Attack Zone by Pitch's .dr-azone-mode-body
+  // already had to make for the same reason (.dr1042-mode-body is hardcoded to
+  // display:table-row-group).
+  function handToggleHTML(autoLabel, rLabel, lLabel) {
+    return `<div class="dr1042-split-toggle" role="tablist" aria-label="Hand split toggle" style="margin:2px 0">
+      <button type="button" class="dr1042-split-btn active" data-hand="auto">${autoLabel}</button>
+      <button type="button" class="dr1042-split-btn" data-hand="R">${rLabel}</button>
+      <button type="button" class="dr1042-split-btn" data-hand="L">${lLabel}</button>
+    </div>`;
+  }
+  // Shared "toggle exists but this particular hand has no real rows yet" placeholder --
+  // same honest-empty-state convention as the rest of this modal (never silently reuse
+  // the AUTO grid's numbers under a vs-RHB/vs-LHB label, since that would misrepresent
+  // blended data as hand-specific).
+  function strikeZoneCellsOrPlaceholder(cells, label) {
+    return cells ? `<div class="strike-zone">${cells}</div>` : `<div class="strike-zone" style="display:flex;align-items:center;justify-content:center;height:134px;padding:8px;text-align:center"><span class="zone-note" style="margin:0">No real ${label} data yet.</span></div>`;
+  }
 
   // ── HR Zones: real pitch-location scatter of each player's home runs ──
   // Distinct from the wOBA-based Strike Zone Matchup grids above -- this plots each
@@ -4892,23 +4952,54 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   const batterHRLocations = hrSprayList; // same per-HR event list the field Spray Chart uses below -- now carries plateX/plateZ too
   const pitcherHRZoneScatter = buildHRZoneScatterSVG(pitcherHRLocations);
   const batterHRZoneScatter = buildHRZoneScatterSVG(batterHRLocations);
+  // AUTO/vs-RHB/vs-LHB (pitcher side) and AUTO/vs-RHP/vs-LHP (batter side) hand splits --
+  // client-side filter of the already-tagged dot arrays (sync-pitcher-zone-hr.mjs's
+  // hrLocations[].batterStand, sync-batter-zone-hr.mjs's hrSpray[].pitcherHand), no new
+  // data fetch needed. Only offered once at least one real HR is actually tagged with a
+  // hand -- a player with zero tagged HRs gets no toggle rather than an always-empty one.
+  function filterHRLocationsByHand(locations, handField, hand) {
+    if (!Array.isArray(locations)) return null;
+    return locations.filter(l => l[handField] === hand);
+  }
+  const pitcherHRHasHandTags = Array.isArray(pitcherHRLocations) && pitcherHRLocations.some(l => l.batterStand === 'R' || l.batterStand === 'L');
+  const pitcherHRScatterHand = pitcherHRHasHandTags ? {
+    R: buildHRZoneScatterSVG(filterHRLocationsByHand(pitcherHRLocations, 'batterStand', 'R')),
+    L: buildHRZoneScatterSVG(filterHRLocationsByHand(pitcherHRLocations, 'batterStand', 'L')),
+  } : null;
+  const batterHRHasHandTags = Array.isArray(batterHRLocations) && batterHRLocations.some(l => l.pitcherHand === 'R' || l.pitcherHand === 'L');
+  const batterHRScatterHand = batterHRHasHandTags ? {
+    R: buildHRZoneScatterSVG(filterHRLocationsByHand(batterHRLocations, 'pitcherHand', 'R')),
+    L: buildHRZoneScatterSVG(filterHRLocationsByHand(batterHRLocations, 'pitcherHand', 'L')),
+  } : null;
+  function hrZoneBoxInner(scatter, subjectName) {
+    if (!scatter) return `<div class="zone-note" style="margin:0;text-align:center;padding:0 4px">No real HR-location data yet for ${subjectName}.</div>`;
+    if (scatter.empty) return `<div class="zone-note" style="margin:0;text-align:center;padding:0 4px">No real home runs tracked yet for ${subjectName} this season.</div>`;
+    if (scatter.noCoords) return `<div class="zone-note" style="margin:0;text-align:center;padding:0 4px">Real home runs tracked, but pitch-location coordinates haven't synced yet.</div>`;
+    return scatter.html;
+  }
   // Same OUTSIDE/INSIDE + HIGH/MID/LOW framing as the Strike Zone Matchup and Attack
   // Zone by Pitch grids above, so this box reads as a third instance of the same
   // widget instead of a visually different one-off.
-  function hrZoneScatterColumn(scatter, subjectName, nameLabel, captionSuffix) {
-    const boxInner = !scatter
-      ? `<div class="zone-note" style="margin:0;text-align:center;padding:0 4px">No real HR-location data yet for ${subjectName}.</div>`
-      : scatter.empty
-      ? `<div class="zone-note" style="margin:0;text-align:center;padding:0 4px">No real home runs tracked yet for ${subjectName} this season.</div>`
-      : scatter.noCoords
-      ? `<div class="zone-note" style="margin:0;text-align:center;padding:0 4px">Real home runs tracked, but pitch-location coordinates haven't synced yet.</div>`
-      : scatter.html;
+  function hrZoneScatterColumn(scatter, subjectName, nameLabel, captionSuffix, handScatters, rLabel, lLabel) {
+    const boxInner = hrZoneBoxInner(scatter, subjectName);
     const caption = scatter && !scatter.empty && !scatter.noCoords
       ? `${scatter.count} real home run${scatter.count === 1 ? '' : 's'} plotted by pitch location`
       : captionSuffix;
+    const hasHandSplit = !!(handScatters && (handScatters.R || handScatters.L));
+    // .dr-hand-mode-body itself must carry no inline "display" -- that would win over the
+    // stylesheet's display:none/.active{display:block} toggle (inline styles always beat
+    // class rules), leaving every mode permanently visible and stacked. The fixed-size
+    // centering box goes on a nested div instead.
+    const centeredBox = (inner) => `<div style="width:${SCATTER_W}px;height:${SCATTER_H}px;display:flex;align-items:center;justify-content:center">${inner}</div>`;
+    const boxHTML = hasHandSplit ? `<div style="width:${SCATTER_W}px">
+              <div class="dr-hand-mode-body active" data-hand="auto">${centeredBox(boxInner)}</div>
+              <div class="dr-hand-mode-body" data-hand="R">${centeredBox(hrZoneBoxInner(handScatters.R, subjectName))}</div>
+              <div class="dr-hand-mode-body" data-hand="L">${centeredBox(hrZoneBoxInner(handScatters.L, subjectName))}</div>
+            </div>` : centeredBox(boxInner);
     return `
-        <div class="zone-grid-outer">
+        <div class="zone-grid-outer"${hasHandSplit ? ' data-hand-toggle' : ''}>
           <span class="zone-label" style="font-weight:700;color:var(--fg,#fff)">${nameLabel}</span>
+          ${hasHandSplit ? handToggleHTML('AUTO', rLabel, lLabel) : ''}
           <span class="zone-label">OUTSIDE ←&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ INSIDE</span>
           <div style="display:flex;align-items:center;gap:6px">
             <div style="display:flex;flex-direction:column;gap:2px;font-size:9px;color:var(--muted);text-align:right;padding-right:4px">
@@ -4916,7 +5007,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
               <div style="height:${(SCATTER_H / 3).toFixed(0)}px;display:flex;align-items:center">MID</div>
               <div style="height:${(SCATTER_H / 3).toFixed(0)}px;display:flex;align-items:center">LOW</div>
             </div>
-            <div style="width:${SCATTER_W}px;height:${SCATTER_H}px;display:flex;align-items:center;justify-content:center">${boxInner}</div>
+            ${boxHTML}
           </div>
           <span class="zone-label" style="margin-top:4px">${caption}</span>
         </div>`;
@@ -4929,8 +5020,8 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <div class="zone-title" style="cursor:pointer;user-select:none" onclick="toggleZoneSection(this,'${hzuid}-body')"><span class="zone-toggle-arrow">▸</span> HR ZONES · REAL PITCH-LOCATION DATA</div>
       <div id="${hzuid}-body" style="display:none">
       <div class="zone-wrap">
-        ${hrZoneScatterColumn(pitcherHRZoneScatter, pitcherName, `${pitcherName.split(' ').pop().toUpperCase()} · HRs ALLOWED`, 'no data')}
-        ${hrZoneScatterColumn(batterHRZoneScatter, batterName, `${batterName.split(' ').pop().toUpperCase()} · OWN HRs`, 'no data')}
+        ${hrZoneScatterColumn(pitcherHRZoneScatter, pitcherName, `${pitcherName.split(' ').pop().toUpperCase()} · HRs ALLOWED`, 'no data', pitcherHRScatterHand, 'vs RHB', 'vs LHB')}
+        ${hrZoneScatterColumn(batterHRZoneScatter, batterName, `${batterName.split(' ').pop().toUpperCase()} · OWN HRs`, 'no data', batterHRScatterHand, 'vs RHP', 'vs LHP')}
         <div style="flex-basis:100%">
           <div class="zone-note" style="max-width:480px;margin-top:2px">Where each player's home runs actually come from by pitch location — every dot is one real home run, plotted at the pitch's exact strike-zone coordinate. Not damage potential like the Strike Zone grid above, the real thing that happened.</div>
         </div>
@@ -4974,21 +5065,41 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     if (pct >= 8)  return { bg:'#1a2a10', text:'#90ee60' };
     return { bg:'#0d1a0d', text:'#3a6a3a' };
   }
+  // Shared cell-builder for a single pitch type's 9-zone usage grid, reused for the
+  // AUTO grid and (when a pitch has real hand-split rows) its vs-RHB/vs-LHB variants --
+  // sourced from sync-pitcher-zone-hr.mjs's byPitch[].zones / .zonesByHand.
+  function attackZoneCellsFromZones(zonesMap, pitchName, handSuffix) {
+    if (!zonesMap) return null;
+    const cells = [1,2,3,4,5,6,7,8,9].map(z => zonesMap[z]);
+    if (cells.every(c => c?.usagePct == null)) return null;
+    return cells.map((cell, i) => {
+      const pct = cell?.usagePct;
+      if (pct == null) return `<div class="sz-cell" style="background:#0d1220;color:var(--muted)" title="${zoneLabels[i]}: no data">–</div>`;
+      const c = attackZoneColor(pct);
+      const wobaTxt = cell.wobaAgainst != null ? `, ${fv(cell.wobaAgainst,3)} wOBA against` : '';
+      return `<div class="sz-cell" style="background:${c.bg};color:${c.text}" title="${zoneLabels[i]}: ${pct}% of his ${pitchName}s${handSuffix}${wobaTxt}">${pct}%</div>`;
+    }).join('');
+  }
   const attackZonePitches = (pitcherProfile?.byPitch || []).filter(p => p?.name && p.zones && Object.keys(p.zones).length);
   let attackZoneHTML = '';
   if (attackZonePitches.length) {
     const auid = `azone-${String(pitcherId||'p')}-${Math.random().toString(36).slice(2,8)}`;
     const tabs = attackZonePitches.map((p, i) => `<button type="button" class="dr1042-split-btn${i===0?' active':''}" data-pitch="${i}">${p.name}</button>`).join('');
     const bodies = attackZonePitches.map((p, i) => {
-      const cells = [1,2,3,4,5,6,7,8,9].map(z => {
-        const cell = p.zones[z];
-        const pct = cell?.usagePct;
-        if (pct == null) return `<div class="sz-cell" style="background:#0d1220;color:var(--muted)" title="${zoneLabels[z-1]}: no data">–</div>`;
-        const c = attackZoneColor(pct);
-        const wobaTxt = cell.wobaAgainst != null ? `, ${fv(cell.wobaAgainst,3)} wOBA against` : '';
-        return `<div class="sz-cell" style="background:${c.bg};color:${c.text}" title="${zoneLabels[z-1]}: ${pct}% of his ${p.name}s${wobaTxt}">${pct}%</div>`;
-      }).join('');
-      return `<div class="dr-azone-mode-body${i===0?' active':''}" data-pitch="${i}"><div class="strike-zone">${cells}</div></div>`;
+      const cells = attackZoneCellsFromZones(p.zones, p.name, '');
+      // Per-pitch AUTO/vs RHB/vs LHB hand split (sync-pitcher-zone-hr.mjs's
+      // byPitch[].zonesByHand) -- independent of and nested inside the pitch-type tab
+      // above it, since it's a 2nd, orthogonal axis (which pitch × which batter hand).
+      const rCells = attackZoneCellsFromZones(p.zonesByHand?.R, p.name, ' vs RHB');
+      const lCells = attackZoneCellsFromZones(p.zonesByHand?.L, p.name, ' vs LHB');
+      const hasPitchHandSplit = !!(rCells || lCells);
+      const gridHTML = hasPitchHandSplit ? `<div data-hand-toggle>
+          ${handToggleHTML('AUTO', 'vs RHB', 'vs LHB')}
+          <div class="dr-hand-mode-body active" data-hand="auto"><div class="strike-zone">${cells}</div></div>
+          <div class="dr-hand-mode-body" data-hand="R">${strikeZoneCellsOrPlaceholder(rCells, 'vs-RHB')}</div>
+          <div class="dr-hand-mode-body" data-hand="L">${strikeZoneCellsOrPlaceholder(lCells, 'vs-LHB')}</div>
+        </div>` : `<div class="strike-zone">${cells}</div>`;
+      return `<div class="dr-azone-mode-body${i===0?' active':''}" data-pitch="${i}">${gridHTML}</div>`;
     }).join('');
     attackZoneHTML = `
     <div class="zone-section" id="${auid}" data-attack-zone-toggle>
@@ -6009,8 +6120,9 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         <div id="sz-matchup-body">
       ${hasRealZones ? `
       <div class="zone-wrap">
-        <div class="zone-grid-outer">
+        <div class="zone-grid-outer"${hasPitcherZoneHandSplit ? ' data-hand-toggle' : ''}>
           <span class="zone-label" style="font-weight:700;color:var(--fg,#fff)">${pitcherName.split(' ').pop().toUpperCase()} · WEAK ZONES</span>
+          ${hasPitcherZoneHandSplit ? handToggleHTML('AUTO', 'vs RHB', 'vs LHB') : ''}
           <span class="zone-label">OUTSIDE ←&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ INSIDE</span>
           <div style="display:flex;align-items:center;gap:6px">
             <div style="display:flex;flex-direction:column;gap:2px;font-size:9px;color:var(--muted);text-align:right;padding-right:4px">
@@ -6018,12 +6130,17 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
               <div style="height:40px;display:flex;align-items:center">MID</div>
               <div style="height:40px;display:flex;align-items:center">LOW</div>
             </div>
-            <div class="strike-zone">${zoneCells}</div>
+            ${hasPitcherZoneHandSplit ? `<div>
+              <div class="dr-hand-mode-body active" data-hand="auto"><div class="strike-zone">${zoneCells}</div></div>
+              <div class="dr-hand-mode-body" data-hand="R">${strikeZoneCellsOrPlaceholder(pitcherZoneCellsR, 'vs-RHB')}</div>
+              <div class="dr-hand-mode-body" data-hand="L">${strikeZoneCellsOrPlaceholder(pitcherZoneCellsL, 'vs-LHB')}</div>
+            </div>` : `<div class="strike-zone">${zoneCells}</div>`}
           </div>
           <span class="zone-label" style="margin-top:4px">% = Batter opportunity score per zone</span>
         </div>
-        <div class="zone-grid-outer">
+        <div class="zone-grid-outer"${hasRealBatterZones && hasBatterZoneHandSplit ? ' data-hand-toggle' : ''}>
           <span class="zone-label" style="font-weight:700;color:var(--fg,#fff)">${batterName.split(' ').pop().toUpperCase()} · HOT ZONES</span>
+          ${hasRealBatterZones && hasBatterZoneHandSplit ? handToggleHTML('AUTO', 'vs RHP', 'vs LHP') : ''}
           <span class="zone-label">OUTSIDE ←&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ INSIDE</span>
           <div style="display:flex;align-items:center;gap:6px">
             <div style="display:flex;flex-direction:column;gap:2px;font-size:9px;color:var(--muted);text-align:right;padding-right:4px">
@@ -6031,7 +6148,11 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
               <div style="height:40px;display:flex;align-items:center">MID</div>
               <div style="height:40px;display:flex;align-items:center">LOW</div>
             </div>
-            ${hasRealBatterZones ? `<div class="strike-zone">${batterZoneCells}</div>` : `<div class="strike-zone" style="display:flex;align-items:center;justify-content:center;height:134px;padding:8px;text-align:center"><span class="zone-note" style="margin:0">No real per-location data yet for ${batterName}.</span></div>`}
+            ${!hasRealBatterZones ? `<div class="strike-zone" style="display:flex;align-items:center;justify-content:center;height:134px;padding:8px;text-align:center"><span class="zone-note" style="margin:0">No real per-location data yet for ${batterName}.</span></div>` : hasBatterZoneHandSplit ? `<div>
+              <div class="dr-hand-mode-body active" data-hand="auto"><div class="strike-zone">${batterZoneCells}</div></div>
+              <div class="dr-hand-mode-body" data-hand="R">${strikeZoneCellsOrPlaceholder(batterZoneCellsR, 'vs-RHP')}</div>
+              <div class="dr-hand-mode-body" data-hand="L">${strikeZoneCellsOrPlaceholder(batterZoneCellsL, 'vs-LHP')}</div>
+            </div>` : `<div class="strike-zone">${batterZoneCells}</div>`}
           </div>
           <span class="zone-label" style="margin-top:4px">% = ${batterName.split(' ').pop()}'s own wOBA per zone</span>
         </div>
@@ -6111,6 +6232,21 @@ document.addEventListener('click', function(e) {
   const idx = btn.dataset.pitch;
   box.querySelectorAll('.dr1042-split-btn[data-pitch]').forEach(b => b.classList.toggle('active', b === btn));
   box.querySelectorAll('.dr-azone-mode-body').forEach(tb => tb.classList.toggle('active', tb.dataset.pitch === idx));
+});
+
+// ── Hand split toggle (AUTO/vs RHB/vs LHB, AUTO/vs RHP/vs LHP) ────────
+// Strike Zone Matchup, Attack Zone by Pitch, and HR Zones each render one
+// [data-hand-toggle] box per side (pitcher/batter), independently of each other --
+// same delegated-click pattern as the two handlers above, just keyed off data-hand
+// instead of data-mode/data-pitch.
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest && e.target.closest('.dr1042-split-btn[data-hand]');
+  if (!btn) return;
+  const box = btn.closest('[data-hand-toggle]');
+  if (!box) return;
+  const hand = btn.dataset.hand;
+  box.querySelectorAll('.dr1042-split-btn[data-hand]').forEach(b => b.classList.toggle('active', b === btn));
+  box.querySelectorAll('.dr-hand-mode-body').forEach(tb => tb.classList.toggle('active', tb.dataset.hand === hand));
 });
 
 
