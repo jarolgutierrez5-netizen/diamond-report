@@ -918,6 +918,12 @@ const STATCAST_MIN_PITCHES = 100; // below this, a player's aggregate is too thi
 // calibration-check what site visitors actually see, not just this file's own (better-
 // designed but different) scoreForMarket formula.
 const STATCAST_HOT_HITTERS_PATH = path.join(__dirname, '..', 'data', 'statcast-hot-hitters.json');
+// data/near-hrs.json -- same file (and sync-near-hrs.mjs schema) app.js's loadNearHRs()
+// fetches client-side to drive the board's "🚀 NEAR HR" chip. Read here purely so a
+// captured HR Threat pick can snapshot whether this batter had real warning-track power
+// at pick time, the same "measure before it's ever treated as signal" step already taken
+// for isFavorable/isDue/matchupEdge/etc -- nothing here reads it back into scoring.
+const NEAR_HRS_PATH = path.join(__dirname, '..', 'data', 'near-hrs.json');
 
 // Both files store xSLG/hard-hit% per pitch-type row (batter: seasonPitchTypeStats,
 // pitcher: byPitch) -- this aggregates either one into a single pitches-weighted
@@ -984,6 +990,22 @@ async function loadStatcastHotHittersIndex() {
     console.warn('Statcast hot-hitters index: failed to load, live HR score will use fallback profiles only:', e.message);
   }
   return statcastHotHittersCache;
+}
+
+let nearHRsCache = null;
+async function loadNearHRsIndex() {
+  if (nearHRsCache) return nearHRsCache;
+  nearHRsCache = new Map();
+  try {
+    const raw = await readFile(NEAR_HRS_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    for (const [id, list] of Object.entries(data?.players || {})) {
+      if (Array.isArray(list) && list.length) nearHRsCache.set(String(id), list);
+    }
+  } catch (e) {
+    console.warn('Near-HRs index: failed to load, hasNearHR will be false for every batter:', e.message);
+  }
+  return nearHRsCache;
 }
 
 let pitcherStatcastPowerCache = null;
@@ -2015,6 +2037,7 @@ async function buildBatterPool(games, season) {
   const pitcherStatcastIndex = await loadPitcherStatcastPowerIndex();
   const pitcher2kSuppressionIndex = await loadPitcher2kSuppressionIndex();
   const statcastHotHittersIndex = await loadStatcastHotHittersIndex();
+  const nearHRsIndex = await loadNearHRsIndex();
   const rows = [];
   for (const g of games) {
     // Once per game (weather isn't batter- or side-specific) -- see fetchLiveGameWeather's
@@ -2097,6 +2120,11 @@ async function buildBatterPool(games, season) {
           (ops >= 0.750 ? 1 : 0) +
           (hrSeason >= 8 ? 1 : 0) // recent.hr===0 already established by isDrought above
         ) >= 2;
+        // Mirrors the client board's "🚀 NEAR HR" chip (app.js's hasNearHR check against
+        // nearHRs) so the tracker can finally answer whether real warning-track power
+        // actually precedes a HR at a higher rate -- that question was previously
+        // unanswerable since nothing captured it at pick time.
+        const hasNearHR = (nearHRsIndex.get(String(pid)) || []).length > 0;
         const rowParkFactor = PARK_FACTORS[g.teams.home.team.abbreviation] || 100;
         // Raw platoon split (this batter's real AVG/OBP/SLG vs today's specific opposing
         // pitcher's throwing hand) -- already fetched above (see `split`) to blend into
@@ -2131,7 +2159,7 @@ async function buildBatterPool(games, season) {
           pitcherHr9: n(pitcherStat.homeRunsPer9), pitcherSbAllowed: n(pitcherStat.stolenBases), pitcherCsAllowed: n(pitcherStat.caughtStealing),
           pitcherBFper9: pitcherBattersFacedPer9(pitcherStat),
           pitcherAvgAllowed, pitcherSlgAllowed, pitcherWhip, parkFactor: rowParkFactor,
-          isFavorable, isHot, isDrought, isDue, statcast: statcastIndex.get(String(pid)) || null,
+          isFavorable, isHot, isDrought, isDue, hasNearHR, statcast: statcastIndex.get(String(pid)) || null,
           windFactor: windPowerFactor(g.weather), temperatureFactor: temperaturePowerFactor(g.weather),
           fatigueFactor: battingTeamFatigue,
           pitcherStatcast, homeRoadFactor,
@@ -2185,6 +2213,10 @@ async function captureHRThreatToday(store, pool) {
       // first place any of them get recorded against a real outcome. isOnFire is
       // named to match the client (app.js), backed by the isHot proxy computed here.
       isOnFire: !!r.isHot, isFavorable: !!r.isFavorable, isDrought: !!r.isDrought, isDue: !!r.isDue,
+      // Snapshot of the board's "🚀 NEAR HR" chip (real warning-track power in the last
+      // 10 games, see sync-near-hrs.mjs) at pick time -- previously a display-only chip
+      // with no way to check whether it actually precedes a HR at a higher rate.
+      hasNearHR: !!r.hasNearHR,
       // Opposing pitcher matchup snapshot at pick time — previously only the opposing
       // TEAM was recorded (r.opp), with no way to tell which pitcher, or what inputs
       // the score actually used, drove any individual graded result. Recording these
