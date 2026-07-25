@@ -143,6 +143,8 @@ async function buildPitcherZoneHR(pitcherId, name) {
   const zoneAgg = {}; // zone -> { wobaSum, denomSum }
   const pitchZoneAgg = {}; // pitchName -> zone -> { wobaSum, denomSum, count }
   const pitchTotalCount = {}; // pitchName -> total pitches thrown (usage% denominator)
+  const hrZoneCount = {}; // zone -> count of HRs allowed on a pitch located in that zone
+  let hrZoneTotal = 0; // HRs allowed with a known zone -- the hrByZone pct denominator
   for (const raw of rows) {
     const p = extractPitchRow(raw);
     if (!p) continue;
@@ -161,12 +163,24 @@ async function buildPitcherZoneHR(pitcherId, name) {
       cell.count++;
       if (p.wobaValue != null && p.wobaDenom != null) { cell.wobaSum += p.wobaValue; cell.denomSum += p.wobaDenom; }
     }
+    if (p.zone && p.isHomeRun) {
+      hrZoneCount[p.zone] = (hrZoneCount[p.zone] || 0) + 1;
+      hrZoneTotal++;
+    }
   }
 
   const byZone = {};
   for (const z of Object.keys(zoneAgg)) {
     const { wobaSum, denomSum } = zoneAgg[z];
     if (denomSum > 0) byZone[z] = { wobaAgainst: +(wobaSum / denomSum).toFixed(3) };
+  }
+
+  // hrByZone: real share of THIS pitcher's home-runs-allowed by pitch location, not a
+  // damage/quality score like byZone above -- the HR-specific counterpart to the
+  // Attack Zone by Pitch usagePct grid, but filtered to home_run outcomes only.
+  const hrByZone = {};
+  for (const z of Object.keys(hrZoneCount)) {
+    hrByZone[z] = { count: hrZoneCount[z], pct: +((hrZoneCount[z] / hrZoneTotal) * 100).toFixed(1) };
   }
 
   const byPitchZone = {};
@@ -183,7 +197,7 @@ async function buildPitcherZoneHR(pitcherId, name) {
     if (Object.keys(zones).length) byPitchZone[pitchName] = zones;
   }
 
-  return { hrByPitch, byZone: Object.keys(byZone).length ? byZone : null, byPitchZone };
+  return { hrByPitch, byZone: Object.keys(byZone).length ? byZone : null, hrByZone: Object.keys(hrByZone).length ? hrByZone : null, byPitchZone };
 }
 
 async function main() {
@@ -223,6 +237,10 @@ async function main() {
       if (result.byZone) {
         pitcherStatcast.pitchers[id] = pitcherStatcast.pitchers[id] || { totalPitches: 0, byPitch: [] };
         pitcherStatcast.pitchers[id].byZone = result.byZone;
+      }
+      if (result.hrByZone) {
+        pitcherStatcast.pitchers[id] = pitcherStatcast.pitchers[id] || { totalPitches: 0, byPitch: [] };
+        pitcherStatcast.pitchers[id].hrByZone = result.hrByZone;
       }
       updated++;
     } catch (e) {

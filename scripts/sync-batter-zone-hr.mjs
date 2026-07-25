@@ -159,6 +159,8 @@ async function buildBatterZoneHR(batterId, name) {
   // zero-HR pitch type is recorded as a confirmed 0, not left looking like unknown data.
   const hrByPitch = {};
   const zoneAgg = {}; // zone -> { wobaSum, denomSum }
+  const hrZoneCount = {}; // zone -> count of this batter's own HRs on a pitch located there
+  let hrZoneTotal = 0; // HRs with a known zone -- the hrByZone pct denominator
   const hrSpray = [];
   const hasHitCoords = 'hc_x' in sample && 'hc_y' in sample;
   for (const raw of rows) {
@@ -170,6 +172,10 @@ async function buildBatterZoneHR(batterId, name) {
       if (!zoneAgg[p.zone]) zoneAgg[p.zone] = { wobaSum: 0, denomSum: 0 };
       zoneAgg[p.zone].wobaSum += p.wobaValue;
       zoneAgg[p.zone].denomSum += p.wobaDenom;
+    }
+    if (p.zone && p.isHomeRun) {
+      hrZoneCount[p.zone] = (hrZoneCount[p.zone] || 0) + 1;
+      hrZoneTotal++;
     }
     // hc_x/hc_y (hit-coordinate columns) are on every row of this same CSV, not just
     // extractPitchRow()'s subset -- read them straight off the raw row. Skipped
@@ -200,9 +206,16 @@ async function buildBatterZoneHR(batterId, name) {
     const { wobaSum, denomSum } = zoneAgg[z];
     if (denomSum > 0) byZone[z] = { woba: +(wobaSum / denomSum).toFixed(3) };
   }
+  // hrByZone: real share of THIS batter's OWN home runs by pitch location -- the
+  // HR-specific counterpart to byZone above (which is quality-of-contact, not HR share).
+  const hrByZone = {};
+  for (const z of Object.keys(hrZoneCount)) {
+    hrByZone[z] = { count: hrZoneCount[z], pct: +((hrZoneCount[z] / hrZoneTotal) * 100).toFixed(1) };
+  }
   return {
     hrByPitch,
     byZone: Object.keys(byZone).length ? byZone : null,
+    hrByZone: Object.keys(hrByZone).length ? hrByZone : null,
     hrSpray: hasHitCoords ? hrSpray : null,
   };
 }
@@ -261,6 +274,10 @@ async function main() {
         batterStatcast.players[id] = batterStatcast.players[id] || { seasonPitchTypeStats: [] };
         batterStatcast.players[id].byZone = result.byZone;
         if (!entry?.seasonPitchTypeStats?.length) updated++;
+      }
+      if (result.hrByZone) {
+        batterStatcast.players[id] = batterStatcast.players[id] || { seasonPitchTypeStats: [] };
+        batterStatcast.players[id].hrByZone = result.hrByZone;
       }
       // No entry / no seasonPitchTypeStats and no byZone means this player isn't in the
       // pitch-arsenal leaderboard at all yet and had no usable zone rows either --
