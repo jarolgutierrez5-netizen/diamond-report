@@ -145,6 +145,8 @@ async function buildPitcherZoneHR(pitcherId, name) {
   const pitchTotalCount = {}; // pitchName -> total pitches thrown (usage% denominator)
   const hrZoneCount = {}; // zone -> count of HRs allowed on a pitch located in that zone
   let hrZoneTotal = 0; // HRs allowed with a known zone -- the hrByZone pct denominator
+  const hrLocations = []; // real plate_x/plate_z per HR allowed -- exact pitch coordinates, not a discrete 1-9 zone bucket
+  const hasPitchCoords = 'plate_x' in sample && 'plate_z' in sample;
   for (const raw of rows) {
     const p = extractPitchRow(raw);
     if (!p) continue;
@@ -166,6 +168,21 @@ async function buildPitcherZoneHR(pitcherId, name) {
     if (p.zone && p.isHomeRun) {
       hrZoneCount[p.zone] = (hrZoneCount[p.zone] || 0) + 1;
       hrZoneTotal++;
+    }
+    // plate_x/plate_z (feet, front-of-plate crossing point) are on every row of this
+    // same CSV, same "read straight off the raw row" pattern as sync-batter-zone-hr.mjs's
+    // hc_x/hc_y -- not something extractPitchRow's fixed field set carries.
+    if (hasPitchCoords && p.isHomeRun) {
+      const px = Number(raw.plate_x), pz = Number(raw.plate_z);
+      if (Number.isFinite(px) && Number.isFinite(pz)) {
+        hrLocations.push({
+          date: raw.game_date || null,
+          plateX: +px.toFixed(2),
+          plateZ: +pz.toFixed(2),
+          exitVelo: Number.isFinite(Number(raw.launch_speed)) ? Number(raw.launch_speed) : null,
+          matchup: [raw.away_team, raw.home_team].filter(Boolean).join(' @ ') || null,
+        });
+      }
     }
   }
 
@@ -197,7 +214,13 @@ async function buildPitcherZoneHR(pitcherId, name) {
     if (Object.keys(zones).length) byPitchZone[pitchName] = zones;
   }
 
-  return { hrByPitch, byZone: Object.keys(byZone).length ? byZone : null, hrByZone: Object.keys(hrByZone).length ? hrByZone : null, byPitchZone };
+  return {
+    hrByPitch,
+    byZone: Object.keys(byZone).length ? byZone : null,
+    hrByZone: Object.keys(hrByZone).length ? hrByZone : null,
+    hrLocations: hasPitchCoords ? hrLocations : null,
+    byPitchZone,
+  };
 }
 
 async function main() {
@@ -241,6 +264,10 @@ async function main() {
       if (result.hrByZone) {
         pitcherStatcast.pitchers[id] = pitcherStatcast.pitchers[id] || { totalPitches: 0, byPitch: [] };
         pitcherStatcast.pitchers[id].hrByZone = result.hrByZone;
+      }
+      if (result.hrLocations) {
+        pitcherStatcast.pitchers[id] = pitcherStatcast.pitchers[id] || { totalPitches: 0, byPitch: [] };
+        pitcherStatcast.pitchers[id].hrLocations = result.hrLocations;
       }
       updated++;
     } catch (e) {

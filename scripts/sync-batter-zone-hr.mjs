@@ -187,6 +187,12 @@ async function buildBatterZoneHR(batterId, name) {
         // Community-standard hc_x/hc_y -> feet-from-home-plate transform (used by
         // pybaseball, baseballr, and most public Statcast spray-chart tooling) --
         // not something this script can verify against a live response here.
+        // plate_x/plate_z (feet, front-of-plate crossing point) -- the exact strike-zone
+        // coordinate of the pitch that got hit for this same home run, alongside its
+        // field landing spot above. Same row, same event, just two different locations
+        // (where the pitch was vs. where the ball ended up).
+        const plateX = Number(raw.plate_x), plateZ = Number(raw.plate_z);
+        const hasPlateCoords = Number.isFinite(plateX) && Number.isFinite(plateZ);
         hrSpray.push({
           date: raw.game_date || null,
           xFt: +(((hcX - 125.42) * 2.5).toFixed(1)),
@@ -195,6 +201,8 @@ async function buildBatterZoneHR(batterId, name) {
           exitVelo: Number.isFinite(Number(raw.launch_speed)) ? Number(raw.launch_speed) : null,
           launchAngle: Number.isFinite(Number(raw.launch_angle)) ? Number(raw.launch_angle) : null,
           matchup: [raw.away_team, raw.home_team].filter(Boolean).join(' @ ') || null,
+          plateX: hasPlateCoords ? +plateX.toFixed(2) : null,
+          plateZ: hasPlateCoords ? +plateZ.toFixed(2) : null,
         });
       }
     }
