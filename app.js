@@ -6300,15 +6300,17 @@ function renderHRThreatResults() {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const yStr = yesterday.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-  const graded = list.filter(r => r.date === yStr && (r.result === 'win' || r.result === 'loss'));
+  // Hits only, per request -- misses (result === 'loss') are deliberately excluded
+  // from this board entirely, not just visually de-emphasized.
+  const graded = list.filter(r => r.date === yStr && r.result === 'win');
 
   if (!graded.length) {
-    el.innerHTML = `<div class="mu-empty" style="color:var(--muted)">No graded HR Threat picks for ${yStr} yet — picks grade once yesterday's games go final.</div>`;
+    el.innerHTML = `<div class="mu-empty" style="color:var(--muted)">No graded HR Threat hits for ${yStr} yet — picks grade once yesterday's games go final.</div>`;
     if (countEl) countEl.style.display = 'none';
     return;
   }
 
-  graded.sort((a, b) => (b.result === 'win') - (a.result === 'win') || (b.score || 0) - (a.score || 0));
+  graded.sort((a, b) => (b.score || 0) - (a.score || 0));
   const players = graded.filter(r => drMatchesSearch('results', r.playerName || ''));
 
   if (!players.length) {
@@ -6318,14 +6320,12 @@ function renderHRThreatResults() {
   }
 
   if (countEl) {
-    const wins = graded.filter(r => r.result === 'win').length;
-    countEl.textContent = `${wins}-${graded.length - wins}`;
+    countEl.textContent = `${graded.length} Hit${graded.length !== 1 ? 's' : ''}`;
     countEl.style.cssText = 'background:var(--accent);color:white;font-family:Manrope,sans-serif;font-size:12px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;letter-spacing:.5px;flex-shrink:0';
   }
 
   const hs = id => id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_32,q_auto:best/v1/people/${id}/headshot/67/current` : '';
   el.innerHTML = players.map(r => {
-    const win = r.result === 'win';
     const hasMatchup = r.playerId != null && r.pitcherId != null;
     // Single-quoted JS string literals with embedded single quotes backslash-escaped
     // (a real MLB name like "O'Neill" would otherwise break out of the attribute) --
@@ -6342,7 +6342,7 @@ function renderHRThreatResults() {
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span style="font-size:13px;font-weight:600;color:var(--text)">${r.playerName || '–'}</span>
-          <span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.5px;${win ? 'background:rgba(80,200,120,.15);color:var(--green)' : 'background:rgba(255,107,107,.12);color:#ff6b6b'}">${win ? '✅ HIT' : '❌ MISS'}</span>
+          <span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.5px;background:rgba(80,200,120,.15);color:var(--green)">✅ HIT</span>
         </div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">
           ${r.team || '–'} vs ${r.opp || '–'}${r.pitcherName ? ` · ${r.pitcherName}` : ''} — ${r.actual != null ? `${r.actual} HR` : 'no HR'}${r.score != null ? ` · ${r.score} score` : ''}${hasMatchup ? ' · <span style="color:var(--accent2)">⚔ View Matchup</span>' : ''}
