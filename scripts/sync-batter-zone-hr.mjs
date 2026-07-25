@@ -163,6 +163,15 @@ async function buildBatterZoneHR(batterId, name) {
   let hrZoneTotal = 0; // HRs with a known zone -- the hrByZone pct denominator
   const hrSpray = [];
   const hasHitCoords = 'hc_x' in sample && 'hc_y' in sample;
+  // Same-toggle-as-Pitch-Mix-Advantage feature: p_throws (the OPPOSING PITCHER's
+  // throwing hand on each pitch) is the same column sync-batter-situational-props.mjs
+  // already relies on -- splits this batter's own zone production into vs-RHP/vs-LHP
+  // buckets so the Strike Zone Matchup / HR Zones grids can offer the same AUTO/vs
+  // RHP/vs LHP toggle the Pitch Mix Advantage table already has. Guarded the same
+  // loud/graceful way as every other optional column in this file: absent -> null,
+  // never a fabricated split.
+  const hasHandSplit = 'p_throws' in sample;
+  const zoneAggByHand = { R: {}, L: {} }; // hand -> zone -> { wobaSum, denomSum }
   for (const raw of rows) {
     const p = extractPitchRow(raw);
     if (!p) continue;
@@ -172,6 +181,12 @@ async function buildBatterZoneHR(batterId, name) {
       if (!zoneAgg[p.zone]) zoneAgg[p.zone] = { wobaSum: 0, denomSum: 0 };
       zoneAgg[p.zone].wobaSum += p.wobaValue;
       zoneAgg[p.zone].denomSum += p.wobaDenom;
+      if (hasHandSplit && (raw.p_throws === 'R' || raw.p_throws === 'L')) {
+        const bucket = zoneAggByHand[raw.p_throws];
+        if (!bucket[p.zone]) bucket[p.zone] = { wobaSum: 0, denomSum: 0 };
+        bucket[p.zone].wobaSum += p.wobaValue;
+        bucket[p.zone].denomSum += p.wobaDenom;
+      }
     }
     if (p.zone && p.isHomeRun) {
       hrZoneCount[p.zone] = (hrZoneCount[p.zone] || 0) + 1;
@@ -203,6 +218,7 @@ async function buildBatterZoneHR(batterId, name) {
           matchup: [raw.away_team, raw.home_team].filter(Boolean).join(' @ ') || null,
           plateX: hasPlateCoords ? +plateX.toFixed(2) : null,
           plateZ: hasPlateCoords ? +plateZ.toFixed(2) : null,
+          pitcherHand: hasHandSplit && (raw.p_throws === 'R' || raw.p_throws === 'L') ? raw.p_throws : null,
         });
       }
     }
@@ -220,9 +236,21 @@ async function buildBatterZoneHR(batterId, name) {
   for (const z of Object.keys(hrZoneCount)) {
     hrByZone[z] = { count: hrZoneCount[z], pct: +((hrZoneCount[z] / hrZoneTotal) * 100).toFixed(1) };
   }
+  let byZoneByHand = null;
+  if (hasHandSplit) {
+    byZoneByHand = { R: {}, L: {} };
+    for (const hand of ['R', 'L']) {
+      for (const z of Object.keys(zoneAggByHand[hand])) {
+        const { wobaSum, denomSum } = zoneAggByHand[hand][z];
+        if (denomSum > 0) byZoneByHand[hand][z] = { woba: +(wobaSum / denomSum).toFixed(3) };
+      }
+    }
+    if (!Object.keys(byZoneByHand.R).length && !Object.keys(byZoneByHand.L).length) byZoneByHand = null;
+  }
   return {
     hrByPitch,
     byZone: Object.keys(byZone).length ? byZone : null,
+    byZoneByHand,
     hrByZone: Object.keys(hrByZone).length ? hrByZone : null,
     hrSpray: hasHitCoords ? hrSpray : null,
   };
@@ -282,6 +310,10 @@ async function main() {
         batterStatcast.players[id] = batterStatcast.players[id] || { seasonPitchTypeStats: [] };
         batterStatcast.players[id].byZone = result.byZone;
         if (!entry?.seasonPitchTypeStats?.length) updated++;
+      }
+      if (result.byZoneByHand) {
+        batterStatcast.players[id] = batterStatcast.players[id] || { seasonPitchTypeStats: [] };
+        batterStatcast.players[id].byZoneByHand = result.byZoneByHand;
       }
       if (result.hrByZone) {
         batterStatcast.players[id] = batterStatcast.players[id] || { seasonPitchTypeStats: [] };

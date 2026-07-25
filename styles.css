@@ -3599,6 +3599,17 @@ select:focus-visible {
   display: block;
 }
 
+/* Hand-split toggle (AUTO/vs RHB/vs LHB and AUTO/vs RHP/vs LHP) — Strike Zone Matchup,
+   Attack Zone by Pitch, and HR Zones. Same div-toggle generalization as .dr-azone-mode-body
+   above, reused here under its own class since each [data-hand-toggle] box can sit
+   independently on the pitcher's or batter's side of the same section. */
+.dr-hand-mode-body {
+  display: none;
+}
+.dr-hand-mode-body.active {
+  display: block;
+}
+
 /* Player watchlist star toggle — sits top-right on HR Threats / Strikeouts /
    Hits / RBIs / Total Bases / Stolen Bases / Hits+Runs+RBI cards, all of
    which already carry position:relative + overflow:hidden, so an absolute
