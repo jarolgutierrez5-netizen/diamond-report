@@ -150,15 +150,17 @@ async function main() {
     console.log('  (need at least 20 graded picks with a live-score snapshot for a meaningful breakdown — check back after more picks are captured and graded under the new field)');
   }
 
-  // ── Signal-tag breakdowns (isOnFire/isFavorable/isDrought/isDue) — same
+  // ── Signal-tag breakdowns (isOnFire/isFavorable/isDrought/isDue/hasNearHR) — same
   // methodology as the score-calibration z-test above, not just raw percentages:
   // only present on picks captured after those tags were added to the snapshot,
   // and a tag's TRUE/FALSE split is only worth reading once both sides clear a
   // real sample size — the whole reason the score check above and
   // tune-model-params.mjs both gate on sample size before treating a split as
-  // signal instead of noise from a handful of picks. ──
+  // signal instead of noise from a handful of picks. hasNearHR is the board's
+  // "🚀 NEAR HR" chip (real warning-track power in the last 10 games) — previously
+  // a display-only chip never checked against real graded outcomes. ──
   const TAG_MIN_SAMPLE_PER_SIDE = 20;
-  for (const tag of ['isOnFire', 'isFavorable', 'isDrought', 'isDue']) {
+  for (const tag of ['isOnFire', 'isFavorable', 'isDrought', 'isDue', 'hasNearHR']) {
     const withTag = graded.filter(r => tag in r);
     if (!withTag.length) continue;
     const on = withTag.filter(r => r[tag]);
