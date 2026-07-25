@@ -6264,6 +6264,103 @@ async function loadNearHRsBoard() {
   } catch(e) {}
 }
 window.loadNearHRsBoard = loadNearHRsBoard;
+
+// ── Results tab: yesterday's graded HR Threats picks ──────────────────────
+// data/tracker.json's market.hrThreat[] has been captured + graded (win/loss vs.
+// real box-score home runs) by update-tracker.mjs since it shipped, but was never
+// surfaced anywhere in the UI -- purely internal bookkeeping until now. Same direct
+// fetch pattern as loadTrackerPicks() above (no dependency on the much larger
+// repoSourceStore DRP/K-Prop merge logic, which this doesn't need).
+let _hrThreatResultsCache = null;
+let _hrThreatResultsLoadPromise = null;
+async function loadHRThreatResults(force=false) {
+  if (_hrThreatResultsCache && !force) return _hrThreatResultsCache;
+  if (_hrThreatResultsLoadPromise && !force) return _hrThreatResultsLoadPromise;
+  _hrThreatResultsLoadPromise = (async () => {
+    let list = [];
+    try {
+      const res = await fetch('./data/tracker.json', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        list = Array.isArray(data?.market?.hrThreat) ? data.market.hrThreat : [];
+      }
+    } catch {}
+    _hrThreatResultsCache = list;
+    return list;
+  })();
+  return _hrThreatResultsLoadPromise;
+}
+window.loadHRThreatResults = loadHRThreatResults;
+
+function renderHRThreatResults() {
+  const el = document.getElementById('hr-results-content');
+  if (!el) return;
+  const countEl = document.getElementById('hr-results-count');
+  const list = _hrThreatResultsCache || [];
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yStr = yesterday.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+  const graded = list.filter(r => r.date === yStr && (r.result === 'win' || r.result === 'loss'));
+
+  if (!graded.length) {
+    el.innerHTML = `<div class="mu-empty" style="color:var(--muted)">No graded HR Threat picks for ${yStr} yet — picks grade once yesterday's games go final.</div>`;
+    if (countEl) countEl.style.display = 'none';
+    return;
+  }
+
+  graded.sort((a, b) => (b.result === 'win') - (a.result === 'win') || (b.score || 0) - (a.score || 0));
+  const players = graded.filter(r => drMatchesSearch('results', r.playerName || ''));
+
+  if (!players.length) {
+    el.innerHTML = `<div class="mu-empty" style="color:var(--muted)">No players match your search.</div>`;
+    if (countEl) countEl.style.display = 'none';
+    return;
+  }
+
+  if (countEl) {
+    const wins = graded.filter(r => r.result === 'win').length;
+    countEl.textContent = `${wins}-${graded.length - wins}`;
+    countEl.style.cssText = 'background:var(--accent);color:white;font-family:Manrope,sans-serif;font-size:12px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;letter-spacing:.5px;flex-shrink:0';
+  }
+
+  const hs = id => id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_32,q_auto:best/v1/people/${id}/headshot/67/current` : '';
+  el.innerHTML = players.map(r => {
+    const win = r.result === 'win';
+    const hasMatchup = r.playerId != null && r.pitcherId != null;
+    // Single-quoted JS string literals with embedded single quotes backslash-escaped
+    // (a real MLB name like "O'Neill" would otherwise break out of the attribute) --
+    // same escaping pattern used by the other openMatchup(...) onclick builders in
+    // this file (see safeName above), not JSON.stringify, which emits double quotes
+    // that collide with this double-quoted HTML attribute.
+    const safePlayerName = String(r.playerName || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const safePitcherName = String(r.pitcherName || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const clickAttrs = hasMatchup
+      ? `onclick="openMatchup(${Number(r.playerId)},'${safePlayerName}',${Number(r.pitcherId)},'${safePitcherName}')" style="cursor:pointer"`
+      : '';
+    return `<div class="stat-row" ${clickAttrs} style="align-items:center;flex-wrap:wrap">
+      <img src="${hs(r.playerId)}" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" alt="" loading="lazy" decoding="async">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">${r.playerName || '–'}</span>
+          <span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.5px;${win ? 'background:rgba(80,200,120,.15);color:var(--green)' : 'background:rgba(255,107,107,.12);color:#ff6b6b'}">${win ? '✅ HIT' : '❌ MISS'}</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">
+          ${r.team || '–'} vs ${r.opp || '–'}${r.pitcherName ? ` · ${r.pitcherName}` : ''} — ${r.actual != null ? `${r.actual} HR` : 'no HR'}${r.score != null ? ` · ${r.score} score` : ''}${hasMatchup ? ' · <span style="color:var(--accent2)">⚔ View Matchup</span>' : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+window.renderHRThreatResults = renderHRThreatResults;
+
+async function loadResultsBoard() {
+  try {
+    await loadHRThreatResults();
+    renderHRThreatResults();
+  } catch(e) {}
+}
+window.loadResultsBoard = loadResultsBoard;
+
 // Same repo-fed-JSON-with-graceful-fallback pattern as loadNearHRs() above —
 // data/pitcher-rolling.json is keyed by pitcher ID already, so this just
 // normalizes the ID to a string for lookup consistency with the rest of the app.
@@ -10917,7 +11014,7 @@ if (document.readyState === 'loading') {
 
 /* ---- from <script id="prod-v8-70-performance-loader"> ---- */
 (function(){
-  const loaded = { game:false, pr:false, hr:false, k:false, props:false, deep:false, fantasy:false, nearhr:false };
+  const loaded = { game:false, pr:false, hr:false, k:false, props:false, deep:false, fantasy:false, nearhr:false, results:false };
   const idle = window.requestIdleCallback || function(cb){ return setTimeout(cb, 900); };
 
   window.__drLoadGamePickPaneData = function(pane){
@@ -10958,6 +11055,12 @@ if (document.readyState === 'loading') {
         try { if (typeof window.loadNearHRsBoard === 'function') window.loadNearHRsBoard(); } catch(e) {}
         return;
       }
+      if (pane === 'results') {
+        if (loaded.results) return;
+        loaded.results = true;
+        try { if (typeof window.loadResultsBoard === 'function') window.loadResultsBoard(); } catch(e) {}
+        return;
+      }
       if (pane === 'k') {
         if (loaded.k) return;
         loaded.k = true;
@@ -10996,7 +11099,7 @@ if (document.readyState === 'loading') {
 /* ---- from <script id="anonymous"> ---- */
 // PROD v8.44 — Game Picks inner tab controller with persistent state
 (function(){
-  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, fantasy: true, nearhr: true };
+  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, fantasy: true, nearhr: true, results: true };
 
   // Only the URL hash decides the pane on load (e.g. a shared #gamepick=premium
   // link). No localStorage fallback — a plain refresh/revisit with no hash
