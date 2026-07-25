@@ -3,7 +3,7 @@ name: Sync Pitcher/Batter Pitch-Arsenal Data
 on:
   schedule:
     # 13:04 UTC = ~8am CDT — before the update-tracker.yml morning run (14:07 UTC), so
-    # today's Elite Picks/matchup pages have fresh pitch-arsenal data before first pitch.
+    # today's HR Threats/matchup pages have fresh pitch-arsenal data before first pitch.
     # Offset off the top of the hour on purpose — see the comment in update-tracker.yml.
     # This is the only trigger that runs the full sync (pitch-arsenal + hot-hitters +
     # zone/HR) — those two leaderboard pulls are whole-season aggregates that don't

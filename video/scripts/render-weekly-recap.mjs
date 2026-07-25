@@ -11,7 +11,6 @@ const trackerPath = path.join(repoRoot, 'data', 'tracker.json');
 const MARKET_LABELS = {
   drp: 'Moneyline (DRP)',
   kprop: 'K Props',
-  premium: 'Elite Picks',
   hrThreat: 'HR Threats',
 };
 

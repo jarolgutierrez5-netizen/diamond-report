@@ -11,19 +11,15 @@
 //
 //   1. CAPTURE — for TODAY's games, independently derives the Diamond Report Pick
 //      (game winner) and K Props (strikeout over/under), and *selects and locks in*
-//      the Premium tab's Elite Picks (Home Runs: top 3 per game; the other five
-//      markets — Hits/RBI/Total Bases/Stolen Bases/Hits+Runs+RBI — top 5 pooled
-//      across the slate; cross-market deduped) using only data available *before* the
-//      games start. This is the single source of truth for Elite Picks — the live
-//      client (app.js, the Premium: Elite Picks IIFE) reads these captured picks
-//      straight out of data/tracker.json rather than selecting its own, so every
-//      visitor sees the identical picks with the identical score, and once a pick is
-//      captured it's locked for the day: a later run in the same day only fills
-//      genuinely open slots, it never bumps an already-captured pick for one that's
-//      since scored higher. This has to happen pre-game — season stats fetched
-//      *after* a game already include that game's own result, which would silently
-//      make every backtest look artificially accurate (lookahead bias). Capturing
-//      pre-game and grading later is the only honest way to measure this.
+//      the HR Threats board's per-batter picks using only data available *before* the
+//      games start, so every visitor sees the identical picks with the identical
+//      score, and once a pick is captured it's locked for the day: a later run in
+//      the same day only fills genuinely open slots (batters newly clearing the
+//      score gate as lineups post), it never bumps an already-captured pick for one
+//      that's since scored higher. This has to happen pre-game — season stats
+//      fetched *after* a game already include that game's own result, which would
+//      silently make every backtest look artificially accurate (lookahead bias).
+//      Capturing pre-game and grading later is the only honest way to measure this.
 //
 //   2. GRADE — for any *earlier* day's picks still marked "pending", fetches
 //      the real final results and resolves them to win/loss/push.
@@ -37,16 +33,16 @@
 //   - K Props: no independent server-side sportsbook feed, so it grades
 //     against the model's own fallback line (floor(projK) - 0.5), same as
 //     the client falls back to when no real book line has loaded.
-//   - Elite Picks: no Statcast hot-hitter sync data available server-side,
-//     so the "recent hot form" quality-gate signal uses a real,
-//     independently-computable proxy (last-10-game AVG meaningfully above
-//     season AVG, or a HR in the last 10 games) instead of the site's
-//     onFireScore/hotBoostPct. Official starting lineups also often aren't
-//     posted yet this early in the day — when a game's real lineup isn't up
-//     yet, batter candidates fall back to the team's active roster position
-//     players (same fallback tier HR Threats itself uses pre-lineup), and
-//     lineup-slot-dependent signals are simply left at their unknown-slot
-//     defaults rather than guessed.
+//   - HR Threats: no Statcast hot-hitter sync data available server-side,
+//     so the "recent hot form" signal uses a real, independently-computable
+//     proxy (last-10-game AVG meaningfully above season AVG, or a HR in the
+//     last 10 games) instead of the site's onFireScore/hotBoostPct. Official
+//     starting lineups also often aren't posted yet this early in the day —
+//     when a game's real lineup isn't up yet, batter candidates fall back to
+//     the team's active roster position players (same fallback tier the live
+//     HR Threats board itself uses pre-lineup), and lineup-slot-dependent
+//     signals are simply left at their unknown-slot defaults rather than
+//     guessed.
 // All noted so nobody mistakes this for a 1:1 replay of the live site's
 // exact numbers — it's an independent, real, but slightly simpler model.
 // ─────────────────────────────────────────────────────────────────────────
@@ -64,11 +60,10 @@ const TRACKER_PATH = path.join(__dirname, '..', 'data', 'tracker.json');
 // had nothing to actually read despite already knowing how to parse it.
 const K_PROPS_ODDS_PATH = path.join(__dirname, '..', 'data', 'k-props.json');
 // Same idea as K_PROPS_ODDS_PATH above, for the batter markets — real sportsbook
-// hits/home_runs/total_bases/rbis/stolen_bases lines for EVERY quoted batter (not
-// just the handful that end up as an Elite Pick), from the exact same batterLines
-// map fetchOddsLookup() already builds. Lets the live client compute a real
-// implied-probability edge (see scripts/sync-batter-situational-props.mjs) for any
-// batter on today's board, not only ones Elite Picks happened to select.
+// hits/home_runs/total_bases/rbis/stolen_bases lines for EVERY quoted batter, from
+// the exact same batterLines map fetchOddsLookup() already builds. Lets the live
+// client compute a real implied-probability edge (see
+// scripts/sync-batter-situational-props.mjs) for any batter on today's board.
 const PROP_MARKET_ODDS_PATH = path.join(__dirname, '..', 'data', 'prop-market-odds.json');
 // Separate file, separate pipeline — deliberately never merged into
 // data/tracker.json. Captures our own Diamond Report Pick alongside Ballpark
@@ -88,7 +83,7 @@ const ODDS_API_BASE = 'https://api.the-odds-api.com/v4';
 // Budget note: the-odds-api.com's free tier is metered per month. One events-list call
 // plus one per-event odds call (all markets requested together in a single call per
 // event) runs roughly 15-16 requests/day if fetched daily — call this only from the
-// morning capture pass, not the afternoon Elite-Picks-only pass, to stay well within a
+// morning capture pass, not the later same-day re-passes, to stay well within a
 // typical free-tier monthly quota.
 
 const PARK_FACTORS = {
@@ -126,8 +121,8 @@ function normalizeName(s) {
   return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z\s]/g, '').trim();
 }
 
-// Real sportsbook lines for K Props and the batter markets Elite Picks covers, from
-// the-odds-api.com. Two lookup maps come back: pitcherLines (strikeout O/U) and
+// Real sportsbook lines for K Props and batter prop markets, from the-odds-api.com.
+// Two lookup maps come back: pitcherLines (strikeout O/U) and
 // batterLines (hits/home runs/RBIs/total bases/stolen bases O/U), each keyed by
 // normalized player name. Every failure mode here — no key, quota exceeded, an event
 // or market simply not offered yet — resolves to an empty lookup rather than throwing,
@@ -433,7 +428,7 @@ function blendRecentForm(seasonVal, recent, key) {
 
 // Populated as a side effect of seasonPitchingStat (below) — pitchHand comes back on
 // the same /people/{id} response the season stat call already makes, so caching it
-// here means the Elite Picks pool's handedness-split lookup costs zero extra pitcher
+// here means the batter pool's handedness-split lookup costs zero extra pitcher
 // requests, only the one new per-batter split request (see battingSplitVsHand).
 const pitcherHandCache = new Map();
 
@@ -869,11 +864,10 @@ async function computeKProp(g, side, season, oddsLookup) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Premium Elite Picks — this is now the live selection engine, not just a grading
-// copy: the client (app.js, the Premium: Elite Picks IIFE) displays exactly what gets
-// captured here, joined against live row data for display only. Uses the same
-// cross-market Monte Carlo engine as the client's __DR_MONTE_CARLO__ IIFE, ported as
-// closely as possible; two real simplifications, both noted where they apply below:
+// buildBatterPool() below builds the shared active-roster batter candidate pool,
+// scored across markets by the same cross-market Monte Carlo engine as the client's
+// __DR_MONTE_CARLO__ IIFE (ported as closely as possible). Two real simplifications,
+// both noted where they apply below:
 //   - No Statcast hot-hitter sync data available server-side, so the
 //     "recent hot form" signal uses a real, independently-computable proxy
 //     (last-10-game AVG trending meaningfully above season AVG, or a HR in
@@ -887,21 +881,17 @@ async function computeKProp(g, side, season, oddsLookup) {
 //     for those players rather than guessed.
 // ─────────────────────────────────────────────────────────────────────────
 
-const ELITE_MARKETS = ['hr', 'hits', 'rbis', 'tb', 'sb', 'hrrbi'];
 const MC_TRIALS = 3000;
 const MC_AB_PER_PA = 0.88;
-const ELITE_MIN_AB = 40;
-const ELITE_MIN_QUALITY = 2;
-const ELITE_TOP_N = 5;
-const ELITE_HR_TOP_N_PER_GAME = 3;
+const POOL_MIN_AB = 40;
 const LEAGUE_AVG_AVG = 0.245, LEAGUE_AVG_OBP = 0.315, LEAGUE_AVG_SLG = 0.400, LEAGUE_AVG_HR_RATE = 0.031;
 
 // ── Statcast batted-ball power (data/batter-pitch-type-season.json) ──
 // Synced by sync-statcast.yml ~1hr before this job's morning run, so it's reliably
-// fresh by the time buildEliteBatterPool() runs. This was previously synced but never
+// fresh by the time buildBatterPool() runs. This was previously synced but never
 // actually read by this file (see the "no Statcast hot-hitter sync data available
-// server-side" comment on ELITE_MIN_QUALITY above, which was true for the *recent-form*
-// signal specifically, but this season-long power data was sitting unused too).
+// server-side" comment above, which was true for the *recent-form* signal
+// specifically, but this season-long power data was sitting unused too).
 // xSLG/hard-hit% measure the quality of contact directly (exit velocity, launch angle)
 // instead of relying on AVG/SLG outcomes, which are tangled up with luck, defense, and
 // ballpark sequencing -- a real, independent power signal box-score rates can't see.
@@ -1025,7 +1015,7 @@ async function loadPitcherStatcastPowerIndex() {
 // opposing pitcher actually throws, hand-adjusted by the batter's real split vs that
 // pitcher's throwing hand -- the same 0-99 score shown as "MATCHUP EDGE" in the live
 // site's Pitcher Matchup modal and as a sortable stat on the HR Threats board. Not used
-// in scoreForMarket/eliteQualityScore -- snapshotted onto captured HR Threat picks below
+// in scoreForMarket -- snapshotted onto captured HR Threat picks below
 // purely so analyze-hr-matchups.mjs can check later whether it actually predicts real
 // outcomes, same "measure before it's a scoring input" treatment as platoonFavorable.
 function normalizePitchTypeKeyMatchupEdge(name) {
@@ -1264,7 +1254,7 @@ async function teamRestFatigueFactor(teamId, todayGameDateIso) {
 // gets a lower 14% bar. This backend job uses one uniform 18% cutoff across the whole
 // pool — a known, deliberate simplification (skips the tiny per-game 14% carve-out) so
 // the daily scanned/hit counts are simple to reason about and don't require re-deriving
-// per-game rankings. Same buildEliteBatterPool/scoreForMarket('hr', ...) model as Elite
+// per-game rankings. Same buildBatterPool/scoreForMarket('hr', ...) model as Elite
 // Picks, just applied to every qualifying batter instead of the top 3 per game.
 const HR_THREAT_MIN_SCORE = 18;
 
@@ -1316,7 +1306,7 @@ function buildBatterModel(row) {
   const seasonAB = row.atBats || 0;
   const seasonHR = row.hrSeason || 0;
   const hrRatePerPA = seasonAB > 0 ? (seasonHR / seasonAB) * MC_AB_PER_PA : pHit * 0.11;
-  // Same weather (row.weatherHRMult, set by buildEliteBatterPool) and quality-of-contact
+  // Same weather (row.weatherHRMult, set by buildBatterPool) and quality-of-contact
   // (battedBallPowerIndex/shrinkMult off row.statcast, already used by scoreForMarket('hr')
   // and computeLiveHRScore) corrections app.js's buildBatterModel now applies client-side —
   // kept in sync per this function's own header comment. Both default to neutral (1).
@@ -1439,7 +1429,7 @@ function simulateHRGameOdds(pPerPA, battingOrder) {
   // Was hard-capped at 25 with no floor, unlike every other market's 1-99 range —
   // real per-game HR probability for a genuinely elite matchup can exceed 25%, so
   // the old cap flattened great and mediocre matchups into the same narrow band
-  // and made ranking/selection nearly meaningless. See Elite Picks HR record audit.
+  // and made ranking/selection nearly meaningless. See analyze-hr-matchups.mjs.
   return Math.max(1, Math.min(99, Math.round(prob * 100)));
 }
 
@@ -1538,7 +1528,7 @@ function liveFallbackHotHitterProfile(ops, iso, last10HR, isFavorable) {
     (ops >= .900 ? 22 : ops >= .820 ? 16 : ops >= .760 ? 10 : 0) +
     (iso >= .260 ? 22 : iso >= .210 ? 16 : iso >= .170 ? 9 : 0) +
     (last10HR >= 3 ? 26 : last10HR >= 2 ? 18 : last10HR >= 1 ? 10 : 0) +
-    // streakDays (consecutive-day HR streak) isn't computed by buildEliteBatterPool --
+    // streakDays (consecutive-day HR streak) isn't computed by buildBatterPool --
     // this file has no equivalent input -- so that addend (up to +14 client-side) is
     // deliberately omitted rather than faked. A small, known conservative gap versus
     // the real client score, only for players without live-repo Statcast coverage.
@@ -1592,7 +1582,7 @@ function computeLiveHRScore(row, statcastHotHitters, weatherHRMult = 1) {
   // Quality-of-contact correction -- same battedBallPowerIndex/shrinkMult this file's
   // own scoreForMarket already applies, and the exact signal the live client formula
   // this function mirrors now also applies (see app.js's loadHRPotential). row.statcast
-  // is already populated by buildEliteBatterPool from the same statcastIndex
+  // is already populated by buildBatterPool from the same statcastIndex
   // scoreForMarket uses, so this needs no separate data source.
   const batterRate = boxScoreBatterRate * shrinkMult(battedBallPowerIndex(row.statcast));
   const pitcherRate = row.pitcherHr9 > 0 ? row.pitcherHr9 / 38 : 0.03;
@@ -1643,21 +1633,6 @@ function scoreForMarket(marketKey, row) {
   return simulatePropOdds(marketKey, row);
 }
 
-function eliteQualityScore(marketKey, row) {
-  let score = 0;
-  if (row.isFavorable) score++;
-  if (row.isHot) score++;
-  if (row.battingOrder && row.battingOrder >= 1 && row.battingOrder <= 5) score++;
-  if (marketKey === 'sb') {
-    if ((row.stolenBases + row.caughtStealing) >= 5) score++;
-  } else if (marketKey === 'hr') {
-    if (row.iso >= 0.180 || row.hrSeason >= 15) score++;
-  } else {
-    if (row.ops >= 0.780 || row.iso >= 0.180) score++;
-  }
-  return score;
-}
-
 // ── Building today's batter candidate pool ──
 async function seasonBattingStat(pid, season) {
   try {
@@ -1686,7 +1661,7 @@ async function recentBattingForm(pid, season, games = 10) {
   } catch (e) { return null; }
 }
 
-// Elite Picks pool only (see PARK_FACTORS/pitcherHandCache comments) — vs-LHP/vs-RHP
+// Batter pool only (see PARK_FACTORS/pitcherHandCache comments) — vs-LHP/vs-RHP
 // split for this batter against *this specific game's* probable pitcher's hand. One
 // extra request per batter, only paid here (not by the live client page), matching the
 // user's ask to scope handedness data to the backend pool rather than page-load-latency
@@ -2008,7 +1983,7 @@ function liveWindHRMult(weather, homeAbbr) {
   const mult = 1 + WIND_HR_SENSITIVITY * (weather.wind - 5) * (impact === 'out' ? 1 : -1);
   return Math.max(0.85, Math.min(1.2, mult));
 }
-// Cached per gamePk within a single run -- buildEliteBatterPool below calls this once
+// Cached per gamePk within a single run -- buildBatterPool below calls this once
 // per game (not per batter/side), same reasoning as the client (weather is a whole-
 // game condition), but a Map cache here also protects against any future caller
 // requesting the same game's weather twice in one run.
@@ -2035,7 +2010,7 @@ async function fetchLiveGameWeather(gamePk, homeAbbr, awayAbbr) {
   return weather;
 }
 
-async function buildEliteBatterPool(games, season) {
+async function buildBatterPool(games, season) {
   const statcastIndex = await loadStatcastPowerIndex();
   const pitcherStatcastIndex = await loadPitcherStatcastPowerIndex();
   const pitcher2kSuppressionIndex = await loadPitcher2kSuppressionIndex();
@@ -2070,9 +2045,9 @@ async function buildEliteBatterPool(games, season) {
           battingSplitHomeAway(pid, season, side === 'home'),
         ]);
         const ab = n(stat.atBats);
-        const seasonAvg = shrinkToLeague(n(stat.avg), ab, LEAGUE_AVG_AVG, ELITE_MIN_AB);
-        const seasonObp = shrinkToLeague(n(stat.obp, seasonAvg + 0.065), ab, LEAGUE_AVG_OBP, ELITE_MIN_AB);
-        const seasonSlg = shrinkToLeague(n(stat.slg, seasonAvg + 0.155), ab, LEAGUE_AVG_SLG, ELITE_MIN_AB);
+        const seasonAvg = shrinkToLeague(n(stat.avg), ab, LEAGUE_AVG_AVG, POOL_MIN_AB);
+        const seasonObp = shrinkToLeague(n(stat.obp, seasonAvg + 0.065), ab, LEAGUE_AVG_OBP, POOL_MIN_AB);
+        const seasonSlg = shrinkToLeague(n(stat.slg, seasonAvg + 0.155), ab, LEAGUE_AVG_SLG, POOL_MIN_AB);
         const homeRoadFactor = homeRoadPowerFactor(homeAwaySplit, seasonSlg);
         // Recency blend — mirrors the client-side loadHRPotential blend exactly (same
         // 20-AB cap, same 35% max weight), using the lastXGames data already fetched
@@ -2084,7 +2059,7 @@ async function buildEliteBatterPool(games, season) {
         const recSlg = recentWeight > 0 && recent.slg != null ? seasonSlg * (1 - recentWeight) + recent.slg * recentWeight : seasonSlg;
         // Platoon blend — this batter's actual AVG/OBP/SLG against this specific
         // game's probable pitcher's throwing hand, applied on top of the recency blend.
-        // Elite Picks pool only (see battingSplitVsHand comment); the live client page
+        // Batter pool only (see battingSplitVsHand comment); the live client page
         // does not pay this extra per-batter request.
         const SPLIT_MAX_AB = 50, SPLIT_MAX_WEIGHT = 0.30;
         const splitWeight = split && split.ab > 0 ? Math.min(split.ab, SPLIT_MAX_AB) / SPLIT_MAX_AB * SPLIT_MAX_WEIGHT : 0;
@@ -2141,8 +2116,8 @@ async function buildEliteBatterPool(games, season) {
         // blend, so this is a zero-extra-fetch snapshot, same as platoonAB/platoonOps.
         const matchupEdge = computeMatchupEdgeScore(pid, pitcher.id, pitcherHand, seasonAvg, seasonSlg, split);
         // Snapshot of the live client's own HR score (see computeLiveHRScore's header
-        // comment) -- only meaningful for the 'hr' market; harmless (just unused) on the
-        // other five Elite Picks markets this same pool feeds.
+        // comment) -- only meaningful for the 'hr' market; harmless (just unused) for
+        // any other market this same pool feeds.
         const liveScore = computeLiveHRScore({
           id: pid, name: person.fullName, ops, iso, atBats: ab, hrSeason,
           pitcherHr9: n(pitcherStat.homeRunsPer9), parkFactor: rowParkFactor, battingOrder,
@@ -2176,177 +2151,10 @@ async function buildEliteBatterPool(games, season) {
   return rows;
 }
 
-// Picks are locked in the moment they're first captured — a later run (the same day's
-// afternoon lineup re-check, see update-tracker.yml) never bumps an already-captured
-// player out in favor of someone who's since scored higher; it only fills genuinely
-// open slots (fewer picks captured so far than the target count). Mirrors the client's
-// per-game HR / pooled-other-markets scoping exactly (app.js, the Premium: Elite Picks
-// IIFE) so every site visitor and the graded record agree on the same picks.
-// usedIds/alreadyLockedCounts describe what's already locked in today (from earlier
-// runs); this only returns the NEW entries that should fill remaining open slots.
-function buildEliteFills(pool, usedIds, alreadyLockedCounts) {
-  const eligible = pool.filter(r => r.atBats >= ELITE_MIN_AB);
-  const fills = { hr: [] };
-
-  const byGame = {};
-  eligible.forEach(r => { if (r.gamePk == null) return; (byGame[r.gamePk] ||= []).push(r); });
-
-  Object.keys(byGame).forEach(gamePk => {
-    const already = alreadyLockedCounts.hr[gamePk] || 0;
-    const need = ELITE_HR_TOP_N_PER_GAME - already;
-    if (need <= 0) return;
-    byGame[gamePk]
-      .map(row => ({ row, score: scoreForMarket('hr', row), quality: eliteQualityScore('hr', row) }))
-      .filter(x => x.score > 0 && x.quality >= ELITE_MIN_QUALITY && !usedIds.has(x.row.id))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, need)
-      .forEach(c => { usedIds.add(c.row.id); fills.hr.push(c); });
-  });
-
-  ELITE_MARKETS.filter(m => m !== 'hr').forEach(m => {
-    const need = ELITE_TOP_N - (alreadyLockedCounts[m] || 0);
-    fills[m] = [];
-    if (need <= 0) return;
-    eligible
-      .map(row => ({ row, score: scoreForMarket(m, row), quality: eliteQualityScore(m, row) }))
-      .filter(x => x.score > 0 && x.quality >= ELITE_MIN_QUALITY && !usedIds.has(x.row.id))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, need)
-      .forEach(c => { usedIds.add(c.row.id); fills[m].push(c); });
-  });
-
-  return fills;
-}
-
-// Maps Elite Picks market keys to their the-odds-api.com equivalent. hrrbi
-// (Hits+Runs+RBI) has no direct sportsbook market — no market context for that one,
-// which is expected, not a bug.
-const ELITE_TO_ODDS_MARKET = { hr: 'home_runs', hits: 'hits', rbis: 'rbis', tb: 'total_bases', sb: 'stolen_bases' };
-
-async function captureEliteToday(store, pool, oddsLookup) {
-  store.market.premium ||= [];
-  if (!pool.length) return 0;
-  const today = cdtDateString(new Date());
-
-  // What's already locked in today, across every slot — the cross-slot dedup set and
-  // per-slot counts that determine how many (if any) open slots remain to fill.
-  const todaysPicks = store.market.premium.filter(r => r.date === today);
-  const usedIds = new Set(todaysPicks.map(r => r.playerId));
-  const alreadyLockedCounts = { hr: {} };
-  todaysPicks.forEach(r => {
-    if (r.market === 'hr') {
-      const gp = String(r.gamePk);
-      alreadyLockedCounts.hr[gp] = (alreadyLockedCounts.hr[gp] || 0) + 1;
-    } else {
-      alreadyLockedCounts[r.market] = (alreadyLockedCounts[r.market] || 0) + 1;
-    }
-  });
-
-  const fills = buildEliteFills(pool, usedIds, alreadyLockedCounts);
-  let added = 0;
-
-  ELITE_MARKETS.forEach(m => {
-    (fills[m] || []).forEach(entry => {
-      const r = entry.row;
-      const key = `${today}|PREMIUM|${m}|${r.id}`;
-      if (store.market.premium.some(x => x.key === key)) return; // safety net; shouldn't happen given usedIds
-      // Informational only — real sportsbook line/price when quoted, for comparing our
-      // simulated probability against the market later. Never affects win/loss grading,
-      // which always stays the real, fixed stat threshold (see eliteHit below).
-      const oddsMarket = ELITE_TO_ODDS_MARKET[m];
-      const marketOdds = oddsMarket ? (oddsLookup?.batterLines?.get(normalizeName(r.name))?.[oddsMarket] ?? null) : null;
-      const existingForSlot = m === 'hr'
-        ? todaysPicks.filter(x => x.market === 'hr' && String(x.gamePk) === String(r.gamePk)).length
-        : todaysPicks.filter(x => x.market === m).length;
-      store.market.premium.push({
-        key, date: today, market: m, rank: existingForSlot + 1,
-        playerId: r.id, playerName: r.name, team: r.teamAbbr, opp: r.oppAbbr, gamePk: r.gamePk,
-        score: entry.score, quality: entry.quality, marketOdds,
-        result: 'pending', actual: null,
-        // Matchup snapshot at pick time -- same gap the HR Threat/K Props trackers had:
-        // buildEliteBatterPool computes all of this per row to feed scoreForMarket, but it
-        // was discarded once the score was captured, so there was no way to check
-        // afterward whether a market is systematically off for certain batter/pitcher/park
-        // profiles (see analyze-elite-matchups.mjs). Kept generic across all six markets
-        // rather than picking a different subset per market -- storage is cheap and this
-        // stays one shared shape.
-        batterAVG: r.avg ?? null, batterOBP: r.obp ?? null, batterSLG: r.slg ?? null,
-        batterOPS: r.ops ?? null, batterISO: r.iso ?? null, hrSeason: r.hrSeason ?? null,
-        battingOrder: r.battingOrder ?? null, stolenBases: r.stolenBases ?? null,
-        pitcherId: r.pitcherId ?? null, pitcherName: r.pitcherName ?? null,
-        pitcherHr9: r.pitcherHr9 ?? null, pitcherAvgAllowed: r.pitcherAvgAllowed ?? null,
-        pitcherSlgAllowed: r.pitcherSlgAllowed ?? null, pitcherWhip: r.pitcherWhip ?? null,
-        pitcherSbAllowed: r.pitcherSbAllowed ?? null,
-        parkFactor: r.parkFactor ?? null, windFactor: r.windFactor ?? null, temperatureFactor: r.temperatureFactor ?? null,
-        isFavorable: !!r.isFavorable, isHot: !!r.isHot, isDrought: !!r.isDrought, isDue: !!r.isDue,
-      });
-      todaysPicks.push(store.market.premium[store.market.premium.length - 1]);
-      added++;
-    });
-  });
-  return added;
-}
-
-// Real per-market "hit" definitions — same success conditions the client-side Monte
-// Carlo engine targets (g.hits>=1, g.tb>=2, g.hr>=1, rbi>=1, hits+runs+rbi>=2, sb>=1).
-function eliteHit(marketKey, box) {
-  if (marketKey === 'hits') return box.hits >= 1;
-  if (marketKey === 'tb') return box.totalBases >= 2;
-  if (marketKey === 'hr') return box.homeRuns >= 1;
-  if (marketKey === 'rbis') return box.rbi >= 1;
-  if (marketKey === 'sb') return box.stolenBases >= 1;
-  if (marketKey === 'hrrbi') return (box.hits + box.runs + box.rbi) >= 2;
-  return false;
-}
-
-async function gradeElitePending(store) {
-  store.market.premium ||= [];
-  const today = cdtDateString(new Date());
-  const pending = store.market.premium.filter(r => r.result === 'pending' && r.date < today);
-  if (!pending.length) return 0;
-
-  const byGame = {};
-  pending.forEach(r => { (byGame[r.gamePk] ||= []).push(r); });
-  let graded = 0;
-
-  for (const [gamePk, recs] of Object.entries(byGame)) {
-    if (gamePk === 'null') continue;
-    let box;
-    try {
-      box = await fetchJSON(`${API}/game/${gamePk}/boxscore`);
-    } catch (e) {
-      console.warn(`Elite grading: boxscore fetch failed for gamePk ${gamePk}:`, e.message);
-      continue;
-    }
-    // Only grade once the game is actually final — a boxscore can exist mid-game too.
-    let isFinal = false;
-    try {
-      const liveGame = await fetchJSON(`${API}/schedule?sportId=1&date=${recs[0].date}&hydrate=team`);
-      const g = (liveGame?.dates?.[0]?.games || []).find(x => String(x.gamePk) === String(gamePk));
-      isFinal = g?.status?.abstractGameState === 'Final';
-    } catch (e) {}
-    if (!isFinal) continue;
-
-    const allPlayers = { ...(box?.teams?.away?.players || {}), ...(box?.teams?.home?.players || {}) };
-    for (const rec of recs) {
-      const p = allPlayers['ID' + rec.playerId];
-      const bat = p?.stats?.batting;
-      if (!bat) continue;
-      const line = {
-        hits: n(bat.hits), totalBases: n(bat.totalBases), homeRuns: n(bat.homeRuns),
-        rbi: n(bat.rbi), runs: n(bat.runs), stolenBases: n(bat.stolenBases),
-      };
-      rec.actual = line;
-      rec.result = eliteHit(rec.market, line) ? 'win' : 'loss';
-      graded++;
-    }
-  }
-  return graded;
-}
-
-// HR Threats board hit-rate tracker — same shared batter pool as Elite Picks, but instead
-// of taking only the top 3 per game, captures every batter who clears HR_THREAT_MIN_SCORE
-// (see that constant's comment for how this differs from the live client-side gate).
+// HR Threats board hit-rate tracker — draws from the same shared batter pool
+// (buildBatterPool) as generate-daily-insights.mjs's storylines, captures every
+// batter who clears HR_THREAT_MIN_SCORE (see that constant's comment for how this
+// differs from the live client-side gate).
 // Picks lock in the moment they're first captured, same as everywhere else in this file —
 // a later same-day pass only adds newly-qualifying batters, never recomputes or drops one
 // already captured.
@@ -2356,7 +2164,7 @@ async function captureHRThreatToday(store, pool) {
   const today = cdtDateString(new Date());
   const already = new Set(store.market.hrThreat.filter(r => r.date === today).map(r => r.playerId));
   let added = 0;
-  pool.filter(r => r.atBats >= ELITE_MIN_AB && !already.has(r.id)).forEach(r => {
+  pool.filter(r => r.atBats >= POOL_MIN_AB && !already.has(r.id)).forEach(r => {
     const score = scoreForMarket('hr', r);
     if (score < HR_THREAT_MIN_SCORE) return;
     const key = `${today}|HRTHREAT|${r.id}`;
@@ -2372,7 +2180,7 @@ async function captureHRThreatToday(store, pool) {
       // missing it, same as every other snapshot field added here over time.
       liveScore: r.liveScore ?? null,
       // Snapshot of the live client board's HR Threats tags at pick time (see
-      // buildEliteBatterPool's isFavorable/isHot/isDrought/isDue) — score above is a
+      // buildBatterPool's isFavorable/isHot/isDrought/isDue) — score above is a
       // separate Monte Carlo simulation and never used these tags, so this is the
       // first place any of them get recorded against a real outcome. isOnFire is
       // named to match the client (app.js), backed by the isHot proxy computed here.
@@ -2394,7 +2202,7 @@ async function captureHRThreatToday(store, pool) {
       // script's sample floor and is today's probable starter.
       pitcher2kSuppressionDelta: r.pitcher2kSuppressionDelta ?? null,
       // Exploratory platoon-split signal (this batter's real AVG/OBP/SLG vs today's
-      // specific opposing pitcher's throwing hand) — see buildEliteBatterPool's
+      // specific opposing pitcher's throwing hand) — see buildBatterPool's
       // platoonAB/platoonOps/platoonFavorable comment. Not used by any live scoring
       // (client or server) for the 'hr' market; recorded purely so
       // analyze-hr-matchups.mjs can check whether it's worth building into the Compare
@@ -2464,9 +2272,10 @@ async function captureToday(store, compStore, drpSimCompStore) {
   let added = 0;
 
   // Fetched at most once per day, not once per run — this script fires twice daily
-  // (morning capture + afternoon Elite Picks re-pass, see the workflow's cron entries),
-  // and re-fetching odds on the second run would double real API usage against a
-  // metered monthly quota for no benefit (K Props/DRP are already locked by then).
+  // (morning capture + an afternoon re-pass that catches HR Threat picks for batters
+  // whose lineup spot wasn't posted yet on the first pass, see the workflow's cron
+  // entries), and re-fetching odds on the second run would double real API usage
+  // against a metered monthly quota for no benefit (K Props/DRP are already locked by then).
   let oddsLookup = { pitcherLines: new Map(), batterLines: new Map() };
   if (store.oddsLastFetchedDate !== today) {
     oddsLookup = await fetchOddsLookup();
@@ -2503,7 +2312,7 @@ async function captureToday(store, compStore, drpSimCompStore) {
     const gameDay = cdtDateString(new Date(g.gameDate));
     const drpKey = `${gameDay}|DRP|${[g.teams.away.team.abbreviation, g.teams.home.team.abbreviation].sort().join('-')}`;
     // Check-before-compute: this script runs more than once a day (see the afternoon
-    // Elite Picks pass below), and DRP/K Props are already fully captured on the first
+    // re-pass comment above), and DRP/K Props are already fully captured on the first
     // pass — skip the expensive model recompute entirely instead of doing the work and
     // discarding it as a duplicate.
     if (!store.market.drp.some(r => r.key === drpKey)) {
@@ -2540,14 +2349,11 @@ async function captureToday(store, compStore, drpSimCompStore) {
     console.log(`Captured ${simAdded} new DRP simulation comparison entr(ies) for ${today}.`);
   }
 
-  // Built once and shared — Elite Picks and the HR Threats hit-rate tracker both need
-  // the same full batter pool (season stats, recent form, platoon splits per batter),
-  // which is the single most expensive part of this script (per-batter API calls).
-  const pool = previewGames.length ? await buildEliteBatterPool(previewGames, season) : [];
-
-  // Elite Picks (Premium) was removed from the site -- no new picks are captured,
-  // but gradePending() below still grades any that were already pending so the
-  // historical record finishes cleanly instead of being left stuck mid-grade.
+  // Built once and shared — the HR Threats hit-rate tracker and generate-daily-insights.mjs's
+  // storylines both need the same full batter pool (season stats, recent form, platoon
+  // splits per batter), which is the single most expensive part of this script (per-batter
+  // API calls).
+  const pool = previewGames.length ? await buildBatterPool(previewGames, season) : [];
 
   const hrThreatAdded = await captureHRThreatToday(store, pool);
   console.log(`Captured ${hrThreatAdded} new pending HR Threat pool entry(ies) for ${today}.`);
@@ -2621,9 +2427,6 @@ async function gradePending(store) {
   }
   console.log(`Graded ${graded} pick(s).`);
 
-  const eliteGraded = await gradeElitePending(store);
-  console.log(`Graded ${eliteGraded} Elite Pick(s).`);
-
   const hrThreatGraded = await gradeHRThreatPending(store);
   console.log(`Graded ${hrThreatGraded} HR Threat pool entry(ies).`);
 }
@@ -2668,10 +2471,10 @@ export {
   loadTracker, saveTracker, recomputeAllTime, recentPitchingForm, blendRecentForm,
   seasonPitchingStat, computeDRPick, computeKProp, captureToday, gradePending, main,
   cdtDateString, emptyTracker,
-  buildEliteBatterPool, buildEliteFills, captureEliteToday, gradeElitePending,
+  buildBatterPool,
   captureHRThreatToday, gradeHRThreatPending,
-  simulatePropOdds, simulateSBOdds, simulateHRGameOdds, scoreForMarket, eliteQualityScore,
-  eliteHit, fetchOddsLookup, normalizeName,
+  simulatePropOdds, simulateSBOdds, simulateHRGameOdds, scoreForMarket,
+  fetchOddsLookup, normalizeName,
   loadStatcastPowerIndex, loadPitcherStatcastPowerIndex, loadPitcher2kSuppressionIndex, battedBallPowerIndex,
   computeMatchupEdgeScore, battingSplitVsHand,
   parseInningsPitched, pitcherBattersFacedPer9,

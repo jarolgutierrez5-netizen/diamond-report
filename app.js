@@ -4833,6 +4833,11 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   function buildHRZoneScatterSVG(locations, subjectLabel) {
     if (locations == null) return null;
     if (!locations.length) return { empty: true };
+    // Real home runs exist, but none carry a plate_x/plate_z coordinate yet -- distinct
+    // from "empty" above (which means genuinely zero home runs). Rendering an empty box
+    // captioned "0 real home runs plotted" here would be actively misleading for a player
+    // who clearly has home runs, just not pitch-location data for them yet.
+    if (!locations.some(l => l.plateX != null && l.plateZ != null)) return { noCoords: true };
     const W = 220, H = 190;
     const X_MIN = -1.5, X_MAX = 1.5, Z_MIN = 0.4, Z_MAX = 4.6;
     const toXY = (px, pz) => ({
@@ -4874,7 +4879,8 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   const batterHRZoneScatter = buildHRZoneScatterSVG(batterHRLocations, batterName.split(' ').pop());
   function hrZoneScatterCell(scatter, subjectName) {
     if (!scatter) return `<div class="zone-note" style="padding:8px 0">No real HR-location data yet for ${subjectName}.</div>`;
-    if (scatter.empty) return `<div class="zone-note" style="padding:8px 0">No real home runs with pitch-location data yet for ${subjectName}.</div>`;
+    if (scatter.empty) return `<div class="zone-note" style="padding:8px 0">No real home runs tracked yet for ${subjectName} this season.</div>`;
+    if (scatter.noCoords) return `<div class="zone-note" style="padding:8px 0">${subjectName} has real home runs tracked, but pitch-location coordinates for them haven't synced yet.</div>`;
     return scatter.html;
   }
   let hrZoneGridHTML = '';
@@ -6005,9 +6011,9 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       </div>` : `
       <div class="zone-note" style="padding:10px 0;color:var(--muted);font-size:12px">No real per-location Statcast data available for ${pitcherName} yet — this requires a separate pitch-location sync that hasn't been built.</div>`}
       </div>
-      ${hrZoneGridHTML}
       ${attackZoneHTML}
       </div>
+      ${hrZoneGridHTML}
       ${zoneFitPanelHTML}
 
       ${gameContextHTML}
