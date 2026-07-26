@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-26T14:43:05.778Z",
+  "generatedAt": "2026-07-26T15:19:11.655Z",
   "season": 2026,
   "players": {
     "457705": {
@@ -31067,7 +31067,7 @@
           "whiffPct": 50,
           "hardHitPct": 50,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1
         },
         {
           "name": "Cutter",
@@ -31082,9 +31082,40 @@
           "whiffPct": 0,
           "hardHitPct": 0,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0
         }
-      ]
+      ],
+      "byZone": {
+        "5": {
+          "woba": 0
+        },
+        "6": {
+          "woba": 0
+        },
+        "9": {
+          "woba": 0
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "5": {
+            "woba": 0
+          },
+          "6": {
+            "woba": 0
+          },
+          "9": {
+            "woba": 0
+          }
+        },
+        "L": {}
+      },
+      "hrByZone": {
+        "6": {
+          "count": 1,
+          "pct": 100
+        }
+      }
     },
     "662139": {
       "seasonPitchTypeStats": [
@@ -50669,7 +50700,7 @@
           "whiffPct": 28.9,
           "hardHitPct": 53.3,
           "barrelPct": null,
-          "homeRuns": 10
+          "homeRuns": null
         },
         {
           "name": "Slider",
@@ -50684,7 +50715,7 @@
           "whiffPct": 32.8,
           "hardHitPct": 37.3,
           "barrelPct": null,
-          "homeRuns": 5
+          "homeRuns": null
         },
         {
           "name": "Sinker",
@@ -50699,7 +50730,7 @@
           "whiffPct": 11.9,
           "hardHitPct": 50.9,
           "barrelPct": null,
-          "homeRuns": 4
+          "homeRuns": null
         },
         {
           "name": "Sweeper",
@@ -50714,7 +50745,7 @@
           "whiffPct": 31.5,
           "hardHitPct": 37.9,
           "barrelPct": null,
-          "homeRuns": 4
+          "homeRuns": null
         },
         {
           "name": "Changeup",
@@ -50729,7 +50760,7 @@
           "whiffPct": 32.6,
           "hardHitPct": 26.5,
           "barrelPct": null,
-          "homeRuns": 0
+          "homeRuns": null
         },
         {
           "name": "Cutter",
@@ -50744,7 +50775,7 @@
           "whiffPct": 32.9,
           "hardHitPct": 41.7,
           "barrelPct": null,
-          "homeRuns": 2
+          "homeRuns": null
         },
         {
           "name": "Curveball",
@@ -50759,7 +50790,7 @@
           "whiffPct": 35,
           "hardHitPct": 66.7,
           "barrelPct": null,
-          "homeRuns": 2
+          "homeRuns": null
         },
         {
           "name": "Split-Finger",
@@ -50774,7 +50805,7 @@
           "whiffPct": 36,
           "hardHitPct": 75,
           "barrelPct": null,
-          "homeRuns": 2
+          "homeRuns": null
         },
         {
           "name": "Slurve",
@@ -50789,128 +50820,9 @@
           "whiffPct": 0,
           "hardHitPct": null,
           "barrelPct": null,
-          "homeRuns": 0
+          "homeRuns": null
         }
-      ],
-      "byZone": {
-        "1": {
-          "woba": 0.64
-        },
-        "2": {
-          "woba": 0.291
-        },
-        "3": {
-          "woba": 0.196
-        },
-        "4": {
-          "woba": 0.461
-        },
-        "5": {
-          "woba": 0.396
-        },
-        "6": {
-          "woba": 0.113
-        },
-        "7": {
-          "woba": 0.455
-        },
-        "8": {
-          "woba": 0.621
-        },
-        "9": {
-          "woba": 0.225
-        }
-      },
-      "byZoneByHand": {
-        "R": {
-          "1": {
-            "woba": 0.644
-          },
-          "2": {
-            "woba": 0.324
-          },
-          "3": {
-            "woba": 0.281
-          },
-          "4": {
-            "woba": 0.407
-          },
-          "5": {
-            "woba": 0.413
-          },
-          "6": {
-            "woba": 0.082
-          },
-          "7": {
-            "woba": 0.525
-          },
-          "8": {
-            "woba": 0.455
-          },
-          "9": {
-            "woba": 0.2
-          }
-        },
-        "L": {
-          "1": {
-            "woba": 0.633
-          },
-          "2": {
-            "woba": 0.222
-          },
-          "3": {
-            "woba": 0
-          },
-          "4": {
-            "woba": 0.591
-          },
-          "5": {
-            "woba": 0.358
-          },
-          "6": {
-            "woba": 0.18
-          },
-          "7": {
-            "woba": 0.361
-          },
-          "8": {
-            "woba": 0.888
-          },
-          "9": {
-            "woba": 0.3
-          }
-        }
-      },
-      "hrByZone": {
-        "1": {
-          "count": 5,
-          "pct": 19.2
-        },
-        "2": {
-          "count": 3,
-          "pct": 11.5
-        },
-        "3": {
-          "count": 2,
-          "pct": 7.7
-        },
-        "4": {
-          "count": 4,
-          "pct": 15.4
-        },
-        "5": {
-          "count": 6,
-          "pct": 23.1
-        },
-        "7": {
-          "count": 2,
-          "pct": 7.7
-        },
-        "8": {
-          "count": 4,
-          "pct": 15.4
-        }
-      }
+      ]
     },
     "669134": {
       "seasonPitchTypeStats": [
@@ -94456,7 +94368,7 @@
           "whiffPct": 42.3,
           "hardHitPct": 58.3,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 3
         },
         {
           "name": "Sinker",
@@ -94471,7 +94383,7 @@
           "whiffPct": 17.8,
           "hardHitPct": 46.7,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0
         },
         {
           "name": "Slider",
@@ -94486,7 +94398,7 @@
           "whiffPct": 40,
           "hardHitPct": 38.9,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1
         },
         {
           "name": "Sweeper",
@@ -94501,7 +94413,7 @@
           "whiffPct": 30.6,
           "hardHitPct": 38.5,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 4
         },
         {
           "name": "Changeup",
@@ -94516,7 +94428,7 @@
           "whiffPct": 35.3,
           "hardHitPct": 12.5,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1
         },
         {
           "name": "Curveball",
@@ -94531,7 +94443,7 @@
           "whiffPct": 36.8,
           "hardHitPct": 28.6,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0
         },
         {
           "name": "Cutter",
@@ -94546,7 +94458,7 @@
           "whiffPct": 31.8,
           "hardHitPct": 37.5,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0
         },
         {
           "name": "Split-Finger",
@@ -94561,7 +94473,7 @@
           "whiffPct": 0,
           "hardHitPct": 50,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0
         },
         {
           "name": "Slurve",
@@ -94576,9 +94488,120 @@
           "whiffPct": 0,
           "hardHitPct": 100,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 1
         }
-      ]
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.485
+        },
+        "2": {
+          "woba": 0.406
+        },
+        "3": {
+          "woba": 0
+        },
+        "4": {
+          "woba": 0.41
+        },
+        "5": {
+          "woba": 0.379
+        },
+        "6": {
+          "woba": 0.195
+        },
+        "7": {
+          "woba": 0.421
+        },
+        "8": {
+          "woba": 0.282
+        },
+        "9": {
+          "woba": 0.164
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.436
+          },
+          "2": {
+            "woba": 0.49
+          },
+          "3": {
+            "woba": 0
+          },
+          "4": {
+            "woba": 0.25
+          },
+          "5": {
+            "woba": 0.42
+          },
+          "6": {
+            "woba": 0.113
+          },
+          "7": {
+            "woba": 0.58
+          },
+          "8": {
+            "woba": 0.164
+          },
+          "9": {
+            "woba": 0.09
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.6
+          },
+          "2": {
+            "woba": 0.286
+          },
+          "3": {
+            "woba": 0
+          },
+          "4": {
+            "woba": 0.593
+          },
+          "5": {
+            "woba": 0.225
+          },
+          "6": {
+            "woba": 0.417
+          },
+          "7": {
+            "woba": 0.307
+          },
+          "8": {
+            "woba": 0.717
+          },
+          "9": {
+            "woba": 0.9
+          }
+        }
+      },
+      "hrByZone": {
+        "2": {
+          "count": 3,
+          "pct": 30
+        },
+        "4": {
+          "count": 2,
+          "pct": 20
+        },
+        "5": {
+          "count": 3,
+          "pct": 30
+        },
+        "6": {
+          "count": 1,
+          "pct": 10
+        },
+        "7": {
+          "count": 1,
+          "pct": 10
+        }
+      }
     },
     "691783": {
       "seasonPitchTypeStats": [
