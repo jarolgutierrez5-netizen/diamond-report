@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-27T15:52:17.130Z",
+  "generatedAt": "2026-07-27T17:06:32.614Z",
   "season": 2026,
   "pitchers": {
     "434378": {
@@ -84459,7 +84459,99 @@
           "whiffPct": 14.3,
           "hardHitPct": 50,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 15.1,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 5.7,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 11.3,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 11.3,
+              "wobaAgainst": 0
+            },
+            "6": {
+              "usagePct": 1.9,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 3.8,
+              "wobaAgainst": null
+            },
+            "8": {
+              "usagePct": 5.7,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 1.9,
+              "wobaAgainst": null
+            }
+          },
+          "zonesByHand": {
+            "R": {
+              "1": {
+                "usagePct": 18.2,
+                "wobaAgainst": 0
+              },
+              "2": {
+                "usagePct": 9.1,
+                "wobaAgainst": null
+              },
+              "4": {
+                "usagePct": 13.6,
+                "wobaAgainst": null
+              },
+              "5": {
+                "usagePct": 9.1,
+                "wobaAgainst": null
+              },
+              "8": {
+                "usagePct": 4.5,
+                "wobaAgainst": 0
+              }
+            },
+            "L": {
+              "1": {
+                "usagePct": 12.9,
+                "wobaAgainst": null
+              },
+              "2": {
+                "usagePct": 3.2,
+                "wobaAgainst": null
+              },
+              "4": {
+                "usagePct": 9.7,
+                "wobaAgainst": 0
+              },
+              "5": {
+                "usagePct": 12.9,
+                "wobaAgainst": 0
+              },
+              "6": {
+                "usagePct": 3.2,
+                "wobaAgainst": 0
+              },
+              "7": {
+                "usagePct": 6.5,
+                "wobaAgainst": null
+              },
+              "8": {
+                "usagePct": 6.5,
+                "wobaAgainst": 0
+              },
+              "9": {
+                "usagePct": 3.2,
+                "wobaAgainst": null
+              }
+            }
+          }
         },
         {
           "name": "Changeup",
@@ -84474,7 +84566,79 @@
           "whiffPct": 23.1,
           "hardHitPct": 42.9,
           "barrelPct": null,
-          "homeRuns": null
+          "homeRuns": 0,
+          "zones": {
+            "1": {
+              "usagePct": 7.7,
+              "wobaAgainst": 0
+            },
+            "2": {
+              "usagePct": 3.8,
+              "wobaAgainst": null
+            },
+            "3": {
+              "usagePct": 3.8,
+              "wobaAgainst": null
+            },
+            "4": {
+              "usagePct": 7.7,
+              "wobaAgainst": 0
+            },
+            "5": {
+              "usagePct": 7.7,
+              "wobaAgainst": 0
+            },
+            "7": {
+              "usagePct": 3.8,
+              "wobaAgainst": 0
+            },
+            "8": {
+              "usagePct": 3.8,
+              "wobaAgainst": 0
+            },
+            "9": {
+              "usagePct": 11.5,
+              "wobaAgainst": 0
+            }
+          },
+          "zonesByHand": {
+            "R": {
+              "8": {
+                "usagePct": 100,
+                "wobaAgainst": 0
+              }
+            },
+            "L": {
+              "1": {
+                "usagePct": 8,
+                "wobaAgainst": 0
+              },
+              "2": {
+                "usagePct": 4,
+                "wobaAgainst": null
+              },
+              "3": {
+                "usagePct": 4,
+                "wobaAgainst": null
+              },
+              "4": {
+                "usagePct": 8,
+                "wobaAgainst": 0
+              },
+              "5": {
+                "usagePct": 8,
+                "wobaAgainst": 0
+              },
+              "7": {
+                "usagePct": 4,
+                "wobaAgainst": 0
+              },
+              "9": {
+                "usagePct": 12,
+                "wobaAgainst": 0
+              }
+            }
+          }
         }
       ],
       "career": {
@@ -84511,7 +84675,64 @@
             "barrelPct": null
           }
         ]
-      }
+      },
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0
+        },
+        "4": {
+          "wobaAgainst": 0
+        },
+        "5": {
+          "wobaAgainst": 0
+        },
+        "6": {
+          "wobaAgainst": 0
+        },
+        "7": {
+          "wobaAgainst": 0
+        },
+        "8": {
+          "wobaAgainst": 0
+        },
+        "9": {
+          "wobaAgainst": 0
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0
+          },
+          "8": {
+            "woba": 0
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0
+          },
+          "4": {
+            "woba": 0
+          },
+          "5": {
+            "woba": 0
+          },
+          "6": {
+            "woba": 0
+          },
+          "7": {
+            "woba": 0
+          },
+          "8": {
+            "woba": 0
+          },
+          "9": {
+            "woba": 0
+          }
+        }
+      },
+      "hrLocations": []
     },
     "678906": {
       "totalPitches": 1162,
