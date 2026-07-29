@@ -4244,3 +4244,72 @@ select:focus-visible {
   .hr-compare-score span, .hr-compare-score em { display: inline; }
   #hr-compare-bar { left: 10px; right: 10px; transform: none; max-width: none; }
 }
+
+/* Featured Home Run Pick (roadmap 5.1) -- same .dr1027-hr-card base as every other
+   card, distinguished with the gold/amber accent already used for "DUE"/"TOP HR
+   THREAT" chips elsewhere on this board, instead of the default blue side-accent, so
+   it reads as the flagship pick rather than just another list entry. */
+.dr1027-featured-pick {
+  border-color: rgba(245, 158, 11, .55) !important;
+  box-shadow: inset 3px 0 0 rgba(245, 158, 11, .95), 0 0 22px rgba(245, 158, 11, .12) !important;
+  margin-bottom: 16px !important;
+}
+.dr1027-featured-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: .05em;
+  color: #fbbf24;
+  background: rgba(120, 53, 15, .3);
+  border: 1px solid rgba(245, 158, 11, .55);
+  border-radius: 999px;
+  padding: 3px 10px;
+  margin-bottom: 8px;
+}
+
+/* Interactive visualization tap-tooltip (roadmap 5.3) -- reuses each cell/dot's
+   existing title text on tap, since native title attributes/SVG <title> only ever
+   show on hover, which a touch device has no equivalent of. */
+.dr-viz-tooltip {
+  position: absolute;
+  z-index: 10000;
+  max-width: 220px;
+  background: #0a0e1a;
+  border: 1px solid rgba(147, 197, 253, .55);
+  color: #f8fafc;
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 6px 10px;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .4);
+  pointer-events: none;
+}
+
+/* Combined Strike Zone grid (roadmap 5.4) -- one 9-cell grid instead of two
+   side-by-side pitcher/batter grids; each pre-rendered (pitcher-hand x
+   batter-hand) combo body is hidden until its two toggle rows both select it. */
+.dr-combined-zone-body {
+  display: none;
+}
+.dr-combined-zone-body.active {
+  display: block;
+}
+.sz-cell-combined {
+  flex-direction: column;
+  gap: 1px;
+  font-size: 9px;
+  line-height: 1.2;
+}
+.sz-cell-combined span {
+  display: block;
+}
+
+/* Combined Pitcher Stats section (roadmap 5.4) -- SEASON/CAREER/L3 TREND toggle,
+   each mode swapping its own full table (not just a <tbody>, since the L3 Trend
+   columns differ structurally from the season/career columns). */
+.dr-pstats-mode-body {
+  display: none;
+}
+.dr-pstats-mode-body.active {
+  display: block;
+}

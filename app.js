@@ -1722,6 +1722,15 @@ let pitcherRolling = {};
 let pitcherRollingLoaded = false;
 let pitcherRollingPromise = null;
 
+// Pitch-count performance (wOBA/whiff%/HR on the 1st vs 2nd vs 3rd+ pitch of an
+// at-bat) — loaded from data/pitcher-count-performance.json, written by
+// scripts/sync-pitcher-count-performance.mjs. Keyed by pitcher MLB ID (string).
+// Empty object = file not yet synced or this pitcher isn't a probable starter
+// today; the matchup modal falls back gracefully, same as pitcherRolling.
+let pitcherCountPerf = {};
+let pitcherCountPerfLoaded = false;
+let pitcherCountPerfPromise = null;
+
 // Per-pitcher Statcast store — loaded from data/pitcher-statcast.json,
 // written by scripts/sync-pitcher-statcast.mjs. Keyed by pitcher MLB ID.
 // Empty object = file not yet synced; front-end falls back gracefully.
@@ -4672,7 +4681,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
       fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}/stats?stats=statSplits&group=pitching&sitCodes=vl,vr&season=2026`).catch(() => null)
     ]);
     const todayCDT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadBatterHRSpray(), loadPitcherRolling(), loadSituationalProps(), loadPropMarketOdds(todayCDT), loadBullpenFatigue(), loadParkFactors(), getTodaySchedule('team').catch(() => [])]);
+    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadBatterHRSpray(), loadPitcherRolling(), loadPitcherCountPerf(), loadSituationalProps(), loadPropMarketOdds(todayCDT), loadBullpenFatigue(), loadParkFactors(), getTodaySchedule('team').catch(() => [])]);
     const todayGames = preloadResults[preloadResults.length - 1];
 
     const batterPerson = batterData.people?.[0] || {};
@@ -4690,6 +4699,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
     const recentHRList = recentHRs[String(batterId)] || null;
     const hrSprayList = batterHRSpray[String(batterId)] || null;
     const rollingProfile = pitcherRolling[String(pitcherId)] || null;
+    const countPerfProfile = pitcherCountPerf[String(pitcherId)] || null;
     const situationalProfile = situationalProps[String(batterId)] || null;
 
     // Bullpen fatigue is keyed to the PITCHER's own team (that's who the batter
@@ -4719,7 +4729,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
       }
     }
 
-    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, hrSprayList, todayParkAbbr, rollingProfile, situationalProfile, bullpenInfo, parkHrIndex });
+    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, hrSprayList, todayParkAbbr, rollingProfile, countPerfProfile, situationalProfile, bullpenInfo, parkHrIndex });
   } catch(e) {
     body.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
@@ -4756,7 +4766,7 @@ window.toggleZoneSection = function(headerEl, contentId) {
   if (arrow) arrow.textContent = isOpen ? '▸' : '▾';
 };
 
-function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, hrSprayList=null, todayParkAbbr=null, rollingProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null }) {
+function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, hrSprayList=null, todayParkAbbr=null, rollingProfile=null, countPerfProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null }) {
   function fv(v, dec=3) {
     if (v==null||v===''||v==='---') return '–';
     const n = parseFloat(v); return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0(\.)/, '$1');
@@ -4848,10 +4858,10 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   }
 
   const zoneLabels = ['In/High','High','Out/High','Inside','Middle','Away','In/Low','Low','Out/Low'];
-  // Shared cell-builder so the AUTO grid and the vs-RHB/vs-RHP / vs-LHB/vs-LHP hand-split
-  // grids (below) all render identically -- only the source zone map and the "% = ..."
-  // wording differ.
-  function zoneCellsFromMap(zMap, valueFn, titleSuffix) {
+  // Raw 0-1 normalized value array (or null) for a zone map -- shared by the individual
+  // pitcher/batter grid cell-builder below AND the combined-grid cell-builder, which
+  // needs the raw numbers (not pre-built HTML) to blend both sides' values per cell.
+  function zoneValsFromMap(zMap, valueFn) {
     if (!zMap) return null;
     const vals = [1,2,3,4,5,6,7,8,9].map(z => {
       const cell = zMap[z];
@@ -4860,6 +4870,14 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       return val != null ? Math.min(val / 0.640, 1.0) : null;
     });
     if (vals.every(v => v == null)) return null;
+    return vals;
+  }
+  // Shared cell-builder so the AUTO grid and the vs-RHB/vs-RHP / vs-LHB/vs-LHP hand-split
+  // grids (below) all render identically -- only the source zone map and the "% = ..."
+  // wording differ.
+  function zoneCellsFromMap(zMap, valueFn, titleSuffix) {
+    const vals = zoneValsFromMap(zMap, valueFn);
+    if (!vals) return null;
     return vals.map((v, i) => {
       if (v == null) return `<div class="sz-cell" style="background:#0d1220;color:var(--muted)" title="${zoneLabels[i]}: no data">–</div>`;
       const c = zoneColor(v);
@@ -4914,6 +4932,56 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   const batterZoneCellsR = zoneCellsFromMap(batterZoneProfileByHand?.R, c => c.woba, 'production vs RHP');
   const batterZoneCellsL = zoneCellsFromMap(batterZoneProfileByHand?.L, c => c.woba, 'production vs LHP');
   const hasBatterZoneHandSplit = !!(batterZoneCellsR || batterZoneCellsL);
+
+  // ── Combined Strike Zone grid (roadmap 5.4) -- pitcher's weak zones and batter's hot
+  // zones overlaid into ONE 9-cell grid instead of two side-by-side grids, so a cell that's
+  // bad for the pitcher AND good for the batter reads as one clear damage-opportunity
+  // signal instead of requiring a visual side-by-side comparison. Each cell shows both raw
+  // numbers (never blends them into a single misleading figure) with a background color
+  // driven by whichever side is more extreme -- a zone that's hot for EITHER player is
+  // exactly why it belongs in this combined view.
+  const pitcherZoneValsR = zoneValsFromMap(pitcherProfile?.byZoneByHand?.R, c => c.woba);
+  const pitcherZoneValsL = zoneValsFromMap(pitcherProfile?.byZoneByHand?.L, c => c.woba);
+  const batterZoneValsR = zoneValsFromMap(batterZoneProfileByHand?.R, c => c.woba);
+  const batterZoneValsL = zoneValsFromMap(batterZoneProfileByHand?.L, c => c.woba);
+  function combinedZoneCells(pVals, bVals) {
+    return [0,1,2,3,4,5,6,7,8].map(i => {
+      const pv = pVals ? pVals[i] : null;
+      const bv = bVals ? bVals[i] : null;
+      if (pv == null && bv == null) return `<div class="sz-cell sz-cell-combined" style="background:#0d1220;color:var(--muted)" title="${zoneLabels[i]}: no data">–</div>`;
+      const blended = pv != null && bv != null ? Math.max(pv, bv) : (pv ?? bv);
+      const c = zoneColor(blended);
+      const pTxt = pv != null ? Math.round(pv * 100) + '%' : '–';
+      const bTxt = bv != null ? Math.round(bv * 100) + '%' : '–';
+      const titleParts = [];
+      if (pv != null) titleParts.push(`Pitcher ${pTxt} opportunity`);
+      if (bv != null) titleParts.push(`Batter ${bTxt} production`);
+      return `<div class="sz-cell sz-cell-combined" style="background:${c.bg};color:${c.text}" title="${zoneLabels[i]}: ${titleParts.join(', ')}"><span>P ${pTxt}</span><span>B ${bTxt}</span></div>`;
+    }).join('');
+  }
+  const hasCombinedZones = !!(zoneVals || batterZoneVals);
+  // Every real (pitcher hand mode) x (batter hand mode) combination gets its own
+  // pre-rendered body, same "pre-render every mode, toggle with CSS" pattern as every
+  // other hand toggle in this modal -- two independent toggle rows (one per side) can
+  // then each drive which combination is currently shown without any JS-side recompute.
+  const combinedPitcherModes = ['auto'].concat(hasPitcherZoneHandSplit ? ['R', 'L'] : []);
+  const combinedBatterModes = ['auto'].concat(hasBatterZoneHandSplit ? ['R', 'L'] : []);
+  const pitcherValsByMode = { auto: zoneVals, R: pitcherZoneValsR, L: pitcherZoneValsL };
+  const batterValsByMode = { auto: batterZoneVals, R: batterZoneValsR, L: batterZoneValsL };
+  const combinedZoneBodies = combinedPitcherModes.map(pm => combinedBatterModes.map(bm => {
+    const isDefault = pm === 'auto' && bm === 'auto';
+    return `<div class="dr-combined-zone-body${isDefault ? ' active' : ''}" data-pitcher-mode="${pm}" data-batter-mode="${bm}"><div class="strike-zone">${combinedZoneCells(pitcherValsByMode[pm], batterValsByMode[bm])}</div></div>`;
+  }).join('')).join('');
+  const combinedPitcherToggleHTML = hasPitcherZoneHandSplit ? `<div class="dr1042-split-toggle" data-combined-side="pitcher" role="tablist" aria-label="Pitcher hand toggle" style="margin:2px 0">
+    <button type="button" class="dr1042-split-btn active" data-hand="auto">AUTO</button>
+    <button type="button" class="dr1042-split-btn" data-hand="R">vs RHB</button>
+    <button type="button" class="dr1042-split-btn" data-hand="L">vs LHB</button>
+  </div>` : '';
+  const combinedBatterToggleHTML = hasBatterZoneHandSplit ? `<div class="dr1042-split-toggle" data-combined-side="batter" role="tablist" aria-label="Batter hand toggle" style="margin:2px 0">
+    <button type="button" class="dr1042-split-btn active" data-hand="auto">AUTO</button>
+    <button type="button" class="dr1042-split-btn" data-hand="R">vs RHP</button>
+    <button type="button" class="dr1042-split-btn" data-hand="L">vs LHP</button>
+  </div>` : '';
   // Small shared pill-toggle builder for the hand splits below -- same visual/interaction
   // pattern as .dr1042-split-toggle (Pitch Mix Advantage's AUTO/vs RHP/vs LHP), reusing its
   // CSS classes, but toggling plain <div> mode bodies (.dr-hand-mode-body) instead of
@@ -5161,7 +5229,13 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         </div>
         <div>
           <div class="dr1042-split-toggle" role="tablist" aria-label="Attack zone pitch toggle" style="flex-wrap:wrap;height:auto">${tabs}</div>
-          <div class="zone-note" style="margin-top:10px;max-width:220px">Where ${pitcherName.split(' ').pop()} actually locates each individual pitch — his real location tendency pitch by pitch, not just the blended zone profile above.</div>
+          <div class="zone-legend" style="margin-top:10px">
+            <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#4a1010"></div><span style="color:#ff6b6b">Heavy usage (20%+) — his primary spot for this pitch</span></div>
+            <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#3a2010"></div><span style="color:#f4a261">Frequent (14–19%)</span></div>
+            <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#1a2a10"></div><span style="color:#90ee60">Occasional (8–13%)</span></div>
+            <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#0d1a0d"></div><span style="color:#3a6a3a">Rare (&lt;8%)</span></div>
+          </div>
+          <div class="zone-note" style="margin-top:10px;max-width:220px">Where ${pitcherName.split(' ').pop()} actually locates each individual pitch — his real location tendency pitch by pitch, not just the blended zone profile above. Tap (or hover) any cell for its exact %.</div>
         </div>
       </div>
       </div>
@@ -5501,31 +5575,9 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   const hasCareerPitchMix = !!(pitcherProfile?.career?.byPitch?.length);
   const careerPitchRows = hasCareerPitchMix ? buildPitchRows(pitcherProfile.career.byPitch) : '';
 
-  const pitchEffToggleHTML = hasCareerPitchMix ? `
-      <div class="dr1042-split-toggle" role="tablist" aria-label="Season vs career toggle">
-        <button type="button" class="dr1042-split-btn active" data-mode="season">SEASON</button>
-        <button type="button" class="dr1042-split-btn" data-mode="career">CAREER</button>
-      </div>` : '';
-
-  const pitchEffectivenessTableHTML = hasRealPitchMix ? `<div class="dr1041-pitch-mix" style="margin-top:14px"${hasCareerPitchMix ? ' data-pitch-mix-toggle' : ''}>
-    <div class="dr1041-pitch-head">
-      <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">Real synced pitch-level data for ${pitcherName}${hasCareerPitchMix ? ' · toggle SEASON/CAREER (2015-present, blended across seasons)' : ''}.</div></div>
-      ${pitchEffToggleHTML}
-    </div>
-    <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage</th><th>AVG</th><th>wOBA</th><th>SLG</th><th>HR</th><th>Whiff%</th><th>Notes</th></tr></thead>
-      <tbody class="dr1042-mode-body active" data-mode="season">${pitchRows}</tbody>
-      ${hasCareerPitchMix ? `<tbody class="dr1042-mode-body" data-mode="career">${careerPitchRows}</tbody>` : ''}
-    </table></div>
-    ${gbLegendHTML}
-  </div>` : `<div class="dr1041-pitch-mix" style="margin-top:14px">
-    <div class="dr1041-pitch-head">
-      <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">No real pitch-level data available for ${pitcherName} yet — this section will populate once the daily Statcast sync has run.</div></div>
-    </div>
-  </div>`;
-
   // ── Rolling Pitch Metrics — last 3 starts vs season, per pitch type ──────
   // Answers "is this pitcher's stuff trending up or down right now," which the
-  // season-only Pitch Effectiveness table above can't — a real velocity dip or
+  // season-only Pitch Effectiveness table below can't — a real velocity dip or
   // whiff-rate drop over recent starts is a much more direct "how will today's
   // at-bats go" signal than a full-season average. Data from
   // data/pitcher-rolling.json (scripts/sync-pitcher-rolling.mjs). Green/orange
@@ -5534,109 +5586,112 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   // up or whiff rate up both mean tougher at-bats, so both color orange. Small
   // deltas below each metric's noise threshold render muted rather than forcing
   // a color call on what's probably just start-to-start variance.
-  const rollingMetricsHTML = (() => {
-    const shortPName = pitcherName.split(' ').pop();
-    if (!rollingProfile || !rollingProfile.byPitch?.length) return `
-    <div class="dr1041-pitch-mix" style="margin-top:14px">
-      <div class="dr1041-pitch-head">
-        <div><div class="dr1041-kicker">📈 ROLLING PITCH METRICS · NO REAL DATA YET</div><div class="dr1041-subtext">No last-3-start trend data available for ${shortPName} yet — this section will populate once the daily Statcast sync has run for today's probable starters.</div></div>
-      </div>
+  const hasRollingData = !!(rollingProfile && rollingProfile.byPitch?.length);
+  function rollingDeltaTag(delta, noiseThreshold) {
+    if (delta == null) return `<span style="color:var(--muted)">–</span>`;
+    // #f4a261 is the same "warning/tougher" orange the Strike Zone legend already
+    // uses for its warm-zone tier — var(--accent)/var(--accent2) are both blue in
+    // this theme, which would misread as neutral/informational rather than a
+    // caution, so this reuses the established orange instead of the accent var.
+    const color = delta <= -noiseThreshold ? 'var(--green)' : delta >= noiseThreshold ? '#f4a261' : 'var(--muted)';
+    const sign = delta > 0 ? '+' : '';
+    return `<span style="color:${color};font-weight:700">${sign}${delta.toFixed(1)}</span>`;
+  }
+
+  // ── Combined Pitcher Stats section (roadmap 5.4) — the season pitch-mix table,
+  // its career counterpart, and the rolling-last-3-starts table used to be three
+  // stacked boxes; they're now one box with a SEASON/CAREER/L3 TREND toggle (only
+  // whichever modes actually have real data get a tab), reusing the exact same
+  // .dr1042-split-btn + [data-pstats-toggle] delegated-click pattern as every other
+  // toggle in this modal. Each mode swaps its OWN full table (not just a <tbody>)
+  // since the L3 Trend columns are structurally different from the season/career
+  // columns.
+  const pstatsModes = [];
+  if (hasRealPitchMix) pstatsModes.push('season');
+  if (hasCareerPitchMix) pstatsModes.push('career');
+  if (hasRollingData) pstatsModes.push('rolling');
+  const pstatsModeLabel = m => m === 'season' ? 'SEASON' : m === 'career' ? 'CAREER' : 'L3 TREND';
+  const pstatsToggleHTML = pstatsModes.length > 1 ? `
+      <div class="dr1042-split-toggle" role="tablist" aria-label="Pitcher stats mode toggle">
+        ${pstatsModes.map((m, i) => `<button type="button" class="dr1042-split-btn${i === 0 ? ' active' : ''}" data-mode="${m}">${pstatsModeLabel(m)}</button>`).join('')}
+      </div>` : '';
+  function seasonOrCareerBody(mode, rows, isActive) {
+    return `<div class="dr-pstats-mode-body${isActive ? ' active' : ''}" data-mode="${mode}">
+      <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage</th><th>AVG</th><th>wOBA</th><th>SLG</th><th>HR</th><th>Whiff%</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table></div>
+      ${gbLegendHTML}
     </div>`;
-    function deltaTag(delta, noiseThreshold) {
-      if (delta == null) return `<span style="color:var(--muted)">–</span>`;
-      // #f4a261 is the same "warning/tougher" orange the Strike Zone legend already
-      // uses for its warm-zone tier — var(--accent)/var(--accent2) are both blue in
-      // this theme, which would misread as neutral/informational rather than a
-      // caution, so this reuses the established orange instead of the accent var.
-      const color = delta <= -noiseThreshold ? 'var(--green)' : delta >= noiseThreshold ? '#f4a261' : 'var(--muted)';
-      const sign = delta > 0 ? '+' : '';
-      return `<span style="color:${color};font-weight:700">${sign}${delta.toFixed(1)}</span>`;
-    }
+  }
+  function rollingBody(isActive) {
+    const shortPName = pitcherName.split(' ').pop();
     const rows = rollingProfile.byPitch.map(p => `
       <tr>
         <td><strong>${p.name}</strong></td>
         <td class="num">${p.seasonUsagePct != null ? p.seasonUsagePct.toFixed(0) + '%' : '–'} → ${p.rollingUsagePct != null ? p.rollingUsagePct.toFixed(0) + '%' : '–'}</td>
-        <td class="num">${p.seasonVelo != null ? p.seasonVelo.toFixed(1) : '–'} → ${p.rollingVelo != null ? p.rollingVelo.toFixed(1) : '–'} mph (${deltaTag(p.veloDelta, 0.5)})</td>
-        <td class="num">${p.seasonWhiffPct != null ? p.seasonWhiffPct.toFixed(0) + '%' : '–'} → ${p.rollingWhiffPct != null ? p.rollingWhiffPct.toFixed(0) + '%' : '–'} (${deltaTag(p.whiffDelta, 3)})</td>
+        <td class="num">${p.seasonVelo != null ? p.seasonVelo.toFixed(1) : '–'} → ${p.rollingVelo != null ? p.rollingVelo.toFixed(1) : '–'} mph (${rollingDeltaTag(p.veloDelta, 0.5)})</td>
+        <td class="num">${p.seasonWhiffPct != null ? p.seasonWhiffPct.toFixed(0) + '%' : '–'} → ${p.rollingWhiffPct != null ? p.rollingWhiffPct.toFixed(0) + '%' : '–'} (${rollingDeltaTag(p.whiffDelta, 3)})</td>
       </tr>`).join('');
     const lastDates = (rollingProfile.lastStartDates || []).join(', ');
-    return `
-    <div class="dr1041-pitch-mix" style="margin-top:14px">
-      <div class="dr1041-pitch-head">
-        <div><div class="dr1041-kicker">📈 ROLLING PITCH METRICS · LAST 3 STARTS VS SEASON</div><div class="dr1041-subtext">${shortPName}'s last 3 starts (${lastDates}) compared to his full-season baseline, per pitch — is his stuff trending up or down right now.</div></div>
-      </div>
+    return `<div class="dr-pstats-mode-body${isActive ? ' active' : ''}" data-mode="rolling">
       <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage (Season → L3)</th><th>Velo (Season → L3)</th><th>Whiff% (Season → L3)</th></tr></thead><tbody>${rows}</tbody></table></div>
-      <div class="zone-note" style="margin-top:8px">Green = trending easier for the batter (velocity or whiff rate down). Orange = trending tougher (velocity or whiff rate up). Muted = change too small to be a real signal.</div>
+      <div class="zone-note" style="margin-top:8px">${shortPName}'s last 3 starts${lastDates ? ` (${lastDates})` : ''} vs his full-season baseline. Green = trending easier for the batter (velocity or whiff rate down). Orange = trending tougher (velocity or whiff rate up). Muted = change too small to be a real signal.</div>
     </div>`;
+  }
+  const pstatsBodiesHTML = pstatsModes.map((m, i) => {
+    const isActive = i === 0;
+    if (m === 'season') return seasonOrCareerBody('season', pitchRows, isActive);
+    if (m === 'career') return seasonOrCareerBody('career', careerPitchRows, isActive);
+    return rollingBody(isActive);
+  }).join('');
+  const pstatsSubtext = pstatsModes.length > 1
+    ? `Real synced pitch-level data for ${pitcherName} — toggle ${pstatsModes.map(pstatsModeLabel).join(' / ')}.`
+    : hasRealPitchMix
+      ? `Real synced pitch-level data for ${pitcherName}.`
+      : hasRollingData
+        ? `${pitcherName}'s last 3 starts compared to his full-season baseline, per pitch — season pitch-mix data not synced yet.`
+        : `No real pitch-level data available for ${pitcherName} yet — this section will populate once the daily Statcast sync has run.`;
+
+  const pitchEffectivenessTableHTML = pstatsModes.length > 0 ? `<div class="dr1041-pitch-mix" style="margin-top:14px" data-pstats-toggle>
+    <div class="dr1041-pitch-head">
+      <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">${pstatsSubtext}</div></div>
+      ${pstatsToggleHTML}
+    </div>
+    ${pstatsBodiesHTML}
+  </div>` : `<div class="dr1041-pitch-mix" style="margin-top:14px">
+    <div class="dr1041-pitch-head">
+      <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">No real pitch-level data available for ${pitcherName} yet — this section will populate once the daily Statcast sync has run.</div></div>
+    </div>
+  </div>`;
+
+  // ── Pitch-Count Performance (roadmap 5.4d) — how ${pitcherName} performs on the
+  // 1st vs 2nd vs 3rd-or-later pitch of an at-bat, from data/pitcher-count-
+  // performance.json (scripts/sync-pitcher-count-performance.mjs). Answers "does he
+  // get hit hard early in the count, or once he falls behind" -- a signal the
+  // season-only and pitch-type-only tables above can't isolate. wOBA is used (not
+  // AVG/SLG) since it's the same production metric already used everywhere else in
+  // this modal (Strike Zone grids, per-pitch-type table), so the color thresholds
+  // (gbCls) are directly comparable across sections.
+  const countPerfHTML = (() => {
+    if (!countPerfProfile || !countPerfProfile.byCount?.length) return '';
+    const bucketLabel = b => b === '1st' ? '1st Pitch' : b === '2nd' ? '2nd Pitch' : '3rd+ Pitch';
+    const rows = countPerfProfile.byCount.map(c => `
+      <tr>
+        <td><strong>${bucketLabel(c.bucket)}</strong></td>
+        <td class="num">${c.pitches}</td>
+        <td class="num${gbCls('woba', c.woba)}">${fmtDec(c.woba, 3)}</td>
+        <td class="num${gbCls('whiff', c.whiffPct)}">${c.whiffPct != null ? c.whiffPct.toFixed(0) + '%' : '–'}</td>
+        <td class="num">${c.homeRuns}</td>
+      </tr>`).join('');
+    return `<div class="dr1041-pitch-mix" style="margin-top:14px">
+    <div class="dr1041-pitch-head">
+      <div><div class="dr1041-kicker">🔢 ${pitcherName.split(' ').pop()}'S PITCH-COUNT PERFORMANCE</div><div class="dr1041-subtext">wOBA / whiff% / HR allowed on the 1st, 2nd, and 3rd-or-later pitch of an at-bat this season — does he get hit hard early, or once he falls behind?</div></div>
+    </div>
+    <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Count</th><th>Pitches</th><th>wOBA</th><th>Whiff%</th><th>HR</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${gbLegendHTML}
+  </div>`;
   })();
 
-  // Zone Fit's "Location Tendency" dot grid was always a fixed decorative pattern
-  // ([1,3,4,5,7].includes(...)), never real pitch-location data — there is no real data
-  // source for it without a full pitch-by-pitch Statcast location sync (a separate,
-  // heavier pipeline than the pitch-arsenal sync this modal now uses). Rather than keep
-  // a fake visualization alive, this panel is gated behind the same hasRealZones flag as
-  // the Strike Zone heatmap and shows nothing until real zone data exists.
-  function buildZoneFitPanelHTML(pitches) {
-    const list = (pitches && pitches.length ? pitches : []).slice(0,5);
-    if (!hasRealZones || !list.length) return '';
-    const rows = list.map((p) => {
-      const st = p.stat || {};
-      const grade = gradePitchAdvantage(st, p.usage || p.usagePct || 0);
-      const fitLabel = grade.score >= 78 ? 'Excellent' : grade.score >= 64 ? 'Good' : grade.score >= 45 ? 'Neutral' : 'Weak';
-      const chipCls = grade.score >= 78 ? '' : grade.score >= 64 ? ' good' : grade.score >= 45 ? ' neutral' : ' weak';
-      const avg = fmtDec(st.avg ?? st.battingAverage, 3, 'avg');
-      const hr = +(st.homeRuns ?? st.hr ?? st.hrs ?? 0) || 0;
-      const hrTag = st.__hrEstimated
-        ? `<sup style="color:var(--muted);font-weight:400" title="Estimated — Baseball Savant doesn’t expose an exact per-pitch HR count for batters. This redistributes his overall HR total vs this pitcher hand by this pitch’s usage share.">est</sup>` : '';
-      return `<tr>
-        <td><strong>${p.name}</strong></td>
-        <td><span class="dr1041-chip${chipCls}">${fitLabel}</span></td>
-        <td class="num">${avg} AVG / ${hr} HR${hrTag}</td>
-      </tr>`;
-    }).join('');
-    return `<div class="zone-section zone-fit-section">
-      <div class="zone-title">🎯 ZONE FIT · VS THIS PITCHER'S ARSENAL</div>
-      <table class="dr1041-zone-fit-table"><thead><tr><th>Pitch</th><th>Zone Fit</th><th>Vs This Batter</th></tr></thead><tbody>${rows}</tbody></table>
-    </div>`;
-  }
-
   const pitchMixDashboard = buildPitchMixAdvantageSection(pitchHrList);
-  const zoneFitPanelHTML = buildZoneFitPanelHTML(pitchMixDashboard.pitches);
   const bottomUsageChips = pitchMixDashboard.usageChips || '';
-
-  // ── Simulated Odds Today — reuses the exact same Monte Carlo engine (and, when the
-  // batter/pitcher are already in today's scanned pool, the exact same cached result) that
-  // powers the Hits/RBI/TB/SB/HR Threats/K Props boards, applied to this one matchup. This
-  // keeps the modal consistent with those boards instead of quoting a second, independently
-  // modeled number for the same player.
-  function simOddsChip(label, pct) {
-    if (pct === null || pct === undefined || Number.isNaN(pct)) return '';
-    const p = Math.round(Number(pct));
-    const cls = p >= 65 ? 'good' : p >= 40 ? 'neutral' : 'weak';
-    return `<div class="dr1044-odds-chip ${cls}"><strong>${p}%</strong><span>${label}</span></div>`;
-  }
-  const propRowPool = (typeof window.getProductionPropRows === 'function') ? window.getProductionPropRows() : [];
-  const matchupRow = propRowPool.find(r => r && String(r.id) === String(batterId)) || null;
-  const kPropsPool = Array.isArray(window.kPropsData) ? window.kPropsData : [];
-  const matchupKRow = kPropsPool.find(r => r && String(r.pitcherId) === String(pitcherId)) || null;
-  let simOddsChips = '';
-  if (matchupRow) {
-    simOddsChips += simOddsChip('Hits (1+)', window.simulatePropOdds ? window.simulatePropOdds('hits', matchupRow) : null);
-    simOddsChips += simOddsChip('Total Bases (2+)', window.simulatePropOdds ? window.simulatePropOdds('tb', matchupRow) : null);
-    simOddsChips += simOddsChip('RBI (1+)', window.simulatePropOdds ? window.simulatePropOdds('rbis', matchupRow) : null);
-    simOddsChips += simOddsChip('Home Run', matchupRow.hrProb != null ? Number(matchupRow.hrProb) : null);
-    simOddsChips += simOddsChip('Stolen Base', window.simulateSBOdds ? window.simulateSBOdds(matchupRow) : null);
-    simOddsChips += simOddsChip('Hits+Runs+RBI (2+)', window.simulatePropOdds ? window.simulatePropOdds('hrrbi', matchupRow) : null);
-  }
-  if (matchupKRow) {
-    simOddsChips += simOddsChip(`${pitcherName.split(' ').pop()} K Over ${matchupKRow.recommendedOverLine}`, matchupKRow.overProb);
-  }
-  const simOddsPanelHTML = simOddsChips ? `<div class="dr1044-odds-panel">
-      <div class="dr1044-odds-head">
-        <div><div class="dr1044-odds-title">🎲 Simulated Odds Today</div><div class="dr1044-odds-sub">Thousands of simulated games built from real season rate stats, run for this exact matchup — same engine as the Hits/RBI/TB/SB/HR Threats/K Props boards.</div></div>
-      </div>
-      <div class="dr1044-odds-grid">${simOddsChips}</div>
-    </div>` : `<div class="dr1044-odds-panel"><div class="dr1044-odds-sub">Simulated odds aren't available yet for this matchup — ${!matchupRow && !matchupKRow ? 'neither player is in today’s scanned lineup pool yet' : !matchupRow ? batterName + ' isn’t in today’s scanned lineup pool yet' : pitcherName + ' isn’t in today’s K Props pool yet'}. Check back once today's props boards have loaded.</div></div>`;
 
   // ── Vulnerability summary bullets ──
   const hrRate = parseInt(bs.homeRuns)||0;
@@ -6029,6 +6084,13 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       </div>`;
   })();
 
+  // Roadmap 5.4 re-sort: Hot Streak Signal's own score/label comes first, then Recent
+  // Contact + HR Spray Chart side by side (reusing .dr1041-zone-grid, the same
+  // two-column/collapses-to-one-on-mobile layout Strike Zone + Attack Zone already
+  // use), THEN the Barrel%/Exit Velo/Launch Angle metric cards (moved down from
+  // directly under the score, since the spec places raw swing metrics after the
+  // real-outcome sections, not before them) with their "how to read this" explanation
+  // still directly underneath, and Situational True Probability last.
   const hotStreakHTML = `
     <div class="mu-hotstreak-section" style="margin-bottom:20px">
       <div class="zone-title">🔥 HOT STREAK SIGNALS</div>
@@ -6040,6 +6102,10 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         </div>
       </div>
       ${xMatchupLine}
+      <div class="dr1041-zone-grid">
+      ${recentContactHTML}
+      ${hrSprayChartHTML}
+      </div>
       ${hasLiveX ? `
         <div style="font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">What his contact says he should be hitting · hover any box for a plain-English explanation</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
@@ -6060,8 +6126,6 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <div style="font-size:11px;color:var(--muted);line-height:1.6">
         <strong style="color:var(--text)">How to read this:</strong> batting average can lie — a hitter can smash the ball all week straight into gloves, or bloop his way to a lucky hot streak. These numbers look at the swings themselves: how hard he's hitting the ball and where it's going. A green <strong style="color:var(--green)">▲ due</strong> tag means his swings have been better than his results — good things may be coming. An orange <strong style="color:var(--accent2)">▼ running hot</strong> tag means the opposite: the results have been better than the swings, and he may cool off.
       </div>
-      ${recentContactHTML}
-      ${hrSprayChartHTML}
       ${edgeHTML}
     </div>`;
 
@@ -6091,7 +6155,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       </div>` : `<div style="color:var(--muted);font-size:12px;padding:8px 0">No 2026 H2H data yet — using season stats for analysis.</div>`}
     </div>
 
-    ${simOddsPanelHTML}
+    ${countPerfHTML}
 
     <!-- Combined handedness + season matchup -->
     <div class="dr1043-combined-matchup">
@@ -6150,9 +6214,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     ${hotStreakHTML}
 
     <div class="dr1041-matchup-dashboard">
-      ${pitchMixDashboard.html}
       ${pitchEffectivenessTableHTML}
-      ${rollingMetricsHTML}
 
       <!-- Strike Zone + Attack Zone by Pitch, side by side -->
       <div class="dr1041-zone-grid">
@@ -6161,9 +6223,10 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         <div id="sz-matchup-body">
       ${hasRealZones ? `
       <div class="zone-wrap">
-        <div class="zone-grid-outer"${hasPitcherZoneHandSplit ? ' data-hand-toggle' : ''}>
-          <span class="zone-label" style="font-weight:700;color:var(--fg,#fff)">${pitcherName.split(' ').pop().toUpperCase()} · WEAK ZONES</span>
-          ${hasPitcherZoneHandSplit ? handToggleHTML('AUTO', 'vs RHB', 'vs LHB') : ''}
+        <div class="zone-grid-outer" data-combined-zone-toggle>
+          <span class="zone-label" style="font-weight:700;color:var(--fg,#fff)">${pitcherName.split(' ').pop().toUpperCase()} vs ${batterName.split(' ').pop().toUpperCase()} · COMBINED ZONES</span>
+          ${combinedPitcherToggleHTML}
+          ${combinedBatterToggleHTML}
           <span class="zone-label">OUTSIDE ←&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ INSIDE</span>
           <div style="display:flex;align-items:center;gap:6px">
             <div style="display:flex;flex-direction:column;gap:2px;font-size:9px;color:var(--muted);text-align:right;padding-right:4px">
@@ -6171,31 +6234,9 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
               <div style="height:40px;display:flex;align-items:center">MID</div>
               <div style="height:40px;display:flex;align-items:center">LOW</div>
             </div>
-            ${hasPitcherZoneHandSplit ? `<div>
-              <div class="dr-hand-mode-body active" data-hand="auto"><div class="strike-zone">${zoneCells}</div></div>
-              <div class="dr-hand-mode-body" data-hand="R">${strikeZoneCellsOrPlaceholder(pitcherZoneCellsR, 'vs-RHB')}</div>
-              <div class="dr-hand-mode-body" data-hand="L">${strikeZoneCellsOrPlaceholder(pitcherZoneCellsL, 'vs-LHB')}</div>
-            </div>` : `<div class="strike-zone">${zoneCells}</div>`}
+            <div>${combinedZoneBodies}</div>
           </div>
-          <span class="zone-label" style="margin-top:4px">% = Batter opportunity score per zone</span>
-        </div>
-        <div class="zone-grid-outer"${hasRealBatterZones && hasBatterZoneHandSplit ? ' data-hand-toggle' : ''}>
-          <span class="zone-label" style="font-weight:700;color:var(--fg,#fff)">${batterName.split(' ').pop().toUpperCase()} · HOT ZONES</span>
-          ${hasRealBatterZones && hasBatterZoneHandSplit ? handToggleHTML('AUTO', 'vs RHP', 'vs LHP') : ''}
-          <span class="zone-label">OUTSIDE ←&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ INSIDE</span>
-          <div style="display:flex;align-items:center;gap:6px">
-            <div style="display:flex;flex-direction:column;gap:2px;font-size:9px;color:var(--muted);text-align:right;padding-right:4px">
-              <div style="height:40px;display:flex;align-items:center">HIGH</div>
-              <div style="height:40px;display:flex;align-items:center">MID</div>
-              <div style="height:40px;display:flex;align-items:center">LOW</div>
-            </div>
-            ${!hasRealBatterZones ? `<div class="strike-zone" style="display:flex;align-items:center;justify-content:center;height:134px;padding:8px;text-align:center"><span class="zone-note" style="margin:0">No real per-location data yet for ${batterName}.</span></div>` : hasBatterZoneHandSplit ? `<div>
-              <div class="dr-hand-mode-body active" data-hand="auto"><div class="strike-zone">${batterZoneCells}</div></div>
-              <div class="dr-hand-mode-body" data-hand="R">${strikeZoneCellsOrPlaceholder(batterZoneCellsR, 'vs-RHP')}</div>
-              <div class="dr-hand-mode-body" data-hand="L">${strikeZoneCellsOrPlaceholder(batterZoneCellsL, 'vs-LHP')}</div>
-            </div>` : `<div class="strike-zone">${batterZoneCells}</div>`}
-          </div>
-          <span class="zone-label" style="margin-top:4px">% = ${batterName.split(' ').pop()}'s own wOBA per zone</span>
+          <span class="zone-label" style="margin-top:4px">P = ${pitcherName.split(' ').pop()} opportunity allowed · B = ${batterName.split(' ').pop()}'s own production${hasRealBatterZones ? '' : ' (not synced yet)'}</span>
         </div>
         <div>
           <div class="zone-legend">
@@ -6204,8 +6245,8 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
             <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#1a2a10"></div><span style="color:#90ee60">Neutral (45–64%) — contact likely</span></div>
             <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#0d1a0d"></div><span style="color:#3a6a3a">Cold zone (&lt;45%) — favors the pitcher</span></div>
           </div>
-          <div class="zone-note" style="margin-top:10px;max-width:220px">
-            Left grid: quality of contact ${pitcherName.split(' ').pop()} ${usingExpected ? 'should be allowing (luck removed)' : 'has allowed'} (${fv(pitcherVuln,3)}), his HR/9 (${pHR9}), and the batter's power profile. Right grid: ${batterName.split(' ').pop()}'s own real per-zone production${hasRealBatterZones ? '' : ' (not synced yet)'}. Overlapping hot zones on both = the clearest damage opportunity.
+          <div class="zone-note" style="margin-top:10px;max-width:320px">
+            Each cell shows both sides: P = quality of contact ${pitcherName.split(' ').pop()} ${usingExpected ? 'should be allowing (luck removed)' : 'has allowed'} (${fv(pitcherVuln,3)} overall, ${pHR9} HR/9); B = ${batterName.split(' ').pop()}'s own real per-zone production${hasRealBatterZones ? '' : ' (not synced yet)'}. Cell color follows whichever side is hotter — a zone that's dangerous for either player is a damage opportunity.
           </div>
         </div>
       </div>` : `
@@ -6215,7 +6256,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       ${attackZoneHTML}
       </div>
       ${hrZoneGridHTML}
-      ${zoneFitPanelHTML}
+      ${pitchMixDashboard.html}
 
       ${gameContextHTML}
       <div class="dr1041-bottom-strip">
@@ -6288,6 +6329,73 @@ document.addEventListener('click', function(e) {
   const hand = btn.dataset.hand;
   box.querySelectorAll('.dr1042-split-btn[data-hand]').forEach(b => b.classList.toggle('active', b === btn));
   box.querySelectorAll('.dr-hand-mode-body').forEach(tb => tb.classList.toggle('active', tb.dataset.hand === hand));
+});
+
+// ── Combined Strike Zone grid toggle (roadmap 5.4) ─────────────────────
+// Two INDEPENDENT toggle rows (pitcher hand, batter hand) both drive which
+// single pre-rendered [data-pitcher-mode][data-batter-mode] body is shown --
+// same delegated-click + pre-render-every-combo pattern as the other toggles
+// above, just keyed off two dataset values instead of one.
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest && e.target.closest('.dr1042-split-btn[data-hand]');
+  if (!btn) return;
+  const row = btn.closest('[data-combined-side]');
+  if (!row) return;
+  const box = row.closest('[data-combined-zone-toggle]');
+  if (!box) return;
+  const side = row.dataset.combinedSide;
+  const hand = btn.dataset.hand;
+  row.querySelectorAll('.dr1042-split-btn[data-hand]').forEach(b => b.classList.toggle('active', b === btn));
+  box.dataset[side === 'pitcher' ? 'pitcherMode' : 'batterMode'] = hand;
+  const pMode = box.dataset.pitcherMode || 'auto';
+  const bMode = box.dataset.batterMode || 'auto';
+  box.querySelectorAll('.dr-combined-zone-body').forEach(body => {
+    body.classList.toggle('active', body.dataset.pitcherMode === pMode && body.dataset.batterMode === bMode);
+  });
+});
+
+// ── Combined Pitcher Stats toggle (SEASON / CAREER / L3 TREND) ─────────
+// Each mode swaps a whole [data-pstats-toggle] > .dr-pstats-mode-body (a full
+// table, not just a <tbody>) since the L3 Trend table's columns are structurally
+// different from the season/career table's -- same delegated-click pattern as
+// every other toggle in this modal, just its own data attribute/class names.
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest && e.target.closest('.dr1042-split-btn[data-mode]');
+  if (!btn) return;
+  const box = btn.closest('[data-pstats-toggle]');
+  if (!box) return;
+  const mode = btn.dataset.mode;
+  box.querySelectorAll(':scope > .dr1041-pitch-head .dr1042-split-btn').forEach(b => b.classList.toggle('active', b === btn));
+  box.querySelectorAll('.dr-pstats-mode-body').forEach(tb => tb.classList.toggle('active', tb.dataset.mode === mode));
+});
+
+// ── Interactive visualization tap-tooltip (roadmap 5.3) ────────────────
+// The Strike Zone Matchup / Attack Zone by Pitch / HR Zones grids already carry a
+// per-cell description via the native title attribute (color-coded cells) or an SVG
+// <title> child (HR Zones' scatter dots) -- both work as a hover tooltip on desktop,
+// but neither has any mobile-tap equivalent (a phone has no "hover" state at all), so
+// a mobile user could see the color-coding but never actually read what a given cell
+// or dot means. Reuses the exact same title text (no separate copy to keep in sync)
+// in a small floating popover on tap, auto-dismissing after a few seconds or on the
+// next tap elsewhere -- desktop hover behavior is completely untouched.
+document.addEventListener('click', function(e) {
+  const existing = document.getElementById('dr-viz-tooltip');
+  if (existing) existing.remove();
+  const target = e.target.closest && e.target.closest('.zone-section .sz-cell[title], .zone-section circle');
+  if (!target) return;
+  const text = target.getAttribute('title') || (target.querySelector('title') ? target.querySelector('title').textContent : '');
+  if (!text) return;
+  const tip = document.createElement('div');
+  tip.id = 'dr-viz-tooltip';
+  tip.className = 'dr-viz-tooltip';
+  tip.textContent = text;
+  document.body.appendChild(tip);
+  const rect = target.getBoundingClientRect();
+  const left = Math.min(window.innerWidth - tip.offsetWidth - 8, Math.max(8, rect.left + rect.width / 2 - tip.offsetWidth / 2));
+  const top = Math.max(8, rect.top + window.scrollY - tip.offsetHeight - 8);
+  tip.style.left = left + 'px';
+  tip.style.top = top + 'px';
+  setTimeout(function () { if (tip.parentNode) tip.remove(); }, 3500);
 });
 
 
@@ -6602,6 +6710,25 @@ async function loadPitcherRolling(force=false) {
     return pitcherRolling;
   })();
   return pitcherRollingPromise;
+}
+
+// Same repo-fed-JSON-with-graceful-fallback pattern as loadPitcherRolling() above.
+async function loadPitcherCountPerf(force=false) {
+  if (pitcherCountPerfLoaded && !force) return pitcherCountPerf;
+  if (pitcherCountPerfPromise && !force) return pitcherCountPerfPromise;
+  pitcherCountPerfPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/pitcher-count-performance.json`);
+      const players = data.pitchers || {};
+      pitcherCountPerf = {};
+      Object.keys(players).forEach(id => { pitcherCountPerf[String(id)] = players[id]; });
+    } catch(e) {
+      pitcherCountPerf = {};
+    }
+    pitcherCountPerfLoaded = true;
+    return pitcherCountPerf;
+  })();
+  return pitcherCountPerfPromise;
 }
 // Overwrites the hardcoded park-factor estimates (declared above, near the venue
 // list) with real, auto-updating Baseball Savant HR-index values once synced —
@@ -12055,7 +12182,135 @@ if (document.readyState === 'loading') {
     if (s.last10HomeRuns != null && s.last10HomeRuns !== '') return s.last10HomeRuns;
     return null;
   }
-  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); populateHRGameSelect(base); if(!base.length){el.innerHTML=hrpRetryTimer?'<div class="mu-empty">Lineups not posted yet — automatically checking again in 15 min.<br><span style="font-size:10px;color:var(--muted)">No need to refresh, this updates itself.</span></div>':'<div class="mu-empty">No HR potential data yet — check back once lineups are posted.</div>';return;} var completedOnly=!!window.__hrpShowCompletedOnly; var arr=applyHRFilters(base).filter(function(r){return completedOnly ? isHit('hr',r) : (!isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL');}).sort(function(a,b){return hrSortValue(b)-hrSortValue(a);}); arr.forEach(function(r){window.__hrCompareRows[String(r.id)]=r;}); if(!arr.length){el.innerHTML='<div class="mu-empty" style="padding:24px">'+(completedOnly?'No completed home runs yet today. Check back once games are underway.':'No players match the selected filters. Try fewer filters, or select ALL to reset.')+'</div>';return;} var cards=arr.map(function(r){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); if(hasNearHR(r.id))labels.push(labelChip('🚀 NEAR HR',nearHRs[String(r.id)].length,'gold')); var l10=dr113Last10HRValue(r); var bpPct=ballparkPalFactorForPlayer(r.gamePk,r.id); var stats=[hrChip('HR Prob',p.toFixed(1)+'%','green'),hrChip('Matchup Edge',r.matchupEdge==null?'–':r.matchupEdge,r.matchupEdge==null?'':r.matchupEdge>=64?'green':r.matchupEdge<45?'red':'gold'),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1),'gold'):'',bpPct!=null?hrChip('Ballpark Pal',(bpPct>0?'+':'')+bpPct+'%',bpPct>0?'green':bpPct<0?'red':''):''].filter(Boolean); return '<div class="dr1027-hr-card '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="cursor:pointer" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="if(!event.target.closest(\'button,a\')){var d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName);}">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-why" id="hrp-scout-'+esc(r.id)+'-'+esc(r.pitcherId||0)+'">'+(r.pitcherId?'<span class="spin"></span> Loading scouting report\u2026':'<span style="color:var(--muted)">No opposing pitcher assigned yet \u2014 scouting report unavailable.</span>')+'</div><label class="dr1027-hr-compare" onclick="event.stopPropagation()" title="Add to Compare"><input type="checkbox" '+(window.drHRCompareHas&&window.drHRCompareHas(r.id)?'checked':'')+' onchange="drHRCompareToggle(\''+esc(r.id)+'\',this.checked)"><span>Add to Compare</span></label>'+'</div>'; }).join(''); el.innerHTML=hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; arr.forEach(function(r){ if(!r.pitcherId) return; loadHRScoutingReport(r.id,r.name,r.pitcherId,r.pitcherName).then(function(html){ var t=document.getElementById('hrp-scout-'+r.id+'-'+r.pitcherId); if(t) t.innerHTML=html; }); }); hrCompareUpdateBar(); }
+
+  // ── Player Trend Indicators (roadmap 5.2) ──────────────────────────────
+  // Standardized, documented Hot Streak/Trending Up/Cooling Off/Cold labels, computed
+  // the same way for every player -- a separate, additive signal from isOnFire/isDue/
+  // isDrought/isFavorable above, which are deliberately left untouched since they're
+  // already captured on graded HR Threats picks server-side (update-tracker.mjs) for
+  // the calibration report; changing their definitions here would silently invalidate
+  // that tracked history.
+  //
+  // Rule (last 10 games vs season rate, since last10HR is already on every row with no
+  // extra fetch -- "such as the last 5, 10, or 15 games" in the spec, picking the one
+  // period this board already has real data for):
+  //   expectedHRPer10 = this player's season HR rate, projected over ~40 AB (a rough
+  //   10-games'-worth estimate) -- same reasoning MC_AB_PER_PA-style rate conversions
+  //   use elsewhere in this codebase, just simplified to an AB count instead of PA.
+  //   ratio = actual last10HR / expectedHRPer10 (floored so a near-zero expectation
+  //   doesn't blow the ratio up to a meaningless number).
+  //   ratio >= 1.75 (and at least 2 real last-10 HRs, not just 1 lucky one) -> Hot Streak
+  //   ratio >= 1.15 -> Trending Up
+  //   0 last-10 HR while the season rate expected at least 1 -> Cold
+  //   ratio <= 0.5 -> Cooling Off
+  //   otherwise -> no indicator (genuinely neutral, not worth a badge)
+  // Below a 40-AB season sample, the same read is still shown but flagged as a small
+  // sample rather than suppressed outright, per the "small samples are clearly marked"
+  // acceptance criterion -- suppressing it would just look like the indicator silently
+  // doesn't exist for that player, which is worse than an honest caveat.
+  function computePlayerTrendIndicator(r){
+    var last10HR = dr113Last10HRValue(r);
+    if (last10HR == null) return null;
+    last10HR = n(last10HR);
+    var ab = n(r.atBats);
+    var hrSeason = n(r.hrSeason);
+    if (ab <= 0) return null;
+    var expectedHRPer10 = (hrSeason / ab) * 40;
+    var ratio = last10HR / Math.max(expectedHRPer10, 0.4);
+    var smallSample = ab < 40;
+    var label = null, tone = '';
+    if (last10HR >= 2 && ratio >= 1.75) { label = 'Hot Streak'; tone = 'red'; }
+    else if (ratio >= 1.15) { label = 'Trending Up'; tone = 'green'; }
+    else if (last10HR === 0 && expectedHRPer10 >= 1.0) { label = 'Cold'; tone = ''; }
+    else if (ratio <= 0.5) { label = 'Cooling Off'; tone = ''; }
+    if (!label) return null;
+    return { label: label, tone: tone, period: 'L10', smallSample: smallSample };
+  }
+  function playerTrendIndicatorChip(r){
+    var t = computePlayerTrendIndicator(r);
+    if (!t) return '';
+    var icon = t.label === 'Hot Streak' ? '📈' : t.label === 'Trending Up' ? '↗️' : t.label === 'Cooling Off' ? '↘️' : '🧊';
+    return labelChip(icon + ' ' + t.label.toUpperCase(), t.period + (t.smallSample ? ' · small sample' : ''), t.tone);
+  }
+
+  // ── Featured Home Run Pick (roadmap 5.1) ──────────────────────────────
+  // A flagship card above the regular list, always the single highest-hrProb
+  // player in the CURRENT (live, already-filtered-to-not-final) row array --
+  // recomputed fresh on every render rather than cached/frozen, so a player
+  // who gets scratched after being the top pick simply drops out on the next
+  // refresh the same way they'd drop out of the regular list, with no extra
+  // "is this player scratched" check needed.
+  function pickFeaturedHRRow(arr){
+    if (!arr || !arr.length) return null;
+    return arr.reduce(function(best, cur){ return n(cur.hrProb) > n(best.hrProb) ? cur : best; }, arr[0]);
+  }
+  function buildFeaturedHRPickHTML(r){
+    if (!r) return '';
+    var p = n(r.hrProb);
+    var l10 = dr113Last10HRValue(r);
+    var bpPct = ballparkPalFactorForPlayer(r.gamePk, r.id);
+    // statcastHotHitters is keyed by both id and lowercased name (see loadStatcastHotHitters) --
+    // same dual-key lookup every other consumer of this store already uses.
+    var hh = (typeof statcastHotHitters !== 'undefined' && statcastHotHitters) ? (statcastHotHitters[String(r.id)] || statcastHotHitters[String(r.name||'').toLowerCase()]) : null;
+    var trendBadges = [];
+    if (r.isOnFire) trendBadges.push(labelChip('🔥 ON FIRE', Math.round(n(r.onFireScore)), 'red'));
+    if (r.isDue) trendBadges.push(labelChip('⚡ DUE', 'YES', 'gold'));
+    if (r.isDrought) trendBadges.push(labelChip('❄️ DROUGHT', 'YES', 'red'));
+    if (r.isFavorable) trendBadges.push(labelChip('✅ FAVORABLE', 'MATCHUP', 'green'));
+    var featuredTrendChip = playerTrendIndicatorChip(r); if (featuredTrendChip) trendBadges.push(featuredTrendChip);
+    var statChips = [
+      hrChip('Barrel%', hh && hh.barrelPct != null ? parseFloat(hh.barrelPct)+'%' : '–', hh && n(hh.barrelPct) >= 10 ? 'green' : ''),
+      hrChip('Hard-Hit%', hh && hh.hardHitPct != null ? parseFloat(hh.hardHitPct)+'%' : '–', hh && n(hh.hardHitPct) >= 40 ? 'green' : ''),
+      hrChip('Avg Exit Velo', hh && hh.avgExitVelo != null ? parseFloat(hh.avgExitVelo)+' mph' : '–', hh && n(hh.avgExitVelo) >= 90 ? 'green' : ''),
+      hrChip('Ballpark Factor', bpPct != null ? (bpPct>0?'+':'')+bpPct+'%' : '–', bpPct>0?'green':bpPct<0?'red':''),
+      hrChip('Last 10 HR', l10==null?'–':l10, n(l10)>=2?'green':''),
+    ].filter(Boolean);
+    var uid = 'featured-hrp-' + r.id + '-' + (r.pitcherId||0);
+    return '<div class="dr1027-hr-card dr1027-featured-pick" style="cursor:pointer" onclick="if(!event.target.closest(\'button,a\')){openMatchup('+JSON.stringify(String(r.id))+','+JSON.stringify(r.name||'')+','+JSON.stringify(String(r.pitcherId||''))+','+JSON.stringify(r.pitcherName||'')+');}">'
+      + '<div class="dr1027-featured-badge">💥 FEATURED HOME RUN PICK</div>'
+      + '<div class="dr1027-hr-head">'
+        + '<img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt="">'
+        + '<div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div>'
+        + '<div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div>'
+        + '<div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div>'
+      + '</div>'
+      + '<div class="dr1027-chip-row">'+trendBadges.concat(statChips).join('')+'</div>'
+      + '<div class="dr1027-why" id="'+uid+'-why">'+(r.pitcherId?'<span class="spin"></span> Loading scouting report…':'<span style="color:var(--muted)">No opposing pitcher assigned yet — scouting report unavailable.</span>')+'</div>'
+      + '<div class="dr1027-featured-weather" id="'+uid+'-weather" style="font-size:11px;color:var(--muted);margin-top:6px">Checking game weather…</div>'
+      + '<div style="font-size:10px;color:var(--muted);margin-top:8px;text-align:right">Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'</div>'
+      + '</div>';
+  }
+  // Async-fills the AI explanation + weather blurb on the featured card after
+  // the main render, same "placeholder now, fill in when ready" pattern every
+  // regular card's own .dr1027-why already uses (loadHRScoutingReport is a
+  // shared cache, so this doesn't double-fetch if the same matchup already
+  // has a pending/resolved request from the regular card list).
+  function fillFeaturedHRPickAsync(r){
+    if (!r) return;
+    var uid = 'featured-hrp-' + r.id + '-' + (r.pitcherId||0);
+    if (r.pitcherId) {
+      loadHRScoutingReport(r.id, r.name, r.pitcherId, r.pitcherName).then(function(html){
+        var t = document.getElementById(uid+'-why'); if (t) t.innerHTML = html;
+      });
+    }
+    var wEl = document.getElementById(uid+'-weather');
+    if (wEl && r.teamAbbr && r.oppAbbr) {
+      // fetchGameWeather checks stadiumCoords for EITHER abbr passed to it (whichever
+      // one is actually the home team), so passing team/opp in an unknown order here
+      // is safe -- it doesn't need to know which side is home to find the right park.
+      fetchGameWeather(r.teamAbbr, r.oppAbbr).then(function(weather){
+        if (!wEl) return;
+        if (!weather) { wEl.textContent = 'Dome/indoor park — weather is not a factor for this game.'; return; }
+        var bits = [];
+        if (weather.temp != null) bits.push(weather.temp + '°F');
+        if (weather.wind != null) bits.push('wind ' + weather.wind + ' mph' + (weather.windDir != null ? ' @' + weather.windDir + '°' : ''));
+        wEl.textContent = bits.length ? ('🌤️ ' + bits.join(' · ')) : 'Weather data not available for this game.';
+      }).catch(function(){ wEl.textContent = 'Weather data not available for this game.'; });
+    } else if (wEl) {
+      wEl.textContent = '';
+    }
+  }
+  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); populateHRGameSelect(base); if(!base.length){el.innerHTML=hrpRetryTimer?'<div class="mu-empty">Lineups not posted yet — automatically checking again in 15 min.<br><span style="font-size:10px;color:var(--muted)">No need to refresh, this updates itself.</span></div>':'<div class="mu-empty">No HR potential data yet — check back once lineups are posted.</div>';return;} var completedOnly=!!window.__hrpShowCompletedOnly; var arr=applyHRFilters(base).filter(function(r){return completedOnly ? isHit('hr',r) : (!isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL');}).sort(function(a,b){return hrSortValue(b)-hrSortValue(a);}); arr.forEach(function(r){window.__hrCompareRows[String(r.id)]=r;}); if(!arr.length){el.innerHTML='<div class="mu-empty" style="padding:24px">'+(completedOnly?'No completed home runs yet today. Check back once games are underway.':'No players match the selected filters. Try fewer filters, or select ALL to reset.')+'</div>';return;} var cards=arr.map(function(r){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); var trendChip=playerTrendIndicatorChip(r); if(trendChip)labels.push(trendChip); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); if(hasNearHR(r.id))labels.push(labelChip('🚀 NEAR HR',nearHRs[String(r.id)].length,'gold')); var l10=dr113Last10HRValue(r); var bpPct=ballparkPalFactorForPlayer(r.gamePk,r.id); var stats=[hrChip('HR Prob',p.toFixed(1)+'%','green'),hrChip('Matchup Edge',r.matchupEdge==null?'–':r.matchupEdge,r.matchupEdge==null?'':r.matchupEdge>=64?'green':r.matchupEdge<45?'red':'gold'),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1),'gold'):'',bpPct!=null?hrChip('Ballpark Pal',(bpPct>0?'+':'')+bpPct+'%',bpPct>0?'green':bpPct<0?'red':''):''].filter(Boolean); return '<div class="dr1027-hr-card '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="cursor:pointer" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="if(!event.target.closest(\'button,a\')){var d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName);}">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-why" id="hrp-scout-'+esc(r.id)+'-'+esc(r.pitcherId||0)+'">'+(r.pitcherId?'<span class="spin"></span> Loading scouting report\u2026':'<span style="color:var(--muted)">No opposing pitcher assigned yet \u2014 scouting report unavailable.</span>')+'</div><label class="dr1027-hr-compare" onclick="event.stopPropagation()" title="Add to Compare"><input type="checkbox" '+(window.drHRCompareHas&&window.drHRCompareHas(r.id)?'checked':'')+' onchange="drHRCompareToggle(\''+esc(r.id)+'\',this.checked)"><span>Add to Compare</span></label>'+'</div>'; }).join(''); var featuredRow=completedOnly?null:pickFeaturedHRRow(arr); el.innerHTML=(featuredRow?buildFeaturedHRPickHTML(featuredRow):'')+hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; if(featuredRow) fillFeaturedHRPickAsync(featuredRow); arr.forEach(function(r){ if(!r.pitcherId) return; loadHRScoutingReport(r.id,r.name,r.pitcherId,r.pitcherName).then(function(html){ var t=document.getElementById('hrp-scout-'+r.id+'-'+r.pitcherId); if(t) t.innerHTML=html; }); }); hrCompareUpdateBar(); }
 
   // ── HR Threats compare tray ─────────────────────────────────────────────
   // Lets a user shortlist up to HR_COMPARE_MAX cards (checkbox per card, added
