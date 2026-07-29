@@ -6084,6 +6084,13 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       </div>`;
   })();
 
+  // Roadmap 5.4 re-sort: Hot Streak Signal's own score/label comes first, then Recent
+  // Contact + HR Spray Chart side by side (reusing .dr1041-zone-grid, the same
+  // two-column/collapses-to-one-on-mobile layout Strike Zone + Attack Zone already
+  // use), THEN the Barrel%/Exit Velo/Launch Angle metric cards (moved down from
+  // directly under the score, since the spec places raw swing metrics after the
+  // real-outcome sections, not before them) with their "how to read this" explanation
+  // still directly underneath, and Situational True Probability last.
   const hotStreakHTML = `
     <div class="mu-hotstreak-section" style="margin-bottom:20px">
       <div class="zone-title">🔥 HOT STREAK SIGNALS</div>
@@ -6095,6 +6102,10 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         </div>
       </div>
       ${xMatchupLine}
+      <div class="dr1041-zone-grid">
+      ${recentContactHTML}
+      ${hrSprayChartHTML}
+      </div>
       ${hasLiveX ? `
         <div style="font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">What his contact says he should be hitting · hover any box for a plain-English explanation</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
@@ -6115,8 +6126,6 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <div style="font-size:11px;color:var(--muted);line-height:1.6">
         <strong style="color:var(--text)">How to read this:</strong> batting average can lie — a hitter can smash the ball all week straight into gloves, or bloop his way to a lucky hot streak. These numbers look at the swings themselves: how hard he's hitting the ball and where it's going. A green <strong style="color:var(--green)">▲ due</strong> tag means his swings have been better than his results — good things may be coming. An orange <strong style="color:var(--accent2)">▼ running hot</strong> tag means the opposite: the results have been better than the swings, and he may cool off.
       </div>
-      ${recentContactHTML}
-      ${hrSprayChartHTML}
       ${edgeHTML}
     </div>`;
 
@@ -6145,6 +6154,8 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         <div class="h2h-stat"><div class="h2h-val">${h2hOPS}</div><div class="h2h-lbl">OPS</div></div>
       </div>` : `<div style="color:var(--muted);font-size:12px;padding:8px 0">No 2026 H2H data yet — using season stats for analysis.</div>`}
     </div>
+
+    ${countPerfHTML}
 
     <!-- Combined handedness + season matchup -->
     <div class="dr1043-combined-matchup">
@@ -6203,9 +6214,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     ${hotStreakHTML}
 
     <div class="dr1041-matchup-dashboard">
-      ${pitchMixDashboard.html}
       ${pitchEffectivenessTableHTML}
-      ${countPerfHTML}
 
       <!-- Strike Zone + Attack Zone by Pitch, side by side -->
       <div class="dr1041-zone-grid">
@@ -6247,6 +6256,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       ${attackZoneHTML}
       </div>
       ${hrZoneGridHTML}
+      ${pitchMixDashboard.html}
 
       ${gameContextHTML}
       <div class="dr1041-bottom-strip">
