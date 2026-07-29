@@ -724,13 +724,33 @@ function diamondApiFallbackUrl(url) {
 // after a browser already cached that day's "first response." The version is part
 // of the cache key, so a bump makes every existing cached entry unreachable and
 // forces one fresh fetch, without needing to wait until midnight Central.
+//
+// v8.74: freezing an entire CALENDAR DAY was too coarse -- data/*.json sync
+// workflows routinely re-run several times during the same day (verified directly:
+// three separate sync-statcast.yml runs landed genuinely different pitcher/batter
+// zone data within a few hours of each other on 2026-07-25), so a returning visitor
+// could go the rest of the day without ever seeing a sync that happened minutes
+// after their first page load that day -- while Incognito, starting with empty
+// storage, always looked "fresher" than a normal session. This is the literal
+// "why does incognito show newer data" complaint. Replacing the whole-day bucket
+// with a short rolling window keeps the original goal (no mid-render number shifts
+// from two back-to-back fetches of the same page) while a page opened more than
+// DR_STATIC_DUMP_TTL_MS after the last one automatically gets a real fetch, no
+// manual version bump required for routine same-day re-syncs.
 const DR_STATIC_DAILY_DUMP = true;
 const DR_STATIC_DUMP_VERSION = 'v8.73';
+const DR_STATIC_DUMP_TTL_MS = 15 * 60 * 1000; // 15 minutes -- matches the HR Threats board's own "checking again in 15 min" retry cadence
 function drStaticDateKey(){
   try { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }); }
   catch(e) { return new Date().toISOString().slice(0,10); }
 }
-function drStaticKey(url){ return 'dr-static-dump:' + DR_STATIC_DUMP_VERSION + ':' + drStaticDateKey() + ':' + String(url).replace(/([?&])(ts|v|_)=\d+/g,'').replace(/[?&]$/,''); }
+// Bucketed by both calendar day (for the debug "clear today's cache" prefix match
+// below, and for informational readability) and a short rolling window within that
+// day -- the window component is what actually enforces DR_STATIC_DUMP_TTL_MS,
+// since a new window makes the OLD window's key unreachable both in localStorage
+// and in the underlying fetch() URL (see drFetchDailyJSON's _w= param).
+function drStaticWindowKey(){ return drStaticDateKey() + ':' + Math.floor(Date.now() / DR_STATIC_DUMP_TTL_MS); }
+function drStaticKey(url){ return 'dr-static-dump:' + DR_STATIC_DUMP_VERSION + ':' + drStaticWindowKey() + ':' + String(url).replace(/([?&])(ts|v|_)=\d+/g,'').replace(/[?&]$/,''); }
 function drStripCacheBust(url){ return String(url).replace(/([?&])(ts|v|_)=\d+/g,'').replace(/[?&]$/,''); }
 function drIsLiveScoreURL(url){
   var u = String(url || '').toLowerCase();
@@ -762,10 +782,15 @@ async function drFetchDailyJSON(url, opts){
   // the daily sync backend had run yet) would keep serving that stale response
   // indefinitely, with no way to notice the file now has real data — confirmed live:
   // a pitcher whose real Statcast data existed in the repo still showed "no data" in a
-  // browser that had cached an earlier empty fetch. Appending a date key makes each new
-  // day's fetch a genuinely different URL, forcing exactly one fresh network fetch per
-  // day while still letting force-cache dedupe repeat fetches within the same day.
-  const dailyUrl = drIsLiveScoreURL(cleanUrl) ? cleanUrl : cleanUrl + (cleanUrl.includes('?') ? '&' : '?') + '_d=' + drStaticDateKey();
+  // browser that had cached an earlier empty fetch. Appending a window key (see
+  // drStaticWindowKey — a short rolling bucket, not a whole calendar day) makes each
+  // new window's fetch a genuinely different URL, forcing one fresh network fetch per
+  // DR_STATIC_DUMP_TTL_MS while still letting force-cache dedupe repeat fetches within
+  // the same window. This has to change in lockstep with the localStorage-level key
+  // above — force-cache means the browser's OWN http cache would otherwise keep
+  // serving the first window's response for this exact URL all day regardless of what
+  // the localStorage layer does.
+  const dailyUrl = drIsLiveScoreURL(cleanUrl) ? cleanUrl : cleanUrl + (cleanUrl.includes('?') ? '&' : '?') + '_w=' + drStaticWindowKey();
   const requestUrl = drIsLiveScoreURL(cleanUrl) ? drLiveURL(cleanUrl) : dailyUrl;
   const requestOpts = drIsLiveScoreURL(cleanUrl) ? Object.assign({ cache:'no-store' }, opts || {}) : Object.assign({ cache:'force-cache' }, opts || {});
   const res = await fetch(requestUrl, requestOpts);
@@ -942,7 +967,13 @@ async function fetchJSON(url) {
   }
   // v8.71 reload speed: use memory + localStorage cache so a browser reload can
   // paint with recently-fetched MLB/data JSON instead of waiting on every API call.
-  const ttl = (DR_STATIC_DAILY_DUMP && !drIsLiveScoreURL(url)) ? 24 * 60 * 60 * 1000 : _cacheTTL(url);
+  // v8.74: this used to be a flat 24-hour TTL whenever the static-dump mode above was
+  // on, which quietly reintroduced the exact same whole-day staleness the dr-static-dump:
+  // window-key fix above was built to eliminate -- the static-dump check would correctly
+  // miss on a new window, fall through to HERE, and then get served a same-day-old
+  // response from THIS separate cache anyway. Matching DR_STATIC_DUMP_TTL_MS keeps both
+  // layers honoring the same freshness window instead of one silently overriding the other.
+  const ttl = (DR_STATIC_DAILY_DUMP && !drIsLiveScoreURL(url)) ? DR_STATIC_DUMP_TTL_MS : _cacheTTL(url);
   const now = Date.now();
   const cached = _fetchCache.get(url);
   if (cached && now - cached.ts < ttl) return cached.data;
@@ -974,7 +1005,17 @@ async function fetchJSON(url) {
         try {
           // Live score/schedule URLs must bypass cache so in-game/final scores refresh.
           const live = drIsLiveScoreURL(requestUrl);
-          const res = await _fetchWithTimeout(live ? drLiveURL(requestUrl) : requestUrl, { cache: live ? 'no-store' : 'default' });
+          // v8.74: by the time execution reaches here, every app-level cache layer above
+          // (dr-static-dump:, _fetchCache, dr-json-cache:) has already decided this URL is
+          // due for a real refetch. But confirmed empirically: two fetch() calls to the
+          // exact same URL with {cache:'default'} can be silently satisfied by the
+          // BROWSER'S OWN HTTP cache without ever reaching the network the second time --
+          // no app-level TTL, however short, can fix staleness if the actual request URL
+          // never changes. Appending a bucket that changes at the same cadence as `ttl`
+          // (same fix drFetchDailyJSON's _w= param already applies) forces a genuinely
+          // new URL exactly when the app-level logic already decided a refetch was due.
+          const bustedUrl = live ? drLiveURL(requestUrl) : requestUrl + (requestUrl.includes('?') ? '&' : '?') + '_b=' + Math.floor(now / ttl);
+          const res = await _fetchWithTimeout(bustedUrl, { cache: live ? 'no-store' : 'default' });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const text = await res.text();
           if (!text || text.trim() === '') throw new Error('Empty response from API');
