@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026072501">
+<link rel="stylesheet" href="styles.min.css?v=2026072502">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -244,15 +244,17 @@
       </div>
     </div>
 
-    <!-- Diamond Report's own written analysis — a recap of yesterday's graded picks
-         plus a few storylines for today, generated daily by
-         scripts/generate-daily-insights.mjs (real numbers, not spun filler; see that
-         script's header comment). Placed ahead of the live data boards on purpose:
-         this is the site's original written content, not another data table. -->
-    <div class="dr-hub-insights" id="dr-hub-insights" style="display:none">
-      <div class="dr-hub-section-head"><span class="dr-hub-section-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5H5a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8z"/><path d="M11.5 2.5V8H17"/><path d="M7 11h6M7 14h4"/></svg></span><h2>Diamond Report Insights</h2><span class="dr-hub-section-line"></span></div>
-      <p class="dr-hub-insights-recap" id="dr-hub-insights-recap"></p>
-      <div class="dr-hub-insights-storylines" id="dr-hub-insights-storylines"></div>
+    <!-- Diamond Report Headlines (roadmap 3.2) — proprietary, data-driven editorial
+         headlines generated daily by scripts/generate-headlines.mjs from this site's
+         own model/trend/leaderboard/injury/weather/notable-performance signals (real
+         numbers, not spun filler; see that script's header comment). Placed ahead of
+         the ESPN news grid below on purpose: this is the site's original written
+         content, not a repackaged third-party feed. Each card links to the related
+         board (see applyHeadlineLink in app.js) and, when a real clip exists, opens
+         it in the same in-site video modal the HR highlights already use. -->
+    <div class="dr-hub-headlines" id="dr-hub-headlines" style="display:none">
+      <div class="dr-hub-section-head"><span class="dr-hub-section-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5H5a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8z"/><path d="M11.5 2.5V8H17"/><path d="M7 11h6M7 14h4"/></svg></span><h2>Diamond Report Headlines</h2><span class="dr-hub-section-line"></span></div>
+      <div class="dr-hub-headlines-grid" id="dr-hub-headlines-grid"></div>
     </div>
 
     <div class="dr-hub-scoreboard" id="dr-hub-scoreboard" style="display:none">
@@ -263,7 +265,7 @@
     <div class="dr-hub-layout">
       <div class="dr-hub-main">
         <div class="dr-hub-news" id="dr-hub-news" style="display:none">
-          <div class="dr-hub-section-head"><span class="dr-hub-section-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><path d="M6 7.5h8M6 10.5h8M6 13.5h5"/></svg></span><h2>Top Headlines</h2><span class="dr-hub-section-line"></span></div>
+          <div class="dr-hub-section-head"><span class="dr-hub-section-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><path d="M6 7.5h8M6 10.5h8M6 13.5h5"/></svg></span><h2>Around MLB</h2><span class="dr-hub-section-line"></span></div>
           <div class="dr-hub-news-grid" id="dr-hub-news-grid"></div>
           <button type="button" id="dr-hub-news-more" class="dr-hub-news-more" style="display:none">View More</button>
         </div>
@@ -884,7 +886,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026072501" defer></script>
+<script src="app.min.js?v=2026072502" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
