@@ -4296,12 +4296,37 @@ select:focus-visible {
 }
 .sz-cell-combined {
   flex-direction: column;
-  gap: 1px;
-  font-size: 9px;
-  line-height: 1.2;
+  gap: 0;
+  padding: 2px 0;
 }
-.sz-cell-combined span {
-  display: block;
+/* Two stacked P/B rows, split by a hairline so each reads as its own row
+   instead of two lines of text touching -- validated status-tile fills
+   (see zoneColor's comment) mean text color is already guaranteed contrast,
+   so this only needs to separate label from value, not fight the background. */
+.sz-cell-combined .scc-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  font-size: 10px;
+  line-height: 1.35;
+}
+.sz-cell-combined .scc-row:first-child {
+  padding-bottom: 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, .22);
+}
+.sz-cell-combined .scc-row:last-child {
+  padding-top: 2px;
+}
+.sz-cell-combined .scc-label {
+  font-size: 8px;
+  font-weight: 600;
+  opacity: .72;
+  letter-spacing: .02em;
+}
+.sz-cell-combined .scc-val {
+  font-weight: 800;
 }
 
 /* Combined Pitcher Stats section (roadmap 5.4) -- SEASON/CAREER/L3 TREND toggle,
