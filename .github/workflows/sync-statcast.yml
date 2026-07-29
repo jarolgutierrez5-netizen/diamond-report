@@ -2,25 +2,27 @@ name: Sync Pitcher/Batter Pitch-Arsenal Data
 
 on:
   schedule:
-    # 13:04 UTC = ~8am CDT — before the update-tracker.yml morning run (14:07 UTC), so
-    # today's HR Threats/matchup pages have fresh pitch-arsenal data before first pitch.
-    # Offset off the top of the hour on purpose — see the comment in update-tracker.yml.
-    # This is the only trigger that runs the full sync (pitch-arsenal + hot-hitters +
-    # zone/HR) — those two leaderboard pulls are whole-season aggregates that don't
-    # meaningfully change hour to hour, so there's no reason to repeat them below.
-    - cron: '4 13 * * *'
+    # Five runs a day at 6am/9am/12pm/3pm/6pm CT (CDT, UTC-5 — shifts an hour relative
+    # to local time during CST/winter, same known approximation this file has always
+    # used rather than DST-aware scheduling). 11:04 UTC = 6am CDT, before the
+    # update-tracker.yml morning run (14:07 UTC), so today's HR Threats/matchup pages
+    # have fresh pitch-arsenal data before first pitch. Offset off the top of the hour
+    # on purpose — see the comment in update-tracker.yml. This is the only trigger that
+    # runs the full sync (pitch-arsenal + hot-hitters + zone/HR) — those two leaderboard
+    # pulls are whole-season aggregates that don't meaningfully change hour to hour, so
+    # there's no reason to repeat them below.
+    - cron: '4 11 * * *'
     # MLB's own probablePitcher field on the schedule API doesn't populate all at once
     # in the morning — it fills in through the day as rotations get confirmed, so a
-    # pitcher starting a later game can be missing from the 13:04 run entirely (see the
-    # Christian Scott case this caught). These five re-run just the zone/HR step — a
+    # pitcher starting a later game can be missing from the 6am run entirely (see the
+    # Christian Scott case this caught). These four re-run just the zone/HR step — a
     # bounded ~15-30 requests against today's probable starters, not the two heavy
     # whole-league leaderboard pulls — to pick up newly-confirmed starters without
-    # hammering Baseball Savant's public endpoint five extra times a day.
-    - cron: '9 15 * * *'
-    - cron: '9 17 * * *'
-    - cron: '9 19 * * *'
-    - cron: '9 21 * * *'
-    - cron: '9 23 * * *'
+    # hammering Baseball Savant's public endpoint extra times a day.
+    - cron: '9 14 * * *'  # 9am CT
+    - cron: '9 17 * * *'  # 12pm CT
+    - cron: '9 20 * * *'  # 3pm CT
+    - cron: '9 23 * * *'  # 6pm CT
   workflow_dispatch: {}
 
 permissions:
@@ -49,23 +51,23 @@ jobs:
       - name: Run Statcast pitch-arsenal sync
         # Now also pulls career (2015-present) pitch-arsenal data — ~12 more cheap
         # whole-league requests (not per-pitcher), hence the added timeout below.
-        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '4 11 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-pitcher-statcast.mjs
         timeout-minutes: 10
 
       - name: Run Statcast hot-hitters sync (batter Barrel% / Hard-Hit% / xwOBA)
-        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '4 11 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-statcast-hot-hitters.mjs
         timeout-minutes: 5
 
       - name: Run fielding-defense sync (OAA / Arm Strength)
-        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '4 11 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-fielding-defense.mjs
         continue-on-error: true
         timeout-minutes: 3
 
       - name: Run situational splits sync (Home/Away, RISP, recent-form trend)
-        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '4 11 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-batter-splits.mjs
         continue-on-error: true
         timeout-minutes: 5
@@ -76,19 +78,19 @@ jobs:
       # cold — must run after both. Gated to the morning-only run like those two steps,
       # since the cold-batter population itself only refreshes once/day.
       - name: Run pitch-mix-faced trend sync for currently-cold batters
-        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '4 11 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-batter-pitch-mix-trend.mjs
         continue-on-error: true
         timeout-minutes: 10
 
       - name: Run park-factors sync
-        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '4 11 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-park-factors.mjs
         continue-on-error: true
         timeout-minutes: 3
 
       - name: Run bullpen-fatigue sync (recent reliever pitch counts / back-to-back arms)
-        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '4 11 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-bullpen-fatigue.mjs
         continue-on-error: true
         timeout-minutes: 5
@@ -114,7 +116,7 @@ jobs:
       # pitcher step above (a roster doesn't "fill in through the day" the way probable-
       # pitcher assignments do, so there's nothing to gain from re-running it).
       - name: Run per-pitch-type HR sync for today's active batters
-        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '4 11 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-batter-zone-hr.mjs
         continue-on-error: true
         timeout-minutes: 25
@@ -167,7 +169,7 @@ jobs:
       # the day can use same-run fresh data instead of whatever was left over from
       # yesterday's last commit.
       - name: Run Ballpark Pal weather/park-factor sync
-        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '4 11 * * *' || github.event_name == 'workflow_dispatch'
         env:
           BALLPARKPAL_API_KEY: ${{ secrets.BALLPARKPAL_API_KEY }}
         run: node scripts/sync-ballparkpal.mjs
@@ -198,7 +200,7 @@ jobs:
       # bumped from 20 to 25 minutes to give that extra ~1 request-per-unique-game
       # pass (cached across batters sharing a game) room to finish.
       - name: Run near-HR (warning-track fly-out) + confirmed-HR sync for tracked batters
-        if: github.event.schedule == '4 13 * * *' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '4 11 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/sync-near-hrs.mjs
         continue-on-error: true
         timeout-minutes: 25
