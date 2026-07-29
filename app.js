@@ -4850,11 +4850,18 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     if (zoneVals.every(v => v == null)) zoneVals = null;
   }
 
+  // Solid status-tile fills (not the old dark-tinted-bg + same-hue-text pairing,
+  // which validate_palette.js flags hard: COLD's text read as near-gray (chroma
+  // 0.09, under the 0.10 floor) and HOT-vs-WARM sat only 12.7 ΔE apart in OKLab --
+  // below the 15 floor even for normal color vision). Text color is picked per
+  // tile for real contrast rather than a fixed color: white on the two dark fills
+  // (COLD/HOT), the app's own near-black (#06060f) on the two light fills
+  // (OK/WARM) -- all four clear 4.5:1, computed, not eyeballed.
   function zoneColor(v) {
-    if (v >= 0.85) return { bg:'#4a1010', text:'#ff6b6b', label:'HOT' };
-    if (v >= 0.65) return { bg:'#3a2010', text:'#f4a261', label:'WARM' };
-    if (v >= 0.45) return { bg:'#1a2a10', text:'#90ee60', label:'OK' };
-    return { bg:'#0d1a0d', text:'#3a6a3a', label:'COLD' };
+    if (v >= 0.85) return { bg:'#d03b3b', text:'#ffffff', label:'HOT' };
+    if (v >= 0.65) return { bg:'#ec835a', text:'#06060f', label:'WARM' };
+    if (v >= 0.45) return { bg:'#fab219', text:'#06060f', label:'OK' };
+    return { bg:'#0e7a1c', text:'#ffffff', label:'COLD' };
   }
 
   const zoneLabels = ['In/High','High','Out/High','Inside','Middle','Away','In/Low','Low','Out/Low'];
@@ -4956,7 +4963,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       const titleParts = [];
       if (pv != null) titleParts.push(`Pitcher ${pTxt} opportunity`);
       if (bv != null) titleParts.push(`Batter ${bTxt} production`);
-      return `<div class="sz-cell sz-cell-combined" style="background:${c.bg};color:${c.text}" title="${zoneLabels[i]}: ${titleParts.join(', ')}"><span>P ${pTxt}</span><span>B ${bTxt}</span></div>`;
+      return `<div class="sz-cell sz-cell-combined" style="background:${c.bg};color:${c.text}" title="${zoneLabels[i]}: ${titleParts.join(', ')}"><span class="scc-row"><span class="scc-label">P</span><span class="scc-val">${pTxt}</span></span><span class="scc-row"><span class="scc-label">B</span><span class="scc-val">${bTxt}</span></span></div>`;
     }).join('');
   }
   const hasCombinedZones = !!(zoneVals || batterZoneVals);
@@ -6240,10 +6247,10 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         </div>
         <div>
           <div class="zone-legend">
-            <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#4a1010"></div><span style="color:#ff6b6b">Hot zone (85%+) — prime HR location</span></div>
-            <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#3a2010"></div><span style="color:#f4a261">Warm zone (65–84%) — extra-base threat</span></div>
-            <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#1a2a10"></div><span style="color:#90ee60">Neutral (45–64%) — contact likely</span></div>
-            <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#0d1a0d"></div><span style="color:#3a6a3a">Cold zone (&lt;45%) — favors the pitcher</span></div>
+            <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#d03b3b"></div><span style="color:#ff6b6b">Hot zone (85%+) — prime HR location</span></div>
+            <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#ec835a"></div><span style="color:#ffab7a">Warm zone (65–84%) — extra-base threat</span></div>
+            <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#fab219"></div><span style="color:#ffd166">Neutral (45–64%) — contact likely</span></div>
+            <div class="zone-leg-item"><div class="zone-leg-swatch" style="background:#0e7a1c"></div><span style="color:#4ade80">Cold zone (&lt;45%) — favors the pitcher</span></div>
           </div>
           <div class="zone-note" style="margin-top:10px;max-width:320px">
             Each cell shows both sides: P = quality of contact ${pitcherName.split(' ').pop()} ${usingExpected ? 'should be allowing (luck removed)' : 'has allowed'} (${fv(pitcherVuln,3)} overall, ${pHR9} HR/9); B = ${batterName.split(' ').pop()}'s own real per-zone production${hasRealBatterZones ? '' : ' (not synced yet)'}. Cell color follows whichever side is hotter — a zone that's dangerous for either player is a damage opportunity.
