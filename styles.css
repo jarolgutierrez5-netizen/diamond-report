@@ -4303,3 +4303,13 @@ select:focus-visible {
 .sz-cell-combined span {
   display: block;
 }
+
+/* Combined Pitcher Stats section (roadmap 5.4) -- SEASON/CAREER/L3 TREND toggle,
+   each mode swapping its own full table (not just a <tbody>, since the L3 Trend
+   columns differ structurally from the season/career columns). */
+.dr-pstats-mode-body {
+  display: none;
+}
+.dr-pstats-mode-body.active {
+  display: block;
+}

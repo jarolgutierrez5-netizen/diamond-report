@@ -5565,31 +5565,9 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   const hasCareerPitchMix = !!(pitcherProfile?.career?.byPitch?.length);
   const careerPitchRows = hasCareerPitchMix ? buildPitchRows(pitcherProfile.career.byPitch) : '';
 
-  const pitchEffToggleHTML = hasCareerPitchMix ? `
-      <div class="dr1042-split-toggle" role="tablist" aria-label="Season vs career toggle">
-        <button type="button" class="dr1042-split-btn active" data-mode="season">SEASON</button>
-        <button type="button" class="dr1042-split-btn" data-mode="career">CAREER</button>
-      </div>` : '';
-
-  const pitchEffectivenessTableHTML = hasRealPitchMix ? `<div class="dr1041-pitch-mix" style="margin-top:14px"${hasCareerPitchMix ? ' data-pitch-mix-toggle' : ''}>
-    <div class="dr1041-pitch-head">
-      <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">Real synced pitch-level data for ${pitcherName}${hasCareerPitchMix ? ' · toggle SEASON/CAREER (2015-present, blended across seasons)' : ''}.</div></div>
-      ${pitchEffToggleHTML}
-    </div>
-    <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage</th><th>AVG</th><th>wOBA</th><th>SLG</th><th>HR</th><th>Whiff%</th><th>Notes</th></tr></thead>
-      <tbody class="dr1042-mode-body active" data-mode="season">${pitchRows}</tbody>
-      ${hasCareerPitchMix ? `<tbody class="dr1042-mode-body" data-mode="career">${careerPitchRows}</tbody>` : ''}
-    </table></div>
-    ${gbLegendHTML}
-  </div>` : `<div class="dr1041-pitch-mix" style="margin-top:14px">
-    <div class="dr1041-pitch-head">
-      <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">No real pitch-level data available for ${pitcherName} yet — this section will populate once the daily Statcast sync has run.</div></div>
-    </div>
-  </div>`;
-
   // ── Rolling Pitch Metrics — last 3 starts vs season, per pitch type ──────
   // Answers "is this pitcher's stuff trending up or down right now," which the
-  // season-only Pitch Effectiveness table above can't — a real velocity dip or
+  // season-only Pitch Effectiveness table below can't — a real velocity dip or
   // whiff-rate drop over recent starts is a much more direct "how will today's
   // at-bats go" signal than a full-season average. Data from
   // data/pitcher-rolling.json (scripts/sync-pitcher-rolling.mjs). Green/orange
@@ -5598,41 +5576,81 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   // up or whiff rate up both mean tougher at-bats, so both color orange. Small
   // deltas below each metric's noise threshold render muted rather than forcing
   // a color call on what's probably just start-to-start variance.
-  const rollingMetricsHTML = (() => {
-    const shortPName = pitcherName.split(' ').pop();
-    if (!rollingProfile || !rollingProfile.byPitch?.length) return `
-    <div class="dr1041-pitch-mix" style="margin-top:14px">
-      <div class="dr1041-pitch-head">
-        <div><div class="dr1041-kicker">📈 ROLLING PITCH METRICS · NO REAL DATA YET</div><div class="dr1041-subtext">No last-3-start trend data available for ${shortPName} yet — this section will populate once the daily Statcast sync has run for today's probable starters.</div></div>
-      </div>
+  const hasRollingData = !!(rollingProfile && rollingProfile.byPitch?.length);
+  function rollingDeltaTag(delta, noiseThreshold) {
+    if (delta == null) return `<span style="color:var(--muted)">–</span>`;
+    // #f4a261 is the same "warning/tougher" orange the Strike Zone legend already
+    // uses for its warm-zone tier — var(--accent)/var(--accent2) are both blue in
+    // this theme, which would misread as neutral/informational rather than a
+    // caution, so this reuses the established orange instead of the accent var.
+    const color = delta <= -noiseThreshold ? 'var(--green)' : delta >= noiseThreshold ? '#f4a261' : 'var(--muted)';
+    const sign = delta > 0 ? '+' : '';
+    return `<span style="color:${color};font-weight:700">${sign}${delta.toFixed(1)}</span>`;
+  }
+
+  // ── Combined Pitcher Stats section (roadmap 5.4) — the season pitch-mix table,
+  // its career counterpart, and the rolling-last-3-starts table used to be three
+  // stacked boxes; they're now one box with a SEASON/CAREER/L3 TREND toggle (only
+  // whichever modes actually have real data get a tab), reusing the exact same
+  // .dr1042-split-btn + [data-pstats-toggle] delegated-click pattern as every other
+  // toggle in this modal. Each mode swaps its OWN full table (not just a <tbody>)
+  // since the L3 Trend columns are structurally different from the season/career
+  // columns.
+  const pstatsModes = [];
+  if (hasRealPitchMix) pstatsModes.push('season');
+  if (hasCareerPitchMix) pstatsModes.push('career');
+  if (hasRollingData) pstatsModes.push('rolling');
+  const pstatsModeLabel = m => m === 'season' ? 'SEASON' : m === 'career' ? 'CAREER' : 'L3 TREND';
+  const pstatsToggleHTML = pstatsModes.length > 1 ? `
+      <div class="dr1042-split-toggle" role="tablist" aria-label="Pitcher stats mode toggle">
+        ${pstatsModes.map((m, i) => `<button type="button" class="dr1042-split-btn${i === 0 ? ' active' : ''}" data-mode="${m}">${pstatsModeLabel(m)}</button>`).join('')}
+      </div>` : '';
+  function seasonOrCareerBody(mode, rows, isActive) {
+    return `<div class="dr-pstats-mode-body${isActive ? ' active' : ''}" data-mode="${mode}">
+      <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage</th><th>AVG</th><th>wOBA</th><th>SLG</th><th>HR</th><th>Whiff%</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table></div>
+      ${gbLegendHTML}
     </div>`;
-    function deltaTag(delta, noiseThreshold) {
-      if (delta == null) return `<span style="color:var(--muted)">–</span>`;
-      // #f4a261 is the same "warning/tougher" orange the Strike Zone legend already
-      // uses for its warm-zone tier — var(--accent)/var(--accent2) are both blue in
-      // this theme, which would misread as neutral/informational rather than a
-      // caution, so this reuses the established orange instead of the accent var.
-      const color = delta <= -noiseThreshold ? 'var(--green)' : delta >= noiseThreshold ? '#f4a261' : 'var(--muted)';
-      const sign = delta > 0 ? '+' : '';
-      return `<span style="color:${color};font-weight:700">${sign}${delta.toFixed(1)}</span>`;
-    }
+  }
+  function rollingBody(isActive) {
+    const shortPName = pitcherName.split(' ').pop();
     const rows = rollingProfile.byPitch.map(p => `
       <tr>
         <td><strong>${p.name}</strong></td>
         <td class="num">${p.seasonUsagePct != null ? p.seasonUsagePct.toFixed(0) + '%' : '–'} → ${p.rollingUsagePct != null ? p.rollingUsagePct.toFixed(0) + '%' : '–'}</td>
-        <td class="num">${p.seasonVelo != null ? p.seasonVelo.toFixed(1) : '–'} → ${p.rollingVelo != null ? p.rollingVelo.toFixed(1) : '–'} mph (${deltaTag(p.veloDelta, 0.5)})</td>
-        <td class="num">${p.seasonWhiffPct != null ? p.seasonWhiffPct.toFixed(0) + '%' : '–'} → ${p.rollingWhiffPct != null ? p.rollingWhiffPct.toFixed(0) + '%' : '–'} (${deltaTag(p.whiffDelta, 3)})</td>
+        <td class="num">${p.seasonVelo != null ? p.seasonVelo.toFixed(1) : '–'} → ${p.rollingVelo != null ? p.rollingVelo.toFixed(1) : '–'} mph (${rollingDeltaTag(p.veloDelta, 0.5)})</td>
+        <td class="num">${p.seasonWhiffPct != null ? p.seasonWhiffPct.toFixed(0) + '%' : '–'} → ${p.rollingWhiffPct != null ? p.rollingWhiffPct.toFixed(0) + '%' : '–'} (${rollingDeltaTag(p.whiffDelta, 3)})</td>
       </tr>`).join('');
     const lastDates = (rollingProfile.lastStartDates || []).join(', ');
-    return `
-    <div class="dr1041-pitch-mix" style="margin-top:14px">
-      <div class="dr1041-pitch-head">
-        <div><div class="dr1041-kicker">📈 ROLLING PITCH METRICS · LAST 3 STARTS VS SEASON</div><div class="dr1041-subtext">${shortPName}'s last 3 starts (${lastDates}) compared to his full-season baseline, per pitch — is his stuff trending up or down right now.</div></div>
-      </div>
+    return `<div class="dr-pstats-mode-body${isActive ? ' active' : ''}" data-mode="rolling">
       <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage (Season → L3)</th><th>Velo (Season → L3)</th><th>Whiff% (Season → L3)</th></tr></thead><tbody>${rows}</tbody></table></div>
-      <div class="zone-note" style="margin-top:8px">Green = trending easier for the batter (velocity or whiff rate down). Orange = trending tougher (velocity or whiff rate up). Muted = change too small to be a real signal.</div>
+      <div class="zone-note" style="margin-top:8px">${shortPName}'s last 3 starts${lastDates ? ` (${lastDates})` : ''} vs his full-season baseline. Green = trending easier for the batter (velocity or whiff rate down). Orange = trending tougher (velocity or whiff rate up). Muted = change too small to be a real signal.</div>
     </div>`;
-  })();
+  }
+  const pstatsBodiesHTML = pstatsModes.map((m, i) => {
+    const isActive = i === 0;
+    if (m === 'season') return seasonOrCareerBody('season', pitchRows, isActive);
+    if (m === 'career') return seasonOrCareerBody('career', careerPitchRows, isActive);
+    return rollingBody(isActive);
+  }).join('');
+  const pstatsSubtext = pstatsModes.length > 1
+    ? `Real synced pitch-level data for ${pitcherName} — toggle ${pstatsModes.map(pstatsModeLabel).join(' / ')}.`
+    : hasRealPitchMix
+      ? `Real synced pitch-level data for ${pitcherName}.`
+      : hasRollingData
+        ? `${pitcherName}'s last 3 starts compared to his full-season baseline, per pitch — season pitch-mix data not synced yet.`
+        : `No real pitch-level data available for ${pitcherName} yet — this section will populate once the daily Statcast sync has run.`;
+
+  const pitchEffectivenessTableHTML = pstatsModes.length > 0 ? `<div class="dr1041-pitch-mix" style="margin-top:14px" data-pstats-toggle>
+    <div class="dr1041-pitch-head">
+      <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">${pstatsSubtext}</div></div>
+      ${pstatsToggleHTML}
+    </div>
+    ${pstatsBodiesHTML}
+  </div>` : `<div class="dr1041-pitch-mix" style="margin-top:14px">
+    <div class="dr1041-pitch-head">
+      <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">No real pitch-level data available for ${pitcherName} yet — this section will populate once the daily Statcast sync has run.</div></div>
+    </div>
+  </div>`;
 
   const pitchMixDashboard = buildPitchMixAdvantageSection(pitchHrList);
   const bottomUsageChips = pitchMixDashboard.usageChips || '';
@@ -6149,7 +6167,6 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     <div class="dr1041-matchup-dashboard">
       ${pitchMixDashboard.html}
       ${pitchEffectivenessTableHTML}
-      ${rollingMetricsHTML}
 
       <!-- Strike Zone + Attack Zone by Pitch, side by side -->
       <div class="dr1041-zone-grid">
@@ -6286,6 +6303,21 @@ document.addEventListener('click', function(e) {
   box.querySelectorAll('.dr-combined-zone-body').forEach(body => {
     body.classList.toggle('active', body.dataset.pitcherMode === pMode && body.dataset.batterMode === bMode);
   });
+});
+
+// ── Combined Pitcher Stats toggle (SEASON / CAREER / L3 TREND) ─────────
+// Each mode swaps a whole [data-pstats-toggle] > .dr-pstats-mode-body (a full
+// table, not just a <tbody>) since the L3 Trend table's columns are structurally
+// different from the season/career table's -- same delegated-click pattern as
+// every other toggle in this modal, just its own data attribute/class names.
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest && e.target.closest('.dr1042-split-btn[data-mode]');
+  if (!btn) return;
+  const box = btn.closest('[data-pstats-toggle]');
+  if (!box) return;
+  const mode = btn.dataset.mode;
+  box.querySelectorAll(':scope > .dr1041-pitch-head .dr1042-split-btn').forEach(b => b.classList.toggle('active', b === btn));
+  box.querySelectorAll('.dr-pstats-mode-body').forEach(tb => tb.classList.toggle('active', tb.dataset.mode === mode));
 });
 
 // ── Interactive visualization tap-tooltip (roadmap 5.3) ────────────────
