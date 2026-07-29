@@ -129,6 +129,15 @@ jobs:
         continue-on-error: true
         timeout-minutes: 8
 
+      # Same bounded per-probable-starter scope as the two steps above, reusing the
+      # same pitcherSearchURL/todaysProbablePitcherIds — how a pitcher performs on the
+      # 1st/2nd/3rd-or-later pitch of an at-bat, bucketed from the same Statcast Search
+      # CSV those steps already pull.
+      - name: Run pitch-count performance sync (1st/2nd/3rd+ pitch of at-bat)
+        run: node scripts/sync-pitcher-count-performance.mjs
+        continue-on-error: true
+        timeout-minutes: 8
+
       # Exploratory signal, not yet wired into any live scoring path — see
       # scripts/sync-pitcher-2k-suppression.mjs's header for the full rationale.
       # Same bounded per-probable-starter scope as the two steps above, reusing
@@ -218,6 +227,7 @@ jobs:
           [ -f data/recent-hrs.json ] && git add data/recent-hrs.json
           [ -f data/batter-hr-spray.json ] && git add data/batter-hr-spray.json
           [ -f data/pitcher-rolling.json ] && git add data/pitcher-rolling.json
+          [ -f data/pitcher-count-performance.json ] && git add data/pitcher-count-performance.json
           [ -f data/pitcher-2k-suppression.json ] && git add data/pitcher-2k-suppression.json
           [ -f data/batter-situational-props.json ] && git add data/batter-situational-props.json
           [ -f data/prop-market-odds.json ] && git add data/prop-market-odds.json

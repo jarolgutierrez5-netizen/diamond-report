@@ -1722,6 +1722,15 @@ let pitcherRolling = {};
 let pitcherRollingLoaded = false;
 let pitcherRollingPromise = null;
 
+// Pitch-count performance (wOBA/whiff%/HR on the 1st vs 2nd vs 3rd+ pitch of an
+// at-bat) — loaded from data/pitcher-count-performance.json, written by
+// scripts/sync-pitcher-count-performance.mjs. Keyed by pitcher MLB ID (string).
+// Empty object = file not yet synced or this pitcher isn't a probable starter
+// today; the matchup modal falls back gracefully, same as pitcherRolling.
+let pitcherCountPerf = {};
+let pitcherCountPerfLoaded = false;
+let pitcherCountPerfPromise = null;
+
 // Per-pitcher Statcast store — loaded from data/pitcher-statcast.json,
 // written by scripts/sync-pitcher-statcast.mjs. Keyed by pitcher MLB ID.
 // Empty object = file not yet synced; front-end falls back gracefully.
@@ -4672,7 +4681,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
       fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}/stats?stats=statSplits&group=pitching&sitCodes=vl,vr&season=2026`).catch(() => null)
     ]);
     const todayCDT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadBatterHRSpray(), loadPitcherRolling(), loadSituationalProps(), loadPropMarketOdds(todayCDT), loadBullpenFatigue(), loadParkFactors(), getTodaySchedule('team').catch(() => [])]);
+    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadBatterHRSpray(), loadPitcherRolling(), loadPitcherCountPerf(), loadSituationalProps(), loadPropMarketOdds(todayCDT), loadBullpenFatigue(), loadParkFactors(), getTodaySchedule('team').catch(() => [])]);
     const todayGames = preloadResults[preloadResults.length - 1];
 
     const batterPerson = batterData.people?.[0] || {};
@@ -4690,6 +4699,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
     const recentHRList = recentHRs[String(batterId)] || null;
     const hrSprayList = batterHRSpray[String(batterId)] || null;
     const rollingProfile = pitcherRolling[String(pitcherId)] || null;
+    const countPerfProfile = pitcherCountPerf[String(pitcherId)] || null;
     const situationalProfile = situationalProps[String(batterId)] || null;
 
     // Bullpen fatigue is keyed to the PITCHER's own team (that's who the batter
@@ -4719,7 +4729,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
       }
     }
 
-    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, hrSprayList, todayParkAbbr, rollingProfile, situationalProfile, bullpenInfo, parkHrIndex });
+    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, hrSprayList, todayParkAbbr, rollingProfile, countPerfProfile, situationalProfile, bullpenInfo, parkHrIndex });
   } catch(e) {
     body.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
   }
@@ -4756,7 +4766,7 @@ window.toggleZoneSection = function(headerEl, contentId) {
   if (arrow) arrow.textContent = isOpen ? '▸' : '▾';
 };
 
-function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, hrSprayList=null, todayParkAbbr=null, rollingProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null }) {
+function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, hrSprayList=null, todayParkAbbr=null, rollingProfile=null, countPerfProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null }) {
   function fv(v, dec=3) {
     if (v==null||v===''||v==='---') return '–';
     const n = parseFloat(v); return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0(\.)/, '$1');
@@ -5652,6 +5662,34 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     </div>
   </div>`;
 
+  // ── Pitch-Count Performance (roadmap 5.4d) — how ${pitcherName} performs on the
+  // 1st vs 2nd vs 3rd-or-later pitch of an at-bat, from data/pitcher-count-
+  // performance.json (scripts/sync-pitcher-count-performance.mjs). Answers "does he
+  // get hit hard early in the count, or once he falls behind" -- a signal the
+  // season-only and pitch-type-only tables above can't isolate. wOBA is used (not
+  // AVG/SLG) since it's the same production metric already used everywhere else in
+  // this modal (Strike Zone grids, per-pitch-type table), so the color thresholds
+  // (gbCls) are directly comparable across sections.
+  const countPerfHTML = (() => {
+    if (!countPerfProfile || !countPerfProfile.byCount?.length) return '';
+    const bucketLabel = b => b === '1st' ? '1st Pitch' : b === '2nd' ? '2nd Pitch' : '3rd+ Pitch';
+    const rows = countPerfProfile.byCount.map(c => `
+      <tr>
+        <td><strong>${bucketLabel(c.bucket)}</strong></td>
+        <td class="num">${c.pitches}</td>
+        <td class="num${gbCls('woba', c.woba)}">${fmtDec(c.woba, 3)}</td>
+        <td class="num${gbCls('whiff', c.whiffPct)}">${c.whiffPct != null ? c.whiffPct.toFixed(0) + '%' : '–'}</td>
+        <td class="num">${c.homeRuns}</td>
+      </tr>`).join('');
+    return `<div class="dr1041-pitch-mix" style="margin-top:14px">
+    <div class="dr1041-pitch-head">
+      <div><div class="dr1041-kicker">🔢 ${pitcherName.split(' ').pop()}'S PITCH-COUNT PERFORMANCE</div><div class="dr1041-subtext">wOBA / whiff% / HR allowed on the 1st, 2nd, and 3rd-or-later pitch of an at-bat this season — does he get hit hard early, or once he falls behind?</div></div>
+    </div>
+    <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Count</th><th>Pitches</th><th>wOBA</th><th>Whiff%</th><th>HR</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${gbLegendHTML}
+  </div>`;
+  })();
+
   const pitchMixDashboard = buildPitchMixAdvantageSection(pitchHrList);
   const bottomUsageChips = pitchMixDashboard.usageChips || '';
 
@@ -6167,6 +6205,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     <div class="dr1041-matchup-dashboard">
       ${pitchMixDashboard.html}
       ${pitchEffectivenessTableHTML}
+      ${countPerfHTML}
 
       <!-- Strike Zone + Attack Zone by Pitch, side by side -->
       <div class="dr1041-zone-grid">
@@ -6661,6 +6700,25 @@ async function loadPitcherRolling(force=false) {
     return pitcherRolling;
   })();
   return pitcherRollingPromise;
+}
+
+// Same repo-fed-JSON-with-graceful-fallback pattern as loadPitcherRolling() above.
+async function loadPitcherCountPerf(force=false) {
+  if (pitcherCountPerfLoaded && !force) return pitcherCountPerf;
+  if (pitcherCountPerfPromise && !force) return pitcherCountPerfPromise;
+  pitcherCountPerfPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/pitcher-count-performance.json`);
+      const players = data.pitchers || {};
+      pitcherCountPerf = {};
+      Object.keys(players).forEach(id => { pitcherCountPerf[String(id)] = players[id]; });
+    } catch(e) {
+      pitcherCountPerf = {};
+    }
+    pitcherCountPerfLoaded = true;
+    return pitcherCountPerf;
+  })();
+  return pitcherCountPerfPromise;
 }
 // Overwrites the hardcoded park-factor estimates (declared above, near the venue
 // list) with real, auto-updating Baseball Savant HR-index values once synced —
