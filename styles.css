@@ -4856,6 +4856,97 @@ select:focus-visible {
 }
 .dr-inline-retry:hover { color: var(--accent2); }
 
+/* Standardized filter bar (roadmap 2.3) -- shared across every projection
+   board (HR Threats, K Props, the 5 Prop Intelligence boards). Desktop/
+   tablet: controls always visible in a wrapping row, toggle button hidden.
+   Mobile (<=700px): controls collapse behind the toggle button, which shows
+   the active-filter count so it's visible even while collapsed. */
+.dr-filter-bar {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.dr-filter-toggle-btn {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: Manrope, sans-serif;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--muted);
+  cursor: pointer;
+}
+.dr-filter-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--border);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+.dr-filter-count-badge.active {
+  background: var(--accent);
+  color: #fff;
+}
+.dr-filter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+.dr-filter-select-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.dr-filter-label {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.dr-filter-select {
+  background: #0e1728;
+  color: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  max-width: 160px;
+}
+.dr-filter-clear-all {
+  align-self: flex-end;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-family: Manrope, sans-serif;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dr-filter-clear-all:hover { background: var(--accent-soft); }
+@media (max-width: 700px) {
+  .dr-filter-toggle-btn { display: inline-flex; margin-bottom: 8px; }
+  .dr-filter-controls { display: none; }
+  .dr-filter-bar-open .dr-filter-controls { display: flex; }
+  .dr-filter-select { max-width: none; flex: 1 1 130px; }
+}
+
 /* Near HRs board card parity (roadmap "Motion and Interaction Design" --
    "make the player cards for the Near HR tab the same as the HR section").
    The card itself (.dr1027-hr-card / -head / -photo / -name / -meta / -score
