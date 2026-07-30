@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026073001">
+<link rel="stylesheet" href="styles.min.css?v=2026073002">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -119,7 +119,7 @@
 
 
 </head>
-<body>
+<body class="dr-hub-sport-all">
 <header class="header">
 <button id="dr-mobile-menu-btn" type="button" aria-label="Open menu" class="dr-mobile-menu-btn"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 5.5H17M3 10H17M3 14.5H17" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
 <!-- Desktop top nav (wide viewports only — mobile keeps the hamburger drawer
@@ -217,8 +217,22 @@
     <h1 class="dr-hub-title">News Central</h1>
     <div class="dr-hub-sub">Headlines across the sports we cover, plus model-driven projections graded in the open. Pick a sport to dive in.</div>
 
+    <!-- Multi-Sport News and Navigation (roadmap 3.x) -- these tabs filter the
+         feed below (headlines/news/scoreboard/leaders) by sport without leaving
+         the hub. "All Sports" (default) shows the combined feed; MLB shows the
+         full real analytics/news stack; NFL/NBA show real filtered ESPN news
+         (already fetched by loadHubNews) plus an honest "launching soon" notice
+         instead of fabricated leaderboards/projections. See setActiveSport in
+         the hub IIFE at the end of app.js. -->
+    <div class="dr-hub-sporttabs" id="dr-hub-sporttabs" role="tablist" aria-label="Filter by sport">
+      <button type="button" class="dr-hub-sporttab active" data-sport="all" role="tab" aria-selected="true">All Sports</button>
+      <button type="button" class="dr-hub-sporttab" data-sport="MLB" role="tab" aria-selected="false">MLB</button>
+      <button type="button" class="dr-hub-sporttab" data-sport="NFL" role="tab" aria-selected="false">NFL</button>
+      <button type="button" class="dr-hub-sporttab" data-sport="NBA" role="tab" aria-selected="false">NBA</button>
+    </div>
+
     <div class="dr-hub-sports">
-      <button type="button" class="dr-hub-sport-card live" id="dr-hub-baseball-card">
+      <button type="button" class="dr-hub-sport-card live current" id="dr-hub-baseball-card" data-sport="MLB">
         <span class="dr-hub-sport-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M5.6 4.6c1.4 1.5 1.9 3.4 1.9 5.4s-.5 3.9-1.9 5.4M14.4 4.6c-1.4 1.5-1.9 3.4-1.9 5.4s.5 3.9 1.9 5.4" stroke-width="1.15"/></svg></span>
         <span class="dr-hub-sport-text">
           <span class="dr-hub-sport-title">MLB</span>
@@ -226,22 +240,26 @@
           <span class="dr-hub-sport-badge">● Live — Enter Projections</span>
         </span>
       </button>
-      <div class="dr-hub-sport-card soon" aria-disabled="true">
+      <button type="button" class="dr-hub-sport-card soon" id="dr-hub-nfl-card" data-sport="NFL">
         <span class="dr-hub-sport-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 10c2-4.3 5.7-6.5 7.2-6.5s5.2 2.2 7.2 6.5c-2 4.3-5.7 6.5-7.2 6.5s-5.2-2.2-7.2-6.5z"/><path d="M5.2 10h9.6" stroke-width="1.1"/><path d="M8 8.7v2.6M10 8.4v3.2M12 8.7v2.6" stroke-width="1"/></svg></span>
         <span class="dr-hub-sport-text">
           <span class="dr-hub-sport-title">NFL</span>
           <span class="dr-hub-sport-desc">NFL projections launching for the 2026 season.</span>
           <span class="dr-hub-sport-badge">Coming September</span>
         </span>
-      </div>
-      <div class="dr-hub-sport-card soon" aria-disabled="true">
+      </button>
+      <button type="button" class="dr-hub-sport-card soon" id="dr-hub-nba-card" data-sport="NBA">
         <span class="dr-hub-sport-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14" stroke-width="1.15"/><path d="M4.9 5.1c1.9 1.7 3 3 3 4.9s-1.1 3.2-3 4.9M15.1 5.1c-1.9 1.7-3 3-3 4.9s1.1 3.2 3 4.9" stroke-width="1.1"/></svg></span>
         <span class="dr-hub-sport-text">
           <span class="dr-hub-sport-title">NBA</span>
           <span class="dr-hub-sport-desc">NBA projections in the works.</span>
           <span class="dr-hub-sport-badge">Coming Soon</span>
         </span>
-      </div>
+      </button>
+    </div>
+
+    <div class="dr-hub-sport-comingsoon" id="dr-hub-sport-comingsoon" style="display:none">
+      <p class="dr-hub-sport-comingsoon-text" id="dr-hub-sport-comingsoon-text"></p>
     </div>
 
     <!-- Diamond Report Headlines (roadmap 3.2) — proprietary, data-driven editorial
@@ -265,7 +283,7 @@
     <div class="dr-hub-layout">
       <div class="dr-hub-main">
         <div class="dr-hub-news" id="dr-hub-news" style="display:none">
-          <div class="dr-hub-section-head"><span class="dr-hub-section-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><path d="M6 7.5h8M6 10.5h8M6 13.5h5"/></svg></span><h2>Around MLB</h2><span class="dr-hub-section-line"></span></div>
+          <div class="dr-hub-section-head"><span class="dr-hub-section-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><path d="M6 7.5h8M6 10.5h8M6 13.5h5"/></svg></span><h2 id="dr-hub-news-heading">Around the Leagues</h2><span class="dr-hub-section-line"></span></div>
           <div class="dr-hub-news-grid" id="dr-hub-news-grid"></div>
           <button type="button" id="dr-hub-news-more" class="dr-hub-news-more" style="display:none">View More</button>
         </div>
@@ -911,7 +929,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026073001" defer></script>
+<script src="app.min.js?v=2026073002" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
