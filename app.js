@@ -3169,6 +3169,17 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
 
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
 
+    // Real batter handedness (R/L/S) for the RHB/LHB split in the Matchup section --
+    // MLB Stats API's bulk /people?personIds= endpoint returns full person records
+    // (batSide included) for the whole lineup in one request, the same real
+    // person-record shape as the single-batter /people/{id} calls used elsewhere in
+    // this file, just batched so a 9-batter lineup doesn't cost 9 extra round trips.
+    // Fired now so it resolves in parallel with the enrichment work below.
+    const batterIdsForHand = batters.slice(0,9).map(b => b.person?.id).filter(Boolean);
+    const batSidePromise = batterIdsForHand.length
+      ? fetchJSON(`https://diamondreport.app/api/v1/people?personIds=${batterIdsForHand.join(',')}`).catch(() => null)
+      : Promise.resolve(null);
+
     // Fast path: use stats already in the boxscore, skip per-batter API calls.
     // K Props lineup expand uses this — saves ~18 API calls and renders instantly.
     let enriched;
@@ -3201,10 +3212,19 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
       }));
     }
 
+    const peopleData = await batSidePromise;
+    const batSideById = {};
+    (peopleData?.people || []).forEach(p => { if (p?.id) batSideById[p.id] = handCode(p, 'batSide'); });
+
     const lineup = batters.slice(0,9).map((b, i) => ({
       name: b.person?.fullName || '–',
       id: b.person?.id,
       pos: b.position?.abbreviation || '–',
+      // Real MLB-reported batting side ('R'/'L'/'S') from the bulk /people fetch
+      // above, or null if that call failed or this batter simply isn't in the
+      // response -- never guessed, and handCode's own '–' sentinel is normalized
+      // to null here so downstream RHB/LHB grouping can cleanly skip unknowns.
+      hand: (batSideById[b.person?.id] && batSideById[b.person?.id] !== '–') ? batSideById[b.person?.id] : null,
       stats: enriched[i].seasonStats,
       last10HR: enriched[i].last10HR,
       todayHR: enriched[i].todayHR,

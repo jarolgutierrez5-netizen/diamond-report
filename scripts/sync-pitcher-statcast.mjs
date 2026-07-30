@@ -129,6 +129,13 @@ function rowToPitchStat(r) {
     // candidate names; barrelPct stays null if none of them exist in the response,
     // same graceful-degradation behavior as every other field here.
     barrelPct: num(pick(r, ['barrel_batted_rate', 'brl_percent', 'barrel_percent', 'barrels_per_bbe_percent'])),
+    // Same best-effort-candidate-names caveat as barrelPct above — the pitch-arsenal
+    // leaderboard's exact exit-velocity column name isn't confirmed live (this
+    // environment can't reach baseballsavant.mlb.com); avgEV stays null, same as every
+    // other field here, if none of these candidates are present rather than guessing.
+    // app.js's ingestBatterPitchTypeSeasonPayload already reads this exact field name
+    // off data/batter-pitch-type-season.json (row.avgEV), so no read-side change needed.
+    avgEV: num(pick(r, ['exit_velocity_avg', 'avg_hit_speed', 'avg_exit_velocity', 'launch_speed_avg'])),
     // Same caveat as above — genuinely unknown until sync-pitcher-zone-hr.mjs (which
     // runs after this script) fills in real per-pitch-type HR counts for today's
     // probable starters from Statcast Search. Left null here on purpose rather than 0.
@@ -195,7 +202,7 @@ async function buildPitcherCareerStatcast() {
       if (!buckets[id][stat.name]) buckets[id][stat.name] = { pitchesSum: 0, sums: {}, weights: {} };
       const bucket = buckets[id][stat.name];
       bucket.pitchesSum += pitches;
-      ['avg', 'slg', 'xslg', 'xba', 'woba', 'xwoba', 'whiffPct', 'hardHitPct', 'barrelPct'].forEach(k => {
+      ['avg', 'slg', 'xslg', 'xba', 'woba', 'xwoba', 'whiffPct', 'hardHitPct', 'barrelPct', 'avgEV'].forEach(k => {
         if (stat[k] != null) {
           bucket.sums[k] = (bucket.sums[k] || 0) + (stat[k] * pitches);
           bucket.weights[k] = (bucket.weights[k] || 0) + pitches;
@@ -211,7 +218,7 @@ async function buildPitcherCareerStatcast() {
   for (const [id, byName] of Object.entries(buckets)) {
     const byPitch = Object.entries(byName).map(([name, bucket]) => {
       const stat = { name, pitches: bucket.pitchesSum, usagePct: null, homeRuns: null };
-      ['avg', 'slg', 'xslg', 'xba', 'woba', 'xwoba', 'whiffPct', 'hardHitPct', 'barrelPct'].forEach(k => {
+      ['avg', 'slg', 'xslg', 'xba', 'woba', 'xwoba', 'whiffPct', 'hardHitPct', 'barrelPct', 'avgEV'].forEach(k => {
         stat[k] = bucket.weights[k] ? bucket.sums[k] / bucket.weights[k] : null;
       });
       return stat;

@@ -40,6 +40,26 @@ const SEASON = new Date().getFullYear();
 const MLB_API = 'https://statsapi.mlb.com/api/v1';
 const SEARCH_BASE = 'https://baseballsavant.mlb.com/statcast_search/csv';
 
+// Events that end a plate appearance with the batter making an out, mapped to how
+// many outs the play recorded (double/triple plays record 2/3 off one row). Used
+// only to reconstruct innings pitched BY BATTER HAND for hr9ByHand below -- the
+// Statcast Search CSV has no innings-pitched column at all, split or otherwise, so
+// this is the standard reconstruction public Statcast tooling uses: an out is an
+// out regardless of what stat it's feeding. Any event string not in this map
+// (reached base, or a non-PA-ending row) is simply not counted, rather than guessed.
+const OUT_EVENTS = {
+  strikeout: 1, strikeout_double_play: 2, field_out: 1, force_out: 1,
+  grounded_into_double_play: 2, double_play: 2, triple_play: 3,
+  fielders_choice_out: 1, sac_fly: 1, sac_fly_double_play: 2,
+  sac_bunt: 1, sac_bunt_double_play: 2, batter_interference: 1,
+};
+// Small-sample HR/9 is wildly noisy (one homer allowed in 2 IP reads as an
+// absurd 40+ HR/9) -- same sample-floor discipline as MIN_TWO_STRIKE_BIP in
+// sync-pitcher-2k-suppression.mjs. Below this many innings against a given
+// hand, the real hr/ip counts are still reported so a consumer can show
+// "small sample" instead of nothing, but the hr9 rate itself stays null.
+const MIN_IP_FOR_HR9 = 8;
+
 function cdtDateString(d) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 }
@@ -157,6 +177,8 @@ async function buildPitcherZoneHR(pitcherId, name) {
   const zoneAggByHand = { R: {}, L: {} }; // batter stand -> zone -> { wobaSum, denomSum }
   const pitchZoneAggByHand = { R: {}, L: {} }; // batter stand -> pitchName -> zone -> { wobaSum, denomSum, count }
   const pitchTotalCountByHand = { R: {}, L: {} }; // batter stand -> pitchName -> total pitches (usage% denominator for that hand)
+  const hrByHand = { R: 0, L: 0 }; // batter stand -> HRs allowed to that hand
+  const outsByHand = { R: 0, L: 0 }; // batter stand -> outs recorded against that hand (see OUT_EVENTS) -- IP-by-hand = this / 3
   for (const raw of rows) {
     const p = extractPitchRow(raw);
     if (!p) continue;
@@ -164,7 +186,12 @@ async function buildPitcherZoneHR(pitcherId, name) {
     if (p.isHomeRun) hrByPitch[p.pitchName]++;
     pitchTotalCount[p.pitchName] = (pitchTotalCount[p.pitchName] || 0) + 1;
     const stand = hasHandSplit && (raw.stand === 'R' || raw.stand === 'L') ? raw.stand : null;
-    if (stand) pitchTotalCountByHand[stand][p.pitchName] = (pitchTotalCountByHand[stand][p.pitchName] || 0) + 1;
+    if (stand) {
+      pitchTotalCountByHand[stand][p.pitchName] = (pitchTotalCountByHand[stand][p.pitchName] || 0) + 1;
+      if (p.isHomeRun) hrByHand[stand]++;
+      const outs = OUT_EVENTS[raw.events];
+      if (outs) outsByHand[stand] += outs;
+    }
     if (p.zone && p.wobaValue != null && p.wobaDenom != null) {
       if (!zoneAgg[p.zone]) zoneAgg[p.zone] = { wobaSum: 0, denomSum: 0 };
       zoneAgg[p.zone].wobaSum += p.wobaValue;
@@ -268,10 +295,30 @@ async function buildPitcherZoneHR(pitcherId, name) {
     if (!Object.keys(byPitchZoneByHand.R).length && !Object.keys(byPitchZoneByHand.L).length) byPitchZoneByHand = null;
   }
 
+  // hr9ByHand: real HR/9 allowed vs RHB and vs LHB, reconstructed from outs-by-hand
+  // (see OUT_EVENTS) rather than any published split-IP stat -- Statcast Search has
+  // no innings-pitched column, split or otherwise. hr/ip are always real counts;
+  // hr9 itself is only populated once IP-by-hand clears MIN_IP_FOR_HR9, to avoid a
+  // single home run in a tiny sample reading as a wild, misleading rate.
+  let hr9ByHand = null;
+  if (hasHandSplit) {
+    hr9ByHand = {};
+    for (const hand of ['R', 'L']) {
+      const ip = outsByHand[hand] / 3;
+      hr9ByHand[hand] = {
+        hr: hrByHand[hand],
+        ip: +ip.toFixed(1),
+        hr9: ip >= MIN_IP_FOR_HR9 ? +((hrByHand[hand] * 9) / ip).toFixed(2) : null,
+      };
+    }
+    if (!hr9ByHand.R.ip && !hr9ByHand.L.ip) hr9ByHand = null;
+  }
+
   return {
     hrByPitch,
     byZone: Object.keys(byZone).length ? byZone : null,
     byZoneByHand,
+    hr9ByHand,
     hrByZone: Object.keys(hrByZone).length ? hrByZone : null,
     hrLocations: hasPitchCoords ? hrLocations : null,
     byPitchZone,
@@ -326,6 +373,10 @@ async function main() {
         pitcherStatcast.pitchers[id] = pitcherStatcast.pitchers[id] || { totalPitches: 0, byPitch: [] };
         pitcherStatcast.pitchers[id].byZoneByHand = result.byZoneByHand;
       }
+      if (result.hr9ByHand) {
+        pitcherStatcast.pitchers[id] = pitcherStatcast.pitchers[id] || { totalPitches: 0, byPitch: [] };
+        pitcherStatcast.pitchers[id].hr9ByHand = result.hr9ByHand;
+      }
       if (result.hrByZone) {
         pitcherStatcast.pitchers[id] = pitcherStatcast.pitchers[id] || { totalPitches: 0, byPitch: [] };
         pitcherStatcast.pitchers[id].hrByZone = result.hrByZone;
@@ -357,4 +408,4 @@ if (isMain) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { pitcherSearchURL, extractPitchRow, buildPitcherZoneHR, todaysProbablePitcherIds, main };
+export { pitcherSearchURL, extractPitchRow, buildPitcherZoneHR, todaysProbablePitcherIds, main, OUT_EVENTS, MIN_IP_FOR_HR9 };
