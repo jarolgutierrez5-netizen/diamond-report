@@ -952,10 +952,18 @@ let statcastPowerCache = null;
 // needs the individual per-pitch-type AVG/SLG/xSLG rows, not a single pitches-weighted
 // blend across all of them.
 let batterPitchTypeRawCache = null;
+// Real per-zone wOBA production (sync-batter-zone-hr.mjs's byZone/byZoneByHand) --
+// same STATCAST_PATH file as the xSLG/hard-hit% aggregate above, just a different field
+// on the same per-player record, so this costs no second file read. Feeds
+// zoneMatchupMultiplier below (client-mirrored, see app.js's own copy of this function).
+let batterZoneCache = null;
+let batterZoneByHandCache = null;
 async function loadStatcastPowerIndex() {
   if (statcastPowerCache) return statcastPowerCache;
   statcastPowerCache = new Map();
   batterPitchTypeRawCache = new Map();
+  batterZoneCache = new Map();
+  batterZoneByHandCache = new Map();
   try {
     const raw = await readFile(STATCAST_PATH, 'utf8');
     const data = JSON.parse(raw);
@@ -965,6 +973,8 @@ async function loadStatcastPowerIndex() {
       if (Array.isArray(player?.seasonPitchTypeStats) && player.seasonPitchTypeStats.length) {
         batterPitchTypeRawCache.set(String(id), player.seasonPitchTypeStats);
       }
+      if (player?.byZone) batterZoneCache.set(String(id), player.byZone);
+      if (player?.byZoneByHand) batterZoneByHandCache.set(String(id), player.byZoneByHand);
     }
   } catch (e) {
     console.warn('Statcast power index: failed to load, HR scoring will use box-score rates only:', e.message);
@@ -1012,10 +1022,17 @@ let pitcherStatcastPowerCache = null;
 // Raw byPitch arrays (name + usagePct per pitch type thrown) -- same "cache alongside the
 // aggregate, no second read" reasoning as batterPitchTypeRawCache above.
 let pitcherByPitchRawCache = null;
+// Real per-zone wOBA-against (sync-pitcher-zone-hr.mjs's byZone/byZoneByHand) -- same
+// PITCHER_STATCAST_PATH file as the xSLG/hard-hit%-allowed aggregate above, feeds
+// zoneMatchupMultiplier below, mirroring batterZoneCache/batterZoneByHandCache.
+let pitcherZoneCache = null;
+let pitcherZoneByHandCache = null;
 async function loadPitcherStatcastPowerIndex() {
   if (pitcherStatcastPowerCache) return pitcherStatcastPowerCache;
   pitcherStatcastPowerCache = new Map();
   pitcherByPitchRawCache = new Map();
+  pitcherZoneCache = new Map();
+  pitcherZoneByHandCache = new Map();
   try {
     const raw = await readFile(PITCHER_STATCAST_PATH, 'utf8');
     const data = JSON.parse(raw);
@@ -1025,6 +1042,8 @@ async function loadPitcherStatcastPowerIndex() {
       if (Array.isArray(pitcher?.byPitch) && pitcher.byPitch.length) {
         pitcherByPitchRawCache.set(String(id), pitcher.byPitch);
       }
+      if (pitcher?.byZone) pitcherZoneCache.set(String(id), pitcher.byZone);
+      if (pitcher?.byZoneByHand) pitcherZoneByHandCache.set(String(id), pitcher.byZoneByHand);
     }
   } catch (e) {
     console.warn('Pitcher Statcast power index: failed to load, HR scoring will use box-score rates only:', e.message);
@@ -1147,6 +1166,33 @@ function battedBallPowerIndex(statcast) {
   if (!ratios.length) return 1;
   const avgRatio = ratios.reduce((a, b) => a + b, 0) / ratios.length;
   return clamp(avgRatio, 0.7, 1.5);
+}
+
+// Zone-matchup correction -- exact port of app.js's own copy of this function (kept as
+// two independent copies, same reasoning as battedBallPowerIndex above: one client, one
+// server, no shared module between them). Real per-zone wOBA overlap between a batter's
+// own hot zones (batterZoneCache/batterZoneByHandCache) and a pitcher's own weak zones
+// (pitcherZoneCache/pitcherZoneByHandCache), both from the same real Statcast zone sync
+// already driving the live matchup modal's Strike Zone Matchup grid. Same ratio-to-
+// league-average + clamp shape as battedBallPowerIndex, averaged over whichever of the 9
+// real zones both sides have data for. Neutral (1x) below MIN_ZONE_OVERLAP shared zones.
+const ZONE_LEAGUE_AVG_WOBA = 0.320; // matches the /0.640 normalization the Strike Zone
+                                     // Matchup grid already uses (0.320/0.640 = 0.5 = "OK")
+const MIN_ZONE_OVERLAP = 4; // of 9 real Statcast zones
+function zoneMatchupMultiplier(batterZoneMap, pitcherZoneMap) {
+  if (!batterZoneMap || !pitcherZoneMap) return 1;
+  const ratios = [];
+  for (let z = 1; z <= 9; z++) {
+    const bCell = batterZoneMap[z], pCell = pitcherZoneMap[z];
+    if (!bCell || !pCell) continue;
+    const bVal = bCell.xwobaContact ?? bCell.woba ?? bCell.xwoba ?? bCell.wobaAgainst;
+    const pVal = pCell.xwobaContact ?? pCell.wobaAgainst ?? pCell.xwoba ?? pCell.woba;
+    if (bVal == null || pVal == null) continue;
+    ratios.push(((bVal + pVal) / 2) / ZONE_LEAGUE_AVG_WOBA);
+  }
+  if (ratios.length < MIN_ZONE_OVERLAP) return 1;
+  const avgRatio = ratios.reduce((a, b) => a + b, 0) / ratios.length;
+  return clamp(avgRatio, 0.85, 1.15);
 }
 
 // Wind is one of the single biggest real per-game HR factors -- a strong wind blowing
@@ -1669,7 +1715,11 @@ function scoreForMarket(marketKey, row) {
     // pitching, so they're applied once to the combined rate rather than to the
     // batter/pitcher components separately -- applying either twice would double-count
     // the same physical effect.
-    const hrPerPA = (batterRate * 0.6 + pitcherRate * 0.4) * shrinkMult(row.windFactor || 1) * shrinkMult(row.temperatureFactor || 1);
+    // Zone-matchup correction (see zoneMatchupMultiplier's header comment) -- pre-computed
+    // in buildBatterPool (row.zoneMatchupMult) from the real zone maps already resolved
+    // there, same "compute once outside scoreForMarket, apply with shrinkMult here" shape
+    // as fatigueFactor/homeRoadFactor/windFactor/temperatureFactor above.
+    const hrPerPA = (batterRate * 0.6 + pitcherRate * 0.4) * shrinkMult(row.windFactor || 1) * shrinkMult(row.temperatureFactor || 1) * shrinkMult(row.zoneMatchupMult || 1);
     return simulateHRGameOdds(hrPerPA, row.battingOrder);
   }
   if (marketKey === 'sb') return simulateSBOdds(row);
@@ -2071,6 +2121,11 @@ async function buildBatterPool(games, season) {
       const pitcherStat = await seasonPitchingStat(pitcher.id, season);
       const pitcherStatcast = pitcherStatcastIndex.get(String(pitcher.id)) || null;
       const pitcherHand = pitcherHandCache.get(pitcher.id) || 'R';
+      // Pitcher's real weak-zone map for zoneMatchupMultiplier below -- hand-unconditioned
+      // (pitcherZoneByHandCache is keyed by the OPPOSING BATTER's stand, which this pool
+      // doesn't fetch -- see the per-batter comment below for why not), computed once per
+      // pitcher since it's the same for every batter facing him.
+      const pitcherZoneMapForHR = pitcherZoneCache.get(String(pitcher.id)) || null;
       const teamAbbr = g.teams[side].team.abbreviation;
       const oppAbbr = g.teams[opp].team.abbreviation;
       const batters = await battersForSide(g, side);
@@ -2161,6 +2216,14 @@ async function buildBatterPool(games, season) {
         // pitcherHand/seasonAvg/seasonSlg/split already resolved above for the platoon
         // blend, so this is a zero-extra-fetch snapshot, same as platoonAB/platoonOps.
         const matchupEdge = computeMatchupEdgeScore(pid, pitcher.id, pitcherHand, seasonAvg, seasonSlg, split);
+        // Zone-matchup correction consumed by scoreForMarket('hr') -- batter side
+        // conditioned on this specific pitcher's throwing hand (batterZoneByHandCache is
+        // keyed by the opposing pitcher's hand, and pitcherHand is already resolved above
+        // for the platoon blend, so this is zero extra fetches); pitcher side left
+        // hand-unconditioned since this batter's own batSide isn't fetched anywhere in
+        // this pool (see pitcherZoneMapForHR's comment above).
+        const batterZoneMapForHR = (batterZoneByHandCache.get(String(pid))?.[pitcherHand]) || batterZoneCache.get(String(pid)) || null;
+        const zoneMatchupMult = zoneMatchupMultiplier(batterZoneMapForHR, pitcherZoneMapForHR);
         // Snapshot of the live client's own HR score (see computeLiveHRScore's header
         // comment) -- only meaningful for the 'hr' market; harmless (just unused) for
         // any other market this same pool feeds.
@@ -2182,7 +2245,7 @@ async function buildBatterPool(games, season) {
           fatigueFactor: battingTeamFatigue,
           pitcherStatcast, homeRoadFactor,
           pitcher2kSuppressionDelta: pitcher2kSuppressionIndex.get(String(pitcher.id)) ?? null,
-          liveScore, platoonAB, platoonOps, platoonFavorable, matchupEdge,
+          liveScore, platoonAB, platoonOps, platoonFavorable, matchupEdge, zoneMatchupMult,
           // Same per-game weather multiplier computeLiveHRScore above already used —
           // stored on the row too so buildBatterModel's own HR rate (used by
           // simulatePropOdds for hits/tb/rbis/hrrbi grading, not just the 'hr' market)
@@ -2525,7 +2588,7 @@ export {
   captureHRThreatToday, gradeHRThreatPending,
   simulatePropOdds, simulateSBOdds, simulateHRGameOdds, scoreForMarket,
   fetchOddsLookup, normalizeName,
-  loadStatcastPowerIndex, loadPitcherStatcastPowerIndex, loadPitcher2kSuppressionIndex, battedBallPowerIndex,
+  loadStatcastPowerIndex, loadPitcherStatcastPowerIndex, loadPitcher2kSuppressionIndex, battedBallPowerIndex, zoneMatchupMultiplier,
   computeMatchupEdgeScore, battingSplitVsHand,
   parseInningsPitched, pitcherBattersFacedPer9,
   windPowerFactor, temperaturePowerFactor, isDayGameCT, doubleheaderFatigueFactor, teamRestFatigueFactor,
