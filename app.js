@@ -2777,7 +2777,7 @@ async function renderPitcherSupportSection(meta, wrap) {
 // K/IP from the league-average fallback to the real opponent K rate. Bounded
 // to a few tries over a few seconds rather than polling forever if a game's
 // lineup genuinely never posts.
-function pollForLineupThenRefreshMatchup(pid, meta, matchupSubEl, performanceWrap) {
+function pollForLineupThenRefreshMatchup(pid, meta, matchupSubEl, performanceWrap, matchupTableWrap) {
   const cacheKey = `${meta.gamePk}-${meta.side}`;
   let tries = 0;
   (function tick() {
@@ -2792,11 +2792,263 @@ function pollForLineupThenRefreshMatchup(pid, meta, matchupSubEl, performanceWra
         matchupSubEl.innerHTML = `Today's ${drEscAttr(meta.oppAbbr || 'opposing')} lineup — real avg OPS ${avgOps.toFixed(3).replace(/^0/, '')} (<span style="color:${color};font-weight:700">${tier}</span>)`;
       }
       if (performanceWrap && document.body.contains(performanceWrap)) renderPitcherPerformanceSection(pid, meta, performanceWrap);
+      if (matchupTableWrap && document.body.contains(matchupTableWrap)) renderPitcherMatchupTable(pid, meta, matchupTableWrap);
       return;
     }
     if (tries < 6) setTimeout(tick, 500);
   })();
 }
+
+// heatBG treats a HIGH value as bad (red) -- correct for pitcher rate stats like
+// FIP/WHIP, but backwards for a stat where high is good (Whiff%). Negating both the
+// value and the two thresholds flips which side reads as green without touching
+// heatBG's own blending math.
+function heatBGInverted(val, goodAbove, badBelow) {
+  return heatBG(val == null ? null : -val, -goodAbove, -badBelow);
+}
+
+// Per-pid UI state for the Matchup section's sortable/filterable batter table
+// (pitch-type filter chip, RHB/LHB/All hand toggle, sort column/direction, row
+// density) -- lets interacting with the controls re-render just the table without
+// losing the user's chosen view when the section refreshes for other reasons
+// (e.g. the lineup landing late).
+const pitcherMatchupTableState = {};
+function _muTableState(pid) {
+  if (!pitcherMatchupTableState[pid]) pitcherMatchupTableState[pid] = { pitch: 'all', hand: 'all', sortKey: 'woba', sortDir: 'desc', density: 'comfortable' };
+  return pitcherMatchupTableState[pid];
+}
+
+const MU_TABLE_COLUMNS = [
+  { key: 'pitches', label: 'Pitches Seen', dec: 0 },
+  { key: 'avg',     label: 'AVG',   dec: 3, pct0: true },
+  { key: 'iso',     label: 'ISO',   dec: 3, pct0: true },
+  { key: 'slg',     label: 'SLG',   dec: 3, pct0: true },
+  { key: 'woba',    label: 'wOBA',  dec: 3, pct0: true },
+  { key: 'avgEV',   label: 'Avg EV', dec: 1, suffix: ' mph' },
+  { key: 'whiffPct', label: 'Whiff%', dec: 1, suffix: '%' },
+  { key: 'hr',      label: 'HR', dec: 0 },
+];
+
+// Real per-batter production against either every pitch this pitcher throws
+// (pitchKey === 'all', pitches-weighted across the batter's own real per-pitch-type
+// rows) or one specific pitch type -- sourced entirely from
+// data/batter-pitch-type-season.json (batterPitchTypeSeason), the same real store
+// the Batter vs Pitcher modal's Pitch Mix Advantage table already reads. Returns
+// null fields (never a fabricated number) when a batter simply isn't in that
+// dataset yet or has no rows for the selected pitch type.
+function batterStatsForPitchFilter(batterId, pitchKey) {
+  const rows = batterPitchTypeSeason[String(batterId)];
+  if (!rows) return { pitches: null, avg: null, iso: null, slg: null, woba: null, avgEV: null, whiffPct: null };
+  if (pitchKey !== 'all') {
+    const r = rows[pitchKey];
+    if (!r) return { pitches: null, avg: null, iso: null, slg: null, woba: null, avgEV: null, whiffPct: null };
+    return {
+      pitches: r.pitches || null,
+      avg: r.avg, iso: (r.slg != null && r.avg != null) ? +(r.slg - r.avg).toFixed(3) : null,
+      slg: r.slg, woba: r.woba, avgEV: r.avgEV, whiffPct: r.whiffPct,
+    };
+  }
+  // 'all' -- aggregate every pitch-type row for this batter, weighted by real
+  // pitches seen (a batter who's faced 400 fastballs and 20 sliders shouldn't have
+  // those two rates count equally), with AVG recomputed from real hits/atBats sums
+  // rather than averaged as a rate (a true weighted average of an average).
+  const entries = Object.values(rows);
+  if (!entries.length) return { pitches: null, avg: null, iso: null, slg: null, woba: null, avgEV: null, whiffPct: null };
+  let pitches = 0, atBats = 0, hits = 0;
+  let slgSum = 0, slgW = 0, wobaSum = 0, wobaW = 0, evSum = 0, evW = 0, whiffSum = 0, whiffW = 0;
+  entries.forEach(r => {
+    const w = r.pitches || 0;
+    pitches += w;
+    atBats += r.atBats || 0;
+    hits += r.hits || 0;
+    if (r.slg != null) { slgSum += r.slg * w; slgW += w; }
+    if (r.woba != null) { wobaSum += r.woba * w; wobaW += w; }
+    if (r.avgEV != null) { evSum += r.avgEV * w; evW += w; }
+    if (r.whiffPct != null) { whiffSum += r.whiffPct * w; whiffW += w; }
+  });
+  const avg = atBats > 0 ? +(hits / atBats).toFixed(3) : null;
+  const slg = slgW > 0 ? +(slgSum / slgW).toFixed(3) : null;
+  return {
+    pitches: pitches || null,
+    avg, iso: (slg != null && avg != null) ? +(slg - avg).toFixed(3) : null,
+    slg, woba: wobaW > 0 ? +(wobaSum / wobaW).toFixed(3) : null,
+    avgEV: evW > 0 ? +(evSum / evW).toFixed(1) : null,
+    whiffPct: whiffW > 0 ? +(whiffSum / whiffW).toFixed(1) : null,
+  };
+}
+
+function _muHeatBG(colKey, val) {
+  switch (colKey) {
+    case 'avg':  return heatBG(val, 0.230, 0.290);
+    case 'iso':  return heatBG(val, 0.120, 0.220);
+    case 'slg':  return heatBG(val, 0.370, 0.500);
+    case 'woba': return heatBG(val, 0.290, 0.370);
+    case 'avgEV': return heatBG(val, 87, 92);
+    case 'whiffPct': return heatBGInverted(val, 30, 15);
+    default: return 'transparent';
+  }
+}
+
+// The pitcher's own real pitch arsenal (usage%/season HR already synced by
+// sync-pitcher-statcast.mjs / sync-pitcher-zone-hr.mjs) becomes the filter chips --
+// clicking one recomputes every batter's row against that specific pitch type
+// instead of an "All Pitches" blend.
+function pitcherMatchupChipsHTML(pid, state) {
+  const byPitch = pitcherStatcast[pid]?.byPitch || [];
+  const chips = [`<button type="button" class="dr-mu-chip${state.pitch === 'all' ? ' active' : ''}" data-mu-chip="all" data-mu-pid="${pid}">All Pitches</button>`];
+  byPitch.forEach(p => {
+    const key = normalizePitchTypeKey(p.name);
+    const usage = p.usagePct != null ? `${p.usagePct.toFixed(0)}%` : '–';
+    const hr = p.homeRuns != null ? `${p.homeRuns} HR` : '';
+    chips.push(`<button type="button" class="dr-mu-chip${state.pitch === key ? ' active' : ''}" data-mu-chip="${key}" data-mu-pid="${pid}" style="border-left:3px solid ${pitchTypeColor(p.name)}">${drEscAttr(p.name)} <span class="dr-mu-chip-meta">${usage}${hr ? ' · ' + hr : ''}</span></button>`);
+  });
+  return `<div class="dr-mu-chips">${chips.join('')}</div>`;
+}
+
+function pitcherMatchupControlsHTML(pid, state) {
+  const sortOpts = MU_TABLE_COLUMNS.map(c => `<option value="${c.key}"${state.sortKey === c.key ? ' selected' : ''}>${c.label}</option>`).join('');
+  return `
+    <div class="dr-mu-controls">
+      <div class="dr-mu-hand-toggle" data-mu-pid="${pid}">
+        <button type="button" class="dr-mu-hand-btn${state.hand === 'all' ? ' active' : ''}" data-mu-hand="all">All</button>
+        <button type="button" class="dr-mu-hand-btn${state.hand === 'R' ? ' active' : ''}" data-mu-hand="R">vs RHB</button>
+        <button type="button" class="dr-mu-hand-btn${state.hand === 'L' ? ' active' : ''}" data-mu-hand="L">vs LHB</button>
+      </div>
+      <label class="dr-mu-sort">Sort by
+        <select data-mu-sort-key="${pid}">${sortOpts}</select>
+      </label>
+      <button type="button" class="dr-mu-sort-dir" data-mu-sort-dir="${pid}" title="Toggle ascending/descending">${state.sortDir === 'desc' ? '↓ High to Low' : '↑ Low to High'}</button>
+      <div class="dr-mu-density-toggle" data-mu-pid="${pid}">
+        <button type="button" class="dr-mu-density-btn${state.density === 'comfortable' ? ' active' : ''}" data-mu-density="comfortable" title="Comfortable rows">☰</button>
+        <button type="button" class="dr-mu-density-btn${state.density === 'compact' ? ' active' : ''}" data-mu-density="compact" title="Compact rows">≡</button>
+      </div>
+    </div>`;
+}
+
+// The full sortable/filterable scouting table -- real per-batter production
+// against today's real opposing lineup (already fetched for the lineup cards
+// below), filtered by real batter hand and the pitcher's real pitch mix. Never a
+// second data source from the lineup cards underneath; just a different real cut
+// of the same batterPitchTypeSeason + lineupCache data.
+function pitcherMatchupTableHTML(pid, meta) {
+  const state = _muTableState(pid);
+  const cacheKey = `${meta.gamePk}-${meta.side}`;
+  const lineup = lineupCache[cacheKey]?.lineup || [];
+  if (!lineup.length) {
+    return `<div class="mu-empty" style="color:var(--muted)">Waiting for the ${drEscAttr(meta.oppAbbr || 'opposing')} lineup to load…</div>`;
+  }
+
+  const filtered = state.hand === 'all' ? lineup : lineup.filter(b => b.hand === state.hand);
+  if (!filtered.length) {
+    return `${pitcherMatchupChipsHTML(pid, state)}${pitcherMatchupControlsHTML(pid, state)}<div class="mu-empty" style="color:var(--muted)">No confirmed ${state.hand === 'R' ? 'right-handed' : 'left-handed'} batters in today's lineup.</div>`;
+  }
+
+  const rows = filtered.map(b => {
+    const stat = batterStatsForPitchFilter(b.id, state.pitch);
+    const seasonHR = parseInt(b.stats?.homeRuns);
+    return { batter: b, stat, seasonHR: Number.isFinite(seasonHR) ? seasonHR : null };
+  });
+  const topHRCount = Math.max(0, ...rows.map(r => r.seasonHR || 0));
+
+  rows.sort((a, b) => {
+    const av = a.stat[state.sortKey], bv = b.stat[state.sortKey];
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    return state.sortDir === 'desc' ? bv - av : av - bv;
+  });
+
+  const headCells = MU_TABLE_COLUMNS.map(c => `<th class="num">${c.label}</th>`).join('');
+  const bodyRows = rows.map(({ batter, stat, seasonHR }) => {
+    const cells = MU_TABLE_COLUMNS.map(c => {
+      if (c.key === 'hr') {
+        return `<td class="num">${seasonHR != null ? seasonHR : '–'}</td>`;
+      }
+      const val = stat[c.key];
+      const bg = _muHeatBG(c.key, val);
+      const txt = val == null ? '<span style="color:var(--muted)">–</span>' : (c.pct0 ? val.toFixed(c.dec).replace(/^0/, '') : val.toFixed(c.dec)) + (c.suffix || '');
+      return `<td class="num" style="background:${bg}">${txt}</td>`;
+    }).join('');
+    const star = seasonHR != null && seasonHR > 0 && seasonHR === topHRCount ? '<span title="Most HRs in today\'s lineup" style="color:#fbbf24;margin-left:4px">★</span>' : '';
+    const handTag = batter.hand ? `<span class="dr-mu-hand-tag">${batter.hand}</span>` : '';
+    return `<tr><td class="dr-mu-batter-cell">${drEscAttr(batter.name)}${handTag}${star}</td>${cells}</tr>`;
+  }).join('');
+
+  return `
+    ${pitcherMatchupChipsHTML(pid, state)}
+    ${pitcherMatchupControlsHTML(pid, state)}
+    <div class="dr1041-table-wrap"><table class="dr1041-pitch-table dr-mu-table dr-mu-density-${state.density}">
+      <thead><tr><th>Batter</th>${headCells}</tr></thead>
+      <tbody>${bodyRows}</tbody>
+    </table></div>
+    <div class="zone-note" style="margin-top:8px">Real 2026 season production vs the selected pitch type (data/batter-pitch-type-season.json), not a head-to-head history against this specific pitcher -- too small a sample to exist for most matchups. Color = danger to this pitcher (red = production well above average, green = below); ★ = most home runs in today's confirmed lineup.</div>`;
+}
+
+function renderPitcherMatchupTable(pid, meta, wrap) {
+  if (!wrap.isConnected) return;
+  wrap.innerHTML = pitcherMatchupTableHTML(pid, meta);
+}
+
+// Delegated so re-rendering the table (which replaces its DOM) never loses the
+// click wiring -- same pattern as the existing [data-pstats-toggle] handler.
+document.addEventListener('click', (e) => {
+  const chip = e.target.closest('[data-mu-chip]');
+  if (chip) {
+    const pid = chip.getAttribute('data-mu-pid');
+    const meta = lineupMeta[pid];
+    const wrap = document.getElementById(`pr-matchup-table-${pid}`);
+    if (meta && wrap) {
+      _muTableState(pid).pitch = chip.getAttribute('data-mu-chip');
+      renderPitcherMatchupTable(pid, meta, wrap);
+    }
+    return;
+  }
+  const handBtn = e.target.closest('[data-mu-hand]');
+  if (handBtn) {
+    const pid = handBtn.closest('[data-mu-pid]')?.getAttribute('data-mu-pid');
+    const meta = pid && lineupMeta[pid];
+    const wrap = pid && document.getElementById(`pr-matchup-table-${pid}`);
+    if (meta && wrap) {
+      _muTableState(pid).hand = handBtn.getAttribute('data-mu-hand');
+      renderPitcherMatchupTable(pid, meta, wrap);
+    }
+    return;
+  }
+  const sortDirBtn = e.target.closest('[data-mu-sort-dir]');
+  if (sortDirBtn) {
+    const pid = sortDirBtn.getAttribute('data-mu-sort-dir');
+    const meta = lineupMeta[pid];
+    const wrap = document.getElementById(`pr-matchup-table-${pid}`);
+    if (meta && wrap) {
+      const state = _muTableState(pid);
+      state.sortDir = state.sortDir === 'desc' ? 'asc' : 'desc';
+      renderPitcherMatchupTable(pid, meta, wrap);
+    }
+    return;
+  }
+  const densityBtn = e.target.closest('[data-mu-density]');
+  if (densityBtn) {
+    const pid = densityBtn.closest('[data-mu-pid]')?.getAttribute('data-mu-pid');
+    const meta = pid && lineupMeta[pid];
+    const wrap = pid && document.getElementById(`pr-matchup-table-${pid}`);
+    if (meta && wrap) {
+      _muTableState(pid).density = densityBtn.getAttribute('data-mu-density');
+      renderPitcherMatchupTable(pid, meta, wrap);
+    }
+  }
+});
+document.addEventListener('change', (e) => {
+  const sel = e.target.closest('[data-mu-sort-key]');
+  if (sel) {
+    const pid = sel.getAttribute('data-mu-sort-key');
+    const meta = lineupMeta[pid];
+    const wrap = document.getElementById(`pr-matchup-table-${pid}`);
+    if (meta && wrap) {
+      _muTableState(pid).sortKey = sel.value;
+      renderPitcherMatchupTable(pid, meta, wrap);
+    }
+  }
+});
 
 // Opens (or re-populates, after a table refresh rebuilds its DOM) the
 // Pitcher Analytics Dashboard pop-out for a given pitcher row — clicking the
@@ -2831,8 +3083,12 @@ function openPitcherLineupModal(pidRaw) {
 
   const matchupWrap = document.createElement('div');
   matchupWrap.id = `pr-matchup-${pid}`;
+  const matchupTableWrap = document.createElement('div');
+  matchupTableWrap.id = `pr-matchup-table-${pid}`;
+  matchupTableWrap.innerHTML = `<div style="padding:10px 0;color:var(--muted);font-size:12px"><span class="spin"></span> Loading matchup scouting table…</div>`;
+  matchupWrap.appendChild(matchupTableWrap);
   panel.style.display = 'block';
-  panel.style.marginTop = '0';
+  panel.style.marginTop = '14px';
   matchupWrap.appendChild(panel);
   const matchupSectionEl = pitcherDashboardSectionWrap('matchup', matchupWrap, `Today's ${meta.oppAbbr || 'opposing'} lineup`);
   body.appendChild(matchupSectionEl);
@@ -2864,8 +3120,16 @@ function openPitcherLineupModal(pidRaw) {
   } else if (!lineupLoading.has(pid)) {
     fetchAndRenderLineup(pid, meta.pitcherName, meta.gamePk, meta.side, meta.oppTeamId, meta.pitcherHr9, meta.pitcherIp, false, true).catch(()=>{});
   }
+  // The scouting table needs the pitcher's own arsenal (for the filter chips) and
+  // the batter pitch-type-season store (for every stat cell) on top of the lineup
+  // itself -- render once whichever of those two things is still missing lands,
+  // same "never show a stale filtered view" discipline as the rest of this modal.
+  Promise.all([loadPitcherStatcast(), loadBatterPitchTypeSeason()]).then(() => {
+    renderPitcherMatchupTable(pid, meta, matchupTableWrap);
+  });
+  renderPitcherMatchupTable(pid, meta, matchupTableWrap);
   const matchupSubEl = matchupSectionEl.querySelector('.dr-pdash-section-sub');
-  pollForLineupThenRefreshMatchup(pid, meta, matchupSubEl, performanceWrap);
+  pollForLineupThenRefreshMatchup(pid, meta, matchupSubEl, performanceWrap, matchupTableWrap);
 }
 window.openPitcherLineupModal = openPitcherLineupModal;
 

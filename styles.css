@@ -4936,3 +4936,115 @@ select:focus-visible {
   font-weight: 700;
   color: var(--text);
 }
+
+/* Matchup section's sortable/filterable batter scouting table (pitch-mix chips,
+   RHB/LHB toggle, sort dropdown, density toggle, heat-mapped cells) */
+.dr-mu-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.dr-mu-chip {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, .02);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.dr-mu-chip.active {
+  color: #fff;
+  background: linear-gradient(180deg, rgba(47, 107, 255, .30), rgba(47, 107, 255, .10));
+  border-color: rgba(47, 107, 255, .72);
+}
+.dr-mu-chip-meta {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 10px;
+}
+.dr-mu-chip.active .dr-mu-chip-meta {
+  color: #cfe0ff;
+}
+.dr-mu-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.dr-mu-hand-toggle,
+.dr-mu-density-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.dr-mu-hand-btn,
+.dr-mu-density-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 6px 12px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.dr-mu-hand-btn.active,
+.dr-mu-density-btn.active {
+  color: #fff;
+  background: rgba(47, 107, 255, .28);
+}
+.dr-mu-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.dr-mu-sort select {
+  background: rgba(255, 255, 255, .03);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.dr-mu-sort-dir {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, .02);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dr-mu-batter-cell {
+  font-weight: 800;
+  white-space: nowrap;
+}
+.dr-mu-hand-tag {
+  display: inline-block;
+  margin-left: 5px;
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.dr-mu-table.dr-mu-density-compact td,
+.dr-mu-table.dr-mu-density-compact th {
+  padding: 5px 8px;
+  font-size: 11.5px;
+}
