@@ -2241,6 +2241,10 @@ async function buildBatterPool(games, season) {
           pitcherBFper9: pitcherBattersFacedPer9(pitcherStat),
           pitcherAvgAllowed, pitcherSlgAllowed, pitcherWhip, parkFactor: rowParkFactor,
           isFavorable, isHot, isDrought, isDue, hasNearHR, statcast: statcastIndex.get(String(pid)) || null,
+          // `recent` (recentBattingForm's real lastXGames window) is already fetched
+          // above for the isHot/isDrought/recency-blend inputs -- its real .hr count
+          // wasn't previously stored on the row itself. Zero extra fetch.
+          last10HR: recent?.hr ?? null,
           windFactor: windPowerFactor(g.weather), temperatureFactor: temperaturePowerFactor(g.weather),
           fatigueFactor: battingTeamFatigue,
           pitcherStatcast, homeRoadFactor,

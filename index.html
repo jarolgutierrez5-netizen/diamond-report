@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026073020">
+<link rel="stylesheet" href="styles.min.css?v=2026073021">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -261,6 +261,21 @@
 
     <div class="dr-hub-sport-comingsoon" id="dr-hub-sport-comingsoon" style="display:none">
       <p class="dr-hub-sport-comingsoon-text" id="dr-hub-sport-comingsoon-text"></p>
+    </div>
+
+    <!-- Featured Player (roadmap 2 "Featured Player") — one real daily focal-point
+         player, selected server-side by scripts/generate-headlines.mjs's
+         buildFeaturedPlayer from the exact same real HR-probability model (and
+         batter pool) that drives the HR Threats board, so the pick and its
+         reasons are never fabricated. Locks in for the day the first time the
+         script runs (see that function's comment) — a later scratch/postponement
+         just flips confirmedToday to false client-side rather than swapping to a
+         different player, so the card stays useful (real season numbers still
+         shown) instead of silently changing story mid-day. Placed ahead of
+         Headlines: this is the single most prominent daily element on the hub. -->
+    <div class="dr-hub-featured" id="dr-hub-featured" style="display:none">
+      <div class="dr-hub-section-head"><span class="dr-hub-section-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5l2.2 4.6 5 .7-3.6 3.6.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.6 5-.7z"/></svg></span><h2>Featured Player</h2><span class="dr-hub-section-line"></span></div>
+      <div id="dr-hub-featured-content"></div>
     </div>
 
     <!-- Diamond Report Headlines (roadmap 3.2) — proprietary, data-driven editorial
@@ -965,7 +980,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026073020" defer></script>
+<script src="app.min.js?v=2026073021" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->

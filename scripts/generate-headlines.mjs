@@ -39,6 +39,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const OUT_PATH = path.join(DATA_DIR, 'daily-headlines.json');
 const TRENDING_PATH = path.join(DATA_DIR, 'trending-players.json');
+const FEATURED_PATH = path.join(DATA_DIR, 'featured-player.json');
+// Mirrors update-tracker.mjs's own POOL_MIN_AB -- not exported from that
+// module, so duplicated here rather than adding an export purely for this.
+const FEATURED_MIN_AB = 40;
 const API = 'https://statsapi.mlb.com/api/v1';
 
 async function fetchJSON(url, attempts = 3) {
@@ -491,6 +495,77 @@ async function buildTrendingPlayers(pool, games, today) {
   return { date: today, generatedAt: new Date().toISOString(), players: [...batters, ...pitchers] };
 }
 
+// ── Featured Player — one daily rotating hub focal point (roadmap 2's
+// "Featured Player" card) ──────────────────────────────────────────────
+// Reuses the exact same real batter pool (buildBatterPool) and HR probability
+// model (liveScore, computeLiveHRScore) that already drives the HR Threats
+// board and its own Featured HR Pick flagship card -- no separate model, no
+// fabricated score. The composite spotlight score below only breaks a close
+// liveScore tie using OTHER real, already-corroborating signals (hot streak,
+// favorable matchup, near-HR power, a strong Matchup Edge), never an
+// arbitrary tiebreak.
+function computeSpotlightScore(r) {
+  let score = r.liveScore || 0;
+  if (r.isHot) score += 4;
+  if (r.isFavorable) score += 3;
+  if (r.hasNearHR) score += 2;
+  if (r.matchupEdge != null && r.matchupEdge >= 64) score += 3;
+  return score;
+}
+
+// Every sentence here is gated on a real threshold already computed by
+// buildBatterPool -- same "real number or nothing" discipline as every other
+// headline builder in this file. This becomes the card's visible "why this
+// player" explanation and its rule-based "AI Explanation" prose (there is no
+// real LLM anywhere in this app -- see this file's own header comment).
+function buildFeaturedReasons(r) {
+  const reasons = [];
+  reasons.push({ icon: '💣', text: `Projects at a real ${r.liveScore.toFixed(1)}% HR probability today, from the same model behind the HR Threats board.` });
+  if (r.isHot) reasons.push({ icon: '🔥', text: `On a real hot streak — ${r.last10HR ?? '0'} HR over the last 10 games.` });
+  if (r.isFavorable) reasons.push({ icon: '✅', text: `Favorable matchup — a real ${r.ops.toFixed(3)} OPS bat against a pitcher who's given up real contact this season.` });
+  if (r.matchupEdge != null && r.matchupEdge >= 64) reasons.push({ icon: '⚔️', text: `Real Matchup Edge score of ${r.matchupEdge} against today's specific starter, ${r.pitcherName}.` });
+  if (r.hasNearHR) reasons.push({ icon: '🚀', text: 'Real warning-track power in the last 10 games — recent long fly outs that haven\'t left the yard yet.' });
+  if (r.isDue) reasons.push({ icon: '⚡', text: 'In a real power drought the model flags as due to break.' });
+  return reasons;
+}
+
+// Picks lock in the moment they're first captured for the day, same
+// discipline as captureHRThreatToday above (this script runs multiple times
+// a day) -- once today's pick exists, a later same-day run never recomputes
+// or swaps it, even if a fresher pool would technically score someone else
+// higher. Only `confirmedToday` is re-derived on every run (does this player
+// still appear anywhere in today's freshly rebuilt real pool) so a scratch or
+// postponement degrades the card gracefully client-side instead of silently
+// picking a different player intraday.
+function buildFeaturedPlayer(pool, today, previousFile) {
+  if (previousFile && previousFile.date === today && previousFile.player) {
+    const stillActive = pool.some(r => String(r.id) === String(previousFile.player.id));
+    return {
+      date: today,
+      generatedAt: new Date().toISOString(),
+      player: { ...previousFile.player, confirmedToday: stillActive },
+    };
+  }
+  const candidates = pool.filter(r => r.atBats >= FEATURED_MIN_AB && r.liveScore > 0);
+  if (!candidates.length) return null;
+  const best = candidates.reduce((top, r) => (computeSpotlightScore(r) > computeSpotlightScore(top) ? r : top), candidates[0]);
+  return {
+    date: today,
+    generatedAt: new Date().toISOString(),
+    player: {
+      id: best.id, name: best.name, teamAbbr: best.teamAbbr, oppAbbr: best.oppAbbr, gamePk: best.gamePk,
+      pitcherId: best.pitcherId, pitcherName: best.pitcherName,
+      liveScore: best.liveScore, spotlightScore: +computeSpotlightScore(best).toFixed(1),
+      avg: best.avg, obp: best.obp, slg: best.slg, ops: best.ops, iso: best.iso,
+      hrSeason: best.hrSeason, atBats: best.atBats, last10HR: best.last10HR,
+      isHot: best.isHot, isFavorable: best.isFavorable, isDrought: best.isDrought, isDue: best.isDue, hasNearHR: best.hasNearHR,
+      matchupEdge: best.matchupEdge, statcast: best.statcast || null,
+      reasons: buildFeaturedReasons(best),
+      confirmedToday: true,
+    },
+  };
+}
+
 async function main() {
   await mkdir(DATA_DIR, { recursive: true });
 
@@ -562,6 +637,26 @@ async function main() {
   } catch (e) {
     console.warn(`Trending Players write failed: ${e.message}`);
   }
+
+  // Isolated in its own try/catch, same discipline as the categories above --
+  // a failure here must never take down the headlines/trending writes that
+  // already succeeded. Uses the same real pool already built above (no extra
+  // fetch) unless the schedule fetch failed entirely, in which case there's
+  // no real candidate pool to feature anyone from today and this is skipped
+  // (never a fabricated pick) -- a same-day pick already on disk still keeps
+  // showing (see buildFeaturedPlayer's lock-in branch).
+  try {
+    const previousFeatured = await readDataFile('featured-player.json');
+    const featured = pool && pool.length ? buildFeaturedPlayer(pool, today, previousFeatured) : previousFeatured;
+    if (featured) {
+      console.log(`Featured Player for ${today}: ${featured.player.name} (${featured.player.confirmedToday ? 'confirmed' : 'NOT confirmed'} in today's real pool).`);
+      await writeFile(FEATURED_PATH, JSON.stringify(featured, null, 2) + '\n');
+    } else {
+      console.log(`No Featured Player candidate cleared the real bar for ${today}.`);
+    }
+  } catch (e) {
+    console.warn(`Featured Player write failed: ${e.message}`);
+  }
 }
 
 const isMain = import.meta.url === `file://${process.argv[1]}`;
@@ -574,4 +669,5 @@ export {
   buildStreakHeadlines, computeStreakIndicator, streakTitleAndBlurb,
   buildNotablePerformanceHeadline, buildWeatherHeadline, buildInjuryHeadline, buildModelMovementHeadline,
   buildLeaderboardHeadline, buildTrendingBatters, buildTrendingPitchers, buildTrendingPlayers, main,
+  computeSpotlightScore, buildFeaturedReasons, buildFeaturedPlayer,
 };
