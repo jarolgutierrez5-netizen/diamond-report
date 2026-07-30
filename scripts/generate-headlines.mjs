@@ -11,11 +11,13 @@
 // attribution -- every headline traces back to a stat this app's own sync
 // pipeline produced.
 //
-// Six categories, one script each producing 0 or 1(+) headline objects --
+// Seven categories, one builder each producing 0 or 1(+) headline objects --
 // every builder degrades to producing nothing rather than a fabricated or
 // filler headline when its underlying signal isn't genuinely notable today
 // (same standard the rest of this codebase holds itself to: real numbers or
-// nothing, never spun-up text). All 6 share one shape:
+// nothing, never spun-up text). trend and streak both produce EVERY real
+// qualifying player, not a curated top-N -- "all trends, good or bad" per
+// request, not just a handful of favorable stories. All 7 share one shape:
 //   { id, category, title, blurb, link: { hash, playerId?, playerName? },
 //     clip?: { videoUrl, webUrl? } }
 // `link.hash` is a board hash (e.g. "#gamepick=hr") the client navigates to on
@@ -116,7 +118,6 @@ function buildRecapHeadline(tracker, yesterdayStr) {
 // into a separate one-line headline instead of one long paragraph doing both
 // jobs, per roadmap 3.2's "headline" + "why it matters" split).
 const MIN_STORYLINE_AB = 40;
-const TREND_HEADLINE_COUNT = 5;
 
 function parkDescriptor(pf) {
   if (pf == null) return null;
@@ -157,12 +158,13 @@ function trendTitleAndBlurb(row) {
   };
 }
 function buildTrendHeadlines(pool) {
+  // Every real qualifying matchup, not a top-N cut -- "all trends" per request. The
+  // AB floor and score>0 filter are the real bar for inclusion, not an arbitrary count.
   const eligible = pool.filter(r => r.atBats >= MIN_STORYLINE_AB && r.name && r.oppAbbr);
   const ranked = eligible
     .map(row => ({ row, score: scoreForMarket('hr', row) }))
     .filter(x => x.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, TREND_HEADLINE_COUNT);
+    .sort((a, b) => b.score - a.score);
   return ranked.map(({ row }) => {
     const { title, blurb } = trendTitleAndBlurb(row);
     return {
@@ -173,6 +175,76 @@ function buildTrendHeadlines(pool) {
       link: { hash: '#gamepick=hr', playerId: row.id, playerName: row.name },
     };
   });
+}
+
+// ── 2b. Streak headlines — the same Hot Streak/Trending Up/Cooling Off/Cold
+// indicator app.js's computePlayerTrendIndicator computes client-side (roadmap
+// 5.2), ported here so it can also drive a headline, not just a chip on the HR
+// Threats board. Deliberately covers BAD streaks too (Cooling Off/Cold), not
+// just favorable stories -- a real cold stretch is exactly as headline-worthy
+// as a hot one. Every qualifying player gets one, same "all trends, not a
+// curated top-N" standard as buildTrendHeadlines above; on a normal day this is
+// naturally bounded to a handful of players since the thresholds below require
+// a real, not marginal, swing in recent HR rate vs season rate.
+function computeStreakIndicator(row) {
+  const last10HR = row.last10HR;
+  if (last10HR == null) return null;
+  const ab = row.atBats || 0;
+  const hrSeason = row.hrSeason || 0;
+  if (ab <= 0) return null;
+  const expectedHRPer10 = (hrSeason / ab) * 40;
+  const ratio = last10HR / Math.max(expectedHRPer10, 0.4);
+  const smallSample = ab < 40;
+  let label = null;
+  if (last10HR >= 2 && ratio >= 1.75) label = 'Hot Streak';
+  else if (ratio >= 1.15) label = 'Trending Up';
+  else if (last10HR === 0 && expectedHRPer10 >= 1.0) label = 'Cold';
+  else if (ratio <= 0.5) label = 'Cooling Off';
+  if (!label) return null;
+  return { label, last10HR, expectedHRPer10, smallSample };
+}
+function streakTitleAndBlurb(row, streak) {
+  const sampleNote = streak.smallSample ? ` (a small sample — under 40 at-bats this season, so treat this with some caution)` : '';
+  const expected = streak.expectedHRPer10.toFixed(1);
+  if (streak.label === 'Hot Streak') {
+    return {
+      title: `${row.name} is on a hot streak`,
+      blurb: `${streak.last10HR} home runs in his last 10 games against an expected pace of ${expected} — real recent power, not just a hot box score.${sampleNote}`,
+    };
+  }
+  if (streak.label === 'Trending Up') {
+    return {
+      title: `${row.name} is trending up`,
+      blurb: `${streak.last10HR} home run${streak.last10HR === 1 ? '' : 's'} in his last 10 games, running ahead of his ${expected}-per-10-games season pace.${sampleNote}`,
+    };
+  }
+  if (streak.label === 'Cooling Off') {
+    return {
+      title: `${row.name} is cooling off`,
+      blurb: `Just ${streak.last10HR} home run${streak.last10HR === 1 ? '' : 's'} in his last 10 games against an expected pace of ${expected} — a real dip, worth knowing before starting him.${sampleNote}`,
+    };
+  }
+  return {
+    title: `${row.name} is ice cold`,
+    blurb: `No home runs in his last 10 games despite an expected pace of ${expected} based on his season rate — a genuine cold stretch, not just normal variance.${sampleNote}`,
+  };
+}
+function buildStreakHeadlines(pool) {
+  const out = [];
+  for (const row of pool) {
+    if (!row.name) continue;
+    const streak = computeStreakIndicator(row);
+    if (!streak) continue;
+    const { title, blurb } = streakTitleAndBlurb(row, streak);
+    out.push({
+      id: `streak-${row.id}`,
+      category: 'streak',
+      title,
+      blurb,
+      link: { hash: '#gamepick=hr', playerId: row.id, playerName: row.name },
+    });
+  }
+  return out;
 }
 
 // ── 3. Notable performance — the longest real home run from the most
@@ -310,9 +382,9 @@ async function main() {
   const recapHeadline = buildRecapHeadline(tracker, yesterday);
   if (recapHeadline) headlines.push(recapHeadline);
 
-  // Trend headlines depend on a live MLB schedule/roster fetch, unlike everything
-  // else here (local data/tracker.json reads) -- isolated in its own try/catch so a
-  // transient MLB API hiccup can't cost the other 5 categories too.
+  // Trend + streak headlines depend on a live MLB schedule/roster fetch, unlike
+  // everything else here (local data/tracker.json reads) -- isolated in its own
+  // try/catch so a transient MLB API hiccup can't cost the other categories too.
   try {
     const sched = await fetchJSON(`${API}/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher,linescore,weather`);
     const games = sched?.dates?.find(d => d.date === today)?.games || [];
@@ -320,9 +392,10 @@ async function main() {
     if (previewGames.length) {
       const pool = await buildBatterPool(previewGames, season);
       headlines.push(...buildTrendHeadlines(pool));
+      headlines.push(...buildStreakHeadlines(pool));
     }
   } catch (e) {
-    console.warn(`Trend headlines failed, other categories will still be written: ${e.message}`);
+    console.warn(`Trend/streak headlines failed, other categories will still be written: ${e.message}`);
   }
 
   const recentHrsData = await readDataFile('recent-hrs.json');
@@ -360,6 +433,7 @@ if (isMain) {
 
 export {
   buildRecapHeadline, buildTrendHeadlines, trendTitleAndBlurb, parkDescriptor, suppressionClause,
+  buildStreakHeadlines, computeStreakIndicator, streakTitleAndBlurb,
   buildNotablePerformanceHeadline, buildWeatherHeadline, buildInjuryHeadline, buildModelMovementHeadline,
   buildLeaderboardHeadline, main,
 };
