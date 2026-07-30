@@ -4790,6 +4790,72 @@ select:focus-visible {
   .dr-skeleton-grid { grid-template-columns: 1fr; gap: 12px; }
 }
 
+/* Generic shimmering row skeleton (drSkeletonRowsHTML in app.js) -- for
+   boards/sections whose real layout is a table or list rather than a photo
+   card grid, reusing the same dr-shimmer gradient/keyframes as
+   .dr-skeleton-card above so every skeleton on the site shimmers identically. */
+.dr-skel-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dr-skel-row {
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: linear-gradient(90deg, rgba(255,255,255,.05) 25%, rgba(255,255,255,.12) 37%, rgba(255,255,255,.05) 63%);
+  background-size: 400% 100%;
+  animation: dr-shimmer 1.4s ease infinite;
+}
+
+/* Friendly error state (drShowError in app.js) -- replaces raw `Error:
+   ${e.message}` strings with real copy + a working Retry button that
+   re-invokes the same real loader function the page uses on first load. */
+.dr-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 28px 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #111a2d, #0e1728);
+}
+.dr-error-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+.dr-error-text {
+  color: var(--muted);
+  font-size: 13px;
+  max-width: 360px;
+}
+.dr-error-retry-btn {
+  margin-top: 4px;
+  padding: 7px 18px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.dr-error-retry-btn:hover { background: var(--accent2); }
+.dr-error-retry-btn:disabled { opacity: .6; cursor: default; }
+
+/* Small inline retry link for tiny text spots (e.g. a "Last updated" label)
+   where the full .dr-error-state card would be oversized for the real blast
+   radius of the failure. */
+.dr-inline-retry {
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  margin-left: 4px;
+}
+.dr-inline-retry:hover { color: var(--accent2); }
+
 /* Near HRs board card parity (roadmap "Motion and Interaction Design" --
    "make the player cards for the Near HR tab the same as the HR section").
    The card itself (.dr1027-hr-card / -head / -photo / -name / -meta / -score
