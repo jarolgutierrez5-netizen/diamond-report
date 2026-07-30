@@ -1286,6 +1286,27 @@ function shrinkToLeague(raw, ab, leagueAvg, minAB = 40) {
   return raw * w + leagueAvg * (1 - w);
 }
 
+// Real, independently-computable "hot" proxy (no Statcast sync available
+// server-side): recent AVG meaningfully above season AVG, or multiple real
+// home runs within the last 10 games.
+//
+// v2: the original `recent.hr >= 1` branch was nowhere near selective enough
+// -- a single home run somewhere in a ~10-game window is close to the norm
+// for a healthy everyday hitter, not a notable trend. Confirmed directly: on
+// a normal slate this fired for 158 of 163 real Diamond Report Headlines
+// (generate-headlines.mjs's buildTrendHeadlines uses this exact flag to pick
+// the "X is running hot" title), which is the opposite of a selective signal.
+// Raised both bars to require a real, meaningfully hot stretch: 2+ real home
+// runs (not 1) in the recent window, or a real 50-point (not 30-point) AVG
+// jump over the season baseline -- both genuinely uncommon over a ~15-30 AB
+// sample, unlike the old thresholds.
+function computeIsHot(recent, seasonAvg) {
+  if (!recent || recent.ab < 15) return false;
+  const avgSurge = recent.avg != null && recent.avg >= seasonAvg + 0.050;
+  const realPowerSurge = (recent.hr || 0) >= 2;
+  return avgSurge || realPowerSurge;
+}
+
 async function mapLimit(items, limit, fn) {
   const out = new Array(items.length);
   let i = 0;
@@ -2103,10 +2124,7 @@ async function buildBatterPool(games, season) {
         // model (iso, scoring) doesn't use either. Same fix already applied client-side
         // (app.js's isFavorable/isDue) for the equivalent raw-vs-shrunk-OPS bug.
         const isFavorable = ops >= 0.800 && (pitcherWhip >= 1.25 || pitcherAvgAllowed >= 0.260);
-        // Real, independently-computable "hot" proxy (no Statcast sync available
-        // server-side): recent AVG meaningfully above season AVG, or a HR within the
-        // last 10 games.
-        const isHot = !!recent && recent.ab >= 15 && ((recent.avg != null && recent.avg >= seasonAvg + 0.030) || recent.hr >= 1);
+        const isHot = computeIsHot(recent, seasonAvg);
         // Mirrors the client's HR Threats board tags (app.js: isDrought/isDue) so the
         // HR Threat tracker capture below can snapshot them for real hit-rate analysis
         // later — those tags were never being validated against actual outcomes since
@@ -2520,4 +2538,5 @@ export {
   loadDRPSimComparison, saveDRPSimComparison, recomputeDRPSimSummary,
   gradeDRPSimComparison, captureDRPSimComparisonToday,
   loadModelParams, MODEL_PARAMS_PATH, DEFAULT_MODEL_PARAMS, shrinkMult,
+  computeIsHot,
 };
