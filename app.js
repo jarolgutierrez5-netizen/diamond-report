@@ -2487,6 +2487,12 @@ const lineupMeta  = {}; // pitcherId -> {pitcherName, gamePk, side, oppTeamId, p
 // from overwriting an actively opened Batting Lineup & Matchup panel.
 const lineupLoading = new Set();
 const lineupRequestTokens = {};
+// Same "last call wins, a stale in-flight response gets discarded" token guard as
+// lineupRequestTokens above -- renderPitcherDriversSection can legitimately be
+// triggered twice in close succession for the same pitcher (once chained off the
+// Arsenal section's own Promise.all, once by pollForLineupThenRefreshMatchup once
+// the real lineup lands), and the two calls don't resolve in a guaranteed order.
+const driversRenderTokens = {};
 const normalizePitcherId = (id) => String(id);
 
 // Which pitcher's lineup is currently showing in the pop-out modal, if any —
@@ -2550,6 +2556,10 @@ async function loadPitcherReport() {
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
     await loadStatcastHotHitters();
     await loadParkFactors().catch(() => {});
+    // Whole-file static fetch (cheap, cached), preloaded here so the main table row
+    // (not just the pop-out modal, which already awaited this separately) can show a
+    // real pitcher Trend Indicator badge before a user ever opens a single dashboard.
+    await loadPitcherRolling().catch(() => {});
     const games = await getTodaySchedule('team,probablePitcher');
     if (!games.length) { el.innerHTML = '<div class="mu-empty">No games scheduled today.</div>'; return; }
 
@@ -2583,8 +2593,12 @@ async function loadPitcherReport() {
     const statsArr = await Promise.all(pitchers.map(async p => {
       try {
         const d = await fetchJSON(`https://diamondreport.app/api/v1/people/${p.id}?hydrate=stats(group=pitching,type=season,season=2026)`);
-        return d.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || {};
-      } catch { return {}; }
+        // pitchHand is a top-level field on the person object this same call already
+        // returns (no hydrate needed for it) -- captured here so the Matchup scouting
+        // table below can show each opposing batter's real split against THIS
+        // pitcher's actual throwing hand, zero extra requests.
+        return { stat: d.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || {}, hand: handCode(d.people?.[0], 'pitchHand') };
+      } catch { return { stat: {}, hand: null }; }
     }));
 
     function f(v, dec=2) {
@@ -2594,7 +2608,8 @@ async function loadPitcherReport() {
     function fI(v) { const n=parseInt(v); return isNaN(n)?null:n; }
 
     prRows = pitchers.map((p, i) => {
-      const s = statsArr[i];
+      const s = statsArr[i].stat;
+      const pitcherHand = statsArr[i].hand;
       const iso = (s.slg!=null&&s.avg!=null) ? f(parseFloat(s.slg)-parseFloat(s.avg),3) : null;
       const totalK = parseInt(s.strikeOuts) || 0;
       const gs = parseInt(s.gamesStarted) || parseInt(s.gamesPitched) || 1;
@@ -2627,6 +2642,7 @@ async function loadPitcherReport() {
         rawIp: parseFloat(s.inningsPitched) || 0,
         rawK9: k9,
         gamesStarted: gs,
+        pitcherHand,
       };
     });
 
@@ -2672,6 +2688,7 @@ function getSortedPRRowsForCurrentSort() {
 // bullpen game, not yet enough starts logged) doesn't have real data behind
 // a given section.
 const PITCHER_DASHBOARD_SECTION_META = {
+  drivers:     { icon: '🤖', title: 'MATCHUP DRIVERS & ANALYSIS' },
   arsenal:     { icon: '🧪', title: 'ARSENAL' },
   performance: { icon: '📈', title: 'PERFORMANCE' },
   matchup:     { icon: '⚔️', title: 'MATCHUP' },
@@ -2799,13 +2816,178 @@ async function renderPitcherSupportSection(meta, wrap) {
     <div class="zone-note" style="margin-top:8px">Real recent bullpen workload, not a season average — how much relief support is actually available behind him if he comes out early.</div>`;
 }
 
+// ── Matchup Drivers & AI Explanation ──────────────────────────────────────
+// Rule-based synthesis (no LLM call anywhere in this app) -- the same "real threshold
+// on a real computed number triggers a short templated sentence" convention already
+// used by getColdBatterDiagnosis's reasons and hrScoutingVulnsHTML's vulns. Every input
+// here is already computed elsewhere in this exact modal (rolling profile, bullpen
+// fatigue, park factor, the real lineup with its platoon/K% data); this function adds
+// no new fetch of its own, it just ranks and explains what's already on the page.
+// Returns null fields gracefully (never fabricated) when a given input isn't available
+// yet, and a driver simply doesn't appear rather than showing a fake "no data" line.
+function buildMatchupDrivers({ pitcherName, oppAbbr, row, rollingProfile, bullpenInfo, parkIdx, lineup, avgOpponentKPct }) {
+  const drivers = [];
+
+  // 1. Stuff trend (velocity + whiff, usage-weighted L3-vs-season) -- reuses the exact
+  // same signal the Trend Indicator badge is built from, just spelled out in prose.
+  const trend = computePitcherTrendIndicator(rollingProfile);
+  if (trend) {
+    const veloTxt = trend.veloDelta !== 0 ? `${trend.veloDelta > 0 ? '+' : ''}${trend.veloDelta} mph velo` : null;
+    const whiffTxt = trend.whiffDelta !== 0 ? `${trend.whiffDelta > 0 ? '+' : ''}${trend.whiffDelta}% whiff` : null;
+    const detail = [veloTxt, whiffTxt].filter(Boolean).join(', ');
+    const good = trend.label === 'Hot Streak' || trend.label === 'Trending Up';
+    drivers.push({
+      icon: good ? '📈' : '🧊',
+      tone: good ? 'green' : 'red',
+      magnitude: Math.abs((trend.veloDelta || 0) * 2) + Math.abs(trend.whiffDelta || 0),
+      text: `<b>${good ? 'Trending up' : 'Trending down'}</b> over his last 3 starts${detail ? ` (${detail}, usage-weighted vs season)` : ''}.`,
+    });
+  }
+
+  // 2. Bullpen support behind him.
+  if (bullpenInfo?.tier) {
+    const tough = bullpenInfo.tier === 'Gassed';
+    const good = bullpenInfo.tier === 'Fresh';
+    if (tough || good) {
+      drivers.push({
+        icon: tough ? '🥵' : '🛟',
+        tone: tough ? 'red' : 'green',
+        magnitude: 3,
+        text: tough
+          ? `<b>Bullpen is Gassed</b> — ${bullpenInfo.totalRelieverPitches ?? 'a lot of'} pitches over the last 2 days, less margin if he struggles early.`
+          : `<b>Bullpen is Fresh</b> — deep relief support if he needs to come out early.`,
+      });
+    }
+  }
+
+  // 3. Park HR factor.
+  if (parkIdx != null && (parkIdx >= 110 || parkIdx <= 92)) {
+    const hitterFriendly = parkIdx >= 110;
+    drivers.push({
+      icon: hitterFriendly ? '🏟️' : '🧱',
+      tone: hitterFriendly ? 'red' : 'green',
+      magnitude: Math.abs(parkIdx - 100) / 5,
+      text: hitterFriendly
+        ? `Pitching in a <b>hitter-friendly park</b> tonight (${parkIdx >= 100 ? '+' : ''}${parkIdx - 100}% HR factor).`
+        : `Pitching in a <b>pitcher-friendly park</b> tonight (${parkIdx - 100}% HR factor).`,
+    });
+  }
+
+  // 4. Opposing lineup's real platoon-split strength against his throwing hand
+  // (batter.platoon.ops, from fetchAndRenderLineup's real vl/vr split fetch).
+  if (Array.isArray(lineup) && lineup.length) {
+    const opsVals = lineup.map(b => b.platoon?.ops).filter(v => typeof v === 'number');
+    if (opsVals.length >= 4) {
+      const avgOps = opsVals.reduce((a, b) => a + b, 0) / opsVals.length;
+      if (avgOps >= 0.780 || avgOps <= 0.680) {
+        const tough = avgOps >= 0.780;
+        drivers.push({
+          icon: tough ? '⚔️' : '✅',
+          tone: tough ? 'red' : 'green',
+          magnitude: Math.abs(avgOps - 0.730) * 20,
+          text: `Today's lineup carries a real <b>${avgOps.toFixed(3).replace(/^0/, '')} OPS</b> against his throwing hand (${opsVals.length} of ${lineup.length} batters with a real split).`,
+        });
+      }
+    }
+  }
+
+  // 5. Opposing lineup's real strikeout tendency -- high K% is favorable for the
+  // pitcher, low K% means a tougher, contact-oriented lineup.
+  if (avgOpponentKPct != null) {
+    if (avgOpponentKPct >= 0.26 || avgOpponentKPct <= 0.16) {
+      const favorable = avgOpponentKPct >= 0.26;
+      drivers.push({
+        icon: favorable ? '💨' : '🎯',
+        tone: favorable ? 'green' : 'red',
+        magnitude: Math.abs(avgOpponentKPct - 0.21) * 40,
+        text: favorable
+          ? `Opposing lineup strikes out at a real <b>${(avgOpponentKPct * 100).toFixed(0)}%</b> clip — above average.`
+          : `Opposing lineup is <b>contact-oriented</b> — real strikeout rate of just ${(avgOpponentKPct * 100).toFixed(0)}%.`,
+      });
+    }
+  }
+
+  // 6. Real season rate-stat form (only when clearly above/below average -- this is a
+  // season-long read, weakest signal of the set, so it's ranked last by design).
+  if (row?.era != null) {
+    if (row.era <= 3.20 || row.era >= 5.00) {
+      const good = row.era <= 3.20;
+      drivers.push({
+        icon: good ? '🎖️' : '⚠️',
+        tone: good ? 'green' : 'red',
+        magnitude: Math.abs(row.era - 4.10),
+        text: `Real season ERA of <b>${row.era.toFixed(2)}</b>${good ? ', among the better marks in the league' : ', a rough season so far'}.`,
+      });
+    }
+  }
+
+  drivers.sort((a, b) => b.magnitude - a.magnitude);
+  const top = drivers.slice(0, 5);
+
+  // AI Explanation -- deterministic templated prose, not a generated summary. Built
+  // purely by stitching the top 2-3 real driver sentences together with connective
+  // tissue, same "compute real numbers first, template the sentence" rule as every
+  // other explanation panel in this app (see getColdBatterDiagnosis's own comment).
+  let summary = null;
+  if (top.length) {
+    const strip = t => t.replace(/<\/?b>/g, '');
+    const sentences = top.slice(0, 3).map(d => strip(d.text));
+    const name = (pitcherName || 'This pitcher').split(' ').pop();
+    summary = `${name} ${sentences[0].charAt(0).toLowerCase()}${sentences[0].slice(1)}`;
+    if (sentences[1]) summary += ` ${sentences[1]}`;
+    if (sentences[2]) summary += ` ${sentences[2]}`;
+  } else {
+    const name = (pitcherName || 'This pitcher').split(' ').pop();
+    summary = `No matchup drivers are clearly above/below average for ${name} vs ${oppAbbr || 'this lineup'} right now — a genuinely neutral read, not a missing-data gap.`;
+  }
+
+  return { drivers: top, summary };
+}
+
+function pitcherMatchupDriversHTML(ctx) {
+  const { drivers, summary } = buildMatchupDrivers(ctx);
+  const rows = drivers.map(d => `<div class="pr-driver-row"><span class="pr-driver-icon">${d.icon}</span><span class="pr-driver-text">${d.text}</span></div>`).join('');
+  return `<div class="pr-drivers-panel">
+    <div class="pr-drivers-summary">🤖 <b>AI Explanation:</b> ${summary}</div>
+    ${rows || '<div class="zone-note">No real drivers stand out from average yet.</div>'}
+  </div>
+  <div class="zone-note" style="margin-top:8px">Rule-based synthesis from real numbers already on this page (rolling Statcast trend, bullpen workload, park factor, real platoon splits, opponent K rate, season ERA) -- ranked by how far each one is from average. Not AI-generated text; no external model is called.</div>`;
+}
+
+async function renderPitcherDriversSection(pid, meta, wrap) {
+  if (!wrap.isConnected) return;
+  // See driversRenderTokens' own comment -- this call might be one of two racing to
+  // render the same pitcher; only the most-recently-started one is allowed to write.
+  const token = `${Date.now()}-${Math.random()}`;
+  driversRenderTokens[pid] = token;
+  const row = prRows.find(r => normalizePitcherId(r.pitcher.id) === pid) || null;
+  // Explicitly awaited (not just read off the module store) same as every sibling
+  // section here -- callers don't guarantee loadPitcherRolling has resolved yet by
+  // the time this runs (openPitcherLineupModal fires this and the Arsenal section's
+  // own Promise.all in parallel, not sequentially).
+  await loadPitcherRolling().catch(() => {});
+  const rollingProfile = pitcherRolling[String(pid)] || null;
+  await loadBullpenFatigue().catch(() => {});
+  const bullpenInfo = meta.teamAbbr ? bullpenFatigue[meta.teamAbbr] : null;
+  await loadParkFactors().catch(() => {});
+  const homeAbbr = meta.side === 'home' ? meta.teamAbbr : meta.oppAbbr;
+  const parkIdx = homeAbbr ? parkFactors[homeAbbr] : null;
+  const cacheKey = `${meta.gamePk}-${meta.side}`;
+  const lineup = lineupCache[cacheKey]?.lineup || null;
+  const avgOpponentKPct = (lineup && lineup.length) ? opponentKPctForPid(pid, meta) : null;
+  if (!wrap.isConnected || driversRenderTokens[pid] !== token) return;
+  wrap.innerHTML = pitcherMatchupDriversHTML({
+    pitcherName: meta.pitcherName, oppAbbr: meta.oppAbbr, row, rollingProfile, bullpenInfo, parkIdx, lineup, avgOpponentKPct,
+  });
+}
+
 // Once the opposing lineup (fetched in parallel by openPitcherLineupModal
 // below) actually lands, this fills in the one thing that can't be known
 // before then: a real opposing-lineup-strength read, and refreshes Expected
 // K/IP from the league-average fallback to the real opponent K rate. Bounded
 // to a few tries over a few seconds rather than polling forever if a game's
 // lineup genuinely never posts.
-function pollForLineupThenRefreshMatchup(pid, meta, matchupSubEl, performanceWrap, matchupTableWrap) {
+function pollForLineupThenRefreshMatchup(pid, meta, matchupSubEl, performanceWrap, matchupTableWrap, driversWrap) {
   const cacheKey = `${meta.gamePk}-${meta.side}`;
   let tries = 0;
   (function tick() {
@@ -2821,6 +3003,12 @@ function pollForLineupThenRefreshMatchup(pid, meta, matchupSubEl, performanceWra
       }
       if (performanceWrap && document.body.contains(performanceWrap)) renderPitcherPerformanceSection(pid, meta, performanceWrap);
       if (matchupTableWrap && document.body.contains(matchupTableWrap)) renderPitcherMatchupTable(pid, meta, matchupTableWrap);
+      // Matchup Drivers depends on the same real lineup (platoon splits, opponent K%)
+      // this poll just confirmed landed, plus bullpen/park data the section fetches
+      // itself -- re-run it now so its first real render reflects the actual lineup
+      // instead of the "no lineup yet" placeholder it's stuck with when this function
+      // first runs before the lineup exists.
+      if (driversWrap && document.body.contains(driversWrap)) renderPitcherDriversSection(pid, meta, driversWrap);
       return;
     }
     if (tries < 6) setTimeout(tick, 500);
@@ -2855,6 +3043,14 @@ const MU_TABLE_COLUMNS = [
   { key: 'avgEV',   label: 'Avg EV', dec: 1, suffix: ' mph' },
   { key: 'whiffPct', label: 'Whiff%', dec: 1, suffix: '%' },
   { key: 'hr',      label: 'HR', dec: 0 },
+  // Real platoon split (AVG/OBP/SLG summed) against today's specific pitcher's real
+  // throwing hand -- from fetchAndRenderLineup's per-batter statSplits fetch (batter.
+  // platoon), not the pitch-mix store the columns above read from, but merged into the
+  // same per-row stat object below so this generic column renderer needs no special case.
+  { key: 'platoonOps', label: 'OPS vs Hand', dec: 3, pct0: true },
+  // Real season K% as a hitter (strikeOuts/PA) -- batter.kPct, same "already computed
+  // for the K-prop cell's lineup average, now also surfaced per batter" data as there.
+  { key: 'kPct', label: 'K%', dec: 1, suffix: '%' },
 ];
 
 // Real per-batter production against either every pitch this pitcher throws
@@ -2916,6 +3112,12 @@ function _muHeatBG(colKey, val) {
     case 'woba': return heatBG(val, 0.290, 0.370);
     case 'avgEV': return heatBG(val, 87, 92);
     case 'whiffPct': return heatBGInverted(val, 30, 15);
+    // League-average OPS runs ~.720-.750; a real vs-hand OPS well above that is real
+    // extra danger to this pitcher specifically (not just this batter's overall line).
+    case 'platoonOps': return heatBG(val, 0.680, 0.850);
+    // Inverted like Whiff% above -- a HIGH strikeout rate is good/safe for the pitcher
+    // (green), a low one means a contact hitter who's a tougher real out (red).
+    case 'kPct': return heatBGInverted(val, 25, 15);
     default: return 'transparent';
   }
 }
@@ -2992,6 +3194,8 @@ function pitcherMatchupTableHTML(pid, meta) {
 
   const rows = filtered.map(b => {
     const stat = batterStatsForPitchFilter(b.id, state.pitch);
+    stat.platoonOps = b.platoon?.ops ?? null;
+    stat.kPct = b.kPct ?? null;
     const seasonHR = parseInt(b.stats?.homeRuns);
     return { batter: b, stat, seasonHR: Number.isFinite(seasonHR) ? seasonHR : null };
   });
@@ -3040,7 +3244,7 @@ function pitcherMatchupTableHTML(pid, meta) {
       <tbody>${bodyRows}</tbody>
     </table></div>
     <div class="zone-note" style="margin-top:2px">Click a batter to open their full Matchup analysis.</div>
-    <div class="zone-note" style="margin-top:8px">Real 2026 season production vs the selected pitch type (data/batter-pitch-type-season.json), not a head-to-head history against this specific pitcher -- too small a sample to exist for most matchups. Color = danger to this pitcher (red = production well above average, green = below); ★ = most home runs in today's confirmed lineup.</div>`;
+    <div class="zone-note" style="margin-top:8px">Real 2026 season production vs the selected pitch type (data/batter-pitch-type-season.json), not a head-to-head history against this specific pitcher -- too small a sample to exist for most matchups. "OPS vs Hand" and "K%" are real, unfiltered season stats (platoon split vs this pitcher's own throwing hand, and strikeout rate as a hitter) -- they don't change with the pitch-type filter above. Color = danger to this pitcher (red = production well above average, green = below); ★ = most home runs in today's confirmed lineup.</div>`;
 }
 
 function renderPitcherMatchupTable(pid, meta, wrap) {
@@ -3130,6 +3334,11 @@ function openPitcherLineupModal(pidRaw) {
   if (sub) sub.textContent = `Pitcher Analytics Dashboard${meta.teamAbbr && meta.oppAbbr ? ` · ${meta.teamAbbr} vs ${meta.oppAbbr}` : ''}`;
   body.innerHTML = '';
 
+  const driversWrap = document.createElement('div');
+  driversWrap.id = `pr-drivers-${pid}`;
+  driversWrap.innerHTML = `<div style="padding:10px 0;color:var(--muted);font-size:12px"><span class="spin"></span> Analyzing today's matchup…</div>`;
+  body.appendChild(pitcherDashboardSectionWrap('drivers', driversWrap, 'Real-number synthesis, ranked by how far each factor is from average'));
+
   const arsenalWrap = document.createElement('div');
   arsenalWrap.id = `pr-arsenal-${pid}`;
   arsenalWrap.innerHTML = `<div style="padding:10px 0;color:var(--muted);font-size:12px"><span class="spin"></span> Loading ${meta.pitcherName || 'pitcher'}'s pitch data…</div>`;
@@ -3174,6 +3383,11 @@ function openPitcherLineupModal(pidRaw) {
   Promise.all([loadPitcherStatcast(), loadPitcherRolling()]).then(() => {
     arsenalWrap.innerHTML = pitcherArsenalPanelHTML(pid, meta.pitcherName);
     drFillMeters(arsenalWrap);
+    // Chained after this exact Promise.all (rather than calling loadPitcherRolling
+    // independently) so it can never render its first pass with a still-loading
+    // rolling profile -- same real dependency the Arsenal section above already has
+    // on this data, not a second guess at load ordering.
+    renderPitcherDriversSection(pid, meta, driversWrap);
   });
   renderPitcherPerformanceSection(pid, meta, performanceWrap);
   renderPitcherEnvironmentSection(meta, environmentWrap);
@@ -3183,7 +3397,7 @@ function openPitcherLineupModal(pidRaw) {
   if (lineupCache[cacheKey]) {
     renderLineup(`panel-${pid}`, lineupCache[cacheKey], meta.pitcherHr9, meta.pitcherIp, meta.oppAbbr, pid, meta.pitcherName);
   } else if (!lineupLoading.has(pid)) {
-    fetchAndRenderLineup(pid, meta.pitcherName, meta.gamePk, meta.side, meta.oppTeamId, meta.pitcherHr9, meta.pitcherIp, false, true).catch(()=>{});
+    fetchAndRenderLineup(pid, meta.pitcherName, meta.gamePk, meta.side, meta.oppTeamId, meta.pitcherHr9, meta.pitcherIp, false, true, meta.pitcherHand).catch(()=>{});
   }
   // The scouting table needs the pitcher's own arsenal (for the filter chips) and
   // the batter pitch-type-season store (for every stat cell) on top of the lineup
@@ -3194,7 +3408,7 @@ function openPitcherLineupModal(pidRaw) {
   });
   renderPitcherMatchupTable(pid, meta, matchupTableWrap);
   const matchupSubEl = matchupSectionEl.querySelector('.dr-pdash-section-sub');
-  pollForLineupThenRefreshMatchup(pid, meta, matchupSubEl, performanceWrap, matchupTableWrap);
+  pollForLineupThenRefreshMatchup(pid, meta, matchupSubEl, performanceWrap, matchupTableWrap, driversWrap);
 }
 window.openPitcherLineupModal = openPitcherLineupModal;
 
@@ -3279,13 +3493,14 @@ function renderPRTable() {
     lineupMeta[pid] = {
       pitcherName: p.name, gamePk: p.gamePk, side: p.side, oppTeamId: p.oppTeamId,
       pitcherHr9: r.rawHr9, pitcherIp: r.rawIp, teamAbbr: p.teamAbbr, oppAbbr: p.oppAbbr,
+      pitcherHand: r.pitcherHand,
     };
 
     const row = `<tr class="pr-row-tr" id="pr-row-${pid}" style="cursor:pointer" onclick="window.openPitcherLineupModal('${pid}')">
         <td class="pr-lineup-batter-cell">
           <img class="pr-headshot" src="${hs(p.id)}" alt="${p.name}" loading="lazy" decoding="async">
           <div style="min-width:0">
-            <div class="pr-mobile-name">${p.name}</div>
+            <div class="pr-mobile-name">${p.name} ${pitcherTrendIndicatorChipHTML(pitcherRolling[String(p.id)])}</div>
             <div class="pr-mobile-sub">${p.teamAbbr} · ${r.wl} · vs ${p.oppAbbr}</div>
             <div class="pr-mobile-time" style="color:${p.timeColor};font-weight:${p.timeLabel.includes('LIVE')?700:400}">${p.timeLabel}</div>
             <div class="pr-lineup-hint" style="display:inline-flex;align-items:center;gap:4px;margin-top:5px;padding:3px 8px;border-radius:999px;background:rgba(47,107,255,.12);border:1px solid rgba(47,107,255,.35);color:var(--accent2);font-size:9px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap">
@@ -3430,7 +3645,7 @@ async function fetchExpectedLineup(teamId) {
   }
 }
 
-async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp, skipEnrichment = false, bypassPRGuards = false) {
+async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp, skipEnrichment = false, bypassPRGuards = false, pitcherHand = null) {
   const pid = normalizePitcherId(pitcherId);
   const panel = document.getElementById(`panel-${pid}`);
   if (!panel) return;
@@ -3509,6 +3724,30 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
       ? fetchJSON(`https://diamondreport.app/api/v1/people?personIds=${batterIdsForHand.join(',')}`).catch(() => null)
       : Promise.resolve(null);
 
+    // Real per-batter platoon split (AVG/OBP/SLG/OPS) against THIS specific pitcher's
+    // real throwing hand -- same statSplits/vl/vr endpoint and batterSplitForHand
+    // extraction openMatchup already uses for one batter at a time, just paid for the
+    // whole lineup here since opening a pitcher's full report is an explicit on-demand
+    // click, not part of the always-on HR Threats board. One request per batter (not
+    // gated on a minimum AB -- degrades to whatever real sample exists, same convention
+    // as openMatchup's own split fetch, never fabricated). Skipped entirely when the
+    // pitcher's own throwing hand isn't known yet.
+    const platoonSplitPromise = (pitcherHand === 'L' || pitcherHand === 'R') && batterIdsForHand.length
+      ? Promise.all(batterIdsForHand.map(async id => {
+          try {
+            const d = await fetchJSON(`https://diamondreport.app/api/v1/people/${id}/stats?stats=statSplits&group=hitting&sitCodes=vl,vr&season=${today.slice(0,4)}`);
+            const split = batterSplitForHand(d?.stats?.[0]?.splits || [], pitcherHand);
+            if (!split) return [id, null];
+            const avg = split.avg != null ? parseFloat(split.avg) : null;
+            const obp = split.obp != null ? parseFloat(split.obp) : null;
+            const slg = split.slg != null ? parseFloat(split.slg) : null;
+            const ops = split.ops != null ? parseFloat(split.ops) : (obp != null && slg != null ? +(obp + slg).toFixed(3) : null);
+            const ab = split.atBats != null ? parseInt(split.atBats) : null;
+            return [id, { avg, obp, slg, ops, ab }];
+          } catch { return [id, null]; }
+        })).then(pairs => Object.fromEntries(pairs))
+      : Promise.resolve({});
+
     // Fast path: use stats already in the boxscore, skip per-batter API calls.
     // K Props lineup expand uses this — saves ~18 API calls and renders instantly.
     let enriched;
@@ -3541,25 +3780,39 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
       }));
     }
 
-    const peopleData = await batSidePromise;
+    const [peopleData, platoonById] = await Promise.all([batSidePromise, platoonSplitPromise]);
     const batSideById = {};
     (peopleData?.people || []).forEach(p => { if (p?.id) batSideById[p.id] = handCode(p, 'batSide'); });
 
-    const lineup = batters.slice(0,9).map((b, i) => ({
-      name: b.person?.fullName || '–',
-      id: b.person?.id,
-      pos: b.position?.abbreviation || '–',
-      // Real MLB-reported batting side ('R'/'L'/'S') from the bulk /people fetch
-      // above, or null if that call failed or this batter simply isn't in the
-      // response -- never guessed, and handCode's own '–' sentinel is normalized
-      // to null here so downstream RHB/LHB grouping can cleanly skip unknowns.
-      hand: (batSideById[b.person?.id] && batSideById[b.person?.id] !== '–') ? batSideById[b.person?.id] : null,
-      stats: enriched[i].seasonStats,
-      last10HR: enriched[i].last10HR,
-      todayHR: enriched[i].todayHR,
-      confirmed: lineupConfirmed,
-      source: lineupSource
-    }));
+    const lineup = batters.slice(0,9).map((b, i) => {
+      const s = enriched[i].seasonStats || {};
+      const pa = parseInt(s.plateAppearances) || 0;
+      const so = parseInt(s.strikeOuts) || 0;
+      return {
+        name: b.person?.fullName || '–',
+        id: b.person?.id,
+        pos: b.position?.abbreviation || '–',
+        // Real MLB-reported batting side ('R'/'L'/'S') from the bulk /people fetch
+        // above, or null if that call failed or this batter simply isn't in the
+        // response -- never guessed, and handCode's own '–' sentinel is normalized
+        // to null here so downstream RHB/LHB grouping can cleanly skip unknowns.
+        hand: (batSideById[b.person?.id] && batSideById[b.person?.id] !== '–') ? batSideById[b.person?.id] : null,
+        stats: s,
+        last10HR: enriched[i].last10HR,
+        todayHR: enriched[i].todayHR,
+        confirmed: lineupConfirmed,
+        source: lineupSource,
+        // Real season K% as a hitter (strikeOuts/plateAppearances) -- was already being
+        // computed inline just for the K-prop cell's lineup-wide average (see below);
+        // kept per-batter here too so the scouting table can show each hitter's own
+        // real strikeout tendency instead of only the lineup-wide blend.
+        kPct: pa > 0 ? +(so / pa * 100).toFixed(1) : null,
+        // Real platoon split (AVG/OBP/SLG/OPS) vs today's specific pitcher's throwing
+        // hand -- null when the pitcher's hand isn't known yet or the fetch found no
+        // real split for this batter, never fabricated.
+        platoon: platoonById[b.person?.id] || null,
+      };
+    });
 
     const cacheKey = `${gamePk}-${side}`;
     const prevLineup = lineupCache[cacheKey]?.lineup || [];
@@ -3711,6 +3964,45 @@ function pitchBarChartHTML(title, subtitle, rows, domainMax, fmt) {
     <div class="dr-pchart-title">${title}${subtitle ? `<span class="dr-pchart-subtitle">${subtitle}</span>` : ''}</div>
     <div class="dr-pchart-rows">${bars}</div>
   </div>`;
+}
+
+// Pitcher Trend Indicator -- adapts computePlayerTrendIndicator's Hot Streak/Trending
+// Up/Cooling Off/Cold pattern (batter HR trend, HR Threats board) for pitchers. A
+// pitcher's "hot" means structurally different things than a batter's, so this is its
+// own real signal, not a reused one: driven by real velocity + whiff-rate deltas (last
+// 3 starts vs season baseline, already computed by sync-pitcher-rolling.mjs), weighted
+// by each pitch's rolling usage share so a shift on the primary weapon counts more than
+// one on a rarely-thrown fourth pitch. Null (no badge) when rolling data hasn't synced
+// for this pitcher yet or the signal is genuinely neutral -- never fabricated.
+function computePitcherTrendIndicator(rollingProfile) {
+  if (!rollingProfile || !Array.isArray(rollingProfile.byPitch) || !rollingProfile.byPitch.length) return null;
+  let veloW = 0, veloSum = 0, whiffW = 0, whiffSum = 0;
+  rollingProfile.byPitch.forEach(p => {
+    const w = p.rollingUsagePct || 0;
+    if (p.veloDelta != null) { veloSum += p.veloDelta * w; veloW += w; }
+    if (p.whiffDelta != null) { whiffSum += p.whiffDelta * w; whiffW += w; }
+  });
+  if (!veloW && !whiffW) return null;
+  const veloDelta = veloW > 0 ? veloSum / veloW : 0;
+  const whiffDelta = whiffW > 0 ? whiffSum / whiffW : 0;
+  // Combine into one score: velo weighted x2 (0.5mph is already a meaningful shift per
+  // the L3 Trend table's own noise floor) plus raw whiff% points.
+  const score = (veloDelta * 2) + whiffDelta;
+  let label = null, tone = '';
+  if (score >= 4) { label = 'Hot Streak'; tone = 'red'; }
+  else if (score >= 1.5) { label = 'Trending Up'; tone = 'green'; }
+  else if (score <= -4) { label = 'Cold'; tone = ''; }
+  else if (score <= -1.5) { label = 'Cooling Off'; tone = ''; }
+  if (!label) return null;
+  return { label, tone, veloDelta: +veloDelta.toFixed(1), whiffDelta: +whiffDelta.toFixed(1) };
+}
+function pitcherTrendIndicatorChipHTML(rollingProfile) {
+  const t = computePitcherTrendIndicator(rollingProfile);
+  if (!t) return '';
+  const icon = t.label === 'Hot Streak' ? '📈' : t.label === 'Trending Up' ? '↗️' : t.label === 'Cooling Off' ? '↘️' : '🧊';
+  const cls = t.tone === 'red' ? 'red' : t.tone === 'green' ? 'green' : '';
+  const title = `Velo ${t.veloDelta > 0 ? '+' : ''}${t.veloDelta} mph, Whiff ${t.whiffDelta > 0 ? '+' : ''}${t.whiffDelta}% (L3 starts vs season, usage-weighted)`;
+  return `<span class="pr-trend-chip ${cls}" title="${drEscAttr(title)}">${icon} ${t.label.toUpperCase()}</span>`;
 }
 
 function pitcherArsenalPanelHTML(pitcherId, pitcherName) {
@@ -3865,6 +4157,7 @@ function pitcherArsenalPanelHTML(pitcherId, pitcherName) {
         <td><strong>${p.name}</strong></td>
         <td class="num">${p.seasonUsagePct != null ? p.seasonUsagePct.toFixed(0) + '%' : '–'} → ${p.rollingUsagePct != null ? p.rollingUsagePct.toFixed(0) + '%' : '–'}</td>
         <td class="num">${p.seasonVelo != null ? p.seasonVelo.toFixed(1) : '–'} → ${p.rollingVelo != null ? p.rollingVelo.toFixed(1) : '–'} mph (${rollingDeltaTagPitcherView(p.veloDelta, 0.5)})</td>
+        <td class="num">${p.seasonSpin != null ? p.seasonSpin : '–'} → ${p.rollingSpin != null ? p.rollingSpin : '–'} rpm${p.spinDelta != null ? ` (${rollingDeltaTagPitcherView(p.spinDelta, 50)})` : ''}</td>
         <td class="num">${p.seasonWhiffPct != null ? p.seasonWhiffPct.toFixed(0) + '%' : '–'} → ${p.rollingWhiffPct != null ? p.rollingWhiffPct.toFixed(0) + '%' : '–'} (${rollingDeltaTagPitcherView(p.whiffDelta, 3)})</td>
       </tr>`).join('');
   }
@@ -3890,7 +4183,7 @@ function pitcherArsenalPanelHTML(pitcherId, pitcherName) {
   function rollingBody(isActive) {
     const shortPName = (pitcherName || '').split(' ').pop();
     return `<div class="dr-pstats-mode-body${isActive ? ' active' : ''}" data-mode="rolling">
-      <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage (Season → L3)</th><th>Velo (Season → L3)</th><th>Whiff% (Season → L3)</th></tr></thead><tbody>${rollingRows}</tbody></table></div>
+      <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage (Season → L3)</th><th>Velo (Season → L3)</th><th>Spin (Season → L3)</th><th>Whiff% (Season → L3)</th></tr></thead><tbody>${rollingRows}</tbody></table></div>
       <div class="zone-note" style="margin-top:8px">${shortPName}'s last 3 starts${rollingLastDates ? ` (${rollingLastDates})` : ''} vs his full-season baseline. Green = trending better for him (velocity or whiff rate up). Orange = trending worse (velocity or whiff rate down). Muted = change too small to be a real signal.</div>
     </div>`;
   }
@@ -3907,10 +4200,20 @@ function pitcherArsenalPanelHTML(pitcherId, pitcherName) {
       : hasRollingData
         ? `${pitcherName}'s last 3 starts compared to his full-season baseline, per pitch — season pitch-mix data not synced yet.`
         : `No real pitch-level data available for ${pitcherName} yet — this section will populate once the daily Statcast sync has run.`;
+  // Chase% (O-Swing%) -- overall (not per-pitch-type), so it's a headline stat rather
+  // than another pitch-mix table column. See sync-pitcher-rolling.mjs's
+  // OUT_OF_ZONE_CODES comment for exactly what counts as "out of zone."
+  const trendChipHTML = pitcherTrendIndicatorChipHTML(rollingProfile);
+  const chaseTextHTML = rollingProfile?.seasonChasePct != null
+    ? `<span title="Real swing rate on pitches outside the strike zone (Statcast zone 11-14), season vs last 3 starts">Chase% (O-Swing): <strong>${rollingProfile.seasonChasePct.toFixed(1)}%</strong>${rollingProfile.rollingChasePct != null ? ` → <strong>${rollingProfile.rollingChasePct.toFixed(1)}%</strong> (L3)` : ''}</span>`
+    : '';
+  const chasePctHTML = (chaseTextHTML || trendChipHTML)
+    ? `<div class="pr-chase-chip">${chaseTextHTML}${chaseTextHTML && trendChipHTML ? ' &nbsp; ' : ''}${trendChipHTML}</div>`
+    : '';
 
   const pitchEffectivenessTableHTML = pstatsModes.length > 0 ? `<div class="dr1041-pitch-mix" style="margin-top:14px" data-pstats-toggle>
     <div class="dr1041-pitch-head">
-      <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">${pstatsSubtext}</div></div>
+      <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">${pstatsSubtext}</div>${chasePctHTML}</div>
       ${pstatsToggleHTML}
     </div>
     ${pstatsBodiesHTML}
@@ -6356,11 +6659,12 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         <td><strong>${p.name}</strong></td>
         <td class="num">${p.seasonUsagePct != null ? p.seasonUsagePct.toFixed(0) + '%' : '–'} → ${p.rollingUsagePct != null ? p.rollingUsagePct.toFixed(0) + '%' : '–'}</td>
         <td class="num">${p.seasonVelo != null ? p.seasonVelo.toFixed(1) : '–'} → ${p.rollingVelo != null ? p.rollingVelo.toFixed(1) : '–'} mph (${rollingDeltaTag(p.veloDelta, 0.5)})</td>
+        <td class="num">${p.seasonSpin != null ? p.seasonSpin : '–'} → ${p.rollingSpin != null ? p.rollingSpin : '–'} rpm${p.spinDelta != null ? ` (${rollingDeltaTag(p.spinDelta, 50)})` : ''}</td>
         <td class="num">${p.seasonWhiffPct != null ? p.seasonWhiffPct.toFixed(0) + '%' : '–'} → ${p.rollingWhiffPct != null ? p.rollingWhiffPct.toFixed(0) + '%' : '–'} (${rollingDeltaTag(p.whiffDelta, 3)})</td>
       </tr>`).join('');
     const lastDates = (rollingProfile.lastStartDates || []).join(', ');
     return `<div class="dr-pstats-mode-body${isActive ? ' active' : ''}" data-mode="rolling">
-      <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage (Season → L3)</th><th>Velo (Season → L3)</th><th>Whiff% (Season → L3)</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage (Season → L3)</th><th>Velo (Season → L3)</th><th>Spin (Season → L3)</th><th>Whiff% (Season → L3)</th></tr></thead><tbody>${rows}</tbody></table></div>
       <div class="zone-note" style="margin-top:8px">${shortPName}'s last 3 starts${lastDates ? ` (${lastDates})` : ''} vs his full-season baseline. Green = trending easier for the batter (velocity or whiff rate down). Orange = trending tougher (velocity or whiff rate up). Muted = change too small to be a real signal.</div>
     </div>`;
   }

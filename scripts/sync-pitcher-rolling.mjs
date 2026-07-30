@@ -65,6 +65,18 @@ async function fetchText(url, attempts = 3) {
 
 const SWING_DESCRIPTIONS = new Set(['swinging_strike', 'swinging_strike_blocked', 'foul', 'foul_tip', 'foul_bunt', 'hit_into_play', 'missed_bunt']);
 const WHIFF_DESCRIPTIONS = new Set(['swinging_strike', 'swinging_strike_blocked']);
+// Chase% (O-Swing%) -- how often a pitcher gets a swing on a pitch OUTSIDE the strike
+// zone. Statcast's documented `zone` numbering: 1-9 are the 9 in-zone cells (the same
+// 3x3 grid sync-pitcher-zone-hr.mjs's byZone already keys on), 11/12/13/14 are the four
+// out-of-zone "chase" quadrants (upper-left/upper-right/lower-left/lower-right outside
+// the strike zone) -- a pitch with no zone value at all (rare miscall) is excluded
+// rather than guessed. Computed from the exact same per-pitch rows already being read
+// for velocity/spin/whiff above -- no new fetch, no new data source. Overall (not
+// per-pitch-type) since that's how chase rate is conventionally reported. Same
+// sandbox-can't-verify-live-schema caveat as every other Statcast Search field in this
+// file -- 'zone' itself is already relied on by sync-pitcher-zone-hr.mjs, not a new
+// unverified column.
+const OUT_OF_ZONE_CODES = new Set([11, 12, 13, 14]);
 
 function buildPitcherRolling(csv, name) {
   const rows = parseCSV(csv);
@@ -83,6 +95,8 @@ function buildPitcherRolling(csv, name) {
   //                rollingSpinSum, rollingSpinCount, rollingSwings, rollingWhiffs }
   const agg = {};
   let seasonTotal = 0, rollingTotal = 0;
+  // Overall (not per-pitch-type) chase counters -- see OUT_OF_ZONE_CODES comment above.
+  let seasonOOZPitches = 0, seasonOOZSwings = 0, rollingOOZPitches = 0, rollingOOZSwings = 0;
 
   for (const r of rows) {
     const pitchType = r.pitch_type;
@@ -99,6 +113,8 @@ function buildPitcherRolling(csv, name) {
     const isSwing = SWING_DESCRIPTIONS.has(desc);
     const isWhiff = WHIFF_DESCRIPTIONS.has(desc);
     const inRolling = rollingDates.has(r.game_date);
+    const zone = Number(r.zone);
+    const isOutOfZone = Number.isFinite(zone) && OUT_OF_ZONE_CODES.has(zone);
 
     a.seasonCount++;
     seasonTotal++;
@@ -106,6 +122,7 @@ function buildPitcherRolling(csv, name) {
     if (Number.isFinite(spin)) { a.seasonSpinSum += spin; a.seasonSpinCount++; }
     if (isSwing) a.seasonSwings++;
     if (isWhiff) a.seasonWhiffs++;
+    if (isOutOfZone) { seasonOOZPitches++; if (isSwing) seasonOOZSwings++; }
 
     if (inRolling) {
       a.rollingCount++;
@@ -114,6 +131,7 @@ function buildPitcherRolling(csv, name) {
       if (Number.isFinite(spin)) { a.rollingSpinSum += spin; a.rollingSpinCount++; }
       if (isSwing) a.rollingSwings++;
       if (isWhiff) a.rollingWhiffs++;
+      if (isOutOfZone) { rollingOOZPitches++; if (isSwing) rollingOOZSwings++; }
     }
   }
 
@@ -126,6 +144,11 @@ function buildPitcherRolling(csv, name) {
     const rollingUsagePct = rollingTotal > 0 ? (a.rollingCount / rollingTotal) * 100 : null;
     const seasonWhiffPct = a.seasonSwings > 0 ? (a.seasonWhiffs / a.seasonSwings) * 100 : null;
     const rollingWhiffPct = a.rollingSwings > 0 ? (a.rollingWhiffs / a.rollingSwings) * 100 : null;
+    // release_spin_rate was already being parsed and aggregated per pitch (seasonSpinSum/
+    // seasonSpinCount/rollingSpinSum/rollingSpinCount above) but never made it into the
+    // written output -- the sums were computed and then silently discarded every run.
+    const seasonSpin = a.seasonSpinCount > 0 ? a.seasonSpinSum / a.seasonSpinCount : null;
+    const rollingSpin = a.rollingSpinCount > 0 ? a.rollingSpinSum / a.rollingSpinCount : null;
     byPitch.push({
       name: pitchName,
       seasonVelo: seasonVelo != null ? +seasonVelo.toFixed(1) : null,
@@ -137,12 +160,25 @@ function buildPitcherRolling(csv, name) {
       seasonWhiffPct: seasonWhiffPct != null ? +seasonWhiffPct.toFixed(1) : null,
       rollingWhiffPct: rollingWhiffPct != null ? +rollingWhiffPct.toFixed(1) : null,
       whiffDelta: (seasonWhiffPct != null && rollingWhiffPct != null) ? +(rollingWhiffPct - seasonWhiffPct).toFixed(1) : null,
+      seasonSpin: seasonSpin != null ? Math.round(seasonSpin) : null,
+      rollingSpin: rollingSpin != null ? Math.round(rollingSpin) : null,
+      spinDelta: (seasonSpin != null && rollingSpin != null) ? Math.round(rollingSpin - seasonSpin) : null,
     });
   }
   if (!byPitch.length) return null;
   byPitch.sort((a, b) => (b.rollingUsagePct || 0) - (a.rollingUsagePct || 0));
 
-  return { lastStartDates: [...rollingDates].sort().reverse(), byPitch };
+  // Same MIN_ROLLING_PITCHES floor as the per-pitch-type rolling stats above, applied
+  // to the rolling out-of-zone pitch count so a 1-2-pitch rolling sample doesn't produce
+  // a wild swing-rate percentage.
+  const seasonChasePct = seasonOOZPitches > 0 ? +(seasonOOZSwings / seasonOOZPitches * 100).toFixed(1) : null;
+  const rollingChasePct = rollingOOZPitches >= MIN_ROLLING_PITCHES ? +(rollingOOZSwings / rollingOOZPitches * 100).toFixed(1) : null;
+  const chaseDelta = (seasonChasePct != null && rollingChasePct != null) ? +(rollingChasePct - seasonChasePct).toFixed(1) : null;
+
+  return {
+    lastStartDates: [...rollingDates].sort().reverse(), byPitch,
+    seasonChasePct, rollingChasePct, chaseDelta,
+  };
 }
 
 async function main() {
