@@ -65,7 +65,7 @@ jobs:
       # itself means a transient MLB API hiccup only costs the storylines, never the
       # recap, so this is safe to run unconditionally rather than gating it like the
       # continue-on-error steps elsewhere in this repo.
-      - name: Generate Diamond Report Headlines (recap, trends, notable performances, weather, injuries, model movement, leaderboard)
+      - name: Generate Diamond Report Headlines (recap, trends, notable performances, weather, injuries, model movement, leaderboard, trending players)
         run: node scripts/generate-headlines.mjs
 
       - name: Commit and push if changed
@@ -79,6 +79,7 @@ jobs:
           [ -f data/ballparkpal-comparison.json ] && git add data/ballparkpal-comparison.json
           [ -f data/drp-sim-comparison.json ] && git add data/drp-sim-comparison.json
           [ -f data/daily-headlines.json ] && git add data/daily-headlines.json
+          [ -f data/trending-players.json ] && git add data/trending-players.json
           # update-tracker.mjs has written data/prop-market-odds.json since the
           # situational-true-probability edge feature was added, but this step never
           # staged it — every run silently wrote the file to the runner's local working
@@ -86,7 +87,7 @@ jobs:
           # job logs: the file has never existed on main despite the script succeeding.
           [ -f data/prop-market-odds.json ] && git add data/prop-market-odds.json
           if git diff --cached --quiet; then
-            echo "No changes to data/tracker.json, data/k-props.json, data/ballparkpal-comparison.json, data/drp-sim-comparison.json, data/prop-market-odds.json, or data/daily-headlines.json — nothing to commit."
+            echo "No changes to data/tracker.json, data/k-props.json, data/ballparkpal-comparison.json, data/drp-sim-comparison.json, data/prop-market-odds.json, data/daily-headlines.json, or data/trending-players.json — nothing to commit."
             exit 0
           fi
           git config user.name "diamond-report-bot"

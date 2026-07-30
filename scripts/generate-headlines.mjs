@@ -38,6 +38,7 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const OUT_PATH = path.join(DATA_DIR, 'daily-headlines.json');
+const TRENDING_PATH = path.join(DATA_DIR, 'trending-players.json');
 const API = 'https://statsapi.mlb.com/api/v1';
 
 async function fetchJSON(url, attempts = 3) {
@@ -369,6 +370,120 @@ async function buildLeaderboardHeadline(season) {
   };
 }
 
+// ── 8. Trending Players — a small real visual per player, similar in spirit to
+// Baseball Savant's own "Trending Players" widget. Written to its own output
+// file (data/trending-players.json) rather than folded into the headlines
+// array above, since these are visual cards (a real mini spray chart / whiff
+// scatter), not another title+blurb text headline.
+//
+// Batters are ranked by the exact same real HR-streak ratio
+// computeStreakIndicator already computes above -- restricted here to Hot
+// Streak/Trending Up only (upside framing, matching the reference), unlike
+// the streak headlines above which deliberately also cover cold stretches.
+// Pitchers are ranked by a real rolling-usage-weighted whiff% delta from
+// data/pitcher-rolling.json (each pitch type's real whiffDelta, weighted by
+// how often that pitch is actually thrown, not a flat average across pitch
+// types of wildly different usage). Every card's visual is real synced
+// coordinates -- a real HR landing spot (data/batter-hr-spray.json) or a real
+// swing-and-miss location (data/pitcher-statcast.json's whiffLocations,
+// synced by sync-pitcher-zone-hr.mjs) -- capped to the most recent
+// TRENDING_MAX_DOTS events per player so the small card stays readable, never
+// a random or fabricated sample. A player with a real qualifying trend but no
+// synced visual data yet is simply left out, rather than shown with an empty
+// chart.
+const TRENDING_MAX_BATTERS = 3;
+const TRENDING_MAX_PITCHERS = 2;
+const TRENDING_MAX_DOTS = 15;
+
+function buildTrendingBatters(pool, hrSprayData) {
+  const spray = hrSprayData?.players || {};
+  const candidates = [];
+  for (const row of pool) {
+    if (!row.name || !row.id) continue;
+    const streak = computeStreakIndicator(row);
+    if (!streak || (streak.label !== 'Hot Streak' && streak.label !== 'Trending Up')) continue;
+    const ratio = streak.last10HR / Math.max(streak.expectedHRPer10, 0.4);
+    candidates.push({ row, streak, ratio });
+  }
+  candidates.sort((a, b) => b.ratio - a.ratio);
+  const out = [];
+  for (const { row, streak, ratio } of candidates) {
+    const dots = (spray[String(row.id)] || [])
+      .slice()
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+      .slice(0, TRENDING_MAX_DOTS)
+      .map(d => ({ xFt: d.xFt, yFt: d.yFt, distance: d.distance }));
+    if (!dots.length) continue; // real trend, but no synced visual yet -- skip rather than show empty
+    out.push({
+      playerId: row.id,
+      name: row.name,
+      type: 'batter',
+      trendLabel: streak.label,
+      trendMetric: 'HR pace vs season rate (last 10 games)',
+      trendPct: Math.round((ratio - 1) * 100),
+      visual: { type: 'spray', label: `${row.name.split(' ').pop()} Home Runs`, dots },
+    });
+    if (out.length >= TRENDING_MAX_BATTERS) break;
+  }
+  return out;
+}
+
+function buildTrendingPitchers(pitcherRollingData, pitcherStatcastData, pitcherNameById) {
+  const rolling = pitcherRollingData?.pitchers || {};
+  const statcast = pitcherStatcastData?.pitchers || {};
+  const candidates = [];
+  for (const [id, profile] of Object.entries(rolling)) {
+    const name = pitcherNameById.get(Number(id)) || pitcherNameById.get(id);
+    if (!name) continue;
+    const rows = (profile.byPitch || []).filter(p => p.whiffDelta != null && p.rollingUsagePct != null);
+    if (!rows.length) continue;
+    const weightSum = rows.reduce((s, p) => s + p.rollingUsagePct, 0);
+    if (weightSum <= 0) continue;
+    const weightedDelta = rows.reduce((s, p) => s + p.whiffDelta * p.rollingUsagePct, 0) / weightSum;
+    if (weightedDelta <= 0) continue; // upside-only, same framing as batters above
+    candidates.push({ id, name, weightedDelta });
+  }
+  candidates.sort((a, b) => b.weightedDelta - a.weightedDelta);
+  const out = [];
+  for (const { id, name, weightedDelta } of candidates) {
+    const whiffs = (statcast[id]?.whiffLocations || [])
+      .slice()
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+      .slice(0, TRENDING_MAX_DOTS)
+      .map(w => ({ plateX: w.plateX, plateZ: w.plateZ, pitchName: w.pitchName }));
+    if (!whiffs.length) continue;
+    out.push({
+      playerId: Number(id) || id,
+      name,
+      type: 'pitcher',
+      trendLabel: 'Trending Up',
+      trendMetric: 'Whiff rate vs season rate (last 3 starts)',
+      trendPct: Math.round(weightedDelta),
+      visual: { type: 'whiff', label: `${name.split(' ').pop()} Whiffs`, dots: whiffs },
+    });
+    if (out.length >= TRENDING_MAX_PITCHERS) break;
+  }
+  return out;
+}
+
+async function buildTrendingPlayers(pool, games, today) {
+  const hrSprayData = await readDataFile('batter-hr-spray.json');
+  const pitcherRollingData = await readDataFile('pitcher-rolling.json');
+  const pitcherStatcastData = await readDataFile('pitcher-statcast.json');
+
+  const pitcherNameById = new Map();
+  for (const g of games || []) {
+    for (const side of ['away', 'home']) {
+      const p = g.teams?.[side]?.probablePitcher;
+      if (p?.id) pitcherNameById.set(p.id, p.fullName);
+    }
+  }
+
+  const batters = pool ? buildTrendingBatters(pool, hrSprayData) : [];
+  const pitchers = pitcherRollingData ? buildTrendingPitchers(pitcherRollingData, pitcherStatcastData, pitcherNameById) : [];
+  return { date: today, generatedAt: new Date().toISOString(), players: [...batters, ...pitchers] };
+}
+
 async function main() {
   await mkdir(DATA_DIR, { recursive: true });
 
@@ -385,12 +500,16 @@ async function main() {
   // Trend + streak headlines depend on a live MLB schedule/roster fetch, unlike
   // everything else here (local data/tracker.json reads) -- isolated in its own
   // try/catch so a transient MLB API hiccup can't cost the other categories too.
+  // pool/games are hoisted out so the Trending Players write below (which needs
+  // the exact same real batter pool + today's probable-pitcher names) doesn't
+  // need a second schedule fetch.
+  let pool = null, games = [];
   try {
     const sched = await fetchJSON(`${API}/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher,linescore,weather`);
-    const games = sched?.dates?.find(d => d.date === today)?.games || [];
+    games = sched?.dates?.find(d => d.date === today)?.games || [];
     const previewGames = games.filter(g => g.status?.abstractGameState === 'Preview');
     if (previewGames.length) {
-      const pool = await buildBatterPool(previewGames, season);
+      pool = await buildBatterPool(previewGames, season);
       headlines.push(...buildTrendHeadlines(pool));
       headlines.push(...buildStreakHeadlines(pool));
     }
@@ -424,6 +543,18 @@ async function main() {
 
   const out = { date: today, generatedAt: new Date().toISOString(), headlines };
   await writeFile(OUT_PATH, JSON.stringify(out, null, 2) + '\n');
+
+  // Isolated in its own try/catch, same discipline as every other optional
+  // category above -- a failure here (missing pitcher-rolling.json on a slow
+  // sync day, etc.) must never take down the headlines write that already
+  // succeeded above it.
+  try {
+    const trendingPlayers = await buildTrendingPlayers(pool, games, today);
+    console.log(`Built ${trendingPlayers.players.length} trending player card(s) for ${today}.`);
+    await writeFile(TRENDING_PATH, JSON.stringify(trendingPlayers, null, 2) + '\n');
+  } catch (e) {
+    console.warn(`Trending Players write failed: ${e.message}`);
+  }
 }
 
 const isMain = import.meta.url === `file://${process.argv[1]}`;
@@ -435,5 +566,5 @@ export {
   buildRecapHeadline, buildTrendHeadlines, trendTitleAndBlurb, parkDescriptor, suppressionClause,
   buildStreakHeadlines, computeStreakIndicator, streakTitleAndBlurb,
   buildNotablePerformanceHeadline, buildWeatherHeadline, buildInjuryHeadline, buildModelMovementHeadline,
-  buildLeaderboardHeadline, main,
+  buildLeaderboardHeadline, buildTrendingBatters, buildTrendingPitchers, buildTrendingPlayers, main,
 };
