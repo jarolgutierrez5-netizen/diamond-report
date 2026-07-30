@@ -4769,3 +4769,170 @@ select:focus-visible {
 .near-hr-detail-link:hover {
   text-decoration: underline;
 }
+
+/* Pitcher Analytics Dashboard (roadmap 7.1) -- five named sections in the
+   pitcher pop-out (Arsenal/Performance/Matchup/Environment/Support), plus
+   the Usage/Velocity/Whiff bar charts inside Arsenal. */
+.dr-pdash-section {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.dr-pdash-section:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+.dr-pdash-section-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.dr-pdash-section-icon {
+  font-size: 14px;
+}
+.dr-pdash-section-title {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  color: var(--text);
+}
+.dr-pdash-section-sub {
+  font-size: 11px;
+  color: var(--muted);
+  flex-basis: 100%;
+}
+
+.dr-pchart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 10px;
+}
+.dr-pchart {
+  background: rgba(255, 255, 255, .02);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+}
+.dr-pchart-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dr-pchart-subtitle {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.dr-pchart-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.dr-pchart-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.dr-pchart-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dr-pchart-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.dr-pchart-track {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .06);
+  overflow: hidden;
+}
+.dr-pchart-fill {
+  height: 100%;
+  border-radius: 999px;
+  width: 0;
+  transition: width .6s cubic-bezier(.16, .84, .44, 1);
+}
+.dr-pchart-value {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.dr-pdash-expected {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px solid rgba(47, 107, 255, .25);
+  border-radius: 12px;
+  background: rgba(47, 107, 255, .05);
+  flex-wrap: wrap;
+}
+.dr-pdash-expected-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 56px;
+}
+.dr-pdash-expected-stat strong {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--accent2);
+  line-height: 1;
+}
+.dr-pdash-expected-stat span {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.dr-pdash-env {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dr-pdash-env-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .02);
+}
+.dr-pdash-env-label {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.dr-pdash-env-value {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text);
+}
