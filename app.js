@@ -2930,10 +2930,26 @@ function pitcherMatchupControlsHTML(pid, state) {
 // below), filtered by real batter hand and the pitcher's real pitch mix. Never a
 // second data source from the lineup cards underneath; just a different real cut
 // of the same batterPitchTypeSeason + lineupCache data.
+// A compact real lineup-status line -- the old per-batter card list surfaced
+// this via a CONFIRMED/pending badge; this table takes over the same honesty
+// signal so an "expected" fallback lineup (from a past game, not yet
+// confirmed for today) is never shown looking as certain as a real posted one.
+function pitcherMatchupLineupStatusHTML(cacheEntry) {
+  if (!cacheEntry) return '';
+  if (cacheEntry.lineupStatus === 'confirmed' || cacheEntry.confirmed === true) {
+    return `<div class="dr-mu-lineup-status confirmed">✅ Confirmed lineup${cacheEntry.source ? ' · ' + drEscAttr(cacheEntry.source) : ''}</div>`;
+  }
+  if (cacheEntry.lineupStatus === 'expected') {
+    return `<div class="dr-mu-lineup-status expected">🟡 Expected lineup — not yet confirmed for today${cacheEntry.expectedFromDate ? ' (from ' + new Date(cacheEntry.expectedFromDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ')' : ''}</div>`;
+  }
+  return '';
+}
+
 function pitcherMatchupTableHTML(pid, meta) {
   const state = _muTableState(pid);
   const cacheKey = `${meta.gamePk}-${meta.side}`;
-  const lineup = lineupCache[cacheKey]?.lineup || [];
+  const cacheEntry = lineupCache[cacheKey];
+  const lineup = cacheEntry?.lineup || [];
   if (!lineup.length) {
     return `<div class="mu-empty" style="color:var(--muted)">Waiting for the ${drEscAttr(meta.oppAbbr || 'opposing')} lineup to load…</div>`;
   }
@@ -2959,28 +2975,40 @@ function pitcherMatchupTableHTML(pid, meta) {
   });
 
   const headCells = MU_TABLE_COLUMNS.map(c => `<th class="num">${c.label}</th>`).join('');
+  const pName = (meta.pitcherName || '').replace(/'/g, "\\'");
+  // data-label carries each column's short header onto its own <td> -- same
+  // mechanism renderPRTable's heatCell/plainCell already use so the existing
+  // @media(max-width:700px) card layout can turn every stat into a labeled
+  // chip via a CSS ::before instead of forcing sideways scroll on a phone.
+  // The whole row opens that batter's full Matchup deep-dive (zone heatmaps,
+  // pitch mix, HR spray chart) -- same openMatchup() the old per-batter
+  // lineup cards' "Matchup" button called, now the only way in from here
+  // since those cards are no longer shown alongside this table.
   const bodyRows = rows.map(({ batter, stat, seasonHR }) => {
     const cells = MU_TABLE_COLUMNS.map(c => {
       if (c.key === 'hr') {
-        return `<td class="num">${seasonHR != null ? seasonHR : '–'}</td>`;
+        return `<td class="num" data-label="${c.label}">${seasonHR != null ? seasonHR : '–'}</td>`;
       }
       const val = stat[c.key];
       const bg = _muHeatBG(c.key, val);
       const txt = val == null ? '<span style="color:var(--muted)">–</span>' : (c.pct0 ? val.toFixed(c.dec).replace(/^0/, '') : val.toFixed(c.dec)) + (c.suffix || '');
-      return `<td class="num" style="background:${bg}">${txt}</td>`;
+      return `<td class="num" data-label="${c.label}" style="background:${bg}">${txt}</td>`;
     }).join('');
     const star = seasonHR != null && seasonHR > 0 && seasonHR === topHRCount ? '<span title="Most HRs in today\'s lineup" style="color:#fbbf24;margin-left:4px">★</span>' : '';
     const handTag = batter.hand ? `<span class="dr-mu-hand-tag">${batter.hand}</span>` : '';
-    return `<tr><td class="dr-mu-batter-cell">${drEscAttr(batter.name)}${handTag}${star}</td>${cells}</tr>`;
+    const bName = (batter.name || '').replace(/'/g, "\\'");
+    return `<tr class="dr-mu-row" title="View ${drEscAttr(batter.name)} vs ${drEscAttr(meta.pitcherName || 'pitcher')}" onclick="openMatchup(${batter.id},'${bName}',${pid},'${pName}')"><td class="dr-mu-batter-cell">${drEscAttr(batter.name)}${handTag}${star}</td>${cells}</tr>`;
   }).join('');
 
   return `
+    ${pitcherMatchupLineupStatusHTML(cacheEntry)}
     ${pitcherMatchupChipsHTML(pid, state)}
     ${pitcherMatchupControlsHTML(pid, state)}
-    <div class="dr1041-table-wrap"><table class="dr1041-pitch-table dr-mu-table dr-mu-density-${state.density}">
+    <div class="dr1041-table-wrap dr-mu-table-wrap"><table class="dr1041-pitch-table dr-mu-table dr-mu-density-${state.density}">
       <thead><tr><th>Batter</th>${headCells}</tr></thead>
       <tbody>${bodyRows}</tbody>
     </table></div>
+    <div class="zone-note" style="margin-top:2px">Click a batter to open their full Matchup analysis.</div>
     <div class="zone-note" style="margin-top:8px">Real 2026 season production vs the selected pitch type (data/batter-pitch-type-season.json), not a head-to-head history against this specific pitcher -- too small a sample to exist for most matchups. Color = danger to this pitcher (red = production well above average, green = below); ★ = most home runs in today's confirmed lineup.</div>`;
 }
 
@@ -3087,8 +3115,14 @@ function openPitcherLineupModal(pidRaw) {
   matchupTableWrap.id = `pr-matchup-table-${pid}`;
   matchupTableWrap.innerHTML = `<div style="padding:10px 0;color:var(--muted);font-size:12px"><span class="spin"></span> Loading matchup scouting table…</div>`;
   matchupWrap.appendChild(matchupTableWrap);
-  panel.style.display = 'block';
-  panel.style.marginTop = '14px';
+  // The old per-batter lineup card list is now redundant with the scouting
+  // table above (AVG/HR/OPS/L10/HR PROB there vs. the richer pitch-filtered
+  // stats here, and each table row now opens the same Matchup deep-dive the
+  // old card's button did) -- kept in the DOM rather than removed so
+  // fetchAndRenderLineup/renderLineup (which write into this exact node, and
+  // are what actually populates lineupCache for the table above) don't need
+  // any restructuring, just visually hidden.
+  panel.style.display = 'none';
   matchupWrap.appendChild(panel);
   const matchupSectionEl = pitcherDashboardSectionWrap('matchup', matchupWrap, `Today's ${meta.oppAbbr || 'opposing'} lineup`);
   body.appendChild(matchupSectionEl);
