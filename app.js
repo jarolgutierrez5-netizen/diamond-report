@@ -2878,23 +2878,26 @@ function batterStatsForPitchFilter(batterId, pitchKey) {
   }
   // 'all' -- aggregate every pitch-type row for this batter, weighted by real
   // pitches seen (a batter who's faced 400 fastballs and 20 sliders shouldn't have
-  // those two rates count equally), with AVG recomputed from real hits/atBats sums
-  // rather than averaged as a rate (a true weighted average of an average).
+  // those two rates count equally). AVG is pitches-weighted the same way SLG/wOBA/
+  // Whiff%/Avg EV already are below -- this used to try recomputing AVG from summed
+  // atBats/hits instead, but rowToPitchStat (sync-pitcher-statcast.mjs) never writes
+  // per-pitch-type atBats/hits counts, only the pre-computed avg rate itself, so that
+  // sum was always 0 and AVG (and ISO, which needs AVG) silently showed "–" for every
+  // batter's default "All Pitches" view, every day, regardless of real data coverage.
   const entries = Object.values(rows);
   if (!entries.length) return { pitches: null, avg: null, iso: null, slg: null, woba: null, avgEV: null, whiffPct: null };
-  let pitches = 0, atBats = 0, hits = 0;
-  let slgSum = 0, slgW = 0, wobaSum = 0, wobaW = 0, evSum = 0, evW = 0, whiffSum = 0, whiffW = 0;
+  let pitches = 0;
+  let avgSum = 0, avgW = 0, slgSum = 0, slgW = 0, wobaSum = 0, wobaW = 0, evSum = 0, evW = 0, whiffSum = 0, whiffW = 0;
   entries.forEach(r => {
     const w = r.pitches || 0;
     pitches += w;
-    atBats += r.atBats || 0;
-    hits += r.hits || 0;
+    if (r.avg != null) { avgSum += r.avg * w; avgW += w; }
     if (r.slg != null) { slgSum += r.slg * w; slgW += w; }
     if (r.woba != null) { wobaSum += r.woba * w; wobaW += w; }
     if (r.avgEV != null) { evSum += r.avgEV * w; evW += w; }
     if (r.whiffPct != null) { whiffSum += r.whiffPct * w; whiffW += w; }
   });
-  const avg = atBats > 0 ? +(hits / atBats).toFixed(3) : null;
+  const avg = avgW > 0 ? +(avgSum / avgW).toFixed(3) : null;
   const slg = slgW > 0 ? +(slgSum / slgW).toFixed(3) : null;
   return {
     pitches: pitches || null,
