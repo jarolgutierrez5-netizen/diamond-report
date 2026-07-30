@@ -5331,3 +5331,234 @@ select:focus-visible {
 .pr-driver-text span {
   color: var(--muted);
 }
+
+/* Home Run Highlights Carousel (loadHRCarousel / renderHRCarouselShell in app.js) */
+.dr-hrc-wrap {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+}
+.dr-hrc-stage {
+  position: relative;
+  flex: 1 1 62%;
+  min-width: 0;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.dr-hrc-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  background: #000;
+}
+.dr-hrc-noclip {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 34px;
+  background: radial-gradient(circle at 50% 40%, rgba(255,255,255,.04), transparent 70%);
+}
+.dr-hrc-noclip span {
+  font-size: 12px;
+  font-weight: 700;
+}
+.dr-hrc-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: linear-gradient(0deg, rgba(0,0,0,.78), rgba(0,0,0,0));
+}
+.dr-hrc-btn {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.25);
+  background: rgba(0,0,0,.4);
+  color: #fff;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dr-hrc-btn:hover {
+  background: rgba(255,255,255,.18);
+}
+.dr-hrc-dots {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  overflow-x: auto;
+}
+.dr-hrc-dot {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255,255,255,.35);
+  cursor: pointer;
+  padding: 0;
+}
+.dr-hrc-dot.active {
+  background: #fff;
+  width: 18px;
+  border-radius: 999px;
+}
+.dr-hrc-card {
+  flex: 1 1 38%;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255,255,255,.02);
+  padding: 14px;
+  cursor: pointer;
+  color: var(--text);
+  font: inherit;
+  position: relative;
+}
+.dr-hrc-card:hover {
+  border-color: var(--accent2);
+  background: rgba(47,107,255,.06);
+}
+.dr-hrc-photo {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  object-fit: cover;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.dr-hrc-info {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.dr-hrc-name {
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--text);
+}
+.dr-hrc-team {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 12px;
+}
+.dr-hrc-hrline {
+  color: var(--muted);
+  font-size: 12px;
+}
+.dr-hrc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.dr-hrc-chip {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: rgba(255,255,255,.03);
+}
+.dr-hrc-trend {
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 2px 8px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.03);
+}
+.dr-hrc-trend.hot {
+  color: #ff6b6b;
+  border-color: rgba(255,107,107,.4);
+  background: rgba(255,107,107,.1);
+}
+.dr-hrc-trend.up {
+  color: #2ee6a6;
+  border-color: rgba(46,230,166,.4);
+  background: rgba(46,230,166,.1);
+}
+.dr-hrc-recent {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+}
+.dr-hrc-gamedot {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--muted);
+}
+.dr-hrc-gamedot.hr {
+  background: rgba(46,230,166,.18);
+  border-color: rgba(46,230,166,.5);
+  color: #2ee6a6;
+}
+.dr-hrc-next {
+  color: var(--accent2);
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.dr-hrc-cta {
+  align-self: center;
+  flex: 0 0 auto;
+  color: var(--accent2);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .dr-hrc-wrap {
+    flex-direction: column;
+  }
+  .dr-hrc-stage {
+    aspect-ratio: 16 / 10;
+  }
+  .dr-hrc-card {
+    flex-wrap: wrap;
+  }
+  .dr-hrc-cta {
+    align-self: flex-start;
+  }
+  .dr-hrc-btn {
+    width: 38px;
+    height: 38px;
+  }
+}

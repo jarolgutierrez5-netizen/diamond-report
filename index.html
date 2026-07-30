@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026073016">
+<link rel="stylesheet" href="styles.min.css?v=2026073017">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -280,6 +280,17 @@
       <div class="dr-hub-headline-filters" id="dr-hub-headline-filters"></div>
       <div class="dr-hub-headlines-grid" id="dr-hub-headlines-grid"></div>
       <button type="button" id="dr-hub-headlines-more" class="dr-hub-news-more" style="display:none">View More</button>
+    </div>
+
+    <!-- Home Run Highlights Carousel — auto-playing (muted) real MLB highlight
+         clips for today's (or yesterday's, before today's first pitch) real home
+         run hitters, loaded/rendered by loadHRCarousel in app.js. Real MLB
+         official content-API clip per player, real trend/hard-hit%/barrel%/next-
+         matchup stats, click-through to the full Matchup modal. Hidden entirely
+         on a day with zero real HRs to show. -->
+    <div class="dr-hub-hr-carousel" id="dr-hub-hr-carousel" style="display:none">
+      <div class="dr-hub-section-head"><span class="dr-hub-section-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8c.9 2.7-2.4 3.7-2.4 6.8a2.4 2.4 0 0 0 4.8 0c0-.8-.4-1.5-.8-2 .2 1.2-.8 1.6-1 .8-.4-1.1.8-1.7.6-3.7-.1-1.6-1.2-1.9-1.2-1.9z"/><path d="M7.2 11.5A3.4 3.4 0 0 0 10 17a3.4 3.4 0 0 0 3.3-4.3"/></svg></span><h2>Home Run Highlights</h2><span class="dr-hub-section-line"></span></div>
+      <div class="dr-hrc-wrap" id="dr-hub-hr-carousel-body"></div>
     </div>
 
     <!-- Trending Players: a real mini visual per player (loaded/rendered by
@@ -954,7 +965,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026073016" defer></script>
+<script src="app.min.js?v=2026073017" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
