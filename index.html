@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026073018">
+<link rel="stylesheet" href="styles.min.css?v=2026073019">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -526,7 +526,7 @@
       </div>
       <div id="gameprops-refresh" class="dr-refresh"></div>
     </div>
-    <div id="gameprops-content" class="dr-panel-body dr-scroll-game"><div class="mu-empty"><span class="spin"></span>Loading game projections…</div></div>
+    <div id="gameprops-content" class="dr-panel-body dr-scroll-game"><div class="dr-skel-rows"><div class="dr-skel-row" style="height:64px"></div><div class="dr-skel-row" style="height:64px"></div><div class="dr-skel-row" style="height:64px;width:82%"></div></div></div>
   </div>
 </div>
 
@@ -651,7 +651,7 @@
         <span id="hr-results-count" class="dr-count-pill"></span>
       </div>
       <div id="hr-results-content" class="dr-panel-body dr-scroll-tall">
-        <div class="mu-empty"><span class="spin"></span>Loading results…</div>
+        <div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading results…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div>
       </div>
     </div>
   </div>
@@ -669,7 +669,7 @@
         <div id="kprops-refresh" class="dr-refresh"></div>
       </div>
       <div id="kprops-content" class="dr-panel-body dr-scroll-medium">
-        <div class="mu-empty"><span class="spin"></span>Loading strikeout projections…</div>
+        <div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading strikeout projections…</div><div class="dr-skel-row" style="height:48px"></div><div class="dr-skel-row" style="height:48px"></div><div class="dr-skel-row" style="height:48px;width:84%"></div></div>
       </div>
     </div>
   </div>
@@ -677,23 +677,23 @@
 
 <div class="gamepick-pane" id="gamepick-pane-hits" role="tabpanel" aria-labelledby="gamepick-tab-hits" data-gamepick-pane="hits" hidden>
   <div class="dr-center-label">⚾ Hits</div>
-  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">Hits <span>Projections</span></p><small>Top hitters ranked by contact profile, recent form, lineup spot, and pitcher contact allowed.</small></div></div><div id="hits-props-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading hits board…</div></div></div>
+  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">Hits <span>Projections</span></p><small>Top hitters ranked by contact profile, recent form, lineup spot, and pitcher contact allowed.</small></div></div><div id="hits-props-content" class="dr-panel-body dr-scroll-tall"><div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading hits board…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div></div></div>
 </div>
 <div class="gamepick-pane" id="gamepick-pane-rbis" role="tabpanel" aria-labelledby="gamepick-tab-rbis" data-gamepick-pane="rbis" hidden>
   <div class="dr-center-label">💰 RBIs</div>
-  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">RBI <span>Projections</span></p><small>RBI opportunities ranked by run environment, power profile, lineup context, and matchup edge.</small></div></div><div id="rbis-props-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading RBI board…</div></div></div>
+  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">RBI <span>Projections</span></p><small>RBI opportunities ranked by run environment, power profile, lineup context, and matchup edge.</small></div></div><div id="rbis-props-content" class="dr-panel-body dr-scroll-tall"><div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading RBI board…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div></div></div>
 </div>
 <div class="gamepick-pane" id="gamepick-pane-tb" role="tabpanel" aria-labelledby="gamepick-tab-tb" data-gamepick-pane="tb" hidden>
   <div class="dr-center-label">💎 Total Bases</div>
-  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">Total Bases <span>Projections</span></p><small>Total base opportunities ranked by slugging, ISO, hard-hit profile, and pitch matchup.</small></div></div><div id="tb-props-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading total bases board…</div></div></div>
+  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">Total Bases <span>Projections</span></p><small>Total base opportunities ranked by slugging, ISO, hard-hit profile, and pitch matchup.</small></div></div><div id="tb-props-content" class="dr-panel-body dr-scroll-tall"><div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading total bases board…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div></div></div>
 </div>
 <div class="gamepick-pane" id="gamepick-pane-sb" role="tabpanel" aria-labelledby="gamepick-tab-sb" data-gamepick-pane="sb" hidden>
   <div class="dr-center-label">🏃 Stolen Bases</div>
-  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">Stolen Base <span>Projections</span></p><small>Speed and baserunning opportunities ranked by attempt profile, matchup, and lineup context.</small></div></div><div id="sb-props-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading stolen base board…</div></div></div>
+  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">Stolen Base <span>Projections</span></p><small>Speed and baserunning opportunities ranked by attempt profile, matchup, and lineup context.</small></div></div><div id="sb-props-content" class="dr-panel-body dr-scroll-tall"><div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading stolen base board…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div></div></div>
 </div>
 <div class="gamepick-pane" id="gamepick-pane-hrrbi" role="tabpanel" aria-labelledby="gamepick-tab-hrrbi" data-gamepick-pane="hrrbi" hidden>
   <div class="dr-center-label">📈 Hits+Runs+RBI</div>
-  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">Hits + Runs + RBIs <span>Projections</span></p><small>Combined production opportunities ranked by on-base skill, power, run environment, and lineup position.</small></div></div><div id="hrrbi-props-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading Hits+Runs+RBI board…</div></div></div>
+  <div class="dr-panel dr-panel-large dr-prop-center-panel dr-panel-fresh"><div class="dr-panel-head"><div><p class="section-title">Hits + Runs + RBIs <span>Projections</span></p><small>Combined production opportunities ranked by on-base skill, power, run environment, and lineup position.</small></div></div><div id="hrrbi-props-content" class="dr-panel-body dr-scroll-tall"><div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading Hits+Runs+RBI board…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div></div></div>
 </div>
 <div class="gamepick-pane" id="gamepick-pane-fantasy" role="tabpanel" aria-labelledby="gamepick-tab-fantasy" data-gamepick-pane="fantasy" hidden>
   <div class="dr-center-label">🏆 Fantasy Points [Beta]</div>
@@ -709,7 +709,7 @@
         <small>Every starter's season stats side by side — sort any column, and colored pills flag elite vs. concerning numbers at a glance.</small>
       </div>
     </div>
-    <div id="pr-content" class="dr-panel-body dr-scroll-tall"><div class="mu-empty"><span class="spin"></span>Loading pitcher report…</div></div>
+    <div id="pr-content" class="dr-panel-body dr-scroll-tall"><div class="dr-skel-rows"><div class="dr-skel-row" style="height:52px"></div><div class="dr-skel-row" style="height:52px"></div><div class="dr-skel-row" style="height:52px;width:86%"></div><div class="dr-skel-row" style="height:52px"></div></div></div>
   </div>
 </div>
 
@@ -965,7 +965,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026073018" defer></script>
+<script src="app.min.js?v=2026073019" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->

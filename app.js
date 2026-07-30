@@ -1593,8 +1593,17 @@ async function loadScores() {
     if (activePane === 'hr') setTimeout(() => { loadHRsToday(); }, 250);
     if (activePane === 'k') setTimeout(() => { loadKsToday(); }, 250);
   } catch(e) {
+    // Just the tiny "Last updated" timestamp label next to the section title,
+    // not a content area -- the scoreboard itself keeps showing whatever it
+    // last rendered, so a small inline retry link (not the full drShowError
+    // card, which would be oversized here) is the honest match for the real
+    // blast radius of this failure.
     const srErr = document.getElementById('scores-refresh');
-    if (srErr) srErr.textContent = `Error: ${e.message}`;
+    if (srErr) {
+      srErr.innerHTML = `Couldn't refresh scores <span class="dr-inline-retry" role="button" tabindex="0">Retry</span>`;
+      const retryEl = srErr.querySelector('.dr-inline-retry');
+      if (retryEl) retryEl.addEventListener('click', () => loadScores());
+    }
   }
 }
 
@@ -2552,6 +2561,7 @@ try {
 
 async function loadPitcherReport() {
   const el = document.getElementById('pr-content');
+  if (el) el.innerHTML = drSkeletonRowsHTML(4, 'Loading pitcher report…');
   try {
     const today = new Date().toLocaleDateString('en-CA', {timeZone:'America/Chicago'});
     await loadStatcastHotHitters();
@@ -2653,7 +2663,15 @@ async function loadPitcherReport() {
     renderPRTable();
     loadKsToday();
   } catch(e) {
-    document.getElementById('pr-content').innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
+    // Passes {force:true} because window.loadPitcherReport gets wrapped later
+    // in this file (prod-v9-performance-orchestrator's coalesce('loadPitcherReport',
+    // 'matchups')) with a guard that silently no-ops any call while paneId
+    // 'matchups' isn't the active .section -- a stale check from an older UI
+    // layout (Pitcher Report now lives inside #props as a .gamepick-pane, not
+    // its own top-level #matchups section, so that check can never pass).
+    // {force:true} is the same bypass loadGameProps's own retry already
+    // relies on for the identical reason.
+    drShowError(document.getElementById('pr-content'), "Couldn't load the pitcher report.", () => loadPitcherReport({ force: true }));
   }
 }
 
@@ -3698,7 +3716,7 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
   const isFirstLoad = !panel.querySelector('[data-batter-id]');
   if (isFirstLoad) {
     panel.style.minHeight = '86px';
-    panel.innerHTML = `<div style="padding:12px 0;color:var(--muted);font-size:12px"><span class="spin"></span> Loading lineup…</div>`;
+    panel.innerHTML = drSkeletonRowsHTML(3, 'Loading lineup…');
   }
 
   try {
@@ -3911,7 +3929,7 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
     }
   } catch(e) {
     if (lineupRequestTokens[pid] === token && isFirstLoad && panel) {
-      panel.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error loading lineup: ${e.message}</div>`;
+      drShowError(panel, "Couldn't load today's lineup.", () => fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp, skipEnrichment, bypassPRGuards, pitcherHand));
     }
   } finally {
     if (lineupRequestTokens[pid] === token) {
@@ -5479,7 +5497,11 @@ async function loadGameProps() {
     if (window.refreshFavoredPills) window.refreshFavoredPills();
 
   } catch(e) {
-    if (el) el.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
+    // Deliberately leaves the DOM alone rather than writing a raw error here --
+    // the wrapper below (loadGamePropsFirstLoadSafe) retries this up to 3 times
+    // automatically and shows its own friendly message (with a real Retry
+    // button) if every attempt fails, so a raw error written here would just
+    // flash briefly before the next automatic retry's spinner overwrites it.
   }
 }
 
@@ -5520,8 +5542,8 @@ loadGameProps = async function loadGamePropsFirstLoadSafe(opts = {}) {
   const hasRealGameCards = () => !!el.querySelector('.gp-card');
   const hasUsefulContent = () => hasRealGameCards() || /No games found|No game data available/i.test(el.textContent || '');
 
-  if (!hasUsefulContent() && !el.querySelector('.spin')) {
-    el.innerHTML = `<div class="mu-empty"><span class="spin"></span>Loading Game Center...</div>`;
+  if (!hasUsefulContent() && !el.querySelector('.dr-skel-rows') && !el.querySelector('.dr-error-state')) {
+    el.innerHTML = drSkeletonRowsHTML(5, 'Loading Game Center…');
     if (refreshEl) refreshEl.textContent = 'Loading...';
   }
 
@@ -5540,7 +5562,7 @@ loadGameProps = async function loadGamePropsFirstLoadSafe(opts = {}) {
       await new Promise(resolve => setTimeout(resolve, attempt * 900));
     }
     if (!hasUsefulContent()) {
-      el.innerHTML = `<div class="mu-empty" style="color:var(--accent2)">Game Center is still loading. Retrying automatically...</div>`;
+      drShowError(el, "Game Center is taking a while to load. We'll keep retrying automatically.", () => loadGameProps({ force: true }));
       setTimeout(() => loadGameProps({ force: true }), 2500);
     }
   })().finally(() => { __drGameCenterInFlight = null; });
@@ -5783,7 +5805,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
 
     renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, hrSprayList, todayParkAbbr, rollingProfile, countPerfProfile, situationalProfile, bullpenInfo, parkHrIndex });
   } catch(e) {
-    body.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
+    drShowError(body, "Couldn't load this matchup.", () => openMatchup(batterId, batterName, pitcherId, pitcherName));
   }
 }
 
@@ -7610,6 +7632,57 @@ function drEscAttr(v) {
   return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
 
+// Shared friendly error state with a real, working Retry button -- replaces
+// the ~10 near-identical `Error: ${e.message}` strings various board/section
+// loaders used to dump straight into the page (a raw JS error message with no
+// way to recover short of a full page reload). Declared top-level (like
+// drEscAttr above) so every IIFE elsewhere in the file can call it too.
+// retryFn is the loader's OWN real load function (already in memory at every
+// call site), re-invoked with no args on click -- Retry always re-runs the
+// exact same real fetch path a fresh page load would use, never a fake/local
+// reset. Never shows e.message itself (that's an internal implementation
+// detail, e.g. a raw "Failed to fetch" or a stack-trace fragment); callers
+// pass a short, real, human description of what failed to load instead.
+// Per-container (not global) staleness counter -- a WeakMap keyed by the
+// container element itself, so only a re-render of THAT SAME container
+// invalidates its own button. An earlier version used one shared module-level
+// counter, which meant any unrelated board's error appearing anywhere on the
+// page (e.g. a background retry timer) silently disarmed every other
+// already-visible Retry button across the whole site.
+const drErrorStateEpochs = new WeakMap();
+function drShowError(container, message, retryFn) {
+  if (!container) return;
+  const epoch = (drErrorStateEpochs.get(container) || 0) + 1;
+  drErrorStateEpochs.set(container, epoch);
+  container.innerHTML = `
+    <div class="dr-error-state">
+      <div class="dr-error-icon" aria-hidden="true">⚠️</div>
+      <div class="dr-error-text">${drEscAttr(message || "Couldn't load this right now.")}</div>
+      <button type="button" class="dr-error-retry-btn">Retry</button>
+    </div>`;
+  const btn = container.querySelector('.dr-error-retry-btn');
+  if (btn && typeof retryFn === 'function') {
+    btn.addEventListener('click', () => {
+      if (drErrorStateEpochs.get(container) !== epoch) return; // a newer render already replaced this button
+      btn.disabled = true;
+      btn.textContent = 'Retrying…';
+      Promise.resolve().then(() => retryFn()).catch(() => {});
+    });
+  }
+}
+
+// Generic shimmering row skeleton for any board/section that used to show
+// only a bare spinner while its first real fetch was in flight -- reuses the
+// exact shimmer gradient/keyframes .dr-skeleton-card already defines (see
+// styles.css), just as loose full-width rows instead of a fixed photo-card
+// grid, since not every board's real layout is a card grid (tables, prop
+// boards, etc.). Purely a loading placeholder -- callers always still render
+// the real content (or drShowError) once the real fetch settles.
+function drSkeletonRowsHTML(n, label) {
+  const rows = Array.from({ length: n || 4 }, (_, i) => `<div class="dr-skel-row" style="width:${i % 2 ? '86%' : '100%'}"></div>`).join('');
+  return `<div class="dr-skel-rows">${label ? `<div class="dr-v9-loading-label">${drEscAttr(label)}</div>` : ''}${rows}</div>`;
+}
+
 // Renders the Near HRs board (Home Runs pane, third panel) — one card per
 // batter with 1+ warning-track fly outs in their last 10 games, sorted by
 // event count (most near-misses first) then longest single distance.
@@ -7743,7 +7816,11 @@ async function loadNearHRsBoard() {
   try {
     await Promise.all([loadNearHRs(), loadStatcastHotHitters()]);
     renderNearHRs();
-  } catch(e) {}
+  } catch(e) {
+    // Previously a silent catch{} -- the board's static skeleton (index.html)
+    // just stayed on screen forever with no way to know it had actually failed.
+    drShowError(document.getElementById('near-hrs-content'), "Couldn't load Near HRs.", loadNearHRsBoard);
+  }
 }
 window.loadNearHRsBoard = loadNearHRsBoard;
 
@@ -7755,6 +7832,13 @@ window.loadNearHRsBoard = loadNearHRsBoard;
 // repoSourceStore DRP/K-Prop merge logic, which this doesn't need).
 let _hrThreatResultsCache = null;
 let _hrThreatResultsLoadPromise = null;
+// Tracks whether the most recent real fetch attempt actually failed (network
+// error or non-ok response), distinct from a genuinely empty [] result --
+// loadResultsBoard below needs to tell "nothing graded yet today" (real,
+// honest empty state) apart from "couldn't reach data/tracker.json at all"
+// (a real failure that deserves drShowError + a working retry, not a silent
+// empty board).
+let _hrThreatResultsLoadFailed = false;
 async function loadHRThreatResults(force=false) {
   if (_hrThreatResultsCache && !force) return _hrThreatResultsCache;
   if (_hrThreatResultsLoadPromise && !force) return _hrThreatResultsLoadPromise;
@@ -7765,8 +7849,11 @@ async function loadHRThreatResults(force=false) {
       if (res.ok) {
         const data = await res.json();
         list = Array.isArray(data?.market?.hrThreat) ? data.market.hrThreat : [];
+        _hrThreatResultsLoadFailed = false;
+      } else {
+        _hrThreatResultsLoadFailed = true;
       }
-    } catch {}
+    } catch { _hrThreatResultsLoadFailed = true; }
     _hrThreatResultsCache = list;
     return list;
   })();
@@ -7835,11 +7922,17 @@ function renderHRThreatResults() {
 }
 window.renderHRThreatResults = renderHRThreatResults;
 
-async function loadResultsBoard() {
+async function loadResultsBoard(force=false) {
   try {
-    await loadHRThreatResults();
+    await loadHRThreatResults(force);
+    if (_hrThreatResultsLoadFailed) {
+      drShowError(document.getElementById('hr-results-content'), "Couldn't load results.", () => loadResultsBoard(true));
+      return;
+    }
     renderHRThreatResults();
-  } catch(e) {}
+  } catch(e) {
+    drShowError(document.getElementById('hr-results-content'), "Couldn't load results.", () => loadResultsBoard(true));
+  }
 }
 window.loadResultsBoard = loadResultsBoard;
 
@@ -8871,7 +8964,7 @@ async function loadKsToday() {
     });
   } catch(e) {
     console.warn('K Today render error', e);
-    if (el) el.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error loading Ks: ${e.message}</div>`;
+    if (el) drShowError(el, "Couldn't load K's Today.", () => loadKsTodayWithRetry(0));
   }
 }
 
@@ -9476,7 +9569,7 @@ async function loadHRPotential() {
     if (refresh) refresh.textContent = `Last updated ${now}`;
   } catch(e) {
     const el2 = document.getElementById('hr-potential-content');
-    if (el2) el2.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
+    if (el2) drShowError(el2, "Couldn't load HR Threats.", loadHRPotential);
   }
 }
 
@@ -9815,7 +9908,7 @@ async function loadHRsToday() {
     }
   } catch(e) {
     const el2=document.getElementById('hrs-today-content');
-    if(el2) el2.innerHTML=`<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
+    if(el2) drShowError(el2, "Couldn't load today's HRs.", loadHRsToday);
   }
 }
 
@@ -10158,7 +10251,7 @@ async function openKPropLineupModal(pitcherId, pitcherName, teamAbbr, oppAbbr) {
   if (title) title.textContent = pitcherName || 'Batting Lineup & Matchups';
   if (sub) sub.textContent = `Batting Lineup & Matchups${teamAbbr && oppAbbr ? ` · ${teamAbbr} vs ${oppAbbr}` : ''}`;
   body.innerHTML = `<div id="kprop-arsenal-${pid}"><div style="padding:10px 0;color:var(--muted);font-size:12px"><span class="spin"></span> Loading ${pitcherName || 'pitcher'}'s pitch data…</div></div>` +
-    `<div class="pr-expand-panel kprop-lineup-panel" id="${panelId}" style="margin-top:14px"><span class="spin"></span> Loading lineup…</div>`;
+    `<div class="pr-expand-panel kprop-lineup-panel" id="${panelId}" style="margin-top:14px">${drSkeletonRowsHTML(3, 'Loading lineup…')}</div>`;
   overlay.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 
@@ -10224,7 +10317,7 @@ async function openKPropLineupModal(pitcherId, pitcherName, teamAbbr, oppAbbr) {
 
     renderLineup(panelId, { lineup, teamAbbr: oppTeamAbbr, confirmed: true }, null, null, oppTeamAbbr, pitcherId, pitcherName);
   } catch(e) {
-    outerPanel.innerHTML = `<div class="mu-empty" style="color:var(--accent)">Error: ${e.message}</div>`;
+    drShowError(outerPanel, "Couldn't load this lineup.", () => openKPropLineupModal(pitcherId, pitcherName, teamAbbr, oppAbbr));
   }
 }
 window.openKPropLineupModal = openKPropLineupModal;
@@ -10484,7 +10577,7 @@ function scheduleKPropsLoad() {
       var el = document.getElementById('kprops-content');
       try {
         if (el && /loading strikeout projections/i.test(el.textContent || '')) {
-          el.innerHTML = '<div class="mu-empty"><span class="spin"></span> Loading strikeout projections…</div>';
+          el.innerHTML = drSkeletonRowsHTML(4, 'Loading strikeout projections…');
         }
         var today = todayCdt();
         try { if (typeof loadSportsbookKLines === 'function') await withTimeout(loadSportsbookKLines(today), 3500); } catch(e){}
@@ -10515,13 +10608,13 @@ function scheduleKPropsLoad() {
         try { Object.keys(pitcherOULines || {}).forEach(function(k){ delete pitcherOULines[k]; }); rows.forEach(function(p){ pitcherOULines[p.pitcherId] = p.compareLine; }); } catch(e){}
         try { if (typeof renderKProps === 'function') renderKProps(); else if (typeof window.renderKProps === 'function') window.renderKProps(); } catch(e){
           console.warn('v10.27 safe renderKProps failed', e);
-          if (el) el.innerHTML = '<div class="mu-empty" style="color:var(--accent)">Strikeout render error: '+(e && e.message ? e.message : e)+'</div>';
+          if (el) drShowError(el, "Couldn't render strikeout projections.", function(){ safeLoadKProps(); });
         }
         try { if (typeof loadRepoLineups === 'function') loadRepoLineups().catch(function(){}); } catch(e){}
         return rows;
       } catch(e) {
         console.warn('v10.27 safeLoadKProps failed', e);
-        if (el) el.innerHTML = '<div class="mu-empty" style="color:var(--accent)">Strikeout data error: '+(e && e.message ? e.message : e)+'</div>';
+        if (el) drShowError(el, "Couldn't load strikeout projections.", function(){ safeLoadKProps(); });
         return [];
       } finally { inflight = null; }
     })();
@@ -15386,7 +15479,21 @@ if (document.readyState === 'loading') {
     trendingPlayersLoaded = true;
     drFetchDailyJSON('data/trending-players.json').then(function(data){
       renderTrendingPlayers(data);
-    }).catch(function(){});
+    }).catch(function(){
+      // Previously a silent catch(){} -- the section starts display:none and
+      // is only ever revealed by renderTrendingPlayers on real success, so a
+      // fetch failure here used to leave it hidden forever with zero signal
+      // anything had gone wrong. Reset the one-shot guard so Retry can
+      // actually re-fetch (trendingPlayersLoaded normally blocks re-entry
+      // after the first call).
+      trendingPlayersLoaded = false;
+      var section = document.getElementById('dr-hub-trending');
+      var grid = document.getElementById('dr-hub-trending-grid');
+      if (section && grid) {
+        section.style.display = '';
+        drShowError(grid, "Couldn't load trending players.", loadTrendingPlayers);
+      }
+    });
   }
 
   // Small decorative HR-landing-spot dot plot -- same real xFt/yFt/distance
