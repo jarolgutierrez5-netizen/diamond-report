@@ -3062,14 +3062,15 @@ const MU_TABLE_COLUMNS = [
 // dataset yet or has no rows for the selected pitch type.
 function batterStatsForPitchFilter(batterId, pitchKey) {
   const rows = batterPitchTypeSeason[String(batterId)];
-  if (!rows) return { pitches: null, avg: null, iso: null, slg: null, woba: null, avgEV: null, whiffPct: null };
+  if (!rows) return { pitches: null, avg: null, iso: null, slg: null, woba: null, avgEV: null, whiffPct: null, homeRuns: null };
   if (pitchKey !== 'all') {
     const r = rows[pitchKey];
-    if (!r) return { pitches: null, avg: null, iso: null, slg: null, woba: null, avgEV: null, whiffPct: null };
+    if (!r) return { pitches: null, avg: null, iso: null, slg: null, woba: null, avgEV: null, whiffPct: null, homeRuns: null };
     return {
       pitches: r.pitches || null,
       avg: r.avg, iso: (r.slg != null && r.avg != null) ? +(r.slg - r.avg).toFixed(3) : null,
       slg: r.slg, woba: r.woba, avgEV: r.avgEV, whiffPct: r.whiffPct,
+      homeRuns: r.homeRuns,
     };
   }
   // 'all' -- aggregate every pitch-type row for this batter, weighted by real
@@ -3081,9 +3082,10 @@ function batterStatsForPitchFilter(batterId, pitchKey) {
   // sum was always 0 and AVG (and ISO, which needs AVG) silently showed "–" for every
   // batter's default "All Pitches" view, every day, regardless of real data coverage.
   const entries = Object.values(rows);
-  if (!entries.length) return { pitches: null, avg: null, iso: null, slg: null, woba: null, avgEV: null, whiffPct: null };
+  if (!entries.length) return { pitches: null, avg: null, iso: null, slg: null, woba: null, avgEV: null, whiffPct: null, homeRuns: null };
   let pitches = 0;
   let avgSum = 0, avgW = 0, slgSum = 0, slgW = 0, wobaSum = 0, wobaW = 0, evSum = 0, evW = 0, whiffSum = 0, whiffW = 0;
+  let hrSum = 0, hrSeen = false;
   entries.forEach(r => {
     const w = r.pitches || 0;
     pitches += w;
@@ -3092,6 +3094,7 @@ function batterStatsForPitchFilter(batterId, pitchKey) {
     if (r.woba != null) { wobaSum += r.woba * w; wobaW += w; }
     if (r.avgEV != null) { evSum += r.avgEV * w; evW += w; }
     if (r.whiffPct != null) { whiffSum += r.whiffPct * w; whiffW += w; }
+    if (r.homeRuns != null) { hrSum += r.homeRuns; hrSeen = true; }
   });
   const avg = avgW > 0 ? +(avgSum / avgW).toFixed(3) : null;
   const slg = slgW > 0 ? +(slgSum / slgW).toFixed(3) : null;
@@ -3101,6 +3104,7 @@ function batterStatsForPitchFilter(batterId, pitchKey) {
     slg, woba: wobaW > 0 ? +(wobaSum / wobaW).toFixed(3) : null,
     avgEV: evW > 0 ? +(evSum / evW).toFixed(1) : null,
     whiffPct: whiffW > 0 ? +(whiffSum / whiffW).toFixed(1) : null,
+    homeRuns: hrSeen ? hrSum : null,
   };
 }
 
@@ -3120,6 +3124,31 @@ function _muHeatBG(colKey, val) {
     case 'kPct': return heatBGInverted(val, 25, 15);
     default: return 'transparent';
   }
+}
+
+// A row earns the "Favorable Matchup" flag when the batter's real production
+// against the pitcher's CURRENTLY FILTERED pitch mix clears at least 3 of these
+// danger thresholds at once -- the same red-end cutoffs _muHeatBG above already
+// colors individual cells with. One hot cell is noise; three real thresholds
+// clearing together is a genuine signal this batter is a live danger against
+// this specific slice of the pitcher's arsenal, not a single-stat fluke.
+// Gated on a real sample floor (pitches seen) so a two-pitch outlier can never
+// trigger it -- re-evaluates per pitch-type chip since "favorable" is relative
+// to whichever pitch mix is currently selected, same as every other column.
+const MU_FAVORABLE_MIN_PITCHES = 20;
+const MU_FAVORABLE_MIN_SIGNALS = 3;
+function isFavorableMatchupRow(stat) {
+  if (stat.pitches == null || stat.pitches < MU_FAVORABLE_MIN_PITCHES) return false;
+  let signals = 0;
+  if (stat.avg != null && stat.avg >= 0.290) signals++;
+  if (stat.iso != null && stat.iso >= 0.220) signals++;
+  if (stat.slg != null && stat.slg >= 0.500) signals++;
+  if (stat.woba != null && stat.woba >= 0.370) signals++;
+  if (stat.avgEV != null && stat.avgEV >= 92) signals++;
+  if (stat.whiffPct != null && stat.whiffPct <= 15) signals++;
+  if (stat.platoonOps != null && stat.platoonOps >= 0.850) signals++;
+  if (stat.kPct != null && stat.kPct <= 15) signals++;
+  return signals >= MU_FAVORABLE_MIN_SIGNALS;
 }
 
 // The pitcher's own real pitch arsenal (usage%/season HR already synced by
@@ -3197,7 +3226,16 @@ function pitcherMatchupTableHTML(pid, meta) {
     stat.platoonOps = b.platoon?.ops ?? null;
     stat.kPct = b.kPct ?? null;
     const seasonHR = parseInt(b.stats?.homeRuns);
-    return { batter: b, stat, seasonHR: Number.isFinite(seasonHR) ? seasonHR : null };
+    const seasonHRVal = Number.isFinite(seasonHR) ? seasonHR : null;
+    // 'all' shows the real season HR total (authoritative); a specific pitch
+    // chip shows real HRs off that pitch type specifically (stat.homeRuns,
+    // null when the batter has no HRs logged against it) -- previously this
+    // column showed the season total no matter which chip was active, so
+    // clicking a pitch type never actually changed the HR count shown, and
+    // "Sort by HR" silently sorted by undefined for every row since stat.hr
+    // was never set at all.
+    stat.hr = state.pitch === 'all' ? seasonHRVal : stat.homeRuns;
+    return { batter: b, stat, seasonHR: seasonHRVal };
   });
   const topHRCount = Math.max(0, ...rows.map(r => r.seasonHR || 0));
 
@@ -3222,7 +3260,7 @@ function pitcherMatchupTableHTML(pid, meta) {
   const bodyRows = rows.map(({ batter, stat, seasonHR }) => {
     const cells = MU_TABLE_COLUMNS.map(c => {
       if (c.key === 'hr') {
-        return `<td class="num" data-label="${c.label}">${seasonHR != null ? seasonHR : '–'}</td>`;
+        return `<td class="num" data-label="${c.label}">${stat.hr != null ? stat.hr : '–'}</td>`;
       }
       const val = stat[c.key];
       const bg = _muHeatBG(c.key, val);
@@ -3231,8 +3269,10 @@ function pitcherMatchupTableHTML(pid, meta) {
     }).join('');
     const star = seasonHR != null && seasonHR > 0 && seasonHR === topHRCount ? '<span title="Most HRs in today\'s lineup" style="color:#fbbf24;margin-left:4px">★</span>' : '';
     const handTag = batter.hand ? `<span class="dr-mu-hand-tag">${batter.hand}</span>` : '';
+    const favorable = isFavorableMatchupRow(stat);
+    const favorableBadge = favorable ? `<span class="dr-mu-favorable-badge" title="Clears 3+ real production thresholds against ${state.pitch === 'all' ? "this pitcher's full mix" : 'this pitch type'} on a real sample">🔥 Favorable</span>` : '';
     const bName = (batter.name || '').replace(/'/g, "\\'");
-    return `<tr class="dr-mu-row" title="View ${drEscAttr(batter.name)} vs ${drEscAttr(meta.pitcherName || 'pitcher')}" onclick="openMatchup(${batter.id},'${bName}',${pid},'${pName}')"><td class="dr-mu-batter-cell">${drEscAttr(batter.name)}${handTag}${star}</td>${cells}</tr>`;
+    return `<tr class="dr-mu-row${favorable ? ' dr-mu-row-favorable' : ''}" title="View ${drEscAttr(batter.name)} vs ${drEscAttr(meta.pitcherName || 'pitcher')}" onclick="openMatchup(${batter.id},'${bName}',${pid},'${pName}')"><td class="dr-mu-batter-cell">${drEscAttr(batter.name)}${handTag}${star}${favorableBadge}</td>${cells}</tr>`;
   }).join('');
 
   return `
@@ -3244,7 +3284,7 @@ function pitcherMatchupTableHTML(pid, meta) {
       <tbody>${bodyRows}</tbody>
     </table></div>
     <div class="zone-note" style="margin-top:2px">Click a batter to open their full Matchup analysis.</div>
-    <div class="zone-note" style="margin-top:8px">Real 2026 season production vs the selected pitch type (data/batter-pitch-type-season.json), not a head-to-head history against this specific pitcher -- too small a sample to exist for most matchups. "OPS vs Hand" and "K%" are real, unfiltered season stats (platoon split vs this pitcher's own throwing hand, and strikeout rate as a hitter) -- they don't change with the pitch-type filter above. Color = danger to this pitcher (red = production well above average, green = below); ★ = most home runs in today's confirmed lineup.</div>`;
+    <div class="zone-note" style="margin-top:8px">Real 2026 season production vs the selected pitch type (data/batter-pitch-type-season.json), not a head-to-head history against this specific pitcher -- too small a sample to exist for most matchups. "OPS vs Hand" and "K%" are real, unfiltered season stats (platoon split vs this pitcher's own throwing hand, and strikeout rate as a hitter) -- they don't change with the pitch-type filter above. Color = danger to this pitcher (red = production well above average, green = below); ★ = most home runs in today's confirmed lineup; 🔥 Favorable = a real sample (20+ pitches seen) that clears at least 3 of these danger thresholds at once against the selected pitch mix.</div>`;
 }
 
 function renderPitcherMatchupTable(pid, meta, wrap) {
@@ -5654,6 +5694,19 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
   const body    = document.getElementById('mu-modal-body');
   const title   = document.getElementById('mu-modal-title');
   const sub     = document.getElementById('mu-modal-sub');
+
+  // All pop-out overlays (this one, #pr-lineup-modal-overlay, #tp-modal-overlay,
+  // #hr-compare-modal-overlay) share the same .mu-modal-overlay z-index:999, so
+  // when two are visible at once, plain DOM order decides which sits on top --
+  // and this overlay's <div> sits earlier in index.html than
+  // #pr-lineup-modal-overlay, so opening a batter's matchup from inside the
+  // Pitcher Analytics Dashboard rendered it silently behind that dashboard.
+  // Re-parenting to the end of <body> on every open guarantees this modal is
+  // always the last sibling, and therefore always on top, no matter which other
+  // overlay (if any) was already open underneath it.
+  if (overlay.parentElement !== document.body || overlay !== document.body.lastElementChild) {
+    document.body.appendChild(overlay);
+  }
 
   title.textContent = `${batterName}  vs  ${pitcherName}`;
   sub.textContent   = 'Batter vs Pitcher · 2026 Season Analysis';

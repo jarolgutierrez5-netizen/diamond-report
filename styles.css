@@ -5172,6 +5172,21 @@ select:focus-visible {
 .dr-mu-row:hover td {
   background-color: rgba(47, 107, 255, .07);
 }
+.dr-mu-row-favorable td:first-child {
+  box-shadow: inset 3px 0 0 #fb923c;
+}
+.dr-mu-favorable-badge {
+  display: inline-block;
+  margin-left: 5px;
+  font-size: 9px;
+  font-weight: 800;
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, .45);
+  background: rgba(251, 146, 60, .12);
+  border-radius: 4px;
+  padding: 0 4px;
+  white-space: nowrap;
+}
 .dr-mu-lineup-status {
   font-size: 10.5px;
   font-weight: 700;
