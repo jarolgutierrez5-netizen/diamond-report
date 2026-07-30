@@ -14131,6 +14131,8 @@ if (document.readyState === 'loading') {
   var newsArticlesAll = [];
   var newsArticles = [];
   var newsVisibleCount = 10;
+  var headlinesAll = [];
+  var headlinesVisibleCount = 6;
   var activeSport = 'all';
   var hrLoaded = false;
   var leadersLoaded = false;
@@ -14829,6 +14831,35 @@ if (document.readyState === 'loading') {
     var headlines = Array.isArray(data.headlines) ? data.headlines : [];
     if (!headlines.length) return;
 
+    // Server order is already the real most-important-first ranking: recap
+    // (today's context) leads, then real trend headlines ranked by
+    // scoreForMarket, then real streak headlines ranked by how extreme the
+    // actual ratio is (hot or cold), then the one-off categories. trend and
+    // streak intentionally cover EVERY real qualifying player (not a curated
+    // top-N) per generate-headlines.mjs, so this can legitimately run long on
+    // an active day -- capped here to the leading headlinesVisibleCount, with
+    // "View More" revealing the rest rather than dropping any real story.
+    headlinesAll = headlines;
+    headlinesVisibleCount = Math.min(6, headlinesAll.length);
+
+    var moreBtn = document.getElementById('dr-hub-headlines-more');
+    if (moreBtn && !moreBtn.dataset.drBound) {
+      moreBtn.dataset.drBound = '1';
+      moreBtn.addEventListener('click', function(){
+        headlinesVisibleCount = Math.min(headlinesVisibleCount + 6, headlinesAll.length);
+        renderHeadlinesGrid();
+      });
+    }
+
+    renderHeadlinesGrid();
+    section.style.display = '';
+  }
+
+  function renderHeadlinesGrid(){
+    var grid = document.getElementById('dr-hub-headlines-grid');
+    if (!grid) return;
+    var headlines = headlinesAll.slice(0, headlinesVisibleCount);
+
     grid.innerHTML = '';
     headlines.forEach(function(h, i){
       var catLabel = CATEGORY_LABELS[h.category] || String(h.category || '').toUpperCase();
@@ -14896,7 +14927,9 @@ if (document.readyState === 'loading') {
       card.appendChild(body);
       grid.appendChild(card);
     });
-    section.style.display = '';
+
+    var moreBtn = document.getElementById('dr-hub-headlines-more');
+    if (moreBtn) moreBtn.style.display = headlinesVisibleCount < headlinesAll.length ? '' : 'none';
   }
 
   var trendingPlayersLoaded = false;
