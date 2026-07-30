@@ -5043,6 +5043,23 @@ select:focus-visible {
   border-radius: 4px;
   padding: 0 4px;
 }
+.dr-mu-row {
+  cursor: pointer;
+}
+.dr-mu-row:hover td {
+  background-color: rgba(47, 107, 255, .07);
+}
+.dr-mu-lineup-status {
+  font-size: 10.5px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.dr-mu-lineup-status.confirmed {
+  color: #2ecc71;
+}
+.dr-mu-lineup-status.expected {
+  color: #fbbf24;
+}
 .dr-mu-table.dr-mu-density-compact td,
 .dr-mu-table.dr-mu-density-compact th {
   padding: 5px 8px;
