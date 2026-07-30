@@ -4513,3 +4513,259 @@ select:focus-visible {
 .dr-pstats-mode-body.active {
   display: block;
 }
+
+/* ===================================================================
+   Motion and Interaction Design (roadmap, Medium priority)
+   Shared, reusable primitives -- entrance fade-in, hover elevation,
+   progress-meter fills, skeleton loaders -- applied to the HR Threats /
+   Near HRs boards and the hub (the surfaces already being touched by
+   this pass; same classes are safe to reuse elsewhere later).
+   Reduced motion: the site already has a blanket
+   `@media (prefers-reduced-motion:reduce)` rule earlier in this file that
+   forces every CSS animation/transition to ~0ms, so nothing here needs a
+   per-component override -- these are plain CSS animations/transitions,
+   not JS-driven loops (the one JS-driven exception, animateCountUp's
+   requestAnimationFrame loop in app.js, checks prefers-reduced-motion
+   itself and skips straight to the end value).
+   =================================================================== */
+@keyframes dr-fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.dr-anim-in {
+  animation: dr-fade-in-up .32s ease-out both;
+}
+
+/* Hover elevation + smoother state transitions for the shared HR-card
+   component (HR Threats + Near HRs both use .dr1027-hr-card) and the hub's
+   headline/news cards -- previously these only had an instant border-color/
+   box-shadow snap on :hover with no transition at all. */
+.dr1027-hr-card {
+  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.dr1027-hr-card:hover {
+  transform: translateY(-2px);
+}
+.dr-hub-headline-card {
+  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.dr-hub-headline-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(47,107,255,.35);
+  box-shadow: 0 10px 24px rgba(0,0,0,.24);
+}
+.dr-hub-news-card {
+  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.dr-hub-news-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0,0,0,.24);
+}
+
+/* Progress-meter -- animates its fill width in on render to explain a
+   state (HR Probability on HR Threats cards, how-close-to-a-fence on Near
+   HRs cards) at a glance, without repeating the number the card already
+   shows in text. Starts at width:0 in markup; app.js flips it to the real
+   width one frame later so the CSS transition actually plays. */
+.dr1027-meter {
+  margin-top: 8px;
+}
+.dr1027-meter-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.dr1027-meter-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+  overflow: hidden;
+}
+.dr1027-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2f6bff, #7dc4ff);
+  width: 0;
+  transition: width .6s cubic-bezier(.16,.84,.44,1);
+}
+.dr1027-meter-fill.warn {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+/* Skeleton loading cards -- same footprint/shape as .dr1027-hr-card so
+   swapping a skeleton grid for the real card grid causes no layout shift. */
+.dr-skeleton-card {
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #111a2d, #0e1728);
+  border-radius: 16px;
+  padding: 13px;
+  margin: 0 0 10px;
+  min-height: 128px;
+}
+.dr-skeleton-line {
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, rgba(255,255,255,.06) 25%, rgba(255,255,255,.14) 37%, rgba(255,255,255,.06) 63%);
+  background-size: 400% 100%;
+  animation: dr-shimmer 1.4s ease infinite;
+}
+@keyframes dr-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+.dr-skeleton-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+.dr-skeleton-photo {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, rgba(255,255,255,.06) 25%, rgba(255,255,255,.14) 37%, rgba(255,255,255,.06) 63%);
+  background-size: 400% 100%;
+  animation: dr-shimmer 1.4s ease infinite;
+  flex-shrink: 0;
+}
+.dr-skeleton-head-lines {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dr-skeleton-head-lines .dr-skeleton-line:first-child { width: 60%; }
+.dr-skeleton-head-lines .dr-skeleton-line:last-child { width: 40%; height: 8px; }
+.dr-skeleton-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dr-skeleton-chip {
+  width: 54px;
+  height: 18px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255,255,255,.06) 25%, rgba(255,255,255,.14) 37%, rgba(255,255,255,.06) 63%);
+  background-size: 400% 100%;
+  animation: dr-shimmer 1.4s ease infinite;
+}
+.dr-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 1180px) {
+  .dr-skeleton-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+}
+@media (max-width: 640px) {
+  .dr-skeleton-grid { grid-template-columns: 1fr; gap: 12px; }
+}
+
+/* Near HRs board card parity (roadmap "Motion and Interaction Design" --
+   "make the player cards for the Near HR tab the same as the HR section").
+   The card itself (.dr1027-hr-card / -head / -photo / -name / -meta / -score
+   / -chip-row) is already a generic, unscoped component shared with HR
+   Threats above -- only the card LIST's grid layout needs its own rule here,
+   scoped to #near-hrs-content the same way HR Threats scopes its grid to
+   #hr-potential-content elsewhere in this file. */
+#near-hrs-content .dr1027-hr-card-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-items: stretch;
+  width: 100%;
+  max-width: 100%;
+}
+@media (max-width: 1180px) {
+  #near-hrs-content .dr1027-hr-card-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+@media (max-width: 640px) {
+  #near-hrs-content .dr1027-hr-card-list {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* Near HR detail popup (opened by clicking a Near HRs card) -- reuses the
+   shared .mu-modal-overlay chrome (same as the Batter vs Pitcher modal) but
+   renders synchronously from data already in memory (window.nearHRs), no
+   fetch, so opening it never delays on data access. */
+.near-hr-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.near-hr-detail-head img {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(147,197,253,.55);
+  background: #07111f;
+  flex-shrink: 0;
+}
+.near-hr-detail-count {
+  font-size: 17px;
+  font-weight: 900;
+  color: #fff;
+}
+.near-hr-detail-sub {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.near-hr-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.near-hr-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,.03);
+  transition: border-color .15s ease, transform .15s ease;
+}
+.near-hr-detail-row:hover {
+  border-color: rgba(47,107,255,.4);
+  transform: translateY(-1px);
+}
+.near-hr-detail-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.near-hr-detail-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--text);
+}
+.near-hr-detail-meta {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.near-hr-detail-link {
+  flex-shrink: 0;
+  color: var(--accent2);
+  font-weight: 700;
+  font-size: 12px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.near-hr-detail-link:hover {
+  text-decoration: underline;
+}

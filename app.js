@@ -4742,6 +4742,10 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
 // exactly the kind of distracting repaint the flicker fix above just eliminated.
 function animateCountUp(el, endValue, decimals = 0, duration = 700) {
   if (!el || !Number.isFinite(endValue)) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    el.textContent = endValue.toFixed(decimals);
+    return;
+  }
   const start = performance.now();
   function step(now) {
     const t = Math.min((now - start) / duration, 1);
@@ -4751,6 +4755,27 @@ function animateCountUp(el, endValue, decimals = 0, duration = 700) {
     else el.textContent = endValue.toFixed(decimals);
   }
   requestAnimationFrame(step);
+}
+
+// Flips every .dr1027-meter-fill[data-fill] under `root` from its markup
+// width:0 to its real target width one frame later, so the CSS width
+// transition (styles.css .dr1027-meter-fill) actually plays instead of
+// snapping straight to the final value. Double rAF (not single) so the 0%
+// paint is guaranteed to land before the flip -- a single rAF can get
+// coalesced into the same paint as the initial render on some browsers,
+// which would skip the animation entirely. Purely a CSS transition under
+// the hood, so it already goes near-instant automatically for
+// prefers-reduced-motion users via the blanket rule in styles.css --
+// no separate reduced-motion branch needed here.
+function drFillMeters(root) {
+  if (!root) return;
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      root.querySelectorAll('.dr1027-meter-fill[data-fill]').forEach(function(f){
+        f.style.width = f.getAttribute('data-fill');
+      });
+    });
+  });
 }
 
 // Collapsible zone-grid sections (Attack Zone by Pitch, HR Zones) in the Pitcher
@@ -6524,11 +6549,27 @@ function drFormatNearHRName(rawName) {
   return `${parts[1].trim()} ${parts[0].trim()}`;
 }
 
+// Minimal HTML-attribute escape for the tiny handful of top-level (non-IIFE)
+// render functions in this region of the file -- every IIFE elsewhere in
+// app.js defines its own private esc()/escapeHtml(), which isn't reachable
+// from here, so this is the equivalent for renderNearHRs/openNearHRDetail.
+function drEscAttr(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
 // Renders the Near HRs board (Home Runs pane, third panel) — one card per
 // batter with 1+ warning-track fly outs in their last 10 games, sorted by
 // event count (most near-misses first) then longest single distance.
-// Reuses the same .vuln-item row markup as the matchup modal's nearHRHTML
-// block, including the conditional "Watch ▸" video link.
+// Card markup deliberately mirrors HR Threats' .dr1027-hr-card component
+// (roadmap "Motion and Interaction Design": "make the player cards for the
+// Near HR tab the same as the HR section") -- same photo/name/meta header,
+// score box, chip row, hover elevation, all free via the shared class names
+// (see styles.css); only the card list's grid layout needed its own rule,
+// scoped to #near-hrs-content the same way HR Threats scopes to
+// #hr-potential-content. Clicking a card opens openNearHRDetail() below,
+// which shows the full near-HR event list (not just the most recent) with
+// real Watch links, synchronously from data already in memory -- no fetch,
+// so it can't delay on data access.
 function renderNearHRs() {
   const el = document.getElementById('near-hrs-content');
   if (!el) return;
@@ -6546,6 +6587,7 @@ function renderNearHRs() {
     return {
       id,
       name: drFormatNearHRName(info.name) || `Player ${id}`,
+      teamAbbr: info.teamAbbr || null,
       events: nearHRs[id].slice().sort((a, b) => (b.distance || 0) - (a.distance || 0))
     };
   }).filter(p => drMatchesSearch('nearhr', p.name));
@@ -6563,36 +6605,86 @@ function renderNearHRs() {
     countEl.style.cssText = 'background:var(--accent);color:white;font-family:Manrope,sans-serif;font-size:12px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;letter-spacing:.5px;flex-shrink:0';
   }
 
-  const hs = id => id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_32,q_auto:best/v1/people/${id}/headshot/67/current` : '';
-  const eventRowHTML = n => `
-      <div class="vuln-item">
-        <span class="vuln-icon">🚀</span>
-        <span style="color:var(--text)">
-          <strong>${Math.round(n.distance)} ft</strong>${n.exitVelo != null ? ` · ${n.exitVelo.toFixed(1)} mph` : ''}${n.launchAngle != null ? ` · ${Math.round(n.launchAngle)}° launch` : ''} — ${n.date}${n.matchup ? ` (${n.matchup})` : ''}${n.videoUrl ? ` · <a href="${n.videoUrl}" target="_blank" rel="noopener" style="color:var(--accent2)">Watch ▸</a>` : ''}
-        </span>
-      </div>`;
+  const hs = id => id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/${id}/headshot/67/current` : '';
+  // Reference fence distance used only to express "how close" a player's
+  // longest near-miss was as an at-a-glance meter -- not an official stat,
+  // labeled plainly as an estimate in the meter's own caption.
+  const FENCE_REF_FT = 400;
 
-  // Card shows a clickable stat label ("N Near HRs") collapsed by default —
-  // clicking it (native <details>/<summary>, no extra JS needed) reveals just
-  // the single most recent event, not the full last-10-games list, per the
-  // "shows the last near home run" request.
-  el.innerHTML = players.map(p => {
-    const lastEvent = p.events.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
-    return `<div class="stat-row" style="align-items:flex-start;flex-wrap:wrap">
-      <img src="${hs(p.id)}" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" alt="" loading="lazy" decoding="async">
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <span style="font-size:13px;font-weight:600;color:var(--text)">${p.name}</span>
-        </div>
-        <details style="margin-top:4px">
-          <summary style="cursor:pointer;font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;padding:2px 8px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);display:inline-block">🚀 ${p.events.length} Near HR${p.events.length !== 1 ? 's' : ''}</summary>
-          <div style="margin-top:4px">${eventRowHTML(lastEvent)}</div>
-        </details>
-      </div>
-    </div>`;
+  const cards = players.map((p, i) => {
+    const longest = p.events[0];
+    const mostRecent = p.events.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
+    const pct = Math.max(8, Math.min(100, Math.round(((longest?.distance || 0) / FENCE_REF_FT) * 100)));
+    const chips = [
+      `<span class="dr1027-chip"><b>Longest</b> ${Math.round(longest?.distance || 0)} ft</span>`,
+      `<span class="dr1027-chip"><b>Most Recent</b> ${drEscAttr(mostRecent?.date || '–')}</span>`
+    ];
+    if (longest?.exitVelo != null) chips.push(`<span class="dr1027-chip"><b>Exit Velo</b> ${longest.exitVelo.toFixed(1)} mph</span>`);
+    if (mostRecent?.matchup) chips.push(`<span class="dr1027-chip"><b>vs</b> ${drEscAttr(mostRecent.matchup)}</span>`);
+    return `<div class="dr1027-hr-card dr-anim-in" style="cursor:pointer;animation-delay:${Math.min(i, 8) * 25}ms" data-batter-id="${drEscAttr(p.id)}" data-batter-name="${drEscAttr(p.name)}" onclick="if(!event.target.closest('button,a')){var d=this.dataset;openNearHRDetail(+d.batterId,d.batterName);}">`
+      + `<div class="dr1027-hr-head">`
+      + `<img class="dr1027-hr-photo" loading="lazy" decoding="async" src="${hs(p.id)}" onerror="this.style.visibility='hidden'" alt="">`
+      + `<div><div class="dr1027-hr-name">${drEscAttr(p.name)}</div><div class="dr1027-hr-meta">${drEscAttr(p.teamAbbr || '–')} · Warning-Track Power</div></div>`
+      + `<div class="dr1027-hr-score"><strong>${p.events.length}</strong><span>Near HR${p.events.length !== 1 ? 's' : ''}</span><em>Last 10 Games</em></div>`
+      + `</div>`
+      + `<div class="dr1027-chip-row">${chips.join('')}</div>`
+      + `<div class="dr1027-meter" title="Longest near-miss vs. a typical ${FENCE_REF_FT}ft fence (estimate)"><div class="dr1027-meter-label"><span>How Close</span><span>${pct}%</span></div><div class="dr1027-meter-track"><div class="dr1027-meter-fill" data-fill="${pct}%"></div></div></div>`
+      + `</div>`;
   }).join('');
+
+  el.innerHTML = `<div class="dr1027-hr-card-list">${cards}</div>`;
+  drFillMeters(el);
 }
 window.renderNearHRs = renderNearHRs;
+
+// Opens the shared Batter vs Pitcher modal chrome (#mu-modal-overlay) to show
+// a Near HRs card's full event list -- every warning-track fly out in the
+// player's last 10 games, not just the most recent one, each with a real
+// "Watch ▸" link when a clip exists (data/near-hrs.json, synced via
+// scripts/sync-near-hrs.mjs's gf-feed lookup). Deliberately does NOT reuse
+// openMatchup()/renderMatchupModal(): those need a real opposing pitcher id
+// for several live fetches (H2H, pitcher season stats, etc.) that the Near
+// HRs board has no data for, and would show an error instead of the near-HR
+// content this is supposed to display. Renders synchronously from the
+// nearHRs object already in memory (loaded once by loadNearHRsBoard when
+// this pane first opened), so there's no fetch and no loading state at all.
+function openNearHRDetail(batterId, batterName) {
+  const overlay = document.getElementById('mu-modal-overlay');
+  const body = document.getElementById('mu-modal-body');
+  const title = document.getElementById('mu-modal-title');
+  const sub = document.getElementById('mu-modal-sub');
+  if (!overlay || !body || !title || !sub) return;
+
+  const events = (nearHRs[String(batterId)] || []).slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  title.textContent = batterName || 'Near Home Runs';
+  sub.textContent = 'Warning-Track Power · Last 10 Games';
+
+  const hs = id => id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/${id}/headshot/67/current` : '';
+  const rows = events.map(n => `
+    <div class="near-hr-detail-row">
+      <span class="near-hr-detail-icon">🚀</span>
+      <div class="near-hr-detail-text">
+        <div><strong>${Math.round(n.distance || 0)} ft</strong>${n.exitVelo != null ? ` · ${n.exitVelo.toFixed(1)} mph` : ''}${n.launchAngle != null ? ` · ${Math.round(n.launchAngle)}° launch` : ''}</div>
+        <div class="near-hr-detail-meta">${n.date || ''}${n.matchup ? ` · ${n.matchup}` : ''}</div>
+      </div>
+      ${n.videoUrl ? `<a href="${n.videoUrl}" target="_blank" rel="noopener" class="near-hr-detail-link">Watch ▸</a>` : ''}
+    </div>`).join('');
+
+  body.innerHTML = `
+    <div class="near-hr-detail-head">
+      <img src="${hs(batterId)}" alt="" loading="lazy" decoding="async" onerror="this.style.visibility='hidden'">
+      <div>
+        <div class="near-hr-detail-count">${events.length} Near Home Run${events.length !== 1 ? 's' : ''}</div>
+        <div class="near-hr-detail-sub">Warning-track fly outs (375+ ft) in the last 10 games</div>
+      </div>
+    </div>
+    <div class="near-hr-detail-list dr-anim-in">${rows || '<div class="mu-empty">No near-HR events found.</div>'}</div>
+  `;
+
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+window.openNearHRDetail = openNearHRDetail;
 
 async function loadNearHRsBoard() {
   try {
@@ -12317,7 +12409,7 @@ if (document.readyState === 'loading') {
       wEl.textContent = '';
     }
   }
-  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); populateHRGameSelect(base); if(!base.length){el.innerHTML=hrpRetryTimer?'<div class="mu-empty">Lineups not posted yet — automatically checking again in 15 min.<br><span style="font-size:10px;color:var(--muted)">No need to refresh, this updates itself.</span></div>':'<div class="mu-empty"><span class="spin"></span> Loading HR Projections…</div>';return;} var completedOnly=!!window.__hrpShowCompletedOnly; var arr=applyHRFilters(base).filter(function(r){return completedOnly ? isHit('hr',r) : (!isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL');}).sort(function(a,b){return hrSortValue(b)-hrSortValue(a);}); arr.forEach(function(r){window.__hrCompareRows[String(r.id)]=r;}); if(!arr.length){el.innerHTML='<div class="mu-empty" style="padding:24px">'+(completedOnly?'No completed home runs yet today. Check back once games are underway.':'No players match the selected filters. Try fewer filters, or select ALL to reset.')+'</div>';return;} var cards=arr.map(function(r){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); var trendChip=playerTrendIndicatorChip(r); if(trendChip)labels.push(trendChip); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); if(hasNearHR(r.id))labels.push(labelChip('🚀 NEAR HR',nearHRs[String(r.id)].length,'gold')); var l10=dr113Last10HRValue(r); var bpPct=ballparkPalFactorForPlayer(r.gamePk,r.id); var stats=[hrChip('HR Prob',p.toFixed(1)+'%','green'),hrChip('Matchup Edge',r.matchupEdge==null?'–':r.matchupEdge,r.matchupEdge==null?'':r.matchupEdge>=64?'green':r.matchupEdge<45?'red':'gold'),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1),'gold'):'',bpPct!=null?hrChip('Ballpark Pal',(bpPct>0?'+':'')+bpPct+'%',bpPct>0?'green':bpPct<0?'red':''):''].filter(Boolean); return '<div class="dr1027-hr-card '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="cursor:pointer" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="if(!event.target.closest(\'button,a\')){var d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName);}">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-why" id="hrp-scout-'+esc(r.id)+'-'+esc(r.pitcherId||0)+'">'+(r.pitcherId?'<span class="spin"></span> Loading scouting report\u2026':'<span style="color:var(--muted)">No opposing pitcher assigned yet \u2014 scouting report unavailable.</span>')+'</div><label class="dr1027-hr-compare" onclick="event.stopPropagation()" title="Add to Compare"><input type="checkbox" '+(window.drHRCompareHas&&window.drHRCompareHas(r.id)?'checked':'')+' onchange="drHRCompareToggle(\''+esc(r.id)+'\',this.checked)"><span>Add to Compare</span></label>'+'</div>'; }).join(''); var featuredRow=completedOnly?null:pickFeaturedHRRow(arr); el.innerHTML=(featuredRow?buildFeaturedHRPickHTML(featuredRow):'')+hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; if(featuredRow) fillFeaturedHRPickAsync(featuredRow); arr.forEach(function(r){ if(!r.pitcherId) return; loadHRScoutingReport(r.id,r.name,r.pitcherId,r.pitcherName).then(function(html){ var t=document.getElementById('hrp-scout-'+r.id+'-'+r.pitcherId); if(t) t.innerHTML=html; }); }); hrCompareUpdateBar(); }
+  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); populateHRGameSelect(base); if(!base.length){el.innerHTML=hrpRetryTimer?'<div class="mu-empty">Lineups not posted yet — automatically checking again in 15 min.<br><span style="font-size:10px;color:var(--muted)">No need to refresh, this updates itself.</span></div>':('<div class="dr-skeleton-grid">'+Array(6).fill('<div class="dr-skeleton-card"><div class="dr-skeleton-head"><div class="dr-skeleton-photo"></div><div class="dr-skeleton-head-lines"><div class="dr-skeleton-line"></div><div class="dr-skeleton-line"></div></div></div><div class="dr-skeleton-chips"><div class="dr-skeleton-chip"></div><div class="dr-skeleton-chip"></div><div class="dr-skeleton-chip"></div></div></div>').join('')+'</div>');return;} var completedOnly=!!window.__hrpShowCompletedOnly; var arr=applyHRFilters(base).filter(function(r){return completedOnly ? isHit('hr',r) : (!isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL');}).sort(function(a,b){return hrSortValue(b)-hrSortValue(a);}); arr.forEach(function(r){window.__hrCompareRows[String(r.id)]=r;}); if(!arr.length){el.innerHTML='<div class="mu-empty" style="padding:24px">'+(completedOnly?'No completed home runs yet today. Check back once games are underway.':'No players match the selected filters. Try fewer filters, or select ALL to reset.')+'</div>';return;} var cards=arr.map(function(r,rIdx){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore)),'red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); var trendChip=playerTrendIndicatorChip(r); if(trendChip)labels.push(trendChip); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); if(hasNearHR(r.id))labels.push(labelChip('🚀 NEAR HR',nearHRs[String(r.id)].length,'gold')); var l10=dr113Last10HRValue(r); var bpPct=ballparkPalFactorForPlayer(r.gamePk,r.id); var stats=[hrChip('HR Prob',p.toFixed(1)+'%','green'),hrChip('Matchup Edge',r.matchupEdge==null?'–':r.matchupEdge,r.matchupEdge==null?'':r.matchupEdge>=64?'green':r.matchupEdge<45?'red':'gold'),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1),'gold'):'',bpPct!=null?hrChip('Ballpark Pal',(bpPct>0?'+':'')+bpPct+'%',bpPct>0?'green':bpPct<0?'red':''):''].filter(Boolean); return '<div class="dr1027-hr-card dr-anim-in '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="cursor:pointer;animation-delay:'+(Math.min(rIdx,8)*20)+'ms" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="if(!event.target.closest(\'button,a\')){var d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName);}">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-meter" title="Model-estimated HR probability for this matchup"><div class="dr1027-meter-label"><span>HR Probability</span><span>'+p.toFixed(1)+'%</span></div><div class="dr1027-meter-track"><div class="dr1027-meter-fill" data-fill="'+Math.max(4,Math.min(100,p))+'%"></div></div></div><div class="dr1027-why" id="hrp-scout-'+esc(r.id)+'-'+esc(r.pitcherId||0)+'">'+(r.pitcherId?'<span class="spin"></span> Loading scouting report\u2026':'<span style="color:var(--muted)">No opposing pitcher assigned yet \u2014 scouting report unavailable.</span>')+'</div><label class="dr1027-hr-compare" onclick="event.stopPropagation()" title="Add to Compare"><input type="checkbox" '+(window.drHRCompareHas&&window.drHRCompareHas(r.id)?'checked':'')+' onchange="drHRCompareToggle(\''+esc(r.id)+'\',this.checked)"><span>Add to Compare</span></label>'+'</div>'; }).join(''); var featuredRow=completedOnly?null:pickFeaturedHRRow(arr); el.innerHTML=(featuredRow?buildFeaturedHRPickHTML(featuredRow):'')+hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; drFillMeters(el); if(featuredRow) fillFeaturedHRPickAsync(featuredRow); arr.forEach(function(r){ if(!r.pitcherId) return; loadHRScoutingReport(r.id,r.name,r.pitcherId,r.pitcherName).then(function(html){ var t=document.getElementById('hrp-scout-'+r.id+'-'+r.pitcherId); if(t) t.innerHTML=html; }); }); hrCompareUpdateBar(); }
 
   // ── HR Threats compare tray ─────────────────────────────────────────────
   // Lets a user shortlist up to HR_COMPARE_MAX cards (checkbox per card, added
@@ -13498,7 +13590,7 @@ if (document.readyState === 'loading') {
       var img = a && a.images && a.images[0] && a.images[0].url;
       var when = timeAgo(a && a.published);
       return (
-        '<button type="button" class="dr-hub-news-card' + (i === 0 ? ' lead' : '') + '" data-news-idx="' + i + '">' +
+        '<button type="button" class="dr-hub-news-card dr-anim-in' + (i === 0 ? ' lead' : '') + '" style="animation-delay:' + (Math.min(i, 8) * 25) + 'ms" data-news-idx="' + i + '">' +
           (img ? '<img src="' + escapeHtml(img) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '') +
           '<div class="dr-hub-news-body">' +
             '<div class="dr-hub-news-headline">' + escapeHtml(a && a.headline) + '</div>' +
@@ -14069,7 +14161,8 @@ if (document.readyState === 'loading') {
     headlines.forEach(function(h, i){
       var catLabel = CATEGORY_LABELS[h.category] || String(h.category || '').toUpperCase();
       var card = document.createElement('div');
-      card.className = 'dr-hub-headline-card' + (i === 0 ? ' lead' : '');
+      card.className = 'dr-hub-headline-card dr-anim-in' + (i === 0 ? ' lead' : '');
+      card.style.animationDelay = Math.min(i, 8) * 25 + 'ms';
       card.setAttribute('data-category', h.category || '');
       card.addEventListener('click', function(){ openHeadlineModal(h); });
 
