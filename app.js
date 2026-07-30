@@ -14337,6 +14337,12 @@ if (document.readyState === 'loading') {
   function hs(id){
     return id ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/' + id + '/headshot/67/current' : '';
   }
+  // Same real MLB headshot source as hs() above, just requested at a much
+  // wider size (w_500) since this one gets stretched to the full card width
+  // as a 16:9 banner photo instead of a small round avatar.
+  function hsBig(id){
+    return id ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_500,q_auto:best/v1/people/' + id + '/headshot/67/current' : '';
+  }
 
   // Best-effort lookup of the actual home run clip via the game's content/
   // highlights feed, rather than just linking to the whole game's Gameday
@@ -14832,41 +14838,40 @@ if (document.readyState === 'loading') {
       card.setAttribute('data-category', h.category || '');
       card.addEventListener('click', function(){ openHeadlineModal(h); });
 
-      var head = document.createElement('div');
-      head.className = 'dr-hub-headline-head';
-
+      // Same ESPN "Around the Leagues" card shape (renderHubNews below) --
+      // a full-bleed photo on top, no gap/border under it, rather than the
+      // old small round avatar. Only rendered when there's a real player
+      // photo to show; a headline with none (weather, recap, etc.) just
+      // skips straight to the text body.
       var playerId = h.link && h.link.playerId;
       if (playerId) {
         var photo = document.createElement('img');
-        photo.className = 'dr-hub-headline-photo';
-        photo.src = hs(playerId);
+        photo.className = 'dr-hub-headline-photo-big';
+        photo.src = hsBig(playerId);
         photo.alt = '';
         photo.loading = 'lazy';
         photo.decoding = 'async';
         photo.onerror = function(){ this.style.display = 'none'; };
-        head.appendChild(photo);
+        card.appendChild(photo);
       }
 
-      var headText = document.createElement('div');
-      headText.className = 'dr-hub-headline-headtext';
+      var body = document.createElement('div');
+      body.className = 'dr-hub-headline-body';
 
       var cat = document.createElement('div');
       cat.className = 'dr-hub-headline-cat';
       cat.textContent = catLabel;
-      headText.appendChild(cat);
+      body.appendChild(cat);
 
       var title = document.createElement('div');
       title.className = 'dr-hub-headline-title';
       title.textContent = h.title || '';
-      headText.appendChild(title);
-
-      head.appendChild(headText);
-      card.appendChild(head);
+      body.appendChild(title);
 
       var blurb = document.createElement('p');
       blurb.className = 'dr-hub-headline-blurb';
       blurb.textContent = h.blurb || '';
-      card.appendChild(blurb);
+      body.appendChild(blurb);
 
       var actions = document.createElement('div');
       actions.className = 'dr-hub-headline-actions';
@@ -14886,8 +14891,9 @@ if (document.readyState === 'loading') {
         clipBtn.addEventListener('click', function(e){ e.stopPropagation(); openHRVideoModal(h.title, catLabel, h.clip.videoUrl); });
         actions.appendChild(clipBtn);
       }
-      if (actions.childNodes.length) card.appendChild(actions);
+      if (actions.childNodes.length) body.appendChild(actions);
 
+      card.appendChild(body);
       grid.appendChild(card);
     });
     section.style.display = '';
