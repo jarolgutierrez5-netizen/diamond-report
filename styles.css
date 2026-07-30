@@ -2086,12 +2086,10 @@ html body.dr-hub-active main {
 }
 .dr-hub-sport-card.soon {
   opacity: .55;
-  cursor: default;
+  cursor: pointer;
 }
 .dr-hub-sport-card.soon:hover {
-  transform: none;
-  border-color: rgba(255,255,255,.08);
-  box-shadow: none;
+  opacity: .8;
 }
 .dr-hub-sport-card.soon .dr-hub-sport-badge {
   display: inline-block;
@@ -2103,6 +2101,73 @@ html body.dr-hub-active main {
   letter-spacing: .3px;
   padding: 4px 12px;
   border-radius: 999px;
+}
+.dr-hub-sport-card.current {
+  border-color: rgba(47,107,255,.6);
+  box-shadow: 0 0 0 2px rgba(47,107,255,.3);
+}
+.dr-hub-sporttabs {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+.dr-hub-sporttab {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 999px;
+  color: #93a1bd;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .2px;
+  padding: 8px 18px;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.dr-hub-sporttab:hover {
+  color: #d7deee;
+  border-color: rgba(255,255,255,.24);
+}
+.dr-hub-sporttab.active {
+  background: rgba(47,107,255,.18);
+  border-color: rgba(47,107,255,.55);
+  color: #8fb0ff;
+}
+.dr-hub-sport-comingsoon {
+  background: rgba(47,107,255,.06);
+  border: 1px solid rgba(47,107,255,.22);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 32px;
+  text-align: center;
+}
+.dr-hub-sport-comingsoon-text {
+  font-size: 13.5px;
+  color: #a7b3cc;
+  line-height: 1.6;
+  margin: 0;
+}
+/* Multi-Sport News and Navigation: MLB-only real modules (Diamond Report
+   Headlines, today's scoreboard, projections/leaders rail) have no NFL/NBA
+   data behind them yet, so they're force-hidden -- via !important, so it wins
+   over the inline display:'' each section's own lazy-loader sets once its
+   (MLB-only) fetch resolves, regardless of load timing -- whenever an NFL/NBA
+   sport tab is active. The real, already-fetched ESPN news for that league
+   still shows in #dr-hub-news, filtered by setActiveSport/applyNewsSportFilter
+   in app.js. */
+body.dr-hub-sport-nfl #dr-hub-headlines,
+body.dr-hub-sport-nfl #dr-hub-scoreboard,
+body.dr-hub-sport-nfl #dr-hub-side,
+body.dr-hub-sport-nba #dr-hub-headlines,
+body.dr-hub-sport-nba #dr-hub-scoreboard,
+body.dr-hub-sport-nba #dr-hub-side {
+  display: none !important;
+}
+body.dr-hub-sport-nfl .dr-hub-layout,
+body.dr-hub-sport-nba .dr-hub-layout {
+  grid-template-columns: 1fr;
 }
 .dr-hub-section-head {
   display: flex;

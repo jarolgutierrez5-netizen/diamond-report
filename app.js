@@ -13371,8 +13371,10 @@ if (document.readyState === 'loading') {
 // window.showGamePickPane wraps above).
 (function(){
   var newsLoaded = false;
+  var newsArticlesAll = [];
   var newsArticles = [];
   var newsVisibleCount = 10;
+  var activeSport = 'all';
   var hrLoaded = false;
   var leadersLoaded = false;
   var projectionsLoaded = false;
@@ -13402,6 +13404,42 @@ if (document.readyState === 'loading') {
     if (scoreboardTimer) { clearInterval(scoreboardTimer); scoreboardTimer = null; }
   }
 
+  // Multi-Sport News and Navigation (roadmap 3.x): switches which sport the
+  // hub feed is scoped to. "all" (default) is the combined feed across every
+  // sport we cover; "MLB" is the same feed narrowed to MLB; "NFL"/"NBA" have
+  // no real analytics behind them yet, so they show real filtered ESPN news
+  // (applyNewsSportFilter) plus an honest "launching soon" notice in place of
+  // the MLB-only Diamond Report Headlines/scoreboard/leaders modules -- see
+  // the body.dr-hub-sport-nfl/nba rules in styles.css that force those
+  // sections hidden regardless of their own lazy-loaders' display state.
+  var SPORT_COMINGSOON_TEXT = {
+    NFL: "NFL projections and leaderboards are launching for the 2026 season. In the meantime, here's what's happening around the NFL:",
+    NBA: "NBA projections and leaderboards are in the works. In the meantime, here's what's happening around the NBA:"
+  };
+  function setActiveSport(sport){
+    if (activeSport === sport) return;
+    activeSport = sport;
+    document.body.classList.remove('dr-hub-sport-all', 'dr-hub-sport-mlb', 'dr-hub-sport-nfl', 'dr-hub-sport-nba');
+    document.body.classList.add('dr-hub-sport-' + sport.toLowerCase());
+
+    document.querySelectorAll('.dr-hub-sporttab').forEach(function(btn){
+      var on = btn.getAttribute('data-sport') === sport;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    document.querySelectorAll('.dr-hub-sport-card[data-sport]').forEach(function(card){
+      card.classList.toggle('current', card.getAttribute('data-sport') === sport);
+    });
+
+    var isOtherSport = sport === 'NFL' || sport === 'NBA';
+    var comingSoon = document.getElementById('dr-hub-sport-comingsoon');
+    var comingSoonText = document.getElementById('dr-hub-sport-comingsoon-text');
+    if (comingSoon) comingSoon.style.display = isOtherSport ? '' : 'none';
+    if (comingSoonText) comingSoonText.textContent = isOtherSport ? (SPORT_COMINGSOON_TEXT[sport] || '') : '';
+
+    if (newsArticlesAll.length) applyNewsSportFilter();
+  }
+
   function escapeHtml(s){
     return String(s || '').replace(/[&<>"']/g, function(c){
       return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
@@ -13422,10 +13460,8 @@ if (document.readyState === 'loading') {
     var section = document.getElementById('dr-hub-news');
     var grid = document.getElementById('dr-hub-news-grid');
     if (!section || !grid || !articles || !articles.length) return;
-    newsArticles = articles;
-    newsVisibleCount = Math.min(10, newsArticles.length);
-    renderNewsGrid();
-    section.style.display = '';
+    newsArticlesAll = articles;
+    applyNewsSportFilter();
 
     var moreBtn = document.getElementById('dr-hub-news-more');
     if (moreBtn && !moreBtn.dataset.drBound) {
@@ -13435,6 +13471,23 @@ if (document.readyState === 'loading') {
         renderNewsGrid();
       });
     }
+  }
+
+  // Re-scopes the already-fetched, already-league-tagged news feed (see
+  // fetchLeagueNews/loadHubNews) to the currently selected sport tab -- "All
+  // Sports" shows the full merged feed, a specific sport shows just that
+  // league's real articles. No new fetch, no fabricated content: this is the
+  // same data loadHubNews always pulled, just filtered client-side.
+  function applyNewsSportFilter(){
+    var section = document.getElementById('dr-hub-news');
+    var heading = document.getElementById('dr-hub-news-heading');
+    if (!section) return;
+    newsArticles = activeSport === 'all' ? newsArticlesAll : newsArticlesAll.filter(function(a){ return a.league === activeSport; });
+    newsVisibleCount = Math.min(10, newsArticles.length);
+    if (heading) heading.textContent = activeSport === 'all' ? 'Around the Leagues' : 'Around ' + activeSport;
+    if (!newsArticles.length) { section.style.display = 'none'; return; }
+    renderNewsGrid();
+    section.style.display = '';
   }
 
   function renderNewsGrid(){
@@ -14378,12 +14431,30 @@ if (document.readyState === 'loading') {
     if (baseballCard && !baseballCard.dataset.drHubReady) {
       baseballCard.dataset.drHubReady = '1';
       baseballCard.addEventListener('click', function(){
+        setActiveSport('MLB');
         hideHub();
         if (!hashIsGamepick()) {
           try { window.location.hash = 'gamepick=game'; } catch(e) {}
         }
         if (typeof window.showGamePickPane === 'function') window.showGamePickPane('game');
       });
+    }
+
+    document.querySelectorAll('.dr-hub-sporttab').forEach(function(tab){
+      if (tab.dataset.drHubReady) return;
+      tab.dataset.drHubReady = '1';
+      tab.addEventListener('click', function(){ setActiveSport(tab.getAttribute('data-sport')); });
+    });
+
+    var nflCard = document.getElementById('dr-hub-nfl-card');
+    if (nflCard && !nflCard.dataset.drHubReady) {
+      nflCard.dataset.drHubReady = '1';
+      nflCard.addEventListener('click', function(){ setActiveSport('NFL'); });
+    }
+    var nbaCard = document.getElementById('dr-hub-nba-card');
+    if (nbaCard && !nbaCard.dataset.drHubReady) {
+      nbaCard.dataset.drHubReady = '1';
+      nbaCard.addEventListener('click', function(){ setActiveSport('NBA'); });
     }
 
     var logo = document.getElementById('dr-header-logo');
