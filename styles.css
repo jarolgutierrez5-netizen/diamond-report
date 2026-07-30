@@ -264,6 +264,8 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
   .dr1041-pitch-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
   .dr1041-kicker{color:var(--accent);font-size:12px;font-weight:950;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
   .dr1041-subtext{color:#a9c7ff;font-size:12px;line-height:1.55;max-width:980px}
+  .pr-chase-chip{display:inline-block;margin-top:6px;color:#a9c7ff;font-size:11px;background:rgba(74,158,255,.12);border:1px solid rgba(74,158,255,.28);border-radius:999px;padding:3px 10px}
+  .pr-chase-chip strong{color:#fff}
   .dr1041-score-card{min-width:132px;border:1px solid rgba(46,230,166,.55);border-radius:12px;background:rgba(6,35,38,.72);padding:12px;text-align:center}
   .dr1041-score-card strong{display:block;color:#2ee6a6;font-size:34px;line-height:1;font-family:'JetBrains Mono',monospace;font-weight:950}
   .dr1041-score-card span{display:block;color:#fff;font-size:11px;font-weight:850;margin-top:8px}
@@ -5264,4 +5266,68 @@ select:focus-visible {
   .dr-mu-controls {
     justify-content: space-between;
   }
+}
+
+/* Pitcher Trend Indicator badge (computePitcherTrendIndicator) -- same visual family
+   as the batter-side HR Threats trend chips, just its own class since it renders in a
+   different context (Pitcher Report table row + pop-out modal header). */
+.pr-trend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  border-radius: 999px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: rgba(255,255,255,.04);
+  white-space: nowrap;
+}
+.pr-trend-chip.red {
+  color: #ff6b6b;
+  border-color: rgba(255,107,107,.4);
+  background: rgba(255,107,107,.1);
+}
+.pr-trend-chip.green {
+  color: #2ee6a6;
+  border-color: rgba(46,230,166,.4);
+  background: rgba(46,230,166,.1);
+}
+
+/* Matchup Drivers + AI Explanation panel (buildMatchupDriversHTML) */
+.pr-drivers-panel {
+  margin-top: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: rgba(255,255,255,.02);
+}
+.pr-drivers-summary {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.pr-driver-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text);
+  padding: 5px 0;
+  border-top: 1px solid var(--border);
+}
+.pr-driver-row:first-of-type {
+  border-top: none;
+}
+.pr-driver-icon {
+  flex: 0 0 auto;
+}
+.pr-driver-text b {
+  color: var(--text);
+}
+.pr-driver-text span {
+  color: var(--muted);
 }
