@@ -13337,6 +13337,10 @@ if (document.readyState === 'loading') {
     if (!label) return null;
     return { label: label, tone: tone, period: 'L10', smallSample: smallSample };
   }
+  // Exposed for the HR Highlights Carousel (a different IIFE below, which has no
+  // closure access to this one) -- same real Hot Streak/Trending Up/Cooling Off/
+  // Cold read, no duplicate logic.
+  window.computePlayerTrendIndicator = computePlayerTrendIndicator;
   function playerTrendIndicatorChip(r){
     var t = computePlayerTrendIndicator(r);
     if (!t) return '';
@@ -14497,6 +14501,7 @@ if (document.readyState === 'loading') {
   function showHub(){
     document.body.classList.add('dr-hub-active');
     loadHubHeadlines();
+    loadHRCarousel();
     loadTrendingPlayers();
     loadHubNews();
     loadHubHRs();
@@ -15555,6 +15560,315 @@ if (document.readyState === 'loading') {
         });
       }).catch(function(){ /* leave the generic fallback link in place */ });
     } catch(e) { /* leave the generic fallback link in place */ }
+  }
+
+  // ── Home Run Highlights Carousel ──────────────────────────────────────
+  // A richer, auto-playing companion to the "Home Run Highlights" side-rail
+  // above -- same real today/yesterday-fallback data source (loadHRsToday /
+  // fetchHRsForDate), but each slide gets a real muted-autoplay MLB highlight
+  // clip (fetchGameContent/findHRClipUrl -- MLB's own official content API,
+  // a direct playable clip URL; deliberately NOT the Savant gf-feed path
+  // sync-near-hrs.mjs uses, which has a known unresolved 0%-match bug), plus
+  // real HR trend, hard-hit%/barrel%, and the next real probable-pitcher
+  // matchup. Every field is real or simply omitted from the card -- never
+  // fabricated. The whole section stays hidden when there are zero real HRs
+  // to show (no fallback content, same as the side-rail's own honesty
+  // standard).
+  var hrCarouselSlides = [];
+  var hrCarouselIndex = 0;
+  var hrCarouselPlaying = true;
+  var hrCarouselMuted = true; // starts muted -- browser autoplay policy requires
+                               // it, and this app's own acceptance bar ("autoplay
+                               // does not play disruptive audio") requires it too
+  var hrCarouselAdvanceTimer = null;
+  var hrCarouselLoaded = false;
+  var HR_CAROUSEL_MAX_SLIDES = 8;
+  var HR_CAROUSEL_FALLBACK_MS = 12000; // advance even if a clip never resolves/plays
+
+  function loadHRCarousel(){
+    if (hrCarouselLoaded) return;
+    hrCarouselLoaded = true;
+    try {
+      var maybePromise = typeof window.loadHRsToday === 'function' ? window.loadHRsToday() : null;
+      Promise.resolve(maybePromise).then(function(){
+        var todaysHRs = window.__drHRsToday || [];
+        if (todaysHRs.length) { initHRCarousel(todaysHRs); return; }
+        hasAnyGameStartedToday().then(function(started){
+          if (started) return; // real games underway with zero real HRs yet -- stay hidden, not stale
+          var yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          var yStr = yesterday.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+          fetchHRsForDate(yStr).then(function(list){
+            if (list.length) initHRCarousel(list);
+          });
+        });
+      }).catch(function(){});
+    } catch(e) {}
+  }
+  window.loadHRCarousel = loadHRCarousel;
+
+  // Dedupe by batter id (a multi-HR game, or a doubleheader, can produce more
+  // than one real entry for the same player) keeping their best (highest-HR)
+  // entry, capped to a real top N most-recent so the carousel stays tight.
+  function buildHRCarouselSlideList(rawList){
+    var byId = {};
+    (rawList || []).forEach(function(h){
+      if (!h.id) return;
+      var existing = byId[h.id];
+      if (!existing || h.hrs > existing.hrs) byId[h.id] = h;
+    });
+    return Object.keys(byId).map(function(id){ return byId[id]; })
+      .sort(function(a, b){ return b.gameTimestamp - a.gameTimestamp || b.hrs - a.hrs; })
+      .slice(0, HR_CAROUSEL_MAX_SLIDES);
+  }
+
+  function initHRCarousel(rawList){
+    var slides = buildHRCarouselSlideList(rawList);
+    if (!slides.length) return;
+    hrCarouselSlides = slides.map(function(h){
+      return {
+        id: h.id, name: h.name, teamAbbr: h.teamAbbr, hrs: h.hrs, gamePk: h.gamePk, gameLabel: h.gameLabel,
+        videoUrl: null, webUrl: null, trend: null, recentGames: null, hardHitPct: null, barrelPct: null,
+        nextOpp: null, nextPitcherName: null, nextPitcherId: null,
+      };
+    });
+    var section = document.getElementById('dr-hub-hr-carousel');
+    if (section) section.style.display = '';
+    renderHRCarouselShell();
+    goToHRCarouselSlide(0);
+    enrichHRCarouselSlides();
+  }
+  window.initHRCarousel = initHRCarousel;
+
+  function enrichHRCarouselSlides(){
+    // Hard-hit%/barrel% -- one shared JSON file, real fields already used
+    // elsewhere in this app (Featured Home Run Pick card, cold-batter panel).
+    (typeof loadStatcastHotHitters === 'function' ? loadStatcastHotHitters() : Promise.resolve()).catch(function(){}).then(function(){
+      if (typeof statcastHotHitters === 'undefined' || !statcastHotHitters) return;
+      hrCarouselSlides.forEach(function(slide){
+        var hh = statcastHotHitters[String(slide.id)] || statcastHotHitters[String(slide.name || '').toLowerCase()];
+        if (!hh) return;
+        slide.hardHitPct = hh.hardHitPct != null ? parseFloat(hh.hardHitPct) : null;
+        slide.barrelPct = hh.barrelPct != null ? parseFloat(hh.barrelPct) : null;
+        refreshHRCarouselStatCard(slide.id);
+      });
+    });
+
+    // Real HR trend (computePlayerTrendIndicator) + a real last-5-games HR line --
+    // one fetch (season stats + real game log) covers both, same endpoint the
+    // Pitcher Report lineup/K-prop code already uses.
+    var season = new Date().getFullYear();
+    hrCarouselSlides.forEach(function(slide){
+      if (typeof fetchBatterSeasonBundle !== 'function') return;
+      fetchBatterSeasonBundle(slide.id, season, {}).then(function(bundle){
+        var logs = bundle.logs || [];
+        var last10HR = logs.slice(0, 10).reduce(function(sum, g){ return sum + (parseInt(g.stat && g.stat.homeRuns) || 0); }, 0);
+        var atBats = parseInt(bundle.seasonStats && bundle.seasonStats.atBats) || 0;
+        var hrSeason = parseInt(bundle.seasonStats && bundle.seasonStats.homeRuns) || 0;
+        slide.trend = (typeof window.computePlayerTrendIndicator === 'function' && atBats > 0)
+          ? window.computePlayerTrendIndicator({ last10HR: last10HR, atBats: atBats, hrSeason: hrSeason })
+          : null;
+        slide.recentGames = logs.slice(0, 5).map(function(g){ return parseInt(g.stat && g.stat.homeRuns) || 0; });
+        refreshHRCarouselStatCard(slide.id);
+      }).catch(function(){});
+    });
+
+    // Real next-game probable opposing pitcher -- one shared today's-schedule
+    // fetch for the whole carousel (not one per slide). A team with no game
+    // today (off day) simply gets no next-matchup line, never a guess.
+    if (typeof getTodaySchedule === 'function') {
+      getTodaySchedule('team,probablePitcher').then(function(games){
+        hrCarouselSlides.forEach(function(slide){
+          var game = (games || []).find(function(g){
+            return g.teams && ((g.teams.home.team.abbreviation === slide.teamAbbr) || (g.teams.away.team.abbreviation === slide.teamAbbr));
+          });
+          if (!game) return;
+          var isHome = game.teams.home.team.abbreviation === slide.teamAbbr;
+          var oppSide = isHome ? 'away' : 'home';
+          var oppTeam = game.teams[oppSide];
+          slide.nextOpp = oppTeam.team.abbreviation;
+          if (oppTeam.probablePitcher) {
+            slide.nextPitcherName = oppTeam.probablePitcher.fullName;
+            slide.nextPitcherId = oppTeam.probablePitcher.id;
+          }
+          refreshHRCarouselStatCard(slide.id);
+        });
+      }).catch(function(){});
+    }
+
+    // Real MLB highlight clip -- same resolution path (and cache) as the side-rail's
+    // renderHubHRs above.
+    hrCarouselSlides.forEach(function(slide){
+      if (!slide.gamePk) return;
+      fetchGameContent(slide.gamePk).then(function(items){
+        var found = findHRClipUrl(items, slide.name);
+        slide.videoUrl = found.videoUrl;
+        slide.webUrl = found.webUrl;
+        if (hrCarouselSlides[hrCarouselIndex] === slide) playHRCarouselVideo(slide);
+      });
+    });
+  }
+
+  function renderHRCarouselShell(){
+    var wrap = document.getElementById('dr-hub-hr-carousel-body');
+    if (!wrap) return;
+    var dots = hrCarouselSlides.map(function(s, i){
+      return '<button type="button" class="dr-hrc-dot' + (i === 0 ? ' active' : '') + '" data-hrc-dot="' + i + '" aria-label="Go to slide ' + (i + 1) + '"></button>';
+    }).join('');
+    wrap.innerHTML =
+      '<div class="dr-hrc-stage">' +
+        '<video id="dr-hrc-video" class="dr-hrc-video" playsinline muted></video>' +
+        '<div class="dr-hrc-noclip" id="dr-hrc-noclip">🎥<span>No clip available yet</span></div>' +
+        '<div class="dr-hrc-controls">' +
+          '<button type="button" class="dr-hrc-btn" id="dr-hrc-prev" aria-label="Previous home run">‹</button>' +
+          '<button type="button" class="dr-hrc-btn" id="dr-hrc-playpause" aria-label="Pause carousel">⏸</button>' +
+          '<div class="dr-hrc-dots">' + dots + '</div>' +
+          '<button type="button" class="dr-hrc-btn" id="dr-hrc-mute" aria-label="Unmute">🔇</button>' +
+          '<button type="button" class="dr-hrc-btn" id="dr-hrc-next" aria-label="Next home run">›</button>' +
+        '</div>' +
+      '</div>' +
+      '<button type="button" class="dr-hrc-card" id="dr-hrc-card" aria-label="View full matchup"></button>';
+
+    document.getElementById('dr-hrc-prev').addEventListener('click', function(e){ e.stopPropagation(); hrCarouselGoPrev(); });
+    document.getElementById('dr-hrc-next').addEventListener('click', function(e){ e.stopPropagation(); hrCarouselGoNext(); });
+    document.getElementById('dr-hrc-playpause').addEventListener('click', function(e){ e.stopPropagation(); hrCarouselTogglePlay(); });
+    document.getElementById('dr-hrc-mute').addEventListener('click', function(e){ e.stopPropagation(); hrCarouselToggleMute(); });
+    wrap.querySelectorAll('[data-hrc-dot]').forEach(function(btn){
+      btn.addEventListener('click', function(e){ e.stopPropagation(); goToHRCarouselSlide(parseInt(btn.getAttribute('data-hrc-dot'), 10)); });
+    });
+    document.getElementById('dr-hrc-card').addEventListener('click', function(){ openHRCarouselMatchup(); });
+
+    var video = document.getElementById('dr-hrc-video');
+    video.addEventListener('ended', function(){ if (hrCarouselPlaying) hrCarouselGoNext(); });
+
+    // Basic touch-swipe for mobile -- separate from the control-bar buttons above
+    // (which stopPropagation, so a tap there is never misread as a swipe).
+    var stage = wrap.querySelector('.dr-hrc-stage');
+    var touchStartX = null;
+    stage.addEventListener('touchstart', function(e){ touchStartX = e.touches[0].clientX; }, { passive: true });
+    stage.addEventListener('touchend', function(e){
+      if (touchStartX == null) return;
+      var dx = e.changedTouches[0].clientX - touchStartX;
+      touchStartX = null;
+      if (Math.abs(dx) < 40) return;
+      if (dx < 0) hrCarouselGoNext(); else hrCarouselGoPrev();
+    }, { passive: true });
+  }
+
+  function goToHRCarouselSlide(i){
+    if (!hrCarouselSlides.length) return;
+    hrCarouselIndex = ((i % hrCarouselSlides.length) + hrCarouselSlides.length) % hrCarouselSlides.length;
+    var slide = hrCarouselSlides[hrCarouselIndex];
+    renderHRCarouselStatCard(slide);
+    playHRCarouselVideo(slide);
+    document.querySelectorAll('#dr-hub-hr-carousel-body [data-hrc-dot]').forEach(function(dot, i2){
+      dot.classList.toggle('active', i2 === hrCarouselIndex);
+    });
+    clearTimeout(hrCarouselAdvanceTimer);
+    if (hrCarouselPlaying) hrCarouselAdvanceTimer = setTimeout(function(){ hrCarouselGoNext(); }, HR_CAROUSEL_FALLBACK_MS);
+  }
+  function hrCarouselGoNext(){ goToHRCarouselSlide(hrCarouselIndex + 1); }
+  function hrCarouselGoPrev(){ goToHRCarouselSlide(hrCarouselIndex - 1); }
+
+  function playHRCarouselVideo(slide){
+    var video = document.getElementById('dr-hrc-video');
+    var noclip = document.getElementById('dr-hrc-noclip');
+    if (!video) return;
+    if (slide.videoUrl) {
+      if (video.getAttribute('data-src') !== slide.videoUrl) {
+        video.src = slide.videoUrl;
+        video.setAttribute('data-src', slide.videoUrl);
+      }
+      video.muted = hrCarouselMuted;
+      video.style.display = '';
+      if (noclip) noclip.style.display = 'none';
+      if (hrCarouselPlaying) video.play().catch(function(){});
+    } else {
+      video.pause();
+      video.removeAttribute('src');
+      video.setAttribute('data-src', '');
+      video.load();
+      video.style.display = 'none';
+      // 'flex' (not '') -- .dr-hrc-noclip's own CSS rule defaults to display:none,
+      // so clearing the inline style here would just fall back to that same hidden
+      // default instead of actually showing the placeholder.
+      if (noclip) noclip.style.display = 'flex';
+    }
+  }
+
+  function hrCarouselTogglePlay(){
+    hrCarouselPlaying = !hrCarouselPlaying;
+    var video = document.getElementById('dr-hrc-video');
+    var btn = document.getElementById('dr-hrc-playpause');
+    if (btn) { btn.textContent = hrCarouselPlaying ? '⏸' : '▶'; btn.setAttribute('aria-label', hrCarouselPlaying ? 'Pause carousel' : 'Play carousel'); }
+    if (video) { if (hrCarouselPlaying) video.play().catch(function(){}); else video.pause(); }
+    clearTimeout(hrCarouselAdvanceTimer);
+    if (hrCarouselPlaying) hrCarouselAdvanceTimer = setTimeout(function(){ hrCarouselGoNext(); }, HR_CAROUSEL_FALLBACK_MS);
+  }
+
+  function hrCarouselToggleMute(){
+    hrCarouselMuted = !hrCarouselMuted;
+    var video = document.getElementById('dr-hrc-video');
+    var btn = document.getElementById('dr-hrc-mute');
+    if (video) video.muted = hrCarouselMuted;
+    if (btn) { btn.textContent = hrCarouselMuted ? '🔇' : '🔊'; btn.setAttribute('aria-label', hrCarouselMuted ? 'Unmute' : 'Mute'); }
+  }
+
+  function hrCarouselTrendBadgeHTML(trend){
+    if (!trend) return '';
+    var icon = trend.label === 'Hot Streak' ? '📈' : trend.label === 'Trending Up' ? '↗️' : trend.label === 'Cooling Off' ? '↘️' : '🧊';
+    var cls = trend.tone === 'red' ? 'hot' : trend.tone === 'green' ? 'up' : '';
+    return '<span class="dr-hrc-trend ' + cls + '">' + icon + ' ' + escapeHtml(trend.label) + '</span>';
+  }
+
+  function renderHRCarouselStatCard(slide){
+    var card = document.getElementById('dr-hrc-card');
+    if (!card || !slide) return;
+    var statChips = [];
+    if (slide.hardHitPct != null) statChips.push('<span class="dr-hrc-chip">Hard-Hit ' + slide.hardHitPct.toFixed(1) + '%</span>');
+    if (slide.barrelPct != null) statChips.push('<span class="dr-hrc-chip">Barrel ' + slide.barrelPct.toFixed(1) + '%</span>');
+    var recentGamesHTML = Array.isArray(slide.recentGames) && slide.recentGames.length
+      ? '<div class="dr-hrc-recent" title="Last ' + slide.recentGames.length + ' games, real HR count per game">' +
+          slide.recentGames.map(function(hr){ return '<span class="dr-hrc-gamedot' + (hr > 0 ? ' hr' : '') + '">' + (hr > 0 ? hr : '') + '</span>'; }).join('') +
+        '</div>'
+      : '';
+    var matchupLine = slide.nextPitcherName
+      ? 'Next: vs ' + escapeHtml(slide.nextPitcherName) + (slide.nextOpp ? ' (' + escapeHtml(slide.nextOpp) + ')' : '')
+      : (slide.nextOpp ? 'Next: vs ' + escapeHtml(slide.nextOpp) : '');
+    // Real identity of the currently-shown slide, exposed as data attributes so a
+    // click handler (or a test) never has to assume which slide is active from
+    // navigation history alone.
+    card.setAttribute('data-batter-id', String(slide.id));
+    card.setAttribute('data-next-pitcher-id', slide.nextPitcherId != null ? String(slide.nextPitcherId) : '');
+    card.innerHTML =
+      '<img class="dr-hrc-photo" src="' + escapeHtml(hs(slide.id)) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' +
+      '<div class="dr-hrc-info">' +
+        '<div class="dr-hrc-name">' + escapeHtml(slide.name) + ' <span class="dr-hrc-team">' + escapeHtml(slide.teamAbbr || '') + '</span></div>' +
+        '<div class="dr-hrc-hrline">' + slide.hrs + ' HR' + (slide.hrs !== 1 ? 's' : '') + (slide.gameLabel ? ' · ' + escapeHtml(slide.gameLabel) : '') + '</div>' +
+        '<div class="dr-hrc-chips">' + hrCarouselTrendBadgeHTML(slide.trend) + statChips.join('') + '</div>' +
+        recentGamesHTML +
+        (matchupLine ? '<div class="dr-hrc-next">' + matchupLine + '</div>' : '') +
+      '</div>' +
+      '<span class="dr-hrc-cta">Full Matchup ›</span>';
+  }
+
+  function refreshHRCarouselStatCard(id){
+    var slide = hrCarouselSlides[hrCarouselIndex];
+    if (slide && slide.id === id) renderHRCarouselStatCard(slide);
+  }
+
+  function openHRCarouselMatchup(){
+    var slide = hrCarouselSlides[hrCarouselIndex];
+    if (!slide) return;
+    if (slide.nextPitcherId && typeof window.openMatchup === 'function') {
+      window.openMatchup(slide.id, slide.name, slide.nextPitcherId, slide.nextPitcherName);
+    } else if (slide.videoUrl) {
+      openHRVideoModal(slide.name + ' — ' + slide.hrs + ' HR' + (slide.hrs !== 1 ? 's' : ''), slide.gameLabel || '', slide.videoUrl);
+    } else if (slide.webUrl) {
+      window.open(slide.webUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      window.open(slide.gamePk ? ('https://www.mlb.com/gameday/' + slide.gamePk) : 'https://www.mlb.com/video', '_blank', 'noopener,noreferrer');
+    }
   }
 
   // Today's Games strip — quick-glance scoreboard so a hub visitor can see
