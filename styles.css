@@ -3146,6 +3146,32 @@ select:focus-visible {
 .dr-hub-headline-clip:hover {
   background: rgba(255,255,255,.12);
 }
+.dr-hub-headline-card {
+  cursor: pointer;
+}
+.dr-hub-headline-modal-panel {
+  max-width: 480px;
+}
+.dr-hub-headline-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.dr-hub-headline-modal-photo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgba(47,107,255,.12);
+  border: 2px solid rgba(47,107,255,.5);
+  flex-shrink: 0;
+}
+.dr-hub-headline-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 .dr-hub-scoreboard {
   margin: 28px 0;
 }
