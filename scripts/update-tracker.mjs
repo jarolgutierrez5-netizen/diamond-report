@@ -2180,7 +2180,7 @@ async function buildBatterPool(games, season) {
 }
 
 // HR Threats board hit-rate tracker — draws from the same shared batter pool
-// (buildBatterPool) as generate-daily-insights.mjs's storylines, captures every
+// (buildBatterPool) as generate-headlines.mjs's storylines, captures every
 // batter who clears HR_THREAT_MIN_SCORE (see that constant's comment for how this
 // differs from the live client-side gate).
 // Picks lock in the moment they're first captured, same as everywhere else in this file —
@@ -2381,7 +2381,7 @@ async function captureToday(store, compStore, drpSimCompStore) {
     console.log(`Captured ${simAdded} new DRP simulation comparison entr(ies) for ${today}.`);
   }
 
-  // Built once and shared — the HR Threats hit-rate tracker and generate-daily-insights.mjs's
+  // Built once and shared — the HR Threats hit-rate tracker and generate-headlines.mjs's
   // storylines both need the same full batter pool (season stats, recent form, platoon
   // splits per batter), which is the single most expensive part of this script (per-batter
   // API calls).

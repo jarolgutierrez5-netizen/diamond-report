@@ -13387,7 +13387,7 @@ if (document.readyState === 'loading') {
 
   function showHub(){
     document.body.classList.add('dr-hub-active');
-    loadHubInsights();
+    loadHubHeadlines();
     loadHubNews();
     loadHubHRs();
     loadHubLeaders();
@@ -13913,52 +13913,97 @@ if (document.readyState === 'loading') {
     }).catch(function(){});
   }
 
-  // Diamond Report's own written analysis (recap of yesterday's graded picks + a few
-  // storylines for today), from data/daily-insights.json — see
-  // scripts/generate-daily-insights.mjs for how it's generated (real numbers already
-  // computed for the HR Threats board, narrated, not spun filler text). Same
-  // drFetchDailyJSON pattern as season-projections.json above. Renders via textContent,
-  // not innerHTML, even though the script only ever writes text it built itself from
-  // MLB API names/numbers -- no reason to trust that path any more than user input.
-  var insightsLoaded = false;
-  function loadHubInsights(){
-    if (insightsLoaded) return;
-    insightsLoaded = true;
-    drFetchDailyJSON('data/daily-insights.json').then(function(data){
-      renderHubInsights(data);
+  // Diamond Report Headlines (roadmap 3.2) -- proprietary, data-driven editorial
+  // headlines from data/daily-headlines.json; see scripts/generate-headlines.mjs for
+  // how each of the 6 categories (recap, trend, notable performance, weather, injury,
+  // model movement, leaderboard) is generated -- real numbers this site's own sync
+  // pipeline already computed, narrated, never spun filler text. Same
+  // drFetchDailyJSON pattern as season-projections.json above. Titles/blurbs render
+  // via textContent, not innerHTML, even though the script only ever writes text it
+  // built itself from real stats -- no reason to trust that path any more than user
+  // input. Each card's "View related report" link and clip button are wired with
+  // addEventListener (not inline onclick) since the click targets (applyHeadlineLink,
+  // openHRVideoModal) need the real headline object, not just a string embeddable in
+  // an HTML attribute.
+  var CATEGORY_LABELS = { recap: 'RECAP', trend: 'TREND', notable: 'NOTABLE PERFORMANCE', weather: 'WEATHER', injury: 'INJURY', model: 'MODEL MOVE', leaderboard: 'LEADERBOARD' };
+  var headlinesLoaded = false;
+  function loadHubHeadlines(){
+    if (headlinesLoaded) return;
+    headlinesLoaded = true;
+    drFetchDailyJSON('data/daily-headlines.json').then(function(data){
+      renderHubHeadlines(data);
     }).catch(function(){});
   }
 
-  function renderHubInsights(data){
-    var section = document.getElementById('dr-hub-insights');
-    var recapEl = document.getElementById('dr-hub-insights-recap');
-    var storylinesEl = document.getElementById('dr-hub-insights-storylines');
-    if (!section || !data) return;
-
-    var hasRecap = data.recap && data.recap.text;
-    var storylines = Array.isArray(data.storylines) ? data.storylines : [];
-    if (!hasRecap && !storylines.length) return;
-
-    if (recapEl) {
-      if (hasRecap) { recapEl.textContent = data.recap.text; recapEl.style.display = ''; }
-      else { recapEl.style.display = 'none'; }
+  // Navigates to a headline's related board via the site's existing hash-routing
+  // (#gamepick=...), then -- only for headlines about a specific player, and only
+  // for the HR Threats board, the one board type this reuses -- stuffs the player's
+  // name into that board's own existing per-board search box (window.setPropSearchFilter,
+  // the same global the search input's oninput handler itself calls) so the click
+  // actually surfaces the player the headline was about, rather than just landing on
+  // an unfiltered board. The short delay lets the hashchange listener finish
+  // switching panes before the board searched is guaranteed to exist/be visible.
+  function applyHeadlineLink(link){
+    if (!link || !link.hash) return;
+    window.location.hash = link.hash.replace(/^#/, '');
+    if (link.playerName && link.hash === '#gamepick=hr') {
+      setTimeout(function(){
+        if (typeof window.setPropSearchFilter === 'function') window.setPropSearchFilter('hr', link.playerName);
+      }, 60);
     }
-    if (storylinesEl) {
-      storylinesEl.innerHTML = '';
-      storylines.forEach(function(s){
-        var card = document.createElement('div');
-        card.className = 'dr-hub-insights-storyline';
-        var head = document.createElement('div');
-        head.className = 'dr-hub-insights-storyline-head';
-        head.textContent = s.playerName + (s.team ? ' (' + s.team + ')' : '');
-        var body = document.createElement('p');
-        body.className = 'dr-hub-insights-storyline-text';
-        body.textContent = s.text;
-        card.appendChild(head);
-        card.appendChild(body);
-        storylinesEl.appendChild(card);
-      });
-    }
+  }
+
+  function renderHubHeadlines(data){
+    var section = document.getElementById('dr-hub-headlines');
+    var grid = document.getElementById('dr-hub-headlines-grid');
+    if (!section || !grid || !data) return;
+    var headlines = Array.isArray(data.headlines) ? data.headlines : [];
+    if (!headlines.length) return;
+
+    grid.innerHTML = '';
+    headlines.forEach(function(h, i){
+      var catLabel = CATEGORY_LABELS[h.category] || String(h.category || '').toUpperCase();
+      var card = document.createElement('div');
+      card.className = 'dr-hub-headline-card' + (i === 0 ? ' lead' : '');
+      card.setAttribute('data-category', h.category || '');
+
+      var cat = document.createElement('div');
+      cat.className = 'dr-hub-headline-cat';
+      cat.textContent = catLabel;
+      card.appendChild(cat);
+
+      var title = document.createElement('div');
+      title.className = 'dr-hub-headline-title';
+      title.textContent = h.title || '';
+      card.appendChild(title);
+
+      var blurb = document.createElement('p');
+      blurb.className = 'dr-hub-headline-blurb';
+      blurb.textContent = h.blurb || '';
+      card.appendChild(blurb);
+
+      var actions = document.createElement('div');
+      actions.className = 'dr-hub-headline-actions';
+      if (h.link) {
+        var linkBtn = document.createElement('button');
+        linkBtn.type = 'button';
+        linkBtn.className = 'dr-hub-headline-link';
+        linkBtn.textContent = 'View related report →';
+        linkBtn.addEventListener('click', function(){ applyHeadlineLink(h.link); });
+        actions.appendChild(linkBtn);
+      }
+      if (h.clip && h.clip.videoUrl) {
+        var clipBtn = document.createElement('button');
+        clipBtn.type = 'button';
+        clipBtn.className = 'dr-hub-headline-clip';
+        clipBtn.textContent = '▶ Watch';
+        clipBtn.addEventListener('click', function(){ openHRVideoModal(h.title, catLabel, h.clip.videoUrl); });
+        actions.appendChild(clipBtn);
+      }
+      if (actions.childNodes.length) card.appendChild(actions);
+
+      grid.appendChild(card);
+    });
     section.style.display = '';
   }
 

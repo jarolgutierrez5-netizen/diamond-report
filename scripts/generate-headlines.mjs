@@ -1,0 +1,365 @@
+#!/usr/bin/env node
+// ─────────────────────────────────────────────────────────────────────────
+// Generates data/daily-headlines.json — Diamond Report's own proprietary
+// editorial headlines, replacing generate-daily-insights.mjs (roadmap 3.2:
+// "Replace generic ESPN headline dependency with proprietary, data-driven
+// editorial content"). The homepage still shows ESPN's league-wide news feed
+// (renamed "Around MLB" so it doesn't collide with this section's name) --
+// this is a NEW, separate feed placed above it, built entirely from data this
+// site already computes/syncs. No third-party reporting is read or quoted
+// anywhere in this script, so there is nothing here that needs source
+// attribution -- every headline traces back to a stat this app's own sync
+// pipeline produced.
+//
+// Six categories, one script each producing 0 or 1(+) headline objects --
+// every builder degrades to producing nothing rather than a fabricated or
+// filler headline when its underlying signal isn't genuinely notable today
+// (same standard the rest of this codebase holds itself to: real numbers or
+// nothing, never spun-up text). All 6 share one shape:
+//   { id, category, title, blurb, link: { hash, playerId?, playerName? },
+//     clip?: { videoUrl, webUrl? } }
+// `link.hash` is a board hash (e.g. "#gamepick=hr") the client navigates to on
+// click; `link.playerName`, when present, gets stuffed into that board's own
+// existing player-search box (see loadHubHeadlines/applyHeadlineLink in
+// app.js) so the click actually surfaces the player the headline is about,
+// reusing the per-board search feature rather than building new deep-link
+// wiring per board.
+// ─────────────────────────────────────────────────────────────────────────
+
+import { writeFile, mkdir, readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import {
+  buildBatterPool, loadTracker, cdtDateString, scoreForMarket,
+} from './update-tracker.mjs';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DATA_DIR = path.join(__dirname, '..', 'data');
+const OUT_PATH = path.join(DATA_DIR, 'daily-headlines.json');
+const API = 'https://statsapi.mlb.com/api/v1';
+
+async function fetchJSON(url, attempts = 3) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+      return await res.json();
+    } catch (e) {
+      lastErr = e;
+      if (i < attempts - 1) await new Promise(r => setTimeout(r, 500 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+
+async function readDataFile(name) {
+  try {
+    return JSON.parse(await readFile(path.join(DATA_DIR, name), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function pct(wins, total) {
+  return total > 0 ? Math.round((wins / total) * 1000) / 10 : null;
+}
+
+// "Last, First" (Baseball Savant's format, e.g. data/statcast-hot-hitters.json's
+// own `name` field) -> "First Last" for display consistency with every other
+// name in this script's output. Same conversion app.js's drFormatNearHRName
+// does client-side for the same-shaped near-HR names, just needed here too
+// since this runs in Node, not the browser.
+function reformatName(rawName) {
+  if (!rawName) return '';
+  const parts = String(rawName).split(',');
+  if (parts.length < 2) return rawName;
+  return `${parts[1].trim()} ${parts[0].trim()}`;
+}
+
+function daysBetween(dateStr, todayStr) {
+  const a = new Date(dateStr + 'T00:00:00Z'), b = new Date(todayStr + 'T00:00:00Z');
+  return Math.round((b - a) / 86400000);
+}
+
+// ── 1. Recap — yesterday's graded record across all markets ───────────────
+// Unchanged from generate-daily-insights.mjs's buildRecap, just reshaped into
+// a headline object instead of its own separate top-level field.
+function buildRecapHeadline(tracker, yesterdayStr) {
+  const markets = [
+    { key: 'drp', label: 'Game Picks' },
+    { key: 'kprop', label: 'Strikeout Props' },
+    { key: 'hrThreat', label: 'HR Threats' },
+  ];
+  let wins = 0, losses = 0;
+  for (const m of markets) {
+    const rows = (tracker?.market?.[m.key] || []).filter(r => r.date === yesterdayStr && (r.result === 'win' || r.result === 'loss'));
+    for (const r of rows) { if (r.result === 'win') wins++; else losses++; }
+  }
+  const total = wins + losses;
+  if (total === 0) return null;
+  const p = pct(wins, total);
+  const dateLabel = new Date(yesterdayStr + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' });
+  return {
+    id: 'recap',
+    category: 'recap',
+    title: `Diamond Report went ${wins}-${losses} on ${dateLabel}`,
+    blurb: `${p}% across Game Picks, Strikeout Props, and HR Threats combined (${total} graded picks).`,
+    link: { hash: '#gamepick=results' },
+  };
+}
+
+// ── 2. Trend headlines — same isHot/isDue/isFavorable tags the HR Threats
+// board itself uses, ranked by scoreForMarket('hr', ...) like the board's own
+// default sort. Title is a short, punchy angle; blurb is the full grounded
+// explanation (kept from generate-daily-insights.mjs's storylineFor, split
+// into a separate one-line headline instead of one long paragraph doing both
+// jobs, per roadmap 3.2's "headline" + "why it matters" split).
+const MIN_STORYLINE_AB = 40;
+const TREND_HEADLINE_COUNT = 5;
+
+function parkDescriptor(pf) {
+  if (pf == null) return null;
+  if (pf >= 103) return 'a park that plays up for power';
+  if (pf <= 97) return 'a pitcher-friendly park';
+  return null;
+}
+function suppressionClause(delta) {
+  if (delta == null || Math.abs(delta) < 5) return '';
+  return delta < 0
+    ? ` This pitcher has also been genuinely tougher to hit hard once he gets to two strikes this season, not just generically good.`
+    : ` Worth noting: this pitcher hasn't actually suppressed hard contact with two strikes this season the way his overall numbers suggest he should.`;
+}
+function trendTitleAndBlurb(row) {
+  const pf = parkDescriptor(row.parkFactor);
+  const oppLine = row.pitcherName ? `${row.oppAbbr} sends out ${row.pitcherName}` : `against ${row.oppAbbr}`;
+  if (row.isDue) {
+    return {
+      title: `Due for a breakout: ${row.name}`,
+      blurb: `A real home run drought — none in his last 10 games — but a .${Math.round(row.iso * 1000)} ISO and ${row.ops.toFixed(3)} OPS this season say the power is still there, it just hasn't landed yet. ${oppLine} today${pf ? `, in ${pf}` : ''}.${suppressionClause(row.pitcher2kSuppressionDelta)}`,
+    };
+  }
+  if (row.isHot) {
+    return {
+      title: `${row.name} is running hot`,
+      blurb: `Hitting well above his ${row.avg.toFixed(3)} season average over his last games, with at least one home run in that stretch. He faces ${oppLine} today${pf ? `, in ${pf}` : ''}, a pitcher who's allowed a ${(row.pitcherAvgAllowed ?? 0).toFixed(3)} average against this season.${suppressionClause(row.pitcher2kSuppressionDelta)}`,
+    };
+  }
+  if (row.isFavorable) {
+    return {
+      title: `Buy-low spot: ${row.name} vs ${row.pitcherName || row.oppAbbr}`,
+      blurb: `His ${row.ops.toFixed(3)} OPS lines up against ${row.pitcherName || 'an opposing pitcher'}'s ${(row.pitcherWhip ?? 0).toFixed(2)} WHIP and ${(row.pitcherAvgAllowed ?? 0).toFixed(3)} average allowed${pf ? `, and the game is in ${pf}` : ''}.${suppressionClause(row.pitcher2kSuppressionDelta)}`,
+    };
+  }
+  return {
+    title: `${row.name}'s power profile stays live`,
+    blurb: `A .${Math.round(row.iso * 1000)} ISO and ${row.hrSeason} home runs this season heading into today's matchup with ${oppLine}, who's allowed a ${(row.pitcherHr9 ?? 0).toFixed(1)} HR/9 this year${pf ? `, in ${pf}` : ''}.${suppressionClause(row.pitcher2kSuppressionDelta)}`,
+  };
+}
+function buildTrendHeadlines(pool) {
+  const eligible = pool.filter(r => r.atBats >= MIN_STORYLINE_AB && r.name && r.oppAbbr);
+  const ranked = eligible
+    .map(row => ({ row, score: scoreForMarket('hr', row) }))
+    .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, TREND_HEADLINE_COUNT);
+  return ranked.map(({ row }) => {
+    const { title, blurb } = trendTitleAndBlurb(row);
+    return {
+      id: `trend-${row.id}`,
+      category: 'trend',
+      title,
+      blurb,
+      link: { hash: '#gamepick=hr', playerId: row.id, playerName: row.name },
+    };
+  });
+}
+
+// ── 3. Notable performance — the longest real home run from the most
+// recent day data/recent-hrs.json has entries for, using the real Statcast
+// description text already synced (see sync-near-hrs.mjs) rather than
+// writing a new sentence from scratch.
+function buildNotablePerformanceHeadline(recentHrsData) {
+  const players = recentHrsData?.players || {};
+  let best = null, bestDate = null;
+  for (const [playerId, events] of Object.entries(players)) {
+    for (const e of events || []) {
+      if (!e?.date) continue;
+      if (bestDate == null || e.date > bestDate) { bestDate = e.date; }
+    }
+  }
+  if (!bestDate) return null;
+  for (const [playerId, events] of Object.entries(players)) {
+    for (const e of events || []) {
+      if (e.date !== bestDate) continue;
+      if (!best || (e.distance || 0) > (best.event.distance || 0)) best = { playerId, event: e };
+    }
+  }
+  if (!best || !best.event.distance) return null;
+  const dateLabel = new Date(best.event.date + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' });
+  return {
+    id: `notable-${best.playerId}-${best.event.date}`,
+    category: 'notable',
+    title: `Longest home run of the day: ${best.event.distance} ft`,
+    blurb: `${best.event.description || `A ${best.event.distance}-foot home run on ${dateLabel}`}${best.event.exitVelo != null ? ` (${best.event.exitVelo.toFixed(1)} mph off the bat)` : ''}.`,
+    link: { hash: '#gamepick=hr', playerId: Number(best.playerId) || null, playerName: null },
+    clip: best.event.videoUrl ? { videoUrl: best.event.videoUrl } : undefined,
+  };
+}
+
+// ── 4. Weather — today's single best HR-scoring environment from Ballpark
+// Pal's per-game environment sync (sync-ballparkpal.mjs), only surfaced when
+// genuinely notable (>= +15% HR boost) rather than always picking whichever
+// game happens to rank #1 on an unremarkable day.
+const WEATHER_NOTABLE_HR_PCT = 15;
+function buildWeatherHeadline(gameFactors) {
+  const rows = gameFactors?.rows || [];
+  if (!rows.length) return null;
+  const best = rows.slice().sort((a, b) => (b.homeRunsPercent || 0) - (a.homeRunsPercent || 0))[0];
+  if (!best || (best.homeRunsPercent || 0) < WEATHER_NOTABLE_HR_PCT) return null;
+  return {
+    id: `weather-${best.gameId}`,
+    category: 'weather',
+    title: `Best home run weather today: ${best.teamAway} @ ${best.teamHome}`,
+    blurb: `Ballpark Pal projects a +${best.homeRunsPercent}% home run environment for this game${best.runsPercent != null ? ` and a +${best.runsPercent}% scoring boost overall` : ''} — conditions and park factors both favor the long ball.`,
+    link: { hash: '#gamepick=games' },
+  };
+}
+
+// ── 5. Injury — a player who recently came off the injured list, per the
+// real roster-status history sync-batter-splits.mjs already builds (merged
+// into data/statcast-hot-hitters.json's players). Silent when nobody
+// genuinely qualifies today rather than reaching for a stale example.
+function buildInjuryHeadline(hotHittersData, todayStr) {
+  const players = hotHittersData?.players || [];
+  const candidate = players.find(p => p.recentlyReturnedFromInjury);
+  if (!candidate) return null;
+  const name = reformatName(candidate.name);
+  const daysAgo = daysBetween(candidate.recentlyReturnedFromInjury, todayStr);
+  return {
+    id: `injury-${candidate.playerId}`,
+    category: 'injury',
+    title: `${name} is back in the lineup`,
+    blurb: `Recently returned from the injured list${Number.isFinite(daysAgo) && daysAgo >= 0 ? ` (${daysAgo} day${daysAgo === 1 ? '' : 's'} ago)` : ''} — worth watching how his early at-bats and swing metrics look coming back.`,
+    link: { hash: '#gamepick=hr', playerId: Number(candidate.playerId) || null, playerName: name },
+  };
+}
+
+// ── 6. Model movement — the single biggest day-over-day HR Threat score
+// swing for a player who appears in tracker.json on both their most recent
+// two dated snapshots. Only surfaced above a real threshold so an ordinary
+// day-to-day score wobble never gets narrated as if it meant something.
+const MODEL_MOVE_THRESHOLD = 4;
+function buildModelMovementHeadline(tracker) {
+  const rows = tracker?.market?.hrThreat || [];
+  const byPlayer = new Map();
+  for (const r of rows) {
+    if (r.score == null || !r.date) continue;
+    if (!byPlayer.has(r.playerId)) byPlayer.set(r.playerId, []);
+    byPlayer.get(r.playerId).push(r);
+  }
+  let best = null;
+  for (const [, playerRows] of byPlayer) {
+    if (playerRows.length < 2) continue;
+    const sorted = playerRows.slice().sort((a, b) => a.date.localeCompare(b.date));
+    const latest = sorted[sorted.length - 1];
+    const prior = sorted[sorted.length - 2];
+    const delta = latest.score - prior.score;
+    if (Math.abs(delta) >= MODEL_MOVE_THRESHOLD && (!best || Math.abs(delta) > Math.abs(best.delta))) {
+      best = { latest, prior, delta };
+    }
+  }
+  if (!best) return null;
+  const direction = best.delta > 0 ? 'up' : 'down';
+  return {
+    id: `model-${best.latest.playerId}`,
+    category: 'model',
+    title: `Diamond Report's model is moving ${direction} on ${best.latest.playerName}`,
+    blurb: `His HR Threat score has gone ${direction} from ${best.prior.score} to ${best.latest.score} since his last outing (${best.prior.date}) — a real shift in the underlying matchup inputs, not just noise.`,
+    link: { hash: '#gamepick=hr', playerId: best.latest.playerId, playerName: best.latest.playerName },
+  };
+}
+
+// ── 7. Leaderboard — today's real MLB home run leader, straight from the
+// league's own live stats API (not a copied article, so no attribution
+// needed -- this is the same public leaderboard data statsapi.mlb.com
+// serves to any client).
+async function buildLeaderboardHeadline(season) {
+  const data = await fetchJSON(`${API}/stats/leaders?leaderCategories=homeRuns&season=${season}&sportId=1&statGroup=hitting&limit=1`).catch(() => null);
+  const leader = data?.leagueLeaders?.[0]?.leaders?.[0];
+  if (!leader?.person?.fullName) return null;
+  return {
+    id: `leaderboard-${leader.person.id}`,
+    category: 'leaderboard',
+    title: `${leader.person.fullName} leads MLB with ${leader.value} home runs`,
+    blurb: `The current league home run leader this season, per MLB's own live stats.`,
+    link: { hash: '#gamepick=hr', playerId: leader.person.id || null, playerName: leader.person.fullName },
+  };
+}
+
+async function main() {
+  await mkdir(DATA_DIR, { recursive: true });
+
+  const today = cdtDateString(new Date());
+  const yesterday = cdtDateString(new Date(Date.now() - 24 * 60 * 60 * 1000));
+  const season = today.slice(0, 4);
+
+  const tracker = await loadTracker();
+  const headlines = [];
+
+  const recapHeadline = buildRecapHeadline(tracker, yesterday);
+  if (recapHeadline) headlines.push(recapHeadline);
+
+  // Trend headlines depend on a live MLB schedule/roster fetch, unlike everything
+  // else here (local data/tracker.json reads) -- isolated in its own try/catch so a
+  // transient MLB API hiccup can't cost the other 5 categories too.
+  try {
+    const sched = await fetchJSON(`${API}/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher,linescore,weather`);
+    const games = sched?.dates?.find(d => d.date === today)?.games || [];
+    const previewGames = games.filter(g => g.status?.abstractGameState === 'Preview');
+    if (previewGames.length) {
+      const pool = await buildBatterPool(previewGames, season);
+      headlines.push(...buildTrendHeadlines(pool));
+    }
+  } catch (e) {
+    console.warn(`Trend headlines failed, other categories will still be written: ${e.message}`);
+  }
+
+  const recentHrsData = await readDataFile('recent-hrs.json');
+  const notable = buildNotablePerformanceHeadline(recentHrsData);
+  if (notable) headlines.push(notable);
+
+  const gameFactors = await readDataFile('ballparkpal-game-factors.json');
+  const weather = buildWeatherHeadline(gameFactors);
+  if (weather) headlines.push(weather);
+
+  const hotHittersData = await readDataFile('statcast-hot-hitters.json');
+  const injury = buildInjuryHeadline(hotHittersData, today);
+  if (injury) headlines.push(injury);
+
+  const modelMove = buildModelMovementHeadline(tracker);
+  if (modelMove) headlines.push(modelMove);
+
+  try {
+    const leaderboard = await buildLeaderboardHeadline(season);
+    if (leaderboard) headlines.push(leaderboard);
+  } catch (e) {
+    console.warn(`Leaderboard headline failed: ${e.message}`);
+  }
+
+  console.log(`Built ${headlines.length} headline(s) for ${today}: ${headlines.map(h => h.category).join(', ')}`);
+
+  const out = { date: today, generatedAt: new Date().toISOString(), headlines };
+  await writeFile(OUT_PATH, JSON.stringify(out, null, 2) + '\n');
+}
+
+const isMain = import.meta.url === `file://${process.argv[1]}`;
+if (isMain) {
+  main().catch(e => { console.error(e); process.exit(1); });
+}
+
+export {
+  buildRecapHeadline, buildTrendHeadlines, trendTitleAndBlurb, parkDescriptor, suppressionClause,
+  buildNotablePerformanceHeadline, buildWeatherHeadline, buildInjuryHeadline, buildModelMovementHeadline,
+  buildLeaderboardHeadline, main,
+};
