@@ -14133,6 +14133,7 @@ if (document.readyState === 'loading') {
   var newsVisibleCount = 10;
   var headlinesAll = [];
   var headlinesVisibleCount = 6;
+  var activeHeadlineCategory = 'all';
   var activeSport = 'all';
   var hrLoaded = false;
   var leadersLoaded = false;
@@ -14840,31 +14841,73 @@ if (document.readyState === 'loading') {
     // an active day -- capped here to the leading headlinesVisibleCount, with
     // "View More" revealing the rest rather than dropping any real story.
     headlinesAll = headlines;
+    activeHeadlineCategory = 'all';
     headlinesVisibleCount = Math.min(6, headlinesAll.length);
 
     var moreBtn = document.getElementById('dr-hub-headlines-more');
     if (moreBtn && !moreBtn.dataset.drBound) {
       moreBtn.dataset.drBound = '1';
       moreBtn.addEventListener('click', function(){
-        headlinesVisibleCount = Math.min(headlinesVisibleCount + 6, headlinesAll.length);
+        headlinesVisibleCount = Math.min(headlinesVisibleCount + 6, filteredHeadlines().length);
         renderHeadlinesGrid();
       });
     }
 
+    renderHeadlineFilters();
     renderHeadlinesGrid();
     section.style.display = '';
+  }
+
+  function filteredHeadlines(){
+    if (activeHeadlineCategory === 'all') return headlinesAll;
+    return headlinesAll.filter(function(h){ return h.category === activeHeadlineCategory; });
+  }
+
+  // One chip per category that actually has >=1 real headline today (plus
+  // "All"), each labeled with its real count -- a category with zero real
+  // headlines today simply gets no chip, same "never fabricate a control for
+  // data that doesn't exist" standard as everywhere else. Same pill-tab
+  // visual language as the MLB/NFL/NBA sport tabs above on this same page.
+  function renderHeadlineFilters(){
+    var wrap = document.getElementById('dr-hub-headline-filters');
+    if (!wrap) return;
+    var counts = {};
+    headlinesAll.forEach(function(h){ counts[h.category] = (counts[h.category] || 0) + 1; });
+    var cats = Object.keys(counts).sort(function(a, b){ return counts[b] - counts[a]; });
+    if (cats.length < 2) { wrap.innerHTML = ''; wrap.style.display = 'none'; return; }
+
+    var chips = ['<button type="button" class="dr-hub-headline-filter' + (activeHeadlineCategory === 'all' ? ' active' : '') + '" data-headline-filter="all">All <span class="dr-hub-headline-filter-count">' + headlinesAll.length + '</span></button>'];
+    cats.forEach(function(cat){
+      var label = CATEGORY_LABELS[cat] || String(cat).toUpperCase();
+      chips.push('<button type="button" class="dr-hub-headline-filter' + (activeHeadlineCategory === cat ? ' active' : '') + '" data-headline-filter="' + cat + '">' + label + ' <span class="dr-hub-headline-filter-count">' + counts[cat] + '</span></button>');
+    });
+    wrap.innerHTML = chips.join('');
+    wrap.style.display = '';
+
+    wrap.querySelectorAll('[data-headline-filter]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        activeHeadlineCategory = btn.getAttribute('data-headline-filter');
+        headlinesVisibleCount = Math.min(6, filteredHeadlines().length);
+        renderHeadlineFilters();
+        renderHeadlinesGrid();
+      });
+    });
   }
 
   function renderHeadlinesGrid(){
     var grid = document.getElementById('dr-hub-headlines-grid');
     if (!grid) return;
-    var headlines = headlinesAll.slice(0, headlinesVisibleCount);
+    var headlines = filteredHeadlines().slice(0, headlinesVisibleCount);
 
     grid.innerHTML = '';
     headlines.forEach(function(h, i){
       var catLabel = CATEGORY_LABELS[h.category] || String(h.category || '').toUpperCase();
       var card = document.createElement('div');
-      card.className = 'dr-hub-headline-card dr-anim-in' + (i === 0 ? ' lead' : '');
+      // "lead" (bigger, full-width) is tied to the recap headline itself, not
+      // positional luck -- so filtering to a non-recap category never
+      // stretches an arbitrary first card, and filtering to "Recap" still
+      // shows it full-width.
+      card.className = 'dr-hub-headline-card dr-anim-in' + (h.category === 'recap' ? ' lead' : '');
       card.style.animationDelay = Math.min(i, 8) * 25 + 'ms';
       card.setAttribute('data-category', h.category || '');
       card.addEventListener('click', function(){ openHeadlineModal(h); });
@@ -14929,7 +14972,7 @@ if (document.readyState === 'loading') {
     });
 
     var moreBtn = document.getElementById('dr-hub-headlines-more');
-    if (moreBtn) moreBtn.style.display = headlinesVisibleCount < headlinesAll.length ? '' : 'none';
+    if (moreBtn) moreBtn.style.display = headlinesVisibleCount < filteredHeadlines().length ? '' : 'none';
   }
 
   var trendingPlayersLoaded = false;

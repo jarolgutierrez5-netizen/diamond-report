@@ -3102,6 +3102,41 @@ select:focus-visible {
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 14px;
 }
+/* Category filter chips (see renderHeadlineFilters in app.js) -- same pill-tab
+   visual language as the MLB/NFL/NBA .dr-hub-sporttab row above on this same
+   page, just its own class since it's a semantically separate control. */
+.dr-hub-headline-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.dr-hub-headline-filter {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 999px;
+  color: #93a1bd;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .2px;
+  padding: 6px 13px;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.dr-hub-headline-filter:hover {
+  color: #d7deee;
+  border-color: rgba(255,255,255,.24);
+}
+.dr-hub-headline-filter.active {
+  background: rgba(47,107,255,.18);
+  border-color: rgba(47,107,255,.55);
+  color: #8fb0ff;
+}
+.dr-hub-headline-filter-count {
+  opacity: .7;
+  font-weight: 800;
+}
 /* Same ESPN "Around the Leagues" card shape (.dr-hub-news-card below) --
    full-bleed 16:9 photo on top with no border/gap under it, padded text body
    underneath -- rather than the small round-avatar layout this used before,

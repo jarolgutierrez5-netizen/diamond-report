@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026073012">
+<link rel="stylesheet" href="styles.min.css?v=2026073013">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -273,6 +273,11 @@
          it in the same in-site video modal the HR highlights already use. -->
     <div class="dr-hub-headlines" id="dr-hub-headlines" style="display:none">
       <div class="dr-hub-section-head"><span class="dr-hub-section-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5H5a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8z"/><path d="M11.5 2.5V8H17"/><path d="M7 11h6M7 14h4"/></svg></span><h2>Diamond Report Headlines</h2><span class="dr-hub-section-line"></span></div>
+      <!-- Built dynamically by renderHeadlineFilters in app.js -- one chip per
+           category that actually has a real headline today (plus "All"), with
+           a real count on each. A category with zero real headlines today
+           simply gets no chip. -->
+      <div class="dr-hub-headline-filters" id="dr-hub-headline-filters"></div>
       <div class="dr-hub-headlines-grid" id="dr-hub-headlines-grid"></div>
       <button type="button" id="dr-hub-headlines-more" class="dr-hub-news-more" style="display:none">View More</button>
     </div>
@@ -949,7 +954,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026073012" defer></script>
+<script src="app.min.js?v=2026073013" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
