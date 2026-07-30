@@ -14131,6 +14131,8 @@ if (document.readyState === 'loading') {
   var newsArticlesAll = [];
   var newsArticles = [];
   var newsVisibleCount = 10;
+  var headlinesAll = [];
+  var headlinesVisibleCount = 6;
   var activeSport = 'all';
   var hrLoaded = false;
   var leadersLoaded = false;
@@ -14336,6 +14338,12 @@ if (document.readyState === 'loading') {
 
   function hs(id){
     return id ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/' + id + '/headshot/67/current' : '';
+  }
+  // Same real MLB headshot source as hs() above, just requested at a much
+  // wider size (w_500) since this one gets stretched to the full card width
+  // as a 16:9 banner photo instead of a small round avatar.
+  function hsBig(id){
+    return id ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_500,q_auto:best/v1/people/' + id + '/headshot/67/current' : '';
   }
 
   // Best-effort lookup of the actual home run clip via the game's content/
@@ -14823,6 +14831,35 @@ if (document.readyState === 'loading') {
     var headlines = Array.isArray(data.headlines) ? data.headlines : [];
     if (!headlines.length) return;
 
+    // Server order is already the real most-important-first ranking: recap
+    // (today's context) leads, then real trend headlines ranked by
+    // scoreForMarket, then real streak headlines ranked by how extreme the
+    // actual ratio is (hot or cold), then the one-off categories. trend and
+    // streak intentionally cover EVERY real qualifying player (not a curated
+    // top-N) per generate-headlines.mjs, so this can legitimately run long on
+    // an active day -- capped here to the leading headlinesVisibleCount, with
+    // "View More" revealing the rest rather than dropping any real story.
+    headlinesAll = headlines;
+    headlinesVisibleCount = Math.min(6, headlinesAll.length);
+
+    var moreBtn = document.getElementById('dr-hub-headlines-more');
+    if (moreBtn && !moreBtn.dataset.drBound) {
+      moreBtn.dataset.drBound = '1';
+      moreBtn.addEventListener('click', function(){
+        headlinesVisibleCount = Math.min(headlinesVisibleCount + 6, headlinesAll.length);
+        renderHeadlinesGrid();
+      });
+    }
+
+    renderHeadlinesGrid();
+    section.style.display = '';
+  }
+
+  function renderHeadlinesGrid(){
+    var grid = document.getElementById('dr-hub-headlines-grid');
+    if (!grid) return;
+    var headlines = headlinesAll.slice(0, headlinesVisibleCount);
+
     grid.innerHTML = '';
     headlines.forEach(function(h, i){
       var catLabel = CATEGORY_LABELS[h.category] || String(h.category || '').toUpperCase();
@@ -14832,41 +14869,40 @@ if (document.readyState === 'loading') {
       card.setAttribute('data-category', h.category || '');
       card.addEventListener('click', function(){ openHeadlineModal(h); });
 
-      var head = document.createElement('div');
-      head.className = 'dr-hub-headline-head';
-
+      // Same ESPN "Around the Leagues" card shape (renderHubNews below) --
+      // a full-bleed photo on top, no gap/border under it, rather than the
+      // old small round avatar. Only rendered when there's a real player
+      // photo to show; a headline with none (weather, recap, etc.) just
+      // skips straight to the text body.
       var playerId = h.link && h.link.playerId;
       if (playerId) {
         var photo = document.createElement('img');
-        photo.className = 'dr-hub-headline-photo';
-        photo.src = hs(playerId);
+        photo.className = 'dr-hub-headline-photo-big';
+        photo.src = hsBig(playerId);
         photo.alt = '';
         photo.loading = 'lazy';
         photo.decoding = 'async';
         photo.onerror = function(){ this.style.display = 'none'; };
-        head.appendChild(photo);
+        card.appendChild(photo);
       }
 
-      var headText = document.createElement('div');
-      headText.className = 'dr-hub-headline-headtext';
+      var body = document.createElement('div');
+      body.className = 'dr-hub-headline-body';
 
       var cat = document.createElement('div');
       cat.className = 'dr-hub-headline-cat';
       cat.textContent = catLabel;
-      headText.appendChild(cat);
+      body.appendChild(cat);
 
       var title = document.createElement('div');
       title.className = 'dr-hub-headline-title';
       title.textContent = h.title || '';
-      headText.appendChild(title);
-
-      head.appendChild(headText);
-      card.appendChild(head);
+      body.appendChild(title);
 
       var blurb = document.createElement('p');
       blurb.className = 'dr-hub-headline-blurb';
       blurb.textContent = h.blurb || '';
-      card.appendChild(blurb);
+      body.appendChild(blurb);
 
       var actions = document.createElement('div');
       actions.className = 'dr-hub-headline-actions';
@@ -14886,11 +14922,14 @@ if (document.readyState === 'loading') {
         clipBtn.addEventListener('click', function(e){ e.stopPropagation(); openHRVideoModal(h.title, catLabel, h.clip.videoUrl); });
         actions.appendChild(clipBtn);
       }
-      if (actions.childNodes.length) card.appendChild(actions);
+      if (actions.childNodes.length) body.appendChild(actions);
 
+      card.appendChild(body);
       grid.appendChild(card);
     });
-    section.style.display = '';
+
+    var moreBtn = document.getElementById('dr-hub-headlines-more');
+    if (moreBtn) moreBtn.style.display = headlinesVisibleCount < headlinesAll.length ? '' : 'none';
   }
 
   var trendingPlayersLoaded = false;

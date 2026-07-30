@@ -3102,11 +3102,17 @@ select:focus-visible {
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 14px;
 }
+/* Same ESPN "Around the Leagues" card shape (.dr-hub-news-card below) --
+   full-bleed 16:9 photo on top with no border/gap under it, padded text body
+   underneath -- rather than the small round-avatar layout this used before,
+   so the two feeds read as one consistent card language. A headline with no
+   real player photo (weather, recap, etc.) simply renders without the image
+   area instead of a fabricated placeholder. */
 .dr-hub-headline-card {
   background: rgba(255,255,255,.035);
   border: 1px solid rgba(255,255,255,.08);
-  border-radius: 16px;
-  padding: 16px 18px;
+  border-radius: 14px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -3115,22 +3121,17 @@ select:focus-visible {
   background: rgba(255,255,255,.05);
   border-color: rgba(255,255,255,.14);
 }
-.dr-hub-headline-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-.dr-hub-headline-photo {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+.dr-hub-headline-photo-big {
+  width: 100%;
+  aspect-ratio: 16 / 9;
   object-fit: cover;
-  background: var(--surface2);
-  border: 1px solid rgba(255,255,255,.12);
-  flex-shrink: 0;
+  display: block;
+  background: #111;
 }
-.dr-hub-headline-headtext {
-  min-width: 0;
+.dr-hub-headline-body {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
   flex: 1;
 }
 .dr-hub-headline-cat {
@@ -3244,9 +3245,18 @@ select:focus-visible {
   border-color: rgba(255,255,255,.18);
   background: rgba(255,255,255,.05);
 }
+/* Same full-bleed-photo-on-top shape as .dr-hub-headline-photo-big/.dr-hub-news-card
+   img above -- the chart bleeds to a fixed 16:9 banner instead of sitting in
+   a small padded box, so this card and the ESPN-style headline cards read as
+   one consistent layout. The SVG itself still uses preserveAspectRatio="xMidYMid
+   meet" so it letterboxes cleanly inside the wider frame rather than stretching. */
 .dr-hub-trending-visual {
-  background: rgba(0,0,0,.22);
-  padding: 10px 12px 4px;
+  background: rgba(0,0,0,.32);
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
 }
 .dr-hub-trending-info {
   display: flex;

@@ -202,7 +202,7 @@ function computeStreakIndicator(row) {
   else if (last10HR === 0 && expectedHRPer10 >= 1.0) label = 'Cold';
   else if (ratio <= 0.5) label = 'Cooling Off';
   if (!label) return null;
-  return { label, last10HR, expectedHRPer10, smallSample };
+  return { label, last10HR, expectedHRPer10, smallSample, ratio };
 }
 function streakTitleAndBlurb(row, streak) {
   const sampleNote = streak.smallSample ? ` (a small sample — under 40 at-bats this season, so treat this with some caution)` : '';
@@ -231,21 +231,28 @@ function streakTitleAndBlurb(row, streak) {
   };
 }
 function buildStreakHeadlines(pool) {
-  const out = [];
+  const ranked = [];
   for (const row of pool) {
     if (!row.name) continue;
     const streak = computeStreakIndicator(row);
     if (!streak) continue;
+    ranked.push({ row, streak });
+  }
+  // Ranked by how extreme the real ratio is (distance from 1.0 = exactly on
+  // pace), not left in pool order -- a real ice-cold stretch is exactly as
+  // headline-worthy as a real hot one, so this ranks both directions by
+  // signal strength rather than only surfacing favorable stories first.
+  ranked.sort((a, b) => Math.abs(b.streak.ratio - 1) - Math.abs(a.streak.ratio - 1));
+  return ranked.map(({ row, streak }) => {
     const { title, blurb } = streakTitleAndBlurb(row, streak);
-    out.push({
+    return {
       id: `streak-${row.id}`,
       category: 'streak',
       title,
       blurb,
       link: { hash: '#gamepick=hr', playerId: row.id, playerName: row.name },
-    });
-  }
-  return out;
+    };
+  });
 }
 
 // ── 3. Notable performance — the longest real home run from the most
