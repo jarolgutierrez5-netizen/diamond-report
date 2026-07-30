@@ -13953,6 +13953,58 @@ if (document.readyState === 'loading') {
     }
   }
 
+  // Clicking a headline opens this popup in place rather than jumping straight
+  // to the related board -- readers get the full story without leaving the
+  // headlines feed. The popup's own buttons are the only things that actually
+  // navigate (applyHeadlineLink) or open the video modal, and only when the
+  // reader chooses to.
+  function openHeadlineModal(h){
+    var modal = document.getElementById('dr-hub-headline-modal');
+    if (!modal || !h) return;
+    var photo = document.getElementById('dr-hub-headline-modal-photo');
+    var playerId = h.link && h.link.playerId;
+    if (playerId) {
+      photo.onerror = function(){ this.style.display = 'none'; };
+      photo.src = hs(playerId);
+      photo.style.display = '';
+    } else {
+      photo.removeAttribute('src');
+      photo.style.display = 'none';
+    }
+    document.getElementById('dr-hub-headline-modal-cat').textContent = CATEGORY_LABELS[h.category] || String(h.category || '').toUpperCase();
+    document.getElementById('dr-hub-headline-modal-title').textContent = h.title || '';
+    document.getElementById('dr-hub-headline-modal-blurb').textContent = h.blurb || '';
+
+    var linkBtn = document.getElementById('dr-hub-headline-modal-link');
+    if (h.link) {
+      linkBtn.style.display = '';
+      linkBtn.onclick = function(){ closeHeadlineModal(); applyHeadlineLink(h.link); };
+    } else {
+      linkBtn.style.display = 'none';
+      linkBtn.onclick = null;
+    }
+
+    var clipBtn = document.getElementById('dr-hub-headline-modal-clip');
+    if (h.clip && h.clip.videoUrl) {
+      var catLabel = CATEGORY_LABELS[h.category] || String(h.category || '').toUpperCase();
+      clipBtn.style.display = '';
+      clipBtn.onclick = function(){ closeHeadlineModal(); openHRVideoModal(h.title, catLabel, h.clip.videoUrl); };
+    } else {
+      clipBtn.style.display = 'none';
+      clipBtn.onclick = null;
+    }
+
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeHeadlineModal(){
+    var modal = document.getElementById('dr-hub-headline-modal');
+    if (!modal) return;
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
   function renderHubHeadlines(data){
     var section = document.getElementById('dr-hub-headlines');
     var grid = document.getElementById('dr-hub-headlines-grid');
@@ -13966,6 +14018,7 @@ if (document.readyState === 'loading') {
       var card = document.createElement('div');
       card.className = 'dr-hub-headline-card' + (i === 0 ? ' lead' : '');
       card.setAttribute('data-category', h.category || '');
+      card.addEventListener('click', function(){ openHeadlineModal(h); });
 
       var head = document.createElement('div');
       head.className = 'dr-hub-headline-head';
@@ -14010,7 +14063,7 @@ if (document.readyState === 'loading') {
         linkBtn.type = 'button';
         linkBtn.className = 'dr-hub-headline-link';
         linkBtn.textContent = 'View related report →';
-        linkBtn.addEventListener('click', function(){ applyHeadlineLink(h.link); });
+        linkBtn.addEventListener('click', function(e){ e.stopPropagation(); openHeadlineModal(h); });
         actions.appendChild(linkBtn);
       }
       if (h.clip && h.clip.videoUrl) {
@@ -14018,7 +14071,7 @@ if (document.readyState === 'loading') {
         clipBtn.type = 'button';
         clipBtn.className = 'dr-hub-headline-clip';
         clipBtn.textContent = '▶ Watch';
-        clipBtn.addEventListener('click', function(){ openHRVideoModal(h.title, catLabel, h.clip.videoUrl); });
+        clipBtn.addEventListener('click', function(e){ e.stopPropagation(); openHRVideoModal(h.title, catLabel, h.clip.videoUrl); });
         actions.appendChild(clipBtn);
       }
       if (actions.childNodes.length) card.appendChild(actions);
@@ -14300,6 +14353,17 @@ if (document.readyState === 'loading') {
       leaderModalOverlay.addEventListener('click', closeLeaderModal);
     }
 
+    var headlineModalClose = document.getElementById('dr-hub-headline-modal-close');
+    var headlineModalOverlay = document.getElementById('dr-hub-headline-modal-overlay');
+    if (headlineModalClose && !headlineModalClose.dataset.drHubReady) {
+      headlineModalClose.dataset.drHubReady = '1';
+      headlineModalClose.addEventListener('click', closeHeadlineModal);
+    }
+    if (headlineModalOverlay && !headlineModalOverlay.dataset.drHubReady) {
+      headlineModalOverlay.dataset.drHubReady = '1';
+      headlineModalOverlay.addEventListener('click', closeHeadlineModal);
+    }
+
     var sideToggle = document.getElementById('dr-hub-side-toggle');
     if (sideToggle && !sideToggle.dataset.drHubReady) {
       sideToggle.dataset.drHubReady = '1';
@@ -14307,7 +14371,7 @@ if (document.readyState === 'loading') {
     }
 
     document.addEventListener('keydown', function(e){
-      if (e.key === 'Escape') { closeNewsModal(); closeHRVideoModal(); closeLeaderModal(); }
+      if (e.key === 'Escape') { closeNewsModal(); closeHRVideoModal(); closeLeaderModal(); closeHeadlineModal(); }
     });
 
     var baseballCard = document.getElementById('dr-hub-baseball-card');

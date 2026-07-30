@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026072504">
+<link rel="stylesheet" href="styles.min.css?v=2026073001">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -373,6 +373,31 @@
         <span class="dr-hub-leader-modal-stat-label" id="dr-hub-leader-modal-cat"></span>
       </div>
       <div class="dr-hub-leader-modal-rank" id="dr-hub-leader-modal-rank"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Diamond Report Headline popup -- clicking a headline opens this in place
+     instead of jumping straight to the related board section, so readers can
+     read the full story without leaving the headlines feed. The "View related
+     report" button inside the popup still does the real board navigation
+     (applyHeadlineLink), only when the reader chooses it. Populated/opened by
+     the hub IIFE at the end of app.js. -->
+<div id="dr-hub-headline-modal" class="dr-hub-news-modal" aria-hidden="true">
+  <div class="dr-hub-news-modal-overlay" id="dr-hub-headline-modal-overlay"></div>
+  <div class="dr-hub-news-modal-panel dr-hub-headline-modal-panel" role="dialog" aria-modal="true" aria-labelledby="dr-hub-headline-modal-title">
+    <button type="button" class="dr-hub-news-modal-close" id="dr-hub-headline-modal-close" aria-label="Close">✕</button>
+    <div class="dr-hub-news-modal-body dr-hub-headline-modal-body">
+      <div class="dr-hub-headline-modal-head">
+        <img id="dr-hub-headline-modal-photo" class="dr-hub-headline-modal-photo" alt="" style="display:none">
+        <div class="dr-hub-news-modal-meta" id="dr-hub-headline-modal-cat"></div>
+      </div>
+      <h3 id="dr-hub-headline-modal-title" class="dr-hub-news-modal-title"></h3>
+      <p class="dr-hub-news-modal-desc" id="dr-hub-headline-modal-blurb"></p>
+      <div class="dr-hub-headline-modal-actions">
+        <button type="button" class="dr-hub-headline-link" id="dr-hub-headline-modal-link">View related report →</button>
+        <button type="button" class="dr-hub-headline-clip" id="dr-hub-headline-modal-clip" style="display:none">▶ Watch</button>
+      </div>
     </div>
   </div>
 </div>
@@ -886,7 +911,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026072504" defer></script>
+<script src="app.min.js?v=2026073001" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
