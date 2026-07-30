@@ -2959,15 +2959,19 @@ function pitcherMatchupTableHTML(pid, meta) {
   });
 
   const headCells = MU_TABLE_COLUMNS.map(c => `<th class="num">${c.label}</th>`).join('');
+  // data-label carries each column's short header onto its own <td> -- same
+  // mechanism renderPRTable's heatCell/plainCell already use so the existing
+  // @media(max-width:700px) card layout can turn every stat into a labeled
+  // chip via a CSS ::before instead of forcing sideways scroll on a phone.
   const bodyRows = rows.map(({ batter, stat, seasonHR }) => {
     const cells = MU_TABLE_COLUMNS.map(c => {
       if (c.key === 'hr') {
-        return `<td class="num">${seasonHR != null ? seasonHR : '–'}</td>`;
+        return `<td class="num" data-label="${c.label}">${seasonHR != null ? seasonHR : '–'}</td>`;
       }
       const val = stat[c.key];
       const bg = _muHeatBG(c.key, val);
       const txt = val == null ? '<span style="color:var(--muted)">–</span>' : (c.pct0 ? val.toFixed(c.dec).replace(/^0/, '') : val.toFixed(c.dec)) + (c.suffix || '');
-      return `<td class="num" style="background:${bg}">${txt}</td>`;
+      return `<td class="num" data-label="${c.label}" style="background:${bg}">${txt}</td>`;
     }).join('');
     const star = seasonHR != null && seasonHR > 0 && seasonHR === topHRCount ? '<span title="Most HRs in today\'s lineup" style="color:#fbbf24;margin-left:4px">★</span>' : '';
     const handTag = batter.hand ? `<span class="dr-mu-hand-tag">${batter.hand}</span>` : '';
@@ -2977,7 +2981,7 @@ function pitcherMatchupTableHTML(pid, meta) {
   return `
     ${pitcherMatchupChipsHTML(pid, state)}
     ${pitcherMatchupControlsHTML(pid, state)}
-    <div class="dr1041-table-wrap"><table class="dr1041-pitch-table dr-mu-table dr-mu-density-${state.density}">
+    <div class="dr1041-table-wrap dr-mu-table-wrap"><table class="dr1041-pitch-table dr-mu-table dr-mu-density-${state.density}">
       <thead><tr><th>Batter</th>${headCells}</tr></thead>
       <tbody>${bodyRows}</tbody>
     </table></div>

@@ -5048,3 +5048,82 @@ select:focus-visible {
   padding: 5px 8px;
   font-size: 11.5px;
 }
+
+/* Matchup scouting table on phones: an 8-stat table forced sideways scroll on a
+   ~360-390px screen (the batter-name column alone ate a third of the visible
+   width before any stat was reached). Same real solution as .pr-starters-table
+   above -- one card per batter, stats as a wrapped grid of labeled chips via
+   each <td>'s real data-label attribute (see pitcherMatchupTableHTML in
+   app.js), not a shrunk-font version of the same wide table. */
+@media (max-width: 700px) {
+  .dr-mu-table-wrap {
+    overflow-x: visible !important;
+  }
+  .dr-mu-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    border-spacing: 0 !important;
+  }
+  .dr-mu-table thead {
+    display: none !important;
+  }
+  .dr-mu-table tbody {
+    display: block !important;
+  }
+  .dr-mu-table tr {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
+    background: linear-gradient(180deg, rgba(17,26,45,.78), rgba(14,23,40,.82)) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 14px !important;
+    padding: 10px !important;
+    margin-bottom: 10px !important;
+  }
+  .dr-mu-table td {
+    padding: 0 !important;
+    white-space: normal !important;
+  }
+  .dr-mu-table td.dr-mu-batter-cell {
+    grid-column: 1 / -1 !important;
+    background: none !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 14px !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 4px !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+  .dr-mu-table td[data-label] {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    padding: 5px 7px !important;
+    font-family: var(--font-mono) !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    text-align: left !important;
+  }
+  .dr-mu-table td[data-label][style*="background:transparent"] {
+    background: rgba(255,255,255,.03) !important;
+  }
+  .dr-mu-table td[data-label]::before {
+    content: attr(data-label);
+    font-family: 'Manrope', sans-serif !important;
+    font-size: 8px !important;
+    font-weight: 800 !important;
+    letter-spacing: .05em !important;
+    color: var(--muted) !important;
+    text-transform: uppercase !important;
+  }
+  .dr-mu-chip {
+    flex: 1 1 calc(50% - 6px);
+    text-align: center;
+  }
+  .dr-mu-controls {
+    justify-content: space-between;
+  }
+}
