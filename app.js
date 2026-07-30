@@ -13925,7 +13925,7 @@ if (document.readyState === 'loading') {
   // addEventListener (not inline onclick) since the click targets (applyHeadlineLink,
   // openHRVideoModal) need the real headline object, not just a string embeddable in
   // an HTML attribute.
-  var CATEGORY_LABELS = { recap: 'RECAP', trend: 'TREND', notable: 'NOTABLE PERFORMANCE', weather: 'WEATHER', injury: 'INJURY', model: 'MODEL MOVE', leaderboard: 'LEADERBOARD' };
+  var CATEGORY_LABELS = { recap: 'RECAP', trend: 'TREND', streak: 'STREAK', notable: 'NOTABLE PERFORMANCE', weather: 'WEATHER', injury: 'INJURY', model: 'MODEL MOVE', leaderboard: 'LEADERBOARD' };
   var headlinesLoaded = false;
   function loadHubHeadlines(){
     if (headlinesLoaded) return;
@@ -13967,15 +13967,36 @@ if (document.readyState === 'loading') {
       card.className = 'dr-hub-headline-card' + (i === 0 ? ' lead' : '');
       card.setAttribute('data-category', h.category || '');
 
+      var head = document.createElement('div');
+      head.className = 'dr-hub-headline-head';
+
+      var playerId = h.link && h.link.playerId;
+      if (playerId) {
+        var photo = document.createElement('img');
+        photo.className = 'dr-hub-headline-photo';
+        photo.src = hs(playerId);
+        photo.alt = '';
+        photo.loading = 'lazy';
+        photo.decoding = 'async';
+        photo.onerror = function(){ this.style.display = 'none'; };
+        head.appendChild(photo);
+      }
+
+      var headText = document.createElement('div');
+      headText.className = 'dr-hub-headline-headtext';
+
       var cat = document.createElement('div');
       cat.className = 'dr-hub-headline-cat';
       cat.textContent = catLabel;
-      card.appendChild(cat);
+      headText.appendChild(cat);
 
       var title = document.createElement('div');
       title.className = 'dr-hub-headline-title';
       title.textContent = h.title || '';
-      card.appendChild(title);
+      headText.appendChild(title);
+
+      head.appendChild(headText);
+      card.appendChild(head);
 
       var blurb = document.createElement('p');
       blurb.className = 'dr-hub-headline-blurb';

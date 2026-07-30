@@ -3050,6 +3050,24 @@ select:focus-visible {
   background: rgba(255,255,255,.05);
   border-color: rgba(255,255,255,.14);
 }
+.dr-hub-headline-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.dr-hub-headline-photo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface2);
+  border: 1px solid rgba(255,255,255,.12);
+  flex-shrink: 0;
+}
+.dr-hub-headline-headtext {
+  min-width: 0;
+  flex: 1;
+}
 .dr-hub-headline-cat {
   display: inline-flex;
   align-self: flex-start;
@@ -3065,11 +3083,12 @@ select:focus-visible {
   background: rgba(29,53,94,.42);
   color: #93c5fd;
 }
-/* Each category gets its own tint so the feed reads as 6 distinct signal
+/* Each category gets its own tint so the feed reads as 7 distinct signal
    types at a glance, not one undifferentiated list -- same translucent
    pill-badge treatment as .dr1041-chip elsewhere in the app, just one hue
    per category instead of good/weak. */
 .dr-hub-headline-card[data-category="trend"] .dr-hub-headline-cat { border-color: rgba(163,230,53,.55); background: rgba(63,98,18,.38); color: #a3e635; }
+.dr-hub-headline-card[data-category="streak"] .dr-hub-headline-cat { border-color: rgba(244,114,182,.55); background: rgba(80,15,55,.38); color: #f472b6; }
 .dr-hub-headline-card[data-category="notable"] .dr-hub-headline-cat { border-color: rgba(246,195,67,.55); background: rgba(90,66,10,.38); color: #f6c343; }
 .dr-hub-headline-card[data-category="weather"] .dr-hub-headline-cat { border-color: rgba(56,189,248,.55); background: rgba(8,63,84,.38); color: #7dd3fc; }
 .dr-hub-headline-card[data-category="injury"] .dr-hub-headline-cat { border-color: rgba(252,165,165,.55); background: rgba(64,10,26,.32); color: #fca5a5; }
