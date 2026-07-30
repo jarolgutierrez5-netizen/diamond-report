@@ -1719,6 +1719,34 @@ function battedBallPowerIndex(statcast) {
   const avgRatio = ratios.reduce((a, b) => a + b, 0) / ratios.length;
   return clampNum(avgRatio, 0.7, 1.5);
 }
+// Zone-matchup correction -- exact port of update-tracker.mjs's zoneMatchupMultiplier.
+// Real per-zone wOBA overlap between a batter's own hot zones (batterZoneProfiles/
+// batterZoneProfilesByHand, sync-batter-zone-hr.mjs) and a pitcher's own weak zones
+// (pitcherStatcast[...].byZone/byZoneByHand, sync-pitcher-zone-hr.mjs) -- the same real
+// data already shown in the matchup modal's Strike Zone Matchup grid, now also allowed to
+// move the actual HR probability instead of only being a visual display. Same ratio-to-
+// league-average + clamp shape as battedBallPowerIndex, just averaged over whichever of
+// the 9 real Statcast zones both sides have data for. Neutral (1x) below
+// MIN_ZONE_OVERLAP shared zones, so a matchup with too little zone data synced yet is
+// never penalized or boosted off a thin/misleading sample.
+const ZONE_LEAGUE_AVG_WOBA = 0.320; // matches the /0.640 normalization the Strike Zone
+                                     // Matchup grid already uses (0.320/0.640 = 0.5 = "OK")
+const MIN_ZONE_OVERLAP = 4; // of 9 real Statcast zones
+function zoneMatchupMultiplier(batterZoneMap, pitcherZoneMap) {
+  if (!batterZoneMap || !pitcherZoneMap) return 1;
+  const ratios = [];
+  for (let z = 1; z <= 9; z++) {
+    const bCell = batterZoneMap[z], pCell = pitcherZoneMap[z];
+    if (!bCell || !pCell) continue;
+    const bVal = bCell.xwobaContact ?? bCell.woba ?? bCell.xwoba ?? bCell.wobaAgainst;
+    const pVal = pCell.xwobaContact ?? pCell.wobaAgainst ?? pCell.xwoba ?? pCell.woba;
+    if (bVal == null || pVal == null) continue;
+    ratios.push(((bVal + pVal) / 2) / ZONE_LEAGUE_AVG_WOBA);
+  }
+  if (ratios.length < MIN_ZONE_OVERLAP) return 1;
+  const avgRatio = ratios.reduce((a, b) => a + b, 0) / ratios.length;
+  return clampNum(avgRatio, 0.85, 1.15);
+}
 
 // Warning-track fly-out ("near HR") store — loaded from data/near-hrs.json,
 // written by scripts/sync-near-hrs.mjs. Keyed by batter MLB ID (string).
@@ -8910,6 +8938,18 @@ async function loadHRPotential() {
           // degradation as every other optional signal here.
           const battedBallMult = shrinkMult(battedBallPowerIndex(batterPowerIndex[String(pid)]));
           const batterRate = boxScoreBatterRate * battedBallMult;
+          // Zone-matchup correction (see zoneMatchupMultiplier's header comment) -- real
+          // wOBA overlap between this batter's own hot zones and this pitcher's own weak
+          // zones. Batter side is conditioned on today's actual pitcher throwing hand
+          // (pitcherHandForEdge, already resolved above for Matchup Edge -- zero extra
+          // fetch); pitcher side uses the hand-unconditioned map since this loop doesn't
+          // fetch the batter's own batSide (that per-batter hydrate call is the exact cost
+          // this board's fetch-count comments above warn against paying per-batter). Same
+          // shrinkMult treatment as every other bounded Statcast-derived factor here.
+          const batterZoneMapForHR = (pitcherHandForEdge && batterZoneProfilesByHand[String(pid)]?.[pitcherHandForEdge])
+            || batterZoneProfiles[String(pid)] || null;
+          const pitcherZoneMapForHR = pitcherStatcast[String(pitcher.id)]?.byZone || null;
+          const zoneMult = shrinkMult(zoneMatchupMultiplier(batterZoneMapForHR, pitcherZoneMapForHR));
           // homeRunsPer9 is allowed-per-9-innings (27 outs); a pitcher actually faces
           // ~38 batters per 9 innings once baserunners allowed are counted, so dividing
           // by 27 overstated the pitcher's true HR-per-batter rate.
@@ -8945,7 +8985,7 @@ async function loadHRPotential() {
           // behavior, just applied as a rate multiplier instead of a flat point add-on.
           const hotMult = 1 + (clampNum(hotProfile.onFireScore, 0, 100) / 100) * 0.5;
           const shrunkHotMult = shrinkMult(hotMult);
-          const hrPerPA = ((batterRate*0.6)+(pitcherRate*0.4)) * parkAdj * shrunkHotMult * weatherHRMult;
+          const hrPerPA = ((batterRate*0.6)+(pitcherRate*0.4)) * parkAdj * shrunkHotMult * weatherHRMult * zoneMult;
           // Lineup slot (1-9), computed here (not just below with the display battingOrder)
           // so it can feed the per-PA count the HR simulation runs — same 3-digit MLB
           // battingOrder code as the display field derives from.
