@@ -137,9 +137,16 @@ function extractPitchRow(r) {
   const zone = Number(r.zone);
   const wobaValue = r.woba_value === '' || r.woba_value == null ? null : Number(r.woba_value);
   const wobaDenom = r.woba_denom === '' || r.woba_denom == null ? null : Number(r.woba_denom);
+  // description (not events) carries the real per-pitch outcome -- events only
+  // populates on the last pitch of a plate appearance, but a swing-and-miss can
+  // happen on any pitch. Both swinging_strike and swinging_strike_blocked (a
+  // whiff on a pitch also in the dirt) are real misses, same standard public
+  // Statcast tooling uses for whiff rate.
+  const isWhiff = r.description === 'swinging_strike' || r.description === 'swinging_strike_blocked';
   return {
     pitchName,
     isHomeRun: r.events === 'home_run',
+    isWhiff,
     zone: Number.isFinite(zone) && zone >= 1 && zone <= 9 ? zone : null,
     wobaValue: Number.isFinite(wobaValue) ? wobaValue : null,
     wobaDenom: Number.isFinite(wobaDenom) ? wobaDenom : null,
@@ -166,7 +173,9 @@ async function buildPitcherZoneHR(pitcherId, name) {
   const hrZoneCount = {}; // zone -> count of HRs allowed on a pitch located in that zone
   let hrZoneTotal = 0; // HRs allowed with a known zone -- the hrByZone pct denominator
   const hrLocations = []; // real plate_x/plate_z per HR allowed -- exact pitch coordinates, not a discrete 1-9 zone bucket
+  const whiffLocations = []; // real plate_x/plate_z + pitch type per swing-and-miss -- same coordinate source as hrLocations, just a different outcome filter
   const hasPitchCoords = 'plate_x' in sample && 'plate_z' in sample;
+  const hasWhiffData = 'description' in sample;
   // Same-toggle-as-Pitch-Mix-Advantage feature: stand (the OPPOSING BATTER's batting
   // side on each pitch) is the pitcher-side counterpart to sync-batter-zone-hr.mjs's
   // p_throws split -- lets the Strike Zone Matchup / Attack Zone by Pitch / HR Zones
@@ -234,6 +243,18 @@ async function buildPitcherZoneHR(pitcherId, name) {
           plateZ: +pz.toFixed(2),
           exitVelo: Number.isFinite(Number(raw.launch_speed)) ? Number(raw.launch_speed) : null,
           matchup: [raw.away_team, raw.home_team].filter(Boolean).join(' @ ') || null,
+          batterStand: stand,
+        });
+      }
+    }
+    if (hasPitchCoords && hasWhiffData && p.isWhiff) {
+      const px = Number(raw.plate_x), pz = Number(raw.plate_z);
+      if (Number.isFinite(px) && Number.isFinite(pz)) {
+        whiffLocations.push({
+          date: raw.game_date || null,
+          plateX: +px.toFixed(2),
+          plateZ: +pz.toFixed(2),
+          pitchName: p.pitchName,
           batterStand: stand,
         });
       }
@@ -321,6 +342,7 @@ async function buildPitcherZoneHR(pitcherId, name) {
     hr9ByHand,
     hrByZone: Object.keys(hrByZone).length ? hrByZone : null,
     hrLocations: hasPitchCoords ? hrLocations : null,
+    whiffLocations: (hasPitchCoords && hasWhiffData) ? whiffLocations : null,
     byPitchZone,
     byPitchZoneByHand,
   };
@@ -384,6 +406,10 @@ async function main() {
       if (result.hrLocations) {
         pitcherStatcast.pitchers[id] = pitcherStatcast.pitchers[id] || { totalPitches: 0, byPitch: [] };
         pitcherStatcast.pitchers[id].hrLocations = result.hrLocations;
+      }
+      if (result.whiffLocations) {
+        pitcherStatcast.pitchers[id] = pitcherStatcast.pitchers[id] || { totalPitches: 0, byPitch: [] };
+        pitcherStatcast.pitchers[id].whiffLocations = result.whiffLocations;
       }
       updated++;
     } catch (e) {

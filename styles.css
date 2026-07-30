@@ -3214,6 +3214,82 @@ select:focus-visible {
 .dr-hub-headline-card {
   cursor: pointer;
 }
+
+/* ── Trending Players: a small real visual per player (see loadTrendingPlayers/
+   renderTrendingPlayers in app.js) -- same card language as the Headlines
+   feed above, horizontally scrollable so a phone gets a swipeable row
+   instead of stacked full-width cards. */
+.dr-hub-trending {
+  margin: 0 0 48px;
+}
+.dr-hub-trending-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(200px, 220px);
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+.dr-hub-trending-card {
+  background: rgba(255,255,255,.035);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color .15s, background .15s;
+}
+.dr-hub-trending-card:hover {
+  border-color: rgba(255,255,255,.18);
+  background: rgba(255,255,255,.05);
+}
+.dr-hub-trending-visual {
+  background: rgba(0,0,0,.22);
+  padding: 10px 12px 4px;
+}
+.dr-hub-trending-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 12px;
+}
+.dr-hub-trending-photo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface2);
+  border: 1px solid rgba(255,255,255,.12);
+  flex-shrink: 0;
+}
+.dr-hub-trending-text {
+  min-width: 0;
+  flex: 1;
+}
+.dr-hub-trending-name {
+  font-weight: 700;
+  font-size: 12.5px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dr-hub-trending-sub {
+  font-size: 10px;
+  color: #93a1bd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dr-hub-trending-pct {
+  flex-shrink: 0;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #a3e635;
+  white-space: nowrap;
+}
+
 .dr-hub-headline-modal-panel {
   max-width: 480px;
 }

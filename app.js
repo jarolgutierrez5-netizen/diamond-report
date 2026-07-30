@@ -14147,6 +14147,7 @@ if (document.readyState === 'loading') {
   function showHub(){
     document.body.classList.add('dr-hub-active');
     loadHubHeadlines();
+    loadTrendingPlayers();
     loadHubNews();
     loadHubHRs();
     loadHubLeaders();
@@ -14886,6 +14887,139 @@ if (document.readyState === 'loading') {
         actions.appendChild(clipBtn);
       }
       if (actions.childNodes.length) card.appendChild(actions);
+
+      grid.appendChild(card);
+    });
+    section.style.display = '';
+  }
+
+  var trendingPlayersLoaded = false;
+  function loadTrendingPlayers(){
+    if (trendingPlayersLoaded) return;
+    trendingPlayersLoaded = true;
+    drFetchDailyJSON('data/trending-players.json').then(function(data){
+      renderTrendingPlayers(data);
+    }).catch(function(){});
+  }
+
+  // Small decorative HR-landing-spot dot plot -- same real xFt/yFt/distance
+  // fields the full Matchup modal's spray chart uses (see hrSprayChartHTML
+  // there), just a compact generic-diamond version: this card isn't tied to
+  // a specific game/park, so there's no "today's park" to draw an accurate
+  // wall against.
+  function trendingBatterSprayHTML(dots){
+    var W = 160, H = 120, plateX = W / 2, plateY = H - 8;
+    var maxDist = dots.reduce(function(m, d){ return Math.max(m, d.distance || 0); }, 350);
+    var scale = (plateY - 14) / Math.max(maxDist, 350);
+    var wallPath = 'M ' + plateX + ',' + plateY + ' L 12,36 Q ' + plateX + ',8 ' + (W - 12) + ',36 Z';
+    var circles = dots.map(function(d){
+      var cx = Math.max(4, Math.min(W - 4, plateX + (d.xFt || 0) * scale));
+      var cy = Math.max(4, Math.min(plateY - 2, plateY - (d.yFt || 0) * scale));
+      var title = d.distance != null ? Math.round(d.distance) + ' ft' : '';
+      return '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="3.5" fill="#f6c343" fill-opacity=".9" stroke="#0a0e1a" stroke-width="1"><title>' + title + '</title></circle>';
+    }).join('');
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block">' +
+      '<path d="' + wallPath + '" fill="rgba(120,150,200,.08)" stroke="rgba(255,255,255,.25)" stroke-width="1.2"/>' + circles + '</svg>';
+  }
+
+  // Small pitch-type-colored whiff scatter over a generic strike-zone box --
+  // reuses the exact real pitchTypeColor() mapping the Pitcher Analytics
+  // Dashboard's own charts use (top-level function, defined near
+  // blendRecentForm), so a given pitch type reads the same color everywhere
+  // on the site, not just inside a pitcher's own dashboard.
+  function trendingPitcherWhiffHTML(dots){
+    var W = 160, H = 120;
+    var X_MIN = -1.6, X_MAX = 1.6, Z_MIN = 0.3, Z_MAX = 4.7;
+    var ZONE_HALF_W = 0.83, ZONE_BOT = 1.5, ZONE_TOP = 3.5;
+    function toXY(px, pz){
+      return {
+        x: 8 + ((px - X_MIN) / (X_MAX - X_MIN)) * (W - 16),
+        y: H - 8 - ((pz - Z_MIN) / (Z_MAX - Z_MIN)) * (H - 16),
+      };
+    }
+    var zoneTL = toXY(-ZONE_HALF_W, ZONE_TOP), zoneBR = toXY(ZONE_HALF_W, ZONE_BOT);
+    var circles = dots.map(function(d){
+      var xy = toXY(d.plateX || 0, d.plateZ || 0);
+      var cx = Math.max(4, Math.min(W - 4, xy.x)), cy = Math.max(4, Math.min(H - 4, xy.y));
+      var color = pitchTypeColor(d.pitchName || '');
+      return '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="3.5" fill="' + color + '" fill-opacity=".9" stroke="#0a0e1a" stroke-width="1"><title>' + drEscAttr(d.pitchName || '') + '</title></circle>';
+    }).join('');
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block">' +
+      '<rect x="' + zoneTL.x.toFixed(1) + '" y="' + zoneTL.y.toFixed(1) + '" width="' + (zoneBR.x - zoneTL.x).toFixed(1) + '" height="' + (zoneBR.y - zoneTL.y).toFixed(1) + '" fill="rgba(120,150,200,.08)" stroke="rgba(255,255,255,.3)" stroke-width="1.2"/>' + circles + '</svg>';
+  }
+
+  function renderTrendingPlayers(data){
+    var section = document.getElementById('dr-hub-trending');
+    var grid = document.getElementById('dr-hub-trending-grid');
+    if (!section || !grid || !data) return;
+    var players = Array.isArray(data.players) ? data.players : [];
+    if (!players.length) return;
+
+    grid.innerHTML = '';
+    players.forEach(function(p, i){
+      var card = document.createElement('div');
+      card.className = 'dr-hub-trending-card dr-anim-in';
+      card.style.animationDelay = Math.min(i, 8) * 25 + 'ms';
+      if (p.trendMetric) card.title = p.trendMetric;
+
+      var visualWrap = document.createElement('div');
+      visualWrap.className = 'dr-hub-trending-visual';
+      if (p.visual && p.visual.type === 'whiff') visualWrap.innerHTML = trendingPitcherWhiffHTML(p.visual.dots || []);
+      else if (p.visual && p.visual.type === 'spray') visualWrap.innerHTML = trendingBatterSprayHTML(p.visual.dots || []);
+      card.appendChild(visualWrap);
+
+      var info = document.createElement('div');
+      info.className = 'dr-hub-trending-info';
+
+      if (p.playerId) {
+        var photo = document.createElement('img');
+        photo.className = 'dr-hub-trending-photo';
+        photo.src = hs(p.playerId);
+        photo.alt = '';
+        photo.loading = 'lazy';
+        photo.decoding = 'async';
+        photo.onerror = function(){ this.style.display = 'none'; };
+        info.appendChild(photo);
+      }
+
+      var text = document.createElement('div');
+      text.className = 'dr-hub-trending-text';
+      var nameEl = document.createElement('div');
+      nameEl.className = 'dr-hub-trending-name';
+      nameEl.textContent = p.name || '';
+      text.appendChild(nameEl);
+      var subEl = document.createElement('div');
+      subEl.className = 'dr-hub-trending-sub';
+      subEl.textContent = (p.visual && p.visual.label) || '';
+      text.appendChild(subEl);
+      info.appendChild(text);
+
+      var pctEl = document.createElement('span');
+      pctEl.className = 'dr-hub-trending-pct';
+      var pctVal = Number(p.trendPct) || 0;
+      pctEl.textContent = 'Trending ' + (pctVal >= 0 ? '↑' : '↓') + Math.abs(pctVal) + '%';
+      info.appendChild(pctEl);
+
+      card.appendChild(info);
+
+      // Batters reuse the exact same #gamepick=hr + name-search pattern the
+      // headline cards' applyHeadlineLink already uses. Pitchers land on the
+      // real Strikeouts pane (#gamepick=k, a confirmed valid VALID[] key) --
+      // that board's own search-stuffing hook isn't wired the same way, so
+      // this just navigates there rather than guessing at an unverified call.
+      if (p.playerId) {
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', function(){
+          if (p.type === 'pitcher') {
+            window.location.hash = 'gamepick=k';
+          } else {
+            window.location.hash = 'gamepick=hr';
+            setTimeout(function(){
+              if (typeof window.setPropSearchFilter === 'function') window.setPropSearchFilter('hr', p.name);
+            }, 60);
+          }
+        });
+      }
 
       grid.appendChild(card);
     });
