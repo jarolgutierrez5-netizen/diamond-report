@@ -2374,6 +2374,25 @@ async function gradeHRThreatPending(store) {
       const homeRuns = n(bat.homeRuns);
       rec.actual = homeRuns;
       rec.result = homeRuns >= 1 ? 'win' : 'loss';
+      // Near miss (roadmap 2.5 "Performance Tracking") -- a loss where the batter
+      // still had a real warning-track fly out (same NEAR_HR_MIN_DISTANCE_FT=375ft
+      // definition sync-near-hrs.mjs already uses for the live "🚀 NEAR HR" chip) on
+      // THIS SPECIFIC game date, not just somewhere in the trailing 10-game window.
+      // near-hrs.json is resynced 4x/day (sync-statcast.yml) and this function only
+      // ever grades a date that's already in the past, so by the time grading runs the
+      // window has had at least a full day of resyncs to pick up that date's real
+      // Statcast events -- reading the already-committed file here needs no extra
+      // network call. Computed once at grading time and persisted on the row (rather
+      // than recomputed later from the rolling window), since near-hrs.json only keeps
+      // each player's last 10 games and would otherwise lose the answer once this date
+      // rolls out of that window.
+      if (rec.result === 'loss') {
+        const nearHRIdx = await loadNearHRsIndex();
+        const events = nearHRIdx.get(String(rec.playerId));
+        rec.nearMiss = Array.isArray(events) && events.some(e => e.date === rec.date);
+      } else {
+        rec.nearMiss = false;
+      }
       graded++;
     }
   }
@@ -2509,6 +2528,12 @@ async function gradePending(store) {
       const actualWinner = awayScore === homeScore ? 'TIE' : (awayScore > homeScore ? rec.awayTeam : rec.homeTeam);
       rec.actualWinner = actualWinner;
       rec.result = actualWinner === 'TIE' ? 'push' : (actualWinner === rec.pick ? 'win' : 'loss');
+      // Near miss (roadmap 2.5) -- a moneyline loss decided by a single run. A game
+      // winner is inherently binary, so this is the closest real, unambiguous
+      // "the model's read wasn't far off" bucket available without inventing a
+      // synthetic score-based confidence number.
+      rec.scoreMargin = Math.abs(awayScore - homeScore);
+      rec.nearMiss = rec.result === 'loss' && rec.scoreMargin === 1;
       graded++;
     }
 
@@ -2539,6 +2564,12 @@ async function gradePending(store) {
       if (!Number.isFinite(finalK)) continue;
       rec.finalK = finalK;
       rec.result = finalK === rec.line ? 'push' : (finalK > rec.line ? 'win' : 'loss');
+      // Near miss (roadmap 2.5) -- a loss where the final K total still landed within
+      // one strikeout of the line (e.g. Over 6.5, finalK 6): the model's read was
+      // essentially correct, the pitcher just fell one K short/over. KPROP_NEAR_MISS_MARGIN
+      // documented alongside the other roadmap-2.5 near-miss definitions in
+      // scripts/generate-performance-report.mjs.
+      rec.nearMiss = rec.result === 'loss' && Math.abs(finalK - rec.line) <= 1;
       graded++;
     }
   }
