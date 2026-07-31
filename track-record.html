@@ -226,6 +226,14 @@
   .tr-lb-rank { color: var(--muted); font-weight: 700; width: 24px; }
   .tr-lb-hitrate { font-weight: 900; }
   .tr-def-note { font-size: 11.5px; color: var(--muted); margin: 10px 0 0; }
+
+  /* High-Confidence HR Threats Picks log -- reuses .tr-table's own cell/border
+     rules, just tints a hit row so a real home run reads at a glance without
+     needing a separate legend for a single boolean column. */
+  .tr-hc-hit { background: rgba(52,211,153,.07); }
+  .tr-hc-result { font-weight: 800; }
+  .tr-hc-result.hit { color: #34d399; }
+  .tr-hc-result.miss { color: var(--muted); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -268,6 +276,14 @@
     </div>
   </div>
   <p>Every HR Threats pick carries a real predicted probability the moment it's captured — summed across a day's graded picks, that's an honest "expected home run count" the model itself generated. This chart plots that expected count against how many of those same picks actually went deep, over the last 45 days. If Projected consistently runs above Actual, the model is overconfident; below, underconfident. This tracks Diamond Report's own picks specifically, not every home run hit across MLB that day.</p>
+
+  <div class="dr-hub-section-head" style="margin:36px 0 4px"><h2 style="font-size:15px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:#fff;margin:0">High-Confidence HR Threats Picks</h2></div>
+  <p>Every graded pick that cleared this site's own "High" confidence tier (a real predicted probability of 25% or more) — did it actually go deep? The full season, most recent first.</p>
+  <div id="tr-hc-stats" class="tr-stats" style="margin-top:0"></div>
+  <div class="tr-chart-card" style="padding:20px 20px 16px">
+    <div class="tr-table-wrap visible" id="tr-hc-table-wrap"></div>
+    <button type="button" class="tr-table-toggle" id="tr-hc-more" style="display:none;margin:14px 0 0">View More</button>
+  </div>
 
   <div class="dr-hub-section-head" style="margin:36px 0 4px"><h2 style="font-size:15px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:#fff;margin:0">Performance Breakdown</h2></div>
   <p>Every loss isn't graded the same way here — a game decided by one run, a strikeout total that landed within one K of the line, or a real warning-track fly out that stayed in the park all get separated from the rest as a <strong>near miss</strong>, not lumped in with an outright miss. Pick a window below to see hits/near-misses/misses by market, by confidence level, by team, and which players had the highest real hit rate.</p>
@@ -719,6 +735,57 @@
     hitRect.addEventListener('pointerleave', hideTooltip);
   }
 
+  // High-Confidence HR Threats Picks log -- data/performance-report.json's
+  // hrHighConfidenceLog, already server-sorted most-recent-first and already
+  // scoped to score >= 25% (this site's own "High" tier). Client only handles
+  // display paging (View More, same +N pattern the Diamond Report Headlines
+  // feed on the homepage already uses) -- the full real list ships in the
+  // JSON either way, nothing is fetched or filtered further here.
+  var hcLog = [];
+  var hcVisibleCount = 25;
+  function renderHCStats(log) {
+    var el = document.getElementById('tr-hc-stats');
+    if (!el) return;
+    if (!log.length) { el.innerHTML = '<div class="tr-empty">No high-confidence picks graded yet this season.</div>'; return; }
+    var hits = log.filter(function (r) { return r.hit; }).length;
+    var pct = Math.round((hits / log.length) * 1000) / 10;
+    el.innerHTML = '<div class="tr-stat"><div class="tr-stat-label">High-Confidence Picks (≥ 25%)</div>' +
+      '<div class="tr-stat-record">' + hits + '-' + (log.length - hits) +
+      '<span class="tr-stat-pct" style="color:' + pctColor(pct) + '">(' + pct + '%)</span></div></div>';
+  }
+  function renderHCTable() {
+    var wrap = document.getElementById('tr-hc-table-wrap');
+    var moreBtn = document.getElementById('tr-hc-more');
+    if (!wrap) return;
+    if (!hcLog.length) { wrap.innerHTML = '<div class="tr-empty">No high-confidence picks graded yet this season.</div>'; if (moreBtn) moreBtn.style.display = 'none'; return; }
+    var visible = hcLog.slice(0, hcVisibleCount);
+    var rows = visible.map(function (r) {
+      var matchup = r.team ? (r.team + (r.opp ? ' vs ' + r.opp : '')) : '—';
+      return '<tr class="' + (r.hit ? 'tr-hc-hit' : '') + '">' +
+        '<td>' + formatDateLabel(r.date) + '</td>' +
+        '<td>' + r.playerName + '</td>' +
+        '<td>' + matchup + '</td>' +
+        '<td>' + r.score + '%</td>' +
+        '<td class="tr-hc-result ' + (r.hit ? 'hit' : 'miss') + '">' + (r.hit ? '✔ Home Run' : 'No HR') + '</td>' +
+        '</tr>';
+    }).join('');
+    wrap.innerHTML = '<table class="tr-table"><thead><tr><th>Date</th><th>Player</th><th>Matchup</th><th>Predicted</th><th>Result</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    if (moreBtn) moreBtn.style.display = hcVisibleCount < hcLog.length ? '' : 'none';
+  }
+  function initHighConfidenceLog(log) {
+    hcLog = log || [];
+    renderHCStats(hcLog);
+    renderHCTable();
+    var moreBtn = document.getElementById('tr-hc-more');
+    if (moreBtn && !moreBtn.dataset.bound) {
+      moreBtn.dataset.bound = '1';
+      moreBtn.addEventListener('click', function () {
+        hcVisibleCount += 25;
+        renderHCTable();
+      });
+    }
+  }
+
   function bindTableToggle() {
     var btn = document.getElementById('tr-table-toggle');
     var chartWrap = document.getElementById('tr-chart-wrap');
@@ -889,16 +956,21 @@
       renderTable(data);
       bindTableToggle();
       renderHRCalibrationChart(report.byDate || {});
+      initHighConfidenceLog(report.hrHighConfidenceLog || []);
       initBreakdown(report);
     })
     .catch(function () {
       var stats = document.getElementById('tr-stats');
       var chartEmpty = document.getElementById('tr-chart-empty');
       var hrChartEmpty = document.getElementById('tr-hr-chart-empty');
+      var hcStats = document.getElementById('tr-hc-stats');
+      var hcTableWrap = document.getElementById('tr-hc-table-wrap');
       var breakdownRoot = document.getElementById('tr-breakdown-root');
       if (stats) stats.innerHTML = '<div class="tr-empty">Record data unavailable right now.</div>';
       if (chartEmpty) chartEmpty.textContent = 'Chart data unavailable right now.';
       if (hrChartEmpty) hrChartEmpty.textContent = 'Chart data unavailable right now.';
+      if (hcStats) hcStats.innerHTML = '<div class="tr-empty">Data unavailable right now.</div>';
+      if (hcTableWrap) hcTableWrap.innerHTML = '';
       if (breakdownRoot) breakdownRoot.innerHTML = '<div class="tr-empty">Performance report unavailable right now.</div>';
     });
 })();
