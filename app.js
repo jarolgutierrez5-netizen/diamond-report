@@ -14818,6 +14818,7 @@ if (document.readyState === 'loading') {
 
   function showHub(){
     document.body.classList.add('dr-hub-active');
+    loadFeaturedPlayer();
     loadHubHeadlines();
     loadHRCarousel();
     loadTrendingPlayers();
@@ -15415,6 +15416,83 @@ if (document.readyState === 'loading') {
   // addEventListener (not inline onclick) since the click targets (applyHeadlineLink,
   // openHRVideoModal) need the real headline object, not just a string embeddable in
   // an HTML attribute.
+  // ── Featured Player (roadmap 2) ──────────────────────────────────────────
+  // Fetches data/featured-player.json, generated server-side by
+  // scripts/generate-headlines.mjs's buildFeaturedPlayer from the exact same
+  // real HR-probability model/batter pool the HR Threats board uses (see that
+  // function's own header comment for the full lock-in/degrade discipline).
+  // Never fabricates a pick client-side -- if the file is missing or empty
+  // today, the section just stays hidden (same convention as every other Hub
+  // section here).
+  var featuredPlayerLoaded = false;
+  function loadFeaturedPlayer(){
+    if (featuredPlayerLoaded) return;
+    featuredPlayerLoaded = true;
+    drFetchDailyJSON('data/featured-player.json').then(function(data){
+      renderFeaturedPlayer(data);
+    }).catch(function(){});
+  }
+
+  function featuredPlayerTrendChipHTML(p){
+    if (typeof window.computePlayerTrendIndicator !== 'function') return '';
+    var t = window.computePlayerTrendIndicator({ last10HR: p.last10HR, atBats: p.atBats, hrSeason: p.hrSeason });
+    if (!t) return '';
+    var icon = t.label === 'Hot Streak' ? '🔥' : t.label === 'Cold' ? '🧊' : t.label === 'Trending Up' ? '📈' : '📉';
+    return '<span class="dr-featured-player-trend dr-featured-player-trend-'+(t.tone||'neutral')+'">'+icon+' '+escapeHtml(t.label)+(t.smallSample?' · small sample':'')+'</span>';
+  }
+
+  function renderFeaturedPlayer(data){
+    var section = document.getElementById('dr-hub-featured');
+    var content = document.getElementById('dr-hub-featured-content');
+    if (!section || !content) return;
+    var p = data && data.player;
+    if (!p) { section.style.display = 'none'; return; }
+
+    var matchupHTML = p.confirmedToday
+      ? escapeHtml(p.teamAbbr||'') + ' vs ' + escapeHtml(p.oppAbbr||'') + (p.pitcherName ? ' · ' + escapeHtml(p.pitcherName) : '')
+      : '<span class="dr-featured-player-scratched">Not currently confirmed in today\'s lineup — real season numbers below still reflect this pick.</span>';
+
+    var statChips = [
+      ['AVG', p.avg!=null ? p.avg.toFixed(3).replace(/^0/,'') : '–'],
+      ['OBP', p.obp!=null ? p.obp.toFixed(3).replace(/^0/,'') : '–'],
+      ['SLG', p.slg!=null ? p.slg.toFixed(3).replace(/^0/,'') : '–'],
+      ['OPS', p.ops!=null ? p.ops.toFixed(3).replace(/^0/,'') : '–'],
+      ['Season HR', p.hrSeason!=null ? p.hrSeason : '–'],
+      ['Last 10 HR', p.last10HR!=null ? p.last10HR : '–'],
+    ].map(function(c){ return '<span class="dr-featured-player-stat"><b>'+escapeHtml(c[1])+'</b><small>'+escapeHtml(c[0])+'</small></span>'; }).join('');
+
+    var reasons = Array.isArray(p.reasons) ? p.reasons : [];
+    var whyHTML = reasons.length
+      ? '<div class="dr-featured-player-why"><strong>🤖 AI Explanation:</strong> ' + escapeHtml(reasons.slice(0,3).map(function(r){ return r.text; }).join(' ')) + '</div>'
+      : '';
+    var reasonChips = reasons.map(function(r){ return '<span class="dr-featured-player-reason-chip">'+escapeHtml(r.icon||'')+' '+escapeHtml((r.text||'').split('.')[0])+'</span>'; }).join('');
+
+    var updated = data.generatedAt ? new Date(data.generatedAt).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : '';
+    var clickable = p.confirmedToday && p.pitcherId;
+    var bName = String(p.name||'').replace(/'/g,"\\'");
+    var pName = String(p.pitcherName||'').replace(/'/g,"\\'");
+
+    content.innerHTML =
+      '<div class="dr-featured-player-card'+(clickable?' clickable':'')+'"'+(clickable?' onclick="openMatchup('+p.id+',\''+bName+'\','+p.pitcherId+',\''+pName+'\')" role="button" tabindex="0"':'')+'>'+
+        '<img class="dr-featured-player-photo" loading="lazy" decoding="async" src="'+hsBig(p.id)+'" onerror="this.style.display=\'none\'" alt="">'+
+        '<div class="dr-featured-player-body">'+
+          '<div class="dr-featured-player-badge">⭐ TODAY\'S FEATURED PLAYER</div>'+
+          '<div class="dr-featured-player-name">'+escapeHtml(p.name||'')+'</div>'+
+          '<div class="dr-featured-player-meta">'+matchupHTML+'</div>'+
+          '<div class="dr-featured-player-score-row">'+
+            '<div class="dr-featured-player-score"><strong>'+(p.liveScore!=null?p.liveScore.toFixed(1):'–')+'%</strong><span>HR Probability</span></div>'+
+            featuredPlayerTrendChipHTML(p)+
+          '</div>'+
+          '<div class="dr-featured-player-stats">'+statChips+'</div>'+
+          '<div class="dr-featured-player-reason-row">'+reasonChips+'</div>'+
+          whyHTML+
+          (clickable ? '<div class="dr-featured-player-cta">Tap for the full Matchup analysis ›</div>' : '')+
+          '<div class="dr-featured-player-footer">Selected from the real HR-probability model + hot streak/matchup/near-HR signals · Updated '+escapeHtml(updated)+'</div>'+
+        '</div>'+
+      '</div>';
+    section.style.display = '';
+  }
+
   var CATEGORY_LABELS = { recap: 'RECAP', trend: 'TREND', streak: 'STREAK', notable: 'NOTABLE PERFORMANCE', weather: 'WEATHER', injury: 'INJURY', model: 'MODEL MOVE', leaderboard: 'LEADERBOARD' };
   var headlinesLoaded = false;
   function loadHubHeadlines(){

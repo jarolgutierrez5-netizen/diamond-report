@@ -65,8 +65,15 @@ jobs:
       # itself means a transient MLB API hiccup only costs the storylines, never the
       # recap, so this is safe to run unconditionally rather than gating it like the
       # continue-on-error steps elsewhere in this repo.
-      - name: Generate Diamond Report Headlines (recap, trends, notable performances, weather, injuries, model movement, leaderboard, trending players)
+      - name: Generate Diamond Report Headlines (recap, trends, notable performances, weather, injuries, model movement, leaderboard, trending players, featured player)
         run: node scripts/generate-headlines.mjs
+
+      # Depends on data/tracker.json's just-graded results (including the nearMiss
+      # field the two grading steps above now stamp onto each row) -- pure
+      # aggregation, no network calls, so it's cheap to run every pass regardless
+      # of whether today's slate has started yet.
+      - name: Generate Performance Report (roadmap 2.5 daily/weekly/monthly/season views + leaderboard)
+        run: node scripts/generate-performance-report.mjs
 
       - name: Commit and push if changed
         run: |
@@ -80,6 +87,12 @@ jobs:
           [ -f data/drp-sim-comparison.json ] && git add data/drp-sim-comparison.json
           [ -f data/daily-headlines.json ] && git add data/daily-headlines.json
           [ -f data/trending-players.json ] && git add data/trending-players.json
+          # generate-headlines.mjs has written data/featured-player.json since the
+          # Featured Player feature was added, but this step never staged it -- same
+          # "written to the runner's local copy and silently discarded" gap the
+          # data/prop-market-odds.json fix below already describes.
+          [ -f data/featured-player.json ] && git add data/featured-player.json
+          [ -f data/performance-report.json ] && git add data/performance-report.json
           # update-tracker.mjs has written data/prop-market-odds.json since the
           # situational-true-probability edge feature was added, but this step never
           # staged it — every run silently wrote the file to the runner's local working
@@ -87,7 +100,7 @@ jobs:
           # job logs: the file has never existed on main despite the script succeeding.
           [ -f data/prop-market-odds.json ] && git add data/prop-market-odds.json
           if git diff --cached --quiet; then
-            echo "No changes to data/tracker.json, data/k-props.json, data/ballparkpal-comparison.json, data/drp-sim-comparison.json, data/prop-market-odds.json, data/daily-headlines.json, or data/trending-players.json — nothing to commit."
+            echo "No changes to data/tracker.json, data/k-props.json, data/ballparkpal-comparison.json, data/drp-sim-comparison.json, data/prop-market-odds.json, data/daily-headlines.json, data/trending-players.json, data/featured-player.json, or data/performance-report.json — nothing to commit."
             exit 0
           fi
           git config user.name "diamond-report-bot"

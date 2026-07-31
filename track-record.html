@@ -128,6 +128,104 @@
   .tr-table th { color: var(--muted); font-weight: 700; }
   .tr-table td { color: var(--text); }
   .tr-empty { color: var(--muted); font-size: 13px; padding: 24px 0; }
+
+  /* Performance Breakdown section (roadmap 2.5) -- period tabs + per-period
+     hit/near-miss/miss cards, confidence/team breakdowns, leaderboard, and
+     Near HR outcomes, all fed by data/performance-report.json rather than
+     recomputed client-side (single source of truth with the report itself). */
+  .tr-period-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .tr-period-tab {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 6px 16px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .tr-period-tab.active {
+    border-color: var(--accent);
+    color: #fff;
+    background: rgba(47,107,255,.16);
+  }
+  .tr-period-select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12.5px;
+    font-weight: 700;
+    margin-bottom: 18px;
+  }
+  .tr-breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .tr-breakdown-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .tr-breakdown-card h3 {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    margin: 0 0 10px;
+  }
+  .tr-breakdown-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: 12.5px;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+  }
+  .tr-breakdown-row:last-child { border-bottom: none; }
+  .tr-breakdown-row .label { color: var(--muted); }
+  .tr-breakdown-row .val { color: #fff; font-weight: 800; }
+  .tr-breakdown-row .val.low-sample { color: var(--muted); font-weight: 600; }
+  .tr-near-hr-card {
+    background: linear-gradient(145deg, rgba(25,158,112,.14), rgba(13,13,30,.6));
+    border: 1px solid rgba(25,158,112,.4);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+  }
+  .tr-near-hr-card h3 {
+    font-size: 13px;
+    font-weight: 900;
+    color: #fff;
+    margin: 0 0 8px;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+  }
+  .tr-near-hr-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .tr-near-hr-stat .num { font-size: 20px; font-weight: 900; color: #34d399; display: block; }
+  .tr-near-hr-stat .lbl { font-size: 11px; color: var(--muted); }
+  .tr-leaderboard { margin-bottom: 20px; }
+  .tr-lb-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .tr-lb-table th, .tr-lb-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); }
+  .tr-lb-table th { color: var(--muted); font-weight: 700; white-space: nowrap; }
+  .tr-lb-table td { color: var(--text); }
+  .tr-lb-rank { color: var(--muted); font-weight: 700; width: 24px; }
+  .tr-lb-hitrate { font-weight: 900; }
+  .tr-def-note { font-size: 11.5px; color: var(--muted); margin: 10px 0 0; }
 </style>
 </head>
 <body>
@@ -162,6 +260,18 @@
   <h2>Why week by week</h2>
   <p>A single day's record is mostly noise — a handful of picks either hit or they don't, and that says more about that day's games than about the model. Weekly buckets are large enough to smooth that out while still showing a real trend, not a season-to-date average that takes months to move. Weeks with no graded picks in a market show as a gap in that line rather than a false 0%.</p>
 
+  <div class="dr-hub-section-head" style="margin:36px 0 4px"><h2 style="font-size:15px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:#fff;margin:0">Performance Breakdown</h2></div>
+  <p>Every loss isn't graded the same way here — a game decided by one run, a strikeout total that landed within one K of the line, or a real warning-track fly out that stayed in the park all get separated from the rest as a <strong>near miss</strong>, not lumped in with an outright miss. Pick a window below to see hits/near-misses/misses by market, by confidence level, by team, and which players had the highest real hit rate.</p>
+
+  <div class="tr-period-tabs" id="tr-period-tabs"></div>
+  <select class="tr-period-select" id="tr-period-select" style="display:none"></select>
+
+  <div id="tr-breakdown-root">
+    <div class="tr-empty">Loading performance report…</div>
+  </div>
+
+  <p class="tr-def-note">"Near miss" definitions — <strong>Game Picks:</strong> lost a one-run game. <strong>Strikeout Props:</strong> final K total within 1 strikeout of the line. <strong>HR Threats:</strong> no home run, but a real warning-track fly out (≥375ft — the same distance the "🚀 NEAR HR" chip uses) that same game. Confidence/team/leaderboard splits only show a real percentage once a market has at least 20 graded picks in that split (8 for an individual player on the leaderboard) — smaller samples are shown but marked as low-sample rather than hidden, since a single-digit sample can swing wildly and isn't a reliable signal either way.</p>
+
   <h2>Learn more</h2>
   <p>Read how these projections are actually built on the <a href="/methodology.html">Methodology page</a>, or head back to <a href="/">Diamond Report</a> for today's picks.</p>
 </div>
@@ -181,9 +291,15 @@
 
 <script>
 (function () {
+  // Third categorical color (#199e70) comes from the SAME already-validated
+  // 4-hue palette named in this file's <style> header comment
+  // ("#3987e5,#d95926,#199e70,#c98500", checked against this page's dark
+  // surface) -- adding HR Threats as a series here needed no new validator
+  // run, the color was already proven safe alongside the other two.
   var MARKETS = [
     { key: 'drp', label: 'Game Picks', color: '#3987e5' },
     { key: 'kprop', label: 'Strikeout Props', color: '#d95926' },
+    { key: 'hrThreat', label: 'HR Threats', color: '#199e70' },
   ];
 
   function pctColor(pct) {
@@ -191,54 +307,51 @@
     return pct >= 55 ? '#2ecc71' : pct < 45 ? '#dc2626' : 'var(--accent)';
   }
 
-  // ISO week key (Monday-start), e.g. "2026-W29" -- a stable, sortable bucket
-  // that doesn't depend on the current date, so re-running this later on more
-  // history always buckets the same historical row the same way.
-  function isoWeekKey(dateStr) {
-    var d = new Date(dateStr + 'T12:00:00Z');
-    var day = (d.getUTCDay() + 6) % 7; // Mon=0..Sun=6
-    d.setUTCDate(d.getUTCDate() - day + 3); // nearest Thursday
-    var firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
-    var firstDay = (firstThursday.getUTCDay() + 6) % 7;
-    firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDay + 3);
-    var week = 1 + Math.round((d - firstThursday) / (7 * 86400000));
-    return d.getUTCFullYear() + '-W' + String(week).padStart(2, '0');
-  }
-
-  // Monday date (for a readable x-axis label) of the ISO week a given date falls in.
-  function weekStartLabel(dateStr) {
-    var d = new Date(dateStr + 'T12:00:00Z');
-    var day = (d.getUTCDay() + 6) % 7;
-    d.setUTCDate(d.getUTCDate() - day);
+  // Monday date (for a readable x-axis/select label) of a given ISO week key
+  // ("2026-W29" -> "7/14") -- computed purely from the key itself so it's
+  // correct even for a week whose earliest graded pick landed on, say, a
+  // Wednesday (data/performance-report.json's range.start is the first
+  // GRADED row's date, not necessarily that week's actual Monday).
+  function mondayLabelFromWeekKey(wk) {
+    var parts = wk.split('-W');
+    var year = +parts[0], week = +parts[1];
+    var jan4 = new Date(Date.UTC(year, 0, 4));
+    var jan4Day = (jan4.getUTCDay() + 6) % 7;
+    var week1Monday = new Date(jan4.getTime() - jan4Day * 86400000);
+    var d = new Date(week1Monday.getTime() + (week - 1) * 7 * 86400000);
     return (d.getUTCMonth() + 1) + '/' + d.getUTCDate();
   }
 
-  // Builds { weekKeys: [...sorted], byMarket: { key: Map(weekKey -> {wins,losses,pct}) },
-  // allTime: { key: {wins,losses,total,pct} } } from the raw tracker.
-  function buildWeeklyRecord(tracker) {
-    var weekSet = {};
+  // Adapts data/performance-report.json's byWeek map (already-aggregated
+  // server-side, hits/nearMisses/misses/pushes per market) into the same
+  // { weekKeys, weekLabels, byMarket, allTime } shape the chart/table below
+  // already expect -- the trend chart itself only ever plots win rate, so
+  // "wins" here is real report hits and "losses" is nearMisses+misses
+  // combined (both are still a loss for win-rate purposes; the separate
+  // Performance Breakdown section below is where near-miss gets its own
+  // real bucket).
+  function buildWeeklyRecordFromReport(report) {
+    var weekKeys = Object.keys(report.byWeek || {}).sort();
+    var weekLabels = {};
+    weekKeys.forEach(function (wk) { weekLabels[wk] = mondayLabelFromWeekKey(wk); });
     var byMarket = {};
     var allTime = {};
     MARKETS.forEach(function (m) {
       byMarket[m.key] = {};
-      allTime[m.key] = { wins: 0, losses: 0 };
-      var rows = (tracker.market && tracker.market[m.key]) || [];
-      rows.forEach(function (r) {
-        if (r.result !== 'win' && r.result !== 'loss') return;
-        var wk = isoWeekKey(r.date);
-        weekSet[wk] = weekSet[wk] || weekStartLabel(r.date);
-        byMarket[m.key][wk] = byMarket[m.key][wk] || { wins: 0, losses: 0 };
-        byMarket[m.key][wk][r.result === 'win' ? 'wins' : 'losses']++;
-        allTime[m.key][r.result === 'win' ? 'wins' : 'losses']++;
+      weekKeys.forEach(function (wk) {
+        var b = report.byWeek[wk].byMarket[m.key];
+        if (!b || !b.graded) return;
+        byMarket[m.key][wk] = { wins: b.hits, losses: b.nearMisses + b.misses };
       });
+      var season = (report.seasonTotal && report.seasonTotal.byMarket[m.key]) || { hits: 0, nearMisses: 0, misses: 0, graded: 0 };
+      allTime[m.key] = {
+        wins: season.hits,
+        losses: season.nearMisses + season.misses,
+        total: season.graded,
+        pct: season.graded ? Math.round((season.hits / season.graded) * 1000) / 10 : null,
+      };
     });
-    var weekKeys = Object.keys(weekSet).sort();
-    MARKETS.forEach(function (m) {
-      var t = allTime[m.key];
-      t.total = t.wins + t.losses;
-      t.pct = t.total ? Math.round((t.wins / t.total) * 1000) / 10 : null;
-    });
-    return { weekKeys: weekKeys, weekLabels: weekSet, byMarket: byMarket, allTime: allTime };
+    return { weekKeys: weekKeys, weekLabels: weekLabels, byMarket: byMarket, allTime: allTime };
   }
 
   function renderStats(allTime) {
@@ -459,22 +572,168 @@
     });
   }
 
-  fetch('./data/tracker.json', { cache: 'no-store' })
+  // ── Performance Breakdown (roadmap 2.5) ───────────────────────────────
+  // Period tabs (Daily/Weekly/Monthly/Season) + per-period hit/near-miss/
+  // miss cards, confidence/team breakdowns, and the cross-market leaderboard
+  // -- all read directly from data/performance-report.json's already-
+  // aggregated periods, never recomputed client-side (see that script's own
+  // header comment for why near-miss classification has to live server-side).
+  var PERIOD_TYPES = [
+    { key: 'daily', label: 'Daily', mapKey: 'byDate', formatLabel: formatDateLabel },
+    { key: 'weekly', label: 'Weekly', mapKey: 'byWeek', formatLabel: formatWeekLabel },
+    { key: 'monthly', label: 'Monthly', mapKey: 'byMonth', formatLabel: formatMonthLabel },
+    { key: 'season', label: 'Season', mapKey: null, formatLabel: null },
+  ];
+
+  function formatDateLabel(key) {
+    var d = new Date(key + 'T12:00:00Z');
+    return d.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
+  }
+  function formatWeekLabel(key) { return 'Week of ' + mondayLabelFromWeekKey(key); }
+  function formatMonthLabel(key) {
+    var parts = key.split('-');
+    var d = new Date(Date.UTC(+parts[0], +parts[1] - 1, 1));
+    return d.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', year: 'numeric' });
+  }
+
+  var reportData = null;
+  var activePeriodType = 'weekly';
+
+  function initBreakdown(report) {
+    reportData = report;
+    var tabsEl = document.getElementById('tr-period-tabs');
+    tabsEl.innerHTML = PERIOD_TYPES.map(function (pt) {
+      return '<button type="button" class="tr-period-tab' + (pt.key === activePeriodType ? ' active' : '') + '" data-period="' + pt.key + '">' + pt.label + '</button>';
+    }).join('');
+    Array.prototype.forEach.call(tabsEl.querySelectorAll('.tr-period-tab'), function (btn) {
+      btn.addEventListener('click', function () {
+        activePeriodType = btn.getAttribute('data-period');
+        Array.prototype.forEach.call(tabsEl.querySelectorAll('.tr-period-tab'), function (b) { b.classList.toggle('active', b === btn); });
+        populateSelectAndRender();
+      });
+    });
+    populateSelectAndRender();
+  }
+
+  function populateSelectAndRender() {
+    var pt = PERIOD_TYPES.filter(function (p) { return p.key === activePeriodType; })[0];
+    var selectEl = document.getElementById('tr-period-select');
+    if (pt.key === 'season') {
+      selectEl.style.display = 'none';
+      renderBreakdown(reportData.seasonTotal, reportData.season + ' Season');
+      return;
+    }
+    var map = reportData[pt.mapKey] || {};
+    var keys = Object.keys(map).sort().reverse(); // most recent first
+    if (!keys.length) {
+      selectEl.style.display = 'none';
+      document.getElementById('tr-breakdown-root').innerHTML = '<div class="tr-empty">No graded picks yet for this window.</div>';
+      return;
+    }
+    selectEl.style.display = '';
+    selectEl.innerHTML = keys.map(function (k) { return '<option value="' + k + '">' + pt.formatLabel(k) + '</option>'; }).join('');
+    selectEl.value = keys[0];
+    selectEl.onchange = function () { renderBreakdown(map[selectEl.value], pt.formatLabel(selectEl.value)); };
+    renderBreakdown(map[keys[0]], pt.formatLabel(keys[0]));
+  }
+
+  function bdRow(label, val) {
+    return '<div class="tr-breakdown-row"><span class="label">' + label + '</span><span class="val">' + val + '</span></div>';
+  }
+  function bdStat(num, lbl) {
+    return '<div class="tr-near-hr-stat"><span class="num">' + num + '</span><span class="lbl">' + lbl + '</span></div>';
+  }
+
+  function renderBreakdown(period, label) {
+    var root = document.getElementById('tr-breakdown-root');
+    if (!root) return;
+    if (!period) { root.innerHTML = '<div class="tr-empty">No graded picks for this window.</div>'; return; }
+
+    var marketCards = MARKETS.map(function (m) {
+      var b = period.byMarket[m.key];
+      if (!b || !b.total) return '<div class="tr-breakdown-card"><h3>' + m.label + '</h3><div class="tr-empty" style="padding:4px 0">No graded picks.</div></div>';
+      return '<div class="tr-breakdown-card"><h3>' + m.label + '</h3>' +
+        bdRow('Hits', b.hits) + bdRow('Near Misses', b.nearMisses) + bdRow('Misses', b.misses) +
+        (b.pushes ? bdRow('Pushes', b.pushes) : '') +
+        '<div class="tr-breakdown-row"><span class="label">Hit Rate</span><span class="val" style="color:' + pctColor(b.hitRate) + '">' +
+        (b.hitRate != null ? b.hitRate + '%' : '—') + (b.insufficientSample ? ' <small style="color:var(--muted)">(low sample)</small>' : '') +
+        '</span></div></div>';
+    }).join('');
+
+    var confCards = MARKETS.map(function (m) {
+      var conf = period.byConfidence[m.key];
+      var rows = ['High', 'Medium', 'Low'].map(function (t) {
+        var b = conf[t];
+        var text = b.graded ? b.hitRate + '% (' + b.graded + ')' : '—';
+        return '<div class="tr-breakdown-row"><span class="label">' + t + '</span><span class="val' + (b.insufficientSample ? ' low-sample' : '') + '">' + text + '</span></div>';
+      }).join('');
+      return '<div class="tr-breakdown-card"><h3>' + m.label + ' — By Confidence</h3>' + rows + '</div>';
+    }).join('');
+
+    var teamEntries = Object.keys(period.byTeam || {})
+      .map(function (t) { var e = Object.assign({}, period.byTeam[t]); e.team = t; return e; })
+      .filter(function (t) { return t.graded > 0; })
+      .sort(function (a, b) { return b.hitRate - a.hitRate || b.graded - a.graded; })
+      .slice(0, 10);
+    var teamTable = teamEntries.length
+      ? '<table class="tr-lb-table"><thead><tr><th>Team</th><th>Record</th><th>Hit Rate</th></tr></thead><tbody>' +
+        teamEntries.map(function (t) {
+          return '<tr><td>' + t.team + '</td><td>' + t.hits + '-' + t.nearMisses + '-' + t.misses + '</td><td class="tr-lb-hitrate" style="color:' + pctColor(t.hitRate) + '">' +
+            t.hitRate + '%' + (t.insufficientSample ? ' <small style="color:var(--muted)">(low sample)</small>' : '') + '</td></tr>';
+        }).join('') + '</tbody></table>'
+      : '<div class="tr-empty">No team data for this window.</div>';
+
+    var lbEntries = (period.leaderboard && period.leaderboard.overall) || [];
+    var lbTable = lbEntries.length
+      ? '<table class="tr-lb-table"><thead><tr><th>#</th><th>Player</th><th>Team</th><th>Market</th><th>Record</th><th>Hit Rate</th></tr></thead><tbody>' +
+        lbEntries.slice(0, 15).map(function (e, i) {
+          var marketLabels = e.markets.map(function (mk) {
+            var found = MARKETS.filter(function (m) { return m.key === mk; })[0];
+            return found ? found.label : mk;
+          }).join(', ');
+          return '<tr><td class="tr-lb-rank">' + (i + 1) + '</td><td>' + e.name + '</td><td>' + (e.team || '') + '</td><td>' + marketLabels + '</td><td>' +
+            e.hits + '-' + e.nearMisses + '-' + e.misses + '</td><td class="tr-lb-hitrate" style="color:' + pctColor(e.hitRate) + '">' + e.hitRate + '%</td></tr>';
+        }).join('') + '</tbody></table>'
+      : '<div class="tr-empty">Not enough graded picks yet (min. 8 per player) to populate a leaderboard for this window.</div>';
+
+    var nh = period.nearHR || {};
+    var withSig = nh.signalPerformance && nh.signalPerformance.withSignal;
+    var withoutSig = nh.signalPerformance && nh.signalPerformance.withoutSignal;
+    var nearHRHtml = '<div class="tr-near-hr-card"><h3>🚀 Near HR Outcomes</h3><div class="tr-near-hr-stats">' +
+      bdStat(nh.realEventCount != null ? nh.realEventCount : 0, 'Real warning-track fly-outs (≥375ft) this window, all tracked batters') +
+      bdStat(nh.nearMissCount != null ? nh.nearMissCount : 0, 'HR Threats picks graded as a near miss (no HR, real near-HR fly out that game)') +
+      (withSig && withSig.graded ? bdStat(withSig.hitRate + '%', 'Hit rate when the pre-game 🚀 NEAR HR signal was on (' + withSig.graded + ' picks)') : '') +
+      (withoutSig && withoutSig.graded ? bdStat(withoutSig.hitRate + '%', 'Hit rate without the signal (' + withoutSig.graded + ' picks)') : '') +
+      '</div></div>';
+
+    root.innerHTML =
+      '<div style="font-size:12.5px;color:var(--muted);font-weight:700;margin-bottom:10px">' + label + '</div>' +
+      '<div class="tr-breakdown-grid">' + marketCards + '</div>' +
+      nearHRHtml +
+      '<div class="tr-breakdown-grid">' + confCards + '</div>' +
+      '<div class="tr-breakdown-card" style="margin-bottom:20px"><h3>By Team (Top 10)</h3>' + teamTable + '</div>' +
+      '<div class="tr-leaderboard"><div class="dr-hub-section-head" style="margin-bottom:12px"><h2 style="font-size:14px;font-weight:900;letter-spacing:.4px;text-transform:uppercase;color:#fff;margin:0">🏆 Highest Hit-Rate Players</h2></div>' + lbTable + '</div>';
+  }
+
+  fetch('./data/performance-report.json', { cache: 'no-store' })
     .then(function (res) { return res.ok ? res.json() : null; })
-    .then(function (tracker) {
-      if (!tracker) throw new Error('no tracker data');
-      var data = buildWeeklyRecord(tracker);
+    .then(function (report) {
+      if (!report) throw new Error('no performance report data');
+      var data = buildWeeklyRecordFromReport(report);
       renderStats(data.allTime);
       renderLegend();
       renderChart(data);
       renderTable(data);
       bindTableToggle();
+      initBreakdown(report);
     })
     .catch(function () {
       var stats = document.getElementById('tr-stats');
       var chartEmpty = document.getElementById('tr-chart-empty');
+      var breakdownRoot = document.getElementById('tr-breakdown-root');
       if (stats) stats.innerHTML = '<div class="tr-empty">Record data unavailable right now.</div>';
       if (chartEmpty) chartEmpty.textContent = 'Chart data unavailable right now.';
+      if (breakdownRoot) breakdownRoot.innerHTML = '<div class="tr-empty">Performance report unavailable right now.</div>';
     });
 })();
 </script>

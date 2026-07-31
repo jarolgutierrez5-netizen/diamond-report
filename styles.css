@@ -5734,3 +5734,205 @@ select:focus-visible {
     height: 38px;
   }
 }
+
+/* ===================================================================
+   Featured Player (roadmap 2 "Featured Player") -- one server-picked
+   daily hub focal point. Layout mirrors .dr-hub-headline-card.lead (full-
+   width photo + body); accent gold like .dr1027-featured-pick since it's
+   the same "flagship pick" role, just for the Hub instead of HR Threats.
+   =================================================================== */
+.dr-hub-featured {
+  margin-bottom: 28px;
+}
+.dr-featured-player-card {
+  display: flex;
+  gap: 16px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(245,158,11,.4);
+  border-radius: 16px;
+  box-shadow: inset 3px 0 0 rgba(245,158,11,.85), 0 0 22px rgba(245,158,11,.1);
+  padding: 16px;
+  text-decoration: none;
+  color: inherit;
+}
+.dr-featured-player-card.clickable {
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.dr-featured-player-card.clickable:hover {
+  border-color: rgba(245,158,11,.7);
+  box-shadow: inset 3px 0 0 rgba(245,158,11,.95), 0 0 28px rgba(245,158,11,.18);
+  transform: translateY(-1px);
+}
+.dr-featured-player-photo {
+  width: 96px;
+  height: 96px;
+  border-radius: 14px;
+  object-fit: cover;
+  flex: 0 0 auto;
+  border: 1px solid rgba(245,158,11,.4);
+  background: #0b1424;
+}
+.dr-featured-player-body {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.dr-featured-player-badge {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: .05em;
+  color: #fbbf24;
+  background: rgba(120,53,15,.3);
+  border: 1px solid rgba(245,158,11,.55);
+  border-radius: 999px;
+  padding: 3px 10px;
+  margin-bottom: 8px;
+}
+.dr-featured-player-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.dr-featured-player-meta {
+  font-size: 12px;
+  color: #94a3bd;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+.dr-featured-player-scratched {
+  color: #fca5a5;
+}
+.dr-featured-player-score-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.dr-featured-player-score {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  border: 1px solid rgba(245,158,11,.55);
+  background: rgba(120,53,15,.22);
+  border-radius: 10px;
+  padding: 5px 10px;
+}
+.dr-featured-player-score strong {
+  font-size: 17px;
+  font-weight: 950;
+  color: #fbbf24;
+}
+.dr-featured-player-score span {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: #94a3bd;
+}
+.dr-featured-player-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  border: 1px solid rgba(147,197,253,.4);
+  background: rgba(29,53,94,.42);
+  color: #93c5fd;
+}
+.dr-featured-player-trend-red {
+  border-color: rgba(255,77,109,.7);
+  background: rgba(64,10,26,.28);
+  color: #fca5a5;
+}
+.dr-featured-player-trend-green {
+  border-color: rgba(46,230,166,.7);
+  background: rgba(6,78,59,.42);
+  color: #4ade80;
+}
+.dr-featured-player-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.dr-featured-player-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 52px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  background: rgba(7,15,30,.6);
+  padding: 6px 8px;
+}
+.dr-featured-player-stat b {
+  font-size: 13px;
+  font-weight: 900;
+  color: #f8fafc;
+}
+.dr-featured-player-stat small {
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: #94a3bd;
+  margin-top: 2px;
+}
+.dr-featured-player-reason-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.dr-featured-player-reason-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 10.5px;
+  font-weight: 700;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
+  color: #cbd5e1;
+}
+.dr-featured-player-why {
+  border-top: 1px solid rgba(245,158,11,.25);
+  margin-top: 12px;
+  padding-top: 10px;
+  color: #bec9e3;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.dr-featured-player-why strong {
+  color: #fbbf24;
+}
+.dr-featured-player-cta {
+  color: #fbbf24;
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 10px;
+}
+.dr-featured-player-footer {
+  color: #6b7998;
+  font-size: 10.5px;
+  margin-top: 12px;
+}
+@media (max-width: 640px) {
+  .dr-featured-player-card {
+    flex-direction: column;
+  }
+  .dr-featured-player-photo {
+    width: 100%;
+    height: 160px;
+    border-radius: 12px;
+  }
+}
