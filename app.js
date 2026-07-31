@@ -5257,7 +5257,11 @@ async function loadGameProps() {
 
       const { awayPct, homePct, diff, confidence, confColor, winner, winnerAbbr, winnerPct, loserAbbr, loserPct, factors, projectedTotal, totalEnv, totalEnvColor, hrWeatherBoostPct, parkFactorVal, market, weather, densityMultForDisplay, windMultForDisplay, stadiumName } = model;
 
-      window.drWinProbStore[g.gamePk] = { awayAbbr, homeAbbr, awayPct, homePct, winnerAbbr, winnerPct, confidence };
+      // projectedTotal/totalEnv (see the "Projected Total (DR model)" block above) and
+      // the team names/ids are added here purely so the Command Center homepage's "Best
+      // Game to Target" card (loadTopPicksRow, near the end of this file) can read a
+      // real per-game runs total without recomputing it -- same store, no new model.
+      window.drWinProbStore[g.gamePk] = { awayAbbr, homeAbbr, awayPct, homePct, winnerAbbr, winnerPct, confidence, projectedTotal, totalEnv, totalEnvColor, awayTeamName, homeTeamName, awayTeamId, homeTeamId, timeLabel: timeStr, gameTimestamp: dt.getTime() };
       _favoredCache[g.gamePk] = { abbr: winnerAbbr, pct: winnerPct, source: 'model' };
 
       // Actual result — get live/final scores from linescore
@@ -15054,6 +15058,7 @@ if (document.readyState === 'loading') {
   var smallHeadlineCategories = [];
   var activeSport = 'all';
   var hrLoaded = false;
+  var topPicksLoaded = false;
   var leadersLoaded = false;
   var projectionsLoaded = false;
   var yesterdayScoresLoaded = false;
@@ -15067,6 +15072,7 @@ if (document.readyState === 'loading') {
 
   function showHub(){
     document.body.classList.add('dr-hub-active');
+    loadTopPicksRow();
     loadFeaturedPlayer();
     loadHubHeadlines();
     loadHRCarousel();
@@ -15740,6 +15746,83 @@ if (document.readyState === 'loading') {
         '</div>'+
       '</div>';
     section.style.display = '';
+  }
+
+  // ── Today's Top Picks row (Command Center Phase 2) ─────────────────────
+  // MLB card reuses the exact same data/featured-player.json the full
+  // Featured Player card below reads (see loadFeaturedPlayer above) --
+  // deliberately a second, independent fetch rather than sharing state with
+  // that loader, since drFetchDailyJSON already caches the request and the
+  // two cards render on separate timelines (this one first, compact; the
+  // full one below, detailed). Best Game card reuses the real per-game runs
+  // total loadGameProps (Games Today board) already computes -- see
+  // window.drWinProbStore, extended with projectedTotal/totalEnv there
+  // purely so this card can read it without recomputing anything.
+  function topPickTierLabel(score){
+    var n = parseFloat(score);
+    if (!isFinite(n)) return { label: 'PICK', cls: '' };
+    if (n >= 25) return { label: 'ELITE', cls: 'elite' };
+    if (n >= 20) return { label: 'HIGH CONFIDENCE', cls: 'high' };
+    return { label: 'VALUE', cls: 'value' };
+  }
+  function renderMlbTopPick(data){
+    var el = document.getElementById('dr-toppick-mlb');
+    if (!el) return;
+    var p = data && data.player;
+    if (!p) { el.style.display = 'none'; return; }
+    var tier = topPickTierLabel(p.liveScore);
+    var clickable = p.confirmedToday && p.pitcherId;
+    var bName = String(p.name||'').replace(/'/g,"\\'");
+    var pName = String(p.pitcherName||'').replace(/'/g,"\\'");
+    el.className = 'dr-toppick-card' + (clickable ? ' clickable' : '');
+    if (clickable) { el.setAttribute('role', 'button'); el.onclick = function(){ openMatchup(p.id, bName, p.pitcherId, pName); }; }
+    else { el.removeAttribute('role'); el.onclick = null; }
+    el.innerHTML =
+      '<div class="dr-toppick-sport">⚾ MLB</div>' +
+      '<div class="dr-toppick-label">TOP HR PICK</div>' +
+      '<div class="dr-toppick-name">' + escapeHtml(p.name||'') + '</div>' +
+      '<div class="dr-toppick-meta">' + escapeHtml(p.teamAbbr||'') + (p.oppAbbr ? ' vs ' + escapeHtml(p.oppAbbr) : '') + '</div>' +
+      '<div class="dr-toppick-value">' + (p.liveScore!=null ? p.liveScore.toFixed(1) : '–') + '<small>%</small></div>' +
+      '<div class="dr-toppick-value-label">HR Probability</div>' +
+      '<div class="dr-toppick-badge dr-toppick-badge-' + tier.cls + '">' + tier.label + '</div>';
+    el.style.display = '';
+  }
+  function renderBestGamePick(){
+    var el = document.getElementById('dr-toppick-bestgame');
+    if (!el) return;
+    var store = window.drWinProbStore || {};
+    var games = Object.keys(store).map(function(k){ return store[k]; }).filter(function(g){ return g.projectedTotal != null; });
+    if (!games.length) { el.style.display = 'none'; return; }
+    games.sort(function(a,b){ return b.projectedTotal - a.projectedTotal; });
+    var g = games[0];
+    el.className = 'dr-toppick-card clickable';
+    el.onclick = function(){
+      if (typeof window.DiamondNavigateToPane === 'function') window.DiamondNavigateToPane('game');
+      else window.location.hash = 'gamepick=game';
+    };
+    el.innerHTML =
+      '<div class="dr-toppick-sport">🎯 BEST GAME</div>' +
+      '<div class="dr-toppick-label">TO TARGET</div>' +
+      '<div class="dr-toppick-name">' + escapeHtml(g.awayAbbr||'') + ' vs ' + escapeHtml(g.homeAbbr||'') + '</div>' +
+      '<div class="dr-toppick-meta">' + escapeHtml(g.awayTeamName||'') + ' at ' + escapeHtml(g.homeTeamName||'') + '</div>' +
+      '<div class="dr-toppick-value">' + g.projectedTotal.toFixed(1) + '</div>' +
+      '<div class="dr-toppick-value-label">Projected Total</div>' +
+      '<div class="dr-toppick-badge dr-toppick-badge-' + (g.totalEnv==='HIGH-SCORING'?'elite':g.totalEnv==='LOW-SCORING'?'value':'') + '">' + escapeHtml(g.totalEnv||'') + '</div>';
+    el.style.display = '';
+  }
+  function loadTopPicksRow(){
+    if (topPicksLoaded) return;
+    topPicksLoaded = true;
+    drFetchDailyJSON('data/featured-player.json').then(function(data){ renderMlbTopPick(data); }).catch(function(){});
+    // loadGameProps is normally lazy (only runs once the Games Today pane is
+    // opened -- see its call sites) so the store may still be empty here;
+    // kick it off ourselves (real computation, not a new one -- see its own
+    // header comment) if nothing's in the store yet, same "load once, reuse
+    // everywhere" intent drFetchDailyJSON's own cache already has for the
+    // repo-synced files.
+    var haveGames = window.drWinProbStore && Object.keys(window.drWinProbStore).length > 0;
+    var kick = haveGames ? Promise.resolve() : (typeof window.loadGameProps === 'function' ? window.loadGameProps({ force: false }) : Promise.resolve());
+    Promise.resolve(kick).then(function(){ renderBestGamePick(); }).catch(function(){ renderBestGamePick(); });
   }
 
   var CATEGORY_LABELS = { recap: 'RECAP', trend: 'TREND', streak: 'STREAK', notable: 'NOTABLE PERFORMANCE', weather: 'WEATHER', injury: 'INJURY', model: 'MODEL MOVE', leaderboard: 'LEADERBOARD' };
