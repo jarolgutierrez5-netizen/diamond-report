@@ -3515,13 +3515,18 @@ const PR_SORT_FIELDS = [
 // Heat-map background for a stat cell: green at/below goodBelow, red at/above
 // badAbove, continuously blended in between — reuses the exact same thresholds
 // the old pill() badges used, just expressed as a gradient instead of 3 buckets.
+// Softened extremes (was green=[26,58,42]/red=[58,26,26]) -- 7 of this
+// table's columns are heat-mapped simultaneously, so full-strength color on
+// every one of them read as a heavy wash across the whole row rather than a
+// quick scan. Same neutral midpoint, same real gradient math, just a lower
+// max saturation at both ends.
 function heatBG(val, goodBelow, badAbove) {
   if (val == null) return 'transparent';
   const mid = (goodBelow + badAbove) / 2;
   const half = (badAbove - goodBelow) / 2 || 1;
   let t = 1 + (val - mid) / half; // 0 = green, 1 = neutral, 2 = red
   t = Math.max(0, Math.min(2, t));
-  const green = [26,58,42], neu = [11,20,36], red = [58,26,26];
+  const green = [20,46,36], neu = [11,20,36], red = [46,22,22];
   const [a, b] = t <= 1 ? [green, neu] : [neu, red];
   const localT = t <= 1 ? t : t - 1;
   const rgb = a.map((c, i) => Math.round(c + (b[i] - c) * localT));

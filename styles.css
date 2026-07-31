@@ -1586,6 +1586,19 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
 .pr-starters-table td, .pr-starters-table th {
   white-space: nowrap !important;
 }
+/* Up to 7 columns are heat-mapped (full-cell background) at once here -- with
+   zero gap between rows, adjacent rows' colored cells read as one solid
+   block instead of distinct pitchers. A dark separator (not a bright line --
+   this is a gap, not a rule) between rows plus a touch more vertical padding
+   gives each row visual weight of its own, same "2px surface gap between
+   fills" principle as every other colored grid on this site. */
+.pr-starters-table td {
+  padding: 9px 8px !important;
+  border-bottom: 3px solid rgba(0,0,0,.45) !important;
+}
+.pr-starters-table tr:last-child td {
+  border-bottom: none !important;
+}
 .pr-lineup-batter-cell {
   text-align: left !important;
   display: flex !important;
@@ -5138,16 +5151,23 @@ select:focus-visible {
 
 /* Pitcher Analytics Dashboard (roadmap 7.1) -- five named sections in the
    pitcher pop-out (Arsenal/Performance/Matchup/Environment/Support), plus
-   the Usage/Velocity/Whiff bar charts inside Arsenal. */
+   the Usage/Velocity/Whiff bar charts inside Arsenal.
+   Each section is its own card now (was a flat top-border divider) -- reuses
+   the exact same card recipe (.dr1041-pitch-mix's border/radius/gradient) and
+   kicker-title color (.dr1041-kicker's accent color) already established for
+   the Batter vs Pitcher Matchup modal's Pitch Mix tab, so the two pitcher-
+   facing surfaces read as one consistent visual system instead of one being
+   a polished card grid and the other a plain scrolling list. */
 .dr-pdash-section {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
+  margin-top: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(5,13,25,.98), rgba(4,9,18,.98));
+  padding: 14px 16px;
+  overflow: hidden;
 }
 .dr-pdash-section:first-child {
   margin-top: 0;
-  padding-top: 0;
-  border-top: none;
 }
 .dr-pdash-section-head {
   display: flex;
@@ -5161,13 +5181,14 @@ select:focus-visible {
 }
 .dr-pdash-section-title {
   font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 1.2px;
-  color: var(--text);
+  font-weight: 950;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
 }
 .dr-pdash-section-sub {
   font-size: 11px;
-  color: var(--muted);
+  color: #a9c7ff;
   flex-basis: 100%;
 }
 
