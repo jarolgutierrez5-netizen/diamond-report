@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026073105">
+<link rel="stylesheet" href="styles.min.css?v=2026073108">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -261,6 +261,28 @@
 
     <div class="dr-hub-sport-comingsoon" id="dr-hub-sport-comingsoon" style="display:none">
       <p class="dr-hub-sport-comingsoon-text" id="dr-hub-sport-comingsoon-text"></p>
+    </div>
+
+    <!-- Today's Top Picks (Command Center Phase 2) — a compact strip above the
+         full Featured Player card below. The MLB and Best Game cards are real,
+         filled in by loadTopPicksRow (see the hub IIFE near the end of app.js):
+         MLB reuses the exact same data/featured-player.json the full Featured
+         Player card below reads, and Best Game reuses the real per-game runs
+         total already computed by loadGameProps for the Games Today board (see
+         window.drWinProbStore) -- neither is a new model. NFL/NBA/NHL/Soccer
+         have no real per-pick data behind them yet (this site tracks NHL/Soccer
+         nowhere else at all), so those four are honest static "Coming Soon"
+         tiles rather than fabricated picks. -->
+    <div class="dr-hub-toppicks" id="dr-hub-toppicks">
+      <div class="dr-hub-toppicks-title">TODAY'S TOP PICKS</div>
+      <div class="dr-hub-toppicks-row">
+        <div class="dr-toppick-card dr-toppick-loading" id="dr-toppick-mlb" style="display:none"></div>
+        <div class="dr-toppick-card dr-toppick-soon"><span class="dr-toppick-sport">🏈 NFL</span><span class="dr-toppick-soon-label">Coming Soon</span></div>
+        <div class="dr-toppick-card dr-toppick-soon"><span class="dr-toppick-sport">🏀 NBA</span><span class="dr-toppick-soon-label">Coming Soon</span></div>
+        <div class="dr-toppick-card dr-toppick-soon"><span class="dr-toppick-sport">🏒 NHL</span><span class="dr-toppick-soon-label">Coming Soon</span></div>
+        <div class="dr-toppick-card dr-toppick-soon"><span class="dr-toppick-sport">⚽ Soccer</span><span class="dr-toppick-soon-label">Coming Soon</span></div>
+        <div class="dr-toppick-card dr-toppick-loading" id="dr-toppick-bestgame" style="display:none"></div>
+      </div>
     </div>
 
     <!-- Featured Player (roadmap 2 "Featured Player") — one real daily focal-point
@@ -982,7 +1004,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026073105" defer></script>
+<script src="app.min.js?v=2026073108" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
