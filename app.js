@@ -1782,6 +1782,15 @@ let batterHRSpray = {};
 let batterHRSprayLoaded = false;
 let batterHRSprayPromise = null;
 
+// Real recent-batted-ball log (every ball in play, not just home runs), split by
+// opposing pitcher hand -- written by scripts/sync-batter-zone-hr.mjs off the same
+// per-batter Statcast Search CSV it already fetches. Keyed by batter MLB ID (string),
+// then 'R'/'L'. Each hand entry is { recent:[...], season:{avgEv,barrelPct,n} }.
+// Powers the matchup modal's H2H tab batted-ball log.
+let batterBattedBalls = {};
+let batterBattedBallsLoaded = false;
+let batterBattedBallsPromise = null;
+
 // Rolling pitch metrics (velocity/usage/whiff, last 3 starts vs season) — loaded
 // from data/pitcher-rolling.json, written by scripts/sync-pitcher-rolling.mjs.
 // Keyed by pitcher MLB ID (string). Empty object = file not yet synced or this
@@ -5755,7 +5764,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
       fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}/stats?stats=statSplits&group=pitching&sitCodes=vl,vr&season=2026`).catch(() => null)
     ]);
     const todayCDT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadBatterHRSpray(), loadPitcherRolling(), loadPitcherCountPerf(), loadSituationalProps(), loadPropMarketOdds(todayCDT), loadBullpenFatigue(), loadParkFactors(), getTodaySchedule('team').catch(() => [])]);
+    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadBatterHRSpray(), loadBatterBattedBalls(), loadPitcherRolling(), loadPitcherCountPerf(), loadSituationalProps(), loadPropMarketOdds(todayCDT), loadBullpenFatigue(), loadParkFactors(), getTodaySchedule('team').catch(() => [])]);
     const todayGames = preloadResults[preloadResults.length - 1];
 
     const batterPerson = batterData.people?.[0] || {};
@@ -7216,10 +7225,6 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         </div>
       </div>
       ${xMatchupLine}
-      <div class="dr1041-zone-grid">
-      ${recentContactHTML}
-      ${hrSprayChartHTML}
-      </div>
       ${hasLiveX ? `
         <div style="font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">What his contact says he should be hitting · hover any box for a plain-English explanation</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
@@ -7240,98 +7245,131 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <div style="font-size:11px;color:var(--muted);line-height:1.6">
         <strong style="color:var(--text)">How to read this:</strong> batting average can lie — a hitter can smash the ball all week straight into gloves, or bloop his way to a lucky hot streak. These numbers look at the swings themselves: how hard he's hitting the ball and where it's going. A green <strong style="color:var(--green)">▲ due</strong> tag means his swings have been better than his results — good things may be coming. An orange <strong style="color:var(--accent2)">▼ running hot</strong> tag means the opposite: the results have been better than the swings, and he may cool off.
       </div>
-      ${edgeHTML}
     </div>`;
 
-  body.innerHTML = `
-    ${hh.rosterStatus ? `
-    <div class="vuln-box" style="border-color:rgba(239,68,68,.55);background:rgba(127,29,29,.22);margin-bottom:12px">
-      <div class="vuln-title" style="color:#fca5a5">⚠️ ROSTER STATUS</div>
-      <div class="vuln-item"><span class="vuln-icon">🏥</span><span style="color:var(--text)">${batterName} is currently <strong>${hh.rosterStatus}</strong> — stats and projections below still reflect his full season, not just healthy games.</span></div>
-    </div>` : ''}
-    <!-- Scouting Report -->
-    <div class="vuln-box">
-      <div class="vuln-title">⚡ SCOUTING REPORT — HOW TO HIT A HOME RUN</div>
-      ${vulnHTML}
-    </div>
+  // ── Zone Fit (roadmap: additional data) -- was computed but never rendered
+  // anywhere in this modal; a small real score/read card for the Matchup Edges
+  // tab, same tone-driven colors as every other score card here.
+  const zoneFitHTML = zoneFit ? `<div class="dr1043-panel" style="text-align:center">
+    <div class="dr1043-panel-title">Zone Fit</div>
+    <div class="dr1043-edge-card" style="margin:8px auto 0;border-color:${zoneFit.tone}"><strong style="color:${zoneFit.tone}">${zoneFit.score}</strong><span>${zoneFit.label}</span></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px">${zoneFit.read}</div>
+  </div>` : '';
 
-    <!-- H2H Career Stats -->
-    <div style="margin-bottom:16px">
-      <div class="zone-title" style="margin-bottom:8px">HEAD-TO-HEAD · 2026 SEASON</div>
-      ${hasH2H ? `
-      <div class="h2h-grid">
-        <div class="h2h-stat"><div class="h2h-val">${h2hAB}</div><div class="h2h-lbl">At Bats</div></div>
-        <div class="h2h-stat"><div class="h2h-val" style="color:${parseFloat(h2h.avg)>=.300?'var(--green)':'var(--text)'}">${h2hAVG}</div><div class="h2h-lbl">AVG</div></div>
-        <div class="h2h-stat"><div class="h2h-val" style="color:${parseInt(h2h.homeRuns)>0?'var(--accent2)':'var(--text)'}">${h2hHR}</div><div class="h2h-lbl">HR</div></div>
-        <div class="h2h-stat"><div class="h2h-val">${h2hHits}</div><div class="h2h-lbl">Hits</div></div>
-        <div class="h2h-stat"><div class="h2h-val">${h2hK}</div><div class="h2h-lbl">K</div></div>
-        <div class="h2h-stat"><div class="h2h-val">${h2hOPS}</div><div class="h2h-lbl">OPS</div></div>
-      </div>` : `<div style="color:var(--muted);font-size:12px;padding:8px 0">No 2026 H2H data yet — using season stats for analysis.</div>`}
-    </div>
+  // ── Trend Indicator badge (roadmap: additional data) -- the same real Hot
+  // Streak/Trending Up/Cooling Off/Cold read already shown on HR Threats cards
+  // and the Featured Player card, absent from this modal entirely until now.
+  // last10HR comes from recentHRList (already fetched, already scoped to the
+  // real last-10-games window) -- no new data source.
+  const batterTrendBadgeHTML = (() => {
+    if (typeof window.computePlayerTrendIndicator !== 'function') return '';
+    const t = window.computePlayerTrendIndicator({ last10HR: recentHRList ? recentHRList.length : null, atBats: bs.atBats, hrSeason: bs.homeRuns });
+    if (!t) return '';
+    const icon = t.label === 'Hot Streak' ? '🔥' : t.label === 'Cold' ? '🧊' : t.label === 'Trending Up' ? '📈' : '📉';
+    return `<span class="dr1027-chip ${t.tone || ''}" style="margin-left:8px">${icon} ${t.label}${t.smallSample ? ' · small sample' : ''}</span>`;
+  })();
 
-    ${countPerfHTML}
+  // ── "Why is this batter cold" diagnosis (roadmap: additional data) -- a real
+  // function already live on Prop Intelligence board cards, never pulled into
+  // this modal. Self-suppressing: only returns real content once there's
+  // actual evidence of a cold stretch (see getColdBatterDiagnosis's own
+  // comment), so this stays silent for a batter who isn't showing one.
+  const whyColdHTML = typeof coldBatterAlertHTML === 'function' ? coldBatterAlertHTML({ id: batterId, name: batterName }) : '';
 
-    <!-- Combined handedness + season matchup -->
-    <div class="dr1043-combined-matchup">
-      <div class="dr1043-combined-head">
-        <div>
-          <div class="dr1043-combined-title">🧭 MATCHUP PROFILE · HANDEDNESS + SEASON FORM</div>
-          <div class="dr1043-combined-sub">Combines the batter split, pitcher split, batter season profile, and pitcher season profile into one cleaner matchup read.</div>
-          <div class="dr1043-split-line">
-            <span class="dr1043-badge blue">${batterName.split(' ').pop()} bats ${handLabel(batterHand,'batter')}</span>
-            <span class="dr1043-badge blue">${pitcherName.split(' ').pop()} throws ${handLabel(pitcherHand,'pitcher')}</span>
-            <span class="dr1043-badge">Today's split: ${handLabel(batterHand,'batter')} vs ${handLabel(pitcherHand,'pitcher')}</span>
-          </div>
-        </div>
-        <div class="dr1043-edge-card">
-          <strong>${pitchMixDashboard.score ?? '–'}</strong>
-          <span>Matchup edge</span>
-        </div>
+  // ── Pitcher's induced Chase%/O-Swing% (roadmap: additional data) -- already
+  // fetched into this exact modal's own rollingProfile param for the Pitcher
+  // Report page, never rendered here. Season vs last-3-starts, same real field
+  // this site already trusts elsewhere -- no new fetch.
+  const pitcherChaseHTML = rollingProfile?.seasonChasePct != null
+    ? `<div class="pr-chase-chip" title="Real swing rate on pitches outside the strike zone (Statcast zone 11-14), season vs last 3 starts">Chase% Induced (O-Swing): <strong>${rollingProfile.seasonChasePct.toFixed(1)}%</strong>${rollingProfile.rollingChasePct != null ? ` → <strong>${rollingProfile.rollingChasePct.toFixed(1)}%</strong> (L3)` : ''}</div>${typeof pitcherTrendIndicatorChipHTML === 'function' ? pitcherTrendIndicatorChipHTML(rollingProfile) : ''}`
+    : '';
+
+  // ── HR probability multiplier breakdown (roadmap: additional data) -- park
+  // factor, hot-streak, and zone-overlap are each already computed by the real
+  // client-side HR model (loadHRPotential) to build the single HR% number on
+  // HR Threats/Game Projections cards, then discarded as local variables --
+  // never persisted or shown as their own numbers anywhere. Recomputed here
+  // from data already in this modal's own scope (parkHrIndex, onFireScore,
+  // the same batterZoneProfile/pitcherProfile.byZone the Combined Zones grid
+  // already renders) using the exact same real, shared formulas
+  // (zoneMatchupMultiplier/shrinkMult) rather than a second, drifting copy of
+  // the math. Weather isn't available in this modal's scope (no live game
+  // weather fetch happens here), so it's left out rather than faked.
+  const multiplierBreakdownHTML = (() => {
+    const rows = [];
+    if (parkHrIndex != null) {
+      const parkAdj = 1 + ((parkHrIndex - 100) / 100) * 0.5;
+      const pct = Math.round((parkAdj - 1) * 100);
+      rows.push({ icon: '🏟️', label: 'Park Factor', text: `Today's park HR index is ${Math.round(parkHrIndex)} (100 = neutral) — a real ${pct >= 0 ? '+' : ''}${pct}% adjustment to HR likelihood.` });
+    }
+    if (onFireScore) {
+      const hotMult = shrinkMult(1 + (onFireScore / 100) * 0.5);
+      const pct = Math.round((hotMult - 1) * 100);
+      rows.push({ icon: '🔥', label: 'Hot Streak', text: `On-Fire Score of ${onFireScore}/100 applies a real ${pct >= 0 ? '+' : ''}${pct}% adjustment (shrunk toward neutral, same as the live model).` });
+    }
+    if (typeof zoneMatchupMultiplier === 'function' && (batterZoneProfile || pitcherProfile?.byZone)) {
+      const zMult = zoneMatchupMultiplier(batterZoneProfile, pitcherProfile?.byZone);
+      if (zMult !== 1) {
+        const shrunkZ = shrinkMult(zMult);
+        const pct = Math.round((shrunkZ - 1) * 100);
+        rows.push({ icon: '🎯', label: 'Zone Overlap', text: `Real per-zone overlap between ${batterName.split(' ').pop()}'s hot zones and ${pitcherName.split(' ').pop()}'s weak zones applies a real ${pct >= 0 ? '+' : ''}${pct}% adjustment.` });
+      }
+    }
+    if (!rows.length) return '';
+    return `<div class="vuln-box" style="margin-top:10px">
+      <div class="vuln-title">⚙️ WHY THIS NUMBER — REAL MULTIPLIER BREAKDOWN</div>
+      ${rows.map(r => `<div class="vuln-item"><span class="vuln-icon">${r.icon}</span><span style="color:var(--text)"><strong>${r.label}:</strong> ${r.text}</span></div>`).join('')}
+    </div>`;
+  })();
+
+  // ── Recent batted-ball log (roadmap: full tabbed restructure, H2H tab) --
+  // real per-batted-ball Statcast rows (EV/angle/distance/trajectory/result),
+  // synced by scripts/sync-batter-zone-hr.mjs, split by opposing pitcher hand
+  // since a batter-vs-this-one-specific-pitcher sample is almost always too
+  // small to be useful (same "vs RHP/vs LHP" scoping as the zone-by-hand
+  // toggles elsewhere in this modal). No video-link column: unlike hrSprayList/
+  // recentHRList this log has no per-row game_pk/at_bat resolution against
+  // baseballsavant's /gf feed yet, so a Video column would either be blank for
+  // almost every row or require a fetch this modal doesn't make -- left out
+  // rather than faked, same reasoning as the multiplier breakdown skipping
+  // weather.
+  const battedBallLogHTML = (() => {
+    const log = batterBattedBalls[String(batterId)]?.[pitcherHand];
+    if (!log || !log.recent?.length) return '';
+    const trajLabel = { ground_ball: 'Ground Ball', line_drive: 'Line Drive', fly_ball: 'Fly Ball', popup: 'Popup' };
+    const prettyResult = s => String(s || '').split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+    const rows = log.recent.map(b => {
+      const d = b.date ? new Date(b.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
+      return `<tr>
+        <td>${d}</td>
+        <td>${drEscAttr(b.pitchName || '—')}</td>
+        <td>${b.exitVelo != null ? b.exitVelo.toFixed(1) + ' mph' : '—'}</td>
+        <td>${b.launchAngle != null ? b.launchAngle + '°' : '—'}</td>
+        <td>${b.distance != null ? b.distance + ' ft' : '—'}</td>
+        <td>${trajLabel[b.trajectory] || drEscAttr(b.trajectory || '—')}</td>
+        <td style="color:${b.result === 'home_run' ? 'var(--accent2)' : b.result && !['field_out','force_out','grounded_into_double_play','double_play','strikeout'].includes(b.result) ? 'var(--green)' : 'var(--text)'}">${prettyResult(b.result)}${b.barrel ? ' <span title="Statcast Barrel: EV ≥ 98 mph with a launch angle in the qualifying window" style="color:var(--accent2)">🔴 Barrel</span>' : ''}</td>
+      </tr>`;
+    }).join('');
+    return `<div style="margin-top:16px">
+      <div class="zone-title" style="margin-bottom:8px">RECENT BATTED BALLS · VS ${handLabel(pitcherHand, 'pitcher').toUpperCase()}</div>
+      <div class="dr1027-chip-row" style="margin-bottom:10px">
+        <span class="dr1027-chip">Season Avg EV: <strong>${log.season.avgEv != null ? log.season.avgEv.toFixed(1) + ' mph' : '—'}</strong></span>
+        <span class="dr1027-chip">Season Barrel%: <strong>${log.season.barrelPct}%</strong></span>
+        <span class="dr1027-chip">${log.season.n} batted ball${log.season.n === 1 ? '' : 's'} this season</span>
       </div>
-
-      <div class="dr1043-grid">
-        <div class="dr1043-panel">
-          <div class="dr1043-panel-title">Handedness edge <span class="dr1043-badge">Split view</span></div>
-          ${[[`${batterName.split(' ').pop()} Bats`,handLabel(batterHand,'batter')],[`${pitcherName.split(' ').pop()} Throws`,handLabel(pitcherHand,'pitcher')],['Batter HR vs Pitcher Hand',fi(batterSplitHR)],['Pitcher HR Allowed vs Batter Hand',fi(pitcherSplitHRAllowed)],['Batter OPS vs Hand',fv(batterSplitOPS)],['Pitcher AVG Allowed vs Hand',fv(pitcherSplitAvgAllowed)]].map(([l,v])=>`
-          <div class="dr1043-row"><span>${l}</span><strong>${v}</strong></div>`).join('')}
-        </div>
-
-        <div class="dr1043-panel">
-          <div class="dr1043-panel-title">Batter season <span class="dr1043-badge blue">${batterName.split(' ').pop()}</span></div>
-          ${[['AVG',bAVG],['HR',bHR],['RBI',bRBI],['SB',bSB],['SB%',bSbPct],['OPS',bOPS],['ISO',bISO],['K%',bKpct],['BB%',bBBpct]].map(([l,v])=>`
-          <div class="dr1043-row"><span>${l}</span><strong>${v}</strong></div>`).join('')}
-        </div>
-
-        <div class="dr1043-panel">
-          <div class="dr1043-panel-title">Pitcher season <span class="dr1043-badge blue">${pitcherName.split(' ').pop()}</span></div>
-          ${[['ERA',pERA],['FIP',pFIP],['WHIP',pWHIP],['AVG Allowed',pAVG],['HR/9',pHR9],['K/9',pKper9]].map(([l,v])=>`
-          <div class="dr1043-row"><span>${l}</span><strong>${v}</strong></div>`).join('')}
-        </div>
-
-        ${(hh.homeAvg != null || hh.awayAvg != null || hh.rispAvg != null) ? `
-        <div class="dr1043-panel" style="grid-column:1/-1">
-          <div class="dr1043-panel-title">Situational splits <span class="dr1043-badge blue">${batterName.split(' ').pop()}</span></div>
-          <div class="dr1043-split-line">
-            ${hh.homeAvg != null ? `<span class="dr1043-badge">Home: ${fv(hh.homeAvg,3)} AVG${hh.homeOps!=null?` / ${fv(hh.homeOps,3)} OPS`:''}</span>` : ''}
-            ${hh.awayAvg != null ? `<span class="dr1043-badge">Away: ${fv(hh.awayAvg,3)} AVG${hh.awayOps!=null?` / ${fv(hh.awayOps,3)} OPS`:''}</span>` : ''}
-            ${hh.rispAvg != null ? `<span class="dr1043-badge">RISP: ${fv(hh.rispAvg,3)} AVG${hh.rispOps!=null?` / ${fv(hh.rispOps,3)} OPS`:''}</span>` : ''}
-          </div>
-        </div>` : ''}
+      <div style="overflow-x:auto">
+        <table class="bb-log-table">
+          <thead><tr><th>Date</th><th>Pitch</th><th>EV</th><th>Angle</th><th>Dist</th><th>Trajectory</th><th>Result</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
       </div>
+    </div>`;
+  })();
 
-      <div class="dr1043-callout">
-        <strong style="color:#fff">Diamond Read:</strong>
-        ${batterName.split(' ').pop()} brings ${fi(batterSplitHR)} HR vs this pitcher hand with a ${fv(batterSplitOPS)} OPS split. ${pitcherName.split(' ').pop()} has allowed ${fi(pitcherSplitHRAllowed)} HR vs this batter hand with a ${fv(pitcherSplitAvgAllowed)} AVG allowed split. Season context: batter ${bHR} HR / ${bOPS} OPS against pitcher ${pERA} ERA / ${pHR9} HR/9.
-      </div>
-    </div>
-
-    ${hotStreakHTML}
-
-    <div class="dr1041-matchup-dashboard">
-      ${pitchEffectivenessTableHTML}
-
-      <!-- Strike Zone + Attack Zone by Pitch, side by side -->
-      <div class="dr1041-zone-grid">
+  // Combined Zones grid markup -- unchanged from the single-scroll version,
+  // just relocated (as one block) into the Matchup Edges tab below instead of
+  // being built inline a second time.
+  const combinedZonesGridHTML = `
       <div class="zone-section">
         <div class="zone-title" style="cursor:pointer;user-select:none" onclick="toggleZoneSection(this,'sz-matchup-body')"><span class="zone-toggle-arrow">▾</span> ${hasRealZones ? 'STRIKE ZONE MATCHUP · REAL wOBA BY LOCATION' : 'STRIKE ZONE · NO REAL DATA YET'}</div>
         <div id="sz-matchup-body">
@@ -7366,22 +7404,150 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       </div>` : `
       <div class="zone-note" style="padding:10px 0;color:var(--muted);font-size:12px">No real per-location Statcast data available for ${pitcherName} yet — this requires a separate pitch-location sync that hasn't been built.</div>`}
         </div>
-      </div>
-      ${attackZoneHTML}
-      </div>
-      ${hrZoneGridHTML}
-      ${pitchMixDashboard.html}
+      </div>`;
 
-      ${gameContextHTML}
-      <div class="dr1041-bottom-strip">
-        <span class="dr1041-bottom-item">Pitcher Throws: <strong>${handLabel(pitcherHand,'pitcher')}</strong></span>
-        <span class="dr1041-bottom-item">Batter Stance: <strong>${handLabel(batterHand,'batter')}</strong></span>
-        <span class="dr1041-bottom-split"></span>
-        <span class="dr1041-bottom-item">Today's Matchup: <strong style="color:#22c55e">vs ${handLabel(batterHand,'batter')}</strong></span>
-        <span class="dr1041-bottom-split"></span>
-        <span class="dr1041-bottom-item">Pitch Mix Usage:</span>
-        <span class="dr1041-usage-chips">${bottomUsageChips}</span>
+  body.innerHTML = `
+    ${hh.rosterStatus ? `
+    <div class="vuln-box" style="border-color:rgba(239,68,68,.55);background:rgba(127,29,29,.22);margin-bottom:12px">
+      <div class="vuln-title" style="color:#fca5a5">⚠️ ROSTER STATUS</div>
+      <div class="vuln-item"><span class="vuln-icon">🏥</span><span style="color:var(--text)">${batterName} is currently <strong>${hh.rosterStatus}</strong> — stats and projections below still reflect his full season, not just healthy games.</span></div>
+    </div>` : ''}
+
+    <div data-matchup-tabs>
+      <div class="mu-tabs" role="tablist" aria-label="Matchup analysis sections">
+        <button type="button" class="mu-tab-btn active" data-tab="stats" role="tab" aria-selected="true">📊 Stats</button>
+        <button type="button" class="mu-tab-btn" data-tab="pitchmix" role="tab" aria-selected="false">⚙️ Pitch Mix</button>
+        <button type="button" class="mu-tab-btn" data-tab="h2h" role="tab" aria-selected="false">🆚 H2H</button>
+        <button type="button" class="mu-tab-btn" data-tab="edges" role="tab" aria-selected="false">🎯 Matchup Edges</button>
+        <button type="button" class="mu-tab-btn" data-tab="splits" role="tab" aria-selected="false">🔀 Splits</button>
+        <button type="button" class="mu-tab-btn" data-tab="spray" role="tab" aria-selected="false">📍 Spray Chart</button>
+        <button type="button" class="mu-tab-btn" data-tab="simulator" role="tab" aria-selected="false">🎲 Home Run Simulator</button>
       </div>
+
+      <!-- Stats -->
+      <div class="mu-tab-pane active" data-tab="stats">
+        <div class="dr1043-grid" style="margin-bottom:16px">
+          <div class="dr1043-panel">
+            <div class="dr1043-panel-title">Batter season <span class="dr1043-badge blue">${batterName.split(' ').pop()}</span>${batterTrendBadgeHTML}</div>
+            ${[['AVG',bAVG],['HR',bHR],['RBI',bRBI],['SB',bSB],['SB%',bSbPct],['OPS',bOPS],['ISO',bISO],['K%',bKpct],['BB%',bBBpct]].map(([l,v])=>`
+            <div class="dr1043-row"><span>${l}</span><strong>${v}</strong></div>`).join('')}
+          </div>
+          <div class="dr1043-panel">
+            <div class="dr1043-panel-title">Pitcher season <span class="dr1043-badge blue">${pitcherName.split(' ').pop()}</span></div>
+            ${[['ERA',pERA],['FIP',pFIP],['WHIP',pWHIP],['AVG Allowed',pAVG],['HR/9',pHR9],['K/9',pKper9]].map(([l,v])=>`
+            <div class="dr1043-row"><span>${l}</span><strong>${v}</strong></div>`).join('')}
+          </div>
+        </div>
+        ${whyColdHTML}
+        ${hotStreakHTML}
+      </div>
+
+      <!-- Pitch Mix -->
+      <div class="mu-tab-pane" data-tab="pitchmix">
+        ${pitcherChaseHTML}
+        ${pitchEffectivenessTableHTML}
+        ${countPerfHTML}
+        <div class="dr1041-zone-grid">
+        ${attackZoneHTML}
+        </div>
+        ${pitchMixDashboard.html}
+      </div>
+
+      <!-- H2H -->
+      <div class="mu-tab-pane" data-tab="h2h">
+        <div style="margin-bottom:16px">
+          <div class="zone-title" style="margin-bottom:8px">HEAD-TO-HEAD · 2026 SEASON</div>
+          ${hasH2H ? `
+          <div class="h2h-grid">
+            <div class="h2h-stat"><div class="h2h-val">${h2hAB}</div><div class="h2h-lbl">At Bats</div></div>
+            <div class="h2h-stat"><div class="h2h-val" style="color:${parseFloat(h2h.avg)>=.300?'var(--green)':'var(--text)'}">${h2hAVG}</div><div class="h2h-lbl">AVG</div></div>
+            <div class="h2h-stat"><div class="h2h-val" style="color:${parseInt(h2h.homeRuns)>0?'var(--accent2)':'var(--text)'}">${h2hHR}</div><div class="h2h-lbl">HR</div></div>
+            <div class="h2h-stat"><div class="h2h-val">${h2hHits}</div><div class="h2h-lbl">Hits</div></div>
+            <div class="h2h-stat"><div class="h2h-val">${h2hK}</div><div class="h2h-lbl">K</div></div>
+            <div class="h2h-stat"><div class="h2h-val">${h2hOPS}</div><div class="h2h-lbl">OPS</div></div>
+          </div>` : `<div style="color:var(--muted);font-size:12px;padding:8px 0">No career H2H history found for ${batterName} vs ${pitcherName}.</div>`}
+        </div>
+        ${battedBallLogHTML}
+      </div>
+
+      <!-- Matchup Edges -->
+      <div class="mu-tab-pane" data-tab="edges">
+        <div class="vuln-box">
+          <div class="vuln-title">⚡ SCOUTING REPORT — HOW TO HIT A HOME RUN</div>
+          ${vulnHTML}
+        </div>
+        <div class="dr1043-combined-matchup" style="margin-top:12px">
+          <div class="dr1043-combined-head">
+            <div>
+              <div class="dr1043-combined-title">🧭 MATCHUP EDGE</div>
+              <div class="dr1043-combined-sub">Combines the batter split, pitcher split, batter season profile, and pitcher season profile into one cleaner matchup read.</div>
+              <div class="dr1043-split-line">
+                <span class="dr1043-badge blue">${batterName.split(' ').pop()} bats ${handLabel(batterHand,'batter')}</span>
+                <span class="dr1043-badge blue">${pitcherName.split(' ').pop()} throws ${handLabel(pitcherHand,'pitcher')}</span>
+                <span class="dr1043-badge">Today's split: ${handLabel(batterHand,'batter')} vs ${handLabel(pitcherHand,'pitcher')}</span>
+              </div>
+            </div>
+            <div class="dr1043-edge-card">
+              <strong>${pitchMixDashboard.score ?? '–'}</strong>
+              <span>Matchup edge</span>
+            </div>
+          </div>
+          <div class="dr1043-callout">
+            <strong style="color:#fff">Diamond Read:</strong>
+            ${batterName.split(' ').pop()} brings ${fi(batterSplitHR)} HR vs this pitcher hand with a ${fv(batterSplitOPS)} OPS split. ${pitcherName.split(' ').pop()} has allowed ${fi(pitcherSplitHRAllowed)} HR vs this batter hand with a ${fv(pitcherSplitAvgAllowed)} AVG allowed split. Season context: batter ${bHR} HR / ${bOPS} OPS against pitcher ${pERA} ERA / ${pHR9} HR/9.
+          </div>
+        </div>
+        ${zoneFitHTML}
+        <div class="dr1041-matchup-dashboard" style="margin-top:12px">
+          <div class="dr1041-zone-grid">
+          ${combinedZonesGridHTML}
+          </div>
+        </div>
+        ${gameContextHTML}
+      </div>
+
+      <!-- Splits -->
+      <div class="mu-tab-pane" data-tab="splits">
+        <div class="dr1043-panel">
+          <div class="dr1043-panel-title">Handedness edge <span class="dr1043-badge">Split view</span></div>
+          ${[[`${batterName.split(' ').pop()} Bats`,handLabel(batterHand,'batter')],[`${pitcherName.split(' ').pop()} Throws`,handLabel(pitcherHand,'pitcher')],['Batter HR vs Pitcher Hand',fi(batterSplitHR)],['Pitcher HR Allowed vs Batter Hand',fi(pitcherSplitHRAllowed)],['Batter OPS vs Hand',fv(batterSplitOPS)],['Pitcher AVG Allowed vs Hand',fv(pitcherSplitAvgAllowed)]].map(([l,v])=>`
+          <div class="dr1043-row"><span>${l}</span><strong>${v}</strong></div>`).join('')}
+        </div>
+        ${(hh.homeAvg != null || hh.awayAvg != null || hh.rispAvg != null) ? `
+        <div class="dr1043-panel" style="margin-top:12px">
+          <div class="dr1043-panel-title">Situational splits <span class="dr1043-badge blue">${batterName.split(' ').pop()}</span></div>
+          <div class="dr1043-split-line">
+            ${hh.homeAvg != null ? `<span class="dr1043-badge">Home: ${fv(hh.homeAvg,3)} AVG${hh.homeOps!=null?` / ${fv(hh.homeOps,3)} OPS`:''}</span>` : ''}
+            ${hh.awayAvg != null ? `<span class="dr1043-badge">Away: ${fv(hh.awayAvg,3)} AVG${hh.awayOps!=null?` / ${fv(hh.awayOps,3)} OPS`:''}</span>` : ''}
+            ${hh.rispAvg != null ? `<span class="dr1043-badge">RISP: ${fv(hh.rispAvg,3)} AVG${hh.rispOps!=null?` / ${fv(hh.rispOps,3)} OPS`:''}</span>` : ''}
+          </div>
+        </div>` : ''}
+      </div>
+
+      <!-- Spray Chart -->
+      <div class="mu-tab-pane" data-tab="spray">
+        <div class="dr1041-zone-grid">
+        ${recentContactHTML}
+        ${hrSprayChartHTML}
+        </div>
+        ${hrZoneGridHTML}
+      </div>
+
+      <!-- Home Run Simulator -->
+      <div class="mu-tab-pane" data-tab="simulator">
+        ${edgeHTML}
+        ${multiplierBreakdownHTML}
+      </div>
+    </div>
+
+    <div class="dr1041-bottom-strip" style="margin-top:14px">
+      <span class="dr1041-bottom-item">Pitcher Throws: <strong>${handLabel(pitcherHand,'pitcher')}</strong></span>
+      <span class="dr1041-bottom-item">Batter Stance: <strong>${handLabel(batterHand,'batter')}</strong></span>
+      <span class="dr1041-bottom-split"></span>
+      <span class="dr1041-bottom-item">Today's Matchup: <strong style="color:#22c55e">vs ${handLabel(batterHand,'batter')}</strong></span>
+      <span class="dr1041-bottom-split"></span>
+      <span class="dr1041-bottom-item">Pitch Mix Usage:</span>
+      <span class="dr1041-usage-chips">${bottomUsageChips}</span>
     </div>`;
 
   const scoreEl = body.querySelector('[data-score]');
@@ -7481,6 +7647,25 @@ document.addEventListener('click', function(e) {
   const mode = btn.dataset.mode;
   box.querySelectorAll(':scope > .dr1041-pitch-head .dr1042-split-btn').forEach(b => b.classList.toggle('active', b === btn));
   box.querySelectorAll('.dr-pstats-mode-body').forEach(tb => tb.classList.toggle('active', tb.dataset.mode === mode));
+});
+
+// ── Matchup modal top-level tabs (Stats/Pitch Mix/H2H/Matchup Edges/
+// Splits/Spray Chart/Home Run Simulator) ────────────────────────────
+// Same delegated-click + pre-render-every-pane pattern as every toggle
+// above, scoped to [data-matchup-tabs] rather than the page-level
+// .gamepick-tab system (that one is coupled to #props/history.pushState/
+// per-pane data loaders that don't apply inside a modal that fully
+// re-renders on every open). No tab state persists across opens -- the
+// modal always starts back on Stats since body.innerHTML is rebuilt
+// from scratch by renderMatchupModal every time.
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest && e.target.closest('.mu-tab-btn');
+  if (!btn) return;
+  const box = btn.closest('[data-matchup-tabs]');
+  if (!box) return;
+  const tab = btn.dataset.tab;
+  box.querySelectorAll(':scope > .mu-tabs .mu-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+  box.querySelectorAll(':scope > .mu-tab-pane').forEach(p => p.classList.toggle('active', p.dataset.tab === tab));
 });
 
 // ── Interactive visualization tap-tooltip (roadmap 5.3) ────────────────
@@ -7619,6 +7804,25 @@ async function loadBatterHRSpray(force=false) {
     return batterHRSpray;
   })();
   return batterHRSprayPromise;
+}
+// Same pattern as loadBatterHRSpray() above — data/batter-batted-balls.json,
+// written by scripts/sync-batter-zone-hr.mjs.
+async function loadBatterBattedBalls(force=false) {
+  if (batterBattedBallsLoaded && !force) return batterBattedBalls;
+  if (batterBattedBallsPromise && !force) return batterBattedBallsPromise;
+  batterBattedBallsPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/batter-batted-balls.json`);
+      const players = data.players || {};
+      batterBattedBalls = {};
+      Object.keys(players).forEach(id => { batterBattedBalls[String(id)] = players[id]; });
+    } catch(e) {
+      batterBattedBalls = {};
+    }
+    batterBattedBallsLoaded = true;
+    return batterBattedBalls;
+  })();
+  return batterBattedBallsPromise;
 }
 
 // "Last, First" (Baseball Savant's format, the only name source available for

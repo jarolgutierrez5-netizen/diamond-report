@@ -5923,3 +5923,88 @@ select:focus-visible {
     border-radius: 12px;
   }
 }
+
+/* ===================================================================
+   Matchup modal tabs -- top-level Stats/Pitch Mix/H2H/Matchup Edges/
+   Splits/Spray Chart/Home Run Simulator navigation for the batter-vs-
+   pitcher modal. Deliberately NOT the .gamepick-tab pattern (that's
+   page-level nav coupled to #props/history.pushState/per-pane data
+   loaders) -- underline-style text tabs, closer in spirit to the
+   .dr1042-split-toggle pill convention already used 6x elsewhere in
+   this same modal, just sized for top-level nav instead of a 3-way
+   inline AUTO/vs-hand switch. Horizontal scroll on narrow screens
+   rather than wrapping, since 7 tabs won't fit most phone widths and a
+   wrapped second row would push the active tab out of a predictable
+   position. */
+.mu-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+  padding-bottom: 1px;
+}
+.mu-tabs::-webkit-scrollbar { display: none; }
+.mu-tab-btn {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  padding: 9px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.mu-tab-btn:hover {
+  color: var(--text);
+}
+.mu-tab-btn.active {
+  color: #fff;
+  border-bottom-color: var(--accent2, #2ee6a6);
+}
+.mu-tab-pane {
+  display: none;
+}
+.mu-tab-pane.active {
+  display: block;
+}
+@media (max-width: 640px) {
+  .mu-tab-btn {
+    font-size: 11px;
+    padding: 8px 9px;
+  }
+}
+
+/* Recent batted-ball log (H2H tab) -- a real per-pitch table, so it borrows the
+   site's existing dark-row/monospace-number table convention rather than
+   inventing a new one. */
+.bb-log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.bb-log-table th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  font-size: 9.5px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.bb-log-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+}
+.bb-log-table tbody tr:hover {
+  background: rgba(255,255,255,.03);
+}

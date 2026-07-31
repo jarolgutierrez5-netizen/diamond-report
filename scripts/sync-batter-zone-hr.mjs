@@ -57,7 +57,31 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const BATTER_STATCAST_PATH = path.join(DATA_DIR, 'batter-pitch-type-season.json');
 const HR_SPRAY_PATH = path.join(DATA_DIR, 'batter-hr-spray.json');
+const BATTED_BALLS_PATH = path.join(DATA_DIR, 'batter-batted-balls.json');
 const SEASON = new Date().getFullYear();
+// Recent-batted-balls log is capped per hand-bucket at this many rows -- plenty for
+// a rolling-L10 calc plus a short "recent activity" table (the UI use case), without
+// letting a full season of contact data (~150+ balls in play per batter) bloat this
+// file across ~300 daily-active batters.
+const BATTED_BALL_LOG_CAP = 15;
+
+// Real MLB Statcast Barrel definition (per Baseball Savant's published glossary):
+// exit velo >= 98 mph, with the qualifying launch-angle window widening linearly
+// from 26-30 degrees at 98 mph out to 8-50 degrees at 116 mph (and flat at that
+// 8-50 window for anything harder than 116). Endpoints match the glossary exactly;
+// mph in between are linearly interpolated, not something this sandbox can verify
+// against a live Statcast Search response.
+function barrelAngleWindow(exitVelo) {
+  const ev = Math.min(Math.max(exitVelo, 98), 116);
+  const min = Math.max(8, Math.round(26 - (ev - 98)));
+  const max = Math.min(50, Math.round(30 + (ev - 98) * (20 / 18)));
+  return { min, max };
+}
+function isBarrel(exitVelo, launchAngle) {
+  if (!Number.isFinite(exitVelo) || !Number.isFinite(launchAngle) || exitVelo < 98) return false;
+  const { min, max } = barrelAngleWindow(exitVelo);
+  return launchAngle >= min && launchAngle <= max;
+}
 const MLB_API = 'https://statsapi.mlb.com/api/v1';
 const SEARCH_BASE = 'https://baseballsavant.mlb.com/statcast_search/csv';
 
@@ -172,9 +196,33 @@ async function buildBatterZoneHR(batterId, name) {
   // never a fabricated split.
   const hasHandSplit = 'p_throws' in sample;
   const zoneAggByHand = { R: {}, L: {} }; // hand -> zone -> { wobaSum, denomSum }
+  // Recent-batted-balls log (every ball in play, not just home runs) -- the raw
+  // material for the H2H tab's "vs RHP/vs LHP" contact-quality table. Split by
+  // opposing pitcher hand at sync time, same convention as byZoneByHand above,
+  // since the modal only ever needs "this batter's balls in play against
+  // same-handed pitchers as today's opponent," not a specific opposing pitcher
+  // (batter-vs-one-exact-pitcher sample sizes are almost always too small to be
+  // useful). hasBattedBallCols guards the same way every other optional column
+  // group in this file does: absent -> skipped entirely, never a fabricated log.
+  const hasBattedBallCols = 'type' in sample && 'bb_type' in sample;
+  const battedBallsByHand = { R: [], L: [] };
   for (const raw of rows) {
     const p = extractPitchRow(raw);
     if (!p) continue;
+    if (hasBattedBallCols && hasHandSplit && raw.type === 'X' && raw.bb_type && (raw.p_throws === 'R' || raw.p_throws === 'L')) {
+      const ev = Number(raw.launch_speed), la = Number(raw.launch_angle);
+      battedBallsByHand[raw.p_throws].push({
+        date: raw.game_date || null,
+        pitchName: p.pitchName,
+        exitVelo: Number.isFinite(ev) ? +ev.toFixed(1) : null,
+        launchAngle: Number.isFinite(la) ? Math.round(la) : null,
+        distance: Number.isFinite(Number(raw.hit_distance_sc)) ? Number(raw.hit_distance_sc) : null,
+        trajectory: raw.bb_type,
+        result: raw.events || null,
+        barrel: isBarrel(ev, la),
+        matchup: [raw.away_team, raw.home_team].filter(Boolean).join(' @ ') || null,
+      });
+    }
     if (!(p.pitchName in hrByPitch)) hrByPitch[p.pitchName] = 0;
     if (p.isHomeRun) hrByPitch[p.pitchName]++;
     if (p.zone && p.wobaValue != null && p.wobaDenom != null) {
@@ -247,12 +295,31 @@ async function buildBatterZoneHR(batterId, name) {
     }
     if (!Object.keys(byZoneByHand.R).length && !Object.keys(byZoneByHand.L).length) byZoneByHand = null;
   }
+  // Season-wide aggregate (avg EV / barrel%) computed over the FULL hand-split list
+  // before it gets capped for storage -- so the stat tile stays accurate even though
+  // the stored "recent" log itself is truncated to the last BATTED_BALL_LOG_CAP.
+  let battedBallLog = null;
+  if (hasBattedBallCols && hasHandSplit) {
+    battedBallLog = {};
+    for (const hand of ['R', 'L']) {
+      const all = battedBallsByHand[hand];
+      if (!all.length) continue;
+      const withEv = all.filter(b => Number.isFinite(b.exitVelo));
+      const seasonAvgEv = withEv.length ? +(withEv.reduce((s, b) => s + b.exitVelo, 0) / withEv.length).toFixed(1) : null;
+      const seasonBarrelPct = +((all.filter(b => b.barrel).length / all.length) * 100).toFixed(1);
+      // Most-recent-first, capped for storage -- see BATTED_BALL_LOG_CAP comment above.
+      const recent = [...all].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, BATTED_BALL_LOG_CAP);
+      battedBallLog[hand] = { recent, season: { avgEv: seasonAvgEv, barrelPct: seasonBarrelPct, n: all.length } };
+    }
+    if (!Object.keys(battedBallLog).length) battedBallLog = null;
+  }
   return {
     hrByPitch,
     byZone: Object.keys(byZone).length ? byZone : null,
     byZoneByHand,
     hrByZone: Object.keys(hrByZone).length ? hrByZone : null,
     hrSpray: hasHitCoords ? hrSpray : null,
+    battedBallLog,
   };
 }
 
@@ -282,10 +349,21 @@ async function main() {
   }
   hrSprayData.players = hrSprayData.players || {};
 
+  // Same read+merge reasoning as hrSprayData above -- only today's active batters get
+  // refreshed each run, but a batter who isn't in today's slate shouldn't lose his
+  // batted-ball log until he's actually re-fetched.
+  let battedBallData;
+  try {
+    battedBallData = JSON.parse(await readFile(BATTED_BALLS_PATH, 'utf8'));
+  } catch (e) {
+    battedBallData = { season: SEASON, players: {} };
+  }
+  battedBallData.players = battedBallData.players || {};
+
   const ids = await todaysActiveBatterIds();
   console.log(`Found ${ids.size} active-roster position player(s) for today's games.`);
 
-  let updated = 0, failed = 0, spraySynced = 0;
+  let updated = 0, failed = 0, spraySynced = 0, battedBallsSynced = 0;
   for (const [id, name] of ids) {
     try {
       const result = await buildBatterZoneHR(id, name);
@@ -326,6 +404,10 @@ async function main() {
         hrSprayData.players[id] = result.hrSpray;
         if (result.hrSpray.length) spraySynced++;
       }
+      if (result.battedBallLog != null) {
+        battedBallData.players[id] = result.battedBallLog;
+        battedBallsSynced++;
+      }
     } catch (e) {
       failed++;
       console.error(`Batter zone/HR sync failed for ${name} (${id}):`, e.message);
@@ -335,7 +417,7 @@ async function main() {
     await new Promise(r => setTimeout(r, 500));
   }
 
-  console.log(`Updated ${updated} batter(s), ${failed} failed, out of ${ids.size} active-roster position players. ${spraySynced} with at least one real home-run spray point today.`);
+  console.log(`Updated ${updated} batter(s), ${failed} failed, out of ${ids.size} active-roster position players. ${spraySynced} with at least one real home-run spray point today. ${battedBallsSynced} with a real batted-ball log.`);
   if (updated > 0) {
     batterStatcast.generatedAt = new Date().toISOString();
     await writeFile(BATTER_STATCAST_PATH, JSON.stringify(batterStatcast, null, 2) + '\n');
@@ -345,6 +427,11 @@ async function main() {
     hrSprayData.season = SEASON;
     await writeFile(HR_SPRAY_PATH, JSON.stringify(hrSprayData, null, 2) + '\n');
   }
+  if (battedBallsSynced > 0 || Object.keys(battedBallData.players).length) {
+    battedBallData.generatedAt = new Date().toISOString();
+    battedBallData.season = SEASON;
+    await writeFile(BATTED_BALLS_PATH, JSON.stringify(battedBallData, null, 2) + '\n');
+  }
   if (failed > 0 && updated === 0) process.exitCode = 1;
 }
 
@@ -353,4 +440,4 @@ if (isMain) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { batterSearchURL, buildBatterZoneHR, todaysActiveBatterIds, main };
+export { batterSearchURL, buildBatterZoneHR, todaysActiveBatterIds, isBarrel, barrelAngleWindow, main };
