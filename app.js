@@ -15710,6 +15710,10 @@ if (document.readyState === 'loading') {
   }
 
   var CATEGORY_LABELS = { recap: 'RECAP', trend: 'TREND', streak: 'STREAK', notable: 'NOTABLE PERFORMANCE', weather: 'WEATHER', injury: 'INJURY', model: 'MODEL MOVE', leaderboard: 'LEADERBOARD' };
+  // Purely decorative -- a quick-scan visual cue per category, same real
+  // categories CATEGORY_LABELS already names. A missing icon just renders no
+  // emoji rather than a placeholder.
+  var CATEGORY_ICONS = { recap: '📋', trend: '📈', streak: '🔥', notable: '💥', weather: '🌤️', injury: '🩹', model: '⚙️', leaderboard: '🏆' };
   var headlinesLoaded = false;
   function loadHubHeadlines(){
     if (headlinesLoaded) return;
@@ -15738,7 +15742,15 @@ if (document.readyState === 'loading') {
   }
 
   function fmtRate3(v){ return v != null && Number.isFinite(v) ? v.toFixed(3).replace(/^0/, '') : '—'; }
-  function statPillHTML(value, label){ return '<span class="dr-featured-player-stat"><b>' + escapeHtml(value) + '</b><small>' + escapeHtml(label) + '</small></span>'; }
+  // countTo (optional): a real integer to count up to on first paint via the
+  // existing animateCountUp helper (already used elsewhere for one-shot-per-open
+  // content like this modal) -- renders "0" first, then the real number gets
+  // wired up to a data attribute the caller animates after inserting into the
+  // DOM. Plain text values (rate stats, "—") skip this and render immediately.
+  function statPillHTML(value, label, countTo){
+    var valueHTML = Number.isFinite(countTo) ? '<b data-count-to="' + countTo + '">0</b>' : '<b>' + escapeHtml(value) + '</b>';
+    return '<span class="dr-featured-player-stat">' + valueHTML + '<small>' + escapeHtml(label) + '</small></span>';
+  }
 
   // Real, honestly-aggregated last-10-real-games rate stats -- sums the counting
   // stats (AB/H/HR/BB/HBP/SF/TB) across the most recent N games from the same
@@ -15785,15 +15797,26 @@ if (document.readyState === 'loading') {
     if (!box) return;
     var s = seasonStats || {};
     var hasSeason = (parseInt(s.atBats) || 0) > 0;
-    var seasonRow = hasSeason ? '<div class="dr-hub-headline-stats-row"><div class="dr-hub-headline-stats-label">2026 SEASON</div><div class="dr-featured-player-stats">'
-      + statPillHTML(fmtRate3(parseFloat(s.avg)), 'AVG') + statPillHTML(fmtRate3(parseFloat(s.obp)), 'OBP') + statPillHTML(fmtRate3(parseFloat(s.slg)), 'SLG') + statPillHTML(fmtRate3(parseFloat(s.ops)), 'OPS') + statPillHTML(s.homeRuns != null ? String(s.homeRuns) : '—', 'HR')
+    var rowDelay = 0;
+    var seasonRow = hasSeason ? '<div class="dr-hub-headline-stats-row" style="animation-delay:' + (rowDelay++ * 70) + 'ms"><div class="dr-hub-headline-stats-label">2026 SEASON</div><div class="dr-featured-player-stats">'
+      + statPillHTML(fmtRate3(parseFloat(s.avg)), 'AVG') + statPillHTML(fmtRate3(parseFloat(s.obp)), 'OBP') + statPillHTML(fmtRate3(parseFloat(s.slg)), 'SLG') + statPillHTML(fmtRate3(parseFloat(s.ops)), 'OPS') + statPillHTML(null, 'HR', s.homeRuns != null ? parseInt(s.homeRuns) : NaN)
       + '</div></div>' : '';
-    var l10Row = l10 && l10.ab > 0 ? '<div class="dr-hub-headline-stats-row"><div class="dr-hub-headline-stats-label">LAST ' + l10.games + ' GAME' + (l10.games === 1 ? '' : 'S') + '</div><div class="dr-featured-player-stats">'
-      + statPillHTML(fmtRate3(l10.avg), 'AVG') + statPillHTML(fmtRate3(l10.ops), 'OPS') + statPillHTML(String(l10.hr), 'HR')
+    var l10Row = l10 && l10.ab > 0 ? '<div class="dr-hub-headline-stats-row" style="animation-delay:' + (rowDelay++ * 70) + 'ms"><div class="dr-hub-headline-stats-label">LAST ' + l10.games + ' GAME' + (l10.games === 1 ? '' : 'S') + '</div><div class="dr-featured-player-stats">'
+      + statPillHTML(fmtRate3(l10.avg), 'AVG') + statPillHTML(fmtRate3(l10.ops), 'OPS') + statPillHTML(null, 'HR', l10.hr)
       + '</div></div>' : '';
     if (!seasonRow && !l10Row) { hideHeadlineStats(); return; }
     box.innerHTML = seasonRow + l10Row;
     box.style.display = '';
+    // Deferred one frame: calling animateCountUp synchronously from here (a
+    // promise callback, not an existing rAF frame) let its first internal
+    // rAF occasionally fire with a timestamp at or before its own `start`
+    // capture, producing a negative eased value and a one-frame "-0" flash.
+    // requestAnimationFrame here first guarantees animateCountUp's own
+    // start/first-frame pair are both inside the rAF timeline.
+    box.querySelectorAll('b[data-count-to]').forEach(function(el){
+      var target = parseInt(el.getAttribute('data-count-to'), 10);
+      requestAnimationFrame(function(){ animateCountUp(el, target, 0, 600); });
+    });
   }
 
   // Clicking a headline opens this popup in place rather than jumping straight
@@ -15825,7 +15848,7 @@ if (document.readyState === 'loading') {
       photo.removeAttribute('src');
       photo.style.display = 'none';
     }
-    document.getElementById('dr-hub-headline-modal-cat').textContent = CATEGORY_LABELS[h.category] || String(h.category || '').toUpperCase();
+    document.getElementById('dr-hub-headline-modal-cat').textContent = (CATEGORY_ICONS[h.category] ? CATEGORY_ICONS[h.category] + ' ' : '') + (CATEGORY_LABELS[h.category] || String(h.category || '').toUpperCase());
     document.getElementById('dr-hub-headline-modal-title').textContent = h.title || '';
     document.getElementById('dr-hub-headline-modal-blurb').textContent = h.blurb || '';
 
@@ -16012,7 +16035,7 @@ if (document.readyState === 'loading') {
 
       var cat = document.createElement('div');
       cat.className = 'dr-hub-headline-cat';
-      cat.textContent = catLabel;
+      cat.textContent = (CATEGORY_ICONS[h.category] ? CATEGORY_ICONS[h.category] + ' ' : '') + catLabel;
       body.appendChild(cat);
 
       var title = document.createElement('div');
