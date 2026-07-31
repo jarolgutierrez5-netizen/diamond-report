@@ -1334,6 +1334,58 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   overflow: visible !important;
 }
 
+/* ── HR pick tier sections (roadmap: codebase audit) -- groups the board's
+   card list under Elite/High Confidence/Value/Longshot headers (see
+   hrTierFor/hrTierSectionsHTML in app.js). Sits above the existing
+   .dr1027-hr-card-list rules below, which still apply unchanged inside each
+   tier's own list -- this only adds the section wrapper/header, it doesn't
+   touch card layout. */
+.dr1027-tier-section {
+  margin-bottom: 22px;
+}
+.dr1027-tier-section:last-child {
+  margin-bottom: 0;
+}
+.dr1027-tier-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.dr1027-tier-icon {
+  font-size: 15px;
+}
+.dr1027-tier-title {
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: #fff;
+}
+.dr1027-tier-count {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  background: rgba(255,255,255,.06);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.dr1027-tier-sub {
+  font-size: 11px;
+  color: var(--muted);
+  flex-basis: 100%;
+}
+.dr1027-tier-section[data-tier="elite"] .dr1027-tier-title { color: #f6c343; }
+.dr1027-tier-section[data-tier="elite"] .dr1027-tier-head { border-bottom-color: rgba(246,195,67,.35); }
+.dr1027-tier-section[data-tier="highConfidence"] .dr1027-tier-title { color: #2ee6a6; }
+.dr1027-tier-section[data-tier="highConfidence"] .dr1027-tier-head { border-bottom-color: rgba(46,230,166,.35); }
+.dr1027-tier-section[data-tier="value"] .dr1027-tier-title { color: #7dc4ff; }
+.dr1027-tier-section[data-tier="value"] .dr1027-tier-head { border-bottom-color: rgba(125,196,255,.35); }
+.dr1027-tier-section[data-tier="longshot"] .dr1027-tier-title { color: var(--muted); }
+
 /* ── HR Threats card restyle to match K Props (.dr109-card) ──────────────────
    The HR Threats board previously packed 3 compact cards per row (hence the
    6-8px chip/text sizes and CSS-grid photo/info/score layout below) — this
