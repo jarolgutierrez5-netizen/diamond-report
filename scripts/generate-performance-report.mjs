@@ -250,6 +250,13 @@ function buildPeriod(rowsWithMarket, nearHRsData, range) {
   };
   const byTeam = {};
   const nearHR = { signalWith: emptyBucket(), signalWithout: emptyBucket(), nearMissCount: 0 };
+  // Expected-vs-actual HR calibration: real predicted probability (row.score,
+  // captured at pick time) summed as an expected-value HR count, vs the real
+  // count of picks that actually hit -- both derived straight from already-
+  // graded hrThreat rows, no new signal invented. Same expected-value
+  // technique analyze-hr-matchups.mjs's avgPredicted column already uses per
+  // bucket, just accumulated per period here instead of per score-bucket.
+  let hrExpectedSum = 0, hrGradedWithScore = 0, hrActualWithScore = 0;
 
   for (const { market, row } of rowsWithMarket) {
     const outcome = classifyOutcome(row);
@@ -268,6 +275,11 @@ function buildPeriod(rowsWithMarket, nearHRsData, range) {
     if (market === 'hrThreat') {
       addOutcome(row.hasNearHR ? nearHR.signalWith : nearHR.signalWithout, outcome);
       if (outcome === 'nearMiss') nearHR.nearMissCount++;
+      if (outcome !== 'push' && Number.isFinite(row.score)) {
+        hrExpectedSum += row.score / 100;
+        hrGradedWithScore++;
+        if (outcome === 'hit') hrActualWithScore++;
+      }
     }
   }
 
@@ -283,6 +295,17 @@ function buildPeriod(rowsWithMarket, nearHRsData, range) {
     ])),
     byTeam: Object.fromEntries(Object.entries(byTeam).map(([t, b]) => [t, finalizeBucket(b)])),
     leaderboard: buildLeaderboard(rowsWithMarket),
+    // "Projected vs Actual Home Runs" -- the same real per-pick predicted
+    // probability the model itself generated, summed into an expected count
+    // and compared against the real number of those picks that actually hit.
+    // n === 0 means no graded hrThreat picks with a real score this period
+    // (either nothing graded, or picks captured before the score field
+    // existed) -- the client renders that as a gap, never a fabricated 0-0 point.
+    hrCalibration: {
+      expectedHRs: hrGradedWithScore ? +hrExpectedSum.toFixed(2) : null,
+      actualHRs: hrGradedWithScore ? hrActualWithScore : null,
+      n: hrGradedWithScore,
+    },
     nearHR: {
       realEventCount: countNearHREvents(nearHRsData, range.start, range.end),
       nearMissCount: nearHR.nearMissCount,
