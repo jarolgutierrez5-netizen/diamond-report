@@ -15067,10 +15067,13 @@ if (document.readyState === 'loading') {
 
   function showHub(){
     document.body.classList.add('dr-hub-active');
+    loadDailyBriefing();
+    renderWatchlistSection();
     loadFeaturedPlayer();
     loadHubHeadlines();
     loadHRCarousel();
     loadTrendingPlayers();
+    loadResultsTeaser();
     loadHubNews();
     loadHubHRs();
     loadHubLeaders();
@@ -15773,6 +15776,221 @@ if (document.readyState === 'loading') {
       }, 60);
     }
   }
+
+  // Daily Briefing -- "understand today in under 60 seconds." Deliberately
+  // makes its own independent fetches of data the hub already loads elsewhere
+  // (featured-player.json, daily-headlines.json, trending-players.json)
+  // instead of reaching into loadFeaturedPlayer/loadHubHeadlines/
+  // loadTrendingPlayers' internal state, so this has no load-order dependency
+  // on those other sections and can't be broken by future changes to them.
+  // Every item here is real synced data -- nothing is fabricated, and an
+  // item is simply omitted (not shown empty/fake) when its data isn't
+  // available today.
+  var briefingLoaded = false;
+  var briefingItems = [];
+  function loadDailyBriefing(){
+    if (briefingLoaded) return;
+    briefingLoaded = true;
+    Promise.all([
+      drFetchDailyJSON('data/featured-player.json').catch(function(){ return null; }),
+      drFetchDailyJSON('data/daily-headlines.json').catch(function(){ return null; }),
+      drFetchDailyJSON('data/trending-players.json').catch(function(){ return null; })
+    ]).then(function(results){
+      renderDailyBriefing(results[0], results[1], results[2]);
+    });
+  }
+
+  function briefingItemHTML(it, i){
+    return '<button type="button" class="dr-hub-briefing-item" onclick="(window.__drBriefingClick||function(){})(' + i + ')">' +
+      '<span class="dr-hub-briefing-item-label">' + escapeHtml(it.icon || '') + ' ' + escapeHtml(it.label || '') + '</span>' +
+      '<span class="dr-hub-briefing-item-title">' + escapeHtml(it.title || '') + '</span>' +
+      (it.sub ? '<span class="dr-hub-briefing-item-sub">' + escapeHtml(it.sub) + '</span>' : '') +
+    '</button>';
+  }
+
+  function renderDailyBriefing(featuredData, headlinesData, trendingData){
+    var section = document.getElementById('dr-hub-briefing');
+    var grid = document.getElementById('dr-hub-briefing-grid');
+    var expandBtn = document.getElementById('dr-hub-briefing-expand');
+    var full = document.getElementById('dr-hub-briefing-full');
+    if (!section || !grid) return;
+
+    var p = featuredData && featuredData.player;
+    var headlines = (headlinesData && Array.isArray(headlinesData.headlines)) ? headlinesData.headlines : [];
+    var trendingList = Array.isArray(trendingData && trendingData.players) ? trendingData.players
+      : (Array.isArray(trendingData) ? trendingData : []);
+
+    var recap = headlines.filter(function(h){ return h.category === 'recap'; })[0];
+    var topStory = headlines.filter(function(h){ return h.category !== 'recap'; })[0];
+    var signal = headlines.filter(function(h){ return h.category === 'injury' || h.category === 'weather' || h.category === 'notable'; })[0];
+    var topTrend = trendingList[0];
+
+    briefingItems = [];
+
+    if (topStory) {
+      briefingItems.push({
+        label: 'Top Story', icon: CATEGORY_ICONS[topStory.category] || '📰',
+        title: topStory.title, sub: topStory.blurb,
+        run: function(){ openHeadlineModal(topStory); }
+      });
+    }
+    if (p) {
+      briefingItems.push({
+        label: 'Best Game to Watch', icon: '⚾',
+        title: (p.teamAbbr || '') + ' vs ' + (p.oppAbbr || ''),
+        sub: (p.name || 'Today’s featured matchup') + (p.pitcherName ? ' vs ' + p.pitcherName : ''),
+        run: function(){ applyHeadlineLink({ hash: '#gamepick=game' }); }
+      });
+      briefingItems.push({
+        label: 'Highest-Confidence Pick', icon: '🎯',
+        title: (p.name || '') + ' — ' + (p.liveScore != null ? p.liveScore.toFixed(1) : '–') + '% HR probability',
+        sub: 'Matchup Edge ' + (p.matchupEdge != null ? p.matchupEdge : '–') + (p.pitcherName ? ' vs ' + p.pitcherName : ''),
+        run: function(){ applyHeadlineLink({ hash: '#gamepick=hr', playerName: p.name }); }
+      });
+    }
+    if (signal) {
+      briefingItems.push({
+        label: CATEGORY_LABELS[signal.category] || 'Signal to Know', icon: CATEGORY_ICONS[signal.category] || '🩹',
+        title: signal.title, sub: signal.blurb,
+        run: function(){ openHeadlineModal(signal); }
+      });
+    }
+    if (topTrend) {
+      briefingItems.push({
+        label: 'Trending Up', icon: '📈',
+        title: (topTrend.name || '') + ' — ' + (topTrend.trendLabel || ''),
+        sub: topTrend.trendMetric || '',
+        run: function(){
+          if (topTrend.type === 'pitcher') { window.location.hash = 'gamepick=k'; return; }
+          window.location.hash = 'gamepick=hr';
+          if (topTrend.playerId) setTimeout(function(){
+            if (typeof window.setPropSearchFilter === 'function') window.setPropSearchFilter('hr', topTrend.name);
+          }, 60);
+        }
+      });
+    }
+    if (recap) {
+      briefingItems.push({
+        label: 'Yesterday’s Model Record', icon: '📋',
+        title: recap.title, sub: recap.blurb,
+        run: function(){ applyHeadlineLink({ hash: '#gamepick=results' }); }
+      });
+    }
+
+    if (!briefingItems.length) { section.style.display = 'none'; return; }
+
+    window.__drBriefingClick = function(i){ var it = briefingItems[i]; if (it && it.run) it.run(); };
+    grid.innerHTML = briefingItems.map(briefingItemHTML).join('');
+
+    // "Give me the full briefing" -- everything above, just with the full
+    // (unclipped) text for each item instead of a scannable summary line.
+    // No new data: same briefingItems, rendered without truncation.
+    if (expandBtn && full) {
+      expandBtn.style.display = '';
+      expandBtn.onclick = function(){
+        var open = full.style.display !== 'none';
+        full.style.display = open ? 'none' : '';
+        expandBtn.setAttribute('aria-expanded', open ? 'false' : 'true');
+        document.getElementById('dr-hub-briefing-expand-label').textContent = open ? 'Give me the full briefing' : 'Show less';
+        expandBtn.querySelector('.dr-hub-briefing-expand-icon').textContent = open ? '▾' : '▴';
+        if (!open) {
+          full.innerHTML = briefingItems.map(function(it){
+            return '<div class="dr-hub-briefing-full-item"><b>' + escapeHtml(it.label) + '</b><p>' + escapeHtml((it.title || '') + (it.sub ? ' — ' + it.sub : '')) + '</p></div>';
+          }).join('');
+        }
+      };
+    }
+
+    section.style.display = '';
+  }
+
+  // Projection Results teaser -- a compact, real "how the model's done"
+  // summary on the hub itself (yesterday's graded record from the same
+  // recap the Daily Briefing uses, plus the real all-time HR Threats record
+  // tracker.json already tracks -- the same market the Results pane this
+  // links to actually shows), so results are visible without opening a
+  // separate tab. Does not attempt to merge with the standalone
+  // track-record.html page -- that's a larger change, deliberately deferred.
+  var resultsTeaserLoaded = false;
+  function loadResultsTeaser(){
+    if (resultsTeaserLoaded) return;
+    resultsTeaserLoaded = true;
+    Promise.all([
+      drFetchDailyJSON('data/daily-headlines.json').catch(function(){ return null; }),
+      drFetchDailyJSON('data/tracker.json').catch(function(){ return null; })
+    ]).then(function(results){
+      renderResultsTeaser(results[0], results[1]);
+    });
+  }
+
+  // Green/red here follow the same rule as everywhere else on the site:
+  // color signals whether the record is actually good, not just "here's a
+  // number" -- a losing record in green would be a real semantic bug, not
+  // a style choice.
+  function resultsValueClass(wins, losses){
+    var total = wins + losses;
+    if (!total) return '';
+    return (wins / total >= 0.5) ? ' is-positive' : ' is-negative';
+  }
+
+  function renderResultsTeaser(headlinesData, trackerData){
+    var section = document.getElementById('dr-hub-results-teaser');
+    var content = document.getElementById('dr-hub-results-teaser-content');
+    if (!section || !content) return;
+
+    var headlines = (headlinesData && Array.isArray(headlinesData.headlines)) ? headlinesData.headlines : [];
+    var recap = headlines.filter(function(h){ return h.category === 'recap'; })[0];
+    var allTimeHR = trackerData && trackerData.allTime && trackerData.allTime.hrThreat;
+
+    if (!recap && !allTimeHR) { section.style.display = 'none'; return; }
+
+    var tiles = '';
+    if (recap) {
+      var m = /(\d+)\s*-\s*(\d+)/.exec(recap.title || '');
+      var recapCls = m ? resultsValueClass(parseInt(m[1], 10), parseInt(m[2], 10)) : '';
+      tiles += '<div class="dr-hub-results-tile"><span class="dr-hub-results-tile-label">Yesterday</span>' +
+        '<span class="dr-hub-results-tile-value' + recapCls + '">' + escapeHtml(recap.title.replace(/^Diamond Report went /, '')) + '</span>' +
+        '<span class="dr-hub-results-tile-sub">' + escapeHtml(recap.blurb || '') + '</span></div>';
+    }
+    if (allTimeHR && allTimeHR.total) {
+      var pct = allTimeHR.total ? (allTimeHR.wins / allTimeHR.total * 100) : 0;
+      tiles += '<div class="dr-hub-results-tile"><span class="dr-hub-results-tile-label">All-Time · HR Threats</span>' +
+        '<span class="dr-hub-results-tile-value' + resultsValueClass(allTimeHR.wins, allTimeHR.losses) + '">' + allTimeHR.wins + '-' + allTimeHR.losses + ' <small>(' + pct.toFixed(1) + '%)</small></span>' +
+        '<span class="dr-hub-results-tile-sub">' + allTimeHR.total + ' picks graded, in the open</span></div>';
+    }
+
+    content.innerHTML = tiles +
+      '<button type="button" class="dr-hub-results-cta" onclick="window.location.hash=\'gamepick=results\'">See full Results ›</button>';
+    section.style.display = '';
+  }
+
+  // Your Watchlist -- reads the same localStorage watchlist every board's
+  // inline star already writes to (drGetWatchlist/drToggleWatchlist, defined
+  // top-level above). Hidden entirely when empty, matching the "hide rather
+  // than show empty" convention Trending Players already uses. Re-renders
+  // live on the existing dr-watchlist-change event so starring/unstarring a
+  // player anywhere on the site updates this section without a reload.
+  function renderWatchlistSection(){
+    var section = document.getElementById('dr-hub-watchlist');
+    var grid = document.getElementById('dr-hub-watchlist-grid');
+    if (!section || !grid || typeof drGetWatchlist !== 'function') return;
+    var wl = drGetWatchlist();
+    var ids = Object.keys(wl);
+    if (!ids.length) { section.style.display = 'none'; return; }
+    ids.sort(function(a, b){ return (wl[b].addedAt || 0) - (wl[a].addedAt || 0); });
+    grid.innerHTML = ids.map(function(id){
+      var entry = wl[id] || {};
+      var name = entry.name || 'Player';
+      var safeName = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      return '<div class="dr-hub-watchlist-card">' +
+        '<img class="dr-hub-watchlist-photo" loading="lazy" decoding="async" src="' + hs(id) + '" onerror="this.style.display=\'none\'" alt="">' +
+        '<button type="button" class="dr-hub-watchlist-name" onclick="window.location.hash=\'gamepick=hr\';setTimeout(function(){if(typeof window.setPropSearchFilter===\'function\')window.setPropSearchFilter(\'hr\',\'' + safeName + '\')},60)">' + escapeHtml(name) + '</button>' +
+        '<button type="button" class="dr-hub-watchlist-remove" onclick="window.drToggleWatchlist(\'' + id + '\',\'' + safeName + '\')" aria-label="Remove from watchlist" title="Remove from watchlist">★</button>' +
+      '</div>';
+    }).join('');
+    section.style.display = '';
+  }
+  document.addEventListener('dr-watchlist-change', renderWatchlistSection);
 
   function fmtRate3(v){ return v != null && Number.isFinite(v) ? v.toFixed(3).replace(/^0/, '') : '—'; }
   // countTo (optional): a real integer to count up to on first paint via the
