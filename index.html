@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026073105">
+<link rel="stylesheet" href="styles.min.css?v=2026073106">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -175,6 +175,34 @@
 </div>
 <div class="dr-account-placeholder" aria-hidden="true"></div>
 </header>
+<!-- Command Center left sidebar (desktop-wide only, >=1180px -- see the
+     matching @media block in styles.css). Below that width the existing
+     top-nav dropdown (in .header above) and mobile drawer (below) are
+     unchanged. Real destinations reuse the exact same
+     window.DiamondNavigateToPane routing the top nav/mobile drawer already
+     use (data-gamepick-pane items); a few items link straight to a real
+     existing page (Model Tracker -> track-record.html); others are honest
+     "not built yet" placeholders (data-sidebar-soon) rather than fake pages
+     or fabricated data -- see the sidebar wiring IIFE near the end of
+     app.js for exactly what's real vs. a placeholder and why. -->
+<aside id="dr-sidebar" class="dr-sidebar" aria-label="Primary navigation">
+  <nav class="dr-sidebar-nav">
+    <button type="button" class="dr-sidebar-tab" data-sidebar-action="home"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5l7-6 7 6"/><path d="M4.5 8.5V17h11V8.5"/></svg><span>Home</span></button>
+    <button type="button" class="dr-sidebar-tab" data-sidebar-action="home"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="3" width="6.5" height="6.5" rx="1.3"/><rect x="11" y="3" width="6.5" height="6.5" rx="1.3"/><rect x="2.5" y="10.5" width="6.5" height="6.5" rx="1.3"/><rect x="11" y="10.5" width="6.5" height="6.5" rx="1.3"/></svg><span>Command Center</span></button>
+    <button type="button" class="dr-sidebar-tab" data-gamepick-pane="game"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="15" height="13" rx="2.5"/><path d="M2.5 8h15"/><path d="M6.5 2.5v3M13.5 2.5v3"/></svg><span>Games Today</span></button>
+    <button type="button" class="dr-sidebar-tab" data-sidebar-action="projections"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.5V11M8 16.5V6M13 16.5v-8M17.5 16.5V3"/></svg><span>Projections</span></button>
+    <button type="button" class="dr-sidebar-tab dr-sidebar-soon" data-sidebar-soon="Players"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="6.5" r="3.5"/><path d="M3.5 17c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg><span>Players</span><em>Soon</em></button>
+    <button type="button" class="dr-sidebar-tab" data-gamepick-pane="pr"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5H5a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8z"/><path d="M11.5 2.5V8H17"/><path d="M7 11h6M7 14h4"/></svg><span>Pitchers</span></button>
+    <button type="button" class="dr-sidebar-tab dr-sidebar-soon" data-sidebar-soon="Weather Center"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 14.5a3 3 0 0 1-.5-6 4.2 4.2 0 0 1 8.1-1.4A3.3 3.3 0 0 1 14.5 13.5" stroke-linejoin="round"/><path d="M6.5 16.5v.01M9.5 16.5v.01M12.5 16.5v.01M6.5 14.5v.01"/></svg><span>Weather Center</span><em>Soon</em></button>
+    <button type="button" class="dr-sidebar-tab dr-sidebar-soon" data-sidebar-soon="Injuries"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.3c2.6-2 6.5.3 6.5 3.9 0 3.7-4.3 6.8-6.5 8.9-2.2-2.1-6.5-5.2-6.5-8.9 0-3.6 3.9-5.9 6.5-3.9z"/><path d="M8 9h1.3l.7-1.6.9 3.2.7-1.6H13" stroke-width="1.2"/></svg><span>Injuries</span><em>Soon</em></button>
+    <button type="button" class="dr-sidebar-tab" data-sidebar-href="track-record.html"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><circle cx="10" cy="10" r="2.4"/></svg><span>Model Tracker</span></button>
+    <button type="button" class="dr-sidebar-tab" data-gamepick-pane="fantasy"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h8v4a4 4 0 0 1-8 0v-4z"/><path d="M6 4.5H3.5v1a3 3 0 0 0 3 3M14 4.5h2.5v1a3 3 0 0 1-3 3"/><path d="M10 11.5v2.5M8 14h4v3H8z"/></svg><span>Performance</span></button>
+    <button type="button" class="dr-sidebar-tab dr-sidebar-soon" data-sidebar-soon="Betting Tools"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="15" height="9" rx="2"/><path d="M2.5 9.5h15" stroke-dasharray="1.6 1.6"/><circle cx="10" cy="12" r="1.6"/></svg><span>Betting Tools</span><em>Soon</em></button>
+    <button type="button" class="dr-sidebar-tab" data-sidebar-action="news"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="12" height="12.5" rx="1.5"/><path d="M17.5 7.5v7a2 2 0 0 1-2 2" stroke-linejoin="round"/><path d="M5.3 7.5h6M5.3 10h6M5.3 12.5h4"/></svg><span>News &amp; Insights</span></button>
+    <button type="button" class="dr-sidebar-tab dr-sidebar-soon" data-sidebar-soon="Watchlist"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3l2.1 4.4 4.9.7-3.5 3.4.8 4.8-4.3-2.3-4.3 2.3.8-4.8-3.5-3.4 4.9-.7z" stroke-linejoin="round"/></svg><span>Watchlist</span><em>Soon</em></button>
+    <button type="button" class="dr-sidebar-tab dr-sidebar-soon" data-sidebar-soon="Alerts"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a4 4 0 0 1 8 0c0 4 1.5 5 1.5 5h-11S6 12 6 8z" stroke-linejoin="round"/><path d="M8.3 15.5a1.9 1.9 0 0 0 3.4 0"/></svg><span>Alerts</span><em>Soon</em></button>
+  </nav>
+</aside>
 <div id="dr-mobile-overlay" class="dr-mobile-overlay"></div>
 <div id="dr-mobile-drawer" class="dr-mobile-drawer" aria-hidden="true">
   <div class="dr-mobile-drawer-inner">
@@ -982,7 +1010,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026073105" defer></script>
+<script src="app.min.js?v=2026073106" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
