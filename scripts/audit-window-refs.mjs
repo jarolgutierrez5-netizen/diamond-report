@@ -51,7 +51,6 @@ const NATIVE_GLOBALS = new Set([
   'setInterval', 'clearInterval', 'requestAnimationFrame', 'cancelAnimationFrame',
   'matchMedia', 'open', 'close', 'scrollTo', 'scrollBy', 'alert', 'confirm', 'prompt',
   'fetch', 'getComputedStyle', 'postMessage', 'requestIdleCallback', 'print',
-  'dispatchEvent',
 ]);
 
 function main() {
