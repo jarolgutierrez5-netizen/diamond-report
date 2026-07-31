@@ -88,4 +88,35 @@ jobs:
           git config user.name "diamond-report-bot"
           git config user.email "actions@users.noreply.github.com"
           git commit -m "Weekly model calibration report + parameter auto-tune check"
-          git push
+
+          # main can move during this run -- confirmed live on 2026-07-28 (run 30301535470):
+          # this workflow's own concurrency group only serializes it against ITSELF, not
+          # against update-tracker.yml (a different group, `update-tracker`), which pushes
+          # to main up to 3x/day. That run's push was flat-out rejected ("fetch first")
+          # with no retry, so the whole week's tuning check + calibration report was
+          # silently discarded -- data/model-tuning-log.json went 5 days without a new
+          # entry even though the underlying auto-tune logic ran fine every time.
+          #
+          # Same retry+rebase loop as sync-statcast.yml's own push step (see its comment
+          # for the full rationale). -X theirs is even safer here than there: the files
+          # this step ever touches (calibration-report.md, model-params.json,
+          # model-tuning-log.json) share no overlap at all with what update-tracker.yml/
+          # other workflows write, so a rebase onto a newer main never actually hits a
+          # real conflict -- it's a no-op fast-forward-style replay in practice, this
+          # flag just guards the (currently unseen) case where the SAME workflow overlaps
+          # itself, exactly like sync-statcast.yml's own precedent.
+          for attempt in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push rejected (attempt $attempt/5) — main moved during this run. Fetching and rebasing..."
+            git fetch origin main
+            if ! git rebase -X theirs origin/main; then
+              echo "::error::Rebase onto origin/main failed even preferring our own side — aborting. This run's data was NOT pushed."
+              git rebase --abort
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "::error::Push still rejected after 5 attempts."
+          exit 1
