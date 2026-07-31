@@ -6050,6 +6050,12 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   const pitcherZoneValsL = zoneValsFromMap(pitcherProfile?.byZoneByHand?.L, c => c.woba);
   const batterZoneValsR = zoneValsFromMap(batterZoneProfileByHand?.R, c => c.woba);
   const batterZoneValsL = zoneValsFromMap(batterZoneProfileByHand?.L, c => c.woba);
+  // One bold blended number per cell (the same value that already drives the cell's
+  // color) is the primary signal here, same as every other zone grid in this modal --
+  // the individual P/B numbers are real and still shown, just demoted to a small
+  // caption line underneath rather than two full-size stacked rows fighting the
+  // blended number for attention. Nothing is hidden or hover-only; it's a visual
+  // weight change, not a data change.
   function combinedZoneCells(pVals, bVals) {
     return [0,1,2,3,4,5,6,7,8].map(i => {
       const pv = pVals ? pVals[i] : null;
@@ -6057,12 +6063,13 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       if (pv == null && bv == null) return `<div class="sz-cell sz-cell-combined" style="background:#0d1220;color:var(--muted)" title="${zoneLabels[i]}: no data">–</div>`;
       const blended = pv != null && bv != null ? Math.max(pv, bv) : (pv ?? bv);
       const c = zoneColor(blended);
+      const blendedTxt = Math.round(blended * 100) + '%';
       const pTxt = pv != null ? Math.round(pv * 100) + '%' : '–';
       const bTxt = bv != null ? Math.round(bv * 100) + '%' : '–';
       const titleParts = [];
       if (pv != null) titleParts.push(`Pitcher ${pTxt} opportunity`);
       if (bv != null) titleParts.push(`Batter ${bTxt} production`);
-      return `<div class="sz-cell sz-cell-combined" style="background:${c.bg};color:${c.text}" title="${zoneLabels[i]}: ${titleParts.join(', ')}"><span class="scc-row"><span class="scc-label">P</span><span class="scc-val">${pTxt}</span></span><span class="scc-row"><span class="scc-label">B</span><span class="scc-val">${bTxt}</span></span></div>`;
+      return `<div class="sz-cell sz-cell-combined" style="background:${c.bg};color:${c.text}" title="${zoneLabels[i]}: ${titleParts.join(', ')}"><span class="scc-main">${blendedTxt}</span><span class="scc-detail">P ${pTxt} · B ${bTxt}</span></div>`;
     }).join('');
   }
   const hasCombinedZones = !!(zoneVals || batterZoneVals);
