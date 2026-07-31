@@ -15014,6 +15014,11 @@ if (document.readyState === 'loading') {
   var headlinesAll = [];
   var headlinesVisibleCount = 6;
   var activeHeadlineCategory = 'all';
+  // Categories collapsed into the synthetic "more" filter chip (real count below
+  // MIN_HEADLINE_CHIP_COUNT today) -- populated by renderHeadlineFilters, read by
+  // filteredHeadlines. See renderHeadlineFilters' own comment for why this is
+  // purely count-driven rather than a hardcoded list of "small" categories.
+  var smallHeadlineCategories = [];
   var activeSport = 'all';
   var hrLoaded = false;
   var leadersLoaded = false;
@@ -15732,11 +15737,81 @@ if (document.readyState === 'loading') {
     }
   }
 
+  function fmtRate3(v){ return v != null && Number.isFinite(v) ? v.toFixed(3).replace(/^0/, '') : '—'; }
+  function statPillHTML(value, label){ return '<span class="dr-featured-player-stat"><b>' + escapeHtml(value) + '</b><small>' + escapeHtml(label) + '</small></span>'; }
+
+  // Real, honestly-aggregated last-10-real-games rate stats -- sums the counting
+  // stats (AB/H/HR/BB/HBP/SF/TB) across the most recent N games from the same
+  // stats=lastXGames log fetchBatterSeasonBundle already pulls, then derives
+  // AVG/OBP/SLG/OPS from those sums. Deliberately NOT an average of each game's
+  // own rate stat (which would over-weight a 1-AB game as much as a 5-AB game) --
+  // this is the same real aggregation any box score stretch uses.
+  function aggregateLastNGames(logs, n){
+    var recent = (logs || []).slice().sort(function(a, b){ return (b.date || '').localeCompare(a.date || ''); }).slice(0, n);
+    if (!recent.length) return null;
+    var ab = 0, h = 0, hr = 0, bb = 0, hbp = 0, sf = 0, tb = 0;
+    recent.forEach(function(g){
+      var s = g.stat || {};
+      ab += parseInt(s.atBats) || 0;
+      h += parseInt(s.hits) || 0;
+      hr += parseInt(s.homeRuns) || 0;
+      bb += parseInt(s.baseOnBalls) || 0;
+      hbp += parseInt(s.hitByPitch) || 0;
+      sf += parseInt(s.sacFlies) || 0;
+      tb += parseInt(s.totalBases) || 0;
+    });
+    if (ab === 0) return { games: recent.length, ab: ab, h: h, hr: hr, avg: null, obp: null, slg: null, ops: null };
+    var avg = h / ab;
+    var obpDenom = ab + bb + hbp + sf;
+    var obp = obpDenom > 0 ? (h + bb + hbp) / obpDenom : null;
+    var slg = tb / ab;
+    return { games: recent.length, ab: ab, h: h, hr: hr, avg: avg, obp: obp, slg: slg, ops: obp != null ? obp + slg : null };
+  }
+
+  function renderHeadlineStatsLoading(){
+    var box = document.getElementById('dr-hub-headline-modal-stats');
+    if (!box) return;
+    box.style.display = '';
+    box.innerHTML = '<div class="dr-hub-headline-stats-loading"><span class="spin"></span> Loading real season + last-10-game stats…</div>';
+  }
+  function hideHeadlineStats(){
+    var box = document.getElementById('dr-hub-headline-modal-stats');
+    if (!box) return;
+    box.style.display = 'none';
+    box.innerHTML = '';
+  }
+  function renderHeadlineStats(seasonStats, l10){
+    var box = document.getElementById('dr-hub-headline-modal-stats');
+    if (!box) return;
+    var s = seasonStats || {};
+    var hasSeason = (parseInt(s.atBats) || 0) > 0;
+    var seasonRow = hasSeason ? '<div class="dr-hub-headline-stats-row"><div class="dr-hub-headline-stats-label">2026 SEASON</div><div class="dr-featured-player-stats">'
+      + statPillHTML(fmtRate3(parseFloat(s.avg)), 'AVG') + statPillHTML(fmtRate3(parseFloat(s.obp)), 'OBP') + statPillHTML(fmtRate3(parseFloat(s.slg)), 'SLG') + statPillHTML(fmtRate3(parseFloat(s.ops)), 'OPS') + statPillHTML(s.homeRuns != null ? String(s.homeRuns) : '—', 'HR')
+      + '</div></div>' : '';
+    var l10Row = l10 && l10.ab > 0 ? '<div class="dr-hub-headline-stats-row"><div class="dr-hub-headline-stats-label">LAST ' + l10.games + ' GAME' + (l10.games === 1 ? '' : 'S') + '</div><div class="dr-featured-player-stats">'
+      + statPillHTML(fmtRate3(l10.avg), 'AVG') + statPillHTML(fmtRate3(l10.ops), 'OPS') + statPillHTML(String(l10.hr), 'HR')
+      + '</div></div>' : '';
+    if (!seasonRow && !l10Row) { hideHeadlineStats(); return; }
+    box.innerHTML = seasonRow + l10Row;
+    box.style.display = '';
+  }
+
   // Clicking a headline opens this popup in place rather than jumping straight
   // to the related board -- readers get the full story without leaving the
   // headlines feed. The popup's own buttons are the only things that actually
   // navigate (applyHeadlineLink) or open the video modal, and only when the
   // reader chooses to.
+  //
+  // Real season + last-10-game stats (roadmap: headlines feel bland once
+  // opened) -- fetched live via the exact same fetchBatterSeasonBundle used
+  // elsewhere in this app (openMatchup's batter stats, the lineup builder's
+  // hot-hitter fallback), not a second copy of that MLB Stats API call. Only
+  // fetched for headlines about a specific player (h.link.playerId) -- a
+  // game-level headline like Weather has no player to show stats for.
+  // headlineStatsReqId guards against a fast double-click (open headline A,
+  // then B before A's fetch resolves) rendering A's stats into B's now-open
+  // modal.
+  var headlineStatsReqId = 0;
   function openHeadlineModal(h){
     var modal = document.getElementById('dr-hub-headline-modal');
     if (!modal || !h) return;
@@ -15773,6 +15848,20 @@ if (document.readyState === 'loading') {
       clipBtn.onclick = null;
     }
 
+    var statsReq = ++headlineStatsReqId;
+    if (playerId && typeof fetchBatterSeasonBundle === 'function') {
+      renderHeadlineStatsLoading();
+      fetchBatterSeasonBundle(playerId, new Date().getFullYear()).then(function(bundle){
+        if (statsReq !== headlineStatsReqId) return;
+        renderHeadlineStats(bundle.seasonStats, aggregateLastNGames(bundle.logs, 10));
+      }).catch(function(){
+        if (statsReq !== headlineStatsReqId) return;
+        hideHeadlineStats();
+      });
+    } else {
+      hideHeadlineStats();
+    }
+
     modal.classList.add('open');
     modal.setAttribute('aria-hidden', 'false');
   }
@@ -15792,12 +15881,17 @@ if (document.readyState === 'loading') {
     if (!headlines.length) return;
 
     // Server order is already the real most-important-first ranking: recap
-    // (today's context) leads, then real trend headlines ranked by
+    // (today's context) leads, then the small set of one-off editorial picks
+    // (notable performance, weather, injury, model move, leaderboard -- each
+    // at most one real headline), THEN real trend headlines ranked by
     // scoreForMarket, then real streak headlines ranked by how extreme the
-    // actual ratio is (hot or cold), then the one-off categories. trend and
-    // streak intentionally cover EVERY real qualifying player (not a curated
-    // top-N) per generate-headlines.mjs, so this can legitimately run long on
-    // an active day -- capped here to the leading headlinesVisibleCount, with
+    // actual ratio is (hot or cold). trend and streak intentionally cover
+    // EVERY real qualifying player (not a curated top-N) per
+    // generate-headlines.mjs and can legitimately run into the hundreds on an
+    // active day -- the one-off picks are pushed ahead of that flood
+    // server-side specifically so they land within the leading
+    // headlinesVisibleCount instead of getting buried at the tail of "View
+    // More" pagination. Capped here to the leading headlinesVisibleCount, with
     // "View More" revealing the rest rather than dropping any real story.
     headlinesAll = headlines;
     activeHeadlineCategory = 'all';
@@ -15819,14 +15913,27 @@ if (document.readyState === 'loading') {
 
   function filteredHeadlines(){
     if (activeHeadlineCategory === 'all') return headlinesAll;
+    if (activeHeadlineCategory === 'more') {
+      return headlinesAll.filter(function(h){ return smallHeadlineCategories.indexOf(h.category) !== -1; });
+    }
     return headlinesAll.filter(function(h){ return h.category === activeHeadlineCategory; });
   }
 
-  // One chip per category that actually has >=1 real headline today (plus
-  // "All"), each labeled with its real count -- a category with zero real
-  // headlines today simply gets no chip, same "never fabricate a control for
-  // data that doesn't exist" standard as everywhere else. Same pill-tab
-  // visual language as the MLB/NFL/NBA sport tabs above on this same page.
+  // One chip per category that actually has >=1 real headline today (plus "All"),
+  // each labeled with its real count -- a category with zero real headlines today
+  // simply gets no chip, same "never fabricate a control for data that doesn't
+  // exist" standard as everywhere else. Same pill-tab visual language as the
+  // MLB/NFL/NBA sport tabs above on this same page.
+  //
+  // Categories below MIN_HEADLINE_CHIP_COUNT collapse into a single "More" chip
+  // instead of each getting their own pill. On a normal day trend/streak
+  // legitimately cover hundreds of real players while recap/notable/weather/
+  // injury/model/leaderboard are each a single hand-picked daily pick -- without
+  // this, 5-6 chips that only ever say "1" crowd out the two real-volume filters.
+  // Purely count-driven (not a hardcoded list of "minor" categories), so a
+  // category earns its own chip the moment it produces enough real headlines to
+  // deserve one, same as any other real-number-or-nothing threshold in this app.
+  var MIN_HEADLINE_CHIP_COUNT = 3;
   function renderHeadlineFilters(){
     var wrap = document.getElementById('dr-hub-headline-filters');
     if (!wrap) return;
@@ -15835,11 +15942,23 @@ if (document.readyState === 'loading') {
     var cats = Object.keys(counts).sort(function(a, b){ return counts[b] - counts[a]; });
     if (cats.length < 2) { wrap.innerHTML = ''; wrap.style.display = 'none'; return; }
 
+    var bigCats = cats.filter(function(c){ return counts[c] >= MIN_HEADLINE_CHIP_COUNT; });
+    var smallCats = cats.filter(function(c){ return counts[c] < MIN_HEADLINE_CHIP_COUNT; });
+    smallHeadlineCategories = smallCats;
+    // A lone small category doesn't need the generic "More" label/grouping
+    // behavior -- just show it as its own chip, same as before this change.
+    if (smallCats.length === 1) { bigCats = bigCats.concat(smallCats); smallCats = []; smallHeadlineCategories = []; }
+
     var chips = ['<button type="button" class="dr-hub-headline-filter' + (activeHeadlineCategory === 'all' ? ' active' : '') + '" data-headline-filter="all">All <span class="dr-hub-headline-filter-count">' + headlinesAll.length + '</span></button>'];
-    cats.forEach(function(cat){
+    bigCats.forEach(function(cat){
       var label = CATEGORY_LABELS[cat] || String(cat).toUpperCase();
       chips.push('<button type="button" class="dr-hub-headline-filter' + (activeHeadlineCategory === cat ? ' active' : '') + '" data-headline-filter="' + cat + '">' + label + ' <span class="dr-hub-headline-filter-count">' + counts[cat] + '</span></button>');
     });
+    if (smallCats.length) {
+      var moreCount = smallCats.reduce(function(n, c){ return n + counts[c]; }, 0);
+      var moreTitle = smallCats.map(function(c){ return CATEGORY_LABELS[c] || String(c).toUpperCase(); }).join(', ');
+      chips.push('<button type="button" class="dr-hub-headline-filter' + (activeHeadlineCategory === 'more' ? ' active' : '') + '" data-headline-filter="more" title="' + escapeHtml(moreTitle) + '">More <span class="dr-hub-headline-filter-count">' + moreCount + '</span></button>');
+    }
     wrap.innerHTML = chips.join('');
     wrap.style.display = '';
 
