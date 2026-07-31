@@ -579,26 +579,14 @@ async function main() {
   const recapHeadline = buildRecapHeadline(tracker, yesterday);
   if (recapHeadline) headlines.push(recapHeadline);
 
-  // Trend + streak headlines depend on a live MLB schedule/roster fetch, unlike
-  // everything else here (local data/tracker.json reads) -- isolated in its own
-  // try/catch so a transient MLB API hiccup can't cost the other categories too.
-  // pool/games are hoisted out so the Trending Players write below (which needs
-  // the exact same real batter pool + today's probable-pitcher names) doesn't
-  // need a second schedule fetch.
-  let pool = null, games = [];
-  try {
-    const sched = await fetchJSON(`${API}/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher,linescore,weather`);
-    games = sched?.dates?.find(d => d.date === today)?.games || [];
-    const previewGames = games.filter(g => g.status?.abstractGameState === 'Preview');
-    if (previewGames.length) {
-      pool = await buildBatterPool(previewGames, season);
-      headlines.push(...buildTrendHeadlines(pool));
-      headlines.push(...buildStreakHeadlines(pool));
-    }
-  } catch (e) {
-    console.warn(`Trend/streak headlines failed, other categories will still be written: ${e.message}`);
-  }
-
+  // Notable/weather/injury/model-move/leaderboard are today's small set of hand-picked
+  // one-off stories -- each builder produces at most a single headline, unlike
+  // trend/streak below which intentionally cover EVERY real qualifying player and can
+  // legitimately run into the hundreds on an active day. Pushed here, right after
+  // recap and before that flood, so these don't end up buried at the tail of the "All"
+  // feed where a reader would have to page through everything else (via "View More")
+  // to ever reach them -- the client's category filter chips are a fallback way in,
+  // not the only one.
   const recentHrsData = await readDataFile('recent-hrs.json');
   const notable = buildNotablePerformanceHeadline(recentHrsData);
   if (notable) headlines.push(notable);
@@ -619,6 +607,26 @@ async function main() {
     if (leaderboard) headlines.push(leaderboard);
   } catch (e) {
     console.warn(`Leaderboard headline failed: ${e.message}`);
+  }
+
+  // Trend + streak headlines depend on a live MLB schedule/roster fetch, unlike
+  // everything else here (local data/tracker.json reads) -- isolated in its own
+  // try/catch so a transient MLB API hiccup can't cost the other categories too.
+  // pool/games are hoisted out so the Trending Players write below (which needs
+  // the exact same real batter pool + today's probable-pitcher names) doesn't
+  // need a second schedule fetch.
+  let pool = null, games = [];
+  try {
+    const sched = await fetchJSON(`${API}/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher,linescore,weather`);
+    games = sched?.dates?.find(d => d.date === today)?.games || [];
+    const previewGames = games.filter(g => g.status?.abstractGameState === 'Preview');
+    if (previewGames.length) {
+      pool = await buildBatterPool(previewGames, season);
+      headlines.push(...buildTrendHeadlines(pool));
+      headlines.push(...buildStreakHeadlines(pool));
+    }
+  } catch (e) {
+    console.warn(`Trend/streak headlines failed, other categories will still be written: ${e.message}`);
   }
 
   console.log(`Built ${headlines.length} headline(s) for ${today}: ${headlines.map(h => h.category).join(', ')}`);

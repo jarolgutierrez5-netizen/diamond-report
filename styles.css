@@ -3124,16 +3124,20 @@ select:focus-visible {
   letter-spacing: .2px;
   padding: 6px 13px;
   cursor: pointer;
-  transition: background .15s ease, border-color .15s ease, color .15s ease;
+  transition: background .15s ease, border-color .15s ease, color .15s ease, transform .1s ease;
 }
 .dr-hub-headline-filter:hover {
   color: #d7deee;
   border-color: rgba(255,255,255,.24);
 }
+.dr-hub-headline-filter:active {
+  transform: scale(.95);
+}
 .dr-hub-headline-filter.active {
-  background: rgba(47,107,255,.18);
-  border-color: rgba(47,107,255,.55);
-  color: #8fb0ff;
+  background: rgba(47,107,255,.22);
+  border-color: rgba(47,107,255,.65);
+  color: #a9c6ff;
+  box-shadow: 0 0 0 1px rgba(47,107,255,.15), 0 4px 14px rgba(47,107,255,.22);
 }
 .dr-hub-headline-filter-count {
   opacity: .7;
@@ -3164,6 +3168,10 @@ select:focus-visible {
   object-fit: cover;
   display: block;
   background: #111;
+  transition: transform .3s ease;
+}
+.dr-hub-headline-card:hover .dr-hub-headline-photo-big {
+  transform: scale(1.05);
 }
 .dr-hub-headline-body {
   padding: 12px 14px 14px;
@@ -3198,21 +3206,33 @@ select:focus-visible {
 .dr-hub-headline-card[data-category="model"] .dr-hub-headline-cat { border-color: rgba(196,181,253,.55); background: rgba(49,26,94,.38); color: #c4b5fd; }
 .dr-hub-headline-card[data-category="leaderboard"] .dr-hub-headline-cat { border-color: rgba(52,211,153,.55); background: rgba(6,78,59,.38); color: #34d399; }
 .dr-hub-headline-title {
-  font-weight: 700;
+  font-weight: 800;
   font-size: 14px;
+  letter-spacing: -.01em;
   color: #fff;
-  line-height: 1.35;
-  margin-bottom: 6px;
+  line-height: 1.3;
+  margin-bottom: 5px;
 }
 .dr-hub-headline-card.lead .dr-hub-headline-title {
-  font-size: 17px;
+  font-size: 19px;
+  font-weight: 900;
 }
 .dr-hub-headline-blurb {
   font-size: 12.5px;
   line-height: 1.55;
   color: #93a1bd;
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   flex: 1;
+}
+/* Grid cards clamp to 2 lines so every card in a row reads at a consistent
+   height instead of ragged bottoms driven by blurb length -- the lead
+   (recap) card stays unclamped since it already runs full-width with room
+   for the real full sentence. */
+.dr-hub-headline-card:not(.lead) .dr-hub-headline-blurb {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .dr-hub-headline-actions {
   display: flex;
@@ -3339,6 +3359,23 @@ select:focus-visible {
 
 .dr-hub-headline-modal-panel {
   max-width: 480px;
+  /* CSS `animation` (not `transition`) so this actually plays on the
+     display:none -> block toggle .dr-hub-news-modal.open triggers -- same
+     working pattern as the Matchup modal's own .mu-modal-in. Scoped to this
+     panel's own class only, so the shared News/HR/Leader modals (which reuse
+     .dr-hub-news-modal-panel without this class) are untouched. */
+  animation: dr-headline-modal-in .22s cubic-bezier(.2,.8,.3,1) both;
+}
+@keyframes dr-headline-modal-in {
+  from { opacity: 0; transform: translateY(14px) scale(.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+#dr-hub-headline-modal-overlay {
+  animation: dr-headline-modal-overlay-in .18s ease both;
+}
+@keyframes dr-headline-modal-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .dr-hub-headline-modal-head {
   display: flex;
@@ -3359,6 +3396,57 @@ select:focus-visible {
   display: flex;
   align-items: center;
   gap: 14px;
+}
+/* Real season + last-10-game stats (headline modal). Pills reuse
+   .dr-featured-player-stat's chip look directly rather than duplicating it --
+   only the section label row + loading state are new here. */
+.dr-hub-headline-modal-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  background: rgba(7,15,30,.4);
+}
+.dr-hub-headline-stats-row .dr-featured-player-stats {
+  margin-top: 6px;
+}
+.dr-hub-headline-stats-label {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .05em;
+  color: #94a3bd;
+}
+.dr-hub-headline-stats-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted, #94a3bd);
+}
+/* Each real stat row (season, L10) fades/slides in with a slight stagger
+   (see renderHeadlineStats' inline animation-delay) instead of popping in
+   all at once -- this box's content is brand new every time a headline
+   modal opens, so it's exactly the "one-shot content" case this kind of
+   motion is meant for. Own keyframes, not the shared .dr-anim-in, so this
+   stays scoped to the headline modal. */
+@keyframes dr-headline-stats-row-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.dr-hub-headline-stats-row {
+  animation: dr-headline-stats-row-in .3s ease-out both;
+}
+/* Pills themselves reuse .dr-featured-player-stat -- scoped hover here so the
+   Featured Player card (which shares that class) isn't affected. */
+#dr-hub-headline-modal-stats .dr-featured-player-stat {
+  transition: transform .12s ease, border-color .12s ease;
+}
+#dr-hub-headline-modal-stats .dr-featured-player-stat:hover {
+  transform: translateY(-1px);
+  border-color: rgba(47,107,255,.4);
 }
 .dr-hub-scoreboard {
   margin: 28px 0;
@@ -4657,12 +4745,23 @@ select:focus-visible {
   transform: translateY(-2px);
 }
 .dr-hub-headline-card {
-  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
 }
 .dr-hub-headline-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(47,107,255,.35);
-  box-shadow: 0 10px 24px rgba(0,0,0,.24);
+  transform: translateY(-3px);
+  border-color: rgba(47,107,255,.4);
+  box-shadow: 0 14px 30px rgba(0,0,0,.3);
+}
+/* Own entrance keyframes (not the shared .dr-anim-in used by Near HRs/News/
+   Trending Players cards) -- a touch more pop (slight scale) than the base
+   fade-in-up, scoped narrowly so it doesn't change motion on those other
+   sections. Higher specificity than .dr-anim-in's own rule wins here. */
+@keyframes dr-headline-card-in {
+  from { opacity: 0; transform: translateY(12px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.dr-hub-headline-card.dr-anim-in {
+  animation: dr-headline-card-in .38s cubic-bezier(.2,.8,.2,1) both;
 }
 .dr-hub-news-card {
   transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
