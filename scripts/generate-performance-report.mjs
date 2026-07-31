@@ -241,6 +241,36 @@ function buildLeaderboard(rowsWithMarket) {
   return { overall, byMarket };
 }
 
+// Every graded HR Threats pick that cleared this site's own "High" confidence
+// tier (score >= 25%, the exact same cutoff confidenceTier() already uses for
+// the byConfidence breakdown above) -- a per-pick log answering "when we said
+// high probability, did it actually hit," not just an aggregate rate. Season-
+// wide (not windowed like byDate's 45-day floor), since a real per-pick log
+// like this is exactly the kind of record that shouldn't quietly drop older
+// entries -- the current volume (a few hundred picks/season at most) stays
+// small enough to ship in full rather than needing its own truncation/paging
+// convention server-side.
+function buildHighConfidenceLog(rowsWithMarket) {
+  const log = [];
+  for (const { market, row } of rowsWithMarket) {
+    if (market !== 'hrThreat') continue;
+    const outcome = classifyOutcome(row);
+    if (outcome === null || outcome === 'push') continue;
+    if (confidenceTier(market, row) !== 'High') continue;
+    log.push({
+      date: row.date,
+      playerId: row.playerId,
+      playerName: row.playerName,
+      team: row.team || null,
+      opp: row.opp || null,
+      score: row.score,
+      hit: outcome === 'hit',
+    });
+  }
+  log.sort((a, b) => b.date.localeCompare(a.date) || b.score - a.score);
+  return log;
+}
+
 function buildPeriod(rowsWithMarket, nearHRsData, range) {
   const byMarket = { drp: emptyBucket(), kprop: emptyBucket(), hrThreat: emptyBucket() };
   const byConfidence = {
@@ -388,6 +418,7 @@ async function main() {
     byWeek,
     byMonth,
     seasonTotal,
+    hrHighConfidenceLog: buildHighConfidenceLog(seasonRows),
   };
 
   await writeFile(OUT_PATH, JSON.stringify(report, null, 2) + '\n');
@@ -401,5 +432,5 @@ main().catch(e => {
 
 export {
   MIN_SAMPLE, DEFINITIONS, confidenceTier, classifyOutcome, isoWeekKey, monthKey, seasonKey,
-  buildPeriod, buildLeaderboard, finalizeBucket, emptyBucket, addOutcome, teamOf, playerOf,
+  buildPeriod, buildLeaderboard, buildHighConfidenceLog, finalizeBucket, emptyBucket, addOutcome, teamOf, playerOf,
 };
