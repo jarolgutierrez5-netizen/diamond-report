@@ -76,6 +76,10 @@ const DEFINITIONS = {
 };
 
 const MARKETS = ['drp', 'kprop', 'hrThreat'];
+// Same 4 labels computeZoneFitServer (update-tracker.mjs) / computeZoneFit (app.js)
+// already produce -- kept in this exact order (best to worst) for the client's own
+// bar/table rendering, not re-derived from a score here.
+const ZONE_FIT_TIERS = ['Elite Zone Fit', 'Strong Zone Fit', 'Playable Zone Fit', 'Pitcher Zone Edge'];
 
 function emptyBucket() {
   return { hits: 0, nearMisses: 0, misses: 0, pushes: 0, total: 0 };
@@ -250,6 +254,15 @@ function buildPeriod(rowsWithMarket, nearHRsData, range) {
   };
   const byTeam = {};
   const nearHR = { signalWith: emptyBucket(), signalWithout: emptyBucket(), nearMissCount: 0 };
+  // Zone Fit calibration -- does the live HR Threats board's "Zone Fit" chip
+  // (Elite/Strong/Playable Zone Fit vs Pitcher Zone Edge, snapshotted at pick
+  // time by update-tracker.mjs's computeZoneFitServer) actually predict more
+  // real HRs? Same real graded hrThreat rows as everything else here, just
+  // bucketed by the label already captured on the row instead of re-deriving
+  // a score. Rows captured before zoneFitLabel existed are simply absent from
+  // every bucket, same convention as every other snapshot field added here
+  // over time (see matchupEdge/platoonOps comments in update-tracker.mjs).
+  const byZoneFit = Object.fromEntries(ZONE_FIT_TIERS.map(t => [t, emptyBucket()]));
   // Expected-vs-actual HR calibration: real predicted probability (row.score,
   // captured at pick time) summed as an expected-value HR count, vs the real
   // count of picks that actually hit -- both derived straight from already-
@@ -280,6 +293,7 @@ function buildPeriod(rowsWithMarket, nearHRsData, range) {
         hrGradedWithScore++;
         if (outcome === 'hit') hrActualWithScore++;
       }
+      if (row.zoneFitLabel && byZoneFit[row.zoneFitLabel]) addOutcome(byZoneFit[row.zoneFitLabel], outcome);
     }
   }
 
@@ -314,6 +328,7 @@ function buildPeriod(rowsWithMarket, nearHRsData, range) {
         withoutSignal: finalizeBucket(nearHR.signalWithout),
       },
     },
+    zoneFitCalibration: Object.fromEntries(ZONE_FIT_TIERS.map(t => [t, finalizeBucket(byZoneFit[t])])),
   };
 }
 

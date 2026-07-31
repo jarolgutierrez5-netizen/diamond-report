@@ -869,10 +869,29 @@
       (withoutSig && withoutSig.graded ? bdStat(withoutSig.hitRate + '%', 'Hit rate without the signal (' + withoutSig.graded + ' picks)') : '') +
       '</div></div>';
 
+    // Zone Fit calibration -- does the HR Threats board's real "Zone Fit" chip
+    // (Elite/Strong/Playable Zone Fit vs Pitcher Zone Edge) actually predict more real
+    // HRs? Same fixed tier order generate-performance-report.mjs's ZONE_FIT_TIERS uses
+    // (best to worst), each row only showing once that tier has at least one graded
+    // pick -- rows captured before this field existed just aren't in any bucket yet.
+    var ZONE_FIT_TIERS = ['Elite Zone Fit', 'Strong Zone Fit', 'Playable Zone Fit', 'Pitcher Zone Edge'];
+    var zf = period.zoneFitCalibration || {};
+    var zfRows = ZONE_FIT_TIERS.map(function (t) { return zf[t]; }).filter(function (b) { return b && b.graded > 0; });
+    var zoneFitHtml = zfRows.length
+      ? '<div class="tr-breakdown-card" style="margin-bottom:20px"><h3>🎯 Zone Fit Calibration</h3>' +
+        '<table class="tr-lb-table"><thead><tr><th>Tier</th><th>Record</th><th>Hit Rate</th></tr></thead><tbody>' +
+        ZONE_FIT_TIERS.filter(function (t) { return zf[t] && zf[t].graded > 0; }).map(function (t) {
+          var b = zf[t];
+          return '<tr><td>' + t + '</td><td>' + b.hits + '-' + b.nearMisses + '-' + b.misses + '</td><td class="tr-lb-hitrate" style="color:' + pctColor(b.hitRate) + '">' +
+            b.hitRate + '%' + (b.insufficientSample ? ' <small style="color:var(--muted)">(low sample)</small>' : '') + '</td></tr>';
+        }).join('') + '</tbody></table></div>'
+      : '';
+
     root.innerHTML =
       '<div style="font-size:12.5px;color:var(--muted);font-weight:700;margin-bottom:10px">' + label + '</div>' +
       '<div class="tr-breakdown-grid">' + marketCards + '</div>' +
       nearHRHtml +
+      zoneFitHtml +
       '<div class="tr-breakdown-grid">' + confCards + '</div>' +
       '<div class="tr-breakdown-card" style="margin-bottom:20px"><h3>By Team (Top 10)</h3>' + teamTable + '</div>' +
       '<div class="tr-leaderboard"><div class="dr-hub-section-head" style="margin-bottom:12px"><h2 style="font-size:14px;font-weight:900;letter-spacing:.4px;text-transform:uppercase;color:#fff;margin:0">🏆 Highest Hit-Rate Players</h2></div>' + lbTable + '</div>';

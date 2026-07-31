@@ -1195,6 +1195,38 @@ function zoneMatchupMultiplier(batterZoneMap, pitcherZoneMap) {
   return clamp(avgRatio, 0.85, 1.15);
 }
 
+// Zone Fit -- exact port of app.js's own zoneValsFromByZone/computeZoneFit (same "two
+// independent copies, no shared module" reasoning as zoneMatchupMultiplier above). Real
+// per-zone xwOBA-against overlap with the batter's pull side + power profile, snapshotted
+// at pick time (see captureHRThreatToday below) so a later analysis pass can check
+// whether the live client's "Strong Zone Fit"/"Elite Zone Fit" labels actually predict
+// more real HRs -- score/label only here, the display-only topNames/read/tone fields the
+// client also returns aren't needed for tracking.
+function zoneValsFromByZoneServer(zMap) {
+  if (!zMap) return null;
+  const vals = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(z => {
+    const cell = zMap[z];
+    if (!cell) return null;
+    const val = cell.xwobaContact ?? cell.wobaAgainst ?? cell.xwoba ?? cell.woba;
+    return val != null ? Math.min(val / 0.640, 1.0) : null;
+  });
+  return vals.every(v => v == null) ? null : vals;
+}
+function computeZoneFitServer(zoneVals, batterHand, batterISO) {
+  if (!zoneVals) return null;
+  const weights = zoneVals.map((v, i) => ({ i, v: v ?? 0 })).sort((a, b) => b.v - a.v);
+  const topZones = weights.slice(0, 3);
+  const elevated = topZones.some(z => z.i <= 2);
+  const middle = topZones.some(z => z.i === 4);
+  const pullSide = batterHand === 'L' ? [2, 5, 8] : batterHand === 'R' ? [0, 3, 6] : [0, 2, 3, 5, 6, 8];
+  const pullMatch = topZones.some(z => pullSide.includes(z.i));
+  const avgTop = topZones.reduce((sum, z) => sum + z.v, 0) / Math.max(1, topZones.length);
+  const powerBoost = Math.max(0, Math.min(12, ((batterISO || 0) - 0.170) * 70));
+  const fitScore = Math.max(1, Math.min(99, Math.round(avgTop * 72 + (elevated ? 8 : 0) + (middle ? 7 : 0) + (pullMatch ? 7 : 0) + powerBoost)));
+  const fitLabel = fitScore >= 85 ? 'Elite Zone Fit' : fitScore >= 72 ? 'Strong Zone Fit' : fitScore >= 58 ? 'Playable Zone Fit' : 'Pitcher Zone Edge';
+  return { score: fitScore, label: fitLabel };
+}
+
 // Wind is one of the single biggest real per-game HR factors -- a strong wind blowing
 // out can matter more than any other adjustment in this file. MLB's schedule endpoint
 // returns it (when hydrate=weather is requested) as a free-text field, typically
@@ -1727,10 +1759,18 @@ function scoreForMarket(marketKey, row) {
 }
 
 // ── Building today's batter candidate pool ──
+// Populated as a side effect of seasonBattingStat (below) — batSide comes back on the
+// same /people/{id} response the season stat call already makes, same zero-extra-
+// fetch reasoning as pitcherHandCache above. Feeds computeZoneFitServer's pull-side
+// logic (see near zoneMatchupMultiplier below).
+const batterHandCache = new Map();
+
 async function seasonBattingStat(pid, season) {
   try {
     const d = await fetchJSON(`${API}/people/${pid}?hydrate=stats(group=hitting,type=season,season=${season})`);
-    return d?.people?.[0]?.stats?.[0]?.splits?.[0]?.stat || {};
+    const person = d?.people?.[0];
+    if (person?.batSide?.code) batterHandCache.set(pid, person.batSide.code);
+    return person?.stats?.[0]?.splits?.[0]?.stat || {};
   } catch (e) { return {}; }
 }
 async function recentBattingForm(pid, season, games = 10) {
@@ -2220,10 +2260,17 @@ async function buildBatterPool(games, season) {
         // conditioned on this specific pitcher's throwing hand (batterZoneByHandCache is
         // keyed by the opposing pitcher's hand, and pitcherHand is already resolved above
         // for the platoon blend, so this is zero extra fetches); pitcher side left
-        // hand-unconditioned since this batter's own batSide isn't fetched anywhere in
-        // this pool (see pitcherZoneMapForHR's comment above).
+        // hand-unconditioned since zoneMatchupMultiplier only reads whichever zone data
+        // is on hand for each side independently (unlike computeZoneFitServer below,
+        // which specifically needs this batter's own stand for its pull-side logic).
         const batterZoneMapForHR = (batterZoneByHandCache.get(String(pid))?.[pitcherHand]) || batterZoneCache.get(String(pid)) || null;
         const zoneMatchupMult = zoneMatchupMultiplier(batterZoneMapForHR, pitcherZoneMapForHR);
+        // Zone Fit snapshot -- same real pitcherZoneMapForHR already loaded above for
+        // zoneMatchupMult, plus this batter's own real stand (batterHandCache, populated
+        // as a side effect of seasonBattingStat above) for the pull-side logic. Purely
+        // recorded for later calibration (see captureHRThreatToday below); not consumed
+        // by scoreForMarket.
+        const zoneFit = computeZoneFitServer(zoneValsFromByZoneServer(pitcherZoneMapForHR), batterHandCache.get(pid) || null, iso);
         // Snapshot of the live client's own HR score (see computeLiveHRScore's header
         // comment) -- only meaningful for the 'hr' market; harmless (just unused) for
         // any other market this same pool feeds.
@@ -2250,6 +2297,7 @@ async function buildBatterPool(games, season) {
           pitcherStatcast, homeRoadFactor,
           pitcher2kSuppressionDelta: pitcher2kSuppressionIndex.get(String(pitcher.id)) ?? null,
           liveScore, platoonAB, platoonOps, platoonFavorable, matchupEdge, zoneMatchupMult,
+          zoneFitScore: zoneFit?.score ?? null, zoneFitLabel: zoneFit?.label ?? null,
           // Same per-game weather multiplier computeLiveHRScore above already used —
           // stored on the row too so buildBatterModel's own HR rate (used by
           // simulatePropOdds for hits/tb/rbis/hrrbi grading, not just the 'hr' market)
@@ -2331,6 +2379,12 @@ async function captureHRThreatToday(store, pool) {
       // above -- see computeMatchupEdgeScore's header comment. Null until both this
       // pitcher's and this batter's Statcast pitch-mix sync have landed.
       matchupEdge: r.matchupEdge ?? null,
+      // Snapshot of the live client HR Threats board's "Zone Fit" chip (see
+      // computeZoneFitServer above) at pick time -- previously a display-only chip with
+      // no way to check whether "Strong"/"Elite Zone Fit" actually precedes a HR at a
+      // higher rate than "Pitcher Zone Edge". Null until both this pitcher's zone sync
+      // and this batter's own real batSide (batterHandCache) are available.
+      zoneFitScore: r.zoneFitScore ?? null, zoneFitLabel: r.zoneFitLabel ?? null,
     });
     already.add(r.id);
     added++;
@@ -2624,6 +2678,7 @@ export {
   simulatePropOdds, simulateSBOdds, simulateHRGameOdds, scoreForMarket,
   fetchOddsLookup, normalizeName,
   loadStatcastPowerIndex, loadPitcherStatcastPowerIndex, loadPitcher2kSuppressionIndex, battedBallPowerIndex, zoneMatchupMultiplier,
+  computeZoneFitServer, zoneValsFromByZoneServer,
   computeMatchupEdgeScore, battingSplitVsHand,
   parseInningsPitched, pitcherBattersFacedPer9,
   windPowerFactor, temperaturePowerFactor, isDayGameCT, doubleheaderFatigueFactor, teamRestFatigueFactor,
