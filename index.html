@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026073114">
+<link rel="stylesheet" href="styles.min.css?v=2026073115">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -610,6 +610,11 @@
           <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px"><input type="checkbox" data-hrp-filter="zonefit" onchange="filterHRP('zonefit')"> 🎯 STRONG ZONE FIT</label>
           <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px"><input type="checkbox" id="hrp-completed-checkbox" onchange="window.toggleHRPCompletedView && window.toggleHRPCompletedView()"> ✅ COMPLETED HITS ONLY</label>
           <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px"><input type="checkbox" data-hrp-filter="watchlist" onchange="filterHRP('watchlist')"> ★ WATCHLIST</label>
+          <!-- Team/Position/Pitcher Throws/Batter Bats/Game Time/Stadium/Weather --
+               populated on every render by renderHRPTableV1032 (drStandardFilterControlsHTML),
+               same standardized filter set K Props/Prop Intelligence use, just embedded in
+               this one dropdown instead of a second always-visible filter bar. -->
+          <div id="hrp-std-filters" style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px;display:flex;flex-direction:column;gap:8px"></div>
           <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px">
             <button type="button" id="filter-all-btn" class="hrp-filter-btn hrp-filter-all" style="width:100%" onclick="filterHRP('all')">Clear All</button>
           </div>
@@ -1024,7 +1029,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026073114" defer></script>
+<script src="app.min.js?v=2026073115" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
