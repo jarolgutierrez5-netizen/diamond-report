@@ -170,14 +170,26 @@ function buildTrendHeadlines(pool) {
     .map(row => ({ row, score: scoreForMarket('hr', row) }))
     .filter(x => x.score > 0)
     .sort((a, b) => b.score - a.score);
-  return ranked.map(({ row }) => {
+  return ranked.map(({ row, score }) => {
     const { title, blurb } = trendTitleAndBlurb(row);
     return {
       id: `trend-${row.id}`,
       category: 'trend',
       title,
       blurb,
-      link: { hash: '#gamepick=hr', playerId: row.id, playerName: row.name },
+      // Real HR probability already computed above to rank this headline in
+      // the first place (score>0 filter, sort) -- previously discarded once
+      // the array was mapped down to {row}. Same 1-99 whole-number percentage
+      // shown as "HR Probability" on the HR Threats board itself, so a
+      // headline card can now show the number it was actually written from
+      // instead of prose alone.
+      stat: { kind: 'hrProb', value: score },
+      // pitcherId/pitcherName let the client open the Matchup modal directly
+      // for this exact batter-vs-pitcher pairing instead of only landing on
+      // the HR Threats board filtered to the batter -- real fields already on
+      // every pool row (same ones the blurb text above reads from), just not
+      // previously threaded through to the client.
+      link: { hash: '#gamepick=hr', playerId: row.id, playerName: row.name, pitcherId: row.pitcherId ?? null, pitcherName: row.pitcherName ?? null },
     };
   });
 }
@@ -254,7 +266,19 @@ function buildStreakHeadlines(pool) {
       category: 'streak',
       title,
       blurb,
-      link: { hash: '#gamepick=hr', playerId: row.id, playerName: row.name },
+      // Real last-10-games HR count that already drives both the ranking
+      // (via streak.ratio) and the blurb text -- exposed as its own field so
+      // a headline card can show it as a number, not just read it out of
+      // prose. Sign matches the streak direction (Hot Streak/Trending Up are
+      // positive stories, Cold/Cooling Off are real too) so the client can
+      // decide how to color it rather than guessing from category alone.
+      stat: { kind: 'last10HR', value: streak.last10HR, favorable: streak.label === 'Hot Streak' || streak.label === 'Trending Up' },
+      // pitcherId/pitcherName let the client open the Matchup modal directly
+      // for this exact batter-vs-pitcher pairing instead of only landing on
+      // the HR Threats board filtered to the batter -- real fields already on
+      // every pool row (same ones the blurb text above reads from), just not
+      // previously threaded through to the client.
+      link: { hash: '#gamepick=hr', playerId: row.id, playerName: row.name, pitcherId: row.pitcherId ?? null, pitcherName: row.pitcherName ?? null },
     };
   });
 }

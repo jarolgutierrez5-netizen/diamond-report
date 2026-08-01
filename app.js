@@ -16319,7 +16319,18 @@ if (document.readyState === 'loading') {
     var linkBtn = document.getElementById('dr-hub-headline-modal-link');
     if (h.link) {
       linkBtn.style.display = '';
-      linkBtn.onclick = function(){ closeHeadlineModal(); applyHeadlineLink(h.link); };
+      // A trend/streak headline carries the real opposing pitcher (row.pitcherId/
+      // pitcherName, threaded through by generate-headlines.mjs) -- when it's
+      // there, jump straight into the Matchup modal's Why Today tab instead of
+      // just landing on the HR Threats board filtered to this player, which
+      // still requires finding and clicking their card to see the actual read.
+      if (h.link.pitcherId != null && typeof window.openMatchup === 'function') {
+        linkBtn.textContent = 'See the Matchup →';
+        linkBtn.onclick = function(){ closeHeadlineModal(); window.openMatchup(h.link.playerId, h.link.playerName, h.link.pitcherId, h.link.pitcherName); };
+      } else {
+        linkBtn.textContent = 'View related report →';
+        linkBtn.onclick = function(){ closeHeadlineModal(); applyHeadlineLink(h.link); };
+      }
     } else {
       linkBtn.style.display = 'none';
       linkBtn.onclick = null;
@@ -16507,6 +16518,27 @@ if (document.readyState === 'loading') {
       title.textContent = h.title || '';
       body.appendChild(title);
 
+      // Real stat chip -- generate-headlines.mjs now carries the same number
+      // that already ranked/selected this headline (HR probability for trend,
+      // real last-10-games HR count for streak) instead of dropping it once
+      // the headline text was written. Turns "here's a story" into "here's a
+      // story plus a real number to check," which is the whole point of
+      // surfacing it before a reader ever opens the matchup. Older headline
+      // JSON generated before this field existed just won't have h.stat, and
+      // the chip simply doesn't render -- no fabricated fallback number.
+      if (h.stat && h.stat.value != null) {
+        var statChip = document.createElement('div');
+        statChip.className = 'dr-hub-headline-stat';
+        if (h.stat.kind === 'hrProb') {
+          statChip.classList.add('is-neutral');
+          statChip.innerHTML = '<strong>' + escapeHtml(String(h.stat.value)) + '%</strong><span>HR Probability</span>';
+        } else if (h.stat.kind === 'last10HR') {
+          statChip.classList.add(h.stat.favorable ? 'is-positive' : 'is-negative');
+          statChip.innerHTML = '<strong>' + escapeHtml(String(h.stat.value)) + '</strong><span>HR L10</span>';
+        }
+        if (statChip.innerHTML) body.appendChild(statChip);
+      }
+
       var blurb = document.createElement('p');
       blurb.className = 'dr-hub-headline-blurb';
       blurb.textContent = h.blurb || '';
@@ -16518,7 +16550,7 @@ if (document.readyState === 'loading') {
         var linkBtn = document.createElement('button');
         linkBtn.type = 'button';
         linkBtn.className = 'dr-hub-headline-link';
-        linkBtn.textContent = 'View related report →';
+        linkBtn.textContent = h.link.pitcherId != null ? 'See the Matchup →' : 'View related report →';
         linkBtn.addEventListener('click', function(e){ e.stopPropagation(); openHeadlineModal(h); });
         actions.appendChild(linkBtn);
       }
@@ -17348,5 +17380,40 @@ if (document.readyState === 'loading') {
 
   window.addEventListener('hashchange', function(){
     if (hashIsGamepick()) hideHub(); else showHub();
+  });
+})();
+
+// ── Fixed-header overlap fix ────────────────────────────────────────────
+// .header has 11 separate rule blocks scattered across styles.css (the same
+// kind of "years of conflicting per-breakpoint !important overrides" mess
+// already documented elsewhere in this file), and the cascade currently
+// resolves to position:fixed on every breakpoint -- which pulls the header
+// out of document flow with nothing compensating for it below, so the top
+// of the page (the Featured Player card's footer, in one real report) sits
+// hidden behind it. Rather than add a 12th competing .header{} rule and risk
+// interacting unpredictably with the other eleven, this measures the header's
+// actual rendered height at runtime and reserves that much space -- correct
+// regardless of which of the existing rules ends up winning, and a no-op if
+// a future edit ever makes the header participate in normal flow instead
+// (sticky/static), since it only applies the compensation while the header
+// is actually computed as position:fixed.
+(function () {
+  function fixHeaderOverlap() {
+    var header = document.querySelector('.header');
+    if (!header) return;
+    var isFixed = window.getComputedStyle(header).position === 'fixed';
+    // setProperty(..., 'important') rather than the plain .style shorthand --
+    // one of the eleven .header-adjacent rules is `body{padding:0!important}`
+    // (mobile media query), which silently wins over a non-!important inline
+    // style regardless of the inline style's usual specificity advantage.
+    if (isFixed) document.body.style.setProperty('padding-top', header.offsetHeight + 'px', 'important');
+    else document.body.style.removeProperty('padding-top');
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fixHeaderOverlap, { once: true });
+  else fixHeaderOverlap();
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(fixHeaderOverlap, 150);
   });
 })();
