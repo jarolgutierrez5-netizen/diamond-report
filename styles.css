@@ -5853,7 +5853,8 @@ select:focus-visible {
 }
 .dr-featured-player-card {
   display: flex;
-  gap: 16px;
+  flex-direction: column;
+  gap: 14px;
   background: rgba(255,255,255,.05);
   border: 1px solid rgba(245,158,11,.4);
   border-radius: 16px;
@@ -5871,18 +5872,28 @@ select:focus-visible {
   box-shadow: inset 3px 0 0 rgba(245,158,11,.95), 0 0 28px rgba(245,158,11,.18);
   transform: translateY(-1px);
 }
+.dr-featured-player-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
 .dr-featured-player-photo {
-  width: 96px;
-  height: 96px;
+  width: 72px;
+  height: 72px;
   border-radius: 14px;
   object-fit: cover;
   flex: 0 0 auto;
   border: 1px solid rgba(245,158,11,.4);
   background: #0b1424;
 }
-.dr-featured-player-body {
+.dr-featured-player-headtext {
   min-width: 0;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.dr-featured-player-body {
+  min-width: 0;
   display: flex;
   flex-direction: column;
 }

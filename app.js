@@ -15952,11 +15952,15 @@ if (document.readyState === 'loading') {
 
     content.innerHTML =
       '<div class="dr-featured-player-card'+(clickable?' clickable':'')+'"'+(clickable?' onclick="openMatchup('+p.id+',\''+bName+'\','+p.pitcherId+',\''+pName+'\')" role="button" tabindex="0"':'')+'>'+
-        '<img class="dr-featured-player-photo" loading="lazy" decoding="async" src="'+hsBig(p.id)+'" onerror="this.style.display=\'none\'" alt="">'+
+        '<div class="dr-featured-player-head">'+
+          '<img class="dr-featured-player-photo" loading="lazy" decoding="async" src="'+hsBig(p.id)+'" onerror="this.style.display=\'none\'" alt="">'+
+          '<div class="dr-featured-player-headtext">'+
+            '<div class="dr-featured-player-badge">⭐ TODAY\'S FEATURED PLAYER</div>'+
+            '<div class="dr-featured-player-name">'+escapeHtml(p.name||'')+'</div>'+
+            '<div class="dr-featured-player-meta">'+matchupHTML+'</div>'+
+          '</div>'+
+        '</div>'+
         '<div class="dr-featured-player-body">'+
-          '<div class="dr-featured-player-badge">⭐ TODAY\'S FEATURED PLAYER</div>'+
-          '<div class="dr-featured-player-name">'+escapeHtml(p.name||'')+'</div>'+
-          '<div class="dr-featured-player-meta">'+matchupHTML+'</div>'+
           '<div class="dr-featured-player-score-row">'+
             '<div class="dr-featured-player-score"><strong>'+(p.liveScore!=null?p.liveScore.toFixed(1):'–')+'%</strong><span>HR Probability</span></div>'+
             featuredPlayerTrendChipHTML(p)+
