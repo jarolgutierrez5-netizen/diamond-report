@@ -6438,3 +6438,26 @@ select:focus-visible {
 
 .why-today-scores { display: flex; gap: 10px; flex-wrap: wrap; }
 .why-today-scores .dr1043-edge-card { flex: 1; min-width: 140px; }
+
+.dr-hub-headline-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.dr-hub-headline-stat strong {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+}
+.dr-hub-headline-stat span {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.dr-hub-headline-stat.is-neutral strong { color: var(--accent2); }
+.dr-hub-headline-stat.is-positive strong { color: var(--green); }
+.dr-hub-headline-stat.is-negative strong { color: var(--dr-red); }
