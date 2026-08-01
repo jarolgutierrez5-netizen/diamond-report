@@ -4684,37 +4684,6 @@ select:focus-visible {
   pointer-events: none;
 }
 
-/* Combined Strike Zone grid (roadmap 5.4) -- one 9-cell grid instead of two
-   side-by-side pitcher/batter grids; each pre-rendered (pitcher-hand x
-   batter-hand) combo body is hidden until its two toggle rows both select it. */
-.dr-combined-zone-body {
-  display: none;
-}
-.dr-combined-zone-body.active {
-  display: block;
-}
-.sz-cell-combined {
-  flex-direction: column;
-  gap: 1px;
-  padding: 4px 0;
-}
-/* One bold blended number is the primary signal (matches every other zone grid
-   in this modal -- see combinedZoneCells' own comment for why); the real P/B
-   breakdown is still shown, just as a single small caption line instead of two
-   full-size stacked rows competing with it for attention. */
-.sz-cell-combined .scc-main {
-  font-size: 15px;
-  font-weight: 900;
-  line-height: 1.1;
-}
-.sz-cell-combined .scc-detail {
-  font-size: 8px;
-  font-weight: 600;
-  opacity: .75;
-  letter-spacing: .01em;
-  white-space: nowrap;
-}
-
 /* Combined Pitcher Stats section (roadmap 5.4) -- SEASON/CAREER/L3 TREND toggle,
    each mode swapping its own full table (not just a <tbody>, since the L3 Trend
    columns differ structurally from the season/career columns). */
