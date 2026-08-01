@@ -15926,11 +15926,24 @@ if (document.readyState === 'loading') {
       ['Last 10 HR', p.last10HR!=null ? p.last10HR : '–'],
     ].map(function(c){ return '<span class="dr-featured-player-stat"><b>'+escapeHtml(c[1])+'</b><small>'+escapeHtml(c[0])+'</small></span>'; }).join('');
 
+    // Was two views of the exact same 3 facts stacked on top of each other --
+    // rounded-pill "reason chips" (each truncated at the first literal '.',
+    // which silently chopped any reason containing a decimal number, e.g.
+    // "Projects at a real 37.0% HR probability..." rendering as just
+    // "Projects at a real 37") immediately followed by an "AI Explanation"
+    // paragraph restating the identical text in full. Consolidated into one
+    // real list, reusing the exact driver-row treatment already shipped for
+    // the Matchup modal's Why Today tab (pr-drivers-panel/pr-driver-row) so
+    // this reads as the same real synthesis pattern instead of a different
+    // one-off component, and dropped the truncation entirely -- these are
+    // already short, single-sentence reasons, nothing here needs chopping.
     var reasons = Array.isArray(p.reasons) ? p.reasons : [];
     var whyHTML = reasons.length
-      ? '<div class="dr-featured-player-why"><strong>🤖 AI Explanation:</strong> ' + escapeHtml(reasons.slice(0,3).map(function(r){ return r.text; }).join(' ')) + '</div>'
+      ? '<div class="pr-drivers-panel" style="margin-top:12px">'
+        + '<div class="pr-drivers-summary">🤖 <b>Why the model likes this</b></div>'
+        + reasons.slice(0,3).map(function(r){ return '<div class="pr-driver-row"><span class="pr-driver-icon">'+escapeHtml(r.icon||'')+'</span><span class="pr-driver-text">'+escapeHtml(r.text||'')+'</span></div>'; }).join('')
+        + '</div>'
       : '';
-    var reasonChips = reasons.map(function(r){ return '<span class="dr-featured-player-reason-chip">'+escapeHtml(r.icon||'')+' '+escapeHtml((r.text||'').split('.')[0])+'</span>'; }).join('');
 
     var updated = data.generatedAt ? new Date(data.generatedAt).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : '';
     var clickable = p.confirmedToday && p.pitcherId;
@@ -15949,7 +15962,6 @@ if (document.readyState === 'loading') {
             featuredPlayerTrendChipHTML(p)+
           '</div>'+
           '<div class="dr-featured-player-stats">'+statChips+'</div>'+
-          '<div class="dr-featured-player-reason-row">'+reasonChips+'</div>'+
           whyHTML+
           (clickable ? '<div class="dr-featured-player-cta">Tap for the full Matchup analysis ›</div>' : '')+
           '<div class="dr-featured-player-footer">Selected from the real HR-probability model + hot streak/matchup/near-HR signals · Updated '+escapeHtml(updated)+'</div>'+

@@ -5965,11 +5965,12 @@ select:focus-visible {
   color: #4ade80;
 }
 .dr-featured-player-stats {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin-top: 12px;
 }
+.dr-featured-player-stats .dr-featured-player-stat { min-width: 0; }
 .dr-featured-player-stat {
   display: flex;
   flex-direction: column;
@@ -6032,16 +6033,6 @@ select:focus-visible {
   color: #6b7998;
   font-size: 10.5px;
   margin-top: 12px;
-}
-@media (max-width: 640px) {
-  .dr-featured-player-card {
-    flex-direction: column;
-  }
-  .dr-featured-player-photo {
-    width: 100%;
-    height: 160px;
-    border-radius: 12px;
-  }
 }
 
 /* ===================================================================
