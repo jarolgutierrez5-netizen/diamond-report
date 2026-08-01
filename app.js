@@ -7358,6 +7358,93 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
     </div>`;
   })();
 
+  // ── Why Today? panel -- the one place that brings the rest of this modal
+  // together instead of leaving it scattered across 7 tabs. Same rule-based
+  // "rank real signals by magnitude, take the top few, write a short real-
+  // number sentence" convention as buildMatchupDrivers (Pitcher Report) and
+  // hrScoutingVulnsHTML (HR Threats), applied here per batter-vs-pitcher
+  // instead of per-lineup. No new fetch or data source -- every input is a
+  // value already computed above in this exact function (zoneFit,
+  // pitchMixDashboard, onFireScore, parkHrIndex, bullpenInfo, nearHRList,
+  // batterZoneProfile/pitcherProfile). A signal that's genuinely neutral
+  // today just doesn't produce a driver row, same as its siblings.
+  const whyTodayHTML = (() => {
+    const drivers = [];
+
+    if (typeof window.computePlayerTrendIndicator === 'function') {
+      const t = window.computePlayerTrendIndicator({ last10HR: recentHRList ? recentHRList.length : null, atBats: bs.atBats, hrSeason: bs.homeRuns });
+      if (t && (t.label === 'Hot Streak' || t.label === 'Cold')) {
+        const good = t.label === 'Hot Streak';
+        drivers.push({
+          icon: good ? '🔥' : '🧊',
+          magnitude: 4,
+          text: good
+            ? `<b>${batterName.split(' ').pop()} is on a real Hot Streak</b> — ${recentHRList ? recentHRList.length : 0} HR over the last 10 games${t.smallSample ? ' (small sample)' : ''}.`
+            : `<b>${batterName.split(' ').pop()} is Cold</b> right now, well off his season production${t.smallSample ? ' (small sample)' : ''}.`,
+        });
+      }
+    }
+
+    if (zoneFit && zoneFit.read) {
+      drivers.push({ icon: '🧭', magnitude: Math.abs((zoneFit.score || 50) - 50) / 6, text: zoneFit.read });
+    }
+
+    if (parkHrIndex != null && (parkHrIndex >= 110 || parkHrIndex <= 92)) {
+      const hitterFriendly = parkHrIndex >= 110;
+      drivers.push({
+        icon: hitterFriendly ? '🏟️' : '🧱',
+        magnitude: Math.abs(parkHrIndex - 100) / 5,
+        text: hitterFriendly
+          ? `Playing in a <b>hitter-friendly park</b> tonight (${parkHrIndex >= 100 ? '+' : ''}${Math.round(parkHrIndex - 100)}% HR factor).`
+          : `Playing in a <b>pitcher-friendly park</b> tonight (${Math.round(parkHrIndex - 100)}% HR factor).`,
+      });
+    }
+
+    if (bullpenInfo?.tier === 'Gassed' || bullpenInfo?.tier === 'Fresh') {
+      const tough = bullpenInfo.tier === 'Gassed';
+      drivers.push({
+        icon: tough ? '🥵' : '🛟',
+        magnitude: 2.5,
+        text: tough
+          ? `Opposing <b>bullpen is Gassed</b> — ${bullpenInfo.totalRelieverPitches ?? 'a lot of'} pitches over the last 2 days, less margin if the starter struggles.`
+          : `Opposing <b>bullpen is Fresh</b> — deep relief support behind the starter tonight.`,
+      });
+    }
+
+    if (typeof zoneMatchupMultiplier === 'function' && (batterZoneProfile || pitcherProfile?.byZone)) {
+      const zMult = zoneMatchupMultiplier(batterZoneProfile, pitcherProfile?.byZone);
+      if (zMult !== 1) {
+        drivers.push({
+          icon: '🎯',
+          magnitude: Math.abs(zMult - 1) * 30,
+          text: `Real per-zone overlap between ${batterName.split(' ').pop()}'s hot zones and ${pitcherName.split(' ').pop()}'s weak zones is ${zMult > 1 ? 'favorable' : 'unfavorable'}.`,
+        });
+      }
+    }
+
+    if (nearHRList && nearHRList.length) {
+      drivers.push({
+        icon: '🚀',
+        magnitude: Math.min(nearHRList.length, 5),
+        text: `<b>${nearHRList.length} near-miss${nearHRList.length === 1 ? '' : 'es'}</b> in recent games — real warning-track power that hasn't landed yet.`,
+      });
+    }
+
+    drivers.sort((a, b) => b.magnitude - a.magnitude);
+    const top = drivers.slice(0, 6);
+    const rows = top.map(d => `<div class="pr-driver-row"><span class="pr-driver-icon">${d.icon}</span><span class="pr-driver-text">${d.text}</span></div>`).join('');
+
+    return `
+      <div class="why-today-scores">
+        <div class="dr1043-edge-card"><strong>${pitchMixDashboard.score ?? '–'}</strong><span>Matchup Edge</span></div>
+        ${zoneFit ? `<div class="dr1043-edge-card" style="border-color:${zoneFit.tone}"><strong style="color:${zoneFit.tone}">${zoneFit.score}</strong><span>${zoneFit.label}</span></div>` : ''}
+      </div>
+      <div class="pr-drivers-panel" style="margin-top:12px">
+        ${rows || '<div class="zone-note">No real signals clearly stand out from a neutral read for this matchup right now.</div>'}
+      </div>
+      <div class="zone-note" style="margin-top:8px">Rule-based synthesis of real signals already computed elsewhere in this matchup (Matchup Edge, Zone Fit, park factor, bullpen workload, zone overlap, hot/cold trend, recent near-misses) — ranked by how far each is from a neutral read. Not AI-generated text; no external model is called.</div>`;
+  })();
+
   // ── Recent batted-ball log (roadmap: full tabbed restructure, H2H tab) --
   // real per-batted-ball Statcast rows (EV/angle/distance/trajectory/result),
   // synced by scripts/sync-batter-zone-hr.mjs, split by opposing pitcher hand
@@ -7451,7 +7538,8 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
 
     <div data-matchup-tabs>
       <div class="mu-tabs" role="tablist" aria-label="Matchup analysis sections">
-        <button type="button" class="mu-tab-btn active" data-tab="stats" role="tab" aria-selected="true">📊 Stats</button>
+        <button type="button" class="mu-tab-btn active" data-tab="why" role="tab" aria-selected="true">🧩 Why Today?</button>
+        <button type="button" class="mu-tab-btn" data-tab="stats" role="tab" aria-selected="false">📊 Stats</button>
         <button type="button" class="mu-tab-btn" data-tab="pitchmix" role="tab" aria-selected="false">⚙️ Pitch Mix</button>
         <button type="button" class="mu-tab-btn" data-tab="h2h" role="tab" aria-selected="false">🆚 H2H</button>
         <button type="button" class="mu-tab-btn" data-tab="edges" role="tab" aria-selected="false">🎯 Matchup Edges</button>
@@ -7460,8 +7548,13 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         <button type="button" class="mu-tab-btn" data-tab="simulator" role="tab" aria-selected="false">🎲 Home Run Simulator</button>
       </div>
 
+      <!-- Why Today? -->
+      <div class="mu-tab-pane active" data-tab="why">
+        ${whyTodayHTML}
+      </div>
+
       <!-- Stats -->
-      <div class="mu-tab-pane active" data-tab="stats">
+      <div class="mu-tab-pane" data-tab="stats">
         <div class="dr1043-grid" style="margin-bottom:16px">
           <div class="dr1043-panel">
             <div class="dr1043-panel-title">Batter season <span class="dr1043-badge blue">${batterName.split(' ').pop()}</span>${batterTrendBadgeHTML}</div>
