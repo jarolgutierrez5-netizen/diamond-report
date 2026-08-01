@@ -7557,9 +7557,6 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         ${pitcherChaseHTML}
         ${pitchEffectivenessTableHTML}
         ${countPerfHTML}
-        <div class="dr1041-zone-grid">
-        ${attackZoneHTML}
-        </div>
         ${pitchMixDashboard.html}
       </div>
 
@@ -7612,6 +7609,9 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
           <div class="dr1041-zone-grid">
           ${strikeZoneGridHTML}
           </div>
+        </div>
+        <div class="dr1041-zone-grid">
+        ${attackZoneHTML}
         </div>
         ${gameContextHTML}
       </div>
