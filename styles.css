@@ -6435,3 +6435,6 @@ select:focus-visible {
 .gc-news-row:hover { border-color: var(--accent2, #5b9dff); }
 .gc-news-title { font-size: 12.5px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
 .gc-news-blurb { font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+
+.why-today-scores { display: flex; gap: 10px; flex-wrap: wrap; }
+.why-today-scores .dr1043-edge-card { flex: 1; min-width: 140px; }
