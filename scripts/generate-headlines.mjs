@@ -358,7 +358,7 @@ function buildInjuryHeadline(hotHittersData, todayStr) {
 // two dated snapshots. Only surfaced above a real threshold so an ordinary
 // day-to-day score wobble never gets narrated as if it meant something.
 const MODEL_MOVE_THRESHOLD = 4;
-function buildModelMovementHeadline(tracker) {
+function buildModelMovementHeadline(tracker, todayStr) {
   const rows = tracker?.market?.hrThreat || [];
   const byPlayer = new Map();
   for (const r of rows) {
@@ -371,6 +371,15 @@ function buildModelMovementHeadline(tracker) {
     if (playerRows.length < 2) continue;
     const sorted = playerRows.slice().sort((a, b) => a.date.localeCompare(b.date));
     const latest = sorted[sorted.length - 1];
+    // Require the newer side of the comparison to actually be today's capture --
+    // without this, a player who simply hasn't been re-captured (a day off, or
+    // didn't qualify) could keep resurfacing the same day-old-or-older movement
+    // as if it were live news, on days where nothing about their matchup
+    // actually changed. This is the one piece of `today` this function needs;
+    // "prior" is left as whatever their real last captured outing was, however
+    // long ago that is -- that gap is genuinely part of the real story, not a
+    // data artifact to paper over.
+    if (todayStr && latest.date !== todayStr) continue;
     const prior = sorted[sorted.length - 2];
     const delta = latest.score - prior.score;
     if (Math.abs(delta) >= MODEL_MOVE_THRESHOLD && (!best || Math.abs(delta) > Math.abs(best.delta))) {
@@ -623,7 +632,7 @@ async function main() {
   const injury = buildInjuryHeadline(hotHittersData, today);
   if (injury) headlines.push(injury);
 
-  const modelMove = buildModelMovementHeadline(tracker);
+  const modelMove = buildModelMovementHeadline(tracker, today);
   if (modelMove) headlines.push(modelMove);
 
   try {
