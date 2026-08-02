@@ -5333,14 +5333,12 @@ select:focus-visible {
   gap: 10px;
   margin-bottom: 10px;
 }
-.dr-mu-hand-toggle,
 .dr-mu-density-toggle {
   display: inline-flex;
   border: 1px solid var(--border);
   border-radius: 999px;
   overflow: hidden;
 }
-.dr-mu-hand-btn,
 .dr-mu-density-btn {
   border: none;
   background: transparent;
@@ -5352,7 +5350,6 @@ select:focus-visible {
   text-transform: uppercase;
   cursor: pointer;
 }
-.dr-mu-hand-btn.active,
 .dr-mu-density-btn.active {
   color: #fff;
   background: rgba(47, 107, 255, .28);

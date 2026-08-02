@@ -3119,28 +3119,38 @@ function heatBGInverted(val, goodAbove, badBelow) {
 // (e.g. the lineup landing late).
 const pitcherMatchupTableState = {};
 function _muTableState(pid) {
-  if (!pitcherMatchupTableState[pid]) pitcherMatchupTableState[pid] = { pitch: 'all', hand: 'all', sortKey: 'woba', sortDir: 'desc', density: 'comfortable' };
+  if (!pitcherMatchupTableState[pid]) pitcherMatchupTableState[pid] = { pitch: 'all', sortKey: 'hr', sortDir: 'desc', density: 'comfortable' };
   return pitcherMatchupTableState[pid];
 }
 
-const MU_TABLE_COLUMNS = [
-  { key: 'pitches', label: 'Pitches Seen', dec: 0 },
-  { key: 'avg',     label: 'AVG',   dec: 3, pct0: true },
-  { key: 'iso',     label: 'ISO',   dec: 3, pct0: true },
-  { key: 'slg',     label: 'SLG',   dec: 3, pct0: true },
-  { key: 'woba',    label: 'wOBA',  dec: 3, pct0: true },
-  { key: 'avgEV',   label: 'Avg EV', dec: 1, suffix: ' mph' },
-  { key: 'whiffPct', label: 'Whiff%', dec: 1, suffix: '%' },
-  { key: 'hr',      label: 'HR', dec: 0 },
-  // Real platoon split (AVG/OBP/SLG summed) against today's specific pitcher's real
-  // throwing hand -- from fetchAndRenderLineup's per-batter statSplits fetch (batter.
-  // platoon), not the pitch-mix store the columns above read from, but merged into the
-  // same per-row stat object below so this generic column renderer needs no special case.
-  { key: 'platoonOps', label: 'OPS vs Hand', dec: 3, pct0: true },
-  // Real season K% as a hitter (strikeOuts/PA) -- batter.kPct, same "already computed
-  // for the K-prop cell's lineup average, now also surfaced per batter" data as there.
-  { key: 'kPct', label: 'K%', dec: 1, suffix: '%' },
-];
+// Real platoon split (AVG/SLG/OPS) against today's specific pitcher's real throwing
+// hand -- fetchAndRenderLineup's per-batter statSplits fetch (batter.platoon), not the
+// pitch-mix store the other columns read from. Labels are built dynamically off the
+// real pitcher hand ("vs RHP"/"vs LHP") rather than a generic "vs Hand" so it's explicit
+// these three columns are the batter's real production against pitchers who throw the
+// same hand as this one, not against this pitcher's own arsenal like every other column.
+function muHandLabel(pitcherHand) {
+  return pitcherHand === 'L' ? 'LHP' : pitcherHand === 'R' ? 'RHP' : 'Hand';
+}
+function muTableColumns(pitcherHand) {
+  const hl = muHandLabel(pitcherHand);
+  return [
+    { key: 'pitches', label: 'Pitches Seen', dec: 0 },
+    { key: 'avg',     label: 'AVG',   dec: 3, pct0: true },
+    { key: 'iso',     label: 'ISO',   dec: 3, pct0: true },
+    { key: 'slg',     label: 'SLG',   dec: 3, pct0: true },
+    { key: 'woba',    label: 'wOBA',  dec: 3, pct0: true },
+    { key: 'avgEV',   label: 'Avg EV', dec: 1, suffix: ' mph' },
+    { key: 'whiffPct', label: 'Whiff%', dec: 1, suffix: '%' },
+    { key: 'hr',      label: 'HR', dec: 0 },
+    { key: 'platoonAvg', label: `AVG vs ${hl}`, dec: 3, pct0: true },
+    { key: 'platoonSlg', label: `SLG vs ${hl}`, dec: 3, pct0: true },
+    { key: 'platoonOps', label: `OPS vs ${hl}`, dec: 3, pct0: true },
+    // Real season K% as a hitter (strikeOuts/PA) -- batter.kPct, same "already computed
+    // for the K-prop cell's lineup average, now also surfaced per batter" data as there.
+    { key: 'kPct', label: 'K%', dec: 1, suffix: '%' },
+  ];
+}
 
 // Real per-batter production against either every pitch this pitcher throws
 // (pitchKey === 'all', pitches-weighted across the batter's own real per-pitch-type
@@ -3205,6 +3215,11 @@ function _muHeatBG(colKey, val) {
     case 'woba': return heatBG(val, 0.290, 0.370);
     case 'avgEV': return heatBG(val, 87, 92);
     case 'whiffPct': return heatBGInverted(val, 30, 15);
+    // Same real league-average bands as the season avg/slg columns above -- these
+    // are the batter's real AVG/SLG specifically against pitchers who throw the same
+    // hand as this one.
+    case 'platoonAvg': return heatBG(val, 0.230, 0.290);
+    case 'platoonSlg': return heatBG(val, 0.370, 0.500);
     // League-average OPS runs ~.720-.750; a real vs-hand OPS well above that is real
     // extra danger to this pitcher specifically (not just this batter's overall line).
     case 'platoonOps': return heatBG(val, 0.680, 0.850);
@@ -3256,15 +3271,10 @@ function pitcherMatchupChipsHTML(pid, state) {
   return `<div class="dr-mu-chips">${chips.join('')}</div>`;
 }
 
-function pitcherMatchupControlsHTML(pid, state) {
-  const sortOpts = MU_TABLE_COLUMNS.map(c => `<option value="${c.key}"${state.sortKey === c.key ? ' selected' : ''}>${c.label}</option>`).join('');
+function pitcherMatchupControlsHTML(pid, state, pitcherHand) {
+  const sortOpts = muTableColumns(pitcherHand).map(c => `<option value="${c.key}"${state.sortKey === c.key ? ' selected' : ''}>${c.label}</option>`).join('');
   return `
     <div class="dr-mu-controls">
-      <div class="dr-mu-hand-toggle" data-mu-pid="${pid}">
-        <button type="button" class="dr-mu-hand-btn${state.hand === 'all' ? ' active' : ''}" data-mu-hand="all">All</button>
-        <button type="button" class="dr-mu-hand-btn${state.hand === 'R' ? ' active' : ''}" data-mu-hand="R">vs RHB</button>
-        <button type="button" class="dr-mu-hand-btn${state.hand === 'L' ? ' active' : ''}" data-mu-hand="L">vs LHB</button>
-      </div>
       <label class="dr-mu-sort">Sort by
         <select data-mu-sort-key="${pid}">${sortOpts}</select>
       </label>
@@ -3278,9 +3288,9 @@ function pitcherMatchupControlsHTML(pid, state) {
 
 // The full sortable/filterable scouting table -- real per-batter production
 // against today's real opposing lineup (already fetched for the lineup cards
-// below), filtered by real batter hand and the pitcher's real pitch mix. Never a
-// second data source from the lineup cards underneath; just a different real cut
-// of the same batterPitchTypeSeason + lineupCache data.
+// below) and the pitcher's real pitch mix. Never a second data source from the
+// lineup cards underneath; just a different real cut of the same
+// batterPitchTypeSeason + lineupCache data.
 // A compact real lineup-status line -- the old per-batter card list surfaced
 // this via a CONFIRMED/pending badge; this table takes over the same honesty
 // signal so an "expected" fallback lineup (from a past game, not yet
@@ -3305,13 +3315,16 @@ function pitcherMatchupTableHTML(pid, meta) {
     return `<div class="mu-empty" style="color:var(--muted)">Waiting for the ${drEscAttr(meta.oppAbbr || 'opposing')} lineup to load…</div>`;
   }
 
-  const filtered = state.hand === 'all' ? lineup : lineup.filter(b => b.hand === state.hand);
-  if (!filtered.length) {
-    return `${pitcherMatchupChipsHTML(pid, state)}${pitcherMatchupControlsHTML(pid, state)}<div class="mu-empty" style="color:var(--muted)">No confirmed ${state.hand === 'R' ? 'right-handed' : 'left-handed'} batters in today's lineup.</div>`;
-  }
-
-  const rows = filtered.map(b => {
+  const columns = muTableColumns(meta.pitcherHand);
+  const rows = lineup.map(b => {
     const stat = batterStatsForPitchFilter(b.id, state.pitch);
+    // Real production against pitchers who throw the SAME hand as this one
+    // (b.platoon, fetched once per batter against meta.pitcherHand specifically) --
+    // this is the pitcher-handedness cut the AVG/SLG/OPS "vs Hand" columns show,
+    // distinct from the pitch-mix columns above/below which are about this
+    // pitcher's own arsenal regardless of hand.
+    stat.platoonAvg = b.platoon?.avg ?? null;
+    stat.platoonSlg = b.platoon?.slg ?? null;
     stat.platoonOps = b.platoon?.ops ?? null;
     stat.kPct = b.kPct ?? null;
     const seasonHR = parseInt(b.stats?.homeRuns);
@@ -3336,7 +3349,7 @@ function pitcherMatchupTableHTML(pid, meta) {
     return state.sortDir === 'desc' ? bv - av : av - bv;
   });
 
-  const headCells = MU_TABLE_COLUMNS.map(c => `<th class="num">${c.label}</th>`).join('');
+  const headCells = columns.map(c => `<th class="num">${c.label}</th>`).join('');
   const pName = (meta.pitcherName || '').replace(/'/g, "\\'");
   // data-label carries each column's short header onto its own <td> -- same
   // mechanism renderPRTable's heatCell/plainCell already use so the existing
@@ -3347,7 +3360,7 @@ function pitcherMatchupTableHTML(pid, meta) {
   // lineup cards' "Matchup" button called, now the only way in from here
   // since those cards are no longer shown alongside this table.
   const bodyRows = rows.map(({ batter, stat, seasonHR }) => {
-    const cells = MU_TABLE_COLUMNS.map(c => {
+    const cells = columns.map(c => {
       if (c.key === 'hr') {
         return `<td class="num" data-label="${c.label}">${stat.hr != null ? stat.hr : '–'}</td>`;
       }
@@ -3367,13 +3380,13 @@ function pitcherMatchupTableHTML(pid, meta) {
   return `
     ${pitcherMatchupLineupStatusHTML(cacheEntry)}
     ${pitcherMatchupChipsHTML(pid, state)}
-    ${pitcherMatchupControlsHTML(pid, state)}
+    ${pitcherMatchupControlsHTML(pid, state, meta.pitcherHand)}
     <div class="dr1041-table-wrap dr-mu-table-wrap"><table class="dr1041-pitch-table dr-mu-table dr-mu-density-${state.density}">
       <thead><tr><th>Batter</th>${headCells}</tr></thead>
       <tbody>${bodyRows}</tbody>
     </table></div>
     <div class="zone-note" style="margin-top:2px">Click a batter to open their full Matchup analysis.</div>
-    <div class="zone-note" style="margin-top:8px">Real 2026 season production vs the selected pitch type (data/batter-pitch-type-season.json), not a head-to-head history against this specific pitcher -- too small a sample to exist for most matchups. "OPS vs Hand" and "K%" are real, unfiltered season stats (platoon split vs this pitcher's own throwing hand, and strikeout rate as a hitter) -- they don't change with the pitch-type filter above. Color = danger to this pitcher (red = production well above average, green = below); ★ = most home runs in today's confirmed lineup; 🔥 Favorable = a real sample (20+ pitches seen) that clears at least 3 of these danger thresholds at once against the selected pitch mix.</div>`;
+    <div class="zone-note" style="margin-top:8px">Real 2026 season production vs the selected pitch type (data/batter-pitch-type-season.json), not a head-to-head history against this specific pitcher -- too small a sample to exist for most matchups. "AVG/SLG/OPS vs ${muHandLabel(meta.pitcherHand)}" and "K%" are real, unfiltered season stats (each batter's real platoon split against pitchers who throw the same hand as this one, and strikeout rate as a hitter) -- they don't change with the pitch-type filter above. Color = danger to this pitcher (red = production well above average, green = below); ★ = most home runs in today's confirmed lineup; 🔥 Favorable = a real sample (20+ pitches seen) that clears at least 3 of these danger thresholds at once against the selected pitch mix.</div>`;
 }
 
 function renderPitcherMatchupTable(pid, meta, wrap) {
@@ -3391,17 +3404,6 @@ document.addEventListener('click', (e) => {
     const wrap = document.getElementById(`pr-matchup-table-${pid}`);
     if (meta && wrap) {
       _muTableState(pid).pitch = chip.getAttribute('data-mu-chip');
-      renderPitcherMatchupTable(pid, meta, wrap);
-    }
-    return;
-  }
-  const handBtn = e.target.closest('[data-mu-hand]');
-  if (handBtn) {
-    const pid = handBtn.closest('[data-mu-pid]')?.getAttribute('data-mu-pid');
-    const meta = pid && lineupMeta[pid];
-    const wrap = pid && document.getElementById(`pr-matchup-table-${pid}`);
-    if (meta && wrap) {
-      _muTableState(pid).hand = handBtn.getAttribute('data-mu-hand');
       renderPitcherMatchupTable(pid, meta, wrap);
     }
     return;
