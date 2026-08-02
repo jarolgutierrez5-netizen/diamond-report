@@ -438,6 +438,14 @@ async function buildLeaderboardHeadline(season) {
 const TRENDING_MAX_BATTERS = 3;
 const TRENDING_MAX_PITCHERS = 2;
 const TRENDING_MAX_DOTS = 15;
+// ratio's denominator is floored at 0.4 (see buildTrendingBatters) to avoid a
+// divide-by-zero for a light hitter with a near-zero expected HR pace -- but
+// that same floor lets a single hot 10-game stretch produce a technically-
+// correct but absurd-looking "Trending +900%" for exactly that kind of player.
+// Capped here (client shows a trailing '+' via trendPctCapped) rather than
+// hidden or fabricated, so the number displayed is always true, just not
+// necessarily the full magnitude.
+const TRENDING_PCT_CAP = 200;
 
 function buildTrendingBatters(pool, hrSprayData) {
   const spray = hrSprayData?.players || {};
@@ -458,13 +466,15 @@ function buildTrendingBatters(pool, hrSprayData) {
       .slice(0, TRENDING_MAX_DOTS)
       .map(d => ({ xFt: d.xFt, yFt: d.yFt, distance: d.distance }));
     if (!dots.length) continue; // real trend, but no synced visual yet -- skip rather than show empty
+    const rawPct = Math.round((ratio - 1) * 100);
     out.push({
       playerId: row.id,
       name: row.name,
       type: 'batter',
       trendLabel: streak.label,
       trendMetric: 'HR pace vs season rate (last 10 games)',
-      trendPct: Math.round((ratio - 1) * 100),
+      trendPct: Math.min(rawPct, TRENDING_PCT_CAP),
+      trendPctCapped: rawPct > TRENDING_PCT_CAP,
       visual: { type: 'spray', label: `${row.name.split(' ').pop()} Home Runs`, dots },
     });
     if (out.length >= TRENDING_MAX_BATTERS) break;
