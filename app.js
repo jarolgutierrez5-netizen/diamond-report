@@ -2897,7 +2897,7 @@ async function renderPitcherEnvironmentSection(meta, wrap) {
   const homeAbbr = meta.side === 'home' ? meta.teamAbbr : meta.oppAbbr;
   const awayAbbr = meta.side === 'home' ? meta.oppAbbr : meta.teamAbbr;
   const parkIdx = homeAbbr ? parkFactors[homeAbbr] : null;
-  const weather = homeAbbr ? await fetchGameWeather(homeAbbr, awayAbbr).catch(() => null) : null;
+  const weather = homeAbbr ? await fetchGameWeather(homeAbbr, awayAbbr, meta.gameTimestamp).catch(() => null) : null;
 
   const parkRow = parkIdx != null
     ? `<div class="dr-pdash-env-row"><span class="dr-pdash-env-label">Park HR Factor</span><span class="dr-pdash-env-value" style="color:${parkIdx >= 110 ? '#f4a261' : parkIdx <= 92 ? 'var(--green)' : 'var(--text)'}">${parkIdx >= 100 ? '+' : ''}${(parkIdx - 100)}% ${parkIdx >= 110 ? '(Hitter-Friendly)' : parkIdx <= 92 ? '(Pitcher-Friendly)' : '(Neutral)'}</span></div>`
@@ -3650,7 +3650,7 @@ function renderPRTable() {
     lineupMeta[pid] = {
       pitcherName: p.name, gamePk: p.gamePk, side: p.side, oppTeamId: p.oppTeamId,
       pitcherHr9: r.rawHr9, pitcherIp: r.rawIp, teamAbbr: p.teamAbbr, oppAbbr: p.oppAbbr,
-      pitcherHand: r.pitcherHand,
+      pitcherHand: r.pitcherHand, gameTimestamp: p.gameTimestamp,
     };
 
     const row = `<tr class="pr-row-tr" id="pr-row-${pid}" style="cursor:pointer" onclick="window.openPitcherLineupModal('${pid}')">
@@ -4681,7 +4681,39 @@ const _weatherCache = new Map();
 // in-memory cache keyed to a 15-minute bucket keeps this fresh without re-fetching on
 // every 2-minute auto-refresh, and is shared (module-level _weatherCache) across both
 // callers so visiting both boards in one session only pays for each game's weather once.
-async function fetchGameWeather(homeAbbr, awayAbbr) {
+// gameTimestamp (ms, optional) lets a pre-game call get the FORECAST for first
+// pitch instead of the reading at fetch time — a 7pm game checked at 1pm was
+// otherwise getting locked into an afternoon temp/wind reading for its entire
+// pre-game life. Only kicks in more than 20 min before first pitch; once a game
+// is live/imminent, `current` already IS game-time weather, so there's no reason
+// to prefer a forecast bucket over the real live reading.
+function pickWeatherHourly(wd, gameTimestamp) {
+  if (!gameTimestamp || gameTimestamp <= Date.now() + 20 * 60 * 1000) return { c: wd.current, forecast: false };
+  const h = wd.hourly;
+  if (!h?.time?.length) return { c: wd.current, forecast: false };
+  let bestIdx = -1, bestDiff = Infinity;
+  for (let i = 0; i < h.time.length; i++) {
+    // Open-Meteo's hourly.time strings are naive ("2026-08-02T19:00") in the
+    // timezone we requested (GMT, forced below) — appending "Z" is required or
+    // Date() parses them in the browser's local zone instead of UTC.
+    const diff = Math.abs(new Date(h.time[i] + 'Z').getTime() - gameTimestamp);
+    if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+  }
+  if (bestIdx < 0) return { c: wd.current, forecast: false };
+  return {
+    c: {
+      temperature_2m: h.temperature_2m[bestIdx],
+      relative_humidity_2m: h.relative_humidity_2m[bestIdx],
+      windspeed_10m: h.windspeed_10m[bestIdx],
+      winddirection_10m: h.winddirection_10m[bestIdx],
+      precipitation: h.precipitation[bestIdx],
+      pressure_msl: h.pressure_msl[bestIdx],
+      weathercode: h.weathercode[bestIdx],
+    },
+    forecast: true,
+  };
+}
+async function fetchGameWeather(homeAbbr, awayAbbr, gameTimestamp) {
   // Retractable-roof parks (ARI, HOU, MIA, MIL, SEA, TEX, TOR) are frequently played
   // open-air, so they still get a live weather fetch — only Tropicana Field (TB) is a
   // genuine fixed dome that's never open. Open-Meteo has no live roof-open/closed
@@ -4700,12 +4732,15 @@ async function fetchGameWeather(homeAbbr, awayAbbr) {
       // anomaly from each park's permanent elevation, which the separate Statcast-
       // based park factor already accounts for. Using raw surface_pressure here would
       // double-count Coors' altitude as if it were a "weather" effect every single day.
-      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,relative_humidity_2m,windspeed_10m,winddirection_10m,precipitation,pressure_msl,weathercode&temperature_unit=fahrenheit&windspeed_unit=mph`);
+      // hourly+forecast_days=2 (timezone forced to GMT) backs pickWeatherHourly's
+      // pre-game first-pitch lookup above; forecast_days=2 covers a UTC day rollover
+      // for late West Coast games without inflating the payload further.
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,relative_humidity_2m,windspeed_10m,winddirection_10m,precipitation,pressure_msl,weathercode&hourly=temperature_2m,relative_humidity_2m,windspeed_10m,winddirection_10m,precipitation,pressure_msl,weathercode&forecast_days=2&timezone=GMT&temperature_unit=fahrenheit&windspeed_unit=mph`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       wd = await res.json();
       _weatherCache.set(wKey, wd);
     }
-    const c = wd.current;
+    const { c, forecast } = pickWeatherHourly(wd, gameTimestamp);
     return {
       temp: Math.round(c.temperature_2m),
       humidity: c.relative_humidity_2m,
@@ -4714,6 +4749,7 @@ async function fetchGameWeather(homeAbbr, awayAbbr) {
       precip: c.precipitation,
       pressureMsl: c.pressure_msl,
       code: c.weathercode,
+      isForecast: forecast,
     };
   } catch { return null; }
 }
@@ -5063,7 +5099,7 @@ async function loadGameProps() {
         // Weather -- see fetchGameWeather's own header comment for why this isn't
         // routed through fetchJSON() and why the cache is short/in-memory-only.
         const stadium = stadiumCoords[homeAbbr] || stadiumCoords[awayAbbr];
-        const weather = await fetchGameWeather(homeAbbr, awayAbbr);
+        const weather = await fetchGameWeather(homeAbbr, awayAbbr, dt.getTime());
 
         // Real sportsbook odds (ESPN/DraftKings) — display-only comparison against the
         // DR model's own win%/total. Deliberately NOT an input to awayScore/homeScore or
@@ -5470,7 +5506,7 @@ async function loadGameProps() {
             <div style="font-size:34px;line-height:1">${weatherCodeEmoji(weather.code)}</div>
             <div style="min-width:90px">
               <div style="font-size:20px;font-weight:700;color:var(--text);line-height:1.1">${weather.temp}°F</div>
-              <div style="font-size:11px;color:var(--muted)">${weatherCodeLabel(weather.code)} · ${stadiumName || homeAbbr}</div>
+              <div style="font-size:11px;color:var(--muted)">${weatherCodeLabel(weather.code)} · ${stadiumName || homeAbbr}${weather.isForecast ? ' · forecast for first pitch' : ''}</div>
             </div>
             <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
               ${windArrow}
@@ -9673,7 +9709,7 @@ async function loadHRPotential() {
       // shipped. shrinkMult-style clamping already lives inside airDensityHRMult/
       // windHRMult themselves (+/-15%/+/-20% caps), so this doesn't need its own shrinkage.
       const gameHomeAbbr = g.teams.home.team.abbreviation, gameAwayAbbr = g.teams.away.team.abbreviation;
-      const gameWeather = await fetchGameWeather(gameHomeAbbr, gameAwayAbbr);
+      const gameWeather = await fetchGameWeather(gameHomeAbbr, gameAwayAbbr, dt.getTime());
       const weatherHRMult = gameWeather ? (airDensityHRMult(gameWeather) * windHRMult(gameWeather, gameHomeAbbr)) : 1;
 
       // Process both pitchers in parallel
@@ -14232,13 +14268,13 @@ if (document.readyState === 'loading') {
       // fetchGameWeather checks stadiumCoords for EITHER abbr passed to it (whichever
       // one is actually the home team), so passing team/opp in an unknown order here
       // is safe -- it doesn't need to know which side is home to find the right park.
-      fetchGameWeather(r.teamAbbr, r.oppAbbr).then(function(weather){
+      fetchGameWeather(r.teamAbbr, r.oppAbbr, r.gameTimestamp).then(function(weather){
         if (!wEl) return;
         if (!weather) { wEl.textContent = 'Dome/indoor park — weather is not a factor for this game.'; return; }
         var bits = [];
         if (weather.temp != null) bits.push(weather.temp + '°F');
         if (weather.wind != null) bits.push('wind ' + weather.wind + ' mph' + (weather.windDir != null ? ' @' + weather.windDir + '°' : ''));
-        wEl.textContent = bits.length ? ('🌤️ ' + bits.join(' · ')) : 'Weather data not available for this game.';
+        wEl.textContent = bits.length ? ('🌤️ ' + bits.join(' · ') + (weather.isForecast ? ' (forecast for first pitch)' : '')) : 'Weather data not available for this game.';
       }).catch(function(){ wEl.textContent = 'Weather data not available for this game.'; });
     } else if (wEl) {
       wEl.textContent = '';
