@@ -2543,6 +2543,14 @@ let latestPitcherKData = {}; // pitcherId -> { ks, isFinal, isLive } — kept fr
 // compare a pitcher's real DraftKings points today against his pregame projection.
 let livePitcherGameStats = {}; // pitcherId -> { ip, ks, er, hitsAllowed, bbAllowed, hbpAllowed, win, isFinal, isLive }
 let prSortCol = null, prSortDir = 1, prRows = [];
+// 'all' | 'R' | 'L' -- when set, the Pitcher Report board's HR/9 column and sort
+// swap from each pitcher's season-overall HR/9 to their real HR/9 allowed
+// specifically against that batter hand (pitcherStatcast[pid].hr9ByHand, synced
+// by sync-pitcher-zone-hr.mjs from real outs-by-hand/HR-by-hand reconstruction --
+// the only real per-hand AGGREGATE stat this repo has for pitchers; AVG/wOBA/WHIP/
+// ISO/SLG/FIP have no hand-split source, so those columns stay season-overall
+// regardless of this filter).
+let prHandFilter = 'all';
 const lineupCache = {};
 let repoLineupsData = null;
 let repoLineupsLoaded = false;
@@ -2727,9 +2735,11 @@ async function loadPitcherReport() {
       };
     });
 
-    // Default sort by game time ascending
-    prSortCol = 'gameTime';
-    prSortDir = 1;
+    // Default sort by HR/9 descending -- surfaces the biggest real home-run
+    // risks in today's starting pitchers first, matching every other HR-focused
+    // board's own default (HR Threats sorts by HR probability, not game time).
+    prSortCol = 'hr9';
+    prSortDir = -1;
 
     renderPRTable();
     loadKsToday();
@@ -2754,10 +2764,21 @@ function isPRMobileTabletView() {
   return window.matchMedia && window.matchMedia('(max-width: 1024px)').matches;
 }
 
+// Real HR/9 allowed specifically against batter hand `hand` ('R'/'L'), or the
+// season-overall HR/9 already on the row when hand is 'all'. Null (never a
+// fabricated number) when that pitcher's real hand-split sample hasn't cleared
+// sync-pitcher-zone-hr.mjs's own minimum-IP floor yet.
+function prHr9ForRow(r, hand) {
+  if (hand !== 'R' && hand !== 'L') return r.hr9;
+  const pid = normalizePitcherId(r.pitcher?.id);
+  return pitcherStatcast[String(pid)]?.hr9ByHand?.[hand]?.hr9 ?? null;
+}
+
 function getSortedPRRowsForCurrentSort() {
   return [...prRows].sort((a,b) => {
     if (!prSortCol) return 0;
-    const av=a[prSortCol], bv=b[prSortCol];
+    const av = prSortCol === 'hr9' ? prHr9ForRow(a, prHandFilter) : a[prSortCol];
+    const bv = prSortCol === 'hr9' ? prHr9ForRow(b, prHandFilter) : b[prSortCol];
     if (av==null&&bv==null) return 0;
     if (av==null) return 1; if (bv==null) return -1;
     return (av-bv)*prSortDir;
@@ -3653,7 +3674,7 @@ function renderPRTable() {
         ${heatCell(r.whip, v=>v.toFixed(2), 1.10, 1.40, 'Walks + Hits per Inning Pitched', 'WHIP')}
         ${heatCell(r.iso,  v=>v.toFixed(3).replace(/^0/,''), .150, .200, 'Isolated Power — extra-base power allowed', 'ISO')}
         ${heatCell(r.slg,  v=>v.toFixed(3).replace(/^0/,''), .350, .430, 'Slugging Percentage Against', 'SLG')}
-        ${heatCell(r.hr9,  v=>v.toFixed(2), 0.80, 1.50, 'Home Runs per 9 Innings', 'HR/9')}
+        ${heatCell(prHr9ForRow(r, prHandFilter),  v=>v.toFixed(2), 0.80, 1.50, prHandFilter==='all' ? 'Home Runs per 9 Innings' : `Home Runs per 9 Innings vs ${prHandFilter==='R'?'RHB':'LHB'}`, prHandFilter==='all' ? 'HR/9' : `HR/9 vs ${prHandFilter==='R'?'RHB':'LHB'}`)}
         ${plainCell(r.tb!=null?r.tb:'–', 'Total Bases Allowed', 'TB')}
         ${plainCell(`<span style="color:${r.kpg>=7?'var(--green)':r.kpg>=5?'var(--text)':'var(--muted)'}">${r.kpg??'–'}</span>`, 'Average Strikeouts per Game Started', 'K/GM')}
       </tr>`;
@@ -3672,8 +3693,20 @@ function renderPRTable() {
   const prSortBtns = PR_SORT_FIELDS.map(({key,label}) => {
     const active = prSortCol === key;
     const arrow = active ? (prSortDir === 1 ? ' ↑' : ' ↓') : '';
-    return `<button onclick="sortPR('${key}')" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${active?'var(--accent2)':'var(--border)'};background:${active?'rgba(47,107,255,.12)':'var(--surface2)'};color:${active?'var(--accent2)':'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">${label}${arrow}</button>`;
+    const displayLabel = (key === 'hr9' && prHandFilter !== 'all') ? `HR/9 vs ${prHandFilter==='R'?'RHB':'LHB'}` : label;
+    return `<button onclick="sortPR('${key}')" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${active?'var(--accent2)':'var(--border)'};background:${active?'rgba(47,107,255,.12)':'var(--surface2)'};color:${active?'var(--accent2)':'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">${displayLabel}${arrow}</button>`;
   }).join('');
+
+  // HR/9 vs batter hand toggle -- the only column with a real per-hand aggregate
+  // stat (prHr9ForRow's own comment explains why the rest of the table stays
+  // season-overall regardless of this). Same .dr1042-split-toggle pill styling
+  // as the hand toggles elsewhere in the app so this reads as the same control.
+  const prHandToggle = `<div class="dr1042-split-toggle" role="tablist" aria-label="HR/9 batter hand toggle" style="flex-shrink:0">
+      <button type="button" class="dr1042-split-btn${prHandFilter==='all'?' active':''}" onclick="setPRHandFilter('all')">HR/9: All</button>
+      <button type="button" class="dr1042-split-btn${prHandFilter==='R'?' active':''}" onclick="setPRHandFilter('R')">vs RHB</button>
+      <button type="button" class="dr1042-split-btn${prHandFilter==='L'?' active':''}" onclick="setPRHandFilter('L')">vs LHB</button>
+    </div>`;
+  const hr9HeaderLabel = prHandFilter === 'all' ? 'HR/9' : `HR/9 vs ${prHandFilter === 'R' ? 'RHB' : 'LHB'}`;
 
   const noMatches = !sorted.length && (window.__drBoardSearch.pr || '').trim();
   el.innerHTML = `
@@ -3681,13 +3714,14 @@ function renderPRTable() {
       <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">SORT:</span>
       ${prSortBtns}
       <button onclick="resetPRSort()" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:3px 8px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0">RESET</button>
+      ${prHandToggle}
       ${drSearchInputHTML('pr', 'pr-search-input', 'Search pitchers…', "drSetBoardSearch('pr',this.value,renderPRTable)")}
     </div>
     ${noMatches ? `<div class="mu-empty" style="padding:24px">No pitchers match "${window.__drBoardSearch.pr}". Try a different name.</div>` : `
     <div class="dr1041-table-wrap pr-starters-table-wrap"><table class="pr-stats-table pr-starters-table">
       <thead><tr>
         <th style="text-align:left">Pitcher</th>
-        <th>IP</th><th>BF</th><th>FIP</th><th>AVG</th><th>wOBA</th><th>WHIP</th><th>ISO</th><th>SLG</th><th>HR/9</th><th>TB</th><th>K/GM</th>
+        <th>IP</th><th>BF</th><th>FIP</th><th>AVG</th><th>wOBA</th><th>WHIP</th><th>ISO</th><th>SLG</th><th>${hr9HeaderLabel}</th><th>TB</th><th>K/GM</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
@@ -4611,15 +4645,24 @@ function renderLineup(panelId, data, pitcherHr9, pitcherIp, oppAbbr, pitcherId, 
 
 function sortPR(col) {
   if (prSortCol===col) prSortDir*=-1;
-  else { prSortCol=col; prSortDir=1; }
+  else { prSortCol=col; prSortDir = col==='hr9' ? -1 : 1; }
   renderPRTable();
 }
 
 function resetPRSort() {
-  prSortCol = 'gameTime';
-  prSortDir = 1;
+  prSortCol = 'hr9';
+  prSortDir = -1;
+  prHandFilter = 'all';
   renderPRTable();
 }
+
+// ALL/vs RHB/vs LHB toggle for the HR/9 column -- see prHr9ForRow's own
+// comment for why this is the one column that can actually change (the real
+// hand-split data only exists for HR/9, not the table's other stats).
+window.setPRHandFilter = function(hand) {
+  prHandFilter = (hand === 'R' || hand === 'L') ? hand : 'all';
+  renderPRTable();
+};
 
 
 // ── GAME PROPS ────────────────────────────────────────────────────────
