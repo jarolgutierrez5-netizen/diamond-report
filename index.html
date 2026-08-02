@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026073117">
+<link rel="stylesheet" href="styles.min.css?v=2026073118">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -601,20 +601,24 @@
       </div>
       <div class="dr-filter-dropdown" style="position:relative;display:inline-block">
         <button type="button" id="hrp-filters-btn" class="hrp-filter-btn" onclick="window.toggleHRPFilterMenu && window.toggleHRPFilterMenu(event)">☰ FILTERS<span id="hrp-filters-badge" class="dr-count-pill" style="display:none;margin-left:6px"></span> ▾</button>
-        <div id="hrp-filters-menu" class="dr-filter-dropdown-menu" style="display:none;position:fixed;z-index:600;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;min-width:220px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
-          <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px"><input type="checkbox" data-hrp-filter="onfire" onchange="filterHRP('onfire')"> 🔥 ON FIRE</label>
-          <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px"><input type="checkbox" data-hrp-filter="favorable" onchange="filterHRP('favorable')"> 🟢 FAVORABLE</label>
-          <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px"><input type="checkbox" data-hrp-filter="drought" onchange="filterHRP('drought')"> 🔴 DROUGHT</label>
-          <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px"><input type="checkbox" data-hrp-filter="due" onchange="filterHRP('due')"> ⚠️ DUE</label>
-          <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px"><input type="checkbox" data-hrp-filter="nearhr" onchange="filterHRP('nearhr')"> 🚀 NEAR HR</label>
-          <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px"><input type="checkbox" data-hrp-filter="zonefit" onchange="filterHRP('zonefit')"> 🎯 STRONG ZONE FIT</label>
-          <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px"><input type="checkbox" id="hrp-completed-checkbox" onchange="window.toggleHRPCompletedView && window.toggleHRPCompletedView()"> ✅ COMPLETED HITS ONLY</label>
-          <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px"><input type="checkbox" data-hrp-filter="watchlist" onchange="filterHRP('watchlist')"> ★ WATCHLIST</label>
+        <div id="hrp-filters-menu" class="dr-filter-dropdown-menu" style="display:none;position:fixed;z-index:600;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;width:320px;max-height:min(560px,calc(100vh - 90px));overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.4)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px 6px">
+            <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:6px;padding:6px 8px;font-size:11.5px;font-weight:600;cursor:pointer;border-radius:6px;line-height:1.2"><input type="checkbox" data-hrp-filter="onfire" onchange="filterHRP('onfire')"> 🔥 ON FIRE</label>
+            <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:6px;padding:6px 8px;font-size:11.5px;font-weight:600;cursor:pointer;border-radius:6px;line-height:1.2"><input type="checkbox" data-hrp-filter="favorable" onchange="filterHRP('favorable')"> 🟢 FAVORABLE</label>
+            <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:6px;padding:6px 8px;font-size:11.5px;font-weight:600;cursor:pointer;border-radius:6px;line-height:1.2"><input type="checkbox" data-hrp-filter="drought" onchange="filterHRP('drought')"> 🔴 DROUGHT</label>
+            <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:6px;padding:6px 8px;font-size:11.5px;font-weight:600;cursor:pointer;border-radius:6px;line-height:1.2"><input type="checkbox" data-hrp-filter="due" onchange="filterHRP('due')"> ⚠️ DUE</label>
+            <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:6px;padding:6px 8px;font-size:11.5px;font-weight:600;cursor:pointer;border-radius:6px;line-height:1.2"><input type="checkbox" data-hrp-filter="nearhr" onchange="filterHRP('nearhr')"> 🚀 NEAR HR</label>
+            <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:6px;padding:6px 8px;font-size:11.5px;font-weight:600;cursor:pointer;border-radius:6px;line-height:1.2"><input type="checkbox" data-hrp-filter="zonefit" onchange="filterHRP('zonefit')"> 🎯 STRONG ZONE FIT</label>
+            <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:6px;padding:6px 8px;font-size:11.5px;font-weight:600;cursor:pointer;border-radius:6px;line-height:1.2"><input type="checkbox" id="hrp-completed-checkbox" onchange="window.toggleHRPCompletedView && window.toggleHRPCompletedView()"> ✅ COMPLETED HITS ONLY</label>
+            <label class="dr-filter-dropdown-item" style="display:flex;align-items:center;gap:6px;padding:6px 8px;font-size:11.5px;font-weight:600;cursor:pointer;border-radius:6px;line-height:1.2"><input type="checkbox" data-hrp-filter="watchlist" onchange="filterHRP('watchlist')"> ★ WATCHLIST</label>
+          </div>
           <!-- Team/Position/Pitcher Throws/Batter Bats/Game Time/Stadium/Weather --
                populated on every render by renderHRPTableV1032 (drStandardFilterControlsHTML),
                same standardized filter set K Props/Prop Intelligence use, just embedded in
-               this one dropdown instead of a second always-visible filter bar. -->
-          <div id="hrp-std-filters" style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px;display:flex;flex-direction:column;gap:8px"></div>
+               this one dropdown instead of a second always-visible filter bar. Two-column
+               grid (rather than the shared bar's own flex-wrap row) so 7 selects fit this
+               narrower dropdown without turning it into a very tall single column. -->
+          <div id="hrp-std-filters" style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:8px 10px"></div>
           <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px">
             <button type="button" id="filter-all-btn" class="hrp-filter-btn hrp-filter-all" style="width:100%" onclick="filterHRP('all')">Clear All</button>
           </div>
@@ -1029,7 +1033,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026073117" defer></script>
+<script src="app.min.js?v=2026073118" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
