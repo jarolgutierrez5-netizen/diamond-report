@@ -7199,51 +7199,78 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   // market may not have posted a line for him.
   const edgeHTML = (() => {
     const shortName = batterName.split(' ').pop();
-    if (!situationalProfile) return `
-      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">Situational true-probability tracking for ${shortName} hasn't synced yet — this needs a confirmed starting-lineup spot today.</div>`;
 
-    const markets = [
-      { label: 'Home Run', oddsMarket: 'home_runs', data: situationalProfile.hr },
-      { label: 'Any Hit', oddsMarket: 'hits', data: situationalProfile.hits },
-      { label: '2+ Total Bases', oddsMarket: 'total_bases', data: situationalProfile.tb },
-    ];
-    const rows = markets.map(m => {
-      const trueProb = m.data?.trueProbPct;
-      if (trueProb == null) return '';
-      const marketOdds = getPropMarketOdds(batterName, m.oddsMarket);
-      const implied = marketImpliedProb(marketOdds);
-      const edge = implied != null ? trueProb - implied.pct : null;
-      const edgeTxt = edge != null
-        ? `<span style="color:${edge >= 5 ? 'var(--green)' : edge <= -5 ? '#f4a261' : 'var(--muted)'};font-weight:700">${edge > 0 ? '+' : ''}${edge}pp edge</span>`
-        : `<span style="color:var(--muted)">no real market line yet</span>`;
-      return `<div class="vuln-item">
-        <span class="vuln-icon">🎯</span>
-        <span style="color:var(--text)"><strong>${m.label}:</strong> ${trueProb}% true probability${implied != null ? ` vs ${implied.pct}% market implied${implied.devigged ? '' : ' (single-side, not devigged)'}` : ''} — ${edgeTxt}</span>
-      </div>`;
-    }).filter(Boolean).join('');
-    if (!rows) return `
-      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">No situational markets computed yet for ${shortName}.</div>`;
+    const situationalHTML = (() => {
+      if (!situationalProfile) return `
+        <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">Situational true-probability tracking for ${shortName} hasn't synced yet — this needs a confirmed starting-lineup spot today. The simulator below still works off his real season rate.</div>`;
 
-    // Simulate button lives at the bottom of the whole section (below every market row
-    // and the sample-size footnote), not inline under the Home Run row — HR only, since
-    // that's the market this was actually requested for.
-    const hrTrueProb = situationalProfile.hr?.trueProbPct;
-    const simHTML = hrTrueProb != null ? `
+      const markets = [
+        { label: 'Home Run', oddsMarket: 'home_runs', data: situationalProfile.hr },
+        { label: 'Any Hit', oddsMarket: 'hits', data: situationalProfile.hits },
+        { label: '2+ Total Bases', oddsMarket: 'total_bases', data: situationalProfile.tb },
+      ];
+      const rows = markets.map(m => {
+        const trueProb = m.data?.trueProbPct;
+        if (trueProb == null) return '';
+        const marketOdds = getPropMarketOdds(batterName, m.oddsMarket);
+        const implied = marketImpliedProb(marketOdds);
+        const edge = implied != null ? trueProb - implied.pct : null;
+        const edgeTxt = edge != null
+          ? `<span style="color:${edge >= 5 ? 'var(--green)' : edge <= -5 ? '#f4a261' : 'var(--muted)'};font-weight:700">${edge > 0 ? '+' : ''}${edge}pp edge</span>`
+          : `<span style="color:var(--muted)">no real market line yet</span>`;
+        return `<div class="vuln-item">
+          <span class="vuln-icon">🎯</span>
+          <span style="color:var(--text)"><strong>${m.label}:</strong> ${trueProb}% true probability${implied != null ? ` vs ${implied.pct}% market implied${implied.devigged ? '' : ' (single-side, not devigged)'}` : ''} — ${edgeTxt}</span>
+        </div>`;
+      }).filter(Boolean).join('');
+      if (!rows) return `
+        <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">No situational markets computed yet for ${shortName}.</div>`;
+
+      const ctx = situationalProfile.context;
+      return `
+        <div class="vuln-box" style="margin-top:10px">
+          <div class="vuln-title">🎯 SITUATIONAL TRUE PROBABILITY <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(his own history vs today's exact matchup, shrunk toward season rate)</span></div>
+          ${rows}
+          <div style="font-size:10px;color:var(--muted);margin-top:6px">Based on ${situationalProfile.situationalPA} plate appearance(s) matching today's situation (vs ${ctx.oppHand}HP, ${ctx.parkTier} park${ctx.oppPowerTier ? `, ${ctx.oppPowerTier} arm` : ''}), out of ${situationalProfile.seasonPA} total PA this season.</div>
+        </div>`;
+    })();
+
+    // Simulator: prefers the richer situational rate (his own history vs THIS exact
+    // matchup shape) when it's synced, but no longer requires it -- previously the
+    // whole "Home Run Simulator" tab was just a "hasn't synced yet" note for any
+    // batter without confirmed-lineup situational tracking, which was most of them.
+    // Falls back to his real season per-PA HR rate (homeRuns/plateAppearances,
+    // already fetched for every matchup this modal opens), gated on a minimum real
+    // sample so a five-PA callup doesn't drive the simulator off noise. This is a
+    // DIFFERENT real number from situational true probability and from the board's
+    // own blended hrProb model (see the comment above this IIFE) -- labeled
+    // explicitly so it's never confused with either.
+    const HR_SIM_SEASON_MIN_PA = 40;
+    const seasonPA = parseInt(bs.plateAppearances) || 0;
+    const seasonHRCount = parseInt(bs.homeRuns) || 0;
+    const seasonRate = seasonPA >= HR_SIM_SEASON_MIN_PA ? seasonHRCount / seasonPA : null;
+    const seasonWholeGamePct = seasonRate != null ? +((1 - Math.pow(1 - seasonRate, FANTASY_PROJECTED_PA)) * 100).toFixed(1) : null;
+
+    const situationalRate = situationalProfile?.hr?.shrunkRate;
+    const situationalPct = situationalProfile?.hr?.trueProbPct;
+    const usingSituational = situationalRate != null && situationalPct != null;
+    const simRate = usingSituational ? situationalRate : seasonRate;
+    const simPct = usingSituational ? situationalPct : seasonWholeGamePct;
+    const simSourceNote = usingSituational
+      ? `today's situational true-probability rate above`
+      : `his real ${seasonPA}-PA season rate (${seasonHRCount} HR) — situational tracking for this exact matchup hasn't synced yet`;
+
+    const simHTML = simRate != null && simPct != null ? `
       <div class="hr-sim-wrap" style="margin-top:12px">
+        <div class="zone-note" style="margin:0 0 6px">Simulates ${FANTASY_PROJECTED_PA} plate appearances per game using ${simSourceNote}.</div>
         <button type="button" class="hr-sim-btn" id="hr-sim-btn-${batterId}"
-          data-batter-id="${batterId}" data-rate="${situationalProfile.hr.shrunkRate}" data-true-pct="${hrTrueProb}"
+          data-batter-id="${batterId}" data-rate="${simRate}" data-true-pct="${simPct}"
           onclick="runHRMatchupSimulation(this)">🎲 SIMULATE THIS MATCHUP</button>
         <div class="hr-sim-result" id="hr-sim-result-${batterId}" style="display:none"></div>
-      </div>` : '';
+      </div>` : `
+      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">Not enough real plate appearances yet this season (needs ${HR_SIM_SEASON_MIN_PA}+) to run a simulation for ${shortName}.</div>`;
 
-    const ctx = situationalProfile.context;
-    return `
-      <div class="vuln-box" style="margin-top:10px">
-        <div class="vuln-title">🎯 SITUATIONAL TRUE PROBABILITY <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(his own history vs today's exact matchup, shrunk toward season rate)</span></div>
-        ${rows}
-        <div style="font-size:10px;color:var(--muted);margin-top:6px">Based on ${situationalProfile.situationalPA} plate appearance(s) matching today's situation (vs ${ctx.oppHand}HP, ${ctx.parkTier} park${ctx.oppPowerTier ? `, ${ctx.oppPowerTier} arm` : ''}), out of ${situationalProfile.seasonPA} total PA this season.</div>
-        ${simHTML}
-      </div>`;
+    return `${situationalHTML}${simHTML}`;
   })();
 
   // Roadmap 5.4 re-sort: Hot Streak Signal's own score/label comes first, then Recent
@@ -14011,15 +14038,12 @@ if (document.readyState === 'loading') {
     document.querySelectorAll('#hrp-filters-menu [data-hrp-filter]').forEach(function(cb){ cb.checked = s.has(cb.getAttribute('data-hrp-filter')); });
     var completedCb=document.getElementById('hrp-completed-checkbox');
     if(completedCb) completedCb.checked = completedOn;
-    // One combined count on the one "☰ FILTERS" button/badge -- the qualitative
-    // checkboxes (on fire/drought/etc + completed-only) AND the Team/Position/
-    // Pitcher Throws/Batter Bats/Game Time/Stadium/Weather selects now live in
-    // the same dropdown menu (see renderHRPTableV1032/index.html's
-    // #hrp-std-filters), so there's one button showing the true total instead
-    // of two separate badges on two separate filter UIs. Passes no boardKey so
-    // this doesn't also count the search box, which has its own visible ✕
-    // clear button right next to it.
-    var activeCount = s.size + (completedOn?1:0) + drActiveFilterCount('hr', null);
+    // Badge reflects only what's actually inside this dropdown (qualitative
+    // checkboxes + completed-only) -- the Team/Position/Pitcher Throws/Batter
+    // Bats/Game Time/Stadium/Weather selects live directly on the filter bar
+    // now (index.html's #hrp-std-filters), visible on their own, so they're
+    // no longer folded into this button's count.
+    var activeCount = s.size + (completedOn?1:0);
     var trigger=document.getElementById('hrp-filters-btn');
     if(trigger) trigger.classList.toggle('active', activeCount>0);
     var badge=document.getElementById('hrp-filters-badge');
