@@ -16759,15 +16759,10 @@ if (document.readyState === 'loading') {
       '<rect x="' + zoneTL.x.toFixed(1) + '" y="' + zoneTL.y.toFixed(1) + '" width="' + (zoneBR.x - zoneTL.x).toFixed(1) + '" height="' + (zoneBR.y - zoneTL.y).toFixed(1) + '" fill="rgba(120,150,200,.08)" stroke="rgba(255,255,255,.3)" stroke-width="1.2"/>' + circles + '</svg>';
   }
 
-  function renderTrendingPlayers(data){
-    var section = document.getElementById('dr-hub-trending');
-    var grid = document.getElementById('dr-hub-trending-grid');
-    if (!section || !grid || !data) return;
-    var players = Array.isArray(data.players) ? data.players : [];
-    if (!players.length) return;
-
-    grid.innerHTML = '';
-    players.forEach(function(p, i){
+  // One card's markup -- shared by both the batter (HR pace) and pitcher (whiff
+  // rate) subgroups in renderTrendingPlayers below, since a card looks and
+  // behaves identically either way; only which subgroup it lands in differs.
+  function buildTrendingCard(p, i){
       var card = document.createElement('div');
       card.className = 'dr-hub-trending-card dr-anim-in';
       card.style.animationDelay = Math.min(i, 8) * 25 + 'ms';
@@ -16840,8 +16835,44 @@ if (document.readyState === 'loading') {
         });
       }
 
-      grid.appendChild(card);
-    });
+      return card;
+  }
+
+  // Separated into two labeled subgroups by what's actually trending (HR pace
+  // for hitters, whiff rate for pitchers) instead of one mixed strip -- those
+  // are two different stats on two different scales, and lumping them together
+  // made it unclear at a glance which kind of "trending" a given card meant.
+  // Each subgroup is its own horizontal-scroll row and is only rendered when it
+  // has at least one real qualifying player, same "hide rather than show empty"
+  // rule the section itself already follows.
+  function renderTrendingSubgroup(container, label, players){
+    if (!players.length) return;
+    var group = document.createElement('div');
+    group.className = 'dr-hub-trending-subgroup';
+    var head = document.createElement('div');
+    head.className = 'dr-hub-trending-subhead';
+    head.textContent = label;
+    group.appendChild(head);
+    var row = document.createElement('div');
+    row.className = 'dr-hub-trending-grid';
+    players.forEach(function(p, i){ row.appendChild(buildTrendingCard(p, i)); });
+    group.appendChild(row);
+    container.appendChild(group);
+  }
+
+  function renderTrendingPlayers(data){
+    var section = document.getElementById('dr-hub-trending');
+    var grid = document.getElementById('dr-hub-trending-grid');
+    if (!section || !grid || !data) return;
+    var players = Array.isArray(data.players) ? data.players : [];
+    if (!players.length) return;
+
+    grid.innerHTML = '';
+    grid.className = 'dr-hub-trending-groups';
+    var batters = players.filter(function(p){ return p.type !== 'pitcher'; });
+    var pitchers = players.filter(function(p){ return p.type === 'pitcher'; });
+    renderTrendingSubgroup(grid, '🔥 Hot At The Plate — HR Pace', batters);
+    renderTrendingSubgroup(grid, '🎯 Trending Arms — Whiff Rate', pitchers);
     section.style.display = '';
   }
 
