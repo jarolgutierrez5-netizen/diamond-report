@@ -5021,6 +5021,27 @@ select:focus-visible {
   .dr-filter-select-wrap { flex: 1 1 130px; }
   .dr-filter-select { max-width: none; width: 100%; }
 }
+/* HR Threats' standardized selects (Team/Position/Pitcher Throws/Batter Bats/
+   Game Time/Stadium/Weather) live right on the filter bar next to the
+   "☰ FILTERS"/"Sort: ..." pills now, not in their own labeled block like on
+   K Props/Prop Intelligence -- so they're restyled here (ID-scoped, doesn't
+   touch the shared .dr-filter-select/-wrap classes those boards still use) to
+   match those two pills' exact size/shape instead of standing out as bigger,
+   more rectangular controls. Unconditional (not inside the max-width:700px
+   block) so desktop and mobile both get the same small pill look. */
+/* !important on the label because #props .dr-filter-label{display:block!important}
+   (an existing @media(max-width:768px) rule elsewhere in this file, same
+   specificity: one ID + one class) would otherwise win on mobile regardless of
+   source order, since !important always beats a non-!important rule. */
+#hrp-std-filters .dr-filter-label { display: none !important; }
+#hrp-std-filters .dr-filter-select-wrap { flex: 0 0 auto; }
+#hrp-std-filters .dr-filter-select {
+  border-radius: 20px;
+  padding: 5px 11px;
+  font-size: 10px;
+  max-width: none;
+  width: auto;
+}
 
 /* Near HRs board card parity (roadmap "Motion and Interaction Design" --
    "make the player cards for the Near HR tab the same as the HR section").
