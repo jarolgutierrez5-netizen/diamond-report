@@ -16803,13 +16803,21 @@ if (document.readyState === 'loading') {
       subEl.className = 'dr-hub-trending-sub';
       subEl.textContent = (p.visual && p.visual.label) || '';
       text.appendChild(subEl);
-      info.appendChild(text);
 
-      var pctEl = document.createElement('span');
+      // Stacked under name/sub (not a sibling flex item sharing the row with the
+      // photo) so the pct chip's own width never eats into the space available
+      // for the player's name -- that's what was truncating names like "Luis
+      // Rengifo" down to "Luis ..." on mobile before.
+      var pctEl = document.createElement('div');
       pctEl.className = 'dr-hub-trending-pct';
       var pctVal = Number(p.trendPct) || 0;
-      pctEl.textContent = 'Trending ' + (pctVal >= 0 ? '↑' : '↓') + Math.abs(pctVal) + '%';
-      info.appendChild(pctEl);
+      // trendPctCapped (see generate-headlines.mjs's TRENDING_PCT_CAP): a light
+      // hitter with a near-zero expected HR pace can post a real but absurd-looking
+      // 900%+ ratio off one hot stretch -- capped server-side and flagged here so
+      // the '+' honestly signals "at least this much" instead of a fabricated number.
+      pctEl.textContent = 'Trending ' + (pctVal >= 0 ? '↑' : '↓') + Math.abs(pctVal) + (p.trendPctCapped ? '%+' : '%');
+      text.appendChild(pctEl);
+      info.appendChild(text);
 
       card.appendChild(info);
 
