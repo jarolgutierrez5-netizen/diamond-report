@@ -3776,7 +3776,13 @@ async function fetchBatterSeasonBundle(playerId, preferredSeason, fallbackStats 
         const alt = await fetchJSON(`https://diamondreport.app/api/v1/people/${playerId}/stats?stats=season&group=hitting&season=${season}&gameType=R`).catch(()=>null);
         stat = alt?.stats?.[0]?.splits?.[0]?.stat || stat;
       }
-      const logs = logData?.stats?.[0]?.splits || [];
+      // lastXGames isn't documented as guaranteed most-recent-first -- sorted
+      // explicitly so every caller's logs.slice(0,N) (last10HR, recentGames,
+      // aggregateLastNGames, etc.) actually means "the N most recent games."
+      // Same fix already applied at the HR Threats board's own separate
+      // lastXGames fetch (loadHRPotential) after this exact assumption produced
+      // impossible-looking output (e.g. two "3-HR games" in a batter's last 5).
+      const logs = (logData?.stats?.[0]?.splits || []).slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
       if (_statHasRealBattingData(stat)) return { seasonStats: stat, logs, season };
       if (!bestLogs.length && logs.length) bestLogs = logs;
     } catch {}
