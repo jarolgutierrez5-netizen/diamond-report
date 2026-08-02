@@ -2120,17 +2120,38 @@ function liveWindHRMult(weather, homeAbbr) {
 // per game (not per batter/side), same reasoning as the client (weather is a whole-
 // game condition), but a Map cache here also protects against any future caller
 // requesting the same game's weather twice in one run.
+// gameTimestamp (ms, optional) — same first-pitch-forecast lookup as app.js's
+// fetchGameWeather/pickWeatherHourly (see that file's comment for the full
+// rationale); duplicated rather than shared since server and client already
+// duplicate every other weather multiplier in this pair of files (see
+// liveAirDensityHRMult/airDensityHRMult, liveWindHRMult/windHRMult above).
+function pickWeatherHourly(wd, gameTimestamp) {
+  if (!gameTimestamp || gameTimestamp <= Date.now() + 20 * 60 * 1000) return wd.current;
+  const h = wd.hourly;
+  if (!h?.time?.length) return wd.current;
+  let bestIdx = -1, bestDiff = Infinity;
+  for (let i = 0; i < h.time.length; i++) {
+    const diff = Math.abs(new Date(h.time[i] + 'Z').getTime() - gameTimestamp);
+    if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+  }
+  if (bestIdx < 0) return wd.current;
+  return {
+    temperature_2m: h.temperature_2m[bestIdx], relative_humidity_2m: h.relative_humidity_2m[bestIdx],
+    windspeed_10m: h.windspeed_10m[bestIdx], winddirection_10m: h.winddirection_10m[bestIdx],
+    precipitation: h.precipitation[bestIdx], pressure_msl: h.pressure_msl[bestIdx], weathercode: h.weathercode[bestIdx],
+  };
+}
 const _liveWeatherCache = new Map();
-async function fetchLiveGameWeather(gamePk, homeAbbr, awayAbbr) {
+async function fetchLiveGameWeather(gamePk, homeAbbr, awayAbbr, gameTimestamp) {
   if (_liveWeatherCache.has(gamePk)) return _liveWeatherCache.get(gamePk);
   const stadium = STADIUM_COORDS[homeAbbr] || STADIUM_COORDS[awayAbbr];
   let weather = null;
   if (stadium && (!stadium.dome || stadium.retractable)) {
     try {
-      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,relative_humidity_2m,windspeed_10m,winddirection_10m,precipitation,pressure_msl,weathercode&temperature_unit=fahrenheit&windspeed_unit=mph`);
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,relative_humidity_2m,windspeed_10m,winddirection_10m,precipitation,pressure_msl,weathercode&hourly=temperature_2m,relative_humidity_2m,windspeed_10m,winddirection_10m,precipitation,pressure_msl,weathercode&forecast_days=2&timezone=GMT&temperature_unit=fahrenheit&windspeed_unit=mph`);
       if (res.ok) {
         const wd = await res.json();
-        const c = wd.current;
+        const c = pickWeatherHourly(wd, gameTimestamp);
         weather = {
           temp: Math.round(c.temperature_2m), humidity: c.relative_humidity_2m,
           wind: Math.round(c.windspeed_10m), windDir: c.winddirection_10m,
@@ -2153,7 +2174,7 @@ async function buildBatterPool(games, season) {
   for (const g of games) {
     // Once per game (weather isn't batter- or side-specific) -- see fetchLiveGameWeather's
     // header comment for why this mirrors app.js's own weather fetch/multiplier exactly.
-    const gameWeather = await fetchLiveGameWeather(g.gamePk, g.teams.home.team.abbreviation, g.teams.away.team.abbreviation);
+    const gameWeather = await fetchLiveGameWeather(g.gamePk, g.teams.home.team.abbreviation, g.teams.away.team.abbreviation, new Date(g.gameDate).getTime());
     const weatherHRMult = gameWeather ? (liveAirDensityHRMult(gameWeather) * liveWindHRMult(gameWeather, g.teams.home.team.abbreviation)) : 1;
     for (const [side, opp] of [['away', 'home'], ['home', 'away']]) {
       const pitcher = g.teams[opp].probablePitcher;
