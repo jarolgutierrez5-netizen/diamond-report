@@ -5012,7 +5012,14 @@ select:focus-visible {
   .dr-filter-toggle-btn { display: inline-flex; margin-bottom: 8px; }
   .dr-filter-controls { display: none; }
   .dr-filter-bar-open .dr-filter-controls { display: flex; }
-  .dr-filter-select { max-width: none; flex: 1 1 130px; }
+  /* .dr-filter-select-wrap (the <label>) is the actual row-axis flex item inside
+     .dr-filter-controls/#hrp-std-filters -- this rule used to target
+     .dr-filter-select (the <select> itself) instead, whose own parent
+     (.dr-filter-select-wrap) is flex-direction:column, so "flex: 1 1 130px"
+     was being read as a 130px-tall main-size on the vertical axis instead of a
+     130px-wide one on the row, rendering every select as a ~130px+ tall box. */
+  .dr-filter-select-wrap { flex: 1 1 130px; }
+  .dr-filter-select { max-width: none; width: 100%; }
 }
 
 /* Near HRs board card parity (roadmap "Motion and Interaction Design" --
