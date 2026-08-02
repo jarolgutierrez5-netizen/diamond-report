@@ -14044,10 +14044,16 @@ if (document.readyState === 'loading') {
     if(opening && trigger){
       // position:fixed, positioned here in JS off the trigger's real screen rect.
       var rect = trigger.getBoundingClientRect();
-      var menuWidth = 220;
+      var menuWidth = 320; // matches the CSS width set on #hrp-filters-menu
       var left = Math.min(rect.left, window.innerWidth - menuWidth - 8);
       menu.style.top = (rect.bottom + 6) + 'px';
       menu.style.left = Math.max(8, left) + 'px';
+      // Real available space below the trigger, not a fixed guess -- the CSS
+      // max-height alone assumed the trigger always sits near the top of the
+      // viewport, which isn't true once the page has scrolled or the filter
+      // row itself has moved. This keeps the whole menu (own scrollbar and
+      // all) inside the viewport no matter where the button actually is.
+      menu.style.maxHeight = Math.max(200, window.innerHeight - rect.bottom - 14) + 'px';
     }
     menu.style.display = opening ? 'block' : 'none';
   };
