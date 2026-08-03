@@ -2914,16 +2914,32 @@ async function renderPitcherSupportSection(meta, wrap) {
   const info = meta.teamAbbr ? bullpenFatigue[meta.teamAbbr] : null;
   if (!info) {
     wrap.innerHTML = `<div class="mu-empty" style="color:var(--muted)">Bullpen support data not available yet for ${drEscAttr(meta.teamAbbr || 'this team')}.</div>`;
-    return;
+  } else {
+    const tierColor = info.tier === 'Fresh' ? 'var(--green)' : info.tier === 'Gassed' ? '#f87171' : info.tier === 'Taxed' ? '#fbbf24' : 'var(--text)';
+    wrap.innerHTML = `
+      <div class="dr-pdash-env">
+        <div class="dr-pdash-env-row"><span class="dr-pdash-env-label">${drEscAttr(meta.teamAbbr)} Bullpen</span><span class="dr-pdash-env-value" style="color:${tierColor};font-weight:800">${info.tier}</span></div>
+        <div class="dr-pdash-env-row"><span class="dr-pdash-env-label">Reliever Pitches (last 2 days)</span><span class="dr-pdash-env-value">${info.totalRelieverPitches ?? '–'}</span></div>
+        <div class="dr-pdash-env-row"><span class="dr-pdash-env-label">Arms Used Back-to-Back</span><span class="dr-pdash-env-value">${info.backToBackArms ?? '–'}</span></div>
+      </div>
+      <div class="zone-note" style="margin-top:8px">Real recent bullpen workload, not a season average — how much relief support is actually available behind him if he comes out early.</div>`;
   }
-  const tierColor = info.tier === 'Fresh' ? 'var(--green)' : info.tier === 'Gassed' ? '#f87171' : info.tier === 'Taxed' ? '#fbbf24' : 'var(--text)';
-  wrap.innerHTML = `
-    <div class="dr-pdash-env">
-      <div class="dr-pdash-env-row"><span class="dr-pdash-env-label">${drEscAttr(meta.teamAbbr)} Bullpen</span><span class="dr-pdash-env-value" style="color:${tierColor};font-weight:800">${info.tier}</span></div>
-      <div class="dr-pdash-env-row"><span class="dr-pdash-env-label">Reliever Pitches (last 2 days)</span><span class="dr-pdash-env-value">${info.totalRelieverPitches ?? '–'}</span></div>
-      <div class="dr-pdash-env-row"><span class="dr-pdash-env-label">Arms Used Back-to-Back</span><span class="dr-pdash-env-value">${info.backToBackArms ?? '–'}</span></div>
-    </div>
-    <div class="zone-note" style="margin-top:8px">Real recent bullpen workload, not a season average — how much relief support is actually available behind him if he comes out early.</div>`;
+
+  // Real individual reliever reference (season ERA/WHIP/K9/HR9) -- the aggregate
+  // workload above answers "how gassed is the pen," this answers "who's actually in
+  // it and how good are they." Independent of bullpenFatigue's own availability, so
+  // this still tries even when the block above showed the "not available yet" empty
+  // state. No way to know pre-game which specific arm enters, so a reference list,
+  // not a projection -- same convention as the Bench section on the lineup panel.
+  if (meta.gamePk && meta.side) {
+    try {
+      const box = await fetchJSON(`https://diamondreport.app/api/v1/game/${meta.gamePk}/boxscore`);
+      const teamBox = box.teams?.[meta.side];
+      const bullpenIds = (teamBox?.bullpen || []).filter(Boolean);
+      const people = await fetchRosterReference(bullpenIds, 'pitching', new Date().getFullYear());
+      appendRosterReferenceSection(wrap, 'Bullpen Arms', '🧢', people, 'pitching');
+    } catch (e) {}
+  }
 }
 
 // ── Matchup Drivers & AI Explanation ──────────────────────────────────────
@@ -3821,6 +3837,45 @@ async function fetchExpectedLineup(teamId) {
   }
 }
 
+// Real bench (hitting) / bullpen (pitching) roster reference -- season stats only,
+// never a specific-matchup projection like the confirmed starters/starter get.
+// There's no way to know pre-game which bench player or reliever actually enters a
+// game, so this is deliberately just "who's available and how good are they,"
+// shared by the batting lineup panel's Bench section (fetchAndRenderLineup) and the
+// Pitcher Report Support section's Bullpen Arms section (renderPitcherSupportSection).
+async function fetchRosterReference(ids, statGroup, season) {
+  if (!ids || !ids.length) return [];
+  try {
+    const d = await fetchJSON(`https://diamondreport.app/api/v1/people?personIds=${ids.join(',')}&hydrate=stats(group=${statGroup},type=season,season=${season})`);
+    return d?.people || [];
+  } catch { return []; }
+}
+function rosterReferenceRowsHTML(people, statGroup) {
+  return people.map(p => {
+    const s = p.stats?.[0]?.splits?.[0]?.stat || {};
+    const pos = p.primaryPosition?.abbreviation || '–';
+    const fv = (v, dec) => (v == null || v === '' || v === '-.--') ? '–' : (dec ? String(v).replace(/^0(\.)/, '$1') : v);
+    const statsHTML = statGroup === 'pitching'
+      ? [['ERA', fv(s.era)], ['WHIP', fv(s.whip)], ['K/9', fv(s.strikeoutsPer9Inn)], ['HR/9', fv(s.homeRunsPer9)]]
+      : [['AVG', fv(s.avg, true)], ['HR', fv(s.homeRuns)], ['OPS', fv(s.ops, true)]];
+    return `<div class="lbc-bench-row">
+      <span class="lbc-bench-name">${p.fullName || '–'}</span>
+      <span class="lbc-bench-pos">${pos}</span>
+      <span class="lbc-bench-stats">${statsHTML.map(([label, v]) => `<span class="lbc-stat-chip"><b>${label}</b>${v}</span>`).join('')}</span>
+    </div>`;
+  }).join('');
+}
+function appendRosterReferenceSection(container, title, icon, people, statGroup) {
+  if (!container || !people || !people.length) return;
+  const rowsHTML = rosterReferenceRowsHTML(people, statGroup);
+  if (!rowsHTML) return;
+  const section = document.createElement('div');
+  section.className = 'lbc-bench-section';
+  section.innerHTML = `<button type="button" class="lbc-bench-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">${icon} ${title} (${people.length})<span class="lbc-bench-caret">›</span></button>
+    <div class="lbc-bench-list">${rowsHTML}</div>`;
+  container.appendChild(section);
+}
+
 async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp, skipEnrichment = false, bypassPRGuards = false, pitcherHand = null) {
   const pid = normalizePitcherId(pitcherId);
   const panel = document.getElementById(`panel-${pid}`);
@@ -4009,6 +4064,19 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
       // Full render on first load
       if (lineupRequestTokens[pid] !== token) return;
       renderLineup(`panel-${pid}`, lineupCache[cacheKey], pitcherHr9, pitcherIp, null, pid, pitcherName);
+
+      // Bench reference (real season AVG/HR/OPS, not a projection -- see
+      // fetchRosterReference's header comment) -- fire-and-forget, appended once
+      // ready rather than blocking the starters render above on it. teamBox.bench is
+      // already sitting in the SAME boxscore this function just fetched, so this is
+      // one extra bulk /people call, not a second boxscore fetch.
+      const benchIds = (teamBox?.bench || []).filter(Boolean);
+      if (benchIds.length) {
+        fetchRosterReference(benchIds, 'hitting', today.slice(0, 4)).then(people => {
+          if (lineupRequestTokens[pid] !== token) return;
+          appendRosterReferenceSection(document.getElementById(`panel-${pid}`), 'Bench', '🪑', people, 'hitting');
+        });
+      }
 
       // Patch K Prop cell with lineup-adjusted projection
       const kpropCell = document.getElementById(`kprop-cell-${pid}`);
