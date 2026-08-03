@@ -184,6 +184,62 @@ async function fetchOddsLookup() {
   return { pitcherLines, batterLines };
 }
 
+// ── Real market moneyline (ESPN/DraftKings) for the Diamond Report Pick ────
+// Ported from app.js's loadEspnEventIds()/getMarketOdds() -- the CLIENT already
+// fetches this same real moneyline on every page load to show a "Market %"
+// comparison next to the model's own pick on the Game Projections card, but it
+// was never recorded anywhere: fetched fresh in the browser, then discarded.
+// This is the server-side capture of that exact same number, at pick-lock
+// time, so it's tracked alongside win/loss going forward. Free, unauthenticated
+// ESPN endpoint (unlike ODDS_API_KEY above) -- no quota to budget against.
+const ESPN_ABBR_TO_DR = { CHW: 'CWS' };
+function normalizeEspnAbbr(abbr) { return ESPN_ABBR_TO_DR[abbr] || abbr; }
+
+async function loadEspnEventIds() {
+  const byAbbrPair = {};
+  try {
+    const data = await fetchJSON('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard', 1);
+    (data.events || []).forEach(ev => {
+      const competitors = ev.competitions?.[0]?.competitors || [];
+      const away = competitors.find(c => c.homeAway === 'away');
+      const home = competitors.find(c => c.homeAway === 'home');
+      const awayAbbr = normalizeEspnAbbr(away?.team?.abbreviation);
+      const homeAbbr = normalizeEspnAbbr(home?.team?.abbreviation);
+      if (awayAbbr && homeAbbr) byAbbrPair[`${awayAbbr}@${homeAbbr}`] = ev.id;
+    });
+  } catch (e) {
+    console.warn('ESPN scoreboard fetch failed -- today\'s DRP rows will have no real market odds:', e.message);
+  }
+  return byAbbrPair;
+}
+
+// Same no-vig (vig-removed) implied win% math as app.js's getMarketOdds, so
+// the number recorded here always matches what a user would have actually
+// seen on the site that day. Returns null (never a fabricated price) when
+// ESPN/DraftKings hasn't posted a line for this game yet.
+async function fetchGameMoneyline(eventId) {
+  if (!eventId) return null;
+  try {
+    const summary = await fetchJSON(`https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=${eventId}`, 1);
+    const pc = summary.pickcenter?.[0] || null;
+    const awayML = pc?.awayTeamOdds?.moneyLine;
+    const homeML = pc?.homeTeamOdds?.moneyLine;
+    if (typeof awayML !== 'number' || typeof homeML !== 'number') return null;
+    const impliedProb = (ml) => ml < 0 ? (-ml) / (-ml + 100) : 100 / (ml + 100);
+    const awayImplied = impliedProb(awayML);
+    const homeImplied = impliedProb(homeML);
+    const vigTotal = awayImplied + homeImplied; // >1 due to vig -- normalize it out
+    return {
+      provider: pc.provider?.name || 'Market',
+      awayML, homeML,
+      awayPct: Math.round((awayImplied / vigTotal) * 100),
+      homePct: Math.round((homeImplied / vigTotal) * 100),
+    };
+  } catch {
+    return null;
+  }
+}
+
 function emptyTracker() {
   return {
     version: 1,
@@ -696,18 +752,19 @@ function simulateDRPGame({ awayLineup, awayStarterStat, awayBullpenStat, homeLin
 }
 
 // ── Diamond Report Pick model (ported from loadGameProps in app.js, minus weather) ──
-async function computeDRPick(g, season) {
+async function computeDRPick(g, season, espnEventIds) {
   const awayAbbr = g.teams.away.team.abbreviation;
   const homeAbbr = g.teams.home.team.abbreviation;
   const awayP = g.teams.away.probablePitcher;
   const homeP = g.teams.home.probablePitcher;
   if (!awayP || !homeP) return null;
 
-  const [awayStats, homeStats, awayRecent, homeRecent] = await Promise.all([
+  const [awayStats, homeStats, awayRecent, homeRecent, marketOdds] = await Promise.all([
     seasonPitchingStat(awayP.id, season),
     seasonPitchingStat(homeP.id, season),
     recentPitchingForm(awayP.id, season),
     recentPitchingForm(homeP.id, season),
+    espnEventIds ? fetchGameMoneyline(espnEventIds[`${awayAbbr}@${homeAbbr}`]) : Promise.resolve(null),
   ]);
 
   let awayScore = 50, homeScore = 50;
@@ -778,6 +835,14 @@ async function computeDRPick(g, season) {
     awayRecordPct: (awayW + awayL) > 0 ? Math.round((awayW / (awayW + awayL)) * 1000) / 1000 : null,
     homeRecordPct: (homeW + homeL) > 0 ? Math.round((homeW / (homeW + homeL)) * 1000) / 1000 : null,
     isDayGame: gameHourCT < 17,
+    // Real ESPN/DraftKings moneyline at capture time -- the same number the
+    // Game Projections card shows the user that day (see fetchGameMoneyline's
+    // header comment). null when the book hadn't posted a line yet at capture
+    // time, never fabricated. Locked in permanently once this row is first
+    // captured, same as every other field here -- never refreshed on a later
+    // same-day pass, so this always reflects the real line at pick time, not
+    // whatever the line drifted to by game time.
+    marketOdds,
   };
 }
 
@@ -2519,6 +2584,11 @@ async function captureToday(store, compStore, drpSimCompStore) {
     console.log('Odds already fetched today — reusing model-only fallback for this pass.');
   }
 
+  // Free/unauthenticated (no quota to budget, unlike oddsLookup above), so this
+  // is fetched on every pass -- harmless on the afternoon re-pass since it's
+  // only actually used below for games that haven't been DRP-captured yet.
+  const espnEventIds = await loadEspnEventIds();
+
   for (const g of previewGames) {
     const gameDay = cdtDateString(new Date(g.gameDate));
     const drpKey = `${gameDay}|DRP|${[g.teams.away.team.abbreviation, g.teams.home.team.abbreviation].sort().join('-')}`;
@@ -2528,7 +2598,7 @@ async function captureToday(store, compStore, drpSimCompStore) {
     // discarding it as a duplicate.
     if (!store.market.drp.some(r => r.key === drpKey)) {
       try {
-        const drp = await computeDRPick(g, season);
+        const drp = await computeDRPick(g, season, espnEventIds);
         if (drp) { store.market.drp.push(drp); added++; }
       } catch (e) {
         console.warn(`DRP capture failed for gamePk ${g.gamePk}:`, e.message);
@@ -2698,6 +2768,7 @@ export {
   captureHRThreatToday, gradeHRThreatPending,
   simulatePropOdds, simulateSBOdds, simulateHRGameOdds, scoreForMarket,
   fetchOddsLookup, normalizeName,
+  loadEspnEventIds, fetchGameMoneyline,
   loadStatcastPowerIndex, loadPitcherStatcastPowerIndex, loadPitcher2kSuppressionIndex, battedBallPowerIndex, zoneMatchupMultiplier,
   computeZoneFitServer, zoneValsFromByZoneServer,
   computeMatchupEdgeScore, battingSplitVsHand,
