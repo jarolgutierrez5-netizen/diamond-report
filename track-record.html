@@ -51,6 +51,12 @@
     font-weight: 700;
     margin-left: 6px;
   }
+  .tr-stat-note {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+    margin-top: 8px;
+  }
   .tr-chart-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -311,8 +317,17 @@
     { key: 'hrThreat', label: 'HR Threats', color: '#199e70' },
   ];
 
-  function pctColor(pct) {
+  // marketKey is optional -- omit it (or pass a blended/cross-market number, like
+  // the By Team and leaderboard tables below) to get the general 55/45 read.
+  // HR Threats needs its own bar: it predicts one specific batter homering in one
+  // specific game, a real per-batter per-game rate that tops out well below 50%
+  // even on a great matchup -- the general threshold would paint every single HR
+  // Threats number red regardless of how the model is actually doing relative to
+  // that market's real ceiling. This range isn't a precisely derived cutoff, just
+  // a much more honest one than reusing a 50/50-market bar for a ~10-20% market.
+  function pctColor(pct, marketKey) {
     if (pct == null) return 'var(--muted)';
+    if (marketKey === 'hrThreat') return pct >= 18 ? '#2ecc71' : pct < 10 ? '#dc2626' : 'var(--accent)';
     return pct >= 55 ? '#2ecc71' : pct < 45 ? '#dc2626' : 'var(--accent)';
   }
 
@@ -370,9 +385,10 @@
       var t = allTime[m.key];
       if (!t.total) return '';
       var record = t.wins + '-' + t.losses;
+      var note = m.key === 'hrThreat' ? '<div class="tr-stat-note">Odds one specific batter homers in one specific game — a realistic range is roughly 10-20%, not 50/50.</div>' : '';
       return '<div class="tr-stat"><div class="tr-stat-label">' + m.label + '</div>' +
         '<div class="tr-stat-record">' + record +
-        '<span class="tr-stat-pct" style="color:' + pctColor(t.pct) + '">(' + t.pct + '%)</span></div></div>';
+        '<span class="tr-stat-pct" style="color:' + pctColor(t.pct, m.key) + '">(' + t.pct + '%)</span></div>' + note + '</div>';
     }).join('');
     el.innerHTML = html || '<div class="tr-empty">No graded picks yet this season.</div>';
   }
@@ -818,7 +834,7 @@
       return '<div class="tr-breakdown-card"><h3>' + m.label + '</h3>' +
         bdRow('Hits', b.hits) + bdRow('Near Misses', b.nearMisses) + bdRow('Misses', b.misses) +
         (b.pushes ? bdRow('Pushes', b.pushes) : '') +
-        '<div class="tr-breakdown-row"><span class="label">Hit Rate</span><span class="val" style="color:' + pctColor(b.hitRate) + '">' +
+        '<div class="tr-breakdown-row"><span class="label">Hit Rate</span><span class="val" style="color:' + pctColor(b.hitRate, m.key) + '">' +
         (b.hitRate != null ? b.hitRate + '%' : '—') + (b.insufficientSample ? ' <small style="color:var(--muted)">(low sample)</small>' : '') +
         '</span></div></div>';
     }).join('');
@@ -827,8 +843,8 @@
       var conf = period.byConfidence[m.key];
       var rows = ['High', 'Medium', 'Low'].map(function (t) {
         var b = conf[t];
-        var text = b.graded ? b.hitRate + '% (' + b.graded + ')' : '—';
-        return '<div class="tr-breakdown-row"><span class="label">' + t + '</span><span class="val' + (b.insufficientSample ? ' low-sample' : '') + '">' + text + '</span></div>';
+        var text = b.graded ? b.hitRate + '% (' + b.graded + ')' + (b.insufficientSample ? ' <small style="color:var(--muted)">(low sample)</small>' : '') : '—';
+        return '<div class="tr-breakdown-row"><span class="label">' + t + '</span><span class="val" style="color:' + pctColor(b.hitRate, m.key) + '">' + text + '</span></div>';
       }).join('');
       return '<div class="tr-breakdown-card"><h3>' + m.label + ' — By Confidence</h3>' + rows + '</div>';
     }).join('');
@@ -882,7 +898,7 @@
         '<table class="tr-lb-table"><thead><tr><th>Tier</th><th>Record</th><th>Hit Rate</th></tr></thead><tbody>' +
         ZONE_FIT_TIERS.filter(function (t) { return zf[t] && zf[t].graded > 0; }).map(function (t) {
           var b = zf[t];
-          return '<tr><td>' + t + '</td><td>' + b.hits + '-' + b.nearMisses + '-' + b.misses + '</td><td class="tr-lb-hitrate" style="color:' + pctColor(b.hitRate) + '">' +
+          return '<tr><td>' + t + '</td><td>' + b.hits + '-' + b.nearMisses + '-' + b.misses + '</td><td class="tr-lb-hitrate" style="color:' + pctColor(b.hitRate, 'hrThreat') + '">' +
             b.hitRate + '%' + (b.insufficientSample ? ' <small style="color:var(--muted)">(low sample)</small>' : '') + '</td></tr>';
         }).join('') + '</tbody></table></div>'
       : '';
