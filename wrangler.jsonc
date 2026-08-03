@@ -13,5 +13,30 @@
   "compatibility_date": "2026-07-11",
   "assets": {
     "directory": "."
+  },
+  // "main" adds a real Worker script for the first time -- previously this config had no
+  // script at all (pure static-asset serving). Its fetch() handler just delegates straight
+  // to the same asset serving, so this is behavior-neutral for every normal page/data
+  // request; the only new behavior is the scheduled() handler in that file, which replaces
+  // GitHub's own (documented-unreliable, see src/scheduled-sync.js's header comment)
+  // `schedule:` triggers with Cloudflare Cron Triggers that call workflow_dispatch instead.
+  "main": "src/scheduled-sync.js",
+  // Must exactly match src/scheduled-sync.js's CRON_MAP keys, and (until the redundant
+  // `schedule:` blocks are removed from the workflow YAML files once this is confirmed
+  // working) the schedule: entries in sync-statcast.yml / update-tracker.yml /
+  // generate-projections.yml / calibration-report.yml.
+  "triggers": {
+    "crons": [
+      "4 11 * * *",
+      "9 14 * * *",
+      "9 17 * * *",
+      "9 20 * * *",
+      "9 23 * * *",
+      "7 14 * * *",
+      "13 20 * * *",
+      "19 0 * * *",
+      "11 12 * * *",
+      "22 15 * * 1"
+    ]
   }
 }
