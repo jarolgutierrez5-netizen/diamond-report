@@ -70,7 +70,13 @@
 
 <script>
 (function () {
-  var LABELS = { drp: 'Moneyline Picks', kprop: 'Strikeout Props', premium: 'Premium Picks', hrThreat: 'HR Threat' };
+  // 'premium' intentionally excluded -- Premium/Elite Picks was removed as a
+  // feature (see app.js's Elite Picks removal), but data/tracker.json still
+  // carries a frozen historical allTime.premium bucket from before that
+  // removal (nothing writes new rows to it anymore). Showing it here next to
+  // three markets that are all still actively picking would read as if
+  // Premium Picks were a live market, not a discontinued one.
+  var LABELS = { drp: 'Moneyline Picks', kprop: 'Strikeout Props', hrThreat: 'HR Threat' };
   function pctColor(pct) {
     if (pct == null) return '#8fa3c8';
     return pct >= 55 ? '#2ecc71' : pct < 45 ? '#dc2626' : '#2f6bff';
