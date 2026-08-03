@@ -1705,10 +1705,18 @@ let statcastHotHitters = {};
 // that adjusts it. Defaults to 0.6 (its documented starting value) until the fetch below
 // resolves or if data/model-params.json is ever unavailable.
 let hrMultShrinkage = 0.6;
+// Auto-tuned final recalibration of the whole simulated HR probability (see
+// calibrateHRProb below and update-tracker.mjs's identical calibrateHRProb for
+// the full reasoning) -- separate from hrMultShrinkage above, which dampens
+// each individual input multiplier rather than the combined output. Defaults
+// to the identity transform (1/0) until the fetch below resolves.
+let hrCalibrationSlope = 1, hrCalibrationIntercept = 0;
 // Shared shrink helper -- exact port of update-tracker.mjs's shrinkMult(m), used both
 // for the hot-hitter rate multiplier (loadHRPotential) and the quality-of-contact
 // season-power correction below, same as the server-side formula this mirrors.
 function shrinkMult(m) { return 1 + (m - 1) * hrMultShrinkage; }
+// Exact port of update-tracker.mjs's calibrateHRProb.
+function calibrateHRProb(rawPct) { return hrCalibrationIntercept + hrCalibrationSlope * rawPct; }
 // Quality-of-contact correction for a batter's season HR rate -- exact port of
 // update-tracker.mjs's battedBallPowerIndex. Corrects the box-score HR/AB rate using
 // real quality-of-contact data (xSLG, hard-hit%) instead of trusting the counting stat
@@ -5146,6 +5154,10 @@ async function loadHRModelParams() {
         const data = await res.json();
         const v = Number(data?.params?.HR_MULT_SHRINKAGE);
         if (Number.isFinite(v)) hrMultShrinkage = v;
+        const slope = Number(data?.params?.HR_SCORE_CALIBRATION_SLOPE);
+        if (Number.isFinite(slope)) hrCalibrationSlope = slope;
+        const intercept = Number(data?.params?.HR_SCORE_CALIBRATION_INTERCEPT);
+        if (Number.isFinite(intercept)) hrCalibrationIntercept = intercept;
       }
     } catch {}
     return hrMultShrinkage;
@@ -14066,7 +14078,10 @@ if (document.readyState === 'loading') {
     // real per-game HR probability for a genuinely elite matchup can exceed 25%, so
     // the old cap flattened great and mediocre matchups into the same narrow band
     // and made ranking/selection nearly meaningless. See Elite Picks HR record audit.
-    return Math.max(1, Math.min(99, Math.round(prob * 100)));
+    // Final calibration correction (auto-tuned against graded outcomes; identity by
+    // default) compresses compounding overconfidence from multiplying several
+    // correlated shrunk multipliers together. See Elite Picks HR calibration report.
+    return Math.max(1, Math.min(99, Math.round(calibrateHRProb(prob * 100))));
   };
   window.simulateKOdds = function(projK, line) {
     var lambda = clamp(n(projK, 4.5), 0.3, 15);
