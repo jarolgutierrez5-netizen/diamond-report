@@ -3244,6 +3244,42 @@ function batterStatsForPitchFilter(batterId, pitchKey) {
   };
 }
 
+// Real per-batter production against a SPECIFIC pitcher's own real arsenal mix
+// (data/pitcher-statcast.json's byPitch usage%), unlike batterStatsForPitchFilter's
+// 'all' blend above which weights by how often the BATTER has faced each pitch
+// type across the whole league this season. This weights by how often THIS
+// pitcher actually throws each pitch, a more honest answer to "does this
+// batter's real production profile match up well against this pitcher's
+// specific mix" -- the same real per-pitch-type rows, just reweighted.
+// Returns the same shape isFavorableMatchupRow already expects; null fields
+// when the batter has no real row for a pitch type this pitcher throws.
+function batterVsPitcherArsenalStats(batterId, pitcherId) {
+  const rows = batterPitchTypeSeason[String(batterId)];
+  const arsenal = pitcherStatcast[String(pitcherId)]?.byPitch || [];
+  if (!rows || !arsenal.length) return { pitches: null, avg: null, iso: null, slg: null, woba: null, avgEV: null, whiffPct: null };
+  let pitches = 0, avgSum = 0, avgW = 0, slgSum = 0, slgW = 0, wobaSum = 0, wobaW = 0, evSum = 0, evW = 0, whiffSum = 0, whiffW = 0;
+  arsenal.forEach(p => {
+    const r = rows[normalizePitchTypeKey(p.name)];
+    const w = p.usagePct || 0;
+    if (!r || !w) return;
+    pitches += r.pitches || 0;
+    if (r.avg != null) { avgSum += r.avg * w; avgW += w; }
+    if (r.slg != null) { slgSum += r.slg * w; slgW += w; }
+    if (r.woba != null) { wobaSum += r.woba * w; wobaW += w; }
+    if (r.avgEV != null) { evSum += r.avgEV * w; evW += w; }
+    if (r.whiffPct != null) { whiffSum += r.whiffPct * w; whiffW += w; }
+  });
+  const avg = avgW > 0 ? +(avgSum / avgW).toFixed(3) : null;
+  const slg = slgW > 0 ? +(slgSum / slgW).toFixed(3) : null;
+  return {
+    pitches: pitches || null,
+    avg, iso: (slg != null && avg != null) ? +(slg - avg).toFixed(3) : null,
+    slg, woba: wobaW > 0 ? +(wobaSum / wobaW).toFixed(3) : null,
+    avgEV: evW > 0 ? +(evSum / evW).toFixed(1) : null,
+    whiffPct: whiffW > 0 ? +(whiffSum / whiffW).toFixed(1) : null,
+  };
+}
+
 function _muHeatBG(colKey, val) {
   switch (colKey) {
     case 'avg':  return heatBG(val, 0.230, 0.290);
@@ -9725,6 +9761,14 @@ async function loadHRPotential() {
     const allBatters = [];
     const batterStatCache = {}; // cache batter stats to avoid duplicate fetches
     const boxscoreCache = {};   // cache boxscores by gamePk
+    // Real batter-vs-pitcher career history (MLB Stats API's own vsPlayer endpoint,
+    // same one the Pitcher Matchup modal's H2H tab already uses) -- keyed by
+    // batter+pitcher pair, not batter alone like batterStatCache above, since this
+    // is specific to one matchup. A batter only ever appears against one starting
+    // pitcher per call to this function, so this never actually dedupes a repeat
+    // fetch within one run -- kept as an explicit cache anyway so a future change
+    // that re-checks the same pair doesn't silently double the call.
+    const bvpCache = {};
     let renderScheduled = false;
 
     // Progressive render — show results as they arrive, not all at once
@@ -9920,7 +9964,7 @@ async function loadHRPotential() {
           const pid = b.player.person?.id;
           if (!pid) return null;
           let s=b.player.seasonStats?.batting||{};
-          let last10HR=null, todayHR=0, streakDays=1, hrVsPitcher=null, logs=[];
+          let last10HR=null, todayHR=0, streakDays=1, hrVsPitcher=null, logs=[], bvpStat=null;
           // Declared here (not `const` inside the try block below) so it's still in
           // scope down at matchupEdge's computation, which runs after the try/catch
           // closes -- a `const` declared inside that block's braces would throw
@@ -9995,7 +10039,20 @@ async function loadHRPotential() {
             const hitYd=logs.some(g2=>g2.date===ydStr&&parseInt(g2.stat?.homeRuns)>0);
             const hitDb=logs.some(g2=>g2.date===dbStr&&parseInt(g2.stat?.homeRuns)>0);
             streakDays=hitYd&&hitDb?3:hitYd?2:1;
-            // H2H skipped — adds 1 call per batter (up to 135 extra calls) for a minor display field
+            // Real batter-vs-pitcher career history -- previously skipped here entirely
+            // ("adds up to 135 extra calls for a minor display field") since only
+            // hrVsPitcher's HR count was needed and nothing ever actually populated it
+            // (it stayed null on every row, so the board's own "vs Pitcher: X HR" chip
+            // silently never rendered). Now also powers a real BvP History chip on the
+            // RBI/H+R+RBI boards, so it's worth the one extra per-batter call. Failure
+            // here only costs these two optional display fields, never the core hrProb
+            // pipeline above -- same single-attempt-with-catch discipline as spd.
+            const bvpKey = `${pid}-${pitcher.id}`;
+            if (!(bvpKey in bvpCache)) {
+              bvpCache[bvpKey] = await fetchJSON(`https://diamondreport.app/api/v1/people/${pid}/stats?stats=vsPlayer&opposingPlayerId=${pitcher.id}&group=hitting&season=2026`).catch(() => null);
+            }
+            bvpStat = bvpCache[bvpKey]?.stats?.[0]?.splits?.[0]?.stat || null;
+            if (bvpStat && bvpStat.atBats != null) hrVsPitcher = parseInt(bvpStat.homeRuns) || 0;
           } catch {
             if (last10HR == null && b.player?.last10HR != null) last10HR = b.player.last10HR;
           }
@@ -10146,6 +10203,16 @@ async function loadHRPotential() {
           // are always the identical real number, not two different heuristics that could
           // silently drift apart.
           const zoneFit = computeZoneFit(zoneValsFromByZone(pitcherZoneMapForHR), batSide, Math.max(0, finalSlg - finalAvg), b.player.person?.fullName || '', pitcher.fullName || '');
+          // Real per-batter production against THIS pitcher's own real arsenal mix
+          // (batterVsPitcherArsenalStats, weighted by the pitcher's actual pitch-type
+          // usage%, not the batter's own exposure), run through the same real
+          // isFavorableMatchupRow threshold check the Pitcher Matchup modal's
+          // scouting table already uses for its 🔥 Favorable badge -- surfaces as a
+          // "Pitch Mix" chip on the RBI/H+R+RBI boards. null (shown as "–") until
+          // both the batter's per-pitch-type season data and a real sample against
+          // this pitcher's actual pitch types exist.
+          const pitchMixStat = batterVsPitcherArsenalStats(pid, pitcher.id);
+          const pitchMixFavorable = pitchMixStat.pitches != null ? isFavorableMatchupRow(pitchMixStat) : null;
           return {
             id:pid, name:b.player.person?.fullName||'–', pos:b.player.position?.abbreviation||'–',
             teamAbbr, oppAbbr, pitcherName:pitcher.fullName, pitcherId:pitcher.id,
@@ -10155,6 +10222,12 @@ async function loadHRPotential() {
             // below, which key off the game's actual home park.
             hand: batSide, pitcherHand: pitcherHandForEdge,
             zoneFitScore: zoneFit?.score ?? null, zoneFitLabel: zoneFit?.label ?? null, zoneFitTone: zoneFit?.tone ?? null,
+            pitchMixFavorable, pitchMixPitches: pitchMixStat.pitches,
+            bvp: (bvpStat && bvpStat.atBats != null) ? {
+              ab: parseInt(bvpStat.atBats) || 0,
+              avg: bvpStat.avg != null ? parseFloat(bvpStat.avg) : null,
+              hr: parseInt(bvpStat.homeRuns) || 0,
+            } : null,
             homeAbbr: gameHomeAbbr,
             timeLabel, timeColor, gameTimestamp:dt.getTime(), gamePk:g.gamePk,
             stats:s, todayStats: todayBoxStats, todayHits, todayRBI, todayTB, todaySB, todayRuns, todayHR, last10HR, baseHrProb, hrProb, streakDays, hrVsPitcher,
@@ -10186,6 +10259,27 @@ async function loadHRPotential() {
             topHrThreat:false,
           };
         }))).filter(Boolean);
+
+        // "High OBP table-setters" -- average real OBP (the same shrunk/recency-
+        // blended finalObp every row above already carries as `obp`) of the up to 2
+        // teammates batting immediately ahead of this batter in this SAME real
+        // starting lineup, wrapping from the top of the order back to the bottom
+        // (the #8/#9 hitters still "set the table" for the #1/#2 spot when the
+        // order turns over). batterRowsForPitcher already has every slot's real
+        // OBP computed above -- this is a second pass over that same array, no
+        // extra fetch. A batter with no confirmed battingOrder, or whose only real
+        // teammates ahead lack their own real OBP yet, gets obpAhead:null (shown
+        // as "–"), never a fabricated average.
+        const TABLE_SETTER_OBP_BAR = 0.335;
+        const rowsByOrder = new Map();
+        batterRowsForPitcher.forEach(row => { if (row.battingOrder) rowsByOrder.set(row.battingOrder, row); });
+        batterRowsForPitcher.forEach(row => {
+          if (!row.battingOrder) { row.obpAhead = null; row.tableSettersGood = false; return; }
+          const slotsAhead = [1, 2].map(k => (((row.battingOrder - k - 1) % 9) + 9) % 9 + 1);
+          const obps = slotsAhead.map(s => rowsByOrder.get(s)?.obp).filter(v => v != null);
+          row.obpAhead = obps.length ? +(obps.reduce((a, b) => a + b, 0) / obps.length).toFixed(3) : null;
+          row.tableSettersGood = row.obpAhead != null && row.obpAhead >= TABLE_SETTER_OBP_BAR;
+        });
 
         if (batterRowsForPitcher.length) {
           applyHotHitterBoosts(batterRowsForPitcher);
@@ -13996,12 +14090,27 @@ if (document.readyState === 'loading') {
   // (e.g. "good") always wins when one is passed in.
   function statSlug(k){ return String(k).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
   function chip(k,v,cls){ var c=cls||('stat-'+statSlug(k)); return '<span class="dr109-chip '+c+'"><span>'+esc(k)+':</span><strong>'+esc(v)+'</strong></span>'; }
+  // Real expected-value formulas, same as the (unused-for-rendering) v10.32 IIFE's
+  // own projection() below in this file -- reused here rather than duplicated with
+  // different numbers, just newly surfaced as chips on the RBI/H+R+RBI boards
+  // instead of only existing in that disabled renderer.
+  function expTB(r,slg,iso){ return Math.max(.85,Math.min(2.35,.65+slg*1.35+iso*1.55+(r.topHrThreat?.14:0))); }
+  function expHRRBI(r,avg,obp,ops){ return Math.max(1.2,Math.min(3.6,.75+avg*1.2+obp*1.1+ops*.65+(r.isFavorable?.18:0))); }
+  // r.bvp is the real batter-vs-this-pitcher career line (loadHRPotential's own
+  // vsPlayer fetch) -- null when no real career history exists yet, distinct from
+  // a real 0-AB/0-HR sample, which still renders as real (if unimpressive) history.
+  function bvpText(r){ var b=r.bvp; if(!b||!b.ab) return 'No history'; if(b.ab<3) return b.ab+' AB (small sample)'; return f(b.avg)+' AVG ('+b.ab+' AB'+(b.hr?', '+b.hr+' HR':'')+')'; }
+  function bvpGood(r){ var b=r.bvp; return !!(b && b.ab>=3 && (b.avg>=0.280 || b.hr>0)); }
   function chipSet(type,r){ var s=stats(r),avg=n(r.avg||s.avg),ops=n(r.ops||s.ops),iso=n(r.iso||s.iso),obp=n(r.obp||s.obp),slg=n(r.slg||s.slg),hr=n(r.hrSeason||s.homeRuns),prob=n(r.hrProb),sb=n(s.stolenBases),rbi=n(s.rbi||s.runsBattedIn),runs=n(s.runs),hits=n(s.hits),a=[]; if(hit(type,r)) a.push(['✓ HIT', actual(type,r)+' / '+target(type), 'hit-check']); else if(hasLive(r)) a.push(['Live', actual(type,r)+' / '+target(type), '']);
     if(type==='hits')a=a.concat([['Line',line(type),'good'],['AVG',f(avg),''],['xBA proxy',f(avg+(r.isFavorable?.012:0)),'good'],['OBP',f(obp),''],['Contact',pct(66+avg*80)+'%','good'],['PA Est',(window.estimateGamePA?window.estimateGamePA(r.battingOrder):4.2).toFixed(1),'']]);
-    if(type==='rbis')a=a.concat([['Line',line(type),'good'],['RBI',rbi||'–',''],['RISP proxy',pct(42+ops*20)+'%','good'],['Run Env',r.isFavorable?'Plus':'Neutral',r.isFavorable?'good':''],['OPS',f(ops),''],['ISO',f(iso),'warn'],['Team Stack','Supported',''],['Lineup','Middle/Power','']]);
+    // Table-Setters/Pitch Mix/TB & HR+RBI Potential/BvP History are all real,
+    // already-computed-per-row signals (loadHRPotential) -- Table-Setters and
+    // Pitch Mix replace what used to be two fixed, non-data-driven chips here
+    // (always "Supported"/"Middle-Power" regardless of the actual matchup).
+    if(type==='rbis')a=a.concat([['Line',line(type),'good'],['RBI',rbi||'–',''],['RISP proxy',pct(42+ops*20)+'%','good'],['Run Env',r.isFavorable?'Plus':'Neutral',r.isFavorable?'good':''],['OPS',f(ops),''],['ISO',f(iso),'warn'],['Table-Setters',r.obpAhead!=null?f(r.obpAhead)+' OBP':'–',r.tableSettersGood?'good':''],['Pitch Mix',r.pitchMixPitches!=null?(r.pitchMixFavorable?'Favorable':'Neutral'):'–',r.pitchMixFavorable?'good':''],['TB Potential',expTB(r,slg,iso).toFixed(1),''],['HR+RBI Potential',expHRRBI(r,avg,obp,ops).toFixed(1),''],['BvP History',bvpText(r),bvpGood(r)?'good':'']]);
     if(type==='tb')a=a.concat([['Line',line(type),'good'],['SLG',f(slg),''],['xSLG proxy',f(slg+iso*.12),'good'],['ISO',f(iso),'warn'],['Power',r.topHrThreat?'Top':'Model',r.topHrThreat?'warn':'']]);
     if(type==='sb')a=a.concat([['Line',line(type),'good'],['SB',sb||'–','good'],['OBP',f(obp),''],['Speed proxy',pct(48+sb*2.2)+'%','good'],['Risk','Volatile','warn']]);
-    if(type==='hrrbi')a=a.concat([['Line',line(type),'good'],['Hits',hits||'–',''],['Runs',runs||'–',''],['RBI',rbi||'–',''],['OPS',f(ops),'good'],['OBP',f(obp),'']]);
+    if(type==='hrrbi')a=a.concat([['Line',line(type),'good'],['Hits',hits||'–',''],['Runs',runs||'–',''],['RBI',rbi||'–',''],['OPS',f(ops),'good'],['OBP',f(obp),''],['Table-Setters',r.obpAhead!=null?f(r.obpAhead)+' OBP':'–',r.tableSettersGood?'good':''],['Pitch Mix',r.pitchMixPitches!=null?(r.pitchMixFavorable?'Favorable':'Neutral'):'–',r.pitchMixFavorable?'good':''],['TB Potential',expTB(r,slg,iso).toFixed(1),''],['HR+RBI Potential',expHRRBI(r,avg,obp,ops).toFixed(1),''],['BvP History',bvpText(r),bvpGood(r)?'good':'']]);
     return a.map(function(x){return chip(x[0],x[1],x[2]);}).join(''); }
   function reason(type,r,sc){ var nm=esc(r.name||'This player'),opp=esc(r.oppAbbr||'opponent'),map={hits:'contact profile, on-base skill, projected plate appearances, and matchup quality',rbis:'RBI lane, team run environment, power profile, and traffic ahead of the bat',tb:'slugging profile, ISO power, extra-base upside, and pitcher contact quality allowed',sb:'speed profile, on-base path, game script, and stolen-base opportunity',hrrbi:'multi-category production path through hits, runs, RBIs, lineup role, and team run environment'}; return ' '+nm+' grades at '+sc+'% for '+esc(line(type))+' because the model combines '+(map[type]||'production profile')+'. Opponent context: '+opp+'.'; }
   function head(id){ return id?'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_84,q_auto:best/v1/people/'+id+'/headshot/67/current':''; }
