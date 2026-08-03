@@ -11,13 +11,13 @@
 // attribution -- every headline traces back to a stat this app's own sync
 // pipeline produced.
 //
-// Eight categories, one builder each producing 0 or 1(+) headline objects --
+// Ten categories, one builder each producing 0 or 1(+) headline objects --
 // every builder degrades to producing nothing rather than a fabricated or
 // filler headline when its underlying signal isn't genuinely notable today
 // (same standard the rest of this codebase holds itself to: real numbers or
 // nothing, never spun-up text). trend and streak both produce EVERY real
 // qualifying player, not a curated top-N -- "all trends, good or bad" per
-// request, not just a handful of favorable stories. All 8 share one shape:
+// request, not just a handful of favorable stories. All 10 share one shape:
 //   { id, category, title, blurb, link: { hash, playerId?, playerName? },
 //     clip?: { videoUrl, webUrl? } }
 // `link.hash` is a board hash (e.g. "#gamepick=hr") the client navigates to on
@@ -40,6 +40,7 @@ const DATA_DIR = path.join(__dirname, '..', 'data');
 const OUT_PATH = path.join(DATA_DIR, 'daily-headlines.json');
 const TRENDING_PATH = path.join(DATA_DIR, 'trending-players.json');
 const FEATURED_PATH = path.join(DATA_DIR, 'featured-player.json');
+const MILESTONES_PATH = path.join(DATA_DIR, 'mlb-milestones.json');
 // Mirrors update-tracker.mjs's own POOL_MIN_AB -- not exported from that
 // module, so duplicated here rather than adding an export purely for this.
 const FEATURED_MIN_AB = 40;
@@ -443,6 +444,97 @@ function buildTransactionHeadlines(txData, todayStr) {
   });
 }
 
+// ── No-hitters — real completed games (>= 9 innings, Final) where the
+// official box score shows the losing team with 0 hits, straight from MLB
+// Stats API's own linescore hydration (the league's own record of the game,
+// not a copied recap). Checked against yesterday's AND today's schedule so
+// a no-hitter thrown after this script's last run still surfaces the next
+// time it's checked, then ages out on its own once the game's date falls
+// out of that 2-day window -- no separate "already shown" bookkeeping
+// needed, same pattern as the transaction headlines above.
+//
+// Scoped to no-hitters only, not perfect games -- MLB Stats API's linescore
+// hydration carries hits/runs/errors per team but not walks/HBP allowed, so
+// there's no real way to also confirm "no one reached base" from this same
+// call without a second, per-game boxscore fetch. Left out rather than
+// guessed at from an incomplete signal.
+async function buildNoHitterHeadlines(dateStrs) {
+  const headlines = [];
+  for (const dateStr of dateStrs) {
+    let sched;
+    try {
+      sched = await fetchJSON(`${API}/schedule?sportId=1&date=${dateStr}&hydrate=team,linescore`);
+    } catch (e) {
+      console.warn(`No-hitter check failed for ${dateStr}: ${e.message}`);
+      continue;
+    }
+    const games = sched?.dates?.find(d => d.date === dateStr)?.games || [];
+    for (const g of games) {
+      if (g.status?.abstractGameState !== 'Final') continue;
+      const line = g.linescore;
+      // A real no-hitter requires a completed game of at least 9 innings --
+      // without this, a rained-out shortened game with a clean box score
+      // would be wrongly flagged (MLB itself doesn't recognize those as
+      // official no-hitters).
+      if (!line || (line.currentInning || 0) < 9) continue;
+      const awayHits = line.teams?.away?.hits, homeHits = line.teams?.home?.hits;
+      const awayName = g.teams?.away?.team?.name, homeName = g.teams?.home?.team?.name;
+      let noHit = null;
+      if (awayHits === 0 && awayName && homeName) noHit = { batting: awayName, pitching: homeName };
+      else if (homeHits === 0 && awayName && homeName) noHit = { batting: homeName, pitching: awayName };
+      if (!noHit) continue;
+      headlines.push({
+        id: `nohitter-${g.gamePk}`,
+        category: 'nohitter',
+        title: `${noHit.pitching} throw a no-hitter against the ${noHit.batting}`,
+        blurb: `A real, official no-hitter — a completed 9+ inning game with zero hits allowed, per MLB's own box score (${dateStr}).`,
+        link: { hash: '#gamepick=k' },
+      });
+    }
+  }
+  return headlines;
+}
+
+// ── Milestones — real, in-season home run milestones for batters this site
+// already has in today's real candidate pool (buildBatterPool), not the
+// whole league -- keeps this tied to what the site actually predicts (per
+// the "no-hitter that affects tonight's K Props line, a milestone for
+// someone already on our board" scoping) instead of trying to replicate a
+// general newsroom's whole feed.
+//
+// "Just crossed" is only ever real, never backdated: a player's previous
+// real hrSeason count is read from data/mlb-milestones.json (written by
+// this same script at the end of every run), and a headline only fires when
+// today's count is strictly higher than that real prior observation AND a
+// threshold sits between the two. A player seen for the very first time
+// (no prior real observation on file) gets recorded with no headline --
+// otherwise every batter already sitting on, say, 32 HR would wrongly
+// "just hit" 30 on this script's very first-ever run.
+const MILESTONE_HR_THRESHOLDS = [20, 25, 30, 35, 40, 45, 50, 55, 60];
+function buildMilestoneHeadlines(pool, milestoneState) {
+  const prevPlayers = (milestoneState && milestoneState.players) || {};
+  const nextPlayers = { ...prevPlayers };
+  const headlines = [];
+  for (const row of pool) {
+    if (!row.id || !row.name || row.hrSeason == null) continue;
+    const prev = prevPlayers[row.id];
+    nextPlayers[row.id] = { name: row.name, hrSeason: row.hrSeason };
+    if (prev == null || prev.hrSeason == null) continue;
+    if (row.hrSeason <= prev.hrSeason) continue;
+    const crossed = MILESTONE_HR_THRESHOLDS.filter(t => prev.hrSeason < t && row.hrSeason >= t);
+    if (!crossed.length) continue;
+    const milestone = crossed[crossed.length - 1];
+    headlines.push({
+      id: `milestone-${row.id}-${milestone}`,
+      category: 'milestone',
+      title: `${row.name} just hit his ${milestone}th home run of the season`,
+      blurb: `A real season milestone — ${row.hrSeason} home runs so far, and he's still in today's real HR Threats pool.`,
+      link: { hash: '#gamepick=hr', playerId: row.id, playerName: row.name },
+    });
+  }
+  return { headlines, nextState: { generatedAt: new Date().toISOString(), players: nextPlayers } };
+}
+
 // ── 8. Trending Players — a small real visual per player, similar in spirit to
 // Baseball Savant's own "Trending Players" widget. Written to its own output
 // file (data/trending-players.json) rather than folded into the headlines
@@ -688,6 +780,17 @@ async function main() {
     console.warn(`Leaderboard headline failed: ${e.message}`);
   }
 
+  // Checks yesterday's AND today's completed games -- a no-hitter thrown
+  // after this script's last run (e.g. a night game finishing after the
+  // evening pass) still surfaces the next time this runs, then ages out on
+  // its own once its date falls out of that 2-day window.
+  try {
+    const noHitters = await buildNoHitterHeadlines([yesterday, today]);
+    headlines.push(...noHitters);
+  } catch (e) {
+    console.warn(`No-hitter headline check failed: ${e.message}`);
+  }
+
   // Trend + streak headlines depend on a live MLB schedule/roster fetch, unlike
   // everything else here (local data/tracker.json reads) -- isolated in its own
   // try/catch so a transient MLB API hiccup can't cost the other categories too.
@@ -695,6 +798,11 @@ async function main() {
   // the exact same real batter pool + today's probable-pitcher names) doesn't
   // need a second schedule fetch.
   let pool = null, games = [];
+  // Populated only when pool is real (see below) -- written to disk in its own
+  // try/catch near the other optional writes at the end of main(), same
+  // "never let an optional write take down anything else" discipline as
+  // Trending Players/Featured Player.
+  let milestoneResult = null;
   try {
     const sched = await fetchJSON(`${API}/schedule?sportId=1&date=${today}&hydrate=team,probablePitcher,linescore,weather`);
     games = sched?.dates?.find(d => d.date === today)?.games || [];
@@ -703,9 +811,12 @@ async function main() {
       pool = await buildBatterPool(previewGames, season);
       headlines.push(...buildTrendHeadlines(pool));
       headlines.push(...buildStreakHeadlines(pool));
+      const milestoneState = await readDataFile('mlb-milestones.json');
+      milestoneResult = buildMilestoneHeadlines(pool, milestoneState);
+      headlines.push(...milestoneResult.headlines);
     }
   } catch (e) {
-    console.warn(`Trend/streak headlines failed, other categories will still be written: ${e.message}`);
+    console.warn(`Trend/streak/milestone headlines failed, other categories will still be written: ${e.message}`);
   }
 
   console.log(`Built ${headlines.length} headline(s) for ${today}: ${headlines.map(h => h.category).join(', ')}`);
@@ -744,6 +855,19 @@ async function main() {
   } catch (e) {
     console.warn(`Featured Player write failed: ${e.message}`);
   }
+
+  // Isolated in its own try/catch, same discipline as the writes above -- a
+  // failure here must never take down anything that already succeeded. Only
+  // written when milestoneResult is real (today's schedule fetch actually
+  // produced a pool) so a fetch-failure day never overwrites real prior
+  // hrSeason observations with nothing.
+  if (milestoneResult) {
+    try {
+      await writeFile(MILESTONES_PATH, JSON.stringify(milestoneResult.nextState, null, 2) + '\n');
+    } catch (e) {
+      console.warn(`Milestones state write failed: ${e.message}`);
+    }
+  }
 }
 
 const isMain = import.meta.url === `file://${process.argv[1]}`;
@@ -755,7 +879,7 @@ export {
   buildRecapHeadline, buildTrendHeadlines, trendTitleAndBlurb, parkDescriptor, suppressionClause,
   buildStreakHeadlines, computeStreakIndicator, streakTitleAndBlurb,
   buildNotablePerformanceHeadline, buildWeatherHeadline, buildInjuryHeadline, buildModelMovementHeadline,
-  buildTransactionHeadlines,
+  buildTransactionHeadlines, buildNoHitterHeadlines, buildMilestoneHeadlines,
   buildLeaderboardHeadline, buildTrendingBatters, buildTrendingPitchers, buildTrendingPlayers, main,
   computeSpotlightScore, buildFeaturedReasons, buildFeaturedPlayer,
 };

@@ -16150,11 +16150,11 @@ if (document.readyState === 'loading') {
     section.style.display = '';
   }
 
-  var CATEGORY_LABELS = { recap: 'RECAP', trend: 'TREND', streak: 'STREAK', notable: 'NOTABLE PERFORMANCE', weather: 'WEATHER', injury: 'INJURY', model: 'MODEL MOVE', leaderboard: 'LEADERBOARD', transaction: 'TRANSACTION' };
+  var CATEGORY_LABELS = { recap: 'RECAP', trend: 'TREND', streak: 'STREAK', notable: 'NOTABLE PERFORMANCE', weather: 'WEATHER', injury: 'INJURY', model: 'MODEL MOVE', leaderboard: 'LEADERBOARD', transaction: 'TRANSACTION', nohitter: 'NO-HITTER', milestone: 'MILESTONE' };
   // Purely decorative -- a quick-scan visual cue per category, same real
   // categories CATEGORY_LABELS already names. A missing icon just renders no
   // emoji rather than a placeholder.
-  var CATEGORY_ICONS = { recap: '📋', trend: '📈', streak: '🔥', notable: '💥', weather: '🌤️', injury: '🩹', model: '⚙️', leaderboard: '🏆', transaction: '🔄' };
+  var CATEGORY_ICONS = { recap: '📋', trend: '📈', streak: '🔥', notable: '💥', weather: '🌤️', injury: '🩹', model: '⚙️', leaderboard: '🏆', transaction: '🔄', nohitter: '🚫', milestone: '🎉' };
   var headlinesLoaded = false;
   function loadHubHeadlines(){
     if (headlinesLoaded) return;
@@ -16239,7 +16239,7 @@ if (document.readyState === 'loading') {
     // notable/leaderboard are retrospective facts -- and having Top Story and
     // Signal draw from different ranks of that same ordered list, so they can
     // never collide on one story.
-    var ONE_OFF_PRIORITY = ['transaction', 'model', 'injury', 'weather', 'notable', 'leaderboard'];
+    var ONE_OFF_PRIORITY = ['nohitter', 'milestone', 'transaction', 'model', 'injury', 'weather', 'notable', 'leaderboard'];
     var oneOffs = headlines.filter(function(h){ return h.category !== 'recap' && h.category !== 'trend' && h.category !== 'streak'; });
     oneOffs.sort(function(a, b){
       var ai = ONE_OFF_PRIORITY.indexOf(a.category); if (ai === -1) ai = ONE_OFF_PRIORITY.length;
