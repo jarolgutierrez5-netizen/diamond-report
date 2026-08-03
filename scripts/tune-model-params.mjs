@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// Bounded, logged auto-tune for data/model-params.json — currently just
-// HR_MULT_SHRINKAGE (see update-tracker.mjs's shrinkMult), the one tunable
-// constant a real analysis (analyze-hr-matchups.mjs) has actually justified
-// touching so far.
+// Bounded, logged auto-tune for data/model-params.json. Two tunable HR Threats
+// constants live here, each earned by a real analysis:
+//   - HR_MULT_SHRINKAGE (see update-tracker.mjs's shrinkMult) -- dampens each
+//     individual, correlated input multiplier toward neutral.
+//   - HR_SCORE_CALIBRATION_SLOPE/INTERCEPT (see update-tracker.mjs's
+//     calibrateHRProb) -- a final linear recalibration of the combined
+//     output, fit against real graded outcomes, correcting the compounding
+//     overconfidence that shrinking each input individually doesn't fully
+//     remove.
 //
 // This is deliberately conservative, on purpose: it's adjusting a real,
 // live, real-money-adjacent scoring input, unattended, on a schedule. Every
@@ -40,7 +45,7 @@ const TRACKER_PATH = path.join(__dirname, '..', 'data', 'tracker.json');
 const PARAMS_PATH = path.join(__dirname, '..', 'data', 'model-params.json');
 const LOG_PATH = path.join(__dirname, '..', 'data', 'model-tuning-log.json');
 
-const DEFAULT_PARAMS = { HR_MULT_SHRINKAGE: 0.6 };
+const DEFAULT_PARAMS = { HR_MULT_SHRINKAGE: 0.6, HR_SCORE_CALIBRATION_SLOPE: 1, HR_SCORE_CALIBRATION_INTERCEPT: 0 };
 
 // Safety rails -- see file header for why each of these exists.
 const MIN_SAMPLE_PER_SIDE = 60;
@@ -49,6 +54,42 @@ const STEP_TIGHTEN = 0.05;  // shrink harder when the high-score bucket is still
 const STEP_LOOSEN = 0.03;   // ease off more cautiously if the low bucket now underperforms (asymmetric on purpose)
 const MIN_SHRINKAGE = 0.3;
 const MAX_SHRINKAGE = 1.0;
+
+// HR_SCORE_CALIBRATION_* safety rails -- same philosophy as the shrinkage rails above,
+// sized for a regression instead of a two-bucket split. A regression needs more points
+// than a bucket comparison to pin down a slope reliably, hence the higher sample floor.
+const MIN_SAMPLE_CALIBRATION = 150;
+const MAX_STEP_SLOPE = 0.05;
+const MAX_STEP_INTERCEPT = 3;
+const MIN_CALIBRATION_SLOPE = 0.5;
+const MAX_CALIBRATION_SLOPE = 1.0;   // never amplify past the raw model's own confidence, only compress toward it
+const MIN_CALIBRATION_INTERCEPT = -5;
+const MAX_CALIBRATION_INTERCEPT = 20;
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+// Simple OLS of a 0/1 outcome on a 1-99 predicted score -- a linear probability model.
+// Returns the fitted line plus the slope's standard error, so the caller can test the
+// fitted slope against the null hypothesis slope=1 (i.e. "the model is already calibrated")
+// rather than just eyeballing whether the fit looks off.
+function olsRegression(points) {
+  const n = points.length;
+  if (n < 3) return null;
+  const meanX = points.reduce((s, p) => s + p.x, 0) / n;
+  const meanY = points.reduce((s, p) => s + p.y, 0) / n;
+  let sxx = 0, sxy = 0;
+  for (const p of points) { const dx = p.x - meanX; sxx += dx * dx; sxy += dx * (p.y - meanY); }
+  if (sxx === 0) return null;
+  const slope = sxy / sxx;
+  const intercept = meanY - slope * meanX;
+  let sse = 0;
+  for (const p of points) { const resid = p.y - (intercept + slope * p.x); sse += resid * resid; }
+  const df = n - 2;
+  if (df <= 0) return null;
+  const seSlope = Math.sqrt((sse / df) / sxx);
+  if (!(seSlope > 0)) return null;
+  return { n, slope, intercept, seSlope };
+}
 
 function cdtDateString(d) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
@@ -124,17 +165,39 @@ function checkHRShrinkage(tracker, effectiveSince) {
   };
 }
 
-async function main() {
-  const tracker = await loadJSON(TRACKER_PATH, null);
-  if (!tracker) {
-    console.log('No tracker.json found — nothing to tune against.');
-    await appendLog({ param: 'HR_MULT_SHRINKAGE', decision: 'skip', reason: 'tracker.json missing/unreadable' });
-    return;
-  }
+// Fits actual outcome vs. the score already displayed (score already reflects whatever
+// calibration is currently live, since calibrateHRProb runs before the score is stored --
+// see update-tracker.mjs). A slope significantly below 1 is the compounding-overconfidence
+// signature the calibration report flagged: the score rises faster than the real hit rate
+// does. Same effectiveSince re-baselining as checkHRShrinkage, and for the same reason --
+// only ever judge the calibration actually in effect against picks made under it.
+//
+// The outcome is coded 0/100, not 0/1, to match score's 0-100 scale -- a perfectly
+// calibrated score of 25 should hit 25% of the time, so the calibrated relationship is
+// slope=1/intercept=0 (y == x), not slope=0.01. Coding the outcome as 0/1 would test
+// the fitted line against the wrong null and flag every model as wildly miscalibrated.
+function checkHRCalibration(tracker, effectiveSince) {
+  const all = (tracker?.market?.hrThreat || []).filter(r => r.result === 'win' || r.result === 'loss');
+  const graded = effectiveSince ? all.filter(r => r.date >= effectiveSince) : all;
+  const points = graded
+    .filter(r => Number.isFinite(r.score))
+    .map(r => ({ x: r.score, y: r.result === 'win' ? 100 : 0 }));
+  const fit = olsRegression(points);
+  const tSlope = fit ? (fit.slope - 1) / fit.seSlope : null;
+  return {
+    param: 'HR_SCORE_CALIBRATION',
+    effectiveSince: effectiveSince || null,
+    excludedPreEffective: all.length - graded.length,
+    n: points.length,
+    fittedSlope: fit?.slope ?? null,
+    fittedIntercept: fit?.intercept ?? null,
+    seSlope: fit?.seSlope ?? null,
+    tSlope,
+  };
+}
 
-  const paramsStore = await loadParams();
+async function tuneHRShrinkage(tracker, paramsStore) {
   const current = paramsStore.params.HR_MULT_SHRINKAGE;
-  paramsStore.effectiveSince ||= {};
   const effectiveSince = paramsStore.effectiveSince.HR_MULT_SHRINKAGE || null;
   const check = checkHRShrinkage(tracker, effectiveSince);
 
@@ -183,6 +246,69 @@ async function main() {
   await saveParams(paramsStore);
   console.log(`HR_MULT_SHRINKAGE: ${current} -> ${next} (${reason})`);
   await appendLog({ ...check, decision: 'adjust', reason, previous: current, next });
+}
+
+async function tuneHRCalibration(tracker, paramsStore) {
+  const currentSlope = paramsStore.params.HR_SCORE_CALIBRATION_SLOPE;
+  const currentIntercept = paramsStore.params.HR_SCORE_CALIBRATION_INTERCEPT;
+  const effectiveSince = paramsStore.effectiveSince.HR_SCORE_CALIBRATION || null;
+  const check = checkHRCalibration(tracker, effectiveSince);
+
+  console.log(`HR_SCORE_CALIBRATION check: n=${check.n}, ` +
+    `fittedSlope=${check.fittedSlope != null ? check.fittedSlope.toFixed(3) : 'n/a'}, ` +
+    `fittedIntercept=${check.fittedIntercept != null ? check.fittedIntercept.toFixed(2) : 'n/a'}, ` +
+    `t(slope=1)=${check.tSlope != null ? check.tSlope.toFixed(2) : 'n/a'}, ` +
+    `current=slope ${currentSlope}, intercept ${currentIntercept}`);
+
+  const gateMet = check.n >= MIN_SAMPLE_CALIBRATION && check.tSlope != null;
+  if (!gateMet) {
+    console.log(`Sample size gate not met (need >= ${MIN_SAMPLE_CALIBRATION}) — no change.`);
+    await appendLog({ ...check, decision: 'skip', reason: 'sample size gate not met', current: { slope: currentSlope, intercept: currentIntercept } });
+    return;
+  }
+
+  if (Math.abs(check.tSlope) < SIGNIFICANCE_Z) {
+    console.log(`Not statistically significant enough to act (|t| < ${SIGNIFICANCE_Z}) — no change.`);
+    await appendLog({ ...check, decision: 'skip', reason: 'not statistically significant', current: { slope: currentSlope, intercept: currentIntercept } });
+    return;
+  }
+
+  // Step toward the fitted line, not onto it -- a single run's regression is one noisy
+  // read, not ground truth, so it nudges the live params rather than replacing them.
+  const nextSlope = clamp(currentSlope + clamp(check.fittedSlope - currentSlope, -MAX_STEP_SLOPE, MAX_STEP_SLOPE), MIN_CALIBRATION_SLOPE, MAX_CALIBRATION_SLOPE);
+  const nextIntercept = clamp(currentIntercept + clamp(check.fittedIntercept - currentIntercept, -MAX_STEP_INTERCEPT, MAX_STEP_INTERCEPT), MIN_CALIBRATION_INTERCEPT, MAX_CALIBRATION_INTERCEPT);
+  const roundedSlope = +nextSlope.toFixed(3);
+  const roundedIntercept = +nextIntercept.toFixed(2);
+
+  if (roundedSlope === currentSlope && roundedIntercept === currentIntercept) {
+    console.log(`Already at bound or converged (slope ${currentSlope}, intercept ${currentIntercept}) — no change.`);
+    await appendLog({ ...check, decision: 'skip', reason: 'at bound or converged on fitted line', current: { slope: currentSlope, intercept: currentIntercept } });
+    return;
+  }
+
+  paramsStore.params.HR_SCORE_CALIBRATION_SLOPE = roundedSlope;
+  paramsStore.params.HR_SCORE_CALIBRATION_INTERCEPT = roundedIntercept;
+  // Re-baseline for the same reason as HR_MULT_SHRINKAGE above.
+  paramsStore.effectiveSince.HR_SCORE_CALIBRATION = cdtDateString(new Date());
+  await saveParams(paramsStore);
+  console.log(`HR_SCORE_CALIBRATION: slope ${currentSlope} -> ${roundedSlope}, intercept ${currentIntercept} -> ${roundedIntercept} (stepping toward fitted calibration line)`);
+  await appendLog({ ...check, decision: 'adjust', reason: 'stepping toward fitted calibration line', previous: { slope: currentSlope, intercept: currentIntercept }, next: { slope: roundedSlope, intercept: roundedIntercept } });
+}
+
+async function main() {
+  const tracker = await loadJSON(TRACKER_PATH, null);
+  if (!tracker) {
+    console.log('No tracker.json found — nothing to tune against.');
+    await appendLog({ param: 'HR_MULT_SHRINKAGE', decision: 'skip', reason: 'tracker.json missing/unreadable' });
+    await appendLog({ param: 'HR_SCORE_CALIBRATION', decision: 'skip', reason: 'tracker.json missing/unreadable' });
+    return;
+  }
+
+  const paramsStore = await loadParams();
+  paramsStore.effectiveSince ||= {};
+
+  await tuneHRShrinkage(tracker, paramsStore);
+  await tuneHRCalibration(tracker, paramsStore);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

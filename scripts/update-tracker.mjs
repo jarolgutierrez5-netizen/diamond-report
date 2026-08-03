@@ -1616,7 +1616,21 @@ function simulateHRGameOdds(pPerPA, battingOrder) {
   // real per-game HR probability for a genuinely elite matchup can exceed 25%, so
   // the old cap flattened great and mediocre matchups into the same narrow band
   // and made ranking/selection nearly meaningless. See analyze-hr-matchups.mjs.
-  return Math.max(1, Math.min(99, Math.round(prob * 100)));
+  //
+  // calibrateHRProb (below) applies a real, evidence-tuned final correction here --
+  // analyze-hr-matchups.mjs's calibration report showed the raw simulated
+  // probability above is systematically overconfident, and increasingly so at the
+  // high end (the 30%+ bucket predicted 33.2% but actually hit only 15.1% --
+  // roughly 2x overstated), a compounding-overconfidence signature: several of
+  // the individually-shrunk multipliers feeding hrPerPA above tend to move
+  // together for the same real underlying "good matchup," so multiplying them
+  // double-counts one real signal as several. shrinkMult already dampens each
+  // factor individually; this is the missing final step that recalibrates the
+  // combined OUTPUT against real observed outcomes, same "measure, then
+  // correct" discipline as shrinkMult/tune-model-params.mjs, applied at the one
+  // choke point every HR probability (server score, live-score snapshot, and
+  // the identical client formula in app.js) already passes through.
+  return Math.max(1, Math.min(99, Math.round(calibrateHRProb(prob * 100))));
 }
 
 // A pitcher's box-score HR/9 is allowed-per-9-innings, i.e. per 27 outs -- but a
@@ -1683,7 +1697,16 @@ function pitcherBattersFacedPer9(pitcherStat) {
 // in this repo, never a silent source change. DEFAULT_MODEL_PARAMS is the fallback if
 // that file is ever missing/unreadable, and is what a fresh checkout starts from.
 const MODEL_PARAMS_PATH = path.join(__dirname, '..', 'data', 'model-params.json');
-const DEFAULT_MODEL_PARAMS = { HR_MULT_SHRINKAGE: 0.6 };
+// HR_SCORE_CALIBRATION_SLOPE/INTERCEPT: a final linear recalibration of the
+// whole simulated HR probability (calibrateHRProb below), separate from
+// HR_MULT_SHRINKAGE above -- shrinkage dampens each individual input
+// multiplier, this corrects the COMBINED output against real observed
+// outcomes. Defaults (slope=1, intercept=0) are the identity transform --
+// this ships behavior-neutral; scripts/tune-model-params.mjs's own
+// calibration check is what earns the right to move these, the same "measure
+// first, only the auto-tuner touches a live value" discipline as
+// HR_MULT_SHRINKAGE.
+const DEFAULT_MODEL_PARAMS = { HR_MULT_SHRINKAGE: 0.6, HR_SCORE_CALIBRATION_SLOPE: 1, HR_SCORE_CALIBRATION_INTERCEPT: 0 };
 let modelParams = { ...DEFAULT_MODEL_PARAMS };
 async function loadModelParams() {
   try {
@@ -1697,6 +1720,16 @@ async function loadModelParams() {
 }
 function shrinkMult(m) {
   return 1 + (m - 1) * modelParams.HR_MULT_SHRINKAGE;
+}
+// Real linear recalibration (y = intercept + slope*x) of the raw simulated HR
+// probability, fit by scripts/tune-model-params.mjs against real graded
+// outcomes -- see simulateHRGameOdds's own comment for why this exists
+// alongside shrinkMult instead of replacing it. slope=1/intercept=0 (the
+// shipped default until the auto-tuner has enough evidence to move them) is
+// exactly the identity transform, so this is a no-op until real data justifies
+// otherwise.
+function calibrateHRProb(rawPct) {
+  return modelParams.HR_SCORE_CALIBRATION_INTERCEPT + modelParams.HR_SCORE_CALIBRATION_SLOPE * rawPct;
 }
 
 // ── Live client HR score (exact port of app.js's HR Threats formula) ──────────────
@@ -2782,6 +2815,6 @@ export {
   fetchTeamPitchingAggregate, buildDRPSimLineup, computeDRPSimulation,
   loadDRPSimComparison, saveDRPSimComparison, recomputeDRPSimSummary,
   gradeDRPSimComparison, captureDRPSimComparisonToday,
-  loadModelParams, MODEL_PARAMS_PATH, DEFAULT_MODEL_PARAMS, shrinkMult,
+  loadModelParams, MODEL_PARAMS_PATH, DEFAULT_MODEL_PARAMS, shrinkMult, calibrateHRProb,
   computeIsHot,
 };
