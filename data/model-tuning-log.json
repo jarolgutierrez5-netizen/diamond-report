@@ -28,6 +28,20 @@
       "decision": "skip",
       "reason": "sample size gate not met",
       "current": 0.6
+    },
+    {
+      "at": "2026-08-03T17:20:43.568Z",
+      "param": "HR_MULT_SHRINKAGE",
+      "effectiveSince": "2026-07-20",
+      "excludedPreEffective": 362,
+      "nLow": 539,
+      "nHigh": 248,
+      "lowHitRate": 0.14100185528756956,
+      "highHitRate": 0.16129032258064516,
+      "z": -0.7458758979093798,
+      "decision": "skip",
+      "reason": "not statistically significant",
+      "current": 0.6
     }
   ]
 }
