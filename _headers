@@ -1,0 +1,25 @@
+# Cloudflare Workers Assets reads this file to set real HTTP response headers —
+# see https://developers.cloudflare.com/workers/static-assets/headers/. This is
+# the actual fix for the class of bug index.html's own <meta http-equiv> comment
+# already warned about: a <meta http-equiv="Cache-Control"> tag only ever
+# advises the browser's *document* cache, and is ignored outright by CDN edge
+# caches and by browsers for the purposes of deciding whether to even issue a
+# new request. A visitor could hard-refresh and still get a stale index.html
+# straight from the edge without a single request reaching this Worker. These
+# headers apply at the real HTTP layer, upstream of any meta tag.
+#
+# app.min.js/styles.min.css are deliberately NOT listed here — they're safe to
+# cache aggressively because their real cache-busting is the ?v=... query
+# string on the <link>/<script> tags in index.html (bumped on every commit that
+# changes app.js/styles.css), not this file. As long as index.html itself is
+# never stale, a new deploy is visible on the very next load.
+#
+# Covers every top-level HTML page (index.html, track-record.html — which has
+# its own real "updated automatically" pick-history data with no cache
+# protection of its own before this file existed — about/methodology/etc.),
+# not just index.html.
+/
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/*.html
+  Cache-Control: no-cache, no-store, must-revalidate
