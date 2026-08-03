@@ -14185,7 +14185,7 @@ if (document.readyState === 'loading') {
     if(opening && trigger){
       // position:fixed, positioned here in JS off the trigger's real screen rect.
       var rect = trigger.getBoundingClientRect();
-      var menuWidth = 320; // matches the CSS width set on #hrp-filters-menu
+      var menuWidth = 220; // matches the CSS width set on #hrp-filters-menu
       var left = Math.min(rect.left, window.innerWidth - menuWidth - 8);
       menu.style.top = (rect.bottom + 6) + 'px';
       menu.style.left = Math.max(8, left) + 'px';
