@@ -6065,6 +6065,16 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
     // park) when there's no confirmed game today between these two teams, so
     // the spray chart still has a real park shape to draw rather than none.
     let todayParkAbbr = batterTeamAbbr;
+    // Table-setters -- real average OBP of the up to 2 teammates batting
+    // immediately ahead of this batter in today's confirmed real lineup
+    // (wraps top-to-bottom), same signal/threshold as the RBI/H+R+RBI board
+    // cards' own Table-Setters chip, just resolved independently here since
+    // this modal doesn't share loadHRPotential's in-memory pool. Reuses
+    // lineupCache (already populated by the Pitcher Report tab / RBI board's
+    // own loadRepoLineups() prefetch in the common case) rather than a new
+    // fetch -- null (section hidden) when no real lineup is cached yet for
+    // this specific game, never a fabricated average.
+    let tableSetters = null;
     if (batterTeamAbbr && pitcherTeamAbbr && Array.isArray(todayGames)) {
       const game = todayGames.find(g => {
         const away = g.teams?.away?.team?.abbreviation, home = g.teams?.home?.team?.abbreviation;
@@ -6074,10 +6084,24 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName) {
       if (homeAbbr) {
         todayParkAbbr = homeAbbr;
         if (Number.isFinite(parkFactors[homeAbbr])) parkHrIndex = parkFactors[homeAbbr];
+        // lineupCache is keyed by the PITCHER's own side (see fetchAndRenderLineup),
+        // with the OPPOSING (batting) team's real lineup as the stored payload.
+        const pitcherSide = pitcherTeamAbbr === homeAbbr ? 'home' : 'away';
+        const lineup = lineupCache[`${game.gamePk}-${pitcherSide}`]?.lineup || [];
+        const idx = lineup.findIndex(b => String(b.id) === String(batterId));
+        if (idx !== -1 && lineup.length) {
+          const total = lineup.length;
+          const aheadNames = [1, 2].map(k => lineup[((idx - k) % total + total) % total]).filter(Boolean);
+          const obps = aheadNames.map(b => parseFloat(b.stats?.obp)).filter(v => Number.isFinite(v));
+          if (obps.length) {
+            const avgObp = +(obps.reduce((a, b) => a + b, 0) / obps.length).toFixed(3);
+            tableSetters = { names: aheadNames.map(b => b.name).filter(Boolean), avgObp, good: avgObp >= 0.335 };
+          }
+        }
       }
     }
 
-    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, hrSprayList, todayParkAbbr, rollingProfile, countPerfProfile, situationalProfile, bullpenInfo, parkHrIndex });
+    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, hrSprayList, todayParkAbbr, rollingProfile, countPerfProfile, situationalProfile, bullpenInfo, parkHrIndex, tableSetters });
   } catch(e) {
     drShowError(body, "Couldn't load this matchup.", () => openMatchup(batterId, batterName, pitcherId, pitcherName));
   }
@@ -6139,7 +6163,7 @@ window.toggleZoneSection = function(headerEl, contentId) {
   if (arrow) arrow.textContent = isOpen ? '▸' : '▾';
 };
 
-function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, hrSprayList=null, todayParkAbbr=null, rollingProfile=null, countPerfProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null }) {
+function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, hrSprayList=null, todayParkAbbr=null, rollingProfile=null, countPerfProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null, tableSetters=null }) {
   function fv(v, dec=3) {
     if (v==null||v===''||v==='---') return '–';
     const n = parseFloat(v); return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0(\.)/, '$1');
@@ -7610,6 +7634,20 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         icon: '🚀',
         magnitude: Math.min(nearHRList.length, 5),
         text: `<b>${nearHRList.length} near-miss${nearHRList.length === 1 ? '' : 'es'}</b> in recent games — real warning-track power that hasn't landed yet.`,
+      });
+    }
+
+    // Table-setters -- same real signal/threshold as the RBI/H+R+RBI board
+    // cards' own Table-Setters chip (see openMatchup's tableSetters resolution
+    // above), just with real names instead of only the averaged number a card
+    // has room for -- this is the deeper "why" a click into this modal adds.
+    if (tableSetters && tableSetters.names.length) {
+      drivers.push({
+        icon: '🏃',
+        magnitude: Math.abs(tableSetters.avgObp - 0.315) * 30,
+        text: tableSetters.good
+          ? `Real <b>table-setters ahead</b>: ${tableSetters.names.join(', ')} — a strong ${tableSetters.avgObp.toFixed(3)} combined OBP putting real traffic on base in front of ${batterName.split(' ').pop()}.`
+          : `Table-setters ahead (${tableSetters.names.join(', ')}) carry a modest ${tableSetters.avgObp.toFixed(3)} combined OBP — fewer real baserunners in front of ${batterName.split(' ').pop()} than an ideal RBI spot.`,
       });
     }
 
@@ -14141,7 +14179,17 @@ if (document.readyState === 'loading') {
     // switches to RBI/TB/SB/H+R+RBI, the same real batter pool viewed 5 ways.
     filtered = drApplyStandardFilters('propIntel', filtered);
     var stdFilterBar = drStandardFilterBarHTML('propIntel', type, all, { hasPosition:true, hasPitcherHand:true, hasBatterHand:true, hasWeather:true, renderFnName:"function(){window.__drPropIntelRenderOne('"+type+"','"+id+"');}" });
-    var arr=filtered.filter(function(r){ return String(r.timeLabel||'').toUpperCase()!=='FINAL'; }).sort(function(a,b){ return score(type,b)-score(type,a); }).slice(0,50); if(!all.length){ el.innerHTML='<div class="mu-empty">Loading '+label(type)+' board from active production data…</div>'; return; } var gf=edgeFilterHTML(type); if(!arr.length){ var searchActive=(window.__drBoardSearch[type]||'').trim(); el.innerHTML=stdFilterBar+gf+'<div class="mu-empty" style="padding:24px">'+(searchActive?'No players match "'+esc(window.__drBoardSearch[type])+'". Try a different name.':'No players match the selected filters. Choose All Edges / All Games, or Clear all filters above, to reset.')+'</div>'; drRestoreSearchFocus(__searchFocus); return; } var top=arr[0], avg=Math.round(arr.slice(0,Math.min(6,arr.length)).reduce(function(a,r){return a+score(type,r)},0)/Math.min(6,arr.length)); el.innerHTML=stdFilterBar+'<div class="dr109-summary"><div class="dr109-title">📊 EXPANDED <span>'+esc(label(type).toUpperCase())+' DATA</span></div><p class="dr109-copy">Each player\'s odds come from a Monte Carlo simulation of thousands of games built from their real season rate stats and lineup slot, not a hand-tuned formula. Values are generated from the active production rows so they stay fast and do not add external load time.</p><div class="dr109-grid"><div class="dr109-metric good"><b>'+esc(top.name||'–')+'</b><span>Top Rated</span></div><div class="dr109-metric"><b>'+avg+'%</b><span>Board Avg Odds</span></div><div class="dr109-metric"><b>'+arr.length+'</b><span>Players Scanned</span></div><div class="dr109-metric warn"><b>'+esc(line(type))+'</b><span>Primary Line</span></div></div></div>'+gf+arr.map(function(r){ var sc=score(type,r),isHit=hit(type,r),isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL',isMiss=isFinal&&!isHit; return '<div class="dr109-card '+(isHit?'prop-hit':isMiss?'prop-miss':'')+'">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr109-card-head"><div class="dr109-player"><img loading="lazy" src="'+head(r.id)+'" onerror="this.style.display=\'none\'" alt=""><div style="min-width:0"><div class="dr109-name">'+esc(r.name||'Player')+'</div>'+(isHit?'<div class="dr109-badge-row"><span class="prop-hit-badge">✓ Projection Hit</span></div>':isMiss?'<div class="dr109-badge-row"><span class="prop-miss-badge">✗ Missed</span></div>':'')+'<div class="dr109-meta">'+esc(r.teamAbbr||'')+' · '+esc(r.pos||'')+' · vs '+esc(r.oppAbbr||'')+'</div><span class="dr-row-lineup-badge-slot" id="lineup-badge-'+type+'-'+esc(r.id)+'"></span></div></div><div class="dr109-score">'+sc+'%<small>'+esc(label(type))+' Odds</small></div></div><div class="dr109-chiprow">'+chipSet(type,r)+'</div><div class="dr109-reason"><strong>Why it supports the line:</strong>'+reason(type,r,sc)+'</div>'+coldBatterAlertHTML(r)+'</div>'; }).join(''); el.scrollTop=scrollTop; window.scrollTo(window.scrollX,pageY); loadRepoLineups().then(function(){ arr.forEach(function(r){ var slot=document.getElementById('lineup-badge-'+type+'-'+r.id); if(slot) slot.innerHTML=lineupBadgeHTML(r.gamePk,r.teamAbbr,r.homeAbbr); }); }); drRestoreSearchFocus(__searchFocus); }
+    var arr=filtered.filter(function(r){ return String(r.timeLabel||'').toUpperCase()!=='FINAL'; }).sort(function(a,b){ return score(type,b)-score(type,a); }).slice(0,50); if(!all.length){ el.innerHTML='<div class="mu-empty">Loading '+label(type)+' board from active production data…</div>'; return; } var gf=edgeFilterHTML(type); if(!arr.length){ var searchActive=(window.__drBoardSearch[type]||'').trim(); el.innerHTML=stdFilterBar+gf+'<div class="mu-empty" style="padding:24px">'+(searchActive?'No players match "'+esc(window.__drBoardSearch[type])+'". Try a different name.':'No players match the selected filters. Choose All Edges / All Games, or Clear all filters above, to reset.')+'</div>'; drRestoreSearchFocus(__searchFocus); return; } var top=arr[0], avg=Math.round(arr.slice(0,Math.min(6,arr.length)).reduce(function(a,r){return a+score(type,r)},0)/Math.min(6,arr.length)); el.innerHTML=stdFilterBar+'<div class="dr109-summary"><div class="dr109-title">📊 EXPANDED <span>'+esc(label(type).toUpperCase())+' DATA</span></div><p class="dr109-copy">Each player\'s odds come from a Monte Carlo simulation of thousands of games built from their real season rate stats and lineup slot, not a hand-tuned formula. Values are generated from the active production rows so they stay fast and do not add external load time.</p><div class="dr109-grid"><div class="dr109-metric good"><b>'+esc(top.name||'–')+'</b><span>Top Rated</span></div><div class="dr109-metric"><b>'+avg+'%</b><span>Board Avg Odds</span></div><div class="dr109-metric"><b>'+arr.length+'</b><span>Players Scanned</span></div><div class="dr109-metric warn"><b>'+esc(line(type))+'</b><span>Primary Line</span></div></div></div>'+gf+arr.map(function(r){ var sc=score(type,r),isHit=hit(type,r),isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL',isMiss=isFinal&&!isHit;
+      // Click-through to the full Matchup modal (zone heatmaps, per-pitch mix
+      // breakdown, H2H career log, etc.) for "a more in depth analysis" -- these
+      // cards previously had no click handler at all, unlike every other card
+      // style on the site (HR Threats, Pitcher Report, Featured Player). Uses
+      // the same dataset-driven onclick pattern the HR Threats card already
+      // uses (avoids manually escaping quotes into an inline handler string)
+      // and the same button/link click-guard so the ★ Watchlist star still
+      // works without also opening the modal.
+      var clickAttrs = r.pitcherId ? ' style="cursor:pointer" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId)+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="if(!event.target.closest(\'button,a\')){var d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName);}"' : '';
+      return '<div class="dr109-card '+(isHit?'prop-hit':isMiss?'prop-miss':'')+'"'+clickAttrs+'>'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr109-card-head"><div class="dr109-player"><img loading="lazy" src="'+head(r.id)+'" onerror="this.style.display=\'none\'" alt=""><div style="min-width:0"><div class="dr109-name">'+esc(r.name||'Player')+'</div>'+(isHit?'<div class="dr109-badge-row"><span class="prop-hit-badge">✓ Projection Hit</span></div>':isMiss?'<div class="dr109-badge-row"><span class="prop-miss-badge">✗ Missed</span></div>':'')+'<div class="dr109-meta">'+esc(r.teamAbbr||'')+' · '+esc(r.pos||'')+' · vs '+esc(r.oppAbbr||'')+'</div><span class="dr-row-lineup-badge-slot" id="lineup-badge-'+type+'-'+esc(r.id)+'"></span></div></div><div class="dr109-score">'+sc+'%<small>'+esc(label(type))+' Odds</small></div></div><div class="dr109-chiprow">'+chipSet(type,r)+'</div><div class="dr109-reason"><strong>Why it supports the line:</strong>'+reason(type,r,sc)+'</div>'+coldBatterAlertHTML(r)+'</div>'; }).join(''); el.scrollTop=scrollTop; window.scrollTo(window.scrollX,pageY); loadRepoLineups().then(function(){ arr.forEach(function(r){ var slot=document.getElementById('lineup-badge-'+type+'-'+r.id); if(slot) slot.innerHTML=lineupBadgeHTML(r.gamePk,r.teamAbbr,r.homeAbbr); }); }); drRestoreSearchFocus(__searchFocus); }
   window.renderPropIntelligencePanes=function(){ render('hits','hits-props-content'); render('rbis','rbis-props-content'); render('tb','tb-props-content'); render('sb','sb-props-content'); render('hrrbi','hrrbi-props-content'); if(typeof window.enhanceDeepResearch==='function') try{window.enhanceDeepResearch();}catch(e){} };
   // render() above is private to this IIFE -- inline onchange="..." handlers in
   // drStandardFilterBarHTML's markup execute in plain global scope, so they can
