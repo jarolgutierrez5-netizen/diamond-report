@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-03T03:55:33.143Z",
-  "asOfDate": "2026-08-02",
+  "generatedAt": "2026-08-03T16:11:59.209Z",
+  "asOfDate": "2026-08-03",
   "season": "2026",
   "sampleThresholds": {
     "breakdown": 20,
@@ -23,7 +23,7 @@
       "miss": "No home run and no qualifying near-HR fly out that game."
     }
   },
-  "latestDate": "2026-08-02",
+  "latestDate": "2026-08-03",
   "byDate": {
     "2026-07-11": {
       "range": {
@@ -2993,7 +2993,7 @@
         "n": 72
       },
       "nearHR": {
-        "realEventCount": 6,
+        "realEventCount": 4,
         "nearMissCount": 0,
         "signalPerformance": {
           "withSignal": {
@@ -3511,7 +3511,7 @@
         "n": 93
       },
       "nearHR": {
-        "realEventCount": 5,
+        "realEventCount": 2,
         "nearMissCount": 0,
         "signalPerformance": {
           "withSignal": {
@@ -4029,7 +4029,7 @@
         "n": 45
       },
       "nearHR": {
-        "realEventCount": 6,
+        "realEventCount": 3,
         "nearMissCount": 0,
         "signalPerformance": {
           "withSignal": {
@@ -4547,7 +4547,7 @@
         "n": 60
       },
       "nearHR": {
-        "realEventCount": 15,
+        "realEventCount": 10,
         "nearMissCount": 0,
         "signalPerformance": {
           "withSignal": {
@@ -4865,7 +4865,7 @@
         "n": 17
       },
       "nearHR": {
-        "realEventCount": 5,
+        "realEventCount": 4,
         "nearMissCount": 0,
         "signalPerformance": {
           "withSignal": {
@@ -7893,7 +7893,7 @@
         "n": 42
       },
       "nearHR": {
-        "realEventCount": 14,
+        "realEventCount": 15,
         "nearMissCount": 0,
         "signalPerformance": {
           "withSignal": {
@@ -9422,6 +9422,524 @@
       },
       "byMarket": {
         "drp": {
+          "hits": 10,
+          "nearMisses": 1,
+          "misses": 4,
+          "pushes": 0,
+          "total": 15,
+          "graded": 15,
+          "hitRate": 66.7,
+          "insufficientSample": true
+        },
+        "kprop": {
+          "hits": 16,
+          "nearMisses": 2,
+          "misses": 11,
+          "pushes": 0,
+          "total": 29,
+          "graded": 29,
+          "hitRate": 55.2,
+          "insufficientSample": false
+        },
+        "hrThreat": {
+          "hits": 6,
+          "nearMisses": 2,
+          "misses": 42,
+          "pushes": 0,
+          "total": 50,
+          "graded": 50,
+          "hitRate": 12,
+          "insufficientSample": false
+        }
+      },
+      "byConfidence": {
+        "drp": {
+          "High": {
+            "hits": 0,
+            "nearMisses": 0,
+            "misses": 0,
+            "pushes": 0,
+            "total": 0,
+            "graded": 0,
+            "hitRate": null,
+            "insufficientSample": true
+          },
+          "Medium": {
+            "hits": 0,
+            "nearMisses": 0,
+            "misses": 0,
+            "pushes": 0,
+            "total": 0,
+            "graded": 0,
+            "hitRate": null,
+            "insufficientSample": true
+          },
+          "Low": {
+            "hits": 10,
+            "nearMisses": 1,
+            "misses": 4,
+            "pushes": 0,
+            "total": 15,
+            "graded": 15,
+            "hitRate": 66.7,
+            "insufficientSample": true
+          }
+        },
+        "kprop": {
+          "High": {
+            "hits": 0,
+            "nearMisses": 0,
+            "misses": 1,
+            "pushes": 0,
+            "total": 1,
+            "graded": 1,
+            "hitRate": 0,
+            "insufficientSample": true
+          },
+          "Medium": {
+            "hits": 3,
+            "nearMisses": 1,
+            "misses": 1,
+            "pushes": 0,
+            "total": 5,
+            "graded": 5,
+            "hitRate": 60,
+            "insufficientSample": true
+          },
+          "Low": {
+            "hits": 13,
+            "nearMisses": 1,
+            "misses": 9,
+            "pushes": 0,
+            "total": 23,
+            "graded": 23,
+            "hitRate": 56.5,
+            "insufficientSample": false
+          }
+        },
+        "hrThreat": {
+          "High": {
+            "hits": 0,
+            "nearMisses": 0,
+            "misses": 8,
+            "pushes": 0,
+            "total": 8,
+            "graded": 8,
+            "hitRate": 0,
+            "insufficientSample": true
+          },
+          "Medium": {
+            "hits": 3,
+            "nearMisses": 1,
+            "misses": 18,
+            "pushes": 0,
+            "total": 22,
+            "graded": 22,
+            "hitRate": 13.6,
+            "insufficientSample": false
+          },
+          "Low": {
+            "hits": 3,
+            "nearMisses": 1,
+            "misses": 16,
+            "pushes": 0,
+            "total": 20,
+            "graded": 20,
+            "hitRate": 15,
+            "insufficientSample": false
+          }
+        }
+      },
+      "byTeam": {
+        "PHI": {
+          "hits": 2,
+          "nearMisses": 0,
+          "misses": 2,
+          "pushes": 0,
+          "total": 4,
+          "graded": 4,
+          "hitRate": 50,
+          "insufficientSample": true
+        },
+        "ATL": {
+          "hits": 2,
+          "nearMisses": 2,
+          "misses": 0,
+          "pushes": 0,
+          "total": 4,
+          "graded": 4,
+          "hitRate": 50,
+          "insufficientSample": true
+        },
+        "STL": {
+          "hits": 2,
+          "nearMisses": 0,
+          "misses": 7,
+          "pushes": 0,
+          "total": 9,
+          "graded": 9,
+          "hitRate": 22.2,
+          "insufficientSample": true
+        },
+        "CLE": {
+          "hits": 2,
+          "nearMisses": 0,
+          "misses": 3,
+          "pushes": 0,
+          "total": 5,
+          "graded": 5,
+          "hitRate": 40,
+          "insufficientSample": true
+        },
+        "CIN": {
+          "hits": 3,
+          "nearMisses": 0,
+          "misses": 2,
+          "pushes": 0,
+          "total": 5,
+          "graded": 5,
+          "hitRate": 60,
+          "insufficientSample": true
+        },
+        "TB": {
+          "hits": 1,
+          "nearMisses": 0,
+          "misses": 3,
+          "pushes": 0,
+          "total": 4,
+          "graded": 4,
+          "hitRate": 25,
+          "insufficientSample": true
+        },
+        "MIA": {
+          "hits": 2,
+          "nearMisses": 0,
+          "misses": 4,
+          "pushes": 0,
+          "total": 6,
+          "graded": 6,
+          "hitRate": 33.3,
+          "insufficientSample": true
+        },
+        "HOU": {
+          "hits": 3,
+          "nearMisses": 0,
+          "misses": 1,
+          "pushes": 0,
+          "total": 4,
+          "graded": 4,
+          "hitRate": 75,
+          "insufficientSample": true
+        },
+        "NYY": {
+          "hits": 1,
+          "nearMisses": 0,
+          "misses": 3,
+          "pushes": 0,
+          "total": 4,
+          "graded": 4,
+          "hitRate": 25,
+          "insufficientSample": true
+        },
+        "KC": {
+          "hits": 0,
+          "nearMisses": 1,
+          "misses": 2,
+          "pushes": 0,
+          "total": 3,
+          "graded": 3,
+          "hitRate": 0,
+          "insufficientSample": true
+        },
+        "MIL": {
+          "hits": 1,
+          "nearMisses": 0,
+          "misses": 2,
+          "pushes": 0,
+          "total": 3,
+          "graded": 3,
+          "hitRate": 33.3,
+          "insufficientSample": true
+        },
+        "DET": {
+          "hits": 1,
+          "nearMisses": 0,
+          "misses": 2,
+          "pushes": 0,
+          "total": 3,
+          "graded": 3,
+          "hitRate": 33.3,
+          "insufficientSample": true
+        },
+        "SD": {
+          "hits": 1,
+          "nearMisses": 0,
+          "misses": 0,
+          "pushes": 0,
+          "total": 1,
+          "graded": 1,
+          "hitRate": 100,
+          "insufficientSample": true
+        },
+        "MIN": {
+          "hits": 0,
+          "nearMisses": 1,
+          "misses": 2,
+          "pushes": 0,
+          "total": 3,
+          "graded": 3,
+          "hitRate": 0,
+          "insufficientSample": true
+        },
+        "LAD": {
+          "hits": 0,
+          "nearMisses": 0,
+          "misses": 4,
+          "pushes": 0,
+          "total": 4,
+          "graded": 4,
+          "hitRate": 0,
+          "insufficientSample": true
+        },
+        "BAL": {
+          "hits": 0,
+          "nearMisses": 0,
+          "misses": 2,
+          "pushes": 0,
+          "total": 2,
+          "graded": 2,
+          "hitRate": 0,
+          "insufficientSample": true
+        },
+        "WSH": {
+          "hits": 0,
+          "nearMisses": 0,
+          "misses": 3,
+          "pushes": 0,
+          "total": 3,
+          "graded": 3,
+          "hitRate": 0,
+          "insufficientSample": true
+        },
+        "TOR": {
+          "hits": 1,
+          "nearMisses": 0,
+          "misses": 2,
+          "pushes": 0,
+          "total": 3,
+          "graded": 3,
+          "hitRate": 33.3,
+          "insufficientSample": true
+        },
+        "AZ": {
+          "hits": 1,
+          "nearMisses": 0,
+          "misses": 0,
+          "pushes": 0,
+          "total": 1,
+          "graded": 1,
+          "hitRate": 100,
+          "insufficientSample": true
+        },
+        "PIT": {
+          "hits": 0,
+          "nearMisses": 0,
+          "misses": 3,
+          "pushes": 0,
+          "total": 3,
+          "graded": 3,
+          "hitRate": 0,
+          "insufficientSample": true
+        },
+        "CWS": {
+          "hits": 1,
+          "nearMisses": 0,
+          "misses": 3,
+          "pushes": 0,
+          "total": 4,
+          "graded": 4,
+          "hitRate": 25,
+          "insufficientSample": true
+        },
+        "NYM": {
+          "hits": 1,
+          "nearMisses": 0,
+          "misses": 1,
+          "pushes": 0,
+          "total": 2,
+          "graded": 2,
+          "hitRate": 50,
+          "insufficientSample": true
+        },
+        "TEX": {
+          "hits": 1,
+          "nearMisses": 0,
+          "misses": 1,
+          "pushes": 0,
+          "total": 2,
+          "graded": 2,
+          "hitRate": 50,
+          "insufficientSample": true
+        },
+        "CHC": {
+          "hits": 1,
+          "nearMisses": 0,
+          "misses": 2,
+          "pushes": 0,
+          "total": 3,
+          "graded": 3,
+          "hitRate": 33.3,
+          "insufficientSample": true
+        },
+        "COL": {
+          "hits": 1,
+          "nearMisses": 0,
+          "misses": 1,
+          "pushes": 0,
+          "total": 2,
+          "graded": 2,
+          "hitRate": 50,
+          "insufficientSample": true
+        },
+        "LAA": {
+          "hits": 1,
+          "nearMisses": 0,
+          "misses": 0,
+          "pushes": 0,
+          "total": 1,
+          "graded": 1,
+          "hitRate": 100,
+          "insufficientSample": true
+        },
+        "ATH": {
+          "hits": 0,
+          "nearMisses": 1,
+          "misses": 0,
+          "pushes": 0,
+          "total": 1,
+          "graded": 1,
+          "hitRate": 0,
+          "insufficientSample": true
+        },
+        "SF": {
+          "hits": 1,
+          "nearMisses": 0,
+          "misses": 0,
+          "pushes": 0,
+          "total": 1,
+          "graded": 1,
+          "hitRate": 100,
+          "insufficientSample": true
+        },
+        "SEA": {
+          "hits": 0,
+          "nearMisses": 0,
+          "misses": 1,
+          "pushes": 0,
+          "total": 1,
+          "graded": 1,
+          "hitRate": 0,
+          "insufficientSample": true
+        },
+        "BOS": {
+          "hits": 2,
+          "nearMisses": 0,
+          "misses": 1,
+          "pushes": 0,
+          "total": 3,
+          "graded": 3,
+          "hitRate": 66.7,
+          "insufficientSample": true
+        }
+      },
+      "leaderboard": {
+        "overall": [],
+        "byMarket": {
+          "hrThreat": [],
+          "kprop": []
+        }
+      },
+      "hrCalibration": {
+        "expectedHRs": 10.63,
+        "actualHRs": 6,
+        "n": 50
+      },
+      "nearHR": {
+        "realEventCount": 16,
+        "nearMissCount": 2,
+        "signalPerformance": {
+          "withSignal": {
+            "hits": 1,
+            "nearMisses": 2,
+            "misses": 18,
+            "pushes": 0,
+            "total": 21,
+            "graded": 21,
+            "hitRate": 4.8,
+            "insufficientSample": false
+          },
+          "withoutSignal": {
+            "hits": 5,
+            "nearMisses": 0,
+            "misses": 24,
+            "pushes": 0,
+            "total": 29,
+            "graded": 29,
+            "hitRate": 17.2,
+            "insufficientSample": false
+          }
+        }
+      },
+      "zoneFitCalibration": {
+        "Elite Zone Fit": {
+          "hits": 0,
+          "nearMisses": 0,
+          "misses": 1,
+          "pushes": 0,
+          "total": 1,
+          "graded": 1,
+          "hitRate": 0,
+          "insufficientSample": true
+        },
+        "Strong Zone Fit": {
+          "hits": 2,
+          "nearMisses": 2,
+          "misses": 12,
+          "pushes": 0,
+          "total": 16,
+          "graded": 16,
+          "hitRate": 12.5,
+          "insufficientSample": true
+        },
+        "Playable Zone Fit": {
+          "hits": 3,
+          "nearMisses": 0,
+          "misses": 19,
+          "pushes": 0,
+          "total": 22,
+          "graded": 22,
+          "hitRate": 13.6,
+          "insufficientSample": false
+        },
+        "Pitcher Zone Edge": {
+          "hits": 1,
+          "nearMisses": 0,
+          "misses": 4,
+          "pushes": 0,
+          "total": 5,
+          "graded": 5,
+          "hitRate": 20,
+          "insufficientSample": true
+        }
+      }
+    },
+    "2026-08-03": {
+      "range": {
+        "start": "2026-08-03",
+        "end": "2026-08-03"
+      },
+      "byMarket": {
+        "drp": {
           "hits": 0,
           "nearMisses": 0,
           "misses": 0,
@@ -10622,7 +11140,7 @@
         "n": 262
       },
       "nearHR": {
-        "realEventCount": 14,
+        "realEventCount": 12,
         "nearMissCount": 0,
         "signalPerformance": {
           "withSignal": {
@@ -11140,7 +11658,7 @@
         "n": 403
       },
       "nearHR": {
-        "realEventCount": 60,
+        "realEventCount": 48,
         "nearMissCount": 0,
         "signalPerformance": {
           "withSignal": {
@@ -11215,33 +11733,33 @@
       },
       "byMarket": {
         "drp": {
-          "hits": 34,
-          "nearMisses": 5,
-          "misses": 37,
+          "hits": 44,
+          "nearMisses": 6,
+          "misses": 41,
           "pushes": 0,
-          "total": 76,
-          "graded": 76,
-          "hitRate": 44.7,
+          "total": 91,
+          "graded": 91,
+          "hitRate": 48.4,
           "insufficientSample": false
         },
         "kprop": {
-          "hits": 84,
-          "nearMisses": 13,
-          "misses": 64,
+          "hits": 100,
+          "nearMisses": 15,
+          "misses": 75,
           "pushes": 0,
-          "total": 161,
-          "graded": 161,
-          "hitRate": 52.2,
+          "total": 190,
+          "graded": 190,
+          "hitRate": 52.6,
           "insufficientSample": false
         },
         "hrThreat": {
-          "hits": 52,
-          "nearMisses": 11,
-          "misses": 271,
+          "hits": 58,
+          "nearMisses": 13,
+          "misses": 313,
           "pushes": 0,
-          "total": 334,
-          "graded": 334,
-          "hitRate": 15.6,
+          "total": 384,
+          "graded": 384,
+          "hitRate": 15.1,
           "insufficientSample": false
         }
       },
@@ -11268,13 +11786,13 @@
             "insufficientSample": true
           },
           "Low": {
-            "hits": 33,
-            "nearMisses": 5,
-            "misses": 36,
+            "hits": 43,
+            "nearMisses": 6,
+            "misses": 40,
             "pushes": 0,
-            "total": 74,
-            "graded": 74,
-            "hitRate": 44.6,
+            "total": 89,
+            "graded": 89,
+            "hitRate": 48.3,
             "insufficientSample": false
           }
         },
@@ -11282,31 +11800,31 @@
           "High": {
             "hits": 1,
             "nearMisses": 0,
-            "misses": 1,
+            "misses": 2,
             "pushes": 0,
-            "total": 2,
-            "graded": 2,
-            "hitRate": 50,
+            "total": 3,
+            "graded": 3,
+            "hitRate": 33.3,
             "insufficientSample": true
           },
           "Medium": {
-            "hits": 43,
-            "nearMisses": 6,
-            "misses": 25,
+            "hits": 46,
+            "nearMisses": 7,
+            "misses": 26,
             "pushes": 0,
-            "total": 74,
-            "graded": 74,
-            "hitRate": 58.1,
+            "total": 79,
+            "graded": 79,
+            "hitRate": 58.2,
             "insufficientSample": false
           },
           "Low": {
-            "hits": 40,
-            "nearMisses": 7,
-            "misses": 38,
+            "hits": 53,
+            "nearMisses": 8,
+            "misses": 47,
             "pushes": 0,
-            "total": 85,
-            "graded": 85,
-            "hitRate": 47.1,
+            "total": 108,
+            "graded": 108,
+            "hitRate": 49.1,
             "insufficientSample": false
           }
         },
@@ -11314,237 +11832,257 @@
           "High": {
             "hits": 10,
             "nearMisses": 3,
-            "misses": 41,
+            "misses": 49,
             "pushes": 0,
-            "total": 54,
-            "graded": 54,
-            "hitRate": 18.5,
+            "total": 62,
+            "graded": 62,
+            "hitRate": 16.1,
             "insufficientSample": false
           },
           "Medium": {
-            "hits": 16,
-            "nearMisses": 3,
-            "misses": 113,
+            "hits": 19,
+            "nearMisses": 4,
+            "misses": 131,
             "pushes": 0,
-            "total": 132,
-            "graded": 132,
-            "hitRate": 12.1,
+            "total": 154,
+            "graded": 154,
+            "hitRate": 12.3,
             "insufficientSample": false
           },
           "Low": {
-            "hits": 26,
-            "nearMisses": 5,
-            "misses": 117,
+            "hits": 29,
+            "nearMisses": 6,
+            "misses": 133,
             "pushes": 0,
-            "total": 148,
-            "graded": 148,
-            "hitRate": 17.6,
+            "total": 168,
+            "graded": 168,
+            "hitRate": 17.3,
             "insufficientSample": false
           }
         }
       },
       "byTeam": {
         "TEX": {
-          "hits": 8,
+          "hits": 9,
           "nearMisses": 1,
-          "misses": 21,
+          "misses": 22,
           "pushes": 0,
-          "total": 30,
-          "graded": 30,
-          "hitRate": 26.7,
+          "total": 32,
+          "graded": 32,
+          "hitRate": 28.1,
           "insufficientSample": false
         },
         "DET": {
-          "hits": 3,
+          "hits": 4,
           "nearMisses": 0,
-          "misses": 20,
+          "misses": 22,
           "pushes": 0,
-          "total": 23,
-          "graded": 23,
-          "hitRate": 13,
+          "total": 26,
+          "graded": 26,
+          "hitRate": 15.4,
           "insufficientSample": false
         },
         "PIT": {
           "hits": 6,
           "nearMisses": 2,
-          "misses": 22,
+          "misses": 25,
           "pushes": 0,
-          "total": 30,
-          "graded": 30,
-          "hitRate": 20,
+          "total": 33,
+          "graded": 33,
+          "hitRate": 18.2,
           "insufficientSample": false
         },
         "PHI": {
-          "hits": 3,
+          "hits": 5,
           "nearMisses": 0,
-          "misses": 10,
+          "misses": 12,
           "pushes": 0,
-          "total": 13,
-          "graded": 13,
-          "hitRate": 23.1,
+          "total": 17,
+          "graded": 17,
+          "hitRate": 29.4,
           "insufficientSample": true
         },
         "WSH": {
           "hits": 8,
           "nearMisses": 1,
-          "misses": 33,
+          "misses": 36,
           "pushes": 0,
-          "total": 42,
-          "graded": 42,
-          "hitRate": 19,
+          "total": 45,
+          "graded": 45,
+          "hitRate": 17.8,
           "insufficientSample": false
         },
         "NYM": {
-          "hits": 7,
+          "hits": 8,
           "nearMisses": 1,
-          "misses": 11,
+          "misses": 12,
           "pushes": 0,
-          "total": 19,
-          "graded": 19,
-          "hitRate": 36.8,
-          "insufficientSample": true
+          "total": 21,
+          "graded": 21,
+          "hitRate": 38.1,
+          "insufficientSample": false
         },
         "NYY": {
-          "hits": 7,
+          "hits": 8,
           "nearMisses": 1,
-          "misses": 15,
+          "misses": 18,
           "pushes": 0,
-          "total": 23,
-          "graded": 23,
-          "hitRate": 30.4,
+          "total": 27,
+          "graded": 27,
+          "hitRate": 29.6,
           "insufficientSample": false
         },
         "LAA": {
-          "hits": 3,
+          "hits": 4,
           "nearMisses": 1,
           "misses": 6,
           "pushes": 0,
-          "total": 10,
-          "graded": 10,
-          "hitRate": 30,
+          "total": 11,
+          "graded": 11,
+          "hitRate": 36.4,
           "insufficientSample": true
         },
         "BOS": {
-          "hits": 10,
+          "hits": 12,
           "nearMisses": 0,
-          "misses": 8,
+          "misses": 9,
           "pushes": 0,
-          "total": 18,
-          "graded": 18,
-          "hitRate": 55.6,
-          "insufficientSample": true
+          "total": 21,
+          "graded": 21,
+          "hitRate": 57.1,
+          "insufficientSample": false
         },
         "MIL": {
-          "hits": 10,
+          "hits": 11,
           "nearMisses": 0,
-          "misses": 4,
+          "misses": 6,
           "pushes": 0,
-          "total": 14,
-          "graded": 14,
-          "hitRate": 71.4,
+          "total": 17,
+          "graded": 17,
+          "hitRate": 64.7,
           "insufficientSample": true
         },
         "STL": {
-          "hits": 2,
+          "hits": 4,
           "nearMisses": 2,
-          "misses": 15,
+          "misses": 22,
           "pushes": 0,
-          "total": 19,
-          "graded": 19,
-          "hitRate": 10.5,
-          "insufficientSample": true
+          "total": 28,
+          "graded": 28,
+          "hitRate": 14.3,
+          "insufficientSample": false
         },
         "CIN": {
-          "hits": 3,
+          "hits": 6,
           "nearMisses": 0,
-          "misses": 27,
+          "misses": 29,
           "pushes": 0,
-          "total": 30,
-          "graded": 30,
-          "hitRate": 10,
+          "total": 35,
+          "graded": 35,
+          "hitRate": 17.1,
           "insufficientSample": false
         },
         "MIA": {
-          "hits": 11,
+          "hits": 13,
           "nearMisses": 2,
-          "misses": 11,
+          "misses": 15,
           "pushes": 0,
-          "total": 24,
-          "graded": 24,
-          "hitRate": 45.8,
+          "total": 30,
+          "graded": 30,
+          "hitRate": 43.3,
           "insufficientSample": false
         },
         "MIN": {
           "hits": 5,
-          "nearMisses": 2,
-          "misses": 8,
+          "nearMisses": 3,
+          "misses": 10,
           "pushes": 0,
-          "total": 15,
-          "graded": 15,
-          "hitRate": 33.3,
+          "total": 18,
+          "graded": 18,
+          "hitRate": 27.8,
           "insufficientSample": true
         },
         "HOU": {
-          "hits": 7,
-          "nearMisses": 1,
-          "misses": 9,
-          "pushes": 0,
-          "total": 17,
-          "graded": 17,
-          "hitRate": 41.2,
-          "insufficientSample": true
-        },
-        "SD": {
-          "hits": 3,
+          "hits": 10,
           "nearMisses": 1,
           "misses": 10,
           "pushes": 0,
-          "total": 14,
-          "graded": 14,
-          "hitRate": 21.4,
+          "total": 21,
+          "graded": 21,
+          "hitRate": 47.6,
+          "insufficientSample": false
+        },
+        "SD": {
+          "hits": 4,
+          "nearMisses": 1,
+          "misses": 10,
+          "pushes": 0,
+          "total": 15,
+          "graded": 15,
+          "hitRate": 26.7,
           "insufficientSample": true
         },
         "TB": {
-          "hits": 8,
+          "hits": 9,
           "nearMisses": 2,
-          "misses": 12,
+          "misses": 15,
           "pushes": 0,
-          "total": 22,
-          "graded": 22,
-          "hitRate": 36.4,
+          "total": 26,
+          "graded": 26,
+          "hitRate": 34.6,
           "insufficientSample": false
         },
         "LAD": {
           "hits": 8,
           "nearMisses": 1,
-          "misses": 11,
-          "pushes": 0,
-          "total": 20,
-          "graded": 20,
-          "hitRate": 40,
-          "insufficientSample": false
-        },
-        "ATL": {
-          "hits": 10,
-          "nearMisses": 1,
-          "misses": 13,
+          "misses": 15,
           "pushes": 0,
           "total": 24,
           "graded": 24,
-          "hitRate": 41.7,
+          "hitRate": 33.3,
+          "insufficientSample": false
+        },
+        "ATL": {
+          "hits": 12,
+          "nearMisses": 3,
+          "misses": 13,
+          "pushes": 0,
+          "total": 28,
+          "graded": 28,
+          "hitRate": 42.9,
           "insufficientSample": false
         },
         "CHC": {
-          "hits": 4,
+          "hits": 5,
           "nearMisses": 1,
-          "misses": 14,
+          "misses": 16,
           "pushes": 0,
-          "total": 19,
-          "graded": 19,
-          "hitRate": 21.1,
-          "insufficientSample": true
+          "total": 22,
+          "graded": 22,
+          "hitRate": 22.7,
+          "insufficientSample": false
         },
         "CWS": {
+          "hits": 10,
+          "nearMisses": 0,
+          "misses": 20,
+          "pushes": 0,
+          "total": 30,
+          "graded": 30,
+          "hitRate": 33.3,
+          "insufficientSample": false
+        },
+        "TOR": {
+          "hits": 4,
+          "nearMisses": 1,
+          "misses": 11,
+          "pushes": 0,
+          "total": 16,
+          "graded": 16,
+          "hitRate": 25,
+          "insufficientSample": true
+        },
+        "CLE": {
           "hits": 9,
           "nearMisses": 0,
           "misses": 17,
@@ -11554,94 +12092,74 @@
           "hitRate": 34.6,
           "insufficientSample": false
         },
-        "TOR": {
+        "KC": {
+          "hits": 6,
+          "nearMisses": 1,
+          "misses": 12,
+          "pushes": 0,
+          "total": 19,
+          "graded": 19,
+          "hitRate": 31.6,
+          "insufficientSample": true
+        },
+        "SEA": {
           "hits": 3,
           "nearMisses": 1,
-          "misses": 9,
+          "misses": 14,
+          "pushes": 0,
+          "total": 18,
+          "graded": 18,
+          "hitRate": 16.7,
+          "insufficientSample": true
+        },
+        "BAL": {
+          "hits": 4,
+          "nearMisses": 1,
+          "misses": 14,
+          "pushes": 0,
+          "total": 19,
+          "graded": 19,
+          "hitRate": 21.1,
+          "insufficientSample": true
+        },
+        "SF": {
+          "hits": 3,
+          "nearMisses": 3,
+          "misses": 7,
           "pushes": 0,
           "total": 13,
           "graded": 13,
           "hitRate": 23.1,
           "insufficientSample": true
         },
-        "CLE": {
-          "hits": 7,
-          "nearMisses": 0,
-          "misses": 14,
-          "pushes": 0,
-          "total": 21,
-          "graded": 21,
-          "hitRate": 33.3,
-          "insufficientSample": false
-        },
-        "KC": {
-          "hits": 6,
-          "nearMisses": 0,
-          "misses": 10,
-          "pushes": 0,
-          "total": 16,
-          "graded": 16,
-          "hitRate": 37.5,
-          "insufficientSample": true
-        },
-        "SEA": {
-          "hits": 3,
-          "nearMisses": 1,
-          "misses": 13,
-          "pushes": 0,
-          "total": 17,
-          "graded": 17,
-          "hitRate": 17.6,
-          "insufficientSample": true
-        },
-        "BAL": {
+        "ATH": {
           "hits": 4,
-          "nearMisses": 1,
-          "misses": 12,
+          "nearMisses": 2,
+          "misses": 3,
           "pushes": 0,
-          "total": 17,
-          "graded": 17,
-          "hitRate": 23.5,
+          "total": 9,
+          "graded": 9,
+          "hitRate": 44.4,
           "insufficientSample": true
         },
-        "SF": {
-          "hits": 2,
-          "nearMisses": 3,
+        "AZ": {
+          "hits": 5,
+          "nearMisses": 0,
+          "misses": 1,
+          "pushes": 0,
+          "total": 6,
+          "graded": 6,
+          "hitRate": 83.3,
+          "insufficientSample": true
+        },
+        "COL": {
+          "hits": 3,
+          "nearMisses": 2,
           "misses": 7,
           "pushes": 0,
           "total": 12,
           "graded": 12,
-          "hitRate": 16.7,
-          "insufficientSample": true
-        },
-        "ATH": {
-          "hits": 4,
-          "nearMisses": 1,
-          "misses": 3,
-          "pushes": 0,
-          "total": 8,
-          "graded": 8,
-          "hitRate": 50,
-          "insufficientSample": true
-        },
-        "AZ": {
-          "hits": 4,
-          "nearMisses": 0,
-          "misses": 1,
-          "pushes": 0,
-          "total": 5,
-          "graded": 5,
-          "hitRate": 80,
-          "insufficientSample": true
-        },
-        "COL": {
-          "hits": 2,
-          "nearMisses": 2,
-          "misses": 6,
-          "pushes": 0,
-          "total": 10,
-          "graded": 10,
-          "hitRate": 20,
+          "hitRate": 25,
           "insufficientSample": true
         }
       },
@@ -11653,32 +12171,32 @@
         }
       },
       "hrCalibration": {
-        "expectedHRs": 71.47,
-        "actualHRs": 52,
-        "n": 334
+        "expectedHRs": 82.1,
+        "actualHRs": 58,
+        "n": 384
       },
       "nearHR": {
-        "realEventCount": 62,
-        "nearMissCount": 11,
+        "realEventCount": 79,
+        "nearMissCount": 13,
         "signalPerformance": {
           "withSignal": {
-            "hits": 19,
-            "nearMisses": 6,
-            "misses": 94,
+            "hits": 20,
+            "nearMisses": 8,
+            "misses": 112,
             "pushes": 0,
-            "total": 119,
-            "graded": 119,
-            "hitRate": 16,
+            "total": 140,
+            "graded": 140,
+            "hitRate": 14.3,
             "insufficientSample": false
           },
           "withoutSignal": {
-            "hits": 33,
+            "hits": 38,
             "nearMisses": 5,
-            "misses": 177,
+            "misses": 201,
             "pushes": 0,
-            "total": 215,
-            "graded": 215,
-            "hitRate": 15.3,
+            "total": 244,
+            "graded": 244,
+            "hitRate": 15.6,
             "insufficientSample": false
           }
         }
@@ -11687,41 +12205,258 @@
         "Elite Zone Fit": {
           "hits": 2,
           "nearMisses": 1,
-          "misses": 11,
+          "misses": 12,
           "pushes": 0,
-          "total": 14,
-          "graded": 14,
-          "hitRate": 14.3,
+          "total": 15,
+          "graded": 15,
+          "hitRate": 13.3,
           "insufficientSample": true
         },
         "Strong Zone Fit": {
-          "hits": 9,
-          "nearMisses": 2,
-          "misses": 31,
+          "hits": 11,
+          "nearMisses": 4,
+          "misses": 43,
           "pushes": 0,
-          "total": 42,
-          "graded": 42,
-          "hitRate": 21.4,
+          "total": 58,
+          "graded": 58,
+          "hitRate": 19,
           "insufficientSample": false
         },
         "Playable Zone Fit": {
-          "hits": 5,
+          "hits": 8,
           "nearMisses": 2,
-          "misses": 18,
+          "misses": 37,
           "pushes": 0,
-          "total": 25,
-          "graded": 25,
-          "hitRate": 20,
+          "total": 47,
+          "graded": 47,
+          "hitRate": 17,
           "insufficientSample": false
+        },
+        "Pitcher Zone Edge": {
+          "hits": 1,
+          "nearMisses": 0,
+          "misses": 9,
+          "pushes": 0,
+          "total": 10,
+          "graded": 10,
+          "hitRate": 10,
+          "insufficientSample": true
+        }
+      }
+    },
+    "2026-W32": {
+      "range": {
+        "start": "2026-08-03",
+        "end": "2026-08-03"
+      },
+      "byMarket": {
+        "drp": {
+          "hits": 0,
+          "nearMisses": 0,
+          "misses": 0,
+          "pushes": 0,
+          "total": 0,
+          "graded": 0,
+          "hitRate": null,
+          "insufficientSample": true
+        },
+        "kprop": {
+          "hits": 0,
+          "nearMisses": 0,
+          "misses": 0,
+          "pushes": 0,
+          "total": 0,
+          "graded": 0,
+          "hitRate": null,
+          "insufficientSample": true
+        },
+        "hrThreat": {
+          "hits": 0,
+          "nearMisses": 0,
+          "misses": 0,
+          "pushes": 0,
+          "total": 0,
+          "graded": 0,
+          "hitRate": null,
+          "insufficientSample": true
+        }
+      },
+      "byConfidence": {
+        "drp": {
+          "High": {
+            "hits": 0,
+            "nearMisses": 0,
+            "misses": 0,
+            "pushes": 0,
+            "total": 0,
+            "graded": 0,
+            "hitRate": null,
+            "insufficientSample": true
+          },
+          "Medium": {
+            "hits": 0,
+            "nearMisses": 0,
+            "misses": 0,
+            "pushes": 0,
+            "total": 0,
+            "graded": 0,
+            "hitRate": null,
+            "insufficientSample": true
+          },
+          "Low": {
+            "hits": 0,
+            "nearMisses": 0,
+            "misses": 0,
+            "pushes": 0,
+            "total": 0,
+            "graded": 0,
+            "hitRate": null,
+            "insufficientSample": true
+          }
+        },
+        "kprop": {
+          "High": {
+            "hits": 0,
+            "nearMisses": 0,
+            "misses": 0,
+            "pushes": 0,
+            "total": 0,
+            "graded": 0,
+            "hitRate": null,
+            "insufficientSample": true
+          },
+          "Medium": {
+            "hits": 0,
+            "nearMisses": 0,
+            "misses": 0,
+            "pushes": 0,
+            "total": 0,
+            "graded": 0,
+            "hitRate": null,
+            "insufficientSample": true
+          },
+          "Low": {
+            "hits": 0,
+            "nearMisses": 0,
+            "misses": 0,
+            "pushes": 0,
+            "total": 0,
+            "graded": 0,
+            "hitRate": null,
+            "insufficientSample": true
+          }
+        },
+        "hrThreat": {
+          "High": {
+            "hits": 0,
+            "nearMisses": 0,
+            "misses": 0,
+            "pushes": 0,
+            "total": 0,
+            "graded": 0,
+            "hitRate": null,
+            "insufficientSample": true
+          },
+          "Medium": {
+            "hits": 0,
+            "nearMisses": 0,
+            "misses": 0,
+            "pushes": 0,
+            "total": 0,
+            "graded": 0,
+            "hitRate": null,
+            "insufficientSample": true
+          },
+          "Low": {
+            "hits": 0,
+            "nearMisses": 0,
+            "misses": 0,
+            "pushes": 0,
+            "total": 0,
+            "graded": 0,
+            "hitRate": null,
+            "insufficientSample": true
+          }
+        }
+      },
+      "byTeam": {},
+      "leaderboard": {
+        "overall": [],
+        "byMarket": {
+          "hrThreat": [],
+          "kprop": []
+        }
+      },
+      "hrCalibration": {
+        "expectedHRs": null,
+        "actualHRs": null,
+        "n": 0
+      },
+      "nearHR": {
+        "realEventCount": 0,
+        "nearMissCount": 0,
+        "signalPerformance": {
+          "withSignal": {
+            "hits": 0,
+            "nearMisses": 0,
+            "misses": 0,
+            "pushes": 0,
+            "total": 0,
+            "graded": 0,
+            "hitRate": null,
+            "insufficientSample": true
+          },
+          "withoutSignal": {
+            "hits": 0,
+            "nearMisses": 0,
+            "misses": 0,
+            "pushes": 0,
+            "total": 0,
+            "graded": 0,
+            "hitRate": null,
+            "insufficientSample": true
+          }
+        }
+      },
+      "zoneFitCalibration": {
+        "Elite Zone Fit": {
+          "hits": 0,
+          "nearMisses": 0,
+          "misses": 0,
+          "pushes": 0,
+          "total": 0,
+          "graded": 0,
+          "hitRate": null,
+          "insufficientSample": true
+        },
+        "Strong Zone Fit": {
+          "hits": 0,
+          "nearMisses": 0,
+          "misses": 0,
+          "pushes": 0,
+          "total": 0,
+          "graded": 0,
+          "hitRate": null,
+          "insufficientSample": true
+        },
+        "Playable Zone Fit": {
+          "hits": 0,
+          "nearMisses": 0,
+          "misses": 0,
+          "pushes": 0,
+          "total": 0,
+          "graded": 0,
+          "hitRate": null,
+          "insufficientSample": true
         },
         "Pitcher Zone Edge": {
           "hits": 0,
           "nearMisses": 0,
-          "misses": 5,
+          "misses": 0,
           "pushes": 0,
-          "total": 5,
-          "graded": 5,
-          "hitRate": 0,
+          "total": 0,
+          "graded": 0,
+          "hitRate": null,
           "insufficientSample": true
         }
       }
@@ -12925,7 +13660,7 @@
         "n": 1036
       },
       "nearHR": {
-        "realEventCount": 129,
+        "realEventCount": 116,
         "nearMissCount": 9,
         "signalPerformance": {
           "withSignal": {
@@ -12996,37 +13731,37 @@
     "2026-08": {
       "range": {
         "start": "2026-08-01",
-        "end": "2026-08-02"
+        "end": "2026-08-03"
       },
       "byMarket": {
         "drp": {
-          "hits": 5,
-          "nearMisses": 3,
-          "misses": 7,
+          "hits": 15,
+          "nearMisses": 4,
+          "misses": 11,
           "pushes": 0,
-          "total": 15,
-          "graded": 15,
-          "hitRate": 33.3,
-          "insufficientSample": true
+          "total": 30,
+          "graded": 30,
+          "hitRate": 50,
+          "insufficientSample": false
         },
         "kprop": {
-          "hits": 12,
-          "nearMisses": 5,
-          "misses": 12,
+          "hits": 28,
+          "nearMisses": 7,
+          "misses": 23,
           "pushes": 0,
-          "total": 29,
-          "graded": 29,
-          "hitRate": 41.4,
+          "total": 58,
+          "graded": 58,
+          "hitRate": 48.3,
           "insufficientSample": false
         },
         "hrThreat": {
-          "hits": 11,
-          "nearMisses": 2,
-          "misses": 50,
+          "hits": 17,
+          "nearMisses": 4,
+          "misses": 92,
           "pushes": 0,
-          "total": 63,
-          "graded": 63,
-          "hitRate": 17.5,
+          "total": 113,
+          "graded": 113,
+          "hitRate": 15,
           "insufficientSample": false
         }
       },
@@ -13053,45 +13788,45 @@
             "insufficientSample": true
           },
           "Low": {
-            "hits": 5,
-            "nearMisses": 3,
-            "misses": 7,
+            "hits": 15,
+            "nearMisses": 4,
+            "misses": 11,
             "pushes": 0,
-            "total": 15,
-            "graded": 15,
-            "hitRate": 33.3,
-            "insufficientSample": true
+            "total": 30,
+            "graded": 30,
+            "hitRate": 50,
+            "insufficientSample": false
           }
         },
         "kprop": {
           "High": {
             "hits": 1,
             "nearMisses": 0,
-            "misses": 0,
+            "misses": 1,
             "pushes": 0,
-            "total": 1,
-            "graded": 1,
-            "hitRate": 100,
+            "total": 2,
+            "graded": 2,
+            "hitRate": 50,
             "insufficientSample": true
           },
           "Medium": {
-            "hits": 1,
-            "nearMisses": 2,
-            "misses": 3,
+            "hits": 4,
+            "nearMisses": 3,
+            "misses": 4,
             "pushes": 0,
-            "total": 6,
-            "graded": 6,
-            "hitRate": 16.7,
+            "total": 11,
+            "graded": 11,
+            "hitRate": 36.4,
             "insufficientSample": true
           },
           "Low": {
-            "hits": 10,
-            "nearMisses": 3,
-            "misses": 9,
+            "hits": 23,
+            "nearMisses": 4,
+            "misses": 18,
             "pushes": 0,
-            "total": 22,
-            "graded": 22,
-            "hitRate": 45.5,
+            "total": 45,
+            "graded": 45,
+            "hitRate": 51.1,
             "insufficientSample": false
           }
         },
@@ -13099,77 +13834,267 @@
           "High": {
             "hits": 3,
             "nearMisses": 1,
-            "misses": 11,
-            "pushes": 0,
-            "total": 15,
-            "graded": 15,
-            "hitRate": 20,
-            "insufficientSample": true
-          },
-          "Medium": {
-            "hits": 3,
-            "nearMisses": 0,
-            "misses": 22,
-            "pushes": 0,
-            "total": 25,
-            "graded": 25,
-            "hitRate": 12,
-            "insufficientSample": false
-          },
-          "Low": {
-            "hits": 5,
-            "nearMisses": 1,
-            "misses": 17,
+            "misses": 19,
             "pushes": 0,
             "total": 23,
             "graded": 23,
-            "hitRate": 21.7,
+            "hitRate": 13,
+            "insufficientSample": false
+          },
+          "Medium": {
+            "hits": 6,
+            "nearMisses": 1,
+            "misses": 40,
+            "pushes": 0,
+            "total": 47,
+            "graded": 47,
+            "hitRate": 12.8,
+            "insufficientSample": false
+          },
+          "Low": {
+            "hits": 8,
+            "nearMisses": 2,
+            "misses": 33,
+            "pushes": 0,
+            "total": 43,
+            "graded": 43,
+            "hitRate": 18.6,
             "insufficientSample": false
           }
         }
       },
       "byTeam": {
         "TOR": {
-          "hits": 1,
+          "hits": 2,
           "nearMisses": 0,
-          "misses": 1,
+          "misses": 3,
           "pushes": 0,
-          "total": 2,
-          "graded": 2,
-          "hitRate": 50,
+          "total": 5,
+          "graded": 5,
+          "hitRate": 40,
           "insufficientSample": true
         },
         "SEA": {
           "hits": 1,
           "nearMisses": 1,
-          "misses": 0,
-          "pushes": 0,
-          "total": 2,
-          "graded": 2,
-          "hitRate": 50,
-          "insufficientSample": true
-        },
-        "TB": {
-          "hits": 2,
-          "nearMisses": 0,
-          "misses": 0,
-          "pushes": 0,
-          "total": 2,
-          "graded": 2,
-          "hitRate": 100,
-          "insufficientSample": true
-        },
-        "NYM": {
-          "hits": 1,
-          "nearMisses": 0,
-          "misses": 2,
+          "misses": 1,
           "pushes": 0,
           "total": 3,
           "graded": 3,
           "hitRate": 33.3,
           "insufficientSample": true
         },
+        "TB": {
+          "hits": 3,
+          "nearMisses": 0,
+          "misses": 3,
+          "pushes": 0,
+          "total": 6,
+          "graded": 6,
+          "hitRate": 50,
+          "insufficientSample": true
+        },
+        "NYM": {
+          "hits": 2,
+          "nearMisses": 0,
+          "misses": 3,
+          "pushes": 0,
+          "total": 5,
+          "graded": 5,
+          "hitRate": 40,
+          "insufficientSample": true
+        },
         "CIN": {
+          "hits": 3,
+          "nearMisses": 0,
+          "misses": 8,
+          "pushes": 0,
+          "total": 11,
+          "graded": 11,
+          "hitRate": 27.3,
+          "insufficientSample": true
+        },
+        "BAL": {
+          "hits": 0,
+          "nearMisses": 1,
+          "misses": 5,
+          "pushes": 0,
+          "total": 6,
+          "graded": 6,
+          "hitRate": 0,
+          "insufficientSample": true
+        },
+        "TEX": {
+          "hits": 3,
+          "nearMisses": 1,
+          "misses": 12,
+          "pushes": 0,
+          "total": 16,
+          "graded": 16,
+          "hitRate": 18.8,
+          "insufficientSample": true
+        },
+        "CLE": {
+          "hits": 5,
+          "nearMisses": 0,
+          "misses": 8,
+          "pushes": 0,
+          "total": 13,
+          "graded": 13,
+          "hitRate": 38.5,
+          "insufficientSample": true
+        },
+        "ATL": {
+          "hits": 5,
+          "nearMisses": 2,
+          "misses": 3,
+          "pushes": 0,
+          "total": 10,
+          "graded": 10,
+          "hitRate": 50,
+          "insufficientSample": true
+        },
+        "NYY": {
+          "hits": 2,
+          "nearMisses": 0,
+          "misses": 4,
+          "pushes": 0,
+          "total": 6,
+          "graded": 6,
+          "hitRate": 33.3,
+          "insufficientSample": true
+        },
+        "KC": {
+          "hits": 1,
+          "nearMisses": 1,
+          "misses": 6,
+          "pushes": 0,
+          "total": 8,
+          "graded": 8,
+          "hitRate": 12.5,
+          "insufficientSample": true
+        },
+        "SF": {
+          "hits": 2,
+          "nearMisses": 1,
+          "misses": 1,
+          "pushes": 0,
+          "total": 4,
+          "graded": 4,
+          "hitRate": 50,
+          "insufficientSample": true
+        },
+        "LAD": {
+          "hits": 0,
+          "nearMisses": 1,
+          "misses": 8,
+          "pushes": 0,
+          "total": 9,
+          "graded": 9,
+          "hitRate": 0,
+          "insufficientSample": true
+        },
+        "MIL": {
+          "hits": 4,
+          "nearMisses": 0,
+          "misses": 2,
+          "pushes": 0,
+          "total": 6,
+          "graded": 6,
+          "hitRate": 66.7,
+          "insufficientSample": true
+        },
+        "ATH": {
+          "hits": 1,
+          "nearMisses": 1,
+          "misses": 1,
+          "pushes": 0,
+          "total": 3,
+          "graded": 3,
+          "hitRate": 33.3,
+          "insufficientSample": true
+        },
+        "PHI": {
+          "hits": 3,
+          "nearMisses": 0,
+          "misses": 4,
+          "pushes": 0,
+          "total": 7,
+          "graded": 7,
+          "hitRate": 42.9,
+          "insufficientSample": true
+        },
+        "STL": {
+          "hits": 2,
+          "nearMisses": 1,
+          "misses": 9,
+          "pushes": 0,
+          "total": 12,
+          "graded": 12,
+          "hitRate": 16.7,
+          "insufficientSample": true
+        },
+        "MIA": {
+          "hits": 3,
+          "nearMisses": 1,
+          "misses": 5,
+          "pushes": 0,
+          "total": 9,
+          "graded": 9,
+          "hitRate": 33.3,
+          "insufficientSample": true
+        },
+        "HOU": {
+          "hits": 3,
+          "nearMisses": 1,
+          "misses": 4,
+          "pushes": 0,
+          "total": 8,
+          "graded": 8,
+          "hitRate": 37.5,
+          "insufficientSample": true
+        },
+        "DET": {
+          "hits": 2,
+          "nearMisses": 0,
+          "misses": 4,
+          "pushes": 0,
+          "total": 6,
+          "graded": 6,
+          "hitRate": 33.3,
+          "insufficientSample": true
+        },
+        "SD": {
+          "hits": 1,
+          "nearMisses": 0,
+          "misses": 3,
+          "pushes": 0,
+          "total": 4,
+          "graded": 4,
+          "hitRate": 25,
+          "insufficientSample": true
+        },
+        "MIN": {
+          "hits": 0,
+          "nearMisses": 2,
+          "misses": 2,
+          "pushes": 0,
+          "total": 4,
+          "graded": 4,
+          "hitRate": 0,
+          "insufficientSample": true
+        },
+        "CWS": {
+          "hits": 1,
+          "nearMisses": 0,
+          "misses": 5,
+          "pushes": 0,
+          "total": 6,
+          "graded": 6,
+          "hitRate": 16.7,
+          "insufficientSample": true
+        },
+        "PIT": {
           "hits": 0,
           "nearMisses": 0,
           "misses": 6,
@@ -13179,254 +14104,64 @@
           "hitRate": 0,
           "insufficientSample": true
         },
-        "BAL": {
-          "hits": 0,
-          "nearMisses": 1,
-          "misses": 3,
-          "pushes": 0,
-          "total": 4,
-          "graded": 4,
-          "hitRate": 0,
-          "insufficientSample": true
-        },
-        "TEX": {
-          "hits": 2,
-          "nearMisses": 1,
-          "misses": 11,
-          "pushes": 0,
-          "total": 14,
-          "graded": 14,
-          "hitRate": 14.3,
-          "insufficientSample": true
-        },
-        "CLE": {
-          "hits": 3,
-          "nearMisses": 0,
-          "misses": 5,
-          "pushes": 0,
-          "total": 8,
-          "graded": 8,
-          "hitRate": 37.5,
-          "insufficientSample": true
-        },
-        "ATL": {
-          "hits": 3,
-          "nearMisses": 0,
-          "misses": 3,
-          "pushes": 0,
-          "total": 6,
-          "graded": 6,
-          "hitRate": 50,
-          "insufficientSample": true
-        },
-        "NYY": {
-          "hits": 1,
-          "nearMisses": 0,
-          "misses": 1,
-          "pushes": 0,
-          "total": 2,
-          "graded": 2,
-          "hitRate": 50,
-          "insufficientSample": true
-        },
-        "KC": {
-          "hits": 1,
-          "nearMisses": 0,
-          "misses": 4,
-          "pushes": 0,
-          "total": 5,
-          "graded": 5,
-          "hitRate": 20,
-          "insufficientSample": true
-        },
-        "SF": {
-          "hits": 1,
-          "nearMisses": 1,
-          "misses": 1,
-          "pushes": 0,
-          "total": 3,
-          "graded": 3,
-          "hitRate": 33.3,
-          "insufficientSample": true
-        },
-        "LAD": {
-          "hits": 0,
-          "nearMisses": 1,
-          "misses": 4,
-          "pushes": 0,
-          "total": 5,
-          "graded": 5,
-          "hitRate": 0,
-          "insufficientSample": true
-        },
-        "MIL": {
-          "hits": 3,
-          "nearMisses": 0,
-          "misses": 0,
-          "pushes": 0,
-          "total": 3,
-          "graded": 3,
-          "hitRate": 100,
-          "insufficientSample": true
-        },
-        "ATH": {
-          "hits": 1,
-          "nearMisses": 0,
-          "misses": 1,
-          "pushes": 0,
-          "total": 2,
-          "graded": 2,
-          "hitRate": 50,
-          "insufficientSample": true
-        },
-        "STL": {
-          "hits": 0,
-          "nearMisses": 1,
-          "misses": 2,
-          "pushes": 0,
-          "total": 3,
-          "graded": 3,
-          "hitRate": 0,
-          "insufficientSample": true
-        },
-        "MIN": {
-          "hits": 0,
-          "nearMisses": 1,
-          "misses": 0,
-          "pushes": 0,
-          "total": 1,
-          "graded": 1,
-          "hitRate": 0,
-          "insufficientSample": true
-        },
-        "CWS": {
-          "hits": 0,
-          "nearMisses": 0,
-          "misses": 2,
-          "pushes": 0,
-          "total": 2,
-          "graded": 2,
-          "hitRate": 0,
-          "insufficientSample": true
-        },
-        "MIA": {
-          "hits": 1,
-          "nearMisses": 1,
-          "misses": 1,
-          "pushes": 0,
-          "total": 3,
-          "graded": 3,
-          "hitRate": 33.3,
-          "insufficientSample": true
-        },
-        "PIT": {
-          "hits": 0,
-          "nearMisses": 0,
-          "misses": 3,
-          "pushes": 0,
-          "total": 3,
-          "graded": 3,
-          "hitRate": 0,
-          "insufficientSample": true
-        },
-        "PHI": {
-          "hits": 1,
-          "nearMisses": 0,
-          "misses": 2,
-          "pushes": 0,
-          "total": 3,
-          "graded": 3,
-          "hitRate": 33.3,
-          "insufficientSample": true
-        },
-        "HOU": {
-          "hits": 0,
-          "nearMisses": 1,
-          "misses": 3,
-          "pushes": 0,
-          "total": 4,
-          "graded": 4,
-          "hitRate": 0,
-          "insufficientSample": true
-        },
         "AZ": {
-          "hits": 1,
+          "hits": 2,
           "nearMisses": 0,
           "misses": 0,
           "pushes": 0,
-          "total": 1,
-          "graded": 1,
+          "total": 2,
+          "graded": 2,
           "hitRate": 100,
           "insufficientSample": true
         },
         "WSH": {
           "hits": 1,
           "nearMisses": 0,
-          "misses": 4,
+          "misses": 7,
           "pushes": 0,
-          "total": 5,
-          "graded": 5,
-          "hitRate": 20,
+          "total": 8,
+          "graded": 8,
+          "hitRate": 12.5,
           "insufficientSample": true
         },
         "CHC": {
-          "hits": 1,
-          "nearMisses": 0,
-          "misses": 0,
-          "pushes": 0,
-          "total": 1,
-          "graded": 1,
-          "hitRate": 100,
-          "insufficientSample": true
-        },
-        "COL": {
-          "hits": 1,
-          "nearMisses": 1,
-          "misses": 1,
-          "pushes": 0,
-          "total": 3,
-          "graded": 3,
-          "hitRate": 33.3,
-          "insufficientSample": true
-        },
-        "SD": {
-          "hits": 0,
-          "nearMisses": 0,
-          "misses": 3,
-          "pushes": 0,
-          "total": 3,
-          "graded": 3,
-          "hitRate": 0,
-          "insufficientSample": true
-        },
-        "BOS": {
-          "hits": 1,
-          "nearMisses": 0,
-          "misses": 1,
-          "pushes": 0,
-          "total": 2,
-          "graded": 2,
-          "hitRate": 50,
-          "insufficientSample": true
-        },
-        "DET": {
-          "hits": 1,
+          "hits": 2,
           "nearMisses": 0,
           "misses": 2,
           "pushes": 0,
-          "total": 3,
-          "graded": 3,
-          "hitRate": 33.3,
+          "total": 4,
+          "graded": 4,
+          "hitRate": 50,
+          "insufficientSample": true
+        },
+        "COL": {
+          "hits": 2,
+          "nearMisses": 1,
+          "misses": 2,
+          "pushes": 0,
+          "total": 5,
+          "graded": 5,
+          "hitRate": 40,
+          "insufficientSample": true
+        },
+        "BOS": {
+          "hits": 3,
+          "nearMisses": 0,
+          "misses": 2,
+          "pushes": 0,
+          "total": 5,
+          "graded": 5,
+          "hitRate": 60,
           "insufficientSample": true
         },
         "LAA": {
-          "hits": 0,
+          "hits": 1,
           "nearMisses": 0,
           "misses": 3,
           "pushes": 0,
-          "total": 3,
-          "graded": 3,
-          "hitRate": 0,
+          "total": 4,
+          "graded": 4,
+          "hitRate": 25,
           "insufficientSample": true
         }
       },
@@ -13438,32 +14173,32 @@
         }
       },
       "hrCalibration": {
-        "expectedHRs": 14,
-        "actualHRs": 11,
-        "n": 63
+        "expectedHRs": 24.63,
+        "actualHRs": 17,
+        "n": 113
       },
       "nearHR": {
-        "realEventCount": 8,
-        "nearMissCount": 2,
+        "realEventCount": 24,
+        "nearMissCount": 4,
         "signalPerformance": {
           "withSignal": {
-            "hits": 2,
-            "nearMisses": 1,
-            "misses": 15,
+            "hits": 3,
+            "nearMisses": 3,
+            "misses": 33,
             "pushes": 0,
-            "total": 18,
-            "graded": 18,
-            "hitRate": 11.1,
-            "insufficientSample": true
+            "total": 39,
+            "graded": 39,
+            "hitRate": 7.7,
+            "insufficientSample": false
           },
           "withoutSignal": {
-            "hits": 9,
+            "hits": 14,
             "nearMisses": 1,
-            "misses": 35,
+            "misses": 59,
             "pushes": 0,
-            "total": 45,
-            "graded": 45,
-            "hitRate": 20,
+            "total": 74,
+            "graded": 74,
+            "hitRate": 18.9,
             "insufficientSample": false
           }
         }
@@ -13472,41 +14207,41 @@
         "Elite Zone Fit": {
           "hits": 2,
           "nearMisses": 0,
-          "misses": 10,
+          "misses": 11,
           "pushes": 0,
-          "total": 12,
-          "graded": 12,
-          "hitRate": 16.7,
+          "total": 13,
+          "graded": 13,
+          "hitRate": 15.4,
           "insufficientSample": true
         },
         "Strong Zone Fit": {
-          "hits": 5,
-          "nearMisses": 2,
-          "misses": 23,
+          "hits": 7,
+          "nearMisses": 4,
+          "misses": 35,
           "pushes": 0,
-          "total": 30,
-          "graded": 30,
-          "hitRate": 16.7,
+          "total": 46,
+          "graded": 46,
+          "hitRate": 15.2,
           "insufficientSample": false
         },
         "Playable Zone Fit": {
-          "hits": 4,
+          "hits": 7,
           "nearMisses": 0,
-          "misses": 13,
+          "misses": 32,
           "pushes": 0,
-          "total": 17,
-          "graded": 17,
-          "hitRate": 23.5,
-          "insufficientSample": true
+          "total": 39,
+          "graded": 39,
+          "hitRate": 17.9,
+          "insufficientSample": false
         },
         "Pitcher Zone Edge": {
-          "hits": 0,
+          "hits": 1,
           "nearMisses": 0,
-          "misses": 4,
+          "misses": 8,
           "pushes": 0,
-          "total": 4,
-          "graded": 4,
-          "hitRate": 0,
+          "total": 9,
+          "graded": 9,
+          "hitRate": 11.1,
           "insufficientSample": true
         }
       }
@@ -13515,36 +14250,36 @@
   "seasonTotal": {
     "range": {
       "start": "2026-07-11",
-      "end": "2026-08-02"
+      "end": "2026-08-03"
     },
     "byMarket": {
       "drp": {
-        "hits": 124,
-        "nearMisses": 5,
-        "misses": 113,
+        "hits": 134,
+        "nearMisses": 6,
+        "misses": 117,
         "pushes": 0,
-        "total": 242,
-        "graded": 242,
-        "hitRate": 51.2,
+        "total": 257,
+        "graded": 257,
+        "hitRate": 52.1,
         "insufficientSample": false
       },
       "kprop": {
-        "hits": 278,
-        "nearMisses": 13,
-        "misses": 217,
+        "hits": 294,
+        "nearMisses": 15,
+        "misses": 228,
         "pushes": 0,
-        "total": 508,
-        "graded": 508,
+        "total": 537,
+        "graded": 537,
         "hitRate": 54.7,
         "insufficientSample": false
       },
       "hrThreat": {
-        "hits": 151,
-        "nearMisses": 11,
-        "misses": 937,
+        "hits": 157,
+        "nearMisses": 13,
+        "misses": 979,
         "pushes": 0,
-        "total": 1099,
-        "graded": 1099,
+        "total": 1149,
+        "graded": 1149,
         "hitRate": 13.7,
         "insufficientSample": false
       }
@@ -13572,13 +14307,13 @@
           "insufficientSample": true
         },
         "Low": {
-          "hits": 117,
-          "nearMisses": 5,
-          "misses": 110,
+          "hits": 127,
+          "nearMisses": 6,
+          "misses": 114,
           "pushes": 0,
-          "total": 232,
-          "graded": 232,
-          "hitRate": 50.4,
+          "total": 247,
+          "graded": 247,
+          "hitRate": 51.4,
           "insufficientSample": false
         }
       },
@@ -13586,31 +14321,31 @@
         "High": {
           "hits": 6,
           "nearMisses": 0,
-          "misses": 5,
+          "misses": 6,
           "pushes": 0,
-          "total": 11,
-          "graded": 11,
-          "hitRate": 54.5,
+          "total": 12,
+          "graded": 12,
+          "hitRate": 50,
           "insufficientSample": true
         },
         "Medium": {
-          "hits": 146,
-          "nearMisses": 6,
-          "misses": 88,
+          "hits": 149,
+          "nearMisses": 7,
+          "misses": 89,
           "pushes": 0,
-          "total": 240,
-          "graded": 240,
+          "total": 245,
+          "graded": 245,
           "hitRate": 60.8,
           "insufficientSample": false
         },
         "Low": {
-          "hits": 126,
-          "nearMisses": 7,
-          "misses": 124,
+          "hits": 139,
+          "nearMisses": 8,
+          "misses": 133,
           "pushes": 0,
-          "total": 257,
-          "graded": 257,
-          "hitRate": 49,
+          "total": 280,
+          "graded": 280,
+          "hitRate": 49.6,
           "insufficientSample": false
         }
       },
@@ -13618,30 +14353,30 @@
         "High": {
           "hits": 26,
           "nearMisses": 3,
-          "misses": 135,
+          "misses": 143,
           "pushes": 0,
-          "total": 164,
-          "graded": 164,
-          "hitRate": 15.9,
+          "total": 172,
+          "graded": 172,
+          "hitRate": 15.1,
           "insufficientSample": false
         },
         "Medium": {
-          "hits": 56,
-          "nearMisses": 3,
-          "misses": 437,
+          "hits": 59,
+          "nearMisses": 4,
+          "misses": 455,
           "pushes": 0,
-          "total": 496,
-          "graded": 496,
-          "hitRate": 11.3,
+          "total": 518,
+          "graded": 518,
+          "hitRate": 11.4,
           "insufficientSample": false
         },
         "Low": {
-          "hits": 69,
-          "nearMisses": 5,
-          "misses": 365,
+          "hits": 72,
+          "nearMisses": 6,
+          "misses": 381,
           "pushes": 0,
-          "total": 439,
-          "graded": 439,
+          "total": 459,
+          "graded": 459,
           "hitRate": 15.7,
           "insufficientSample": false
         }
@@ -13651,221 +14386,221 @@
       "PIT": {
         "hits": 20,
         "nearMisses": 2,
-        "misses": 53,
+        "misses": 56,
         "pushes": 0,
-        "total": 75,
-        "graded": 75,
-        "hitRate": 26.7,
+        "total": 78,
+        "graded": 78,
+        "hitRate": 25.6,
         "insufficientSample": false
       },
       "MIN": {
         "hits": 17,
-        "nearMisses": 2,
-        "misses": 42,
+        "nearMisses": 3,
+        "misses": 44,
         "pushes": 0,
-        "total": 61,
-        "graded": 61,
-        "hitRate": 27.9,
+        "total": 64,
+        "graded": 64,
+        "hitRate": 26.6,
         "insufficientSample": false
       },
       "CWS": {
-        "hits": 22,
+        "hits": 23,
         "nearMisses": 0,
-        "misses": 68,
+        "misses": 71,
         "pushes": 0,
-        "total": 90,
-        "graded": 90,
-        "hitRate": 24.4,
+        "total": 94,
+        "graded": 94,
+        "hitRate": 24.5,
         "insufficientSample": false
       },
       "SF": {
-        "hits": 21,
+        "hits": 22,
         "nearMisses": 3,
         "misses": 35,
         "pushes": 0,
-        "total": 59,
-        "graded": 59,
-        "hitRate": 35.6,
+        "total": 60,
+        "graded": 60,
+        "hitRate": 36.7,
         "insufficientSample": false
       },
       "WSH": {
         "hits": 27,
         "nearMisses": 1,
-        "misses": 80,
+        "misses": 83,
         "pushes": 0,
-        "total": 108,
-        "graded": 108,
-        "hitRate": 25,
+        "total": 111,
+        "graded": 111,
+        "hitRate": 24.3,
         "insufficientSample": false
       },
       "TB": {
-        "hits": 21,
+        "hits": 22,
         "nearMisses": 2,
-        "misses": 39,
+        "misses": 42,
         "pushes": 0,
-        "total": 62,
-        "graded": 62,
-        "hitRate": 33.9,
+        "total": 66,
+        "graded": 66,
+        "hitRate": 33.3,
         "insufficientSample": false
       },
       "MIA": {
-        "hits": 21,
+        "hits": 23,
         "nearMisses": 2,
-        "misses": 46,
+        "misses": 50,
         "pushes": 0,
-        "total": 69,
-        "graded": 69,
-        "hitRate": 30.4,
+        "total": 75,
+        "graded": 75,
+        "hitRate": 30.7,
         "insufficientSample": false
       },
       "DET": {
-        "hits": 20,
+        "hits": 21,
         "nearMisses": 0,
-        "misses": 61,
+        "misses": 63,
         "pushes": 0,
-        "total": 81,
-        "graded": 81,
-        "hitRate": 24.7,
+        "total": 84,
+        "graded": 84,
+        "hitRate": 25,
         "insufficientSample": false
       },
       "BAL": {
         "hits": 17,
         "nearMisses": 1,
-        "misses": 29,
+        "misses": 31,
         "pushes": 0,
-        "total": 47,
-        "graded": 47,
-        "hitRate": 36.2,
+        "total": 49,
+        "graded": 49,
+        "hitRate": 34.7,
         "insufficientSample": false
       },
       "HOU": {
-        "hits": 19,
+        "hits": 22,
         "nearMisses": 1,
-        "misses": 33,
+        "misses": 34,
         "pushes": 0,
-        "total": 53,
-        "graded": 53,
-        "hitRate": 35.8,
+        "total": 57,
+        "graded": 57,
+        "hitRate": 38.6,
         "insufficientSample": false
       },
       "CHC": {
-        "hits": 16,
+        "hits": 17,
         "nearMisses": 1,
-        "misses": 43,
+        "misses": 45,
         "pushes": 0,
-        "total": 60,
-        "graded": 60,
-        "hitRate": 26.7,
+        "total": 63,
+        "graded": 63,
+        "hitRate": 27,
         "insufficientSample": false
       },
       "ATL": {
-        "hits": 27,
-        "nearMisses": 1,
+        "hits": 29,
+        "nearMisses": 3,
         "misses": 38,
         "pushes": 0,
-        "total": 66,
-        "graded": 66,
-        "hitRate": 40.9,
+        "total": 70,
+        "graded": 70,
+        "hitRate": 41.4,
         "insufficientSample": false
       },
       "TOR": {
-        "hits": 11,
+        "hits": 12,
         "nearMisses": 1,
-        "misses": 32,
+        "misses": 34,
         "pushes": 0,
-        "total": 44,
-        "graded": 44,
-        "hitRate": 25,
+        "total": 47,
+        "graded": 47,
+        "hitRate": 25.5,
         "insufficientSample": false
       },
       "LAD": {
         "hits": 23,
         "nearMisses": 1,
-        "misses": 42,
+        "misses": 46,
         "pushes": 0,
-        "total": 66,
-        "graded": 66,
-        "hitRate": 34.8,
+        "total": 70,
+        "graded": 70,
+        "hitRate": 32.9,
         "insufficientSample": false
       },
       "CIN": {
-        "hits": 16,
+        "hits": 19,
         "nearMisses": 0,
-        "misses": 59,
+        "misses": 61,
         "pushes": 0,
-        "total": 75,
-        "graded": 75,
-        "hitRate": 21.3,
+        "total": 80,
+        "graded": 80,
+        "hitRate": 23.8,
         "insufficientSample": false
       },
       "BOS": {
-        "hits": 25,
+        "hits": 27,
         "nearMisses": 0,
-        "misses": 26,
+        "misses": 27,
         "pushes": 0,
-        "total": 51,
-        "graded": 51,
-        "hitRate": 49,
+        "total": 54,
+        "graded": 54,
+        "hitRate": 50,
         "insufficientSample": false
       },
       "PHI": {
-        "hits": 16,
+        "hits": 18,
         "nearMisses": 0,
-        "misses": 42,
+        "misses": 44,
         "pushes": 0,
-        "total": 58,
-        "graded": 58,
-        "hitRate": 27.6,
+        "total": 62,
+        "graded": 62,
+        "hitRate": 29,
         "insufficientSample": false
       },
       "CLE": {
-        "hits": 18,
+        "hits": 20,
         "nearMisses": 0,
-        "misses": 29,
+        "misses": 32,
         "pushes": 0,
-        "total": 47,
-        "graded": 47,
-        "hitRate": 38.3,
+        "total": 52,
+        "graded": 52,
+        "hitRate": 38.5,
         "insufficientSample": false
       },
       "ATH": {
         "hits": 17,
-        "nearMisses": 1,
+        "nearMisses": 2,
         "misses": 35,
         "pushes": 0,
-        "total": 53,
-        "graded": 53,
-        "hitRate": 32.1,
+        "total": 54,
+        "graded": 54,
+        "hitRate": 31.5,
         "insufficientSample": false
       },
       "STL": {
-        "hits": 16,
+        "hits": 18,
         "nearMisses": 2,
-        "misses": 65,
+        "misses": 72,
         "pushes": 0,
-        "total": 83,
-        "graded": 83,
-        "hitRate": 19.3,
+        "total": 92,
+        "graded": 92,
+        "hitRate": 19.6,
         "insufficientSample": false
       },
       "TEX": {
-        "hits": 21,
+        "hits": 22,
         "nearMisses": 1,
-        "misses": 58,
+        "misses": 59,
         "pushes": 0,
-        "total": 80,
-        "graded": 80,
-        "hitRate": 26.3,
+        "total": 82,
+        "graded": 82,
+        "hitRate": 26.8,
         "insufficientSample": false
       },
       "SD": {
-        "hits": 16,
+        "hits": 17,
         "nearMisses": 1,
         "misses": 39,
         "pushes": 0,
-        "total": 56,
-        "graded": 56,
-        "hitRate": 28.6,
+        "total": 57,
+        "graded": 57,
+        "hitRate": 29.8,
         "insufficientSample": false
       },
       "AL": {
@@ -13879,83 +14614,83 @@
         "insufficientSample": true
       },
       "NYY": {
-        "hits": 17,
+        "hits": 18,
         "nearMisses": 1,
-        "misses": 42,
+        "misses": 45,
         "pushes": 0,
-        "total": 60,
-        "graded": 60,
-        "hitRate": 28.3,
+        "total": 64,
+        "graded": 64,
+        "hitRate": 28.1,
         "insufficientSample": false
       },
       "MIL": {
-        "hits": 23,
+        "hits": 24,
         "nearMisses": 0,
-        "misses": 37,
+        "misses": 39,
         "pushes": 0,
-        "total": 60,
-        "graded": 60,
-        "hitRate": 38.3,
+        "total": 63,
+        "graded": 63,
+        "hitRate": 38.1,
         "insufficientSample": false
       },
       "COL": {
-        "hits": 14,
+        "hits": 15,
         "nearMisses": 2,
-        "misses": 29,
+        "misses": 30,
         "pushes": 0,
-        "total": 45,
-        "graded": 45,
-        "hitRate": 31.1,
+        "total": 47,
+        "graded": 47,
+        "hitRate": 31.9,
         "insufficientSample": false
       },
       "SEA": {
         "hits": 10,
         "nearMisses": 1,
-        "misses": 43,
+        "misses": 44,
         "pushes": 0,
-        "total": 54,
-        "graded": 54,
-        "hitRate": 18.5,
+        "total": 55,
+        "graded": 55,
+        "hitRate": 18.2,
         "insufficientSample": false
       },
       "KC": {
         "hits": 16,
-        "nearMisses": 0,
-        "misses": 29,
-        "pushes": 0,
-        "total": 45,
-        "graded": 45,
-        "hitRate": 35.6,
-        "insufficientSample": false
-      },
-      "AZ": {
-        "hits": 16,
-        "nearMisses": 0,
-        "misses": 21,
-        "pushes": 0,
-        "total": 37,
-        "graded": 37,
-        "hitRate": 43.2,
-        "insufficientSample": false
-      },
-      "LAA": {
-        "hits": 11,
         "nearMisses": 1,
-        "misses": 34,
-        "pushes": 0,
-        "total": 46,
-        "graded": 46,
-        "hitRate": 23.9,
-        "insufficientSample": false
-      },
-      "NYM": {
-        "hits": 18,
-        "nearMisses": 1,
-        "misses": 29,
+        "misses": 31,
         "pushes": 0,
         "total": 48,
         "graded": 48,
-        "hitRate": 37.5,
+        "hitRate": 33.3,
+        "insufficientSample": false
+      },
+      "AZ": {
+        "hits": 17,
+        "nearMisses": 0,
+        "misses": 21,
+        "pushes": 0,
+        "total": 38,
+        "graded": 38,
+        "hitRate": 44.7,
+        "insufficientSample": false
+      },
+      "LAA": {
+        "hits": 12,
+        "nearMisses": 1,
+        "misses": 34,
+        "pushes": 0,
+        "total": 47,
+        "graded": 47,
+        "hitRate": 25.5,
+        "insufficientSample": false
+      },
+      "NYM": {
+        "hits": 19,
+        "nearMisses": 1,
+        "misses": 30,
+        "pushes": 0,
+        "total": 50,
+        "graded": 50,
+        "hitRate": 38,
         "insufficientSample": false
       },
       "NL": {
@@ -13980,26 +14715,26 @@
           ],
           "hits": 6,
           "nearMisses": 0,
-          "misses": 10,
+          "misses": 11,
           "pushes": 0,
-          "total": 16,
-          "graded": 16,
-          "hitRate": 37.5,
+          "total": 17,
+          "graded": 17,
+          "hitRate": 35.3,
           "insufficientSample": true
         },
         {
-          "id": 665052,
-          "name": "Griffin Conine",
-          "team": "MIA",
+          "id": 621566,
+          "name": "Matt Olson",
+          "team": "ATL",
           "markets": [
             "hrThreat"
           ],
-          "hits": 5,
+          "hits": 6,
           "nearMisses": 0,
-          "misses": 10,
+          "misses": 12,
           "pushes": 0,
-          "total": 15,
-          "graded": 15,
+          "total": 18,
+          "graded": 18,
           "hitRate": 33.3,
           "insufficientSample": true
         },
@@ -14052,41 +14787,41 @@
           "insufficientSample": true
         },
         {
-          "id": 621566,
-          "name": "Matt Olson",
-          "team": "ATL",
+          "id": 665052,
+          "name": "Griffin Conine",
+          "team": "MIA",
           "markets": [
             "hrThreat"
           ],
           "hits": 5,
           "nearMisses": 0,
-          "misses": 12,
+          "misses": 11,
           "pushes": 0,
-          "total": 17,
-          "graded": 17,
-          "hitRate": 29.4,
+          "total": 16,
+          "graded": 16,
+          "hitRate": 31.3,
+          "insufficientSample": true
+        },
+        {
+          "id": 701398,
+          "name": "Sal Stewart",
+          "team": "CIN",
+          "markets": [
+            "hrThreat"
+          ],
+          "hits": 4,
+          "nearMisses": 0,
+          "misses": 9,
+          "pushes": 0,
+          "total": 13,
+          "graded": 13,
+          "hitRate": 30.8,
           "insufficientSample": true
         },
         {
           "id": 571970,
           "name": "Max Muncy",
           "team": "LAD",
-          "markets": [
-            "hrThreat"
-          ],
-          "hits": 4,
-          "nearMisses": 0,
-          "misses": 10,
-          "pushes": 0,
-          "total": 14,
-          "graded": 14,
-          "hitRate": 28.6,
-          "insufficientSample": true
-        },
-        {
-          "id": 592626,
-          "name": "Joc Pederson",
-          "team": "TEX",
           "markets": [
             "hrThreat"
           ],
@@ -14116,34 +14851,18 @@
           "insufficientSample": true
         },
         {
-          "id": 701398,
-          "name": "Sal Stewart",
-          "team": "CIN",
+          "id": 592626,
+          "name": "Joc Pederson",
+          "team": "TEX",
           "markets": [
             "hrThreat"
           ],
-          "hits": 3,
+          "hits": 4,
           "nearMisses": 0,
-          "misses": 9,
+          "misses": 12,
           "pushes": 0,
-          "total": 12,
-          "graded": 12,
-          "hitRate": 25,
-          "insufficientSample": true
-        },
-        {
-          "id": 808959,
-          "name": "Munetaka Murakami",
-          "team": "CWS",
-          "markets": [
-            "hrThreat"
-          ],
-          "hits": 3,
-          "nearMisses": 0,
-          "misses": 9,
-          "pushes": 0,
-          "total": 12,
-          "graded": 12,
+          "total": 16,
+          "graded": 16,
           "hitRate": 25,
           "insufficientSample": true
         },
@@ -14160,22 +14879,6 @@
           "pushes": 0,
           "total": 12,
           "graded": 12,
-          "hitRate": 25,
-          "insufficientSample": true
-        },
-        {
-          "id": 669065,
-          "name": "Kyle Stowers",
-          "team": "MIA",
-          "markets": [
-            "hrThreat"
-          ],
-          "hits": 2,
-          "nearMisses": 0,
-          "misses": 6,
-          "pushes": 0,
-          "total": 8,
-          "graded": 8,
           "hitRate": 25,
           "insufficientSample": true
         },
@@ -14244,6 +14947,22 @@
           "insufficientSample": true
         },
         {
+          "id": 808959,
+          "name": "Munetaka Murakami",
+          "team": "CWS",
+          "markets": [
+            "hrThreat"
+          ],
+          "hits": 3,
+          "nearMisses": 0,
+          "misses": 10,
+          "pushes": 0,
+          "total": 13,
+          "graded": 13,
+          "hitRate": 23.1,
+          "insufficientSample": true
+        },
+        {
           "id": 665953,
           "name": "Andrés Chaparro",
           "team": "WSH",
@@ -14257,6 +14976,22 @@
           "total": 13,
           "graded": 13,
           "hitRate": 23.1,
+          "insufficientSample": true
+        },
+        {
+          "id": 669065,
+          "name": "Kyle Stowers",
+          "team": "MIA",
+          "markets": [
+            "hrThreat"
+          ],
+          "hits": 2,
+          "nearMisses": 0,
+          "misses": 7,
+          "pushes": 0,
+          "total": 9,
+          "graded": 9,
+          "hitRate": 22.2,
           "insufficientSample": true
         },
         {
@@ -14276,9 +15011,9 @@
           "insufficientSample": true
         },
         {
-          "id": 660271,
-          "name": "Shohei Ohtani",
-          "team": "LAD",
+          "id": 547180,
+          "name": "Bryce Harper",
+          "team": "PHI",
           "markets": [
             "hrThreat"
           ],
@@ -14308,6 +15043,22 @@
           "insufficientSample": true
         },
         {
+          "id": 660271,
+          "name": "Shohei Ohtani",
+          "team": "LAD",
+          "markets": [
+            "hrThreat"
+          ],
+          "hits": 3,
+          "nearMisses": 0,
+          "misses": 13,
+          "pushes": 0,
+          "total": 16,
+          "graded": 16,
+          "hitRate": 18.8,
+          "insufficientSample": true
+        },
+        {
           "id": 670541,
           "name": "Yordan Alvarez",
           "team": "HOU",
@@ -14316,49 +15067,33 @@
           ],
           "hits": 3,
           "nearMisses": 1,
-          "misses": 12,
+          "misses": 13,
           "pushes": 0,
-          "total": 16,
-          "graded": 16,
-          "hitRate": 18.8,
+          "total": 17,
+          "graded": 17,
+          "hitRate": 17.6,
+          "insufficientSample": true
+        },
+        {
+          "id": 678246,
+          "name": "Miguel Vargas",
+          "team": "CWS",
+          "markets": [
+            "hrThreat"
+          ],
+          "hits": 2,
+          "nearMisses": 0,
+          "misses": 10,
+          "pushes": 0,
+          "total": 12,
+          "graded": 12,
+          "hitRate": 16.7,
           "insufficientSample": true
         },
         {
           "id": 641343,
           "name": "Jake Bauers",
           "team": "MIL",
-          "markets": [
-            "hrThreat"
-          ],
-          "hits": 2,
-          "nearMisses": 0,
-          "misses": 10,
-          "pushes": 0,
-          "total": 12,
-          "graded": 12,
-          "hitRate": 16.7,
-          "insufficientSample": true
-        },
-        {
-          "id": 666160,
-          "name": "Mickey Moniak",
-          "team": "COL",
-          "markets": [
-            "hrThreat"
-          ],
-          "hits": 2,
-          "nearMisses": 0,
-          "misses": 10,
-          "pushes": 0,
-          "total": 12,
-          "graded": 12,
-          "hitRate": 16.7,
-          "insufficientSample": true
-        },
-        {
-          "id": 682829,
-          "name": "Elly De La Cruz",
-          "team": "CIN",
           "markets": [
             "hrThreat"
           ],
@@ -14380,23 +15115,23 @@
             "team": "WSH",
             "hits": 6,
             "nearMisses": 0,
-            "misses": 10,
+            "misses": 11,
             "pushes": 0,
-            "total": 16,
-            "graded": 16,
-            "hitRate": 37.5,
+            "total": 17,
+            "graded": 17,
+            "hitRate": 35.3,
             "insufficientSample": true
           },
           {
-            "id": 665052,
-            "name": "Griffin Conine",
-            "team": "MIA",
-            "hits": 5,
+            "id": 621566,
+            "name": "Matt Olson",
+            "team": "ATL",
+            "hits": 6,
             "nearMisses": 0,
-            "misses": 10,
+            "misses": 12,
             "pushes": 0,
-            "total": 15,
-            "graded": 15,
+            "total": 18,
+            "graded": 18,
             "hitRate": 33.3,
             "insufficientSample": true
           },
@@ -14440,35 +15175,35 @@
             "insufficientSample": true
           },
           {
-            "id": 621566,
-            "name": "Matt Olson",
-            "team": "ATL",
+            "id": 665052,
+            "name": "Griffin Conine",
+            "team": "MIA",
             "hits": 5,
             "nearMisses": 0,
-            "misses": 12,
+            "misses": 11,
             "pushes": 0,
-            "total": 17,
-            "graded": 17,
-            "hitRate": 29.4,
+            "total": 16,
+            "graded": 16,
+            "hitRate": 31.3,
+            "insufficientSample": true
+          },
+          {
+            "id": 701398,
+            "name": "Sal Stewart",
+            "team": "CIN",
+            "hits": 4,
+            "nearMisses": 0,
+            "misses": 9,
+            "pushes": 0,
+            "total": 13,
+            "graded": 13,
+            "hitRate": 30.8,
             "insufficientSample": true
           },
           {
             "id": 571970,
             "name": "Max Muncy",
             "team": "LAD",
-            "hits": 4,
-            "nearMisses": 0,
-            "misses": 10,
-            "pushes": 0,
-            "total": 14,
-            "graded": 14,
-            "hitRate": 28.6,
-            "insufficientSample": true
-          },
-          {
-            "id": 592626,
-            "name": "Joc Pederson",
-            "team": "TEX",
             "hits": 4,
             "nearMisses": 0,
             "misses": 11,
@@ -14492,28 +15227,15 @@
             "insufficientSample": true
           },
           {
-            "id": 701398,
-            "name": "Sal Stewart",
-            "team": "CIN",
-            "hits": 3,
+            "id": 592626,
+            "name": "Joc Pederson",
+            "team": "TEX",
+            "hits": 4,
             "nearMisses": 0,
-            "misses": 9,
+            "misses": 12,
             "pushes": 0,
-            "total": 12,
-            "graded": 12,
-            "hitRate": 25,
-            "insufficientSample": true
-          },
-          {
-            "id": 808959,
-            "name": "Munetaka Murakami",
-            "team": "CWS",
-            "hits": 3,
-            "nearMisses": 0,
-            "misses": 9,
-            "pushes": 0,
-            "total": 12,
-            "graded": 12,
+            "total": 16,
+            "graded": 16,
             "hitRate": 25,
             "insufficientSample": true
           },
@@ -14527,19 +15249,6 @@
             "pushes": 0,
             "total": 12,
             "graded": 12,
-            "hitRate": 25,
-            "insufficientSample": true
-          },
-          {
-            "id": 669065,
-            "name": "Kyle Stowers",
-            "team": "MIA",
-            "hits": 2,
-            "nearMisses": 0,
-            "misses": 6,
-            "pushes": 0,
-            "total": 8,
-            "graded": 8,
             "hitRate": 25,
             "insufficientSample": true
           },
@@ -14596,6 +15305,19 @@
             "insufficientSample": true
           },
           {
+            "id": 808959,
+            "name": "Munetaka Murakami",
+            "team": "CWS",
+            "hits": 3,
+            "nearMisses": 0,
+            "misses": 10,
+            "pushes": 0,
+            "total": 13,
+            "graded": 13,
+            "hitRate": 23.1,
+            "insufficientSample": true
+          },
+          {
             "id": 665953,
             "name": "Andrés Chaparro",
             "team": "WSH",
@@ -14606,6 +15328,19 @@
             "total": 13,
             "graded": 13,
             "hitRate": 23.1,
+            "insufficientSample": true
+          },
+          {
+            "id": 669065,
+            "name": "Kyle Stowers",
+            "team": "MIA",
+            "hits": 2,
+            "nearMisses": 0,
+            "misses": 7,
+            "pushes": 0,
+            "total": 9,
+            "graded": 9,
+            "hitRate": 22.2,
             "insufficientSample": true
           },
           {
@@ -14622,9 +15357,9 @@
             "insufficientSample": true
           },
           {
-            "id": 660271,
-            "name": "Shohei Ohtani",
-            "team": "LAD",
+            "id": 547180,
+            "name": "Bryce Harper",
+            "team": "PHI",
             "hits": 3,
             "nearMisses": 0,
             "misses": 12,
@@ -14648,12 +15383,12 @@
             "insufficientSample": true
           },
           {
-            "id": 670541,
-            "name": "Yordan Alvarez",
-            "team": "HOU",
+            "id": 660271,
+            "name": "Shohei Ohtani",
+            "team": "LAD",
             "hits": 3,
-            "nearMisses": 1,
-            "misses": 12,
+            "nearMisses": 0,
+            "misses": 13,
             "pushes": 0,
             "total": 16,
             "graded": 16,
@@ -14661,35 +15396,35 @@
             "insufficientSample": true
           },
           {
+            "id": 670541,
+            "name": "Yordan Alvarez",
+            "team": "HOU",
+            "hits": 3,
+            "nearMisses": 1,
+            "misses": 13,
+            "pushes": 0,
+            "total": 17,
+            "graded": 17,
+            "hitRate": 17.6,
+            "insufficientSample": true
+          },
+          {
+            "id": 678246,
+            "name": "Miguel Vargas",
+            "team": "CWS",
+            "hits": 2,
+            "nearMisses": 0,
+            "misses": 10,
+            "pushes": 0,
+            "total": 12,
+            "graded": 12,
+            "hitRate": 16.7,
+            "insufficientSample": true
+          },
+          {
             "id": 641343,
             "name": "Jake Bauers",
             "team": "MIL",
-            "hits": 2,
-            "nearMisses": 0,
-            "misses": 10,
-            "pushes": 0,
-            "total": 12,
-            "graded": 12,
-            "hitRate": 16.7,
-            "insufficientSample": true
-          },
-          {
-            "id": 666160,
-            "name": "Mickey Moniak",
-            "team": "COL",
-            "hits": 2,
-            "nearMisses": 0,
-            "misses": 10,
-            "pushes": 0,
-            "total": 12,
-            "graded": 12,
-            "hitRate": 16.7,
-            "insufficientSample": true
-          },
-          {
-            "id": 682829,
-            "name": "Elly De La Cruz",
-            "team": "CIN",
             "hits": 2,
             "nearMisses": 0,
             "misses": 11,
@@ -14704,32 +15439,32 @@
       }
     },
     "hrCalibration": {
-      "expectedHRs": 233.99,
-      "actualHRs": 151,
-      "n": 1099
+      "expectedHRs": 244.62,
+      "actualHRs": 157,
+      "n": 1149
     },
     "nearHR": {
-      "realEventCount": 137,
-      "nearMissCount": 11,
+      "realEventCount": 140,
+      "nearMissCount": 13,
       "signalPerformance": {
         "withSignal": {
-          "hits": 28,
-          "nearMisses": 6,
-          "misses": 124,
+          "hits": 29,
+          "nearMisses": 8,
+          "misses": 142,
           "pushes": 0,
-          "total": 158,
-          "graded": 158,
-          "hitRate": 17.7,
+          "total": 179,
+          "graded": 179,
+          "hitRate": 16.2,
           "insufficientSample": false
         },
         "withoutSignal": {
-          "hits": 123,
+          "hits": 128,
           "nearMisses": 5,
-          "misses": 813,
+          "misses": 837,
           "pushes": 0,
-          "total": 941,
-          "graded": 941,
-          "hitRate": 13.1,
+          "total": 970,
+          "graded": 970,
+          "hitRate": 13.2,
           "insufficientSample": false
         }
       }
@@ -14738,41 +15473,41 @@
       "Elite Zone Fit": {
         "hits": 2,
         "nearMisses": 1,
-        "misses": 11,
+        "misses": 12,
         "pushes": 0,
-        "total": 14,
-        "graded": 14,
-        "hitRate": 14.3,
+        "total": 15,
+        "graded": 15,
+        "hitRate": 13.3,
         "insufficientSample": true
       },
       "Strong Zone Fit": {
-        "hits": 9,
-        "nearMisses": 2,
-        "misses": 31,
+        "hits": 11,
+        "nearMisses": 4,
+        "misses": 43,
         "pushes": 0,
-        "total": 42,
-        "graded": 42,
-        "hitRate": 21.4,
+        "total": 58,
+        "graded": 58,
+        "hitRate": 19,
         "insufficientSample": false
       },
       "Playable Zone Fit": {
-        "hits": 5,
+        "hits": 8,
         "nearMisses": 2,
-        "misses": 18,
+        "misses": 37,
         "pushes": 0,
-        "total": 25,
-        "graded": 25,
-        "hitRate": 20,
+        "total": 47,
+        "graded": 47,
+        "hitRate": 17,
         "insufficientSample": false
       },
       "Pitcher Zone Edge": {
-        "hits": 0,
+        "hits": 1,
         "nearMisses": 0,
-        "misses": 5,
+        "misses": 9,
         "pushes": 0,
-        "total": 5,
-        "graded": 5,
-        "hitRate": 0,
+        "total": 10,
+        "graded": 10,
+        "hitRate": 10,
         "insufficientSample": true
       }
     }
