@@ -1,0 +1,70 @@
+name: Sync MLB Transactions (real trades)
+
+# Powers the new "transaction" Diamond Report Headlines category -- runs on
+# its own short interval, separate from update-tracker.yml's 3x/day cadence,
+# because a real trade can happen at any hour and this is cheap enough (one
+# API call, no Statcast/per-batter fan-out) to check for far more often.
+#
+# Every 30 minutes, offset a few minutes past the hour/half-hour on purpose
+# -- same reasoning as update-tracker.yml's own schedule comment: GitHub's
+# own docs warn on-the-hour is the highest-congestion time for scheduled
+# workflows and can cause delays or silent skips.
+
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-transactions
+  cancel-in-progress: false
+
+jobs:
+  sync-transactions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run MLB transactions sync
+        run: node scripts/sync-mlb-transactions.mjs
+
+      - name: Commit and push if changed
+        run: |
+          git add data/mlb-transactions.json
+          if git diff --cached --quiet; then
+            echo "No changes to data/mlb-transactions.json — nothing to commit."
+            exit 0
+          fi
+          git config user.name "diamond-report-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -m "Sync MLB transactions"
+
+          # Same retry+rebase loop as sync-statcast.yml/calibration-report.yml's own
+          # push step -- at a 30-minute cadence this run collides with
+          # update-tracker.yml/other workflows' own pushes far more often than this
+          # repo's other once- or few-times-a-day workflows do, so a plain `git push`
+          # failing on a moved main is the expected common case here, not a rare one.
+          for attempt in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push rejected (attempt $attempt/5) — main moved during this run. Fetching and rebasing..."
+            git fetch origin main
+            if ! git rebase -X theirs origin/main; then
+              echo "::error::Rebase onto origin/main failed even preferring our own side — aborting. This run's data was NOT pushed."
+              git rebase --abort
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "::error::Push still rejected after 5 attempts."
+          exit 1

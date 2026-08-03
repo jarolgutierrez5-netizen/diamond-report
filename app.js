@@ -16150,11 +16150,11 @@ if (document.readyState === 'loading') {
     section.style.display = '';
   }
 
-  var CATEGORY_LABELS = { recap: 'RECAP', trend: 'TREND', streak: 'STREAK', notable: 'NOTABLE PERFORMANCE', weather: 'WEATHER', injury: 'INJURY', model: 'MODEL MOVE', leaderboard: 'LEADERBOARD' };
+  var CATEGORY_LABELS = { recap: 'RECAP', trend: 'TREND', streak: 'STREAK', notable: 'NOTABLE PERFORMANCE', weather: 'WEATHER', injury: 'INJURY', model: 'MODEL MOVE', leaderboard: 'LEADERBOARD', transaction: 'TRANSACTION' };
   // Purely decorative -- a quick-scan visual cue per category, same real
   // categories CATEGORY_LABELS already names. A missing icon just renders no
   // emoji rather than a placeholder.
-  var CATEGORY_ICONS = { recap: '📋', trend: '📈', streak: '🔥', notable: '💥', weather: '🌤️', injury: '🩹', model: '⚙️', leaderboard: '🏆' };
+  var CATEGORY_ICONS = { recap: '📋', trend: '📈', streak: '🔥', notable: '💥', weather: '🌤️', injury: '🩹', model: '⚙️', leaderboard: '🏆', transaction: '🔄' };
   var headlinesLoaded = false;
   function loadHubHeadlines(){
     if (headlinesLoaded) return;
@@ -16226,8 +16226,28 @@ if (document.readyState === 'loading') {
       : (Array.isArray(trendingData) ? trendingData : []);
 
     var recap = headlines.filter(function(h){ return h.category === 'recap'; })[0];
-    var topStory = headlines.filter(function(h){ return h.category !== 'recap'; })[0];
-    var signal = headlines.filter(function(h){ return h.category === 'injury' || h.category === 'weather' || h.category === 'notable'; })[0];
+    // Top Story and Signal to Know both used to independently take "the first
+    // non-recap headline in the array" / "the first injury|weather|notable
+    // headline in the array" -- since generate-headlines.mjs always pushes
+    // notable right after recap, whenever a notable headline existed both
+    // slots silently picked the exact same story, wasting a whole briefing
+    // tile on a literal repeat (confirmed live: "Top Story" and "Notable
+    // Performance" showing the identical "Longest home run of the day" line).
+    // Fixed by ranking the real one-off categories by a fixed newsworthiness
+    // order -- transaction/model movement are genuine same-day news that can
+    // change a roster or a pick, weather/injury are real but more contextual,
+    // notable/leaderboard are retrospective facts -- and having Top Story and
+    // Signal draw from different ranks of that same ordered list, so they can
+    // never collide on one story.
+    var ONE_OFF_PRIORITY = ['transaction', 'model', 'injury', 'weather', 'notable', 'leaderboard'];
+    var oneOffs = headlines.filter(function(h){ return h.category !== 'recap' && h.category !== 'trend' && h.category !== 'streak'; });
+    oneOffs.sort(function(a, b){
+      var ai = ONE_OFF_PRIORITY.indexOf(a.category); if (ai === -1) ai = ONE_OFF_PRIORITY.length;
+      var bi = ONE_OFF_PRIORITY.indexOf(b.category); if (bi === -1) bi = ONE_OFF_PRIORITY.length;
+      return ai - bi;
+    });
+    var topStory = oneOffs[0] || headlines.filter(function(h){ return h.category !== 'recap'; })[0];
+    var signal = oneOffs[1];
     var topTrend = trendingList[0];
 
     briefingItems = [];

@@ -11,13 +11,13 @@
 // attribution -- every headline traces back to a stat this app's own sync
 // pipeline produced.
 //
-// Seven categories, one builder each producing 0 or 1(+) headline objects --
+// Eight categories, one builder each producing 0 or 1(+) headline objects --
 // every builder degrades to producing nothing rather than a fabricated or
 // filler headline when its underlying signal isn't genuinely notable today
 // (same standard the rest of this codebase holds itself to: real numbers or
 // nothing, never spun-up text). trend and streak both produce EVERY real
 // qualifying player, not a curated top-N -- "all trends, good or bad" per
-// request, not just a handful of favorable stories. All 7 share one shape:
+// request, not just a handful of favorable stories. All 8 share one shape:
 //   { id, category, title, blurb, link: { hash, playerId?, playerName? },
 //     clip?: { videoUrl, webUrl? } }
 // `link.hash` is a board hash (e.g. "#gamepick=hr") the client navigates to on
@@ -414,6 +414,35 @@ async function buildLeaderboardHeadline(season) {
   };
 }
 
+// ── Transactions — real trades from data/mlb-transactions.json (synced on
+// its own frequent schedule by sync-mlb-transactions.mjs, separate from this
+// script's own 3x/day cadence, so a trade shows up here within that sync's
+// interval rather than waiting for the next full tracker pass). Windowed to
+// the last 2 days (today or yesterday) so a trade stays visible through the
+// rest of the day it happened plus one more full day, then ages out on its
+// own the same way the injury-return headline does -- no separate "already
+// shown" bookkeeping needed.
+function buildTransactionHeadlines(txData, todayStr) {
+  const trades = txData?.trades || [];
+  const recent = trades.filter(t => t.date && daysBetween(t.date, todayStr) <= 1 && daysBetween(t.date, todayStr) >= 0);
+  return recent.map(t => {
+    const move = t.fromTeam && t.toTeam
+      ? `traded from the ${t.fromTeam} to the ${t.toTeam}`
+      : (t.toTeam ? `traded to the ${t.toTeam}` : 'involved in a trade');
+    return {
+      id: `transaction-${t.id}`,
+      category: 'transaction',
+      title: `${t.playerName} ${move}`,
+      // The real MLB transaction description is preferred when present --
+      // it's the league's own official record of the deal, not a generated
+      // sentence -- falling back to our own constructed line only when a
+      // transaction genuinely has none.
+      blurb: t.description || `${t.playerName} was ${move} on ${t.date}.`,
+      link: t.playerId ? { hash: '#gamepick=hr', playerId: t.playerId, playerName: t.playerName } : undefined,
+    };
+  });
+}
+
 // ── 8. Trending Players — a small real visual per player, similar in spirit to
 // Baseball Savant's own "Trending Players" widget. Written to its own output
 // file (data/trending-players.json) rather than folded into the headlines
@@ -645,6 +674,13 @@ async function main() {
   const modelMove = buildModelMovementHeadline(tracker, today);
   if (modelMove) headlines.push(modelMove);
 
+  // Reads data/mlb-transactions.json, kept fresh on its own short-interval
+  // schedule (sync-transactions.yml) separate from this script's -- a real
+  // trade can land at any hour, unlike the stat-driven categories above.
+  const txData = await readDataFile('mlb-transactions.json');
+  const transactions = buildTransactionHeadlines(txData, today);
+  headlines.push(...transactions);
+
   try {
     const leaderboard = await buildLeaderboardHeadline(season);
     if (leaderboard) headlines.push(leaderboard);
@@ -719,6 +755,7 @@ export {
   buildRecapHeadline, buildTrendHeadlines, trendTitleAndBlurb, parkDescriptor, suppressionClause,
   buildStreakHeadlines, computeStreakIndicator, streakTitleAndBlurb,
   buildNotablePerformanceHeadline, buildWeatherHeadline, buildInjuryHeadline, buildModelMovementHeadline,
+  buildTransactionHeadlines,
   buildLeaderboardHeadline, buildTrendingBatters, buildTrendingPitchers, buildTrendingPlayers, main,
   computeSpotlightScore, buildFeaturedReasons, buildFeaturedPlayer,
 };
