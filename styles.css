@@ -3917,6 +3917,78 @@ select:focus-visible {
   border-color: rgba(144,238,96,.4);
   color: #90ee60;
 }
+/* Bench (batting lineup panel) / Bullpen Arms (Pitcher Report Support section) --
+   collapsed by default, a plain roster reference rather than the confirmed-starter
+   card treatment above, since these players aren't a specific pre-game projection. */
+.lbc-bench-section {
+  margin-top: 10px;
+}
+.lbc-bench-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  cursor: pointer;
+  font-family: inherit;
+}
+.lbc-bench-toggle:hover {
+  border-color: rgba(255,255,255,.18);
+  color: var(--text);
+}
+.lbc-bench-caret {
+  transition: transform .15s ease;
+  font-size: 13px;
+}
+.lbc-bench-toggle.open .lbc-bench-caret {
+  transform: rotate(90deg);
+}
+.lbc-bench-list {
+  display: none;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  padding: 2px 4px;
+}
+.lbc-bench-list.open {
+  display: block;
+}
+.lbc-bench-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 7px 8px;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.lbc-bench-row:last-child {
+  border-bottom: none;
+}
+.lbc-bench-name {
+  font-weight: 700;
+  font-size: 11.5px;
+  color: var(--text);
+  flex-shrink: 0;
+}
+.lbc-bench-pos {
+  color: var(--muted);
+  font-size: 10px;
+  flex-shrink: 0;
+}
+.lbc-bench-stats {
+  margin-left: auto;
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
 .lbc-tag-onfire {
   background: rgba(220,38,38,.14);
   color: #ff6b6b;
