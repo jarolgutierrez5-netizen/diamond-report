@@ -1,6 +1,6 @@
 {
   "date": "2026-08-04",
-  "generatedAt": "2026-08-04T15:58:46.319Z",
+  "generatedAt": "2026-08-04T16:19:25.886Z",
   "headlines": [
     {
       "id": "recap",
@@ -2068,6 +2068,23 @@
       }
     },
     {
+      "id": "trend-663698",
+      "category": "trend",
+      "title": "Joey Bart's power profile stays live",
+      "blurb": "A .136 ISO and 4 home runs this season heading into today's matchup with BOS sends out Patrick Sandoval, who's allowed a 1.4 HR/9 this year, in a park that plays up for power.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 13
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 663698,
+        "playerName": "Joey Bart",
+        "pitcherId": 663776,
+        "pitcherName": "Patrick Sandoval"
+      }
+    },
+    {
       "id": "trend-691011",
       "category": "trend",
       "title": "Drew Romo's power profile stays live",
@@ -3122,23 +3139,6 @@
       }
     },
     {
-      "id": "trend-695731",
-      "category": "trend",
-      "title": "Braden Montgomery's power profile stays live",
-      "blurb": "A .110 ISO and 3 home runs this season heading into today's matchup with BOS sends out Patrick Sandoval, who's allowed a 1.4 HR/9 this year, in a park that plays up for power.",
-      "stat": {
-        "kind": "hrProb",
-        "value": 10
-      },
-      "link": {
-        "hash": "#gamepick=hr",
-        "playerId": 695731,
-        "playerName": "Braden Montgomery",
-        "pitcherId": 663776,
-        "pitcherName": "Patrick Sandoval"
-      }
-    },
-    {
       "id": "trend-663330",
       "category": "trend",
       "title": "Jahmai Jones is running hot",
@@ -4006,18 +4006,18 @@
       }
     },
     {
-      "id": "trend-700337",
+      "id": "trend-686668",
       "category": "trend",
-      "title": "Edgar Quero's power profile stays live",
-      "blurb": "A .47 ISO and 2 home runs this season heading into today's matchup with BOS sends out Patrick Sandoval, who's allowed a 1.4 HR/9 this year, in a park that plays up for power.",
+      "title": "Brenton Doyle's power profile stays live",
+      "blurb": "A .72 ISO and 1 home runs this season heading into today's matchup with BOS sends out Patrick Sandoval, who's allowed a 1.4 HR/9 this year, in a park that plays up for power.",
       "stat": {
         "kind": "hrProb",
         "value": 7
       },
       "link": {
         "hash": "#gamepick=hr",
-        "playerId": 700337,
-        "playerName": "Edgar Quero",
+        "playerId": 686668,
+        "playerName": "Brenton Doyle",
         "pitcherId": 663776,
         "pitcherName": "Patrick Sandoval"
       }
@@ -6497,6 +6497,24 @@
       }
     },
     {
+      "id": "streak-663698",
+      "category": "streak",
+      "title": "Joey Bart is ice cold",
+      "blurb": "No home runs in his last 10 games despite an expected pace of 1.5 based on his season rate — a genuine cold stretch, not just normal variance.",
+      "stat": {
+        "kind": "last10HR",
+        "value": 0,
+        "favorable": false
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 663698,
+        "playerName": "Joey Bart",
+        "pitcherId": 663776,
+        "pitcherName": "Patrick Sandoval"
+      }
+    },
+    {
       "id": "streak-671976",
       "category": "streak",
       "title": "Tristan Peters is cooling off",
@@ -6533,6 +6551,24 @@
       }
     },
     {
+      "id": "streak-686668",
+      "category": "streak",
+      "title": "Brenton Doyle is cooling off",
+      "blurb": "Just 0 home runs in his last 10 games against an expected pace of 0.3 — a real dip, worth knowing before starting him.",
+      "stat": {
+        "kind": "last10HR",
+        "value": 0,
+        "favorable": false
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 686668,
+        "playerName": "Brenton Doyle",
+        "pitcherId": 663776,
+        "pitcherName": "Patrick Sandoval"
+      }
+    },
+    {
       "id": "streak-691011",
       "category": "streak",
       "title": "Drew Romo is ice cold",
@@ -6546,42 +6582,6 @@
         "hash": "#gamepick=hr",
         "playerId": 691011,
         "playerName": "Drew Romo",
-        "pitcherId": 663776,
-        "pitcherName": "Patrick Sandoval"
-      }
-    },
-    {
-      "id": "streak-695731",
-      "category": "streak",
-      "title": "Braden Montgomery is cooling off",
-      "blurb": "Just 0 home runs in his last 10 games against an expected pace of 0.8 — a real dip, worth knowing before starting him.",
-      "stat": {
-        "kind": "last10HR",
-        "value": 0,
-        "favorable": false
-      },
-      "link": {
-        "hash": "#gamepick=hr",
-        "playerId": 695731,
-        "playerName": "Braden Montgomery",
-        "pitcherId": 663776,
-        "pitcherName": "Patrick Sandoval"
-      }
-    },
-    {
-      "id": "streak-700337",
-      "category": "streak",
-      "title": "Edgar Quero is cooling off",
-      "blurb": "Just 0 home runs in his last 10 games against an expected pace of 0.5 — a real dip, worth knowing before starting him.",
-      "stat": {
-        "kind": "last10HR",
-        "value": 0,
-        "favorable": false
-      },
-      "link": {
-        "hash": "#gamepick=hr",
-        "playerId": 700337,
-        "playerName": "Edgar Quero",
         "pitcherId": 663776,
         "pitcherName": "Patrick Sandoval"
       }
