@@ -6213,6 +6213,78 @@ select:focus-visible {
    rather than wrapping, since 7 tabs won't fit most phone widths and a
    wrapped second row would push the active tab out of a predictable
    position. */
+/* Matchup Summary -- always visible above the tab bar (not inside any tab
+   pane), so the headline read (favorable/tough matchup, HR probability when
+   opened from the HR Threats board, Matchup Edge, model confidence) is the
+   very first thing the modal shows, no tab click required. */
+.mu-summary {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(17,26,45,.9), rgba(14,23,40,.9));
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.mu-summary-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.mu-summary-names {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+}
+.mu-summary-vs {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 12px;
+  margin: 0 4px;
+}
+.mu-summary-meta {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 700;
+}
+.mu-summary-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-bottom: 10px;
+}
+.mu-summary-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mu-summary-stat > span:not(.dr-hrp-confidence) {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1;
+}
+.mu-summary-stat span.mu-summary-conf-pending {
+  color: var(--muted);
+}
+.mu-summary-stat .dr-hrp-confidence {
+  font-size: 10px;
+}
+.mu-summary-stat label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.mu-summary-conclusion {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text);
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
 .mu-tabs {
   display: flex;
   gap: 4px;
