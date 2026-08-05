@@ -7424,21 +7424,40 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   // shows a combined "hasn't synced" message only when BOTH sources are null,
   // and a combined "nothing found" message only when both are empty, so a
   // batter with real data in only one of the two still renders that data.
-  const gameContextHTML = (() => {
-    const parts = [];
+  // ── Game Environment (real-data redesign) ──────────────────────────────
+  // Consolidates park, weather, and bullpen exposure into one block instead of
+  // three separate reads scattered across the modal. Park HR Factor and
+  // bullpen were already computed synchronously (parkHrIndex/bullpenInfo, both
+  // passed in as params); weather is the one genuinely new fetch here, filled
+  // in async (same non-blocking placeholder-then-fill pattern as the Matchup
+  // Summary's confidence badge above) since this function itself stays sync.
+  // Same real weatherHRMult formula (airDensityHRMult * windHRMult) the actual
+  // HR score itself applies, so "Overall HR Environment" here is never a
+  // different number than what the model used.
+  const envUid = `mu-env-${batterId}-${pitcherId}`;
+  const environmentHTML = (() => {
+    const tiles = [];
     if (parkHrIndex != null) {
       const pct = Math.round(parkHrIndex - 100);
       const cls = parkHrIndex > 107 ? '#f87171' : parkHrIndex < 93 ? '#60a5fa' : 'var(--text)';
-      const label = parkHrIndex > 107 ? 'HR-Friendly' : parkHrIndex < 93 ? 'Pitcher-Friendly' : 'Neutral';
-      parts.push(`<span class="dr1041-bottom-item" title="Statcast HR park factor for today's venue — 100 = league average">🏟️ Park HR Factor: <strong style="color:${cls}">${pct > 0 ? '+' : ''}${pct}% · ${label}</strong></span>`);
+      const label = parkHrIndex > 107 ? 'Hitter-Friendly' : parkHrIndex < 93 ? 'Pitcher-Friendly' : 'Neutral';
+      tiles.push(`<div class="mu-env-tile"><span style="color:${cls}">${pct > 0 ? '+' : ''}${pct}%</span><label>Park HR Factor · ${label}</label></div>`);
     }
+    tiles.push(`<div class="mu-env-tile" id="${envUid}-weather"><span class="mu-summary-conf-pending">–</span><label>Weather</label></div>`);
     if (bullpenInfo && (bullpenInfo.tier === 'Taxed' || bullpenInfo.tier === 'Gassed')) {
       const cls = bullpenInfo.tier === 'Gassed' ? '#f87171' : '#fbbf24';
-      parts.push(`<span class="dr1041-bottom-item" title="${bullpenInfo.totalRelieverPitches} reliever pitches and ${bullpenInfo.backToBackArms} arm(s) used on both of the last two days — real recent workload, not a season average">🧯 ${pitcherName.split(' ').pop()}'s Bullpen: <strong style="color:${cls}">${bullpenInfo.tier}</strong></span>`);
+      tiles.push(`<div class="mu-env-tile"><span style="color:${cls}">${bullpenInfo.tier}</span><label>${pitcherName.split(' ').pop()}'s Bullpen</label></div>`);
     }
-    if (!parts.length) return '';
-    return `<div class="dr1041-bottom-strip" style="margin-bottom:8px">${parts.join('<span class="dr1041-bottom-split"></span>')}</div>`;
+    if (!tiles.length) return '';
+    return `<div class="mu-environment">
+      <div class="mu-environment-head">🌎 Game Environment <span class="mu-environment-overall" id="${envUid}-overall"></span></div>
+      <div class="mu-environment-stats">${tiles.join('')}</div>
+    </div>`;
   })();
+  // Retained name for the one existing call site below (this block also used to
+  // be the only game-context read in the "why" tab) -- now the fuller Game
+  // Environment section above.
+  const gameContextHTML = environmentHTML;
 
   const recentContactHTML = (() => {
     const shortName = batterName.split(' ').pop();
@@ -8037,7 +8056,22 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <div class="mu-tab-pane" data-tab="h2h">
         <div style="margin-bottom:16px">
           <div class="zone-title" style="margin-bottom:8px">HEAD-TO-HEAD · 2026 SEASON</div>
-          ${hasH2H ? `
+          ${hasH2H ? (() => {
+            // Real BvP small-sample framing -- a plain career line first (the
+            // spec's "Career vs pitcher: 2-for-7, 1 HR, 2 K" read), tagged with a
+            // real sample-size badge instead of presenting 3 career at-bats with
+            // the same visual weight as a real, meaningful sample. 15 AB is a
+            // common baseball-analytics floor for "starts to carry any signal at
+            // all" -- below it, BvP is essentially noise no matter how it reads.
+            const abNum = parseInt(h2h.atBats) || 0;
+            const hitsNum = parseInt(h2h.hits) || 0;
+            const small = abNum < 15;
+            const sampleBadge = small
+              ? `<span class="h2h-sample-badge small">Small sample</span>`
+              : `<span class="h2h-sample-badge">${abNum} AB — real sample</span>`;
+            return `
+          <div class="h2h-career-line">Career vs ${pitcherName.split(' ').pop()}: <strong>${hitsNum}-for-${abNum}</strong>, ${h2hHR} HR, ${h2hK} K ${sampleBadge}</div>
+          ${small ? `<div class="zone-note" style="margin-bottom:10px">Only ${abNum} real career at-bats — pitch-type production and contact quality elsewhere in this modal should carry more weight than this specific matchup history.</div>` : ''}
           <div class="h2h-grid">
             <div class="h2h-stat"><div class="h2h-val">${h2hAB}</div><div class="h2h-lbl">At Bats</div></div>
             <div class="h2h-stat"><div class="h2h-val" style="color:${parseFloat(h2h.avg)>=.300?'var(--green)':'var(--text)'}">${h2hAVG}</div><div class="h2h-lbl">AVG</div></div>
@@ -8045,7 +8079,8 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
             <div class="h2h-stat"><div class="h2h-val">${h2hHits}</div><div class="h2h-lbl">Hits</div></div>
             <div class="h2h-stat"><div class="h2h-val">${h2hK}</div><div class="h2h-lbl">K</div></div>
             <div class="h2h-stat"><div class="h2h-val">${h2hOPS}</div><div class="h2h-lbl">OPS</div></div>
-          </div>` : `<div style="color:var(--muted);font-size:12px;padding:8px 0">No career H2H history found for ${batterName} vs ${pitcherName}.</div>`}
+          </div>`;
+          })() : `<div style="color:var(--muted);font-size:12px;padding:8px 0">No career H2H history found for ${batterName} vs ${pitcherName}.</div>`}
         </div>
         ${battedBallLogHTML}
       </div>
@@ -8152,6 +8187,41 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       const tier = computeConfidenceTier(hrBoardRow, entry ? !!entry.confirmed : null);
       confSlot.innerHTML = `${confidenceBadgeHTML(tier)}<label>Model Confidence</label>`;
     }).catch(() => {});
+  }
+
+  // Game Environment weather -- async-filled the same non-blocking way, real
+  // conditions from fetchGameWeather (the exact same Open-Meteo call the
+  // Featured HR Pick card and every other real weather read on this site
+  // already uses). todayParkAbbr is the home park; batterTeamAbbr/
+  // pitcherTeamAbbr cover whichever side is actually away, and
+  // fetchGameWeather checks stadiumCoords for either abbr passed to it, so
+  // order doesn't need to be known here. "Overall HR Environment" combines
+  // this real weatherHRMult with parkHrIndex using the exact same formula
+  // hrPerPA itself applies (see loadHRPotential's parkAdj/weatherHRMult) --
+  // never a different number than what the model actually used.
+  const envBatterTeamAbbr = batterPerson?.currentTeam?.abbreviation || null;
+  const envPitcherTeamAbbr = pitcherPerson?.currentTeam?.abbreviation || null;
+  if (envBatterTeamAbbr || envPitcherTeamAbbr) {
+    fetchGameWeather(envBatterTeamAbbr, envPitcherTeamAbbr).then(weather => {
+      const wSlot = document.getElementById(`${envUid}-weather`);
+      if (wSlot) {
+        wSlot.innerHTML = weather
+          ? `<span>${weather.temp}°F · wind ${weather.wind} mph${weather.windDir != null ? ' @' + weather.windDir + '°' : ''}${weather.humidity != null ? ' · ' + weather.humidity + '% humidity' : ''}</span><label>Weather</label>`
+          : `<span style="color:var(--muted)">Dome / indoor</span><label>Weather</label>`;
+      }
+      const overallSlot = document.getElementById(`${envUid}-overall`);
+      if (overallSlot && weather) {
+        const homeAbbr = todayParkAbbr || envBatterTeamAbbr;
+        const weatherMult = airDensityHRMult(weather) * windHRMult(weather, homeAbbr);
+        const parkMult = parkHrIndex != null ? (1 + ((parkHrIndex - 100) / 100) * 0.5) : 1;
+        const pct = Math.round((weatherMult * parkMult - 1) * 100);
+        const cls = pct >= 5 ? 'var(--green)' : pct <= -5 ? '#f87171' : 'var(--muted)';
+        overallSlot.innerHTML = `· Overall HR Environment: <strong style="color:${cls}">${pct > 0 ? '+' : ''}${pct}%</strong>`;
+      }
+    }).catch(() => {
+      const wSlot = document.getElementById(`${envUid}-weather`);
+      if (wSlot) wSlot.innerHTML = `<span style="color:var(--muted)">Not available</span><label>Weather</label>`;
+    });
   }
 
   // Slide the Recent Form baseballs in from the left edge on first paint. Set

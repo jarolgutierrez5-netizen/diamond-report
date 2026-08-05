@@ -6285,6 +6285,97 @@ select:focus-visible {
   border-top: 1px solid var(--border);
   padding-top: 10px;
 }
+
+/* Game Environment -- same card treatment as .mu-summary above for visual
+   consistency, but an equal-width tile grid (not a natural-width flex row)
+   since Park/Weather/Bullpen tiles are all the same "label + value" shape and
+   should line up evenly regardless of how many are present. */
+.mu-environment {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(17,26,45,.9), rgba(14,23,40,.9));
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.mu-environment-head {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mu-environment-overall {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+.mu-environment-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+.mu-env-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255,255,255,.02);
+}
+.mu-env-tile span {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.25;
+}
+.mu-env-tile span.mu-summary-conf-pending {
+  color: var(--muted);
+  font-weight: 600;
+}
+.mu-env-tile label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* BvP career line -- the plain "2-for-7, 1 HR, 2 K" read the h2h-grid tiles
+   below already break out individually, restated as one sentence with an
+   explicit sample-size badge so a 3-AB career sample never reads with the
+   same visual weight as a real one. */
+.h2h-career-line {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.h2h-sample-badge {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--green);
+}
+.h2h-sample-badge.small {
+  color: var(--muted);
+  border-color: var(--border);
+}
 .mu-tabs {
   display: flex;
   gap: 4px;
