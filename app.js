@@ -6314,6 +6314,12 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   const hasHRContext = !!(hrBoardRow && String(hrBoardRow.pitcherId) === String(pitcherId));
   const summaryHrProb = hasHRContext ? hrBoardRow.hrProb : null;
   const summaryBattingOrder = hasHRContext ? hrBoardRow.battingOrder : null;
+  // Score decomposition -- same hasHRContext gate as summaryHrProb above, since
+  // it needs the raw hrPerPA components (batterRate/pitcherRate/parkAdj/
+  // shrunkHotMult/zoneMult) only a real HR Threats board row carries. See
+  // computeHRScoreDecomposition's own header comment for the counterfactual
+  // method.
+  const scoreDecomp = hasHRContext ? computeHRScoreDecomposition(hrBoardRow) : null;
 
   // Matchup Edge -- computed fresh here (not read off hrBoardRow) so every
   // matchup this modal opens for gets a real number, not just HR Threats ones.
@@ -7459,6 +7465,33 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   // Environment section above.
   const gameContextHTML = environmentHTML;
 
+  // Model Explanation -- the real counterfactual score decomposition (see
+  // computeHRScoreDecomposition/scoreDecomp above), rendered as an expandable
+  // waterfall so the default view isn't dominated by it (matches the "rest in
+  // expandable sections" presentation-hierarchy note) but a curious user can see
+  // exactly which real inputs moved the final number and by how much.
+  const modelExplanationHTML = (() => {
+    if (!scoreDecomp) return '';
+    const maxAbs = Math.max(1, ...scoreDecomp.factors.map(f => Math.abs(f.delta)));
+    const rows = scoreDecomp.factors.map(f => {
+      const pos = f.delta >= 0;
+      const w = Math.min(100, Math.round((Math.abs(f.delta) / maxAbs) * 100));
+      return `<div class="mu-explain-row">
+        <span class="mu-explain-label">${f.label}</span>
+        <div class="mu-explain-bar-track"><div class="mu-explain-bar ${pos ? 'pos' : 'neg'}" style="width:${w}%"></div></div>
+        <span class="mu-explain-delta ${pos ? 'pos' : 'neg'}">${pos ? '+' : ''}${f.delta.toFixed(1)}</span>
+      </div>`;
+    }).join('');
+    return `<details class="mu-explain">
+      <summary class="mu-explain-head">🧮 Model Explanation</summary>
+      <div class="mu-explain-body">
+        <div class="mu-explain-rows">${rows}</div>
+        <div class="mu-explain-final"><span>${scoreDecomp.base.toFixed(1)}%</span><label>Final HR Probability</label></div>
+        <div class="zone-note" style="margin-top:8px">Each row is the real change in HR probability if that one real input were reset to a league-average/neutral value with everything else held fixed -- not an arbitrary point score. With every factor neutralized at once, this matchup would grade at ${scoreDecomp.neutralBaseline.toFixed(1)}%.</div>
+      </div>
+    </details>`;
+  })();
+
   const recentContactHTML = (() => {
     const shortName = batterName.split(' ').pop();
     if (nearHRList == null && recentHRList == null) return `
@@ -8122,6 +8155,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         ${attackZoneHTML}
         </div>
         ${gameContextHTML}
+        ${modelExplanationHTML}
       </div>
 
       <!-- Splits -->
@@ -8512,6 +8546,48 @@ function confidenceBadgeHTML(tier) {
   if (tier === 'high') return '<span class="dr-hrp-confidence high" title="Confirmed lineup, confirmed starter, weather and Statcast data all present">✅ High Confidence</span>';
   if (tier === 'medium') return '<span class="dr-hrp-confidence medium" title="Lineup and starter confirmed; weather or Statcast data still pending">◐ Medium Confidence</span>';
   return '<span class="dr-hrp-confidence prelim" title="Lineup and/or starting pitcher not yet confirmed">○ Preliminary</span>';
+}
+
+// Honest HR-probability decomposition -- the real hrPerPA formula
+// (((batterRate*0.6)+(pitcherRate*0.4)) * parkAdj * shrunkHotMult * weatherHRMult *
+// zoneMult, see loadHRPotential) is multiplicative with a nonlinear PA-aggregation
+// step on top (simulateHRGameOdds), so there's no native additive "+X points per
+// factor" breakdown to just read off it. This computes one honestly instead:
+// counterfactually re-running the SAME real simulateHRGameOdds with one real factor
+// at a time neutralized (held at league-average or 1x, whichever the factor's own
+// neutral point is), and takes the drop from the real final probability as that
+// factor's real contribution in percentage points. Neutral points for batterRate/
+// pitcherRate mirror the exact same league-average constants loadHRPotential itself
+// already falls back to for a batter/pitcher with no real sample (HRP_LEAGUE_AVG_HR_RATE
+// *0.88 and the pitcherHr9<=0 fallback of 0.03) rather than an invented number.
+// Requires the raw components loadHRPotential attaches to the row (batterRate,
+// pitcherRate, parkAdj, shrunkHotMult, weatherHRMult, zoneMult, hrPerPA) -- only
+// ever available for a row sourced from the HR Threats board itself (hasHRContext),
+// never fabricated for a matchup opened some other way.
+function computeHRScoreDecomposition(row) {
+  if (!row || row.hrPerPA == null || typeof window === 'undefined' || typeof window.simulateHRGameOdds !== 'function') return null;
+  const battingOrder = row.battingOrder;
+  const NEUTRAL_BATTER_RATE = 0.031 * 0.88; // same HRP_LEAGUE_AVG_HR_RATE*0.88 loadHRPotential falls back to
+  const NEUTRAL_PITCHER_RATE = 0.03;        // same pitcherHr9<=0 fallback loadHRPotential already uses
+  const real = {
+    batterRate: row.batterRate, pitcherRate: row.pitcherRate, parkAdj: row.parkAdj,
+    shrunkHotMult: row.shrunkHotMult, weatherHRMult: row.weatherHRMult, zoneMult: row.zoneMult,
+  };
+  function probWith(overrides) {
+    const f = Object.assign({}, real, overrides);
+    const perPA = ((f.batterRate * 0.6) + (f.pitcherRate * 0.4)) * f.parkAdj * f.shrunkHotMult * f.weatherHRMult * f.zoneMult;
+    return window.simulateHRGameOdds(perPA, battingOrder);
+  }
+  const base = probWith({});
+  const factors = [
+    { key: 'batterPower', label: 'Batter power', delta: base - probWith({ batterRate: NEUTRAL_BATTER_RATE }) },
+    { key: 'pitcherSusceptibility', label: 'Pitcher HR susceptibility', delta: base - probWith({ pitcherRate: NEUTRAL_PITCHER_RATE }) },
+    { key: 'zoneOverlap', label: 'Zone overlap', delta: base - probWith({ zoneMult: 1 }) },
+    { key: 'recentForm', label: 'Recent form', delta: base - probWith({ shrunkHotMult: 1 }) },
+    { key: 'parkWeather', label: 'Park and weather', delta: base - probWith({ parkAdj: 1, weatherHRMult: 1 }) },
+  ];
+  const neutralBaseline = probWith({ batterRate: NEUTRAL_BATTER_RATE, pitcherRate: NEUTRAL_PITCHER_RATE, zoneMult: 1, shrunkHotMult: 1, parkAdj: 1, weatherHRMult: 1 });
+  return { base, neutralBaseline, factors };
 }
 
 // Shared friendly error state with a real, working Retry button -- replaces
@@ -10602,6 +10678,14 @@ async function loadHRPotential() {
             // or duplicating the Statcast lookup. Same values HR Threats' own hrPerPA above
             // already applies, just also stored on the row instead of staying local-only.
             weatherHRMult, battedBallMult,
+            // Remaining raw hrPerPA components -- batterRate/pitcherRate/parkAdj/
+            // shrunkHotMult/zoneMult/hrPerPA itself -- stored the same way weatherHRMult/
+            // battedBallMult already are above, so the Pitcher Matchup modal's score
+            // decomposition (opened from an HR Threats row, via window.__hrCompareRows)
+            // can re-run the real simulateHRGameOdds with one real factor neutralized at a
+            // time instead of fabricating point contributions that don't trace back to
+            // this formula.
+            batterRate, pitcherRate, parkAdj, shrunkHotMult, zoneMult, hrPerPA,
             // Same sample-size shrinkage as avg/ops/obp/slg above — a raw ISO from a
             // handful of AB (e.g. a 1-for-1 season debut with a HR) can exceed 3.000,
             // which isn't a real power signal and used to inflate the TB/RBI/H+R+RBI
