@@ -4415,42 +4415,6 @@ select:focus-visible {
 .dr-hrp-confidence.medium { color: #ffd39b; border-color: rgba(255,211,155,.4); background: rgba(255,211,155,.08); }
 .dr-hrp-confidence.prelim { color: var(--muted); }
 
-/* Pitch-type matchup rows -- the pitcher's top 2 pitches by usage%, each paired
-   with the batter's real production against that specific pitch type
-   (topPitchMatchupRows in app.js). Deliberately plain rows, not chips -- this is
-   meant to read like a quick two-line scouting note, not another badge to scan. */
-.dr-hrp-pitchrows {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 8px;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: rgba(255,255,255,.02);
-}
-.dr-hrp-pitchrow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 11px;
-}
-.dr-hrp-pitchrow span:first-child { color: var(--muted); font-weight: 700; }
-.dr-hrp-pitchrow strong { font-weight: 800; color: var(--text); }
-.dr-hrp-pitchrow strong.green { color: #9ef0bd; }
-.dr-hrp-pitchrow strong.red { color: #fca5a5; }
-.dr-hrp-pitchrow-thin { color: var(--muted); font-style: italic; }
-/* #hr-potential-content strong{font-size:18px !important} (a broad mobile-only
-   rule elsewhere in this file, originally meant for player names) also catches
-   this row's <strong> delta text, blowing it up far past the pitch-name label
-   beside it. Pin it back to the row's own intended size at every width -- this
-   selector's specificity (id+class+type) beats that rule's (id+type). */
-#hr-potential-content .dr-hrp-pitchrow strong {
-  font-size: 11px !important;
-  line-height: 1.3 !important;
-}
-
 /* Full breakdown -- secondary stats (Zone Fit, Season HR, Last 10 HR, OPS, ISO,
    AVG, Hot Boost, Ballpark Pal, season Barrel%) collapsed behind a native
    <details> disclosure instead of always-visible chips, so the always-on card
