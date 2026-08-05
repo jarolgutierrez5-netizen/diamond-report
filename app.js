@@ -7071,6 +7071,75 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         ? `${pitcherName}'s last 3 starts compared to his full-season baseline, per pitch — season pitch-mix data not synced yet.`
         : `No real pitch-level data available for ${pitcherName} yet — this section will populate once the daily Statcast sync has run.`;
 
+  // ── Pitch Arsenal Matchup (real-data redesign) — the pitcher's most-used
+  // pitches (covering ~85% of his real mix) paired with THIS BATTER's own real
+  // production against each specific pitch type, not a blended average. Distinct
+  // from pitchEffectivenessTableHTML below, which is the pitcher's own numbers
+  // against the league as a whole — this is the one-on-one read, the same
+  // per-pitch-type data topPitchMatchupRows already surfaces on the HR Threats
+  // card, just as a full table here instead of a 2-row summary. Velocity comes
+  // from rollingProfile (season, per pitch) when synced; batter xSLG/whiff come
+  // from batterPitchTypeSeason, and the league-average-per-pitch-type baseline
+  // is the same one leagueAvgXslgByPitchType() computes from that same store.
+  // Matchup designation is a disclosed two-factor rule (batter's real xSLG delta
+  // vs. that real league baseline) — not the full handedness/velocity-band/
+  // pitcher-effectiveness model a from-scratch classifier would need, which this
+  // repo doesn't have the tracked sample sizes to support responsibly yet.
+  function pitchArsenalMatchupTableHTML() {
+    const arsenal = pitcherProfile?.byPitch;
+    if (!arsenal || !arsenal.length) return '';
+    const sorted = arsenal.filter(p => p.usagePct != null).sort((a, b) => (b.usagePct || 0) - (a.usagePct || 0));
+    if (!sorted.length) return '';
+    // Cumulative-usage cutoff (~85%), min 2 / max 5 pitches -- covers the real
+    // repertoire without padding the table with single-digit show-me pitches.
+    let cum = 0;
+    const shown = [];
+    for (const p of sorted) {
+      if (shown.length >= 2 && cum >= 85) break;
+      if (shown.length >= 5) break;
+      shown.push(p);
+      cum += p.usagePct || 0;
+    }
+    const veloByPitch = {};
+    (rollingProfile?.byPitch || []).forEach(p => { veloByPitch[normalizePitchTypeKey(p.name)] = p.seasonVelo; });
+    const batterRows = typeof batterPitchTypeSeason !== 'undefined' ? batterPitchTypeSeason[String(batterId)] : null;
+    const leagueAvg = typeof leagueAvgXslgByPitchType === 'function' ? leagueAvgXslgByPitchType() : {};
+    const MIN_SAMPLE = 10;
+    const rows = shown.map(p => {
+      const pk = normalizePitchTypeKey(p.name);
+      const velo = veloByPitch[pk];
+      const br = batterRows ? batterRows[pk] : null;
+      const enough = br && br.pitches >= MIN_SAMPLE;
+      const stat = enough ? (br.xslg != null ? br.xslg : br.slg) : null;
+      const isExpected = enough ? br.xslg != null : null;
+      const whiff = enough ? br.whiffPct : null;
+      const leagueBaseline = pk ? leagueAvg[pk] : null;
+      const delta = (stat != null && leagueBaseline != null) ? stat - leagueBaseline : null;
+      let tag = 'Small sample', tagCls = '';
+      if (delta != null) {
+        if (delta >= 0.040) { tag = 'Strong'; tagCls = 'good'; }
+        else if (delta <= -0.040) { tag = 'Weak'; tagCls = 'weak'; }
+        else { tag = 'Neutral'; tagCls = ''; }
+      }
+      return `<tr>
+        <td><strong>${p.name}</strong></td>
+        <td class="usage">${p.usagePct.toFixed(0)}%</td>
+        <td class="num">${velo != null ? velo.toFixed(1) + ' mph' : '–'}</td>
+        <td class="num${stat != null ? gbCls('slg', stat) : ''}">${stat != null ? stat.toFixed(3) + (isExpected ? ' xSLG' : ' SLG') : '–'}</td>
+        <td class="num">${whiff != null ? whiff.toFixed(0) + '%' : '–'}</td>
+        <td><span class="dr1041-chip ${tagCls}" style="font-size:9px;padding:2px 7px">${tag}</span></td>
+      </tr>`;
+    }).join('');
+    return `<div class="dr1041-pitch-mix" style="margin-bottom:14px">
+      <div class="dr1041-pitch-head">
+        <div><div class="dr1041-kicker">⚔️ PITCH ARSENAL MATCHUP</div><div class="dr1041-subtext">${pitcherName}'s most-used pitches (~${Math.round(cum)}% of his real mix) vs. ${batterName}'s own real production against each pitch type.</div></div>
+      </div>
+      <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage</th><th>Velocity</th><th>Batter Production</th><th>Batter Whiff%</th><th>Matchup</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="zone-note" style="margin-top:8px">Matchup reflects ${batterName}'s real production (xSLG where available, else SLG) against that specific pitch type vs. the real league-average for it — Strong/Weak requires at least ${MIN_SAMPLE} tracked pitches of that type faced; below that it reads as a small sample rather than a guess.</div>
+    </div>`;
+  }
+  const pitchArsenalMatchupHTML = pitchArsenalMatchupTableHTML();
+
   const pitchEffectivenessTableHTML = pstatsModes.length > 0 ? `<div class="dr1041-pitch-mix" style="margin-top:14px" data-pstats-toggle>
     <div class="dr1041-pitch-head">
       <div><div class="dr1041-kicker">🧪 ${pitchSectionLabel}</div><div class="dr1041-subtext">${pstatsSubtext}</div></div>
@@ -7899,6 +7968,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
 
       <!-- Pitch Mix -->
       <div class="mu-tab-pane" data-tab="pitchmix">
+        ${pitchArsenalMatchupHTML}
         ${pitcherChaseHTML}
         ${pitchEffectivenessTableHTML}
         ${countPerfHTML}
