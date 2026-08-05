@@ -4391,6 +4391,76 @@ select:focus-visible {
 .dr1027-chip.green { color: #9ef0bd !important; }
 .dr1027-chip.gold { color: #ffd39b !important; }
 .dr1027-chip.red { color: #fca5a5 !important; }
+
+/* Model confidence badge -- sits next to the HR Probability figure in the score
+   box, same three-state read (High/Medium/Preliminary) computeConfidenceTier in
+   app.js derives from real lineup/pitcher/weather/Statcast presence. Async-filled
+   after loadRepoLineups() resolves, same pattern as the lineup badge slot right
+   next to it -- empty (no layout shift) until then. */
+.dr-hrp-confidence-slot { display: block; margin-bottom: 4px; }
+.dr-hrp-confidence {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.dr-hrp-confidence.high { color: #9ef0bd; border-color: rgba(158,240,189,.4); background: rgba(158,240,189,.08); }
+.dr-hrp-confidence.medium { color: #ffd39b; border-color: rgba(255,211,155,.4); background: rgba(255,211,155,.08); }
+.dr-hrp-confidence.prelim { color: var(--muted); }
+
+/* Pitch-type matchup rows -- the pitcher's top 2 pitches by usage%, each paired
+   with the batter's real production against that specific pitch type
+   (topPitchMatchupRows in app.js). Deliberately plain rows, not chips -- this is
+   meant to read like a quick two-line scouting note, not another badge to scan. */
+.dr-hrp-pitchrows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255,255,255,.02);
+}
+.dr-hrp-pitchrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+}
+.dr-hrp-pitchrow span:first-child { color: var(--muted); font-weight: 700; }
+.dr-hrp-pitchrow strong { font-weight: 800; color: var(--text); }
+.dr-hrp-pitchrow strong.green { color: #9ef0bd; }
+.dr-hrp-pitchrow strong.red { color: #fca5a5; }
+.dr-hrp-pitchrow-thin { color: var(--muted); font-style: italic; }
+
+/* Full breakdown -- secondary stats (Zone Fit, Season HR, Last 10 HR, OPS, ISO,
+   AVG, Hot Boost, Ballpark Pal, season Barrel%) collapsed behind a native
+   <details> disclosure instead of always-visible chips, so the always-on card
+   surface stays to the handful of genuinely decision-relevant reads. */
+.dr-hrp-breakdown { margin-top: 8px; }
+.dr-hrp-breakdown summary {
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--accent);
+  list-style: none;
+  padding: 2px 0;
+}
+.dr-hrp-breakdown summary::-webkit-details-marker { display: none; }
+.dr-hrp-breakdown summary::before { content: "▸ "; }
+.dr-hrp-breakdown[open] summary::before { content: "▾ "; }
+.dr-hrp-breakdown .dr1027-chip-row { margin-top: 6px; }
 .dr1027-hr-score em {
   background: none !important;
   border: none !important;

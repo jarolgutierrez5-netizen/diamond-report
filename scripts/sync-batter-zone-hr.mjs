@@ -313,11 +313,34 @@ async function buildBatterZoneHR(batterId, name) {
     }
     if (!Object.keys(battedBallLog).length) battedBallLog = null;
   }
+  // Real recent-form contact quality (last 10 distinct game dates, both opposing-
+  // pitcher hands combined -- a batter's own barrel skill isn't naturally split by
+  // opponent hand the way byZoneByHand/battedBallLog above are, so this pools both
+  // buckets before taking the recency window). Reuses the exact same batted-ball
+  // events already fetched above for battedBallLog -- no extra request -- and the
+  // same isBarrel(ev, la) classification used everywhere else in this file, just
+  // scoped to games instead of the whole season. null when there's no real batted-
+  // ball data to compute it from, never a fabricated recent-form read.
+  let recentForm = null;
+  if (hasBattedBallCols && hasHandSplit) {
+    const combined = [...battedBallsByHand.R, ...battedBallsByHand.L].filter(b => b.date);
+    const distinctDates = [...new Set(combined.map(b => b.date))].sort().reverse();
+    const RECENT_FORM_GAMES = 10;
+    const recentDates = new Set(distinctDates.slice(0, RECENT_FORM_GAMES));
+    const recentBalls = combined.filter(b => recentDates.has(b.date));
+    if (recentBalls.length) {
+      const withEv = recentBalls.filter(b => Number.isFinite(b.exitVelo));
+      const avgEv = withEv.length ? +(withEv.reduce((s, b) => s + b.exitVelo, 0) / withEv.length).toFixed(1) : null;
+      const barrelPct = +((recentBalls.filter(b => b.barrel).length / recentBalls.length) * 100).toFixed(1);
+      recentForm = { avgEv, barrelPct, n: recentBalls.length, games: recentDates.size };
+    }
+  }
   return {
     hrByPitch,
     byZone: Object.keys(byZone).length ? byZone : null,
     byZoneByHand,
     hrByZone: Object.keys(hrByZone).length ? hrByZone : null,
+    recentForm,
     hrSpray: hasHitCoords ? hrSpray : null,
     battedBallLog,
   };
