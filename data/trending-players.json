@@ -1,181 +1,391 @@
 {
-  "date": "2026-08-04",
-  "generatedAt": "2026-08-05T03:33:32.187Z",
+  "date": "2026-08-05",
+  "generatedAt": "2026-08-05T16:06:04.156Z",
   "players": [
     {
-      "playerId": 665871,
-      "name": "Javier Assad",
+      "playerId": 663538,
+      "name": "Nico Hoerner",
+      "type": "batter",
+      "trendLabel": "Hot Streak",
+      "trendMetric": "HR pace vs season rate (last 10 games)",
+      "trendPct": 200,
+      "trendPctCapped": true,
+      "visual": {
+        "type": "spray",
+        "label": "Hoerner Home Runs",
+        "dots": [
+          {
+            "xFt": -178.7,
+            "yFt": 339.3,
+            "distance": 381
+          },
+          {
+            "xFt": -273.9,
+            "yFt": 257.9,
+            "distance": 372
+          },
+          {
+            "xFt": -229.6,
+            "yFt": 309.2,
+            "distance": 382
+          },
+          {
+            "xFt": -216,
+            "yFt": 305.5,
+            "distance": 371
+          },
+          {
+            "xFt": -235.5,
+            "yFt": 318.6,
+            "distance": 392
+          },
+          {
+            "xFt": -95.3,
+            "yFt": 391.2,
+            "distance": 400
+          },
+          {
+            "xFt": -204.7,
+            "yFt": 310,
+            "distance": 369
+          },
+          {
+            "xFt": -89,
+            "yFt": 416.8,
+            "distance": 381
+          },
+          {
+            "xFt": -86.1,
+            "yFt": 414.3,
+            "distance": 395
+          }
+        ]
+      }
+    },
+    {
+      "playerId": 808982,
+      "name": "Jung Hoo Lee",
+      "type": "batter",
+      "trendLabel": "Hot Streak",
+      "trendMetric": "HR pace vs season rate (last 10 games)",
+      "trendPct": 200,
+      "trendPctCapped": true,
+      "visual": {
+        "type": "spray",
+        "label": "Lee Home Runs",
+        "dots": [
+          {
+            "xFt": 160.9,
+            "yFt": 382.2,
+            "distance": 410
+          },
+          {
+            "xFt": 173.2,
+            "yFt": 348.3,
+            "distance": 385
+          },
+          {
+            "xFt": 220.1,
+            "yFt": 296.1,
+            "distance": 365
+          },
+          {
+            "xFt": 120,
+            "yFt": 400.2,
+            "distance": 414
+          },
+          {
+            "xFt": 253.5,
+            "yFt": 281,
+            "distance": 373
+          },
+          {
+            "xFt": -200.9,
+            "yFt": 173.1,
+            "distance": 225
+          },
+          {
+            "xFt": 260.1,
+            "yFt": 262.7,
+            "distance": 364
+          },
+          {
+            "xFt": 260,
+            "yFt": 258.3,
+            "distance": 361
+          },
+          {
+            "xFt": 218.8,
+            "yFt": 375.6,
+            "distance": 0
+          }
+        ]
+      }
+    },
+    {
+      "playerId": 678882,
+      "name": "Ceddanne Rafaela",
+      "type": "batter",
+      "trendLabel": "Hot Streak",
+      "trendMetric": "HR pace vs season rate (last 10 games)",
+      "trendPct": 200,
+      "trendPctCapped": true,
+      "visual": {
+        "type": "spray",
+        "label": "Rafaela Home Runs",
+        "dots": [
+          {
+            "xFt": -173.4,
+            "yFt": 350.5,
+            "distance": 388
+          },
+          {
+            "xFt": -144.7,
+            "yFt": 378,
+            "distance": 402
+          },
+          {
+            "xFt": -126.3,
+            "yFt": 369.6,
+            "distance": 389
+          },
+          {
+            "xFt": -266.7,
+            "yFt": 311.4,
+            "distance": 405
+          },
+          {
+            "xFt": -153.2,
+            "yFt": 350.1,
+            "distance": 382
+          },
+          {
+            "xFt": -226.4,
+            "yFt": 304.4,
+            "distance": 376
+          },
+          {
+            "xFt": -116.6,
+            "yFt": 360.1,
+            "distance": 377
+          },
+          {
+            "xFt": -260.6,
+            "yFt": 286.7,
+            "distance": 383
+          },
+          {
+            "xFt": -177.9,
+            "yFt": 331.9,
+            "distance": 374
+          },
+          {
+            "xFt": -213.1,
+            "yFt": 336.2,
+            "distance": 395
+          },
+          {
+            "xFt": -246.1,
+            "yFt": 278.2,
+            "distance": 368
+          },
+          {
+            "xFt": -187.4,
+            "yFt": 329.1,
+            "distance": 376
+          },
+          {
+            "xFt": -234,
+            "yFt": 302.9,
+            "distance": 379
+          },
+          {
+            "xFt": 170.1,
+            "yFt": 323.1,
+            "distance": 362
+          },
+          {
+            "xFt": 227.7,
+            "yFt": 253.6,
+            "distance": 337
+          }
+        ]
+      }
+    },
+    {
+      "playerId": 682052,
+      "name": "Jacob Lopez",
       "type": "pitcher",
       "trendLabel": "Trending Up",
       "trendMetric": "Whiff rate vs season rate (last 3 starts)",
-      "trendPct": 6,
+      "trendPct": 11,
       "visual": {
         "type": "whiff",
-        "label": "Assad Whiffs",
+        "label": "Lopez Whiffs",
         "dots": [
           {
-            "plateX": -0.57,
-            "plateZ": 3.69,
+            "plateX": -1.47,
+            "plateZ": 1.98,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": 0.41,
+            "plateZ": 3.11,
             "pitchName": "4-Seam Fastball"
-          },
-          {
-            "plateX": -0.27,
-            "plateZ": 1.26,
-            "pitchName": "Curveball"
-          },
-          {
-            "plateX": -0.46,
-            "plateZ": 2.44,
-            "pitchName": "4-Seam Fastball"
-          },
-          {
-            "plateX": -0.01,
-            "plateZ": 2.09,
-            "pitchName": "4-Seam Fastball"
-          },
-          {
-            "plateX": -0.13,
-            "plateZ": 2.61,
-            "pitchName": "4-Seam Fastball"
-          },
-          {
-            "plateX": 0.14,
-            "plateZ": 2.99,
-            "pitchName": "4-Seam Fastball"
-          },
-          {
-            "plateX": 0.63,
-            "plateZ": 1.89,
-            "pitchName": "Curveball"
-          },
-          {
-            "plateX": 0.18,
-            "plateZ": 0.48,
-            "pitchName": "Curveball"
-          },
-          {
-            "plateX": -0.54,
-            "plateZ": 0.89,
-            "pitchName": "Changeup"
-          },
-          {
-            "plateX": 0.17,
-            "plateZ": 2.36,
-            "pitchName": "Sinker"
-          },
-          {
-            "plateX": -0.31,
-            "plateZ": 2.3,
-            "pitchName": "Sinker"
-          },
-          {
-            "plateX": -0.22,
-            "plateZ": 2.61,
-            "pitchName": "Sinker"
-          },
-          {
-            "plateX": 0.46,
-            "plateZ": 3.02,
-            "pitchName": "Cutter"
           },
           {
             "plateX": 0.33,
-            "plateZ": 1.77,
+            "plateZ": 2.71,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": 0.84,
+            "plateZ": 3.23,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": 1.16,
+            "plateZ": 3.31,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": 1.34,
+            "plateZ": 0.77,
             "pitchName": "Changeup"
           },
           {
-            "plateX": 0.19,
-            "plateZ": 3.36,
+            "plateX": -0.9,
+            "plateZ": 1.01,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": -0.17,
+            "plateZ": 2.26,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": 0.27,
+            "plateZ": 2.4,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": 1.16,
+            "plateZ": 2.48,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": 0.68,
+            "plateZ": 1.97,
+            "pitchName": "Changeup"
+          },
+          {
+            "plateX": 0.65,
+            "plateZ": 2.24,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": 0.6,
+            "plateZ": 1.65,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": 0.75,
+            "plateZ": 3.02,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": -0.32,
+            "plateZ": 1.64,
             "pitchName": "Slider"
           }
         ]
       }
     },
     {
-      "playerId": 677976,
-      "name": "Randy Dobnak",
+      "playerId": 680732,
+      "name": "Sean Burke",
       "type": "pitcher",
       "trendLabel": "Trending Up",
       "trendMetric": "Whiff rate vs season rate (last 3 starts)",
-      "trendPct": 5,
+      "trendPct": 6,
       "visual": {
         "type": "whiff",
-        "label": "Dobnak Whiffs",
+        "label": "Burke Whiffs",
         "dots": [
           {
-            "plateX": 0.6,
-            "plateZ": 1.22,
-            "pitchName": "Sweeper"
-          },
-          {
-            "plateX": 1.65,
-            "plateZ": 1.35,
-            "pitchName": "Sweeper"
-          },
-          {
-            "plateX": 1.21,
-            "plateZ": 1.47,
-            "pitchName": "Sweeper"
-          },
-          {
-            "plateX": -0.62,
-            "plateZ": 0.67,
-            "pitchName": "Changeup"
-          },
-          {
-            "plateX": -0.65,
-            "plateZ": 1.5,
-            "pitchName": "Sinker"
-          },
-          {
-            "plateX": 0.49,
-            "plateZ": 1.29,
+            "plateX": 0.98,
+            "plateZ": 2.67,
             "pitchName": "Slider"
           },
           {
-            "plateX": 0.36,
-            "plateZ": 1.66,
-            "pitchName": "Sweeper"
+            "plateX": 1.27,
+            "plateZ": 1.85,
+            "pitchName": "Slider"
           },
           {
-            "plateX": 0.36,
-            "plateZ": 1.76,
-            "pitchName": "Sweeper"
+            "plateX": 1.11,
+            "plateZ": 1.88,
+            "pitchName": "Slider"
           },
           {
-            "plateX": 0.11,
-            "plateZ": 1.07,
-            "pitchName": "Changeup"
+            "plateX": 0.26,
+            "plateZ": 2.59,
+            "pitchName": "Sinker"
           },
           {
-            "plateX": 1.51,
-            "plateZ": 0.76,
-            "pitchName": "Changeup"
+            "plateX": 0.46,
+            "plateZ": 1.28,
+            "pitchName": "Slider"
           },
           {
-            "plateX": 1.15,
-            "plateZ": 1.65,
-            "pitchName": "Sweeper"
+            "plateX": -0.56,
+            "plateZ": 2.23,
+            "pitchName": "Cutter"
           },
           {
-            "plateX": 1.85,
-            "plateZ": 1.57,
-            "pitchName": "Sweeper"
+            "plateX": 1.13,
+            "plateZ": 3.23,
+            "pitchName": "4-Seam Fastball"
           },
           {
-            "plateX": -0.57,
-            "plateZ": 2.57,
-            "pitchName": "Changeup"
+            "plateX": -1.18,
+            "plateZ": 1.35,
+            "pitchName": "Knuckle Curve"
           },
           {
-            "plateX": 0.6,
-            "plateZ": 1.15,
-            "pitchName": "Changeup"
+            "plateX": -0.29,
+            "plateZ": 2.37,
+            "pitchName": "4-Seam Fastball"
           },
           {
-            "plateX": 0.16,
-            "plateZ": 0.53,
-            "pitchName": "Changeup"
+            "plateX": -0.14,
+            "plateZ": 2.6,
+            "pitchName": "Sinker"
+          },
+          {
+            "plateX": 0.58,
+            "plateZ": 1.5,
+            "pitchName": "Cutter"
+          },
+          {
+            "plateX": 0.08,
+            "plateZ": 3.33,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": -0.28,
+            "plateZ": 3.44,
+            "pitchName": "Sinker"
+          },
+          {
+            "plateX": 0.94,
+            "plateZ": 1.85,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": 0.64,
+            "plateZ": 2.2,
+            "pitchName": "Cutter"
           }
         ]
       }
