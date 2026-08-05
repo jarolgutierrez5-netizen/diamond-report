@@ -6298,6 +6298,63 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   const batterSplitAvg = firstStat(batterVsPitcherHand?.avg, bs.avg);
   const pitcherSplitAvgAllowed = firstStat(pitcherVsBatterHand?.avg, ps.avg);
 
+  // ── Matchup Summary (real-data redesign) ──────────────────────────────
+  // The first thing this modal shows, answering "does this matchup favor the
+  // batter" before any tab is clicked. HR probability and a live confidence
+  // read only exist when this modal was opened FROM the HR Threats board --
+  // window.__hrCompareRows is that board's own real per-batter row cache (see
+  // renderHRPTableV1032), already keyed by batter id and repopulated on every
+  // board render. Matched by BOTH batter and pitcher id so a stale/different
+  // cached matchup for the same batter never gets misattributed to this one --
+  // every other board this modal opens from (K Props, RBI, Pitcher Report,
+  // headlines, carousel) simply won't have a match, and the summary degrades
+  // to what's real for a generic matchup: hand read, real Matchup Edge, and a
+  // conclusion sentence without an HR-specific probability claim.
+  const hrBoardRow = (typeof window !== 'undefined' && window.__hrCompareRows) ? window.__hrCompareRows[String(batterId)] : null;
+  const hasHRContext = !!(hrBoardRow && String(hrBoardRow.pitcherId) === String(pitcherId));
+  const summaryHrProb = hasHRContext ? hrBoardRow.hrProb : null;
+  const summaryBattingOrder = hasHRContext ? hrBoardRow.battingOrder : null;
+
+  // Matchup Edge -- computed fresh here (not read off hrBoardRow) so every
+  // matchup this modal opens for gets a real number, not just HR Threats ones.
+  // Same weighted per-pitch-type grade computeMatchupEdgeScore already powers
+  // on the board.
+  const summaryMatchupEdge = computeMatchupEdgeScore(batterId, batterName, pitcherId, pitcherHand, parseFloat(bs.avg) || 0, parseFloat(bs.slg) || 0, batterSplits);
+  const summaryEdgeTier = summaryMatchupEdge == null ? null : summaryMatchupEdge >= 64 ? 'favorable' : summaryMatchupEdge < 45 ? 'tough' : 'even';
+  const summaryHandText = (batterHand && pitcherHand) ? `${handLabel(batterHand,'batter')} batter vs ${handLabel(pitcherHand,'pitcher')}` : null;
+  const summaryOrdinal = n => n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`;
+
+  // One-sentence conclusion -- rule-based synthesis from real signals already
+  // computed above (Matchup Edge) or already on the HR board's own row (park/
+  // weather, when opened from that board) -- same "not AI-generated text, no
+  // external model called" discipline every other synthesized sentence in this
+  // file already follows.
+  const summaryConclusion = (() => {
+    const bits = [];
+    if (summaryEdgeTier === 'favorable') bits.push(`${batterName} has a favorable power matchup against ${pitcherName}'s real pitch mix`);
+    else if (summaryEdgeTier === 'tough') bits.push(`${batterName} has a tough matchup against ${pitcherName}'s real pitch mix`);
+    else if (summaryEdgeTier === 'even') bits.push(`${batterName}'s matchup against ${pitcherName}'s real pitch mix reads as roughly even`);
+    else bits.push(`Not enough real per-pitch-type data yet to grade ${batterName}'s matchup against ${pitcherName}`);
+    if (hasHRContext && hrBoardRow.parkFactor != null && hrBoardRow.parkFactor >= 107) bits.push('in a hitter-friendly park tonight');
+    else if (hasHRContext && hrBoardRow.parkFactor != null && hrBoardRow.parkFactor <= 93) bits.push('in a pitcher-friendly park tonight');
+    if (hasHRContext && hrBoardRow.weatherHRMult != null && hrBoardRow.weatherHRMult >= 1.08) bits.push('with conditions further boosting HR odds');
+    return bits.join(', ') + '.';
+  })();
+
+  const matchupSummaryHTML = `
+    <div class="mu-summary">
+      <div class="mu-summary-head">
+        <div class="mu-summary-names">${batterName} <span class="mu-summary-vs">vs</span> ${pitcherName}</div>
+        <div class="mu-summary-meta">${summaryHandText || ''}${summaryBattingOrder ? ` · Batting ${summaryOrdinal(summaryBattingOrder)}` : ''}</div>
+      </div>
+      <div class="mu-summary-stats">
+        ${summaryHrProb != null ? `<div class="mu-summary-stat"><span>${summaryHrProb.toFixed(1)}%</span><label>HR Probability</label></div>` : ''}
+        <div class="mu-summary-stat"><span>${summaryMatchupEdge == null ? '–' : summaryMatchupEdge + '/100'}</span><label>Matchup Edge</label></div>
+        <div class="mu-summary-stat" id="mu-summary-conf-${batterId}-${pitcherId}"><span class="mu-summary-conf-pending">–</span><label>Model Confidence</label></div>
+      </div>
+      <div class="mu-summary-conclusion">${summaryConclusion}</div>
+    </div>`;
+
   // ── Strike zone vulnerability model ──
   // Real per-zone wOBA-against from the synced pitcher profile
   // (data/pitcher-statcast.json) only. There used to be a modeled heatmap fallback here
@@ -7925,6 +7982,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       </div>`;
 
   body.innerHTML = `
+    ${matchupSummaryHTML}
     ${hh.rosterStatus ? `
     <div class="vuln-box" style="border-color:rgba(239,68,68,.55);background:rgba(127,29,29,.22);margin-bottom:12px">
       <div class="vuln-title" style="color:#fca5a5">⚠️ ROSTER STATUS</div>
@@ -8077,6 +8135,24 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
 
   const scoreEl = body.querySelector('[data-score]');
   if (scoreEl && pitchMixDashboard.score != null) animateCountUp(scoreEl, pitchMixDashboard.score, 0);
+
+  // Model Confidence -- async-filled the same way the HR Threats board's own
+  // confidence badge is (see renderHRPTableV1032): needs loadRepoLineups() to
+  // resolve for a real confirmed/expected/pending lineup read, which this
+  // function doesn't wait on synchronously so opening the modal never blocks
+  // on it. Only meaningful when this modal was opened from the HR Threats
+  // board (hasHRContext) -- otherwise there's no real HR-market row to grade
+  // confidence against, so the placeholder is simply left as "–".
+  if (hasHRContext) {
+    loadRepoLineups().then(() => {
+      const confSlot = document.getElementById(`mu-summary-conf-${batterId}-${pitcherId}`);
+      if (!confSlot) return;
+      const side = hrBoardRow.teamAbbr === hrBoardRow.homeAbbr ? 'home' : 'away';
+      const entry = (typeof getRepoLineupForGame === 'function') ? getRepoLineupForGame(hrBoardRow.gamePk, side) : null;
+      const tier = computeConfidenceTier(hrBoardRow, entry ? !!entry.confirmed : null);
+      confSlot.innerHTML = `${confidenceBadgeHTML(tier)}<label>Model Confidence</label>`;
+    }).catch(() => {});
+  }
 
   // Slide the Recent Form baseballs in from the left edge on first paint. Set
   // left in a second rAF (not the same frame the 0% position was painted in)
@@ -8343,6 +8419,29 @@ function drFormatNearHRName(rawName) {
 // from here, so this is the equivalent for renderNearHRs/openNearHRDetail.
 function drEscAttr(v) {
   return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// Model confidence -- promoted to top-level (was previously private to the HR
+// Threats board's own IIFE) so both that board's cards AND the Pitcher Matchup
+// modal's Matchup Summary can share the exact same real read instead of two
+// copies drifting apart. High only when the lineup is REPO-CONFIRMED (not just
+// "expected"/pending), the starting pitcher is the real probable-pitcher feed (not
+// absent), and the row already has real weather (weatherHRMult, set once
+// fetchGameWeather resolves for this game) and real Statcast matchup data
+// (matchupEdge or zoneFitScore). lineupConfirmed is `true`/`false`/`null` (null =
+// not yet checked, treated the same as unconfirmed -- an unverified state is never
+// presented as verified).
+function computeConfidenceTier(r, lineupConfirmed) {
+  const pitcherConfirmed = !!r.pitcherId;
+  if (!pitcherConfirmed || lineupConfirmed !== true) return 'preliminary';
+  const statcastOk = r.matchupEdge != null || r.zoneFitScore != null;
+  const weatherOk = r.weatherHRMult != null;
+  return (statcastOk && weatherOk) ? 'high' : 'medium';
+}
+function confidenceBadgeHTML(tier) {
+  if (tier === 'high') return '<span class="dr-hrp-confidence high" title="Confirmed lineup, confirmed starter, weather and Statcast data all present">✅ High Confidence</span>';
+  if (tier === 'medium') return '<span class="dr-hrp-confidence medium" title="Lineup and starter confirmed; weather or Statcast data still pending">◐ Medium Confidence</span>';
+  return '<span class="dr-hrp-confidence prelim" title="Lineup and/or starting pitcher not yet confirmed">○ Preliminary</span>';
 }
 
 // Shared friendly error state with a real, working Retry button -- replaces
@@ -14486,25 +14585,6 @@ if (document.readyState === 'loading') {
       }
       return '<div class="dr-hrp-pitchrow"><span>'+esc(p.name)+(p.usagePct!=null?' '+p.usagePct+'%':'')+'</span>'+right+'</div>';
     }).join('') + '</div>';
-  }
-  // Model confidence -- High only when the lineup is REPO-CONFIRMED (not just
-  // "expected"/pending), the starting pitcher is the real probable-pitcher feed (not
-  // absent), and the row already has real weather (weatherHRMult, set once
-  // fetchGameWeather resolves for this game) and real Statcast matchup data
-  // (matchupEdge or zoneFitScore). lineupConfirmed is `true`/`false`/`null` (null =
-  // not yet checked, treated the same as unconfirmed -- an unverified state is never
-  // presented as verified).
-  function computeConfidenceTier(r, lineupConfirmed){
-    var pitcherConfirmed = !!r.pitcherId;
-    if (!pitcherConfirmed || lineupConfirmed !== true) return 'preliminary';
-    var statcastOk = r.matchupEdge != null || r.zoneFitScore != null;
-    var weatherOk = r.weatherHRMult != null;
-    return (statcastOk && weatherOk) ? 'high' : 'medium';
-  }
-  function confidenceBadgeHTML(tier){
-    if (tier === 'high') return '<span class="dr-hrp-confidence high" title="Confirmed lineup, confirmed starter, weather and Statcast data all present">✅ High Confidence</span>';
-    if (tier === 'medium') return '<span class="dr-hrp-confidence medium" title="Lineup and starter confirmed; weather or Statcast data still pending">◐ Medium Confidence</span>';
-    return '<span class="dr-hrp-confidence prelim" title="Lineup and/or starting pitcher not yet confirmed">○ Preliminary</span>';
   }
   // Inclusion floor. hrProb here is a single-PA batter/pitcher rate blend (see hrProb()
   // near fetchAndRenderLineup), not a full-game simulation -- realistic values run more
