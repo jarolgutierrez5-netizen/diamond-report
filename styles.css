@@ -6348,6 +6348,87 @@ select:focus-visible {
   color: var(--muted);
 }
 
+/* Model Explanation -- a <details> (collapsed by default, matches the "rest in
+   expandable sections" hierarchy) showing the real counterfactual per-factor
+   HR-probability waterfall from computeHRScoreDecomposition. */
+.mu-explain {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(17,26,45,.9), rgba(14,23,40,.9));
+  padding: 0;
+  margin-bottom: 12px;
+}
+.mu-explain-head {
+  cursor: pointer;
+  list-style: none;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 14px 16px;
+}
+.mu-explain-head::-webkit-details-marker { display: none; }
+.mu-explain-body {
+  padding: 0 16px 16px;
+}
+.mu-explain-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.mu-explain-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 48px;
+  align-items: center;
+  gap: 10px;
+}
+.mu-explain-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+}
+.mu-explain-bar-track {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255,255,255,.06);
+  overflow: hidden;
+}
+.mu-explain-bar {
+  height: 100%;
+  border-radius: 4px;
+}
+.mu-explain-bar.pos { background: var(--green); }
+.mu-explain-bar.neg { background: #f87171; }
+.mu-explain-delta {
+  font-size: 11px;
+  font-weight: 800;
+  text-align: right;
+}
+.mu-explain-delta.pos { color: var(--green); }
+.mu-explain-delta.neg { color: #f87171; }
+.mu-explain-final {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.mu-explain-final span {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--text);
+}
+.mu-explain-final label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 /* BvP career line -- the plain "2-for-7, 1 HR, 2 K" read the h2h-grid tiles
    below already break out individually, restated as one sentence with an
    explicit sample-size badge so a 3-AB career sample never reads with the
