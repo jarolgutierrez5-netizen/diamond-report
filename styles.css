@@ -4441,6 +4441,15 @@ select:focus-visible {
 .dr-hrp-pitchrow strong.green { color: #9ef0bd; }
 .dr-hrp-pitchrow strong.red { color: #fca5a5; }
 .dr-hrp-pitchrow-thin { color: var(--muted); font-style: italic; }
+/* #hr-potential-content strong{font-size:18px !important} (a broad mobile-only
+   rule elsewhere in this file, originally meant for player names) also catches
+   this row's <strong> delta text, blowing it up far past the pitch-name label
+   beside it. Pin it back to the row's own intended size at every width -- this
+   selector's specificity (id+class+type) beats that rule's (id+type). */
+#hr-potential-content .dr-hrp-pitchrow strong {
+  font-size: 11px !important;
+  line-height: 1.3 !important;
+}
 
 /* Full breakdown -- secondary stats (Zone Fit, Season HR, Last 10 HR, OPS, ISO,
    AVG, Hot Boost, Ballpark Pal, season Barrel%) collapsed behind a native
