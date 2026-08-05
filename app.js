@@ -3288,6 +3288,76 @@ function batterVsPitcherArsenalStats(batterId, pitcherId) {
   };
 }
 
+// League-average xSLG (falling back to real SLG when a row has no xSLG) per pitch
+// type, computed from the SAME batterPitchTypeSeason store already loaded for
+// every other per-pitch-type read in this file -- not a separate fetch, not a
+// hardcoded guess. Only numeric-id keys are summed (batterPitchTypeSeason also
+// carries a lowercased-name duplicate of every entry for name-based lookups
+// elsewhere -- summing both would double-count every batter). Memoized since the
+// underlying store only changes when loadBatterPitchTypeSeason's own 2-minute
+// refresh interval swaps it out.
+let _leagueAvgXslgByPitchTypeCache = null;
+let _leagueAvgXslgByPitchTypeSrc = null;
+function leagueAvgXslgByPitchType() {
+  if (_leagueAvgXslgByPitchTypeCache && _leagueAvgXslgByPitchTypeSrc === batterPitchTypeSeason) return _leagueAvgXslgByPitchTypeCache;
+  const sums = {}, weights = {};
+  Object.keys(batterPitchTypeSeason).forEach(key => {
+    if (!/^\d+$/.test(key)) return;
+    const rows = batterPitchTypeSeason[key] || {};
+    Object.values(rows).forEach(r => {
+      const v = r.xslg != null ? r.xslg : r.slg;
+      const w = r.pitches || 0;
+      if (v == null || !w) return;
+      const pk = normalizePitchTypeKey(r.name);
+      if (!pk) return;
+      sums[pk] = (sums[pk] || 0) + v * w;
+      weights[pk] = (weights[pk] || 0) + w;
+    });
+  });
+  const out = {};
+  Object.keys(sums).forEach(pk => { out[pk] = +(sums[pk] / weights[pk]).toFixed(3); });
+  _leagueAvgXslgByPitchTypeCache = out;
+  _leagueAvgXslgByPitchTypeSrc = batterPitchTypeSeason;
+  return out;
+}
+
+// Per-pitch-type matchup rows for the HR Threats card's "why this batter fits THIS
+// pitcher" read -- the pitcher's own most-thrown pitches, each paired with the
+// batter's real production against that specific pitch type (not the blended
+// batterVsPitcherArsenalStats average above, which collapses the arsenal into one
+// number and loses exactly the per-pitch detail this needs). xSLG when the batter
+// has it, real SLG otherwise -- this repo has no expected-stats source for batters
+// scoped to an individual pitch type, so a real SLG is used rather than a fabricated
+// expected one. delta is against the real league-average-per-pitch-type baseline
+// above, not an invented constant. Minimum sample (10 pitches) before showing a
+// number at all -- a 2-pitch sample swinging +.400 xSLG would be noise, not signal.
+const PITCH_MATCHUP_MIN_SAMPLE = 10;
+function topPitchMatchupRows(pitcherId, batterId, count) {
+  count = count || 2;
+  const arsenal = pitcherStatcast[String(pitcherId)]?.byPitch || [];
+  const batterRows = batterPitchTypeSeason[String(batterId)];
+  if (!arsenal.length) return [];
+  const leagueAvg = leagueAvgXslgByPitchType();
+  return arsenal
+    .filter(p => p.usagePct != null)
+    .sort((a, b) => (b.usagePct || 0) - (a.usagePct || 0))
+    .slice(0, count)
+    .map(p => {
+      const pk = normalizePitchTypeKey(p.name);
+      const br = batterRows ? batterRows[pk] : null;
+      const enough = br && br.pitches >= PITCH_MATCHUP_MIN_SAMPLE;
+      const stat = enough ? (br.xslg != null ? br.xslg : br.slg) : null;
+      const leagueBaseline = pk ? leagueAvg[pk] : null;
+      const delta = (stat != null && leagueBaseline != null) ? +(stat - leagueBaseline).toFixed(3) : null;
+      return {
+        name: p.name || pk || 'Pitch',
+        usagePct: p.usagePct != null ? Math.round(p.usagePct) : null,
+        stat, isExpected: enough ? (br.xslg != null) : null,
+        delta, pitches: br ? br.pitches : null,
+      };
+    });
+}
+
 function _muHeatBG(colKey, val) {
   switch (colKey) {
     case 'avg':  return heatBG(val, 0.230, 0.290);
@@ -14289,6 +14359,83 @@ if (document.readyState === 'loading') {
   function statSlug(k){ return String(k).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
   function hrChip(k,v,cls){ var c=cls||('stat-'+statSlug(k)); return '<span class="dr1027-chip '+c+'"><b>'+esc(k)+'</b> '+esc(v)+'</span>'; }
   function labelChip(k,v,cls){ return '<span class="dr1027-chip '+(cls||'')+'"><b>'+esc(k)+'</b> '+esc(v)+'</span>'; }
+
+  // ── Decision-focused card elements (real-data redesign) ────────────────
+  // Environment impact -- combines park + weather into the SAME single multiplier
+  // hrPerPA itself already applies (see loadHRPotential's parkAdj/weatherHRMult),
+  // just surfaced as one readable percentage instead of two separate raw factors
+  // buried inside the score. r.weatherHRMult/r.parkFactor are both already stored
+  // on every row (see loadHRPotential's row object) -- no extra fetch.
+  function environmentImpactData(r){
+    if (r.weatherHRMult == null && r.parkFactor == null) return null;
+    var parkMult = r.parkFactor != null ? (1 + ((r.parkFactor - 100) / 100) * 0.5) : 1;
+    var weatherMult = r.weatherHRMult != null ? r.weatherHRMult : 1;
+    var pct = Math.round((parkMult * weatherMult - 1) * 100);
+    return { pct: pct, cls: pct >= 5 ? 'green' : pct <= -5 ? 'red' : '' };
+  }
+  // Contact-quality trend -- real recent-form Barrel% (last 10 games, both batted-ball
+  // hand-splits combined -- see sync-batter-zone-hr.mjs's recentForm) against the
+  // player's real season Barrel% (statcastHotHitters, already looked up by the caller
+  // as `hh`). Distinct from last10HR (a raw HR count) -- this is underlying quality of
+  // contact, which can be trending up well before it shows up as an actual home run.
+  function contactTrendChipHTML(r, hh){
+    var seasonBarrel = hh && hh.barrelPct != null ? parseFloat(hh.barrelPct) : null;
+    var bb = (typeof batterBattedBalls !== 'undefined' && batterBattedBalls) ? batterBattedBalls[String(r.id)] : null;
+    var recentBarrel = bb && bb.recentForm && bb.recentForm.barrelPct != null ? bb.recentForm.barrelPct : null;
+    if (seasonBarrel == null && recentBarrel == null) return '';
+    var label, cls = '';
+    if (recentBarrel != null && seasonBarrel != null) {
+      var diff = recentBarrel - seasonBarrel;
+      label = recentBarrel.toFixed(1)+'% L10 · '+seasonBarrel.toFixed(1)+'% season'+(diff>=1.5?' ↑':diff<=-1.5?' ↓':'');
+      cls = diff>=1.5?'green':diff<=-1.5?'red':'';
+    } else if (recentBarrel != null) {
+      label = recentBarrel.toFixed(1)+'% L10';
+    } else {
+      label = seasonBarrel.toFixed(1)+'% season';
+    }
+    return labelChip('Barrel Rate', label, cls);
+  }
+  // Pitch-type matchup -- the pitcher's 2 most-used pitches, each paired with the
+  // batter's own real production against that specific pitch type (topPitchMatchupRows,
+  // defined near batterVsPitcherArsenalStats). This is the single most decision-relevant
+  // addition on the card: it explains WHY this batter fits THIS pitcher, not just that
+  // both look good on their own season lines.
+  function pitchMatchupRowsHTML(r){
+    if (!r.pitcherId) return '';
+    var rows = topPitchMatchupRows(r.pitcherId, r.id, 2);
+    if (!rows.length) return '';
+    return '<div class="dr-hrp-pitchrows">' + rows.map(function(p){
+      var right;
+      if (p.stat != null) {
+        var sign = p.delta != null && p.delta >= 0 ? '+' : '';
+        var label = p.delta != null ? (sign + p.delta.toFixed(3) + ' ' + (p.isExpected?'xSLG':'SLG') + ' vs lg avg') : (p.stat.toFixed(3) + ' ' + (p.isExpected?'xSLG':'SLG'));
+        var cls = p.delta != null ? (p.delta >= 0.030 ? 'green' : p.delta <= -0.030 ? 'red' : '') : '';
+        right = '<strong class="'+cls+'">'+esc(label)+'</strong>';
+      } else {
+        right = '<span class="dr-hrp-pitchrow-thin">Small sample</span>';
+      }
+      return '<div class="dr-hrp-pitchrow"><span>'+esc(p.name)+(p.usagePct!=null?' '+p.usagePct+'%':'')+'</span>'+right+'</div>';
+    }).join('') + '</div>';
+  }
+  // Model confidence -- High only when the lineup is REPO-CONFIRMED (not just
+  // "expected"/pending), the starting pitcher is the real probable-pitcher feed (not
+  // absent), and the row already has real weather (weatherHRMult, set once
+  // fetchGameWeather resolves for this game) and real Statcast matchup data
+  // (matchupEdge or zoneFitScore). lineupConfirmed is `true`/`false`/`null` (null =
+  // not yet checked, treated the same as unconfirmed -- an unverified state is never
+  // presented as verified).
+  function computeConfidenceTier(r, lineupConfirmed){
+    var pitcherConfirmed = !!r.pitcherId;
+    if (!pitcherConfirmed || lineupConfirmed !== true) return 'preliminary';
+    var statcastOk = r.matchupEdge != null || r.zoneFitScore != null;
+    var weatherOk = r.weatherHRMult != null;
+    return (statcastOk && weatherOk) ? 'high' : 'medium';
+  }
+  function confidenceBadgeHTML(tier){
+    if (tier === 'high') return '<span class="dr-hrp-confidence high" title="Confirmed lineup, confirmed starter, weather and Statcast data all present">✅ High Confidence</span>';
+    if (tier === 'medium') return '<span class="dr-hrp-confidence medium" title="Lineup and starter confirmed; weather or Statcast data still pending">◐ Medium Confidence</span>';
+    return '<span class="dr-hrp-confidence prelim" title="Lineup and/or starting pitcher not yet confirmed">○ Preliminary</span>';
+  }
   // Inclusion floor. hrProb here is a single-PA batter/pitcher rate blend (see hrProb()
   // near fetchAndRenderLineup), not a full-game simulation -- realistic values run more
   // like a 2-6% league-average range than double digits. window.renderHRPTable ends up
@@ -14543,7 +14690,7 @@ if (document.readyState === 'loading') {
       wEl.textContent = '';
     }
   }
-  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); var stdControls=drStandardFilterControlsHTML('hr','hr',base,{hasPosition:true,hasPitcherHand:true,hasBatterHand:true,hasWeather:true,renderFnName:'window.renderHRPTable'}); var stdWrap=document.getElementById('hrp-std-filters'); if(stdWrap) stdWrap.innerHTML=stdControls.partsHTML; if(!base.length){el.innerHTML=hrpRetryTimer?'<div class="mu-empty">Lineups not posted yet — automatically checking again in 15 min.<br><span style="font-size:10px;color:var(--muted)">No need to refresh, this updates itself.</span></div>':('<div class="dr-skeleton-grid">'+Array(6).fill('<div class="dr-skeleton-card"><div class="dr-skeleton-head"><div class="dr-skeleton-photo"></div><div class="dr-skeleton-head-lines"><div class="dr-skeleton-line"></div><div class="dr-skeleton-line"></div></div></div><div class="dr-skeleton-chips"><div class="dr-skeleton-chip"></div><div class="dr-skeleton-chip"></div><div class="dr-skeleton-chip"></div></div></div>').join('')+'</div>');return;} var completedOnly=!!window.__hrpShowCompletedOnly; var arr=drApplyStandardFilters('hr',applyHRFilters(base)).filter(function(r){return completedOnly ? isHit('hr',r) : (!isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL');}).sort(function(a,b){return hrSortValue(b)-hrSortValue(a);}); arr.forEach(function(r){window.__hrCompareRows[String(r.id)]=r;}); if(!arr.length){el.innerHTML=(completedOnly?'<div class="mu-empty" style="padding:24px">No completed home runs yet today. Check back once games are underway.</div>':drFilterEmptyStateHTML('hr','hr','window.renderHRPTable','players'));return;} var cards=arr.map(function(r,rIdx){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore))+'/100','red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); var trendChip=playerTrendIndicatorChip(r); if(trendChip)labels.push(trendChip); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); if(hasNearHR(r.id))labels.push(labelChip('🚀 NEAR HR',nearHRs[String(r.id)].length,'gold')); var l10=dr113Last10HRValue(r); var bpPct=ballparkPalFactorForPlayer(r.gamePk,r.id); var hh=(typeof statcastHotHitters!=='undefined'&&statcastHotHitters)?(statcastHotHitters[String(r.id)]||statcastHotHitters[String(r.name||'').toLowerCase()]):null; var stats=[hh&&hh.barrelPct!=null?hrChip('Barrel%',parseFloat(hh.barrelPct)+'%',n(hh.barrelPct)>=10?'green':''):'',hrChip('Matchup Edge',r.matchupEdge==null?'–':r.matchupEdge+'/100',r.matchupEdge==null?'':r.matchupEdge>=64?'green':r.matchupEdge<45?'red':'gold'),r.zoneFitScore==null?'':hrChip('Zone Fit',r.zoneFitScore+'/100',r.zoneFitScore>=72?'green':r.zoneFitScore>=58?'gold':''),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1)+' pts','gold'):'',bpPct!=null?hrChip('Ballpark Pal',(bpPct>0?'+':'')+bpPct+'%',bpPct>0?'green':bpPct<0?'red':''):''].filter(Boolean); return '<div class="dr1027-hr-card dr-anim-in '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="cursor:pointer;animation-delay:'+(Math.min(rIdx,8)*20)+'ms" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="if(!event.target.closest(\'button,a\')){var d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName);}">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div><span class="dr-row-lineup-badge-slot" id="lineup-badge-hr-'+esc(r.id)+'"></span></div><div class="dr1027-hr-score"><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(stats).slice(0,16).join('')+'</div><div class="dr1027-meter" title="Model-estimated HR probability for this matchup"><div class="dr1027-meter-label"><span>HR Probability</span><span>'+p.toFixed(1)+'%</span></div><div class="dr1027-meter-track"><div class="dr1027-meter-fill" data-fill="'+Math.max(4,Math.min(100,p))+'%"></div></div></div><div class="dr1027-why" id="hrp-scout-'+esc(r.id)+'-'+esc(r.pitcherId||0)+'">'+(r.pitcherId?'<span class="spin"></span> Loading scouting report\u2026':'<span style="color:var(--muted)">No opposing pitcher assigned yet \u2014 scouting report unavailable.</span>')+'</div><label class="dr1027-hr-compare" onclick="event.stopPropagation()" title="Add to Compare"><input type="checkbox" '+(window.drHRCompareHas&&window.drHRCompareHas(r.id)?'checked':'')+' onchange="drHRCompareToggle(\''+esc(r.id)+'\',this.checked)"><span>Add to Compare</span></label>'+'</div>'; }).join(''); var featuredRow=completedOnly?null:pickFeaturedHRRow(arr); el.innerHTML=(featuredRow?buildFeaturedHRPickHTML(featuredRow):'')+hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; drFillMeters(el); if(featuredRow) fillFeaturedHRPickAsync(featuredRow); arr.forEach(function(r){ if(!r.pitcherId) return; loadHRScoutingReport(r.id,r.name,r.pitcherId,r.pitcherName,r.iso).then(function(html){ var t=document.getElementById('hrp-scout-'+r.id+'-'+r.pitcherId); if(t) t.innerHTML=html; }); }); loadRepoLineups().then(function(){ arr.forEach(function(r){ var slot=document.getElementById('lineup-badge-hr-'+r.id); if(slot) slot.innerHTML=lineupBadgeHTML(r.gamePk,r.teamAbbr,r.homeAbbr); }); }); hrCompareUpdateBar(); }
+  function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-content'); if(!el)return; setButtons(); var base=getHRRows(); var stdControls=drStandardFilterControlsHTML('hr','hr',base,{hasPosition:true,hasPitcherHand:true,hasBatterHand:true,hasWeather:true,renderFnName:'window.renderHRPTable'}); var stdWrap=document.getElementById('hrp-std-filters'); if(stdWrap) stdWrap.innerHTML=stdControls.partsHTML; if(!base.length){el.innerHTML=hrpRetryTimer?'<div class="mu-empty">Lineups not posted yet — automatically checking again in 15 min.<br><span style="font-size:10px;color:var(--muted)">No need to refresh, this updates itself.</span></div>':('<div class="dr-skeleton-grid">'+Array(6).fill('<div class="dr-skeleton-card"><div class="dr-skeleton-head"><div class="dr-skeleton-photo"></div><div class="dr-skeleton-head-lines"><div class="dr-skeleton-line"></div><div class="dr-skeleton-line"></div></div></div><div class="dr-skeleton-chips"><div class="dr-skeleton-chip"></div><div class="dr-skeleton-chip"></div><div class="dr-skeleton-chip"></div></div></div>').join('')+'</div>');return;} var completedOnly=!!window.__hrpShowCompletedOnly; var arr=drApplyStandardFilters('hr',applyHRFilters(base)).filter(function(r){return completedOnly ? isHit('hr',r) : (!isHit('hr',r) && String(r.timeLabel||'').toUpperCase()!=='FINAL');}).sort(function(a,b){return hrSortValue(b)-hrSortValue(a);}); arr.forEach(function(r){window.__hrCompareRows[String(r.id)]=r;}); if(!arr.length){el.innerHTML=(completedOnly?'<div class="mu-empty" style="padding:24px">No completed home runs yet today. Check back once games are underway.</div>':drFilterEmptyStateHTML('hr','hr','window.renderHRPTable','players'));return;} var cards=arr.map(function(r,rIdx){ var p=n(r.hrProb), hot=n(r.hotBoostPct), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit, labels=[]; if(hit)labels.push('<span class="projection-hit-badge">✓ Projection Hit</span>'); else if(isMiss)labels.push('<span class="prop-miss-badge">✗ Missed</span>'); if(r.isOnFire)labels.push(labelChip('🔥 ON FIRE',Math.round(n(r.onFireScore))+'/100','red')); if(r.isDue)labels.push(labelChip('⚡ DUE','YES','gold')); if(r.isDrought)labels.push(labelChip('❄️ DROUGHT','YES','red')); if(r.isFavorable)labels.push(labelChip('✅ FAVORABLE','MATCHUP','green')); var trendChip=playerTrendIndicatorChip(r); if(trendChip)labels.push(trendChip); if(r.topHrThreat||p>=18)labels.push(labelChip('💥 TOP HR','THREAT','gold')); if(hasNearHR(r.id))labels.push(labelChip('🚀 NEAR HR',nearHRs[String(r.id)].length,'gold')); var l10=dr113Last10HRValue(r); var bpPct=ballparkPalFactorForPlayer(r.gamePk,r.id); var hh=(typeof statcastHotHitters!=='undefined'&&statcastHotHitters)?(statcastHotHitters[String(r.id)]||statcastHotHitters[String(r.name||'').toLowerCase()]):null; var envInfo=environmentImpactData(r); var contactChip=contactTrendChipHTML(r,hh); var primaryChips=[hrChip('Matchup Edge',r.matchupEdge==null?'–':r.matchupEdge+'/100',r.matchupEdge==null?'':r.matchupEdge>=64?'green':r.matchupEdge<45?'red':'gold'),envInfo?labelChip('🌎 HR Environment',(envInfo.pct>0?'+':'')+envInfo.pct+'%',envInfo.cls):'',contactChip].filter(Boolean); var stats=[hh&&hh.barrelPct!=null?hrChip('Barrel% (season)',parseFloat(hh.barrelPct)+'%',n(hh.barrelPct)>=10?'green':''):'',r.zoneFitScore==null?'':hrChip('Zone Fit',r.zoneFitScore+'/100',r.zoneFitScore>=72?'green':r.zoneFitScore>=58?'gold':''),hrChip('Season HR',r.hrSeason||'–',''),hrChip('Last 10 HR',l10==null?'–':l10,n(l10)>=2?'green':''),hrChip('OPS',fmt3(r.ops),n(r.ops)>=.850?'green':''),hrChip('ISO',fmt3(r.iso),n(r.iso)>=.200?'gold':''),hrChip('AVG',fmt3(r.avg),n(r.avg)>=.280?'green':''),hot?hrChip('Hot Boost','+'+hot.toFixed(1)+' pts','gold'):'',bpPct!=null?hrChip('Ballpark Pal',(bpPct>0?'+':'')+bpPct+'%',bpPct>0?'green':bpPct<0?'red':''):''].filter(Boolean); return '<div class="dr1027-hr-card dr-anim-in '+(hit?'projection-hit':isMiss?'prop-miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="cursor:pointer;animation-delay:'+(Math.min(rIdx,8)*20)+'ms" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" onclick="if(!event.target.closest(\'button,a\')){var d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName);}">'+window.drWatchStarHTML(r.id,r.name)+'<div class="dr1027-hr-head"><img class="dr1027-hr-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt=""><div><div class="dr1027-hr-name">'+esc(r.name||'–')+'</div><div class="dr1027-hr-meta">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div><span class="dr-row-lineup-badge-slot" id="lineup-badge-hr-'+esc(r.id)+'"></span></div><div class="dr1027-hr-score"><span class="dr-hrp-confidence-slot" id="hrp-conf-'+esc(r.id)+'"></span><strong>'+p.toFixed(1)+'%</strong><span>HR Probability</span><em>GRADE '+grade(p)+'</em></div></div><div class="dr1027-chip-row">'+labels.concat(primaryChips).slice(0,16).join('')+'</div>'+pitchMatchupRowsHTML(r)+(stats.length?'<details class="dr-hrp-breakdown"><summary>Full breakdown</summary><div class="dr1027-chip-row">'+stats.join('')+'</div></details>':'')+'<div class="dr1027-meter" title="Model-estimated HR probability for this matchup"><div class="dr1027-meter-label"><span>HR Probability</span><span>'+p.toFixed(1)+'%</span></div><div class="dr1027-meter-track"><div class="dr1027-meter-fill" data-fill="'+Math.max(4,Math.min(100,p))+'%"></div></div></div><div class="dr1027-why" id="hrp-scout-'+esc(r.id)+'-'+esc(r.pitcherId||0)+'">'+(r.pitcherId?'<span class="spin"></span> Loading scouting report\u2026':'<span style="color:var(--muted)">No opposing pitcher assigned yet \u2014 scouting report unavailable.</span>')+'</div><label class="dr1027-hr-compare" onclick="event.stopPropagation()" title="Add to Compare"><input type="checkbox" '+(window.drHRCompareHas&&window.drHRCompareHas(r.id)?'checked':'')+' onchange="drHRCompareToggle(\''+esc(r.id)+'\',this.checked)"><span>Add to Compare</span></label>'+'</div>'; }).join(''); var featuredRow=completedOnly?null:pickFeaturedHRRow(arr); el.innerHTML=(featuredRow?buildFeaturedHRPickHTML(featuredRow):'')+hrSummary(arr)+'<div class="dr1027-hr-card-list">'+cards+'</div>'; drFillMeters(el); if(featuredRow) fillFeaturedHRPickAsync(featuredRow); arr.forEach(function(r){ if(!r.pitcherId) return; loadHRScoutingReport(r.id,r.name,r.pitcherId,r.pitcherName,r.iso).then(function(html){ var t=document.getElementById('hrp-scout-'+r.id+'-'+r.pitcherId); if(t) t.innerHTML=html; }); }); loadRepoLineups().then(function(){ arr.forEach(function(r){ var slot=document.getElementById('lineup-badge-hr-'+r.id); if(slot) slot.innerHTML=lineupBadgeHTML(r.gamePk,r.teamAbbr,r.homeAbbr); var confSlot=document.getElementById('hrp-conf-'+r.id); if(confSlot){ var side=r.teamAbbr===r.homeAbbr?'home':'away'; var entry=(typeof getRepoLineupForGame==='function')?getRepoLineupForGame(r.gamePk,side):null; confSlot.innerHTML=confidenceBadgeHTML(computeConfidenceTier(r, entry?!!entry.confirmed:null)); } }); }); hrCompareUpdateBar(); }
 
   // ── HR Threats compare tray ─────────────────────────────────────────────
   // Lets a user shortlist up to HR_COMPARE_MAX cards (checkbox per card, added
