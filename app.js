@@ -14709,7 +14709,7 @@ if (document.readyState === 'loading') {
   // "All Games" select+state (window.__hrpGameFilter, #hrp-game-filter), a leftover from
   // before that bar existed, which duplicated the exact same filter as two separate
   // dropdowns with two separate state stores that could silently disagree.
-  function applyHRFilters(arr){ var s=getFilters(); if(!s.size)return arr; return arr.filter(function(r){ if(s.has('onfire')&&!r.isOnFire)return false; if(s.has('top')&&!((r.topHrThreat&&n(r.hrProb)>=14)||n(r.hrProb)>=18))return false; if(s.has('drought')&&!r.isDrought)return false; if(s.has('due')&&!r.isDue)return false; if(s.has('favorable')&&!r.isFavorable)return false; if(s.has('watchlist')&&!window.drIsWatchlisted(r.id))return false; if(s.has('nearhr')&&!hasNearHR(r.id))return false; if(s.has('zonefit')&&!(r.zoneFitScore!=null&&r.zoneFitScore>=72))return false; return true; }); }
+  function applyHRFilters(arr){ var s=getFilters(); if(!s.size)return arr; return arr.filter(function(r){ if(s.has('onfire')&&!r.isOnFire)return false; if(s.has('top')&&!((r.topHrThreat&&n(r.hrProb)>=14)||n(r.hrProb)>=18))return false; if(s.has('drought')&&!r.isDrought)return false; if(s.has('due')&&!r.isDue)return false; if(s.has('favorable')&&!r.isFavorable)return false; if(s.has('watchlist')&&!window.drIsWatchlisted(r.id))return false; if(s.has('nearhr')&&!hasNearHR(r.id))return false; if(s.has('zonefit')&&!(r.zoneFitScore!=null&&r.zoneFitScore>=72))return false; if(s.has('pitchmix')&&!r.pitchMixFavorable)return false; return true; }); }
   function setButtons(){
     syncHRSortSelect();
     var s=getFilters();
