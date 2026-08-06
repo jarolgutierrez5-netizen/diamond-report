@@ -121,6 +121,18 @@ jobs:
         continue-on-error: true
         timeout-minutes: 25
 
+      # Real AB/H/HR/AVG/SLG for each of today's active batters at every MLB park
+      # they've played real games in this season -- distinct from the league-wide
+      # park-factor number, which says nothing about how THIS batter specifically
+      # has hit at a given venue. Reuses sync-batter-zone-hr.mjs's same
+      # todaysActiveBatterIds/batterSearchURL and today's-active-batters scope, so
+      # it's gated to the same morning-only run.
+      - name: Run batter park-history sync (real AB/H/HR/AVG/SLG by venue)
+        if: github.event.schedule == '4 11 * * *' || github.event_name == 'workflow_dispatch'
+        run: node scripts/sync-batter-park-history.mjs
+        continue-on-error: true
+        timeout-minutes: 25
+
       # Same bounded per-probable-starter scope as the zone/HR step above (reuses its
       # todaysProbablePitcherIds/pitcherSearchURL), so it re-runs on every intraday
       # trigger too — a pitcher's last-3-starts velocity/usage/whiff trend doesn't
@@ -228,6 +240,7 @@ jobs:
           [ -f data/near-hrs.json ] && git add data/near-hrs.json
           [ -f data/recent-hrs.json ] && git add data/recent-hrs.json
           [ -f data/batter-hr-spray.json ] && git add data/batter-hr-spray.json
+          [ -f data/batter-park-history.json ] && git add data/batter-park-history.json
           [ -f data/pitcher-rolling.json ] && git add data/pitcher-rolling.json
           [ -f data/pitcher-count-performance.json ] && git add data/pitcher-count-performance.json
           [ -f data/pitcher-2k-suppression.json ] && git add data/pitcher-2k-suppression.json
