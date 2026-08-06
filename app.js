@@ -7130,6 +7130,19 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       ${gbLegendHTML}
     </div>`;
   }
+  // Days rest is computed here from lastStartDates[0] against "right now" rather
+  // than baked into pitcher-rolling.json at sync time -- the modal can be opened
+  // hours or a day after the daily sync ran, and a number computed relative to
+  // sync time would read stale/wrong by the time a user actually sees it. UTC
+  // midnight on both sides avoids an off-by-one from local-time-of-day.
+  function daysRestFromDate(dateStr) {
+    if (!dateStr) return null;
+    const last = new Date(dateStr + 'T00:00:00Z');
+    if (isNaN(last)) return null;
+    const now = new Date();
+    const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    return Math.round((todayUTC - last) / 86400000);
+  }
   function rollingBody(isActive) {
     const shortPName = pitcherName.split(' ').pop();
     const rows = rollingProfile.byPitch.map(p => `
@@ -7141,7 +7154,13 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         <td class="num">${p.seasonWhiffPct != null ? p.seasonWhiffPct.toFixed(0) + '%' : '–'} → ${p.rollingWhiffPct != null ? p.rollingWhiffPct.toFixed(0) + '%' : '–'} (${rollingDeltaTag(p.whiffDelta, 3)})</td>
       </tr>`).join('');
     const lastDates = (rollingProfile.lastStartDates || []).join(', ');
+    const daysRest = daysRestFromDate(rollingProfile.lastStartDates?.[0]);
+    const restWorkloadHTML = (daysRest != null || rollingProfile.lastOutingPitches != null) ? `<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px">
+        ${daysRest != null ? `<div class="dr1041-chip" style="font-size:11px;padding:4px 10px">Days Rest: <strong>${daysRest}</strong></div>` : ''}
+        ${rollingProfile.lastOutingPitches != null ? `<div class="dr1041-chip" style="font-size:11px;padding:4px 10px">Last Outing: <strong>${rollingProfile.lastOutingPitches}</strong> pitches</div>` : ''}
+      </div>` : '';
     return `<div class="dr-pstats-mode-body${isActive ? ' active' : ''}" data-mode="rolling">
+      ${restWorkloadHTML}
       <div class="dr1041-table-wrap"><table class="dr1041-pitch-table"><thead><tr><th>Pitch</th><th>Usage (Season → L3)</th><th>Velo (Season → L3)</th><th>Spin (Season → L3)</th><th>Whiff% (Season → L3)</th></tr></thead><tbody>${rows}</tbody></table></div>
       <div class="zone-note" style="margin-top:8px">${shortPName}'s last 3 starts${lastDates ? ` (${lastDates})` : ''} vs his full-season baseline. Green = trending easier for the batter (velocity or whiff rate down). Orange = trending tougher (velocity or whiff rate up). Muted = change too small to be a real signal.</div>
     </div>`;
