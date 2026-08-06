@@ -1717,6 +1717,54 @@ let hrCalibrationSlope = 1, hrCalibrationIntercept = 0;
 function shrinkMult(m) { return 1 + (m - 1) * hrMultShrinkage; }
 // Exact port of update-tracker.mjs's calibrateHRProb.
 function calibrateHRProb(rawPct) { return hrCalibrationIntercept + hrCalibrationSlope * rawPct; }
+// Fitted logistic-regression alternative to the calibrateHRProb linear correction above
+// (see scripts/fit-hr-logistic-model.mjs for the fit itself and data/hr-logistic-model.json
+// for the persisted coefficients). Cross-validated against the same graded picks the
+// current formula's own score was checked on, it wins on every metric (AUC 0.546 vs
+// 0.487, Brier 0.117 vs 0.125, log-loss 0.395 vs 0.420) -- see that script's PR for the
+// full comparison. Loaded once via loadHRLogisticModel below; null until that resolves,
+// in which case simulateHRGameOdds below falls back to the legacy
+// simulation+calibrateHRProb path unchanged, exactly as if this file didn't exist.
+let hrLogisticModel = null;
+// windFactor/temperatureFactor are real inputs on the SERVER (scripts/update-tracker.mjs
+// parses the MLB API's own weather string), but this client's weather signal
+// (airDensityHRMult/windHRMult above) comes from an entirely different DIY Open-Meteo
+// model with no equivalent string to parse -- a pre-existing client/server weather
+// divergence this change doesn't introduce (the legacy formula's own weatherHRMult
+// already differs from the server's windPowerFactor*temperaturePowerFactor product).
+// Rather than fabricate a conversion between two differently-defined signals, this client
+// passes the neutral value (1 = no effect, these features' own genuine "no signal" point)
+// for both -- an honest degradation to 5 of 7 real inputs, not a wrong one.
+function predictHRLogistic(features) {
+  const model = hrLogisticModel;
+  if (!model || !model.coefficients) return null;
+  const { batterISO, pitcherHr9, pitcherWhip, parkFactor, windFactor, temperatureFactor, isOnFire } = features || {};
+  if (![batterISO, pitcherHr9, pitcherWhip, parkFactor, windFactor, temperatureFactor].every(Number.isFinite)) return null;
+  const raw = { batterISO, pitcherHr9, pitcherWhip, parkFactor, windFactor, temperatureFactor, isOnFire: isOnFire ? 1 : 0 };
+  const c = model.coefficients, means = model.featureMeans, stds = model.featureStds;
+  let z = c.intercept;
+  for (const f of model.features) {
+    const std = (raw[f] - means[f]) / (stds[f] || 1);
+    z += c[f] * std;
+  }
+  const p = 1 / (1 + Math.exp(-z));
+  return Math.max(1, Math.min(99, Math.round(p * 100)));
+}
+let _hrLogisticModelLoadPromise = null;
+async function loadHRLogisticModel() {
+  if (_hrLogisticModelLoadPromise) return _hrLogisticModelLoadPromise;
+  _hrLogisticModelLoadPromise = (async () => {
+    try {
+      const res = await fetch('./data/hr-logistic-model.json', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.coefficients) hrLogisticModel = data;
+      }
+    } catch {}
+    return hrLogisticModel;
+  })();
+  return _hrLogisticModelLoadPromise;
+}
 // Quality-of-contact correction for a batter's season HR rate -- exact port of
 // update-tracker.mjs's battedBallPowerIndex. Corrects the box-score HR/AB rate using
 // real quality-of-contact data (xSLG, hard-hit%) instead of trusting the counting stat
@@ -8525,7 +8573,38 @@ function confidenceBadgeHTML(tier) {
 // pitcherRate, parkAdj, shrunkHotMult, weatherHRMult, zoneMult, hrPerPA) -- only
 // ever available for a row sourced from the HR Threats board itself (hasHRContext),
 // never fabricated for a matchup opened some other way.
+// Logistic-model counterfactual decomposition -- same "neutralize one real factor,
+// measure the drop" method as computeHRScoreDecomposition below, but for rows whose
+// real displayed score came from predictHRLogistic instead of the legacy
+// simulateHRGameOdds path (see row.hrScoreSource, set in loadHRPotential). Neutral
+// point for each feature is the fitted model's own featureMeans -- the standardized
+// value that contributes exactly 0 to the regression, i.e. genuinely "no information
+// beyond average" for that input, the same principle NEUTRAL_BATTER_RATE/
+// NEUTRAL_PITCHER_RATE below apply to the legacy formula's own inputs. Kept as a
+// separate function (not folded into computeHRScoreDecomposition) since the two
+// scoring paths share no formula to counterfactually re-run in common -- this one
+// calls predictHRLogistic, not window.simulateHRGameOdds.
+function computeHRScoreDecompositionLogistic(row) {
+  if (!row || !row.hrLogisticFeatures || !hrLogisticModel || !hrLogisticModel.coefficients) return null;
+  const real = row.hrLogisticFeatures;
+  const means = hrLogisticModel.featureMeans;
+  function probWith(overrides) { return predictHRLogistic(Object.assign({}, real, overrides)); }
+  const base = probWith({});
+  if (base == null) return null;
+  const factors = [
+    { key: 'batterPower', label: 'Batter power', delta: base - probWith({ batterISO: means.batterISO }) },
+    { key: 'pitcherSusceptibility', label: 'Pitcher HR susceptibility', delta: base - probWith({ pitcherHr9: means.pitcherHr9, pitcherWhip: means.pitcherWhip }) },
+    { key: 'recentForm', label: 'Recent form', delta: base - probWith({ isOnFire: false }) },
+    { key: 'parkWeather', label: 'Park and weather', delta: base - probWith({ parkFactor: means.parkFactor, windFactor: means.windFactor, temperatureFactor: means.temperatureFactor }) },
+  ];
+  const neutralBaseline = probWith({
+    batterISO: means.batterISO, pitcherHr9: means.pitcherHr9, pitcherWhip: means.pitcherWhip,
+    isOnFire: false, parkFactor: means.parkFactor, windFactor: means.windFactor, temperatureFactor: means.temperatureFactor,
+  });
+  return { base, neutralBaseline, factors, source: 'logistic' };
+}
 function computeHRScoreDecomposition(row) {
+  if (row && row.hrScoreSource === 'logistic') return computeHRScoreDecompositionLogistic(row);
   if (!row || row.hrPerPA == null || typeof window === 'undefined' || typeof window.simulateHRGameOdds !== 'function') return null;
   const battingOrder = row.battingOrder;
   const NEUTRAL_BATTER_RATE = 0.031 * 0.88; // same HRP_LEAGUE_AVG_HR_RATE*0.88 loadHRPotential falls back to
@@ -10164,6 +10243,7 @@ async function loadHRPotential() {
     await loadParkFactors().catch(() => {});
     await loadBallparkPalFactors().catch(() => {});
     await loadHRModelParams().catch(() => {});
+    await loadHRLogisticModel().catch(() => {});
     await loadBatterPowerIndex().catch(() => {});
     // Needed for the Matchup Edge stat (computeMatchupEdgeScore) — batter-pitch-type-season.json
     // is a real ~1.6MB file, previously deliberately kept lazy (only loaded when a user opens a
@@ -10549,6 +10629,12 @@ async function loadHRPotential() {
           const earlyShrunkOps = ((parseFloat(s.ops)||0)*hrpSampleWeight) + (0.720*(1-hrpSampleWeight));
           const earlyFavorable = earlyShrunkOps>=.800 && (pitcherWhip>=1.25 || pitcherAvg>=.260);
           const hotProfile = getStatcastHotHitterProfile({ id: pid, name: b.player.person?.fullName || '', ops: earlyShrunkOps, last10HR: last10HR||0, streakDays: streakDays||0, isFavorable: earlyFavorable, stats: { slg: s.slg, avg: s.avg } });
+          // Early shrunk ISO -- same hrpSampleWeight-only shrink as earlyShrunkOps above
+          // (not the fuller recency-blended finalSlg/finalAvg computed later below),
+          // purely to feed predictHRLogistic's batterISO input at this same early point.
+          const earlyShrunkAvg = ((parseFloat(s.avg)||0)*hrpSampleWeight) + (0.245*(1-hrpSampleWeight));
+          const earlyShrunkSlg = ((parseFloat(s.slg)||0)*hrpSampleWeight) + (0.400*(1-hrpSampleWeight));
+          const earlyIso = Math.max(0, earlyShrunkSlg - earlyShrunkAvg);
           // 1.0-1.5x, same bound family as battedBallPowerIndex's 0.7-1.5 clamp -- this
           // signal only ever boosts (never suppresses), matching its previous additive-only
           // behavior, just applied as a rate multiplier instead of a flat point add-on.
@@ -10566,7 +10652,12 @@ async function loadHRPotential() {
           // count. simulateHRGameOdds is now an exact closed-form calculation (no
           // Math.random()), so it's already the same for every visitor and every
           // refresh — nothing to cache.
-          const baseHrProb = window.simulateHRGameOdds ? window.simulateHRGameOdds(hrPerPA, battingOrder) : Math.min(hrPerPA*100,25);
+          // logisticFeatures: windFactor/temperatureFactor use the neutral value (see
+          // predictHRLogistic's own comment) since this client's weather signal has no
+          // equivalent to the server's parsed MLB weather string.
+          const hrLogisticFeatures = { batterISO: earlyIso, pitcherHr9, pitcherWhip, parkFactor: gameParkFactor, windFactor: 1, temperatureFactor: 1, isOnFire: hotProfile.onFireScore >= 70 };
+          const baseHrProb = window.simulateHRGameOdds ? window.simulateHRGameOdds(hrPerPA, battingOrder, hrLogisticFeatures) : Math.min(hrPerPA*100,25);
+          const hrScoreSource = window.__hrLastScoreSource || 'legacy';
           let hrProb=baseHrProb;
           const hrInLast8=(logs||[]).slice(0,8).some(g2=>parseInt(g2.stat?.homeRuns)>0);
           const isDrought=!hrInLast8&&hr>0;
@@ -10659,7 +10750,7 @@ async function loadHRPotential() {
             homeAbbr: gameHomeAbbr,
             timeLabel, timeColor, gameTimestamp:dt.getTime(), gamePk:g.gamePk,
             stats:s, todayStats: todayBoxStats, todayHits, todayRBI, todayTB, todaySB, todayRuns, todayHR, last10HR, baseHrProb, hrProb, streakDays, hrVsPitcher,
-            hotMultApplied: true, hotProfileSnapshot: hotProfile,
+            hotMultApplied: true, hotProfileSnapshot: hotProfile, hrScoreSource, hrLogisticFeatures,
             avg:finalAvg, hrSeason:hr, ops:shrunkOps, obp:finalObp, slg:finalSlg, matchupEdge,
             battingOrder,
             pitcherAvgAllowed: pitcherAvg, pitcherSlgAllowed: pitcherSlg, pitcherWhipAllowed: pitcherWhip,
@@ -14455,7 +14546,14 @@ if (document.readyState === 'loading') {
     }
     return dist;
   }
-  window.simulateHRGameOdds = function(pPerPA, battingOrder) {
+  window.simulateHRGameOdds = function(pPerPA, battingOrder, logisticFeatures) {
+    // Fitted logistic model (see predictHRLogistic above) wins on every cross-validated
+    // metric against the legacy simulation+calibrateHRProb path below -- tried first,
+    // falling through to the legacy path unchanged whenever its inputs aren't all
+    // available (model not yet loaded, or a feature genuinely missing for this row).
+    var logisticP = logisticFeatures ? predictHRLogistic(logisticFeatures) : null;
+    window.__hrLastScoreSource = logisticP != null ? 'logistic' : 'legacy';
+    if (logisticP != null) return logisticP;
     pPerPA = clamp(n(pPerPA, 0.03), 0, 0.5);
     var dist = paDistribution(estimatePA(battingOrder));
     var prob = 0;

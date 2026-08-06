@@ -150,6 +150,22 @@ async function main() {
     console.log('  (need at least 20 graded picks with a live-score snapshot for a meaningful breakdown — check back after more picks are captured and graded under the new field)');
   }
 
+  // ── Logistic vs legacy formula -- which one actually produced `score` for a given
+  // pick (see update-tracker.mjs's simulateHRGameOdds/hrScoreSource). Only present on
+  // picks captured after scripts/fit-hr-logistic-model.mjs's model was wired in, so
+  // this stays empty until enough accumulate under it -- same "check back later"
+  // convention as the live-score section above. ──
+  const withSource = graded.filter(r => r.hrScoreSource === 'logistic' || r.hrScoreSource === 'legacy');
+  if (withSource.length) {
+    console.log(`\nScore source breakdown: ${withSource.length}/${graded.length} picks have hrScoreSource recorded`);
+    for (const source of ['logistic', 'legacy']) {
+      const rows = withSource.filter(r => r.hrScoreSource === source);
+      if (!rows.length) continue;
+      const wins = rows.filter(r => r.result === 'win').length;
+      console.log(`  ${source.padEnd(10)} n=${String(rows.length).padStart(5)}   actual hit rate: ${pct(wins / rows.length)}`);
+    }
+  }
+
   // ── Signal-tag breakdowns (isOnFire/isFavorable/isDrought/isDue/hasNearHR) — same
   // methodology as the score-calibration z-test above, not just raw percentages:
   // only present on picks captured after those tags were added to the snapshot,
