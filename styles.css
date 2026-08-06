@@ -5142,6 +5142,35 @@ select:focus-visible {
   white-space: nowrap;
 }
 .dr-filter-clear-all:hover { background: var(--accent-soft); }
+
+/* Scroll-fade hint -- .dr-filter-row itself (HR Threats/Near HRs/Results
+   search+filter row) is the real horizontally-scrolling element at narrow
+   widths (overflow-x:auto, see the max-width:768px rule elsewhere in this
+   file -- its .dr-filter-buttons child just forces min-width:max-content so
+   it never wraps), hides its scrollbar, and gave no visual clue there was
+   more to scroll to (e.g. the Sort dropdown could sit entirely off the edge
+   of a phone screen). drInitFilterScrollHints (app.js) toggles this class on
+   the row itself based on its real scrollWidth/scrollLeft, not a fixed
+   breakpoint -- it only ever shows when there's real overflow left to scroll
+   to, and disappears once the user's scrolled to the end. .dr-filter-row is
+   already position:sticky (elsewhere in this file), which is a valid
+   containing block for this ::after already -- no extra positioning context
+   needed. Fades toward the row's own translucent dark backdrop (not a flat
+   --bg) so the edge blends with its blur/background instead of showing a
+   visible seam. */
+.dr-filter-row::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 2px;
+  width: 28px;
+  background: linear-gradient(to right, transparent, rgba(5,9,18,.92) 75%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+.dr-filter-row.dr-filter-row-has-more::after { opacity: 1; }
 @media (max-width: 700px) {
   .dr-filter-toggle-btn { display: inline-flex; margin-bottom: 8px; }
   .dr-filter-controls { display: none; }
