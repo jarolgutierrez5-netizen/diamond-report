@@ -9897,6 +9897,94 @@ function renderFantasyBoard() {
 }
 window.renderFantasyBoard = renderFantasyBoard;
 
+// ── NFL Anytime Touchdown Scorer (first real NFL board) ────────────────────
+// Real season TD-per-game rate (data/nfl-player-stats.json, scripts/sync-nfl-
+// player-stats.mjs) run through a simple Poisson at-least-one-event model --
+// P(at least 1 TD) = 1 - e^(-lambda), lambda = real season TD/game rate. No
+// opponent-defense adjustment yet (that's the natural next step, same as how
+// the MLB HR formula itself started as a single real rate before Matchup
+// Edge/Zone Fit/park/weather were layered in over many iterations) -- an
+// honest first cut, not a finished model.
+function nflAnytimeTDProb(tdPerGame) {
+  const lambda = Math.max(0, Number(tdPerGame) || 0);
+  const p = 1 - Math.exp(-lambda);
+  return Math.max(1, Math.min(99, Math.round(p * 100)));
+}
+
+let nflTDDataPromise = null;
+async function loadNFLTDData(force = false) {
+  if (nflTDDataPromise && !force) return nflTDDataPromise;
+  nflTDDataPromise = (async () => {
+    const [scheduleData, statsData] = await Promise.all([
+      drFetchDailyJSON('data/nfl-schedule.json').catch(() => null),
+      drFetchDailyJSON('data/nfl-player-stats.json').catch(() => null),
+    ]);
+    return { schedule: (scheduleData && scheduleData.events) || [], players: (statsData && statsData.players) || {} };
+  })();
+  return nflTDDataPromise;
+}
+
+function nflTDCardHTML(r) {
+  const scoreCls = r.prob >= 55 ? 'good' : '';
+  return `<div class="dr109-card${scoreCls ? ' prop-hit' : ''}">
+    <div class="dr109-card-head">
+      <div class="dr109-player"><div style="min-width:0">
+        <div class="dr109-name">${fantasyEsc(r.name || 'Player')}</div>
+        <div class="dr109-meta">${fantasyEsc(r.position || '')} · ${fantasyEsc(r.teamAbbr || '')} vs ${fantasyEsc(r.oppAbbr || '')}</div>
+      </div></div>
+      <div class="dr109-score">${r.prob}%<small>Anytime TD</small></div>
+    </div>
+    <div class="dr109-chiprow">
+      <span class="dr109-chip"><span>Season TD:</span><strong>${r.td != null ? r.td : '–'}</strong></span>
+      <span class="dr109-chip"><span>Games:</span><strong>${r.games != null ? r.games : '–'}</strong></span>
+      <span class="dr109-chip"><span>TD/GM:</span><strong>${r.tdPerGame != null ? r.tdPerGame.toFixed(2) : '–'}</strong></span>
+      <span class="dr109-chip"><span>Season:</span><strong>${r.season != null ? r.season : '–'}</strong></span>
+    </div>
+  </div>`;
+}
+
+async function renderNFLTDBoard() {
+  const el = document.getElementById('nfl-td-content');
+  if (!el) return;
+  let data;
+  try {
+    data = await loadNFLTDData();
+  } catch (e) {
+    el.innerHTML = '<div class="mu-empty">Couldn\'t load NFL data. Check back shortly.</div>';
+    return;
+  }
+  const upcoming = (data.schedule || []).filter(g => !g.completed && g.date).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  if (!upcoming.length) {
+    el.innerHTML = '<div class="mu-empty">No upcoming NFL games found. Check back closer to kickoff.</div>';
+    return;
+  }
+  // Same "nearest upcoming calendar date" scoping the MLB boards use for
+  // "today's slate" -- games are sparse (especially in preseason), so this
+  // is whichever real date has the next kickoff, not a fixed "today" that
+  // could legitimately have zero games on it.
+  const nextDate = upcoming[0].date.slice(0, 10);
+  const slateGames = upcoming.filter(g => (g.date || '').slice(0, 10) === nextDate);
+  const oppByTeam = {};
+  slateGames.forEach(g => {
+    if (g.home && g.away && g.home.abbreviation && g.away.abbreviation) {
+      oppByTeam[g.home.abbreviation] = g.away.abbreviation;
+      oppByTeam[g.away.abbreviation] = g.home.abbreviation;
+    }
+  });
+  const rows = Object.values(data.players || {})
+    .filter(p => p.teamAbbr && oppByTeam[p.teamAbbr] != null && p.tdPerGame != null)
+    .map(p => Object.assign({}, p, { oppAbbr: oppByTeam[p.teamAbbr], prob: nflAnytimeTDProb(p.tdPerGame) }))
+    .sort((a, b) => b.prob - a.prob);
+  if (!rows.length) {
+    el.innerHTML = `<div class="mu-empty">No player season stats synced yet for the ${fantasyEsc(nextDate)} slate. Check back once the daily sync has run.</div>`;
+    return;
+  }
+  el.innerHTML = `<div class="dr109-summary"><div class="dr109-title">🏈 <span>${fantasyEsc(nextDate)} SLATE</span></div>`
+    + `<p class="dr109-copy">Real season touchdown rate per skill-position player (${fantasyEsc(rows[0].season)} season), modeled as at-least-one-TD-this-game probability. Early model — no opponent defense adjustment yet, values are generated from the active synced roster/stats data.</p></div>`
+    + rows.map(nflTDCardHTML).join('');
+}
+window.renderNFLTDBoard = renderNFLTDBoard;
+
 // ── 5AM HR POTENTIAL REFRESH ─────────────────────────────────────────
 // Checks on load and reschedules daily — handles cases where tab wasn't open at 5am
 const HR_POTENTIAL_STORAGE_KEY = 'hrp_last_loaded_date';
@@ -14146,7 +14234,7 @@ if (document.readyState === 'loading') {
 /* ---- from <script id="anonymous"> ---- */
 // PROD v8.44 — Game Picks inner tab controller with persistent state
 (function(){
-  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, fantasy: true, nearhr: true, results: true };
+  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, fantasy: true, nearhr: true, results: true, nfltd: true };
 
   // Only the URL hash decides the pane on load (e.g. a shared #gamepick=premium
   // link). No localStorage fallback — a plain refresh/revisit with no hash
@@ -14224,6 +14312,10 @@ if (document.readyState === 'loading') {
       setTimeout(function(){ if (typeof window.renderFantasyBoard === 'function') window.renderFantasyBoard(); }, 30);
       setTimeout(function(){ if (typeof window.renderFantasyBoard === 'function') window.renderFantasyBoard(); }, 900);
       setTimeout(function(){ if (typeof window.renderFantasyBoard === 'function') window.renderFantasyBoard(); }, 2200);
+    }
+    if (pane === 'nfltd') {
+      setTimeout(function(){ if (typeof window.renderNFLTDBoard === 'function') window.renderNFLTDBoard(); }, 30);
+      setTimeout(function(){ if (typeof window.renderNFLTDBoard === 'function') window.renderNFLTDBoard(); }, 900);
     }
   }
 
