@@ -29,14 +29,33 @@ jobs:
       - name: Run NFL schedule sync
         run: node scripts/sync-nfl-schedule.mjs
 
+      # Depends on data/nfl-teams.json from the step above (either freshly
+      # written this run, or already on disk from a prior run).
+      - name: Run NFL roster sync (skill-position players)
+        run: node scripts/sync-nfl-rosters.mjs
+        continue-on-error: true
+        timeout-minutes: 10
+
+      # Depends on data/nfl-rosters.json from the step above. ~450-500 skill
+      # players across 32 teams, similar bounded scope to the MLB batter
+      # Statcast sync -- allowed to fail without red-Xing the schedule/roster
+      # steps above it, same reasoning as the MLB workflow's own optional
+      # steps.
+      - name: Run NFL player season-stats sync (real TD rate per player)
+        run: node scripts/sync-nfl-player-stats.mjs
+        continue-on-error: true
+        timeout-minutes: 20
+
       - name: Commit and push if changed
         run: |
           git config user.name "diamond-report-bot"
           git config user.email "actions@users.noreply.github.com"
           git add data/nfl-teams.json data/nfl-schedule.json
+          [ -f data/nfl-rosters.json ] && git add data/nfl-rosters.json
+          [ -f data/nfl-player-stats.json ] && git add data/nfl-player-stats.json
           if git diff --cached --quiet; then
             echo "No changes — nothing to commit."
             exit 0
           fi
-          git commit -m "Sync NFL teams/schedule (groundwork)"
+          git commit -m "Sync NFL teams/schedule/rosters/player stats"
           git push

@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026080607">
+<link rel="stylesheet" href="styles.min.css?v=2026080608">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -570,6 +570,7 @@
     <button class="gamepick-tab" id="gamepick-tab-pr" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-pr" data-gamepick-pane="pr" onclick="showGamePickPane('pr')">📋 Pitcher Report</button>
     <button class="gamepick-tab" id="gamepick-tab-fantasy" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-fantasy" data-gamepick-pane="fantasy" onclick="showGamePickPane('fantasy')">🏆 Fantasy Points [Beta]</button>
     <button class="gamepick-tab" id="gamepick-tab-results" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-results" data-gamepick-pane="results" onclick="showGamePickPane('results')">✅ Results</button>
+    <button class="gamepick-tab" id="gamepick-tab-nfltd" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-nfltd" data-gamepick-pane="nfltd" onclick="showGamePickPane('nfltd')">🏈 NFL Anytime TD</button>
   </div>
 </div>
 
@@ -722,6 +723,29 @@
       </div>
       <div id="hr-results-content" class="dr-panel-body dr-scroll-tall">
         <div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading results…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- First real NFL board (roadmap: NFL props) -- Anytime Touchdown Scorer
+     probability for today's/this week's slate. Real season TD-per-game rate
+     (data/nfl-player-stats.json, scripts/sync-nfl-player-stats.mjs) run
+     through a simple Poisson at-least-one model, no opponent-defense
+     adjustment yet -- an honest first cut, same "start simple" precedent the
+     MLB HR formula itself started from. -->
+<div class="gamepick-pane" id="gamepick-pane-nfltd" role="tabpanel" aria-labelledby="gamepick-tab-nfltd" data-gamepick-pane="nfltd" hidden>
+  <div class="dr-center-label">🏈 NFL Anytime Touchdown Scorer</div>
+  <div class="dr-dashboard-grid">
+    <div class="dr-panel dr-panel-large dr-panel-fresh">
+      <div class="dr-panel-head">
+        <div>
+          <p class="section-title">NFL <span>Anytime TD Probability</span></p>
+          <small>Real season touchdown rate per player, modeled as at-least-one-TD-this-game odds. Early model -- no opponent defense adjustment yet.</small>
+        </div>
+      </div>
+      <div id="nfl-td-content" class="dr-panel-body dr-scroll-tall">
+        <div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading NFL props…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div>
       </div>
     </div>
   </div>
@@ -1035,7 +1059,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026080607" defer></script>
+<script src="app.min.js?v=2026080608" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
