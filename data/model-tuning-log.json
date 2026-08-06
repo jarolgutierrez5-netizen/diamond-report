@@ -42,6 +42,41 @@
       "decision": "skip",
       "reason": "not statistically significant",
       "current": 0.6
+    },
+    {
+      "at": "2026-08-06T14:09:18.776Z",
+      "param": "HR_MULT_SHRINKAGE",
+      "effectiveSince": "2026-07-20",
+      "excludedPreEffective": 362,
+      "nLow": 582,
+      "nHigh": 269,
+      "lowHitRate": 0.13573883161512026,
+      "highHitRate": 0.15613382899628253,
+      "z": -0.792085295573984,
+      "decision": "skip",
+      "reason": "not statistically significant",
+      "current": 0.6
+    },
+    {
+      "at": "2026-08-06T14:09:18.846Z",
+      "param": "HR_SCORE_CALIBRATION",
+      "effectiveSince": null,
+      "excludedPreEffective": 0,
+      "n": 1213,
+      "fittedSlope": -0.10979287419409171,
+      "fittedIntercept": 15.692737991086748,
+      "seSlope": 0.25962291972270396,
+      "tSlope": -4.274633670168376,
+      "decision": "adjust",
+      "reason": "stepping toward fitted calibration line",
+      "previous": {
+        "slope": 1,
+        "intercept": 0
+      },
+      "next": {
+        "slope": 0.95,
+        "intercept": 3
+      }
     }
   ]
 }
