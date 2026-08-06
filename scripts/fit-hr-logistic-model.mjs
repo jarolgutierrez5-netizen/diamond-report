@@ -22,19 +22,25 @@
 // for an 8x8 system) -- same "no package.json needed" convention as every
 // other script in this directory.
 //
-// IMPORTANT: this script only FITS and REPORTS. It does not wire the fitted
-// model into live scoring anywhere -- app.js/update-tracker.mjs are untouched.
-// It writes its fitted coefficients to data/hr-logistic-model.json purely so
-// the fit is reviewable/reproducible; actually replacing the live formula
-// with this model is a separate, deliberate follow-up decision once the
-// cross-validated numbers below have been reviewed against the current
-// model's own real performance on the same picks.
+// IMPORTANT: app.js/update-tracker.mjs's predictHRLogistic ALREADY reads
+// data/hr-logistic-model.json live (this stopped being report-only once that
+// wiring shipped) -- running this script with --write and committing the
+// result changes production scoring immediately, the same "measure, then a
+// deliberate commit ships it" discipline as tune-model-params.mjs. Review the
+// cross-validated numbers below against the CURRENTLY LIVE model's own
+// comparisonToCurrentFormula block before deciding to replace it.
 //
 // Feature selection: restricted to real fields with strong coverage across
-// the graded population (batterOPS/ISO, pitcherHr9/Whip, park/wind/temperature
-// factors, isOnFire all co-occur on the same ~758/1213 graded rows -- fields
-// added later, like matchupEdge/zoneFitScore/platoon splits, have thinner
-// coverage and are left out rather than shrinking the training set further).
+// the graded population. batterISO/pitcherHr9/pitcherWhip/park/wind/temperature
+// factors/isOnFire co-occur on ~758/1213 graded rows; matchupEdge (added here)
+// separately co-occurs with all of those on 590/1213 -- verified via
+// scripts/analyze-hr-matchups.mjs's day-by-day capture coverage before adding
+// it: matchupEdge has run at 92-100% real coverage on every day since it was
+// added (2026-07-27), so its historical thinness is purely "field didn't
+// exist yet before then," not an ongoing gap. zoneFitScore is still left out
+// -- despite similarly good day-by-day coverage since 2026-08-01, intersected
+// with every OTHER feature here it only reaches 193 graded rows (27 wins),
+// too thin to add a 9th predictor reliably; revisit once that catches up.
 // batterOPS and pitcherSlgAllowed were dropped for redundancy: OPS/ISO
 // correlate at r=0.66 (ISO is the more HR-specific signal), and
 // pitcherHr9/pitcherSlgAllowed correlate at r=0.83 (HR9 is the more direct
@@ -54,7 +60,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TRACKER_PATH = path.join(__dirname, '..', 'data', 'tracker.json');
 const MODEL_PATH = path.join(__dirname, '..', 'data', 'hr-logistic-model.json');
 
-const FEATURES = ['batterISO', 'pitcherHr9', 'pitcherWhip', 'parkFactor', 'windFactor', 'temperatureFactor', 'isOnFire'];
+const FEATURES = ['batterISO', 'pitcherHr9', 'pitcherWhip', 'parkFactor', 'windFactor', 'temperatureFactor', 'isOnFire', 'matchupEdge'];
 const N_FOLDS = 5;
 const LAMBDA_GRID = [0.5, 1, 2, 5, 10, 20, 40, 80]; // L2 penalty candidates on standardized features, chosen by CV log-loss
 
@@ -191,7 +197,7 @@ function assignFolds(rows, k) {
 }
 
 function buildFeatureRow(r) {
-  return [1, r.batterISO, r.pitcherHr9, r.pitcherWhip, r.parkFactor, r.windFactor, r.temperatureFactor, r.isOnFire ? 1 : 0];
+  return [1, r.batterISO, r.pitcherHr9, r.pitcherWhip, r.parkFactor, r.windFactor, r.temperatureFactor, r.isOnFire ? 1 : 0, r.matchupEdge];
 }
 
 function crossValidate(rows, lambda) {
@@ -269,23 +275,28 @@ async function main() {
   const cvBrier = brierScore(cv.y, cv.p);
   const cvLogLoss = logLoss(cv.y, cv.p);
 
-  // ── Same metrics for the CURRENT model's own score, on the identical rows,
-  // so this is an apples-to-apples comparison, not against a different-sized
-  // population. ──
-  const currentP = trainable.map(r => r.score / 100);
-  const currentY = trainable.map(r => (r.result === 'win' ? 1 : 0));
+  // ── Same metrics for the CURRENT model's own score, on the identical rows --
+  // apples-to-apples, not a different-sized population. Excludes any row whose
+  // score ALREADY came from a live logistic model (hrScoreSource === 'logistic'
+  // -- see update-tracker.mjs), so a refit never ends up comparing a new model
+  // against a baseline partly produced by an earlier version of itself. A
+  // no-op today (no captured row has hrScoreSource yet), but real protection
+  // once picks start accumulating under the now-live wiring. ──
+  const legacyOnly = trainable.filter(r => r.hrScoreSource !== 'logistic');
+  const currentP = legacyOnly.map(r => r.score / 100);
+  const currentY = legacyOnly.map(r => (r.result === 'win' ? 1 : 0));
   const currentAuc = auc(currentY, currentP);
   const currentBrier = brierScore(currentY, currentP);
   const currentLogLoss = logLoss(currentY, currentP);
 
-  console.log('\nHeld-out (cross-validated) performance, new model vs. current formula, same rows:');
+  console.log(`\nHeld-out (cross-validated) performance -- new model (n=${trainable.length}) vs. current formula (n=${legacyOnly.length}${legacyOnly.length !== trainable.length ? ', excludes rows already scored by a live logistic model' : ''}):`);
   console.log(`  ${'Metric'.padEnd(22)}${'New (logistic)'.padStart(18)}${'Current formula'.padStart(18)}`);
   console.log(`  ${'AUC (higher better)'.padEnd(22)}${(cvAuc == null ? 'n/a' : cvAuc.toFixed(3)).padStart(18)}${(currentAuc == null ? 'n/a' : currentAuc.toFixed(3)).padStart(18)}`);
   console.log(`  ${'Brier (lower better)'.padEnd(22)}${cvBrier.toFixed(4).padStart(18)}${currentBrier.toFixed(4).padStart(18)}`);
   console.log(`  ${'Log-loss (lower better)'.padEnd(22)}${cvLogLoss.toFixed(4).padStart(18)}${currentLogLoss.toFixed(4).padStart(18)}`);
 
   printBucketTable('New model (cross-validated, out-of-fold predictions):', bucketTable(cv.rows, cv.p, cv.y));
-  printBucketTable('Current formula (same rows, its own live "score" field):', bucketTable(trainable, currentP, currentY));
+  printBucketTable('Current formula (its own live "score" field):', bucketTable(legacyOnly, currentP, currentY));
 
   // ── Full-data fit (for persisting/reviewing coefficients -- NOT used for the
   // cross-validated numbers above, which only ever score a fold on a model
@@ -309,11 +320,22 @@ async function main() {
     featureStds: Object.fromEntries(FEATURES.map((f, i) => [f, stds[i + 1]])),
     training: { n: trainable.length, wins, hitRate: wins / trainable.length },
     crossValidated: { nFolds: N_FOLDS, auc: cvAuc, brier: cvBrier, logLoss: cvLogLoss },
-    comparisonToCurrentFormula: { auc: currentAuc, brier: currentBrier, logLoss: currentLogLoss },
-    note: 'Fitted and reported only -- not wired into live scoring anywhere. See this script\'s file header.',
+    comparisonToCurrentFormula: { auc: currentAuc, brier: currentBrier, logLoss: currentLogLoss, n: legacyOnly.length },
+    note: 'app.js/update-tracker.mjs read this file live for HR probability scoring -- see predictHRLogistic in both. Not a report-only artifact.',
   };
+
+  // --write is required to actually overwrite the LIVE model file (see this
+  // script's IMPORTANT header comment) -- default is report-only, printing
+  // what a refit would look like without touching production scoring. Same
+  // "measure first, a deliberate step ships it" gate as tune-model-params.mjs,
+  // just manual here rather than significance-tested, since a refit changing
+  // which predictors exist isn't the kind of thing that should auto-apply.
+  if (!process.argv.includes('--write')) {
+    console.log('\n(dry run -- pass --write to overwrite data/hr-logistic-model.json with this fit)');
+    return;
+  }
   await writeFile(MODEL_PATH, JSON.stringify(model, null, 2) + '\n');
-  console.log(`\nWrote fitted model to ${path.relative(path.join(__dirname, '..'), MODEL_PATH)} (report/reference only, not live).`);
+  console.log(`\nWrote fitted model to ${path.relative(path.join(__dirname, '..'), MODEL_PATH)} -- this is now what live HR scoring uses.`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
