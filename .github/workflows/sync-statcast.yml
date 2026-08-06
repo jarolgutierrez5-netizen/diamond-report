@@ -95,6 +95,17 @@ jobs:
         continue-on-error: true
         timeout-minutes: 5
 
+      # Same once-daily, day-lag-window reasoning as the bullpen-fatigue step above
+      # (yesterday's games need to have actually finished before their real K/BB
+      # totals mean anything) -- also looks up today's schedule for each game's
+      # assigned HP umpire where MLB has confirmed it yet. See the script's own
+      # header for the full "start capturing going forward" rationale.
+      - name: Run umpire tendency sync (real per-umpire K%/BB%, accumulated daily)
+        if: github.event.schedule == '4 11 * * *' || github.event_name == 'workflow_dispatch'
+        run: node scripts/sync-umpire-tendency.mjs
+        continue-on-error: true
+        timeout-minutes: 10
+
       - name: Run per-pitch-type HR + Strike Zone sync for today's probable starters
         # Depends on data/pitcher-statcast.json already existing (either from the step
         # above on the morning run, or from a prior run earlier the same day). A failure
@@ -234,6 +245,7 @@ jobs:
           git add data/pitcher-statcast.json data/batter-pitch-type-season.json data/statcast-hot-hitters.json
           [ -f data/park-factors.json ] && git add data/park-factors.json
           [ -f data/bullpen-fatigue.json ] && git add data/bullpen-fatigue.json
+          [ -f data/umpire-tendency.json ] && git add data/umpire-tendency.json
           [ -f data/ballparkpal-hr-factors.json ] && git add data/ballparkpal-hr-factors.json
           [ -f data/ballparkpal-game-factors.json ] && git add data/ballparkpal-game-factors.json
           [ -f data/injury-history.json ] && git add data/injury-history.json
