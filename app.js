@@ -1864,6 +1864,14 @@ let batterParkHistory = {};
 let batterParkHistoryLoaded = false;
 let batterParkHistoryPromise = null;
 
+// Real per-umpire K%/BB% tendency, accumulated one day at a time -- loaded from
+// data/umpire-tendency.json, written by scripts/sync-umpire-tendency.mjs.
+// { umpires: { [name]: {totalGames,kPct,bbPct,...} }, todayAssignments: {
+// [gamePk]: umpireName }, leagueAvgKPct, leagueAvgBBPct, minGames }.
+let umpireTendency = { umpires: {}, todayAssignments: {} };
+let umpireTendencyLoaded = false;
+let umpireTendencyPromise = null;
+
 // Rolling pitch metrics (velocity/usage/whiff, last 3 starts vs season) — loaded
 // from data/pitcher-rolling.json, written by scripts/sync-pitcher-rolling.mjs.
 // Keyed by pitcher MLB ID (string). Empty object = file not yet synced or this
@@ -6146,7 +6154,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName, precomp
       fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}/stats?stats=statSplits&group=pitching&sitCodes=vl,vr&season=2026`).catch(() => null)
     ]);
     const todayCDT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadBatterHRSpray(), loadBatterBattedBalls(), loadBatterParkHistory(), loadPitcherRolling(), loadPitcherCountPerf(), loadSituationalProps(), loadPropMarketOdds(todayCDT), loadBullpenFatigue(), loadParkFactors(), getTodaySchedule('team').catch(() => [])]);
+    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadBatterHRSpray(), loadBatterBattedBalls(), loadBatterParkHistory(), loadPitcherRolling(), loadPitcherCountPerf(), loadSituationalProps(), loadPropMarketOdds(todayCDT), loadBullpenFatigue(), loadParkFactors(), loadUmpireTendency(), getTodaySchedule('team').catch(() => [])]);
     const todayGames = preloadResults[preloadResults.length - 1];
 
     const batterPerson = batterData.people?.[0] || {};
@@ -6192,11 +6200,26 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName, precomp
     // fetch -- null (section hidden) when no real lineup is cached yet for
     // this specific game, never a fabricated average.
     let tableSetters = null;
+    // Today's assigned HP umpire + his real accumulated K%/BB% tendency (if enough
+    // games have been captured for him yet -- see MIN_GAMES in
+    // sync-umpire-tendency.mjs). null (section hidden) until both a real game and a
+    // real umpire assignment are found for it, never guessed.
+    let umpireInfo = null;
     if (batterTeamAbbr && pitcherTeamAbbr && Array.isArray(todayGames)) {
       const game = todayGames.find(g => {
         const away = g.teams?.away?.team?.abbreviation, home = g.teams?.home?.team?.abbreviation;
         return (away === batterTeamAbbr && home === pitcherTeamAbbr) || (away === pitcherTeamAbbr && home === batterTeamAbbr);
       });
+      const umpireName = game?.gamePk ? umpireTendency.todayAssignments?.[game.gamePk] : null;
+      if (umpireName) {
+        const stats = umpireTendency.umpires?.[umpireName];
+        const minGames = umpireTendency.minGames || 8;
+        umpireInfo = { name: umpireName, kPct: null, bbPct: null, totalGames: stats?.totalGames || 0 };
+        if (stats && stats.totalGames >= minGames) {
+          umpireInfo.kPct = stats.kPct;
+          umpireInfo.bbPct = stats.bbPct;
+        }
+      }
       const homeAbbr = game?.teams?.home?.team?.abbreviation;
       if (homeAbbr) {
         todayParkAbbr = homeAbbr;
@@ -6223,7 +6246,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName, precomp
     // until batterParkHistory has this batter's entry and it covers today's venue.
     const parkHistory = batterParkHistory[String(batterId)]?.[todayParkAbbr] || null;
 
-    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, hrSprayList, todayParkAbbr, rollingProfile, countPerfProfile, situationalProfile, bullpenInfo, parkHrIndex, tableSetters, precomputedZoneFitScore, parkHistory });
+    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, hrSprayList, todayParkAbbr, rollingProfile, countPerfProfile, situationalProfile, bullpenInfo, parkHrIndex, tableSetters, precomputedZoneFitScore, parkHistory, umpireInfo });
   } catch(e) {
     drShowError(body, "Couldn't load this matchup.", () => openMatchup(batterId, batterName, pitcherId, pitcherName));
   }
@@ -6285,7 +6308,7 @@ window.toggleZoneSection = function(headerEl, contentId) {
   if (arrow) arrow.textContent = isOpen ? '▸' : '▾';
 };
 
-function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, hrSprayList=null, todayParkAbbr=null, rollingProfile=null, countPerfProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null, tableSetters=null, precomputedZoneFitScore=null, parkHistory=null }) {
+function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, hrSprayList=null, todayParkAbbr=null, rollingProfile=null, countPerfProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null, tableSetters=null, precomputedZoneFitScore=null, parkHistory=null, umpireInfo=null }) {
   function fv(v, dec=3) {
     if (v==null||v===''||v==='---') return '–';
     const n = parseFloat(v); return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0(\.)/, '$1');
@@ -7511,6 +7534,21 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       const cls = bullpenInfo.tier === 'Gassed' ? '#f87171' : '#fbbf24';
       tiles.push(`<div class="mu-env-tile"><span style="color:${cls}">${bullpenInfo.tier}</span><label>${pitcherName.split(' ').pop()}'s Bullpen</label></div>`);
     }
+    // Real per-umpire K%/BB% tendency (see sync-umpire-tendency.mjs) -- red/blue
+    // framed the same batter-centric way as the Park HR Factor tile above: a real
+    // zone tighter than league average (fewer Ks) is a red/exciting signal for the
+    // batter, a real zone wider than average (more Ks) reads blue/pitcher-favoring.
+    // Shows just the umpire's name (no color call) until his own sample clears
+    // MIN_GAMES -- never a fabricated or league-average-substituted tendency.
+    if (umpireInfo && umpireInfo.name) {
+      if (umpireInfo.kPct != null) {
+        const kDelta = umpireTendency.leagueAvgKPct != null ? umpireInfo.kPct - umpireTendency.leagueAvgKPct : null;
+        const cls = kDelta != null && kDelta <= -1.5 ? '#f87171' : kDelta != null && kDelta >= 1.5 ? '#60a5fa' : 'var(--text)';
+        tiles.push(`<div class="mu-env-tile"><span style="color:${cls}">${umpireInfo.kPct}% K / ${umpireInfo.bbPct}% BB</span><label>HP Ump: ${umpireInfo.name}</label></div>`);
+      } else {
+        tiles.push(`<div class="mu-env-tile"><span style="color:var(--muted)">${umpireInfo.totalGames}/${umpireTendency.minGames || 8} games</span><label>HP Ump: ${umpireInfo.name}</label></div>`);
+      }
+    }
     if (!tiles.length) return '';
     return `<div class="mu-environment">
       <div class="mu-environment-head">🌎 Game Environment <span class="mu-environment-overall" id="${envUid}-overall"></span></div>
@@ -8593,6 +8631,26 @@ async function loadBatterParkHistory(force=false) {
     return batterParkHistory;
   })();
   return batterParkHistoryPromise;
+}
+// Same pattern as loadBatterParkHistory() above — data/umpire-tendency.json,
+// written by scripts/sync-umpire-tendency.mjs. Unlike the other loaders here,
+// the whole object (not just a .players/.teams sub-key) is what callers need,
+// since todayAssignments/leagueAvgKPct/leagueAvgBBPct/minGames live alongside
+// the per-umpire map, not nested under it.
+async function loadUmpireTendency(force=false) {
+  if (umpireTendencyLoaded && !force) return umpireTendency;
+  if (umpireTendencyPromise && !force) return umpireTendencyPromise;
+  umpireTendencyPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/umpire-tendency.json`);
+      umpireTendency = { umpires: data.umpires || {}, todayAssignments: data.todayAssignments || {}, leagueAvgKPct: data.leagueAvgKPct ?? null, leagueAvgBBPct: data.leagueAvgBBPct ?? null, minGames: data.minGames ?? null };
+    } catch(e) {
+      umpireTendency = { umpires: {}, todayAssignments: {} };
+    }
+    umpireTendencyLoaded = true;
+    return umpireTendency;
+  })();
+  return umpireTendencyPromise;
 }
 
 // "Last, First" (Baseball Savant's format, the only name source available for
