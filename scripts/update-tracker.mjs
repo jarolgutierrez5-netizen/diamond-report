@@ -1607,7 +1607,19 @@ function paDistribution(pa) {
   }
   return dist;
 }
-function simulateHRGameOdds(pPerPA, battingOrder) {
+// Set by every simulateHRGameOdds call to record which path produced its return value
+// -- captureHRThreatToday reads this immediately after calling scoreForMarket('hr', ...)
+// to snapshot hrScoreSource onto the captured row, the same "measure which formula
+// actually drove this real outcome" discipline as every other snapshot field there.
+let __hrLastScoreSource = 'legacy';
+function simulateHRGameOdds(pPerPA, battingOrder, logisticFeatures) {
+  // Fitted logistic model (see predictHRLogistic above) wins on every cross-validated
+  // metric against the legacy simulation+calibrateHRProb path below -- tried first,
+  // falling through to the legacy path unchanged whenever its inputs aren't all
+  // available (model not yet loaded, or a feature genuinely missing for this row).
+  const logisticP = logisticFeatures ? predictHRLogistic(logisticFeatures) : null;
+  __hrLastScoreSource = logisticP != null ? 'logistic' : 'legacy';
+  if (logisticP != null) return logisticP;
   pPerPA = clamp(pPerPA || 0.03, 0, 0.5);
   const dist = paDistribution(estimatePA(battingOrder));
   let prob = 0;
@@ -1732,6 +1744,43 @@ function calibrateHRProb(rawPct) {
   return modelParams.HR_SCORE_CALIBRATION_INTERCEPT + modelParams.HR_SCORE_CALIBRATION_SLOPE * rawPct;
 }
 
+// Fitted logistic-regression alternative to the calibrateHRProb linear correction above
+// -- see scripts/fit-hr-logistic-model.mjs for the fit and data/hr-logistic-model.json
+// for the persisted coefficients. Cross-validated against the same graded picks the
+// legacy formula's own score was checked on, it wins on every metric (AUC 0.546 vs
+// 0.487, Brier 0.117 vs 0.125, log-loss 0.395 vs 0.420). Exact port of app.js's own
+// copy of this function (same two-independent-copies convention as shrinkMult/
+// calibrateHRProb above). Returns null (never throws) when the model hasn't loaded or
+// a required feature is missing, so simulateHRGameOdds below can fall back to the
+// legacy path exactly as if this didn't exist.
+const HR_LOGISTIC_MODEL_PATH = path.join(__dirname, '..', 'data', 'hr-logistic-model.json');
+let hrLogisticModel = null;
+async function loadHRLogisticModel() {
+  try {
+    const raw = await readFile(HR_LOGISTIC_MODEL_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.coefficients) hrLogisticModel = parsed;
+  } catch (e) {
+    // Missing/invalid file -- leave hrLogisticModel null, same graceful-fallback
+    // discipline as loadModelParams above.
+  }
+}
+function predictHRLogistic(features) {
+  const model = hrLogisticModel;
+  if (!model || !model.coefficients) return null;
+  const { batterISO, pitcherHr9, pitcherWhip, parkFactor, windFactor, temperatureFactor, isOnFire } = features || {};
+  if (![batterISO, pitcherHr9, pitcherWhip, parkFactor, windFactor, temperatureFactor].every(Number.isFinite)) return null;
+  const raw = { batterISO, pitcherHr9, pitcherWhip, parkFactor, windFactor, temperatureFactor, isOnFire: isOnFire ? 1 : 0 };
+  const c = model.coefficients, means = model.featureMeans, stds = model.featureStds;
+  let z = c.intercept;
+  for (const f of model.features) {
+    const std = (raw[f] - means[f]) / (stds[f] || 1);
+    z += c[f] * std;
+  }
+  const p = 1 / (1 + Math.exp(-z));
+  return Math.max(1, Math.min(99, Math.round(p * 100)));
+}
+
 // ── Live client HR score (exact port of app.js's HR Threats formula) ──────────────
 // scoreForMarket('hr') above is this file's OWN, more sophisticated HR scoring, used
 // for actual pick selection/grading -- but it's never been what a site visitor sees.
@@ -1809,7 +1858,8 @@ function computeLiveHRScore(row, statcastHotHitters, weatherHRMult = 1) {
   const onFireScore = liveOnFireScore(row, statcastHotHitters);
   const hotMult = 1 + (onFireScore / 100) * 0.5;
   const hrPerPA = ((batterRate * 0.6) + (pitcherRate * 0.4)) * parkAdj * shrinkMult(hotMult) * weatherHRMult;
-  return simulateHRGameOdds(hrPerPA, row.battingOrder);
+  const logisticFeatures = { batterISO: row.iso, pitcherHr9: row.pitcherHr9, pitcherWhip: row.pitcherWhip, parkFactor: row.parkFactor, windFactor: row.windFactor, temperatureFactor: row.temperatureFactor, isOnFire: onFireScore >= 70 };
+  return simulateHRGameOdds(hrPerPA, row.battingOrder, logisticFeatures);
 }
 
 function scoreForMarket(marketKey, row) {
@@ -1850,7 +1900,8 @@ function scoreForMarket(marketKey, row) {
     // there, same "compute once outside scoreForMarket, apply with shrinkMult here" shape
     // as fatigueFactor/homeRoadFactor/windFactor/temperatureFactor above.
     const hrPerPA = (batterRate * 0.6 + pitcherRate * 0.4) * shrinkMult(row.windFactor || 1) * shrinkMult(row.temperatureFactor || 1) * shrinkMult(row.zoneMatchupMult || 1);
-    return simulateHRGameOdds(hrPerPA, row.battingOrder);
+    const logisticFeatures = { batterISO: row.iso, pitcherHr9: row.pitcherHr9, pitcherWhip: row.pitcherWhip, parkFactor: row.parkFactor, windFactor: row.windFactor, temperatureFactor: row.temperatureFactor, isOnFire: row.isHot };
+    return simulateHRGameOdds(hrPerPA, row.battingOrder, logisticFeatures);
   }
   if (marketKey === 'sb') return simulateSBOdds(row);
   return simulatePropOdds(marketKey, row);
@@ -2395,7 +2446,8 @@ async function buildBatterPool(games, season) {
         // any other market this same pool feeds.
         const liveScore = computeLiveHRScore({
           id: pid, name: person.fullName, ops, iso, atBats: ab, hrSeason,
-          pitcherHr9: n(pitcherStat.homeRunsPer9), parkFactor: rowParkFactor, battingOrder,
+          pitcherHr9: n(pitcherStat.homeRunsPer9), pitcherWhip, parkFactor: rowParkFactor, battingOrder,
+          windFactor: windPowerFactor(g.weather), temperatureFactor: temperaturePowerFactor(g.weather),
           last10HR: recent?.hr || 0, isFavorable, statcast: statcastIndex.get(String(pid)) || null,
         }, statcastHotHittersIndex, weatherHRMult);
         return {
@@ -2446,12 +2498,19 @@ async function captureHRThreatToday(store, pool) {
   let added = 0;
   pool.filter(r => r.atBats >= POOL_MIN_AB && !already.has(r.id)).forEach(r => {
     const score = scoreForMarket('hr', r);
+    const hrScoreSource = __hrLastScoreSource;
     if (score < HR_THREAT_MIN_SCORE) return;
     const key = `${today}|HRTHREAT|${r.id}`;
     if (store.market.hrThreat.some(x => x.key === key)) return;
     store.market.hrThreat.push({
       key, date: today, playerId: r.id, playerName: r.name, team: r.teamAbbr, opp: r.oppAbbr,
       gamePk: r.gamePk, score, result: 'pending', actual: null,
+      // Which formula actually produced `score` above -- 'logistic' (see
+      // predictHRLogistic) once its inputs are available for a row, 'legacy'
+      // (the multiplicative simulation + calibrateHRProb) otherwise. Lets a
+      // later calibration pass compare the two paths' real hit rates directly
+      // instead of assuming every row used the same formula.
+      hrScoreSource,
       // The live client board's own score for this same player/matchup (see
       // computeLiveHRScore) -- captured alongside `score` (this file's separate,
       // internal scoring) so analyze-hr-matchups.mjs can calibration-check what site
@@ -2759,6 +2818,7 @@ async function gradePending(store) {
 
 async function main() {
   await loadModelParams();
+  await loadHRLogisticModel();
   const store = await loadTracker();
   await gradePending(store);
 
@@ -2816,5 +2876,6 @@ export {
   loadDRPSimComparison, saveDRPSimComparison, recomputeDRPSimSummary,
   gradeDRPSimComparison, captureDRPSimComparisonToday,
   loadModelParams, MODEL_PARAMS_PATH, DEFAULT_MODEL_PARAMS, shrinkMult, calibrateHRProb,
+  loadHRLogisticModel, predictHRLogistic,
   computeIsHot,
 };
