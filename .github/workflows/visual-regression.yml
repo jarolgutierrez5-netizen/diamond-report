@@ -1,0 +1,65 @@
+name: Visual regression tests
+
+# Screenshot tests for the shared card/filter components (HR Threats, the
+# prop-board card hierarchy, the filter bar) at 390/768/1280/1440px against
+# the committed baselines in tests/visual/__screenshots__. Renders against
+# synthetic seeded data with every non-localhost request blocked, so results
+# never depend on live game data or real network access -- see
+# tests/visual/README.md.
+#
+# tests/visual has its own package.json/package-lock.json (same scoped
+# pattern as video/) -- @playwright/test's version here MUST stay in sync
+# with tests/visual/package.json so this job's browser download matches the
+# pinned test-runner version.
+
+on:
+  push:
+    paths:
+      - 'app.js'
+      - 'styles.css'
+      - 'index.html'
+      - 'tests/visual/**'
+  pull_request:
+    paths:
+      - 'app.js'
+      - 'styles.css'
+      - 'index.html'
+      - 'tests/visual/**'
+
+concurrency:
+  group: visual-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual-regression:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tests/visual
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: tests/visual/package-lock.json
+
+      - name: Install test dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run visual regression tests
+        run: npx playwright test
+
+      - name: Upload failure report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: tests/visual/playwright-report/
+          retention-days: 14

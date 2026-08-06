@@ -1,0 +1,8 @@
+{
+  "name": "diamond-report-visual-tests",
+  "private": true,
+  "description": "Playwright visual regression tests for the static site. Scoped to this directory only -- the rest of the repo intentionally has no root package.json/node_modules (see .github/workflows/build-assets.yml); this mirrors the same scoped-package.json pattern already used in video/.",
+  "devDependencies": {
+    "@playwright/test": "1.56.0"
+  }
+}
