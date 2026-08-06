@@ -12,6 +12,9 @@
 // individual starts, and compares the last ROLLING_STARTS outings against the
 // full-season baseline for the three signals that most directly answer "how
 // will today's at-bats go": velocity, usage mix, and whiff rate, per pitch type.
+// Also returns lastStartDates (rest -- the app computes days-since client-side
+// off the most recent entry) and lastOutingPitches (workload -- pitch count of
+// that single most recent start only, not the 3-start rolling window).
 //
 // Same live-verification caveat as the other Statcast Search-based scripts in
 // this repo: this sandbox cannot reach baseballsavant.mlb.com to confirm the
@@ -168,6 +171,13 @@ function buildPitcherRolling(csv, name) {
   if (!byPitch.length) return null;
   byPitch.sort((a, b) => (b.rollingUsagePct || 0) - (a.rollingUsagePct || 0));
 
+  // Pitch count for the single most recent start only (not the ROLLING_STARTS=3
+  // window the velo/whiff/usage trends above use) -- "how many pitches did he
+  // throw last time out" is a workload/rest signal in its own right, distinct
+  // from the multi-start trend. Same rows already fetched, just filtered to the
+  // single latest game_date.
+  const lastOutingPitches = rows.filter(r => r.game_date === dates[0]).length;
+
   // Same MIN_ROLLING_PITCHES floor as the per-pitch-type rolling stats above, applied
   // to the rolling out-of-zone pitch count so a 1-2-pitch rolling sample doesn't produce
   // a wild swing-rate percentage.
@@ -177,7 +187,7 @@ function buildPitcherRolling(csv, name) {
 
   return {
     lastStartDates: [...rollingDates].sort().reverse(), byPitch,
-    seasonChasePct, rollingChasePct, chaseDelta,
+    seasonChasePct, rollingChasePct, chaseDelta, lastOutingPitches,
   };
 }
 
