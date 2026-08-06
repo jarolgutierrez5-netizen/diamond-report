@@ -1855,6 +1855,15 @@ let batterBattedBalls = {};
 let batterBattedBallsLoaded = false;
 let batterBattedBallsPromise = null;
 
+// Real AB/H/HR/AVG/SLG per batter per MLB venue (today's active batters, refreshed
+// daily) -- loaded from data/batter-park-history.json, written by
+// scripts/sync-batter-park-history.mjs. Keyed by batter MLB ID (string), then the
+// venue's home_team abbreviation. Distinct from the league-wide park-factor number
+// (parkFactors): this is how THIS specific batter has actually hit at that park.
+let batterParkHistory = {};
+let batterParkHistoryLoaded = false;
+let batterParkHistoryPromise = null;
+
 // Rolling pitch metrics (velocity/usage/whiff, last 3 starts vs season) — loaded
 // from data/pitcher-rolling.json, written by scripts/sync-pitcher-rolling.mjs.
 // Keyed by pitcher MLB ID (string). Empty object = file not yet synced or this
@@ -6137,7 +6146,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName, precomp
       fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}/stats?stats=statSplits&group=pitching&sitCodes=vl,vr&season=2026`).catch(() => null)
     ]);
     const todayCDT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadBatterHRSpray(), loadBatterBattedBalls(), loadPitcherRolling(), loadPitcherCountPerf(), loadSituationalProps(), loadPropMarketOdds(todayCDT), loadBullpenFatigue(), loadParkFactors(), getTodaySchedule('team').catch(() => [])]);
+    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadBatterHRSpray(), loadBatterBattedBalls(), loadBatterParkHistory(), loadPitcherRolling(), loadPitcherCountPerf(), loadSituationalProps(), loadPropMarketOdds(todayCDT), loadBullpenFatigue(), loadParkFactors(), getTodaySchedule('team').catch(() => [])]);
     const todayGames = preloadResults[preloadResults.length - 1];
 
     const batterPerson = batterData.people?.[0] || {};
@@ -6209,7 +6218,12 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName, precomp
       }
     }
 
-    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, hrSprayList, todayParkAbbr, rollingProfile, countPerfProfile, situationalProfile, bullpenInfo, parkHrIndex, tableSetters, precomputedZoneFitScore });
+    // Real AB/H/HR/AVG/SLG for THIS batter at today's specific venue (todayParkAbbr,
+    // resolved above), not the league-wide park-factor number -- null (section hidden)
+    // until batterParkHistory has this batter's entry and it covers today's venue.
+    const parkHistory = batterParkHistory[String(batterId)]?.[todayParkAbbr] || null;
+
+    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, hrSprayList, todayParkAbbr, rollingProfile, countPerfProfile, situationalProfile, bullpenInfo, parkHrIndex, tableSetters, precomputedZoneFitScore, parkHistory });
   } catch(e) {
     drShowError(body, "Couldn't load this matchup.", () => openMatchup(batterId, batterName, pitcherId, pitcherName));
   }
@@ -6271,7 +6285,7 @@ window.toggleZoneSection = function(headerEl, contentId) {
   if (arrow) arrow.textContent = isOpen ? '▸' : '▾';
 };
 
-function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, hrSprayList=null, todayParkAbbr=null, rollingProfile=null, countPerfProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null, tableSetters=null, precomputedZoneFitScore=null }) {
+function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, hrSprayList=null, todayParkAbbr=null, rollingProfile=null, countPerfProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null, tableSetters=null, precomputedZoneFitScore=null, parkHistory=null }) {
   function fv(v, dec=3) {
     if (v==null||v===''||v==='---') return '–';
     const n = parseFloat(v); return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0(\.)/, '$1');
@@ -8217,6 +8231,18 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
             ${hh.rispAvg != null ? `<span class="dr1043-badge">RISP: ${fv(hh.rispAvg,3)} AVG${hh.rispOps!=null?` / ${fv(hh.rispOps,3)} OPS`:''}</span>` : ''}
           </div>
         </div>` : ''}
+        ${parkHistory ? `
+        <div class="dr1043-panel" style="margin-top:12px">
+          <div class="dr1043-panel-title">Park history <span class="dr1043-badge blue">${batterName.split(' ').pop()} @ ${todayParkAbbr || '–'}</span></div>
+          <div class="dr1043-split-line">
+            <span class="dr1043-badge">${parkHistory.ab} AB</span>
+            <span class="dr1043-badge">${parkHistory.hits} H</span>
+            <span class="dr1043-badge">${parkHistory.hr} HR</span>
+            <span class="dr1043-badge">${fv(parkHistory.avg,3)} AVG</span>
+            <span class="dr1043-badge">${fv(parkHistory.slg,3)} SLG</span>
+          </div>
+          <div class="zone-note" style="margin-top:8px">${batterName}'s real production at today's specific ballpark this season — distinct from the league-wide park-factor number above, which reflects the venue's effect on every hitter, not this batter in particular.</div>
+        </div>` : ''}
       </div>
 
       <!-- Spray Chart -->
@@ -8548,6 +8574,25 @@ async function loadBatterBattedBalls(force=false) {
     return batterBattedBalls;
   })();
   return batterBattedBallsPromise;
+}
+// Same pattern as loadBatterBattedBalls() above — data/batter-park-history.json,
+// written by scripts/sync-batter-park-history.mjs.
+async function loadBatterParkHistory(force=false) {
+  if (batterParkHistoryLoaded && !force) return batterParkHistory;
+  if (batterParkHistoryPromise && !force) return batterParkHistoryPromise;
+  batterParkHistoryPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/batter-park-history.json`);
+      const players = data.players || {};
+      batterParkHistory = {};
+      Object.keys(players).forEach(id => { batterParkHistory[String(id)] = players[id]; });
+    } catch(e) {
+      batterParkHistory = {};
+    }
+    batterParkHistoryLoaded = true;
+    return batterParkHistory;
+  })();
+  return batterParkHistoryPromise;
 }
 
 // "Last, First" (Baseball Savant's format, the only name source available for
