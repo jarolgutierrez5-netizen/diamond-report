@@ -1,0 +1,58 @@
+{
+  "generatedAt": "2026-08-06T14:44:33.194Z",
+  "features": [
+    "batterISO",
+    "pitcherHr9",
+    "pitcherWhip",
+    "parkFactor",
+    "windFactor",
+    "temperatureFactor",
+    "isOnFire"
+  ],
+  "lambda": 40,
+  "coefficients": {
+    "intercept": -1.8652641012849074,
+    "batterISO": 0.019510029249333934,
+    "pitcherHr9": 0.023080822760214614,
+    "pitcherWhip": -0.07188088599446572,
+    "parkFactor": 0.10506116752489598,
+    "windFactor": -0.08905263694979591,
+    "temperatureFactor": 0.11535056445296413,
+    "isOnFire": 0.05323068549364362
+  },
+  "featureMeans": {
+    "batterISO": 0.22706191275678592,
+    "pitcherHr9": 1.5208970976253282,
+    "pitcherWhip": 1.321820580474936,
+    "parkFactor": 101.03430079155673,
+    "windFactor": 1.013967678100264,
+    "temperatureFactor": 1.0115963060685995,
+    "isOnFire": 0.8575197889182058
+  },
+  "featureStds": {
+    "batterISO": 0.059478505999647324,
+    "pitcherHr9": 0.7416127241915891,
+    "pitcherWhip": 0.20765459828422128,
+    "parkFactor": 10.21065123552793,
+    "windFactor": 0.05298570347968193,
+    "temperatureFactor": 0.019582868693052338,
+    "isOnFire": 0.34954198679397613
+  },
+  "training": {
+    "n": 758,
+    "wins": 103,
+    "hitRate": 0.1358839050131926
+  },
+  "crossValidated": {
+    "nFolds": 5,
+    "auc": 0.545438375453939,
+    "brier": 0.11691290561851152,
+    "logLoss": 0.3952562334902432
+  },
+  "comparisonToCurrentFormula": {
+    "auc": 0.4870303120136367,
+    "brier": 0.12467427440633261,
+    "logLoss": 0.4196837127093642
+  },
+  "note": "Fitted and reported only -- not wired into live scoring anywhere. See this script's file header."
+}
