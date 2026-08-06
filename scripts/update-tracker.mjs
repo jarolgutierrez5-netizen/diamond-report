@@ -1768,10 +1768,19 @@ async function loadHRLogisticModel() {
 function predictHRLogistic(features) {
   const model = hrLogisticModel;
   if (!model || !model.coefficients) return null;
-  const { batterISO, pitcherHr9, pitcherWhip, parkFactor, windFactor, temperatureFactor, isOnFire } = features || {};
-  if (![batterISO, pitcherHr9, pitcherWhip, parkFactor, windFactor, temperatureFactor].every(Number.isFinite)) return null;
-  const raw = { batterISO, pitcherHr9, pitcherWhip, parkFactor, windFactor, temperatureFactor, isOnFire: isOnFire ? 1 : 0 };
+  // Reads model.features itself rather than a hardcoded field list, so a future refit
+  // that adds/removes a predictor (e.g. matchupEdge, zoneFitScore) works everywhere
+  // this is called without another code change -- only the caller supplying the raw
+  // feature values needs to know what's actually in this particular model. Exact port
+  // of app.js's own copy of this function.
   const c = model.coefficients, means = model.featureMeans, stds = model.featureStds;
+  const raw = {};
+  for (const f of model.features) {
+    if (f === 'isOnFire') { raw[f] = (features && features.isOnFire) ? 1 : 0; continue; }
+    const v = features ? features[f] : undefined;
+    if (!Number.isFinite(v)) return null;
+    raw[f] = v;
+  }
   let z = c.intercept;
   for (const f of model.features) {
     const std = (raw[f] - means[f]) / (stds[f] || 1);
@@ -1858,7 +1867,7 @@ function computeLiveHRScore(row, statcastHotHitters, weatherHRMult = 1) {
   const onFireScore = liveOnFireScore(row, statcastHotHitters);
   const hotMult = 1 + (onFireScore / 100) * 0.5;
   const hrPerPA = ((batterRate * 0.6) + (pitcherRate * 0.4)) * parkAdj * shrinkMult(hotMult) * weatherHRMult;
-  const logisticFeatures = { batterISO: row.iso, pitcherHr9: row.pitcherHr9, pitcherWhip: row.pitcherWhip, parkFactor: row.parkFactor, windFactor: row.windFactor, temperatureFactor: row.temperatureFactor, isOnFire: onFireScore >= 70 };
+  const logisticFeatures = { batterISO: row.iso, pitcherHr9: row.pitcherHr9, pitcherWhip: row.pitcherWhip, parkFactor: row.parkFactor, windFactor: row.windFactor, temperatureFactor: row.temperatureFactor, isOnFire: onFireScore >= 70, matchupEdge: row.matchupEdge };
   return simulateHRGameOdds(hrPerPA, row.battingOrder, logisticFeatures);
 }
 
@@ -1900,7 +1909,7 @@ function scoreForMarket(marketKey, row) {
     // there, same "compute once outside scoreForMarket, apply with shrinkMult here" shape
     // as fatigueFactor/homeRoadFactor/windFactor/temperatureFactor above.
     const hrPerPA = (batterRate * 0.6 + pitcherRate * 0.4) * shrinkMult(row.windFactor || 1) * shrinkMult(row.temperatureFactor || 1) * shrinkMult(row.zoneMatchupMult || 1);
-    const logisticFeatures = { batterISO: row.iso, pitcherHr9: row.pitcherHr9, pitcherWhip: row.pitcherWhip, parkFactor: row.parkFactor, windFactor: row.windFactor, temperatureFactor: row.temperatureFactor, isOnFire: row.isHot };
+    const logisticFeatures = { batterISO: row.iso, pitcherHr9: row.pitcherHr9, pitcherWhip: row.pitcherWhip, parkFactor: row.parkFactor, windFactor: row.windFactor, temperatureFactor: row.temperatureFactor, isOnFire: row.isHot, matchupEdge: row.matchupEdge };
     return simulateHRGameOdds(hrPerPA, row.battingOrder, logisticFeatures);
   }
   if (marketKey === 'sb') return simulateSBOdds(row);
@@ -2448,7 +2457,7 @@ async function buildBatterPool(games, season) {
           id: pid, name: person.fullName, ops, iso, atBats: ab, hrSeason,
           pitcherHr9: n(pitcherStat.homeRunsPer9), pitcherWhip, parkFactor: rowParkFactor, battingOrder,
           windFactor: windPowerFactor(g.weather), temperatureFactor: temperaturePowerFactor(g.weather),
-          last10HR: recent?.hr || 0, isFavorable, statcast: statcastIndex.get(String(pid)) || null,
+          last10HR: recent?.hr || 0, isFavorable, statcast: statcastIndex.get(String(pid)) || null, matchupEdge,
         }, statcastHotHittersIndex, weatherHRMult);
         return {
           id: pid, name: person.fullName, teamAbbr, oppAbbr, gamePk: g.gamePk,

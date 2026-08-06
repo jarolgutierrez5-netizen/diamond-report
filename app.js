@@ -1738,10 +1738,18 @@ let hrLogisticModel = null;
 function predictHRLogistic(features) {
   const model = hrLogisticModel;
   if (!model || !model.coefficients) return null;
-  const { batterISO, pitcherHr9, pitcherWhip, parkFactor, windFactor, temperatureFactor, isOnFire } = features || {};
-  if (![batterISO, pitcherHr9, pitcherWhip, parkFactor, windFactor, temperatureFactor].every(Number.isFinite)) return null;
-  const raw = { batterISO, pitcherHr9, pitcherWhip, parkFactor, windFactor, temperatureFactor, isOnFire: isOnFire ? 1 : 0 };
+  // Reads model.features itself rather than a hardcoded field list, so a future refit
+  // that adds/removes a predictor (e.g. matchupEdge, zoneFitScore) works everywhere
+  // this is called without another code change -- only the caller supplying the raw
+  // feature values needs to know what's actually in this particular model.
   const c = model.coefficients, means = model.featureMeans, stds = model.featureStds;
+  const raw = {};
+  for (const f of model.features) {
+    if (f === 'isOnFire') { raw[f] = (features && features.isOnFire) ? 1 : 0; continue; }
+    const v = features ? features[f] : undefined;
+    if (!Number.isFinite(v)) return null;
+    raw[f] = v;
+  }
   let z = c.intercept;
   for (const f of model.features) {
     const std = (raw[f] - means[f]) / (stds[f] || 1);
@@ -8584,23 +8592,35 @@ function confidenceBadgeHTML(tier) {
 // separate function (not folded into computeHRScoreDecomposition) since the two
 // scoring paths share no formula to counterfactually re-run in common -- this one
 // calls predictHRLogistic, not window.simulateHRGameOdds.
+// Feature -> display-group mapping. Each group only appears in the decomposition
+// below when every one of its features is actually present in the live model's
+// own model.features list -- lets a refit that adds a predictor (e.g. matchupEdge)
+// or one that's missing a predictor (e.g. an older cached model.json) both render
+// correctly without this needing to change in lockstep with every refit.
+const HR_LOGISTIC_FACTOR_GROUPS = [
+  { key: 'batterPower', label: 'Batter power', features: ['batterISO'] },
+  { key: 'pitcherSusceptibility', label: 'Pitcher HR susceptibility', features: ['pitcherHr9', 'pitcherWhip'] },
+  { key: 'pitchTypeMatchup', label: 'Pitch-type matchup', features: ['matchupEdge'] },
+  { key: 'recentForm', label: 'Recent form', features: ['isOnFire'] },
+  { key: 'parkWeather', label: 'Park and weather', features: ['parkFactor', 'windFactor', 'temperatureFactor'] },
+];
 function computeHRScoreDecompositionLogistic(row) {
   if (!row || !row.hrLogisticFeatures || !hrLogisticModel || !hrLogisticModel.coefficients) return null;
   const real = row.hrLogisticFeatures;
   const means = hrLogisticModel.featureMeans;
+  const modelFeatures = new Set(hrLogisticModel.features);
   function probWith(overrides) { return predictHRLogistic(Object.assign({}, real, overrides)); }
   const base = probWith({});
   if (base == null) return null;
-  const factors = [
-    { key: 'batterPower', label: 'Batter power', delta: base - probWith({ batterISO: means.batterISO }) },
-    { key: 'pitcherSusceptibility', label: 'Pitcher HR susceptibility', delta: base - probWith({ pitcherHr9: means.pitcherHr9, pitcherWhip: means.pitcherWhip }) },
-    { key: 'recentForm', label: 'Recent form', delta: base - probWith({ isOnFire: false }) },
-    { key: 'parkWeather', label: 'Park and weather', delta: base - probWith({ parkFactor: means.parkFactor, windFactor: means.windFactor, temperatureFactor: means.temperatureFactor }) },
-  ];
-  const neutralBaseline = probWith({
-    batterISO: means.batterISO, pitcherHr9: means.pitcherHr9, pitcherWhip: means.pitcherWhip,
-    isOnFire: false, parkFactor: means.parkFactor, windFactor: means.windFactor, temperatureFactor: means.temperatureFactor,
-  });
+  const neutralOverrides = {};
+  const factors = [];
+  for (const group of HR_LOGISTIC_FACTOR_GROUPS) {
+    if (!group.features.every(f => modelFeatures.has(f))) continue;
+    const overrides = {};
+    for (const f of group.features) { overrides[f] = f === 'isOnFire' ? false : means[f]; neutralOverrides[f] = overrides[f]; }
+    factors.push({ key: group.key, label: group.label, delta: base - probWith(overrides) });
+  }
+  const neutralBaseline = probWith(neutralOverrides);
   return { base, neutralBaseline, factors, source: 'logistic' };
 }
 function computeHRScoreDecomposition(row) {
@@ -10652,10 +10672,18 @@ async function loadHRPotential() {
           // count. simulateHRGameOdds is now an exact closed-form calculation (no
           // Math.random()), so it's already the same for every visitor and every
           // refresh — nothing to cache.
+          // Matchup Edge -- same 0-99 score as the Pitcher Matchup modal's "MATCHUP EDGE"
+          // figure (see computeMatchupEdgeScore's own header comment). Moved up from its
+          // original spot below (now just a reference to this same value) so it's ready
+          // in time to feed hrLogisticFeatures -- computeMatchupEdgeScore is real work
+          // (iterates the pitcher's whole arsenal), so this is one call, not two. null
+          // (shown as "–" / omitted from hrLogisticFeatures) until the Statcast pitch-mix
+          // sync has data for this specific pitcher/batter pair.
+          const matchupEdge = computeMatchupEdgeScore(pid, b.player.person?.fullName || '', pitcher.id, pitcherHandForEdge, parseDecVal(s.avg), parseDecVal(s.slg), batterSplitsForEdge);
           // logisticFeatures: windFactor/temperatureFactor use the neutral value (see
           // predictHRLogistic's own comment) since this client's weather signal has no
           // equivalent to the server's parsed MLB weather string.
-          const hrLogisticFeatures = { batterISO: earlyIso, pitcherHr9, pitcherWhip, parkFactor: gameParkFactor, windFactor: 1, temperatureFactor: 1, isOnFire: hotProfile.onFireScore >= 70 };
+          const hrLogisticFeatures = { batterISO: earlyIso, pitcherHr9, pitcherWhip, parkFactor: gameParkFactor, windFactor: 1, temperatureFactor: 1, isOnFire: hotProfile.onFireScore >= 70, matchupEdge };
           const baseHrProb = window.simulateHRGameOdds ? window.simulateHRGameOdds(hrPerPA, battingOrder, hrLogisticFeatures) : Math.min(hrPerPA*100,25);
           const hrScoreSource = window.__hrLastScoreSource || 'legacy';
           let hrProb=baseHrProb;
@@ -10676,12 +10704,6 @@ async function loadHRPotential() {
           const shrunkObp = (rawObp*hrpSampleWeight) + (LEAGUE_AVG_OBP*(1-hrpSampleWeight));
           const shrunkSlg = (rawSlg*hrpSampleWeight) + (LEAGUE_AVG_SLG*(1-hrpSampleWeight));
           const isFavorable=shrunkOps>=.800&&(pitcherWhip>=1.25||pitcherAvg>=.260);
-          // Matchup Edge — same 0-99 score as the Pitcher Matchup modal's "MATCHUP EDGE"
-          // figure (see computeMatchupEdgeScore's header comment), computed here so it's
-          // available as a board stat/sort key, not just something visible one matchup at
-          // a time. null (shown as "–") until the Statcast pitch-mix sync has data for
-          // this specific pitcher/batter pair.
-          const matchupEdge = computeMatchupEdgeScore(pid, b.player.person?.fullName || '', pitcher.id, pitcherHandForEdge, parseDecVal(s.avg), parseDecVal(s.slg), batterSplitsForEdge);
           // Recency blend — last 10 games, from the same lastXGames log already fetched
           // above for last10HR/streakDays (zero extra API calls). Same idea as the
           // pitcher ERA/WHIP/K9 recent-form blend: a real hot or cold two-week stretch
