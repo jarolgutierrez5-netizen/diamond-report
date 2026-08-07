@@ -6903,13 +6903,57 @@ select:focus-visible {
   overflow: hidden;
   background: var(--surface);
 }
+.hrpt-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(7, 15, 30, .5);
+  font-family: var(--font-body);
+}
+.hrpt-legend-label { font-size: 9.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted2, var(--muted)); }
+.hrpt-legend-item { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
 .hrpt-scroll { overflow-x: auto; }
 table.hrpt-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   min-width: 940px;
+}
+/* Percentage-based fixed layout instead of content-auto sizing -- at full
+   width, auto-sizing left Grade/Signals/Lineup with far more room than
+   their content needs while Player felt cramped. This also reflows
+   proportionally at any container width above the mobile collapse
+   breakpoint, instead of only being tuned for one screenshot's width. */
+.hrpt-table thead th:nth-child(1) { width: 22%; }
+.hrpt-table thead th:nth-child(2) { width: 8%; }
+.hrpt-table thead th:nth-child(3) { width: 6%; }
+.hrpt-table thead th:nth-child(4) { width: 7%; }
+.hrpt-table thead th:nth-child(5) { width: 7%; }
+.hrpt-table thead th:nth-child(6) { width: 8%; }
+.hrpt-table thead th:nth-child(7) { width: 6%; }
+.hrpt-table thead th:nth-child(8) { width: 7%; }
+.hrpt-table thead th:nth-child(9) { width: 7%; }
+.hrpt-table thead th:nth-child(10) { width: 9%; }
+.hrpt-table thead th:nth-child(11) { width: 13%; }
+/* hrChip()'s shared .dr1027-chip is sized for the card view's roomier
+   layout -- wraps onto multiple lines in this table's much narrower fixed
+   columns (Lineup Status pill especially). Scoped, !important override so
+   it stays legible here without touching the shared component other
+   boards still use at its normal size. */
+.hrpt-table .dr1027-chip {
+  font-size: 9.5px !important;
+  padding: 3px 7px !important;
+  white-space: nowrap !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: inline-block !important;
 }
 .hrpt-table thead th {
   position: sticky;
@@ -6954,8 +6998,8 @@ table.hrpt-table {
 .hrpt-mix-pill { font-family: var(--font-body); font-size: 9.5px; font-weight: 700; padding: 3px 7px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
 .hrpt-mix-pill.fav { border-color: rgba(46, 230, 166, .5); color: var(--green); }
 
-.hrpt-signals { font-size: 13px; }
-.hrpt-signals span { cursor: help; margin: 0 1px; }
+.hrpt-signals { font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.hrpt-signals span { cursor: help; line-height: 1; }
 .hrpt-dash { color: var(--muted2, var(--muted)); }
 
 /* #hr-potential-content already carries a legacy blanket rule (an older,
@@ -6970,30 +7014,75 @@ table.hrpt-table {
 .hrpt-detail-row td { padding: 0; border-bottom: 1px solid var(--border); }
 .hrpt-detail-inner {
   font-family: var(--font-body);
-  padding: 14px 16px 16px 46px;
+  padding: 16px;
   background: rgba(6, 6, 15, .5);
   display: grid;
-  grid-template-columns: 1fr 220px;
-  gap: 18px;
+  grid-template-columns: minmax(0, 640px) 220px;
+  gap: 16px;
+  align-items: start;
+}
+.hrpt-box-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--accent2);
+  margin-bottom: 10px;
+}
+.hrpt-why-box {
+  background: rgba(13, 19, 34, .8);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
 }
 .hrpt-why { font-size: 12px; color: var(--muted); line-height: 1.6; }
-.hrpt-detail-side { display: flex; flex-direction: column; gap: 8px; }
-.hrpt-detail-stat { display: flex; justify-content: space-between; font-size: 11.5px; font-family: var(--font-mono); }
+/* The shared .vuln-item is display:flex, which blockifies every one of its
+   inline children -- the icon span, each text run, and the <strong> value --
+   into separate flex items laid out in a row. In the card view's much wider
+   .dr1027-why that's invisible (everything still fits on one row-ish flow),
+   but in this box's narrower width it fragments one sentence into several
+   independently-wrapping mini-columns. Switching to block + an
+   absolutely-positioned icon (instead of flex's gap/align-items) keeps the
+   same visual "icon in a left gutter, text flows normally" look without
+   blockifying the sentence's own inline content. Scoped to this box only --
+   the shared .vuln-item elsewhere (cards, the full matchup modal) keeps its
+   original flex layout, unaffected. */
+#hr-potential-content .hrpt-why-box .vuln-item {
+  display: block !important;
+  position: relative !important;
+  padding-left: 22px !important;
+}
+#hr-potential-content .hrpt-why-box .vuln-icon {
+  position: absolute !important;
+  left: 0 !important;
+  top: 1px !important;
+}
+.hrpt-detail-side {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  background: rgba(13, 19, 34, .8);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.hrpt-detail-stat { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; font-family: var(--font-mono); color: var(--text); }
 .hrpt-detail-stat span { font-family: var(--font-body); color: var(--muted); font-size: 11px; }
 .hrpt-open-full {
   font-family: var(--font-body);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--accent2);
-  background: none;
-  border: 1px solid var(--border2, var(--border));
+  color: #fff;
+  background: var(--accent);
+  border: 1px solid var(--accent);
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 8px 12px;
   cursor: pointer;
-  align-self: flex-start;
-  margin-top: 2px;
+  align-self: stretch;
+  text-align: center;
+  margin-top: 4px;
 }
-.hrpt-open-full:hover { border-color: var(--accent2); }
+.hrpt-open-full:hover { background: var(--accent2); border-color: var(--accent2); }
 .hrpt-compare { display: flex; align-items: center; gap: 6px; font-family: var(--font-body); font-size: 10.5px; color: var(--muted); cursor: pointer; }
 
 /* 768px, not the 700px breakpoint used elsewhere in the file -- matches the
