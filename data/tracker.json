@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-06T03:39:11.582Z",
+  "generatedAt": "2026-08-07T00:55:09.097Z",
   "market": {
     "drp": [
       {
@@ -4546,8 +4546,8 @@
         "homeTeam": "HOU",
         "pick": "HOU",
         "pickPct": 57,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "loss",
+        "actualWinner": "TOR",
         "eraDiff": 2.77,
         "whipDiff": 0.151,
         "k9Diff": 0.18,
@@ -4560,7 +4560,9 @@
           "homeML": -208,
           "awayPct": 33,
           "homePct": 67
-        }
+        },
+        "scoreMargin": 1,
+        "nearMiss": true
       },
       {
         "key": "2026-08-05|DRP|CHC-LAD",
@@ -4570,8 +4572,8 @@
         "homeTeam": "CHC",
         "pick": "CHC",
         "pickPct": 54,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "CHC",
         "eraDiff": 1.03,
         "whipDiff": 0.008,
         "k9Diff": -3.03,
@@ -4584,7 +4586,9 @@
           "homeML": -118,
           "awayPct": 47,
           "homePct": 53
-        }
+        },
+        "scoreMargin": 1,
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|DRP|SF-TEX",
@@ -4594,8 +4598,8 @@
         "homeTeam": "TEX",
         "pick": "TEX",
         "pickPct": 59,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "TEX",
         "eraDiff": 2.13,
         "whipDiff": 0.438,
         "k9Diff": -0.42,
@@ -4608,7 +4612,9 @@
           "homeML": -147,
           "awayPct": 41,
           "homePct": 59
-        }
+        },
+        "scoreMargin": 6,
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|DRP|COL-TB",
@@ -4618,8 +4624,8 @@
         "homeTeam": "COL",
         "pick": "TB",
         "pickPct": 55,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "TB",
         "eraDiff": -1.42,
         "whipDiff": -0.134,
         "k9Diff": -0.89,
@@ -4632,7 +4638,9 @@
           "homeML": 148,
           "awayPct": 60,
           "homePct": 40
-        }
+        },
+        "scoreMargin": 4,
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|DRP|BAL-LAA",
@@ -4642,8 +4650,8 @@
         "homeTeam": "BAL",
         "pick": "BAL",
         "pickPct": 53,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "BAL",
         "eraDiff": 1.01,
         "whipDiff": -0.07,
         "k9Diff": 3.3,
@@ -4656,7 +4664,9 @@
           "homeML": -118,
           "awayPct": 47,
           "homePct": 53
-        }
+        },
+        "scoreMargin": 3,
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|DRP|CLE-NYM",
@@ -4666,8 +4676,8 @@
         "homeTeam": "CLE",
         "pick": "NYM",
         "pickPct": 51,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "NYM",
         "eraDiff": -1.2,
         "whipDiff": -0.049,
         "k9Diff": 5.54,
@@ -4680,7 +4690,9 @@
           "homeML": -110,
           "awayPct": 48,
           "homePct": 52
-        }
+        },
+        "scoreMargin": 1,
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|DRP|ATH-CIN",
@@ -4690,8 +4702,8 @@
         "homeTeam": "CIN",
         "pick": "CIN",
         "pickPct": 50,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "CIN",
         "eraDiff": -1.59,
         "whipDiff": 0.002,
         "k9Diff": 1.86,
@@ -4704,7 +4716,9 @@
           "homeML": -146,
           "awayPct": 42,
           "homePct": 58
-        }
+        },
+        "scoreMargin": 1,
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|DRP|PHI-WSH",
@@ -4714,8 +4728,8 @@
         "homeTeam": "PHI",
         "pick": "WSH",
         "pickPct": 52,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "WSH",
         "eraDiff": -2.24,
         "whipDiff": -0.439,
         "k9Diff": 0.96,
@@ -4728,7 +4742,9 @@
           "homeML": -186,
           "awayPct": 36,
           "homePct": 64
-        }
+        },
+        "scoreMargin": 6,
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|DRP|NYY-STL",
@@ -4738,8 +4754,8 @@
         "homeTeam": "NYY",
         "pick": "NYY",
         "pickPct": 51,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "loss",
+        "actualWinner": "STL",
         "eraDiff": -1.57,
         "whipDiff": -0.228,
         "k9Diff": -2.71,
@@ -4752,7 +4768,9 @@
           "homeML": -153,
           "awayPct": 40,
           "homePct": 60
-        }
+        },
+        "scoreMargin": 2,
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|DRP|BOS-CWS",
@@ -4762,8 +4780,8 @@
         "homeTeam": "BOS",
         "pick": "CWS",
         "pickPct": 53,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "loss",
+        "actualWinner": "BOS",
         "eraDiff": -1.17,
         "whipDiff": -0.317,
         "k9Diff": 4.23,
@@ -4776,7 +4794,9 @@
           "homeML": -128,
           "awayPct": 45,
           "homePct": 55
-        }
+        },
+        "scoreMargin": 4,
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|DRP|ATL-MIA",
@@ -4786,8 +4806,8 @@
         "homeTeam": "ATL",
         "pick": "ATL",
         "pickPct": 50,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "ATL",
         "eraDiff": -1.52,
         "whipDiff": -0.333,
         "k9Diff": 1.41,
@@ -4800,7 +4820,9 @@
           "homeML": -117,
           "awayPct": 47,
           "homePct": 53
-        }
+        },
+        "scoreMargin": 3,
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|DRP|KC-MIN",
@@ -4810,8 +4832,8 @@
         "homeTeam": "KC",
         "pick": "KC",
         "pickPct": 54,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "KC",
         "eraDiff": 2.91,
         "whipDiff": 0.212,
         "k9Diff": 0.05,
@@ -4824,7 +4846,9 @@
           "homeML": -116,
           "awayPct": 47,
           "homePct": 53
-        }
+        },
+        "scoreMargin": 1,
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|DRP|MIL-PIT",
@@ -4834,8 +4858,8 @@
         "homeTeam": "MIL",
         "pick": "MIL",
         "pickPct": 56,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "MIL",
         "eraDiff": 1.05,
         "whipDiff": 0.331,
         "k9Diff": 1.82,
@@ -4848,7 +4872,9 @@
           "homeML": -127,
           "awayPct": 45,
           "homePct": 55
-        }
+        },
+        "scoreMargin": 2,
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|DRP|AZ-SD",
@@ -4858,15 +4884,17 @@
         "homeTeam": "AZ",
         "pick": "SD",
         "pickPct": 56,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "loss",
+        "actualWinner": "AZ",
         "eraDiff": -2.82,
         "whipDiff": -0.94,
         "k9Diff": 3.44,
         "awayRecordPct": 0.518,
         "homeRecordPct": 0.526,
         "isDayGame": false,
-        "marketOdds": null
+        "marketOdds": null,
+        "scoreMargin": 6,
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|DRP|DET-SEA",
@@ -4876,8 +4904,8 @@
         "homeTeam": "SEA",
         "pick": "DET",
         "pickPct": 51,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "loss",
+        "actualWinner": "SEA",
         "eraDiff": -0.77,
         "whipDiff": -0.106,
         "k9Diff": 1.15,
@@ -4890,7 +4918,27 @@
           "homeML": -152,
           "awayPct": 41,
           "homePct": 59
-        }
+        },
+        "scoreMargin": 2,
+        "nearMiss": false
+      },
+      {
+        "key": "2026-08-06|DRP|AZ-SD",
+        "date": "2026-08-06",
+        "gamePk": 825053,
+        "awayTeam": "SD",
+        "homeTeam": "AZ",
+        "pick": "AZ",
+        "pickPct": 55,
+        "result": "pending",
+        "actualWinner": null,
+        "eraDiff": 1.41,
+        "whipDiff": 0.124,
+        "k9Diff": -1.08,
+        "awayRecordPct": 0.513,
+        "homeRecordPct": 0.53,
+        "isDayGame": false,
+        "marketOdds": null
       }
     ],
     "kprop": [
@@ -21668,13 +21716,13 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 4,
+        "finalIP": 4,
+        "finalPitches": 80,
+        "finalBB": 2,
+        "finalHits": 6,
+        "finalBF": 20,
         "k9": 8.7,
         "projIP": 5.07,
         "oppKpct": 0.21,
@@ -21733,7 +21781,8 @@
             "battingOrder": 9,
             "kPct": 0.204
           }
-        ]
+        ],
+        "nearMiss": true
       },
       {
         "key": "2026-08-05|KPROP|hunter brown",
@@ -21748,13 +21797,13 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 8,
+        "finalIP": 6,
+        "finalPitches": 93,
+        "finalBB": 2,
+        "finalHits": 3,
+        "finalBF": 23,
         "k9": 8.52,
         "projIP": 5.22,
         "oppKpct": 0.19,
@@ -21813,7 +21862,8 @@
             "battingOrder": 9,
             "kPct": 0.124
           }
-        ]
+        ],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|eric lauer",
@@ -21828,17 +21878,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 1,
+        "finalIP": 4,
+        "finalPitches": 95,
+        "finalBB": 0,
+        "finalHits": 11,
+        "finalBF": 23,
         "k9": 5.34,
         "projIP": 6.29,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|shota imanaga",
@@ -21853,13 +21904,13 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 6,
+        "finalIP": 5,
+        "finalPitches": 89,
+        "finalBB": 0,
+        "finalHits": 8,
+        "finalBF": 23,
         "k9": 8.37,
         "projIP": 5.78,
         "oppKpct": 0.191,
@@ -21918,7 +21969,8 @@
             "battingOrder": 9,
             "kPct": 0.275
           }
-        ]
+        ],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|carson whisenhunt",
@@ -21933,13 +21985,13 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 4,
+        "finalIP": 3.3333333333333335,
+        "finalPitches": 70,
+        "finalBB": 3,
+        "finalHits": 5,
+        "finalBF": 18,
         "k9": 7.58,
         "projIP": 4.75,
         "oppKpct": 0.228,
@@ -21998,7 +22050,8 @@
             "battingOrder": 9,
             "kPct": 0.227
           }
-        ]
+        ],
+        "nearMiss": true
       },
       {
         "key": "2026-08-05|KPROP|cody bradford",
@@ -22013,13 +22066,13 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 5,
+        "finalIP": 4.333333333333333,
+        "finalPitches": 70,
+        "finalBB": 2,
+        "finalHits": 5,
+        "finalBF": 20,
         "k9": 8,
         "projIP": 5.4,
         "oppKpct": 0.263,
@@ -22078,7 +22131,8 @@
             "battingOrder": 9,
             "kPct": 0.219
           }
-        ]
+        ],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|nick martinez",
@@ -22093,17 +22147,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 4,
+        "finalIP": 5.666666666666667,
+        "finalPitches": 75,
+        "finalBB": 0,
+        "finalHits": 6,
+        "finalBF": 22,
         "k9": 4.28,
         "projIP": 5.86,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|tomoyuki sugano",
@@ -22118,17 +22173,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 3,
+        "finalIP": 5,
+        "finalPitches": 85,
+        "finalBB": 2,
+        "finalHits": 5,
+        "finalBF": 22,
         "k9": 5.17,
         "projIP": 5.38,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|reid detmers",
@@ -22143,17 +22199,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 5,
+        "finalIP": 4,
+        "finalPitches": 81,
+        "finalBB": 1,
+        "finalHits": 4,
+        "finalBF": 17,
         "k9": 11.14,
         "projIP": 5.68,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|trevor rogers",
@@ -22168,17 +22225,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 9,
+        "finalIP": 6,
+        "finalPitches": 93,
+        "finalBB": 0,
+        "finalHits": 3,
+        "finalBF": 21,
         "k9": 7.84,
         "projIP": 5.46,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|christian scott",
@@ -22193,17 +22251,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 7,
+        "finalIP": 5,
+        "finalPitches": 96,
+        "finalBB": 2,
+        "finalHits": 6,
+        "finalBF": 24,
         "k9": 11.49,
         "projIP": 4.61,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|tanner bibee",
@@ -22218,17 +22277,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 10,
+        "finalIP": 5.666666666666667,
+        "finalPitches": 98,
+        "finalBB": 0,
+        "finalHits": 4,
+        "finalBF": 22,
         "k9": 5.95,
         "projIP": 5.74,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|jacob lopez",
@@ -22243,17 +22303,18 @@
         "lineSource": "sportsbook",
         "book": "draftkings",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 9,
+        "finalIP": 5,
+        "finalPitches": 87,
+        "finalBB": 1,
+        "finalHits": 4,
+        "finalBF": 19,
         "k9": 9.34,
         "projIP": 5,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|rhett lowder",
@@ -22268,17 +22329,18 @@
         "lineSource": "sportsbook",
         "book": "draftkings",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 3,
+        "finalIP": 6,
+        "finalPitches": 95,
+        "finalBB": 2,
+        "finalHits": 4,
+        "finalBF": 24,
         "k9": 7.48,
         "projIP": 5.19,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|jake irvin",
@@ -22293,17 +22355,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 3,
+        "finalIP": 5.333333333333333,
+        "finalPitches": 83,
+        "finalBB": 2,
+        "finalHits": 3,
+        "finalBF": 20,
         "k9": 8.78,
         "projIP": 4.68,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": true
       },
       {
         "key": "2026-08-05|KPROP|andrew painter",
@@ -22318,17 +22381,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 4,
+        "finalIP": 4,
+        "finalPitches": 63,
+        "finalBB": 1,
+        "finalHits": 3,
+        "finalBF": 17,
         "k9": 7.81,
         "projIP": 5.46,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|andre pallante",
@@ -22343,17 +22407,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 4,
+        "finalIP": 5.333333333333333,
+        "finalPitches": 103,
+        "finalBB": 3,
+        "finalHits": 3,
+        "finalBF": 21,
         "k9": 6.04,
         "projIP": 5.63,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": true
       },
       {
         "key": "2026-08-05|KPROP|will warren",
@@ -22368,17 +22433,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 5,
+        "finalIP": 5.333333333333333,
+        "finalPitches": 91,
+        "finalBB": 1,
+        "finalHits": 7,
+        "finalBF": 23,
         "k9": 8.76,
         "projIP": 5.15,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|sean burke",
@@ -22393,17 +22459,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 4,
+        "finalIP": 4.333333333333333,
+        "finalPitches": 91,
+        "finalBB": 2,
+        "finalHits": 5,
+        "finalBF": 20,
         "k9": 11.56,
         "projIP": 6.89,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|sonny gray",
@@ -22418,17 +22485,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 8,
+        "finalIP": 6,
+        "finalPitches": 83,
+        "finalBB": 2,
+        "finalHits": 3,
+        "finalBF": 23,
         "k9": 7.33,
         "projIP": 5.66,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|eury pérez",
@@ -22443,17 +22511,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 9,
+        "finalIP": 5,
+        "finalPitches": 91,
+        "finalBB": 2,
+        "finalHits": 7,
+        "finalBF": 24,
         "k9": 9.17,
         "projIP": 5.48,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|bryce elder",
@@ -22468,17 +22537,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 3,
+        "finalIP": 7,
+        "finalPitches": 84,
+        "finalBB": 2,
+        "finalHits": 1,
+        "finalBF": 25,
         "k9": 7.76,
         "projIP": 5.68,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|dean kremer",
@@ -22493,17 +22563,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 2,
+        "finalIP": 5,
+        "finalPitches": 88,
+        "finalBB": 2,
+        "finalHits": 3,
+        "finalBF": 19,
         "k9": 8.71,
         "projIP": 5.14,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|noah cameron",
@@ -22518,17 +22589,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 9,
+        "finalIP": 8,
+        "finalPitches": 106,
+        "finalBB": 1,
+        "finalHits": 3,
+        "finalBF": 28,
         "k9": 8.66,
         "projIP": 5.76,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|paul skenes",
@@ -22543,17 +22615,18 @@
         "lineSource": "sportsbook",
         "book": "draftkings",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 6,
+        "finalIP": 5,
+        "finalPitches": 93,
+        "finalBB": 4,
+        "finalHits": 2,
+        "finalBF": 20,
         "k9": 11.75,
         "projIP": 5.4,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": true
       },
       {
         "key": "2026-08-05|KPROP|kyle harrison",
@@ -22568,17 +22641,18 @@
         "lineSource": "sportsbook",
         "book": "draftkings",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 10,
+        "finalIP": 5,
+        "finalPitches": 69,
+        "finalBB": 1,
+        "finalHits": 1,
+        "finalBF": 16,
         "k9": 9.93,
         "projIP": 4.89,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|casey mize",
@@ -22593,17 +22667,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 1,
+        "finalIP": 3.3333333333333335,
+        "finalPitches": 77,
+        "finalBB": 3,
+        "finalHits": 9,
+        "finalBF": 22,
         "k9": 8.72,
         "projIP": 5.39,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|mitch bratt",
@@ -22618,17 +22693,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 9,
+        "finalIP": 7,
+        "finalPitches": 92,
+        "finalBB": 3,
+        "finalHits": 1,
+        "finalBF": 24,
         "k9": 5.29,
         "projIP": 4.04,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|drew anderson",
@@ -22643,17 +22719,18 @@
         "lineSource": "sportsbook",
         "book": "draftkings",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 0,
+        "finalIP": 3.6666666666666665,
+        "finalPitches": 42,
+        "finalBB": 1,
+        "finalHits": 3,
+        "finalBF": 13,
         "k9": 10.69,
         "projIP": 7,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|KPROP|bryan woo",
@@ -22668,6 +22745,32 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
+        "result": "loss",
+        "finalK": 5,
+        "finalIP": 7,
+        "finalPitches": 91,
+        "finalBB": 1,
+        "finalHits": 3,
+        "finalBF": 26,
+        "k9": 9.54,
+        "projIP": 5.72,
+        "oppKpct": 0.22,
+        "lineup": [],
+        "nearMiss": false
+      },
+      {
+        "key": "2026-08-06|KPROP|walker buehler",
+        "date": "2026-08-06",
+        "gamePk": 825053,
+        "pitcherId": 621111,
+        "pitcherName": "Walker Buehler",
+        "team": "SD",
+        "opp": "AZ",
+        "projK": 3.6,
+        "line": 3.5,
+        "lineSource": "sportsbook",
+        "book": "fanduel",
+        "pick": "OVER",
         "result": "pending",
         "finalK": null,
         "finalIP": null,
@@ -22675,10 +22778,145 @@
         "finalBB": null,
         "finalHits": null,
         "finalBF": null,
-        "k9": 9.54,
-        "projIP": 5.72,
-        "oppKpct": 0.22,
-        "lineup": []
+        "k9": 7.23,
+        "projIP": 4.73,
+        "oppKpct": 0.199,
+        "lineup": [
+          {
+            "id": 672695,
+            "name": "Geraldo Perdomo",
+            "battingOrder": 1,
+            "kPct": 0.121
+          },
+          {
+            "id": 682998,
+            "name": "Corbin Carroll",
+            "battingOrder": 2,
+            "kPct": 0.226
+          },
+          {
+            "id": 672515,
+            "name": "Gabriel Moreno",
+            "battingOrder": 3,
+            "kPct": 0.152
+          },
+          {
+            "id": 606466,
+            "name": "Ketel Marte",
+            "battingOrder": 4,
+            "kPct": 0.151
+          },
+          {
+            "id": 663457,
+            "name": "Lars Nootbaar",
+            "battingOrder": 5,
+            "kPct": 0.208
+          },
+          {
+            "id": 571448,
+            "name": "Nolan Arenado",
+            "battingOrder": 6,
+            "kPct": 0.208
+          },
+          {
+            "id": 596146,
+            "name": "Max Kepler",
+            "battingOrder": 7,
+            "kPct": 0.204
+          },
+          {
+            "id": 694374,
+            "name": "Tim Tawa",
+            "battingOrder": 8,
+            "kPct": 0.205
+          },
+          {
+            "id": 814439,
+            "name": "Ryan Waldschmidt",
+            "battingOrder": 9,
+            "kPct": 0.32
+          }
+        ]
+      },
+      {
+        "key": "2026-08-06|KPROP|kohl drake",
+        "date": "2026-08-06",
+        "gamePk": 825053,
+        "pitcherId": 684442,
+        "pitcherName": "Kohl Drake",
+        "team": "AZ",
+        "opp": "SD",
+        "projK": 3.8,
+        "line": 3.5,
+        "lineSource": "sportsbook",
+        "book": "fanduel",
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 8.31,
+        "projIP": 4.33,
+        "oppKpct": 0.201,
+        "lineup": [
+          {
+            "id": 665487,
+            "name": "Fernando Tatis Jr.",
+            "battingOrder": 1,
+            "kPct": 0.196
+          },
+          {
+            "id": 650859,
+            "name": "Luis Rengifo",
+            "battingOrder": 2,
+            "kPct": 0.129
+          },
+          {
+            "id": 592518,
+            "name": "Manny Machado",
+            "battingOrder": 3,
+            "kPct": 0.225
+          },
+          {
+            "id": 664034,
+            "name": "Ty France",
+            "battingOrder": 4,
+            "kPct": 0.228
+          },
+          {
+            "id": 701538,
+            "name": "Jackson Merrill",
+            "battingOrder": 5,
+            "kPct": 0.24
+          },
+          {
+            "id": 593428,
+            "name": "Xander Bogaerts",
+            "battingOrder": 6,
+            "kPct": 0.184
+          },
+          {
+            "id": 657757,
+            "name": "Gavin Sheets",
+            "battingOrder": 7,
+            "kPct": 0.208
+          },
+          {
+            "id": 666023,
+            "name": "Freddy Fermin",
+            "battingOrder": 8,
+            "kPct": 0.187
+          },
+          {
+            "id": 630105,
+            "name": "Jake Cronenworth",
+            "battingOrder": 9,
+            "kPct": 0.215
+          }
+        ]
       }
     ],
     "premium": [
@@ -72064,8 +72302,8 @@
         "opp": "HOU",
         "gamePk": 824158,
         "score": 18,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 21,
         "isOnFire": true,
         "isFavorable": false,
@@ -72089,7 +72327,8 @@
         "platoonFavorable": false,
         "matchupEdge": 67,
         "zoneFitScore": 65,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|665161",
@@ -72100,8 +72339,8 @@
         "opp": "TOR",
         "gamePk": 824158,
         "score": 30,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 29,
         "isOnFire": true,
         "isFavorable": true,
@@ -72125,7 +72364,8 @@
         "platoonFavorable": true,
         "matchupEdge": 62,
         "zoneFitScore": 82,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|670541",
@@ -72136,8 +72376,8 @@
         "opp": "TOR",
         "gamePk": 824158,
         "score": 41,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 43,
         "isOnFire": true,
         "isFavorable": true,
@@ -72161,7 +72401,8 @@
         "platoonFavorable": true,
         "matchupEdge": 91,
         "zoneFitScore": 85,
-        "zoneFitLabel": "Elite Zone Fit"
+        "zoneFitLabel": "Elite Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|514888",
@@ -72172,8 +72413,8 @@
         "opp": "TOR",
         "gamePk": 824158,
         "score": 24,
-        "result": "pending",
-        "actual": null,
+        "result": "win",
+        "actual": 1,
         "liveScore": 21,
         "isOnFire": false,
         "isFavorable": false,
@@ -72197,7 +72438,8 @@
         "platoonFavorable": false,
         "matchupEdge": 41,
         "zoneFitScore": 76,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|662139",
@@ -72208,8 +72450,8 @@
         "opp": "TOR",
         "gamePk": 824158,
         "score": 20,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 19,
         "isOnFire": false,
         "isFavorable": false,
@@ -72233,7 +72475,8 @@
         "platoonFavorable": false,
         "matchupEdge": 46,
         "zoneFitScore": 76,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|666211",
@@ -72244,8 +72487,8 @@
         "opp": "TOR",
         "gamePk": 824158,
         "score": 24,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 25,
         "isOnFire": true,
         "isFavorable": false,
@@ -72269,7 +72512,8 @@
         "platoonFavorable": true,
         "matchupEdge": 57,
         "zoneFitScore": 80,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|572233",
@@ -72280,8 +72524,8 @@
         "opp": "TOR",
         "gamePk": 824158,
         "score": 26,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 26,
         "isOnFire": true,
         "isFavorable": false,
@@ -72305,7 +72549,8 @@
         "platoonFavorable": false,
         "matchupEdge": 51,
         "zoneFitScore": 80,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|664774",
@@ -72316,8 +72561,8 @@
         "opp": "TOR",
         "gamePk": 824158,
         "score": 19,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 18,
         "isOnFire": false,
         "isFavorable": false,
@@ -72341,7 +72586,8 @@
         "platoonFavorable": false,
         "matchupEdge": 27,
         "zoneFitScore": 76,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|673237",
@@ -72352,8 +72598,8 @@
         "opp": "TOR",
         "gamePk": 824158,
         "score": 21,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 21,
         "isOnFire": true,
         "isFavorable": false,
@@ -72377,7 +72623,8 @@
         "platoonFavorable": false,
         "matchupEdge": 51,
         "zoneFitScore": 76,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|660271",
@@ -72388,8 +72635,8 @@
         "opp": "CHC",
         "gamePk": 824646,
         "score": 26,
-        "result": "pending",
-        "actual": null,
+        "result": "win",
+        "actual": 2,
         "liveScore": 30,
         "isOnFire": true,
         "isFavorable": false,
@@ -72413,7 +72660,8 @@
         "platoonFavorable": true,
         "matchupEdge": 65,
         "zoneFitScore": 69,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|681624",
@@ -72424,8 +72672,8 @@
         "opp": "CHC",
         "gamePk": 824646,
         "score": 19,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 20,
         "isOnFire": true,
         "isFavorable": false,
@@ -72449,7 +72697,8 @@
         "platoonFavorable": true,
         "matchupEdge": 60,
         "zoneFitScore": 70,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": true
       },
       {
         "key": "2026-08-05|HRTHREAT|518692",
@@ -72460,8 +72709,8 @@
         "opp": "CHC",
         "gamePk": 824646,
         "score": 18,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 19,
         "isOnFire": true,
         "isFavorable": false,
@@ -72485,7 +72734,8 @@
         "platoonFavorable": false,
         "matchupEdge": 65,
         "zoneFitScore": 63,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|571970",
@@ -72496,8 +72746,8 @@
         "opp": "CHC",
         "gamePk": 824646,
         "score": 23,
-        "result": "pending",
-        "actual": null,
+        "result": "win",
+        "actual": 1,
         "liveScore": 23,
         "isOnFire": true,
         "isFavorable": false,
@@ -72521,7 +72771,8 @@
         "platoonFavorable": true,
         "matchupEdge": 60,
         "zoneFitScore": 66,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|621020",
@@ -72532,8 +72783,8 @@
         "opp": "LAD",
         "gamePk": 824646,
         "score": 19,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 20,
         "isOnFire": true,
         "isFavorable": false,
@@ -72557,7 +72808,8 @@
         "platoonFavorable": false,
         "matchupEdge": 62,
         "zoneFitScore": 73,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|621438",
@@ -72568,8 +72820,8 @@
         "opp": "LAD",
         "gamePk": 824646,
         "score": 26,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 27,
         "isOnFire": true,
         "isFavorable": false,
@@ -72593,7 +72845,8 @@
         "platoonFavorable": true,
         "matchupEdge": 58,
         "zoneFitScore": 81,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|624424",
@@ -72604,8 +72857,8 @@
         "opp": "LAD",
         "gamePk": 824646,
         "score": 22,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 22,
         "isOnFire": true,
         "isFavorable": false,
@@ -72629,7 +72882,8 @@
         "platoonFavorable": null,
         "matchupEdge": 52,
         "zoneFitScore": 74,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|664023",
@@ -72640,8 +72894,8 @@
         "opp": "LAD",
         "gamePk": 824646,
         "score": 18,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 20,
         "isOnFire": false,
         "isFavorable": false,
@@ -72665,7 +72919,8 @@
         "platoonFavorable": false,
         "matchupEdge": 52,
         "zoneFitScore": 71,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|673548",
@@ -72676,8 +72931,8 @@
         "opp": "LAD",
         "gamePk": 824646,
         "score": 22,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 23,
         "isOnFire": true,
         "isFavorable": false,
@@ -72701,7 +72956,8 @@
         "platoonFavorable": true,
         "matchupEdge": 66,
         "zoneFitScore": 75,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|646240",
@@ -72712,8 +72968,8 @@
         "opp": "TEX",
         "gamePk": 822866,
         "score": 18,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 23,
         "isOnFire": true,
         "isFavorable": false,
@@ -72737,7 +72993,8 @@
         "platoonFavorable": false,
         "matchupEdge": null,
         "zoneFitScore": null,
-        "zoneFitLabel": null
+        "zoneFitLabel": null,
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|694671",
@@ -72748,8 +73005,8 @@
         "opp": "SF",
         "gamePk": 822866,
         "score": 23,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 24,
         "isOnFire": true,
         "isFavorable": true,
@@ -72773,7 +73030,8 @@
         "platoonFavorable": false,
         "matchupEdge": 59,
         "zoneFitScore": 96,
-        "zoneFitLabel": "Elite Zone Fit"
+        "zoneFitLabel": "Elite Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|677649",
@@ -72784,8 +73042,8 @@
         "opp": "SF",
         "gamePk": 822866,
         "score": 20,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 20,
         "isOnFire": true,
         "isFavorable": false,
@@ -72809,7 +73067,8 @@
         "platoonFavorable": false,
         "matchupEdge": 48,
         "zoneFitScore": 96,
-        "zoneFitLabel": "Elite Zone Fit"
+        "zoneFitLabel": "Elite Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|669394",
@@ -72820,8 +73079,8 @@
         "opp": "SF",
         "gamePk": 822866,
         "score": 21,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 24,
         "isOnFire": true,
         "isFavorable": false,
@@ -72845,7 +73104,8 @@
         "platoonFavorable": true,
         "matchupEdge": 63,
         "zoneFitScore": 95,
-        "zoneFitLabel": "Elite Zone Fit"
+        "zoneFitLabel": "Elite Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|679822",
@@ -72856,8 +73116,8 @@
         "opp": "SF",
         "gamePk": 822866,
         "score": 22,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 23,
         "isOnFire": false,
         "isFavorable": false,
@@ -72881,7 +73141,8 @@
         "platoonFavorable": true,
         "matchupEdge": 50,
         "zoneFitScore": 95,
-        "zoneFitLabel": "Elite Zone Fit"
+        "zoneFitLabel": "Elite Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|553869",
@@ -72892,8 +73153,8 @@
         "opp": "SF",
         "gamePk": 822866,
         "score": 18,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 20,
         "isOnFire": true,
         "isFavorable": false,
@@ -72917,7 +73178,8 @@
         "platoonFavorable": true,
         "matchupEdge": 50,
         "zoneFitScore": 96,
-        "zoneFitLabel": "Elite Zone Fit"
+        "zoneFitLabel": "Elite Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|668723",
@@ -72928,8 +73190,8 @@
         "opp": "COL",
         "gamePk": 824322,
         "score": 20,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 26,
         "isOnFire": true,
         "isFavorable": false,
@@ -72953,7 +73215,8 @@
         "platoonFavorable": false,
         "matchupEdge": 47,
         "zoneFitScore": 77,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|683748",
@@ -72964,8 +73227,8 @@
         "opp": "COL",
         "gamePk": 824322,
         "score": 20,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 25,
         "isOnFire": false,
         "isFavorable": false,
@@ -72989,7 +73252,8 @@
         "platoonFavorable": false,
         "matchupEdge": 45,
         "zoneFitScore": 74,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|666160",
@@ -73000,8 +73264,8 @@
         "opp": "TB",
         "gamePk": 824322,
         "score": 24,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 27,
         "isOnFire": true,
         "isFavorable": false,
@@ -73025,7 +73289,8 @@
         "platoonFavorable": true,
         "matchupEdge": 57,
         "zoneFitScore": 76,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|545361",
@@ -73036,8 +73301,8 @@
         "opp": "BAL",
         "gamePk": 824806,
         "score": 18,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 20,
         "isOnFire": true,
         "isFavorable": true,
@@ -73061,7 +73326,8 @@
         "platoonFavorable": true,
         "matchupEdge": 80,
         "zoneFitScore": 58,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|624413",
@@ -73072,8 +73338,8 @@
         "opp": "LAA",
         "gamePk": 824806,
         "score": 18,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 22,
         "isOnFire": true,
         "isFavorable": false,
@@ -73097,7 +73363,8 @@
         "platoonFavorable": false,
         "matchupEdge": 74,
         "zoneFitScore": 62,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|668709",
@@ -73108,8 +73375,8 @@
         "opp": "ATH",
         "gamePk": 824482,
         "score": 20,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 25,
         "isOnFire": true,
         "isFavorable": true,
@@ -73133,7 +73400,8 @@
         "platoonFavorable": false,
         "matchupEdge": 59,
         "zoneFitScore": 77,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|665953",
@@ -73144,8 +73412,8 @@
         "opp": "PHI",
         "gamePk": 823429,
         "score": 26,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 30,
         "isOnFire": true,
         "isFavorable": true,
@@ -73169,7 +73437,8 @@
         "platoonFavorable": null,
         "matchupEdge": 57,
         "zoneFitScore": 82,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|682928",
@@ -73180,8 +73449,8 @@
         "opp": "PHI",
         "gamePk": 823429,
         "score": 25,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 27,
         "isOnFire": true,
         "isFavorable": true,
@@ -73205,7 +73474,8 @@
         "platoonFavorable": true,
         "matchupEdge": 63,
         "zoneFitScore": 87,
-        "zoneFitLabel": "Elite Zone Fit"
+        "zoneFitLabel": "Elite Zone Fit",
+        "nearMiss": true
       },
       {
         "key": "2026-08-05|HRTHREAT|547180",
@@ -73216,8 +73486,8 @@
         "opp": "WSH",
         "gamePk": 823429,
         "score": 23,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 24,
         "isOnFire": true,
         "isFavorable": true,
@@ -73241,7 +73511,8 @@
         "platoonFavorable": true,
         "matchupEdge": 67,
         "zoneFitScore": 81,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": true
       },
       {
         "key": "2026-08-05|HRTHREAT|656941",
@@ -73252,8 +73523,8 @@
         "opp": "WSH",
         "gamePk": 823429,
         "score": 28,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 31,
         "isOnFire": false,
         "isFavorable": true,
@@ -73277,7 +73548,8 @@
         "platoonFavorable": true,
         "matchupEdge": 72,
         "zoneFitScore": 76,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|676369",
@@ -73288,8 +73560,8 @@
         "opp": "NYY",
         "gamePk": 823516,
         "score": 21,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 20,
         "isOnFire": false,
         "isFavorable": false,
@@ -73313,7 +73585,8 @@
         "platoonFavorable": false,
         "matchupEdge": 62,
         "zoneFitScore": 78,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|676475",
@@ -73324,8 +73597,8 @@
         "opp": "NYY",
         "gamePk": 823516,
         "score": 18,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 20,
         "isOnFire": true,
         "isFavorable": true,
@@ -73349,7 +73622,8 @@
         "platoonFavorable": true,
         "matchupEdge": 77,
         "zoneFitScore": 82,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|691023",
@@ -73360,8 +73634,8 @@
         "opp": "NYY",
         "gamePk": 823516,
         "score": 19,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 21,
         "isOnFire": false,
         "isFavorable": true,
@@ -73385,7 +73659,8 @@
         "platoonFavorable": true,
         "matchupEdge": 70,
         "zoneFitScore": 78,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|671277",
@@ -73396,8 +73671,8 @@
         "opp": "STL",
         "gamePk": 823516,
         "score": 20,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 23,
         "isOnFire": true,
         "isFavorable": false,
@@ -73421,7 +73696,8 @@
         "platoonFavorable": null,
         "matchupEdge": 66,
         "zoneFitScore": 64,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|695657",
@@ -73432,8 +73708,8 @@
         "opp": "BOS",
         "gamePk": 824728,
         "score": 19,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 20,
         "isOnFire": true,
         "isFavorable": false,
@@ -73457,7 +73733,8 @@
         "platoonFavorable": false,
         "matchupEdge": 56,
         "zoneFitScore": 65,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|575929",
@@ -73468,8 +73745,8 @@
         "opp": "CWS",
         "gamePk": 824728,
         "score": 21,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 23,
         "isOnFire": true,
         "isFavorable": false,
@@ -73493,7 +73770,8 @@
         "platoonFavorable": true,
         "matchupEdge": 68,
         "zoneFitScore": 65,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|665052",
@@ -73504,8 +73782,8 @@
         "opp": "ATL",
         "gamePk": 824889,
         "score": 25,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 30,
         "isOnFire": true,
         "isFavorable": true,
@@ -73529,7 +73807,8 @@
         "platoonFavorable": true,
         "matchupEdge": 86,
         "zoneFitScore": 68,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|669065",
@@ -73540,8 +73819,8 @@
         "opp": "ATL",
         "gamePk": 824889,
         "score": 19,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 21,
         "isOnFire": true,
         "isFavorable": false,
@@ -73565,7 +73844,8 @@
         "platoonFavorable": true,
         "matchupEdge": 67,
         "zoneFitScore": 66,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|681715",
@@ -73576,8 +73856,8 @@
         "opp": "ATL",
         "gamePk": 824889,
         "score": 20,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 23,
         "isOnFire": true,
         "isFavorable": false,
@@ -73601,7 +73881,8 @@
         "platoonFavorable": false,
         "matchupEdge": 61,
         "zoneFitScore": 62,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": true
       },
       {
         "key": "2026-08-05|HRTHREAT|621566",
@@ -73612,8 +73893,8 @@
         "opp": "MIA",
         "gamePk": 824889,
         "score": 22,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 26,
         "isOnFire": true,
         "isFavorable": false,
@@ -73637,7 +73918,8 @@
         "platoonFavorable": true,
         "matchupEdge": 77,
         "zoneFitScore": 70,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|521692",
@@ -73648,8 +73930,8 @@
         "opp": "MIN",
         "gamePk": 824082,
         "score": 22,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 24,
         "isOnFire": true,
         "isFavorable": false,
@@ -73673,7 +73955,8 @@
         "platoonFavorable": false,
         "matchupEdge": 48,
         "zoneFitScore": 79,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|664728",
@@ -73684,8 +73967,8 @@
         "opp": "MIN",
         "gamePk": 824082,
         "score": 19,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 17,
         "isOnFire": false,
         "isFavorable": false,
@@ -73709,7 +73992,8 @@
         "platoonFavorable": false,
         "matchupEdge": 49,
         "zoneFitScore": 78,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|677951",
@@ -73720,8 +74004,8 @@
         "opp": "MIN",
         "gamePk": 824082,
         "score": 24,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 25,
         "isOnFire": true,
         "isFavorable": true,
@@ -73745,7 +74029,8 @@
         "platoonFavorable": false,
         "matchupEdge": 63,
         "zoneFitScore": 78,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": true
       },
       {
         "key": "2026-08-05|HRTHREAT|686475",
@@ -73756,8 +74041,8 @@
         "opp": "MIN",
         "gamePk": 824082,
         "score": 22,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 23,
         "isOnFire": true,
         "isFavorable": true,
@@ -73781,7 +74066,8 @@
         "platoonFavorable": true,
         "matchupEdge": 30,
         "zoneFitScore": 79,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|641343",
@@ -73792,8 +74078,8 @@
         "opp": "PIT",
         "gamePk": 823753,
         "score": 19,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 21,
         "isOnFire": true,
         "isFavorable": false,
@@ -73817,7 +74103,8 @@
         "platoonFavorable": true,
         "matchupEdge": 76,
         "zoneFitScore": 66,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|592518",
@@ -73828,8 +74115,8 @@
         "opp": "AZ",
         "gamePk": 825052,
         "score": 20,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 22,
         "isOnFire": true,
         "isFavorable": false,
@@ -73853,7 +74140,8 @@
         "platoonFavorable": false,
         "matchupEdge": 77,
         "zoneFitScore": 73,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|664034",
@@ -73864,8 +74152,8 @@
         "opp": "AZ",
         "gamePk": 825052,
         "score": 21,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 24,
         "isOnFire": true,
         "isFavorable": true,
@@ -73889,7 +74177,8 @@
         "platoonFavorable": true,
         "matchupEdge": 58,
         "zoneFitScore": 71,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|693307",
@@ -73900,8 +74189,8 @@
         "opp": "SEA",
         "gamePk": 823106,
         "score": 21,
-        "result": "pending",
-        "actual": null,
+        "result": "win",
+        "actual": 1,
         "liveScore": 22,
         "isOnFire": true,
         "isFavorable": false,
@@ -73925,7 +74214,8 @@
         "platoonFavorable": true,
         "matchupEdge": 82,
         "zoneFitScore": 74,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|691723",
@@ -73936,8 +74226,8 @@
         "opp": "LAA",
         "gamePk": 824806,
         "score": 20,
-        "result": "pending",
-        "actual": null,
+        "result": "win",
+        "actual": 1,
         "liveScore": 20,
         "isOnFire": true,
         "isFavorable": false,
@@ -73961,7 +74251,8 @@
         "platoonFavorable": true,
         "matchupEdge": 88,
         "zoneFitScore": 69,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|687952",
@@ -73972,8 +74263,8 @@
         "opp": "LAA",
         "gamePk": 824806,
         "score": 24,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 26,
         "isOnFire": true,
         "isFavorable": false,
@@ -73997,7 +74288,8 @@
         "platoonFavorable": true,
         "matchupEdge": 89,
         "zoneFitScore": 68,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|682626",
@@ -74008,8 +74300,8 @@
         "opp": "CLE",
         "gamePk": 824402,
         "score": 19,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 19,
         "isOnFire": true,
         "isFavorable": false,
@@ -74033,7 +74325,8 @@
         "platoonFavorable": true,
         "matchupEdge": 58,
         "zoneFitScore": 59,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|682829",
@@ -74044,8 +74337,8 @@
         "opp": "ATH",
         "gamePk": 824482,
         "score": 22,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 25,
         "isOnFire": true,
         "isFavorable": true,
@@ -74069,7 +74362,8 @@
         "platoonFavorable": true,
         "matchupEdge": 94,
         "zoneFitScore": 80,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|701398",
@@ -74080,8 +74374,8 @@
         "opp": "ATH",
         "gamePk": 824482,
         "score": 22,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 25,
         "isOnFire": true,
         "isFavorable": true,
@@ -74105,7 +74399,8 @@
         "platoonFavorable": true,
         "matchupEdge": 70,
         "zoneFitScore": 72,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|686611",
@@ -74116,8 +74411,8 @@
         "opp": "PHI",
         "gamePk": 823429,
         "score": 18,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 21,
         "isOnFire": true,
         "isFavorable": false,
@@ -74141,7 +74436,8 @@
         "platoonFavorable": false,
         "matchupEdge": 48,
         "zoneFitScore": 73,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|695734",
@@ -74152,8 +74448,8 @@
         "opp": "PHI",
         "gamePk": 823429,
         "score": 18,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 17,
         "isOnFire": true,
         "isFavorable": false,
@@ -74177,7 +74473,8 @@
         "platoonFavorable": false,
         "matchupEdge": 55,
         "zoneFitScore": 83,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|700250",
@@ -74188,8 +74485,8 @@
         "opp": "STL",
         "gamePk": 823516,
         "score": 25,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 28,
         "isOnFire": true,
         "isFavorable": false,
@@ -74213,7 +74510,8 @@
         "platoonFavorable": true,
         "matchupEdge": 76,
         "zoneFitScore": 61,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|808959",
@@ -74224,8 +74522,8 @@
         "opp": "BOS",
         "gamePk": 824728,
         "score": 32,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 34,
         "isOnFire": true,
         "isFavorable": false,
@@ -74249,7 +74547,8 @@
         "platoonFavorable": true,
         "matchupEdge": 78,
         "zoneFitScore": 74,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|678246",
@@ -74260,8 +74559,8 @@
         "opp": "BOS",
         "gamePk": 824728,
         "score": 19,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 23,
         "isOnFire": true,
         "isFavorable": false,
@@ -74285,7 +74584,8 @@
         "platoonFavorable": false,
         "matchupEdge": 66,
         "zoneFitScore": 68,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|683357",
@@ -74296,8 +74596,8 @@
         "opp": "ATL",
         "gamePk": 824889,
         "score": 19,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 21,
         "isOnFire": true,
         "isFavorable": false,
@@ -74321,7 +74621,8 @@
         "platoonFavorable": false,
         "matchupEdge": 56,
         "zoneFitScore": 64,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|691788",
@@ -74332,8 +74633,8 @@
         "opp": "ATL",
         "gamePk": 824889,
         "score": 20,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 20,
         "isOnFire": true,
         "isFavorable": false,
@@ -74357,7 +74658,8 @@
         "platoonFavorable": false,
         "matchupEdge": 60,
         "zoneFitScore": 62,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|686948",
@@ -74368,8 +74670,8 @@
         "opp": "MIA",
         "gamePk": 824889,
         "score": 20,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 24,
         "isOnFire": false,
         "isFavorable": false,
@@ -74393,7 +74695,8 @@
         "platoonFavorable": true,
         "matchupEdge": 78,
         "zoneFitScore": 60,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|671739",
@@ -74404,8 +74707,8 @@
         "opp": "MIA",
         "gamePk": 824889,
         "score": 18,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 20,
         "isOnFire": true,
         "isFavorable": false,
@@ -74429,7 +74732,8 @@
         "platoonFavorable": true,
         "matchupEdge": 68,
         "zoneFitScore": 61,
-        "zoneFitLabel": "Playable Zone Fit"
+        "zoneFitLabel": "Playable Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|680777",
@@ -74440,8 +74744,8 @@
         "opp": "KC",
         "gamePk": 824082,
         "score": 20,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 22,
         "isOnFire": true,
         "isFavorable": true,
@@ -74465,7 +74769,8 @@
         "platoonFavorable": true,
         "matchupEdge": 57,
         "zoneFitScore": 76,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|695600",
@@ -74476,8 +74781,8 @@
         "opp": "MIN",
         "gamePk": 824082,
         "score": 25,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 24,
         "isOnFire": true,
         "isFavorable": false,
@@ -74501,7 +74806,8 @@
         "platoonFavorable": false,
         "matchupEdge": 66,
         "zoneFitScore": 79,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|695506",
@@ -74512,8 +74818,8 @@
         "opp": "MIN",
         "gamePk": 824082,
         "score": 28,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 30,
         "isOnFire": true,
         "isFavorable": false,
@@ -74537,7 +74843,8 @@
         "platoonFavorable": true,
         "matchupEdge": 67,
         "zoneFitScore": 80,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|686681",
@@ -74548,8 +74855,8 @@
         "opp": "MIN",
         "gamePk": 824082,
         "score": 22,
-        "result": "pending",
-        "actual": null,
+        "result": "win",
+        "actual": 1,
         "liveScore": 21,
         "isOnFire": true,
         "isFavorable": false,
@@ -74573,7 +74880,8 @@
         "platoonFavorable": false,
         "matchupEdge": 48,
         "zoneFitScore": 78,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       },
       {
         "key": "2026-08-05|HRTHREAT|686555",
@@ -74584,8 +74892,8 @@
         "opp": "MIN",
         "gamePk": 824082,
         "score": 18,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "liveScore": 18,
         "isOnFire": true,
         "isFavorable": false,
@@ -74609,22 +74917,23 @@
         "platoonFavorable": false,
         "matchupEdge": 44,
         "zoneFitScore": 78,
-        "zoneFitLabel": "Strong Zone Fit"
+        "zoneFitLabel": "Strong Zone Fit",
+        "nearMiss": false
       }
     ]
   },
   "allTime": {
     "drp": {
-      "wins": 146,
-      "losses": 132,
+      "wins": 156,
+      "losses": 137,
       "pushes": 0,
-      "total": 278
+      "total": 293
     },
     "kprop": {
-      "wins": 315,
-      "losses": 266,
+      "wins": 331,
+      "losses": 280,
       "pushes": 0,
-      "total": 581
+      "total": 611
     },
     "premium": {
       "wins": 116,
@@ -74633,11 +74942,11 @@
       "total": 597
     },
     "hrThreat": {
-      "wins": 162,
-      "losses": 1051,
+      "wins": 168,
+      "losses": 1116,
       "pushes": 0,
-      "total": 1213
+      "total": 1284
     }
   },
-  "oddsLastFetchedDate": "2026-08-05"
+  "oddsLastFetchedDate": "2026-08-06"
 }
