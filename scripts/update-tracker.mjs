@@ -971,6 +971,14 @@ const PITCHER_STATCAST_PATH = path.join(__dirname, '..', 'data', 'pitcher-statca
 // pattern as pitcherHr9/pitcherWhip. Only covers today's probable starters (the sync
 // script's scope), so most rows will have a null value until/unless that changes.
 const PITCHER_2K_SUPPRESSION_PATH = path.join(__dirname, '..', 'data', 'pitcher-2k-suppression.json');
+// Real avg batters-faced-per-start over a starter's last 5 real starts
+// (scripts/sync-pitcher-workload.mjs) -- load-bearing for scoreForMarket('hr')'s
+// startBFShare (see there), the fix for the calibration-report-confirmed HR/9-and-
+// WHIP-inversion bug: a flat pitcher weight overstated a quick-hook starter's real
+// effect on a batter's whole game. Same today's-probable-starters-only scope as
+// PITCHER_2K_SUPPRESSION_PATH above, so most rows outside that scope fall back to a
+// neutral (no-scaling) share, same graceful degradation.
+const PITCHER_WORKLOAD_PATH = path.join(__dirname, '..', 'data', 'pitcher-workload.json');
 const LEAGUE_AVG_XSLG = 0.400; // same scale as LEAGUE_AVG_SLG; MLB-wide xSLG runs close to actual SLG
 const LEAGUE_AVG_HARD_HIT_PCT = 36; // percent; roughly MLB seasonal average hard-hit rate
 const STATCAST_MIN_PITCHES = 100; // below this, a player's aggregate is too thin a sample to trust
@@ -1210,6 +1218,29 @@ async function loadPitcher2kSuppressionIndex() {
     // no-op — see comment above
   }
   return pitcher2kSuppressionCache;
+}
+
+// Real today's-slate leagueAvgBFperStart, computed server-side by the sync script
+// itself off reliable-sample starters -- see that script's own header for why. Set
+// by loadPitcherWorkloadIndex below; hardcoded fallback only for a day the file
+// hasn't synced yet or came back with no reliable samples at all, same fallback
+// value app.js's client-side port uses for consistency between the two.
+let pitcherWorkloadLeagueAvgBF = 23;
+let pitcherWorkloadCache = null;
+async function loadPitcherWorkloadIndex() {
+  if (pitcherWorkloadCache) return pitcherWorkloadCache;
+  pitcherWorkloadCache = new Map();
+  try {
+    const raw = await readFile(PITCHER_WORKLOAD_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    for (const [id, p] of Object.entries(data?.pitchers || {})) {
+      if (Number.isFinite(p?.avgBFperStart)) pitcherWorkloadCache.set(String(id), p);
+    }
+    if (data?.leagueAvgBFperStart > 0) pitcherWorkloadLeagueAvgBF = data.leagueAvgBFperStart;
+  } catch {
+    // no-op — file not yet synced this run; every row falls back to a neutral share
+  }
+  return pitcherWorkloadCache;
 }
 
 // Converts an aggregate xSLG/hard-hit% into a bounded multiplier on the corresponding
@@ -1866,8 +1897,13 @@ function computeLiveHRScore(row, statcastHotHitters, weatherHRMult = 1) {
   const parkAdj = 1 + ((row.parkFactor - 100) / 100) * 0.5;
   const onFireScore = liveOnFireScore(row, statcastHotHitters);
   const hotMult = 1 + (onFireScore / 100) * 0.5;
-  const hrPerPA = ((batterRate * 0.6) + (pitcherRate * 0.4)) * parkAdj * shrinkMult(hotMult) * weatherHRMult;
-  const logisticFeatures = { batterISO: row.iso, pitcherHr9: row.pitcherHr9, pitcherWhip: row.pitcherWhip, parkFactor: row.parkFactor, windFactor: row.windFactor, temperatureFactor: row.temperatureFactor, isOnFire: onFireScore >= 70, matchupEdge: row.matchupEdge };
+  // Workload-scaled pitcher weight -- see startBFShare's own comment at
+  // PITCHER_WORKLOAD_PATH above; row.startBFShare defaults to 1 (old flat weight,
+  // unscaled) for any row built before that field existed.
+  const pitcherWeight = 0.4 * (row.startBFShare != null ? row.startBFShare : 1);
+  const batterWeight = 1 - pitcherWeight;
+  const hrPerPA = ((batterRate * batterWeight) + (pitcherRate * pitcherWeight)) * parkAdj * shrinkMult(hotMult) * weatherHRMult;
+  const logisticFeatures = { batterISO: row.iso, pitcherHr9: row.pitcherHr9, pitcherWhip: row.pitcherWhip, parkFactor: row.parkFactor, windFactor: row.windFactor, temperatureFactor: row.temperatureFactor, isOnFire: onFireScore >= 70, matchupEdge: row.matchupEdge, startBFShare: row.startBFShare };
   return simulateHRGameOdds(hrPerPA, row.battingOrder, logisticFeatures);
 }
 
@@ -1908,8 +1944,16 @@ function scoreForMarket(marketKey, row) {
     // in buildBatterPool (row.zoneMatchupMult) from the real zone maps already resolved
     // there, same "compute once outside scoreForMarket, apply with shrinkMult here" shape
     // as fatigueFactor/homeRoadFactor/windFactor/temperatureFactor above.
-    const hrPerPA = (batterRate * 0.6 + pitcherRate * 0.4) * shrinkMult(row.windFactor || 1) * shrinkMult(row.temperatureFactor || 1) * shrinkMult(row.zoneMatchupMult || 1);
-    const logisticFeatures = { batterISO: row.iso, pitcherHr9: row.pitcherHr9, pitcherWhip: row.pitcherWhip, parkFactor: row.parkFactor, windFactor: row.windFactor, temperatureFactor: row.temperatureFactor, isOnFire: row.isHot, matchupEdge: row.matchupEdge };
+    // Workload-scaled pitcher weight -- pre-computed in buildBatterPool (row.startBFShare)
+    // from real avg-batters-faced-per-start data, correcting for how a quick-hook
+    // starter only actually faces a batter for 1-2 of his ~4 PA before the bullpen
+    // takes over. Defaults to 1 (old flat weight, unscaled) for a row with no reliable
+    // workload sample. See PITCHER_WORKLOAD_PATH's own comment for the calibration-
+    // report evidence this addresses.
+    const pitcherWeight = 0.4 * (row.startBFShare != null ? row.startBFShare : 1);
+    const batterWeight = 1 - pitcherWeight;
+    const hrPerPA = (batterRate * batterWeight + pitcherRate * pitcherWeight) * shrinkMult(row.windFactor || 1) * shrinkMult(row.temperatureFactor || 1) * shrinkMult(row.zoneMatchupMult || 1);
+    const logisticFeatures = { batterISO: row.iso, pitcherHr9: row.pitcherHr9, pitcherWhip: row.pitcherWhip, parkFactor: row.parkFactor, windFactor: row.windFactor, temperatureFactor: row.temperatureFactor, isOnFire: row.isHot, matchupEdge: row.matchupEdge, startBFShare: row.startBFShare };
     return simulateHRGameOdds(hrPerPA, row.battingOrder, logisticFeatures);
   }
   if (marketKey === 'sb') return simulateSBOdds(row);
@@ -2326,6 +2370,7 @@ async function buildBatterPool(games, season) {
   const statcastIndex = await loadStatcastPowerIndex();
   const pitcherStatcastIndex = await loadPitcherStatcastPowerIndex();
   const pitcher2kSuppressionIndex = await loadPitcher2kSuppressionIndex();
+  const pitcherWorkloadIndex = await loadPitcherWorkloadIndex();
   const statcastHotHittersIndex = await loadStatcastHotHittersIndex();
   const nearHRsIndex = await loadNearHRsIndex();
   const rows = [];
@@ -2345,6 +2390,15 @@ async function buildBatterPool(games, season) {
       // doesn't fetch -- see the per-batter comment below for why not), computed once per
       // pitcher since it's the same for every batter facing him.
       const pitcherZoneMapForHR = pitcherZoneCache.get(String(pitcher.id)) || null;
+      // Workload share -- how much of a batter's ~4 PA this specific starter actually
+      // sticks around for, vs handing the rest to the bullpen (see PITCHER_WORKLOAD_PATH
+      // comment above). Same 0.55-1.15 clamp and reliable-sample-only gate as app.js's
+      // client-side port, computed once per pitcher (not per batter) since it's the
+      // same for every batter facing him this game.
+      const pitcherWorkloadProfile = pitcherWorkloadIndex.get(String(pitcher.id)) || null;
+      const startBFShare = (pitcherWorkloadProfile && pitcherWorkloadProfile.reliable && pitcherWorkloadLeagueAvgBF > 0)
+        ? Math.max(0.55, Math.min(1.15, pitcherWorkloadProfile.avgBFperStart / pitcherWorkloadLeagueAvgBF))
+        : 1;
       const teamAbbr = g.teams[side].team.abbreviation;
       const oppAbbr = g.teams[opp].team.abbreviation;
       const batters = await battersForSide(g, side);
@@ -2458,6 +2512,7 @@ async function buildBatterPool(games, season) {
           pitcherHr9: n(pitcherStat.homeRunsPer9), pitcherWhip, parkFactor: rowParkFactor, battingOrder,
           windFactor: windPowerFactor(g.weather), temperatureFactor: temperaturePowerFactor(g.weather),
           last10HR: recent?.hr || 0, isFavorable, statcast: statcastIndex.get(String(pid)) || null, matchupEdge,
+          startBFShare,
         }, statcastHotHittersIndex, weatherHRMult);
         return {
           id: pid, name: person.fullName, teamAbbr, oppAbbr, gamePk: g.gamePk,
@@ -2476,6 +2531,7 @@ async function buildBatterPool(games, season) {
           fatigueFactor: battingTeamFatigue,
           pitcherStatcast, homeRoadFactor,
           pitcher2kSuppressionDelta: pitcher2kSuppressionIndex.get(String(pitcher.id)) ?? null,
+          startBFShare, pitcherWorkloadReliable: !!(pitcherWorkloadProfile && pitcherWorkloadProfile.reliable),
           liveScore, platoonAB, platoonOps, platoonFavorable, matchupEdge, zoneMatchupMult,
           zoneFitScore: zoneFit?.score ?? null, zoneFitLabel: zoneFit?.label ?? null,
           // Same per-game weather multiplier computeLiveHRScore above already used —
@@ -2572,6 +2628,13 @@ async function captureHRThreatToday(store, pool) {
       // higher rate than "Pitcher Zone Edge". Null until both this pitcher's zone sync
       // and this batter's own real batSide (batterHandCache) are available.
       zoneFitScore: r.zoneFitScore ?? null, zoneFitLabel: r.zoneFitLabel ?? null,
+      // Workload-share signal now driving the live pitcher weight (see
+      // PITCHER_WORKLOAD_PATH's comment) -- recorded raw (not just baked into the
+      // final score) so a later analyze-hr-matchups.mjs pass can directly re-check
+      // whether this specific correction is working, the same way the calibration
+      // report originally surfaced the bug this fixes. 1 = neutral/no reliable
+      // workload sample yet, not "confirmed average workload".
+      startBFShare: r.startBFShare ?? null, pitcherWorkloadReliable: r.pitcherWorkloadReliable ?? false,
     });
     already.add(r.id);
     added++;

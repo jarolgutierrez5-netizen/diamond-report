@@ -1890,6 +1890,23 @@ let pitcherCountPerf = {};
 let pitcherCountPerfLoaded = false;
 let pitcherCountPerfPromise = null;
 
+// Real avg batters-faced/innings-pitched over a starter's last 5 real starts —
+// loaded from data/pitcher-workload.json, written by
+// scripts/sync-pitcher-workload.mjs. Keyed by pitcher MLB ID (string). Used to
+// scale down the opposing-pitcher weight in the HR Threats formula for
+// quick-hook starters (see the startBFShare comment in loadHRPotential).
+// Empty object = file not yet synced or this pitcher isn't a probable starter
+// today; falls back to the league-average share (no scaling), same as every
+// other repo-fed-JSON signal here.
+let pitcherWorkload = {};
+// Real today's-slate average avgBFperStart (over reliable-sample starters), computed
+// server-side by the sync script itself rather than guessed here -- see
+// leagueAvgBFperStart in that script. Hardcoded fallback only for a day the file
+// hasn't synced yet or came back with no reliable samples at all.
+let pitcherWorkloadLeagueAvgBF = 23;
+let pitcherWorkloadLoaded = false;
+let pitcherWorkloadPromise = null;
+
 // Per-pitcher Statcast store — loaded from data/pitcher-statcast.json,
 // written by scripts/sync-pitcher-statcast.mjs. Keyed by pitcher MLB ID.
 // Empty object = file not yet synced; front-end falls back gracefully.
@@ -6154,7 +6171,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName, precomp
       fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}/stats?stats=statSplits&group=pitching&sitCodes=vl,vr&season=2026`).catch(() => null)
     ]);
     const todayCDT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadBatterHRSpray(), loadBatterBattedBalls(), loadBatterParkHistory(), loadPitcherRolling(), loadPitcherCountPerf(), loadSituationalProps(), loadPropMarketOdds(todayCDT), loadBullpenFatigue(), loadParkFactors(), loadUmpireTendency(), getTodaySchedule('team').catch(() => [])]);
+    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadBatterHRSpray(), loadBatterBattedBalls(), loadBatterParkHistory(), loadPitcherRolling(), loadPitcherCountPerf(), loadPitcherWorkload(), loadSituationalProps(), loadPropMarketOdds(todayCDT), loadBullpenFatigue(), loadParkFactors(), loadUmpireTendency(), getTodaySchedule('team').catch(() => [])]);
     const todayGames = preloadResults[preloadResults.length - 1];
 
     const batterPerson = batterData.people?.[0] || {};
@@ -8762,9 +8779,15 @@ function computeHRScoreDecomposition(row) {
     batterRate: row.batterRate, pitcherRate: row.pitcherRate, parkAdj: row.parkAdj,
     shrunkHotMult: row.shrunkHotMult, weatherHRMult: row.weatherHRMult, zoneMult: row.zoneMult,
   };
+  // Real workload-derived weights from the row itself (see startBFShare in
+  // loadHRPotential) so this reproduces the exact blend the live score used --
+  // falls back to the old flat 0.6/0.4 only for a stale row captured before that
+  // field existed.
+  const pitcherWeight = row.pitcherWeight != null ? row.pitcherWeight : 0.4;
+  const batterWeight = row.batterWeight != null ? row.batterWeight : 0.6;
   function probWith(overrides) {
     const f = Object.assign({}, real, overrides);
-    const perPA = ((f.batterRate * 0.6) + (f.pitcherRate * 0.4)) * f.parkAdj * f.shrunkHotMult * f.weatherHRMult * f.zoneMult;
+    const perPA = ((f.batterRate * batterWeight) + (f.pitcherRate * pitcherWeight)) * f.parkAdj * f.shrunkHotMult * f.weatherHRMult * f.zoneMult;
     return window.simulateHRGameOdds(perPA, battingOrder);
   }
   const base = probWith({});
@@ -9297,6 +9320,25 @@ async function loadPitcherCountPerf(force=false) {
     return pitcherCountPerf;
   })();
   return pitcherCountPerfPromise;
+}
+// Same repo-fed-JSON-with-graceful-fallback pattern as loadPitcherCountPerf() above.
+async function loadPitcherWorkload(force=false) {
+  if (pitcherWorkloadLoaded && !force) return pitcherWorkload;
+  if (pitcherWorkloadPromise && !force) return pitcherWorkloadPromise;
+  pitcherWorkloadPromise = (async () => {
+    try {
+      const data = await drFetchDailyJSON(`data/pitcher-workload.json`);
+      const players = data.pitchers || {};
+      pitcherWorkload = {};
+      Object.keys(players).forEach(id => { pitcherWorkload[String(id)] = players[id]; });
+      if (data.leagueAvgBFperStart > 0) pitcherWorkloadLeagueAvgBF = data.leagueAvgBFperStart;
+    } catch(e) {
+      pitcherWorkload = {};
+    }
+    pitcherWorkloadLoaded = true;
+    return pitcherWorkload;
+  })();
+  return pitcherWorkloadPromise;
 }
 // Overwrites the hardcoded park-factor estimates (declared above, near the venue
 // list) with real, auto-updating Baseball Savant HR-index values once synced —
@@ -10489,6 +10531,7 @@ async function loadHRPotential() {
     // the board can sort by it, not just the one matchup a user happens to click into.
     await loadPitcherStatcast().catch(() => {});
     await loadBatterPitchTypeSeason().catch(() => {});
+    await loadPitcherWorkload().catch(() => {});
     const games = await getTodaySchedule('team,probablePitcher');
     await loadActivePlayerIdsForGames(games).catch(() => {});
 
@@ -10840,6 +10883,27 @@ async function loadHRPotential() {
           // ~38 batters per 9 innings once baserunners allowed are counted, so dividing
           // by 27 overstated the pitcher's true HR-per-batter rate.
           const pitcherRate=pitcherHr9>0?pitcherHr9/38:0.03;
+          // Workload share -- how much of a batter's ~4 PA the OPPOSING STARTER actually
+          // sticks around for, vs handing the rest to the bullpen. Real data
+          // (data/pitcher-workload.json, see scripts/sync-pitcher-workload.mjs) instead
+          // of assuming every probable starter pitches the same fixed-length outing. This
+          // is the fix for a real, calibration-report-confirmed bug: HR Threats picks
+          // against pitchers with WORSE HR/9 and WHIP were hitting at a LOWER real rate
+          // than picks against pitchers with BETTER peripherals -- backwards from what the
+          // flat-weight formula assumed. A quick-hook starter (usually the same one with
+          // the worse peripherals that got him pulled early) was getting the full 40%
+          // pitcher weight applied across a batter's whole game even though the bullpen
+          // -- not that starter -- actually faces that batter for most of his PAs.
+          // Clamped 0.55-1.15 so a single extreme (a get-lit ace or a rookie's first
+          // start) can't swing the blend further than a genuine ~2x share difference;
+          // 1.0 (no scaling, same as the old flat weight) for any starter without a
+          // reliable recent-starts sample yet.
+          const workloadProfile = pitcherWorkload[String(pitcher.id)];
+          const startBFShare = (workloadProfile && workloadProfile.reliable && pitcherWorkloadLeagueAvgBF > 0)
+            ? Math.max(0.55, Math.min(1.15, workloadProfile.avgBFperStart / pitcherWorkloadLeagueAvgBF))
+            : 1;
+          const pitcherWeight = 0.4 * startBFShare;
+          const batterWeight = 1 - pitcherWeight;
           // gameParkFactor (100=average, Coors~145, Oakland~90) used to be computed and
           // attached to the row as metadata but never actually multiplied into the rate
           // that drives hrProb — Coors Field and Oakland Coliseum graded identically once
@@ -10877,7 +10941,7 @@ async function loadHRPotential() {
           // behavior, just applied as a rate multiplier instead of a flat point add-on.
           const hotMult = 1 + (clampNum(hotProfile.onFireScore, 0, 100) / 100) * 0.5;
           const shrunkHotMult = shrinkMult(hotMult);
-          const hrPerPA = ((batterRate*0.6)+(pitcherRate*0.4)) * parkAdj * shrunkHotMult * weatherHRMult * zoneMult;
+          const hrPerPA = ((batterRate*batterWeight)+(pitcherRate*pitcherWeight)) * parkAdj * shrunkHotMult * weatherHRMult * zoneMult;
           // Lineup slot (1-9), computed here (not just below with the display battingOrder)
           // so it can feed the per-PA count the HR simulation runs — same 3-digit MLB
           // battingOrder code as the display field derives from.
@@ -10900,7 +10964,11 @@ async function loadHRPotential() {
           // logisticFeatures: windFactor/temperatureFactor use the neutral value (see
           // predictHRLogistic's own comment) since this client's weather signal has no
           // equivalent to the server's parsed MLB weather string.
-          const hrLogisticFeatures = { batterISO: earlyIso, pitcherHr9, pitcherWhip, parkFactor: gameParkFactor, windFactor: 1, temperatureFactor: 1, isOnFire: hotProfile.onFireScore >= 70, matchupEdge };
+          // startBFShare included so future graded captures carry this signal for a
+          // later refit of hr-logistic-model.json (see scripts/fit-hr-logistic-model.mjs)
+          // -- predictHRLogistic only reads keys the currently-fitted model.features
+          // lists, so this is inert against the live model until that refit adds it.
+          const hrLogisticFeatures = { batterISO: earlyIso, pitcherHr9, pitcherWhip, parkFactor: gameParkFactor, windFactor: 1, temperatureFactor: 1, isOnFire: hotProfile.onFireScore >= 70, matchupEdge, startBFShare };
           const baseHrProb = window.simulateHRGameOdds ? window.simulateHRGameOdds(hrPerPA, battingOrder, hrLogisticFeatures) : Math.min(hrPerPA*100,25);
           const hrScoreSource = window.__hrLastScoreSource || 'legacy';
           let hrProb=baseHrProb;
@@ -11009,6 +11077,11 @@ async function loadHRPotential() {
             // time instead of fabricating point contributions that don't trace back to
             // this formula.
             batterRate, pitcherRate, parkAdj, shrunkHotMult, zoneMult, hrPerPA,
+            // Real workload-derived blend weights (see startBFShare above) -- stored so
+            // the decomposition's own probWith reproduces the exact same blend the real
+            // hrPerPA used, instead of drifting back to the old flat 0.6/0.4 for a
+            // quick-hook or workhorse starter.
+            batterWeight, pitcherWeight,
             // Same sample-size shrinkage as avg/ops/obp/slg above — a raw ISO from a
             // handful of AB (e.g. a 1-for-1 season debut with a HR) can exceed 3.000,
             // which isn't a real power signal and used to inflate the TB/RBI/H+R+RBI

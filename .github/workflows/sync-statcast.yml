@@ -144,6 +144,18 @@ jobs:
         continue-on-error: true
         timeout-minutes: 25
 
+      # Same today's-active-batter scope/reasoning as the two steps above (morning
+      # only, roster doesn't change through the day), but a wider per-player Statcast
+      # Search window (current + 2 prior seasons, not single-season) -- see the
+      # script's own header for why that's bounded rather than a true since-2015 pull.
+      # Wider window means a heavier response per player than its season-only
+      # siblings, hence the longer timeout budget.
+      - name: Run batter career-window pitch-type HR sync
+        if: github.event.schedule == '4 11 * * *' || github.event_name == 'workflow_dispatch'
+        run: node scripts/sync-batter-pitch-type-hr.mjs
+        continue-on-error: true
+        timeout-minutes: 40
+
       # Same bounded per-probable-starter scope as the zone/HR step above (reuses its
       # todaysProbablePitcherIds/pitcherSearchURL), so it re-runs on every intraday
       # trigger too — a pitcher's last-3-starts velocity/usage/whiff trend doesn't
@@ -158,6 +170,20 @@ jobs:
       # same pitcherSearchURL/todaysProbablePitcherIds — how a pitcher performs on the
       # 1st/2nd/3rd-or-later pitch of an at-bat, bucketed from the same Statcast Search
       # CSV those steps already pull.
+      # Same bounded per-probable-starter scope as the steps above, reusing
+      # todaysProbablePitcherIds -- but hits the MLB Stats API gameLog endpoint
+      # directly instead of Statcast Search, since battersFaced/inningsPitched
+      # per start is an exact box-score counting stat, not something that needs
+      # reconstructing from pitch-level rows. Real avg batters-faced-per-start
+      # over a starter's last 5 starts, used to scale down the opposing-pitcher
+      # weight in the HR Threats formula for quick-hook starters who only see a
+      # batter for 1-2 of his ~4 PA before the bullpen takes over -- see the
+      # script's own header for the calibration-report evidence this addresses.
+      - name: Run starting pitcher workload sync (real BF/IP per start)
+        run: node scripts/sync-pitcher-workload.mjs
+        continue-on-error: true
+        timeout-minutes: 8
+
       - name: Run pitch-count performance sync (1st/2nd/3rd+ pitch of at-bat)
         run: node scripts/sync-pitcher-count-performance.mjs
         continue-on-error: true
@@ -243,6 +269,13 @@ jobs:
           # recent-form trend, etc.). `git add --` on an existing-or-not glob does not
           # error the way naming a literal missing path does.
           git add data/pitcher-statcast.json data/batter-pitch-type-season.json data/statcast-hot-hitters.json
+          # batter-power-index.json is written by the same sync-pitcher-statcast.mjs run
+          # as the two files hard-added above, but was missing from this list -- the
+          # script has been computing it successfully every run, this step just never
+          # staged it, so it silently never made it into a commit. Same story for
+          # batter-batted-balls.json from sync-batter-zone-hr.mjs below.
+          [ -f data/batter-power-index.json ] && git add data/batter-power-index.json
+          [ -f data/batter-batted-balls.json ] && git add data/batter-batted-balls.json
           [ -f data/park-factors.json ] && git add data/park-factors.json
           [ -f data/bullpen-fatigue.json ] && git add data/bullpen-fatigue.json
           [ -f data/umpire-tendency.json ] && git add data/umpire-tendency.json
@@ -258,6 +291,19 @@ jobs:
           [ -f data/pitcher-2k-suppression.json ] && git add data/pitcher-2k-suppression.json
           [ -f data/batter-situational-props.json ] && git add data/batter-situational-props.json
           [ -f data/prop-market-odds.json ] && git add data/prop-market-odds.json
+          # batter-pitch-mix-advantage.json is a second guessed filename app.js's
+          # loadBatterPitchTypeSeason() also fetches for the exact same payload
+          # batter-pitch-type-season.json already carries -- sync-pitcher-statcast.mjs
+          # now writes both, same "ship the real data to every guessed alias" pattern
+          # as k-props.json/k_props.json elsewhere in this app.
+          [ -f data/batter-pitch-mix-advantage.json ] && git add data/batter-pitch-mix-advantage.json
+          # All three of these are the same real multi-season payload written to every
+          # filename app.js's loadBatterPitchTypeHr() guesses -- see
+          # sync-batter-pitch-type-hr.mjs's own header.
+          [ -f data/batter-pitch-type-hr.json ] && git add data/batter-pitch-type-hr.json
+          [ -f data/all-time-pitch-type-hr.json ] && git add data/all-time-pitch-type-hr.json
+          [ -f data/career-pitch-type-hr.json ] && git add data/career-pitch-type-hr.json
+          [ -f data/pitcher-workload.json ] && git add data/pitcher-workload.json
           if git diff --cached --quiet; then
             echo "No changes to sync — nothing to commit."
             exit 0
