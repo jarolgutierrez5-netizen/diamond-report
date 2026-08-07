@@ -6865,37 +6865,10 @@ select:focus-visible {
 .dr-hub-headline-stat.is-positive strong { color: var(--green); }
 .dr-hub-headline-stat.is-negative strong { color: var(--dr-red); }
 
-/* ── HR Threats: Table view toggle + compact sortable table ─────────────
-   Alternate to the .dr1027-hr-card grid — same underlying picks, denser
-   layout for scanning/sorting, narrative text moved into a click-to-expand
-   row instead of always-visible. Mirrors #pr-content's own heat-cell +
-   mobile label-chip collapse pattern for visual consistency. */
-.hrp-view-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  border: 1px solid rgba(74, 158, 255, .34);
-  background: rgba(7, 15, 30, .76);
-  border-radius: 999px;
-  padding: 3px;
-  margin-left: 10px;
-}
-.hrp-view-btn {
-  appearance: none;
-  border: none;
-  cursor: pointer;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-family: var(--font-body);
-  font-size: 11px;
-  font-weight: 700;
-  background: transparent;
-  color: var(--muted);
-  transition: background .15s, color .15s;
-  white-space: nowrap;
-}
-.hrp-view-btn.active { background: var(--accent); color: #fff; }
-.hrp-view-btn:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+/* ── HR Threats: compact sortable table (replaced the old card grid) ────
+   Denser layout for scanning/sorting, narrative text moved into a
+   click-to-expand row instead of always-visible. Mirrors #pr-content's own
+   heat-cell + mobile label-chip collapse pattern for visual consistency. */
 
 .hrpt-shell {
   border: 1px solid var(--border);
@@ -6925,12 +6898,12 @@ table.hrpt-table {
   font-variant-numeric: tabular-nums;
   min-width: 940px;
 }
-/* Percentage-based fixed layout instead of content-auto sizing -- at full
-   width, auto-sizing left Grade/Signals/Lineup with far more room than
-   their content needs while Player felt cramped. This also reflows
+/* Percentage-based fixed layout instead of content-auto sizing -- reflows
    proportionally at any container width above the mobile collapse
-   breakpoint, instead of only being tuned for one screenshot's width. */
-.hrpt-table thead th:nth-child(1) { width: 22%; }
+   breakpoint, instead of being tuned for one screenshot's width. AVG (col
+   11) is a short numeric value like OPS/ISO, so the extra room the old
+   Lineup Status pill needed goes to Player and Signals instead. */
+.hrpt-table thead th:nth-child(1) { width: 26%; }
 .hrpt-table thead th:nth-child(2) { width: 8%; }
 .hrpt-table thead th:nth-child(3) { width: 6%; }
 .hrpt-table thead th:nth-child(4) { width: 7%; }
@@ -6939,22 +6912,8 @@ table.hrpt-table {
 .hrpt-table thead th:nth-child(7) { width: 6%; }
 .hrpt-table thead th:nth-child(8) { width: 7%; }
 .hrpt-table thead th:nth-child(9) { width: 7%; }
-.hrpt-table thead th:nth-child(10) { width: 9%; }
-.hrpt-table thead th:nth-child(11) { width: 13%; }
-/* hrChip()'s shared .dr1027-chip is sized for the card view's roomier
-   layout -- wraps onto multiple lines in this table's much narrower fixed
-   columns (Lineup Status pill especially). Scoped, !important override so
-   it stays legible here without touching the shared component other
-   boards still use at its normal size. */
-.hrpt-table .dr1027-chip {
-  font-size: 9.5px !important;
-  padding: 3px 7px !important;
-  white-space: nowrap !important;
-  max-width: 100% !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  display: inline-block !important;
-}
+.hrpt-table thead th:nth-child(10) { width: 11%; }
+.hrpt-table thead th:nth-child(11) { width: 7%; }
 .hrpt-table thead th {
   position: sticky;
   top: 0;
@@ -6972,14 +6931,26 @@ table.hrpt-table {
   white-space: nowrap;
 }
 .hrpt-table thead th.hrpt-num { text-align: center; }
-.hrpt-table thead th.hrpt-sortable { cursor: pointer; }
+.hrpt-table thead th.hrpt-sortable { cursor: pointer; transition: color .15s ease, text-shadow .15s ease; }
 .hrpt-table thead th.hrpt-sortable:hover { color: var(--text); }
-.hrpt-table thead th.hrpt-sortable.active { color: var(--accent2); }
+.hrpt-table thead th.hrpt-sortable.active { color: var(--accent2); text-shadow: 0 0 12px rgba(91,157,255,.55); }
 
-.hrpt-row { border-bottom: 1px solid var(--border); cursor: pointer; transition: background .1s; }
-.hrpt-row:hover { background: rgba(47, 107, 255, .06); }
+@keyframes hrptRowIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.hrpt-row.dr-anim-in { animation: hrptRowIn .4s cubic-bezier(.2,.8,.2,1) both; }
+.hrpt-row {
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+.hrpt-row:hover { background: rgba(47, 107, 255, .12); transform: translateX(3px); }
+.hrpt-row td[style*="background"] { transition: filter .18s ease; }
+.hrpt-row:hover td[style*="background"] { filter: brightness(1.22) saturate(1.15); }
 .hrpt-row.hit { box-shadow: inset 3px 0 0 var(--green); }
 .hrpt-row.miss { box-shadow: inset 3px 0 0 var(--dr-red, #ff4d6d); }
+@media (prefers-reduced-motion: reduce) {
+  .hrpt-row.dr-anim-in { animation: none; }
+  .hrpt-row, .hrpt-row td[style*="background"], .hrpt-detail-row.hrpt-open .hrpt-detail-inner { transition: none !important; animation: none !important; }
+}
 .hrpt-table td { padding: 8px 10px; vertical-align: middle; }
 .hrpt-table td.hrpt-num { text-align: center; font-size: 12.5px; }
 
@@ -6989,17 +6960,18 @@ table.hrpt-table {
 .hrpt-name { font-family: var(--font-body); font-size: 12.5px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 5px; white-space: nowrap; }
 .hrpt-sub { font-family: var(--font-body); font-size: 10px; color: var(--muted); white-space: nowrap; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; }
 
-.hrpt-prob { font-size: 14px; font-weight: 800; }
+.hrpt-prob { font-size: 15px; font-weight: 800; color: #8ec2ff; text-shadow: 0 0 12px rgba(91,157,255,.35); }
 .hrpt-grade { display: inline-block; font-family: var(--font-body); font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 6px; }
-.hrpt-grade-a { background: rgba(46, 230, 166, .16); color: var(--green); border: 1px solid rgba(46, 230, 166, .4); }
-.hrpt-grade-b { background: var(--accent-soft, rgba(47,107,255,.14)); color: var(--accent2); border: 1px solid rgba(91, 157, 255, .4); }
-.hrpt-grade-c { background: rgba(209, 169, 78, .16); color: var(--gold); border: 1px solid rgba(209, 169, 78, .4); }
+.hrpt-grade-a { background: rgba(46, 230, 166, .26); color: #4dffc4; border: 1px solid rgba(46, 230, 166, .65); text-shadow: 0 0 10px rgba(46,230,166,.5); }
+.hrpt-grade-b { background: rgba(91, 157, 255, .24); color: #8ec2ff; border: 1px solid rgba(91, 157, 255, .65); text-shadow: 0 0 10px rgba(91,157,255,.5); }
+.hrpt-grade-c { background: rgba(209, 169, 78, .26); color: #ffcf6b; border: 1px solid rgba(209, 169, 78, .65); text-shadow: 0 0 10px rgba(209,169,78,.4); }
 
 .hrpt-mix-pill { font-family: var(--font-body); font-size: 9.5px; font-weight: 700; padding: 3px 7px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
-.hrpt-mix-pill.fav { border-color: rgba(46, 230, 166, .5); color: var(--green); }
+.hrpt-mix-pill.fav { background: rgba(46, 230, 166, .14); border-color: rgba(46, 230, 166, .7); color: #4dffc4; }
 
 .hrpt-signals { font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 6px; }
-.hrpt-signals span { cursor: help; line-height: 1; }
+.hrpt-signals span { cursor: help; line-height: 1; display: inline-block; transition: transform .15s ease; }
+.hrpt-signals span:hover { transform: scale(1.4); }
 .hrpt-dash { color: var(--muted2, var(--muted)); }
 
 /* #hr-potential-content already carries a legacy blanket rule (an older,
@@ -7011,6 +6983,8 @@ table.hrpt-table {
    rule already uses for the same reason. */
 #hr-potential-content .hrpt-detail-row { display: none !important; }
 #hr-potential-content .hrpt-detail-row.hrpt-open { display: table-row !important; }
+@keyframes hrptDetailIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.hrpt-detail-row.hrpt-open .hrpt-detail-inner { animation: hrptDetailIn .3s cubic-bezier(.2,.8,.2,1) both; }
 .hrpt-detail-row td { padding: 0; border-bottom: 1px solid var(--border); }
 .hrpt-detail-inner {
   font-family: var(--font-body);
@@ -7081,8 +7055,9 @@ table.hrpt-table {
   align-self: stretch;
   text-align: center;
   margin-top: 4px;
+  transition: background .15s ease, box-shadow .15s ease, transform .15s ease;
 }
-.hrpt-open-full:hover { background: var(--accent2); border-color: var(--accent2); }
+.hrpt-open-full:hover { background: var(--accent2); border-color: var(--accent2); box-shadow: 0 0 16px rgba(91,157,255,.5); transform: translateY(-1px); }
 .hrpt-compare { display: flex; align-items: center; gap: 6px; font-family: var(--font-body); font-size: 10.5px; color: var(--muted); cursor: pointer; }
 
 /* 768px, not the 700px breakpoint used elsewhere in the file -- matches the

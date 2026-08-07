@@ -619,7 +619,7 @@
           </div>
         </div>
       </div>
-      <select id="hrp-sort-select" onchange="window.setHRSort && window.setHRSort(this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:10px;font-weight:700"><option value="hrProb">Sort: HR Probability</option><option value="matchupEdge">Sort: Matchup Edge</option><option value="zoneFit">Sort: Zone Fit</option><option value="ops">Sort: OPS</option><option value="iso">Sort: ISO</option></select>
+      <select id="hrp-sort-select" onchange="window.setHRSort && window.setHRSort(this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:10px;font-weight:700"><option value="hrProb">Sort: HR Probability</option><option value="matchupEdge">Sort: Matchup Edge</option><option value="zoneFit">Sort: Zone Fit</option><option value="ops">Sort: OPS</option><option value="iso">Sort: ISO</option><option value="avg">Sort: AVG</option></select>
       <!-- Team/Position/Pitcher Throws/Batter Bats/Game Time/Stadium/Weather -- populated
            on every render by renderHRPTableV1032 (drStandardFilterControlsHTML), same
            standardized filter set K Props/Prop Intelligence use. Lives directly on the
@@ -641,10 +641,6 @@
           <small>Top home run threats ranked by power indicators and matchup context.</small>
         </div>
         <span class="dr-panel-tag">Live Board</span>
-        <div class="hrp-view-toggle" role="tablist" aria-label="View">
-          <button type="button" id="hrp-view-cards-btn" class="hrp-view-btn active" onclick="window.setHRPView&&window.setHRPView('cards')">🗂 Cards</button>
-          <button type="button" id="hrp-view-table-btn" class="hrp-view-btn" onclick="window.setHRPView&&window.setHRPView('table')">📋 Table</button>
-        </div>
       </div>
       <div id="hr-potential-content" class="dr-panel-body dr-scroll-tall">
         <div class="mu-empty"><span class="spin"></span>Loading HR threats…</div>
