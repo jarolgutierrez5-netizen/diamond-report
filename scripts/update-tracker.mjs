@@ -2603,6 +2603,13 @@ async function captureHRThreatToday(store, pool) {
       pitcherHr9: r.pitcherHr9 ?? null, pitcherAvgAllowed: r.pitcherAvgAllowed ?? null,
       pitcherSlgAllowed: r.pitcherSlgAllowed ?? null, pitcherWhip: r.pitcherWhip ?? null,
       batterOPS: r.ops ?? null, batterISO: r.iso ?? null,
+      // Real season AB total at pick time -- r.atBats already exists on the pool row
+      // (used to gate pool eligibility via POOL_MIN_AB) but was never actually
+      // persisted here, so there's been no way to check whether the model's real
+      // calibration holds up for a part-time/platoon/bench batter the same way it
+      // does for an everyday starter. Recorded purely for that later analysis; not
+      // itself a scoring input (batterRate's own shrinkage already uses it live).
+      batterAtBats: r.atBats ?? null,
       parkFactor: r.parkFactor ?? null, windFactor: r.windFactor ?? null, temperatureFactor: r.temperatureFactor ?? null,
       // Exploratory "Pitcher IQ" signal — see PITCHER_2K_SUPPRESSION_PATH comment.
       // Recorded here purely so it accumulates against real graded outcomes; not

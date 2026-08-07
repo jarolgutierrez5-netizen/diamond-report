@@ -298,6 +298,24 @@ async function main() {
     console.log('  (need at least 20 graded picks with 2-strike suppression data for a meaningful breakdown — check back after more picks are captured and graded)');
   }
 
+  // ── Batter sample-size breakdown — checks whether real calibration holds up
+  // for a part-time/platoon/bench batter the same way it does for an everyday
+  // starter, not just whether the model's OWN shrinkage logic feels reasonable.
+  // batterAtBats was only added to the capture in this same session, so this
+  // will be empty/thin at first -- same "instrument now, judge once real picks
+  // accumulate" pattern as startBFShare/matchupEdge above. Boundaries: POOL_MIN_AB
+  // (40) already floors what gets captured at all, so buckets start above that --
+  // <150 AB is roughly a part-timer/injury-limited/recent-call-up sample, 150-350
+  // is a platoon or bench-regular season, 350+ is a genuine everyday starter.
+  const withBatterAB = graded.filter(r => r.batterAtBats != null);
+  console.log(`\nPicks with batter AB-total data: ${withBatterAB.length}/${graded.length}`);
+  if (withBatterAB.length >= 20) {
+    const abBucket = r => r.batterAtBats < 150 ? '<150 AB (part-time)' : r.batterAtBats < 350 ? '150-350 AB (platoon/bench)' : '350+ AB (everyday)';
+    printTable('By batter season AB total:', bucketStats(withBatterAB, abBucket, ['<150 AB (part-time)', '150-350 AB (platoon/bench)', '350+ AB (everyday)']));
+  } else {
+    console.log('  (need at least 20 graded picks with batter AB-total data for a meaningful breakdown — check back after more picks are captured and graded under the new field)');
+  }
+
   console.log('\n' + '═'.repeat(70));
 }
 
