@@ -170,6 +170,20 @@ jobs:
       # same pitcherSearchURL/todaysProbablePitcherIds — how a pitcher performs on the
       # 1st/2nd/3rd-or-later pitch of an at-bat, bucketed from the same Statcast Search
       # CSV those steps already pull.
+      # Same bounded per-probable-starter scope as the steps above, reusing
+      # todaysProbablePitcherIds -- but hits the MLB Stats API gameLog endpoint
+      # directly instead of Statcast Search, since battersFaced/inningsPitched
+      # per start is an exact box-score counting stat, not something that needs
+      # reconstructing from pitch-level rows. Real avg batters-faced-per-start
+      # over a starter's last 5 starts, used to scale down the opposing-pitcher
+      # weight in the HR Threats formula for quick-hook starters who only see a
+      # batter for 1-2 of his ~4 PA before the bullpen takes over -- see the
+      # script's own header for the calibration-report evidence this addresses.
+      - name: Run starting pitcher workload sync (real BF/IP per start)
+        run: node scripts/sync-pitcher-workload.mjs
+        continue-on-error: true
+        timeout-minutes: 8
+
       - name: Run pitch-count performance sync (1st/2nd/3rd+ pitch of at-bat)
         run: node scripts/sync-pitcher-count-performance.mjs
         continue-on-error: true
@@ -289,6 +303,7 @@ jobs:
           [ -f data/batter-pitch-type-hr.json ] && git add data/batter-pitch-type-hr.json
           [ -f data/all-time-pitch-type-hr.json ] && git add data/all-time-pitch-type-hr.json
           [ -f data/career-pitch-type-hr.json ] && git add data/career-pitch-type-hr.json
+          [ -f data/pitcher-workload.json ] && git add data/pitcher-workload.json
           if git diff --cached --quiet; then
             echo "No changes to sync — nothing to commit."
             exit 0
