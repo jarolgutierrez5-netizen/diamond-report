@@ -2,14 +2,26 @@ import { test, expect } from '@playwright/test';
 import { openHRBoard, openPropBoard, BOARD_ROWS } from './lib/fixtures.mjs';
 
 test.describe('HR Threats board', () => {
-  // The board is table-only now (no more card grid, no Cards/Table toggle --
-  // openHRBoard's own render call already lands on the table).
+  // The dense table's mobile collapse (stacked label:value rows) read worse
+  // than the original card layout on an actual phone, so the split is now
+  // viewport-driven: cards at <=768px (renderHRPTableV1032's own
+  // window.innerWidth check, same 768px breakpoint the table's CSS already
+  // used for its now-unused mobile collapse), table above that. No more
+  // Cards/Table toggle -- there's nothing to switch, the board picks for you.
   test('filter bar renders (closed)', async ({ page }) => {
     await openHRBoard(page);
     await expect(page.locator('#gamepick-pane-hr .dr-filter-row').first()).toHaveScreenshot('hr-filter-row.png');
   });
 
-  test('table renders by default with sortable heat cells, renamed columns, and no confidence badge', async ({ page }) => {
+  test('renders cards, not the table, at mobile/tablet widths', async ({ page }) => {
+    test.skip(page.viewportSize().width > 768, 'card view only applies at <=768px; covered by the table tests above that width');
+    await openHRBoard(page);
+    await expect(page.locator('#hr-potential-content .dr1027-hr-card-list')).toBeVisible();
+    await expect(page.locator('#hr-potential-content .hrpt-table')).toHaveCount(0);
+  });
+
+  test('desktop: table renders by default with sortable heat cells, renamed columns, and no confidence badge', async ({ page }) => {
+    test.skip(page.viewportSize().width <= 768, 'table view is desktop-only; mobile/tablet render cards instead');
     await openHRBoard(page);
     // HR% runs a JS count-up (animateCountUp) independent of the fixture's
     // CSS-only disableMotion() -- give it time to land on its final value
@@ -40,7 +52,8 @@ test.describe('HR Threats board', () => {
     await expect(sparseRow.locator('td[data-label="Edge"]')).toHaveText('–');
   });
 
-  test('table row expands to a detail panel, and collapses again on a second click', async ({ page }) => {
+  test('desktop: table row expands to a detail panel, and collapses again on a second click', async ({ page }) => {
+    test.skip(page.viewportSize().width <= 768, 'table view is desktop-only; mobile/tablet render cards instead');
     await openHRBoard(page);
 
     const firstRow = page.locator('.hrpt-row').first();
@@ -55,7 +68,8 @@ test.describe('HR Threats board', () => {
     await expect(detailRow).toBeHidden();
   });
 
-  test('"Full Matchup" button in an expanded table row opens the matchup modal', async ({ page }) => {
+  test('desktop: "Full Matchup" button in an expanded table row opens the matchup modal', async ({ page }) => {
+    test.skip(page.viewportSize().width <= 768, 'table view is desktop-only; mobile/tablet render cards instead');
     await openHRBoard(page);
     await page.locator('.hrpt-row').first().click();
 
