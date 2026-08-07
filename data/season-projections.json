@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-06T14:31:17.805Z",
+  "generatedAt": "2026-08-07T13:32:28.516Z",
   "season": 2026,
   "worldSeries": [
     {
@@ -7,33 +7,33 @@
       "name": "Milwaukee Brewers",
       "abbr": "MIL",
       "league": "NL",
-      "pct": 22.2
+      "pct": 22.3
     },
     {
       "teamId": 119,
       "name": "Los Angeles Dodgers",
       "abbr": "LAD",
       "league": "NL",
-      "pct": 17.9
+      "pct": 17.6
     },
     {
       "teamId": 139,
       "name": "Tampa Bay Rays",
       "abbr": "TB",
       "league": "AL",
-      "pct": 12.9
+      "pct": 13
     },
     {
       "teamId": 144,
       "name": "Atlanta Braves",
       "abbr": "ATL",
       "league": "NL",
-      "pct": 9.1
+      "pct": 9.6
     },
     {
-      "teamId": 145,
-      "name": "Chicago White Sox",
-      "abbr": "CWS",
+      "teamId": 116,
+      "name": "Detroit Tigers",
+      "abbr": "DET",
       "league": "AL",
       "pct": 8
     },
@@ -49,21 +49,21 @@
       "name": "New York Yankees",
       "abbr": "NYY",
       "league": "AL",
-      "pct": 6.5
+      "pct": 6.4
     },
     {
       "teamId": 111,
       "name": "Boston Red Sox",
       "abbr": "BOS",
       "league": "AL",
-      "pct": 6.3
+      "pct": 6.2
     },
     {
-      "teamId": 116,
-      "name": "Detroit Tigers",
-      "abbr": "DET",
+      "teamId": 145,
+      "name": "Chicago White Sox",
+      "abbr": "CWS",
       "league": "AL",
-      "pct": 3.6
+      "pct": 3.8
     },
     {
       "teamId": 117,
@@ -73,18 +73,18 @@
       "pct": 2.4
     },
     {
-      "teamId": 109,
-      "name": "Arizona Diamondbacks",
-      "abbr": "AZ",
-      "league": "NL",
-      "pct": 2.4
-    },
-    {
       "teamId": 143,
       "name": "Philadelphia Phillies",
       "abbr": "PHI",
       "league": "NL",
       "pct": 2.2
+    },
+    {
+      "teamId": 109,
+      "name": "Arizona Diamondbacks",
+      "abbr": "AZ",
+      "league": "NL",
+      "pct": 2.1
     }
   ],
   "mvp": {
@@ -93,7 +93,7 @@
         "id": 670541,
         "name": "Yordan Alvarez",
         "teamAbbr": "HOU",
-        "pct": 17.6
+        "pct": 17.5
       },
       {
         "id": 691406,
@@ -105,13 +105,19 @@
         "id": 700250,
         "name": "Ben Rice",
         "teamAbbr": "NYY",
-        "pct": 13.2
+        "pct": 13.1
+      },
+      {
+        "id": 693307,
+        "name": "Dillon Dingler",
+        "teamAbbr": "DET",
+        "pct": 11.7
       },
       {
         "id": 671277,
         "name": "Luis García Jr.",
         "teamAbbr": "NYY",
-        "pct": 10.7
+        "pct": 10.4
       },
       {
         "id": 575929,
@@ -120,16 +126,10 @@
         "pct": 10.3
       },
       {
-        "id": 693307,
-        "name": "Dillon Dingler",
-        "teamAbbr": "DET",
-        "pct": 10.2
-      },
-      {
         "id": 701762,
         "name": "Nick Kurtz",
         "teamAbbr": "ATH",
-        "pct": 7.2
+        "pct": 7.1
       },
       {
         "id": 621439,
@@ -141,13 +141,13 @@
         "id": 678246,
         "name": "Miguel Vargas",
         "teamAbbr": "CWS",
-        "pct": 5.8
+        "pct": 5
       },
       {
-        "id": 624413,
-        "name": "Pete Alonso",
-        "teamAbbr": "BAL",
-        "pct": 4.5
+        "id": 672960,
+        "name": "Kazuma Okamoto",
+        "teamAbbr": "TOR",
+        "pct": 4.4
       }
     ],
     "NL": [
@@ -161,7 +161,7 @@
         "id": 691718,
         "name": "Pete Crow-Armstrong",
         "teamAbbr": "CHC",
-        "pct": 13.9
+        "pct": 13.4
       },
       {
         "id": 695578,
@@ -173,25 +173,25 @@
         "id": 660271,
         "name": "Shohei Ohtani",
         "teamAbbr": "LAD",
-        "pct": 11.5
+        "pct": 11.3
       },
       {
         "id": 621566,
         "name": "Matt Olson",
         "teamAbbr": "ATL",
-        "pct": 10
+        "pct": 10.5
       },
       {
         "id": 656941,
         "name": "Kyle Schwarber",
         "teamAbbr": "PHI",
-        "pct": 8.6
+        "pct": 8.7
       },
       {
         "id": 696100,
         "name": "Hunter Goodman",
         "teamAbbr": "COL",
-        "pct": 8.6
+        "pct": 8.4
       },
       {
         "id": 547180,
@@ -200,16 +200,16 @@
         "pct": 6.7
       },
       {
-        "id": 691023,
-        "name": "Jordan Walker",
-        "teamAbbr": "STL",
-        "pct": 6.5
-      },
-      {
         "id": 701398,
         "name": "Sal Stewart",
         "teamAbbr": "CIN",
-        "pct": 6
+        "pct": 6.5
+      },
+      {
+        "id": 691023,
+        "name": "Jordan Walker",
+        "teamAbbr": "STL",
+        "pct": 6.4
       }
     ]
   }
