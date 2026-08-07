@@ -327,13 +327,12 @@ async function main() {
   }
   if (!batterErr) {
     await writeFile(path.join(DATA_DIR, 'batter-pitch-type-season.json'), JSON.stringify(batterOut, null, 2) + '\n');
-    // app.js's loadBatterPitchTypeSeason() reads this same batterOut payload from a
-    // second guessed path alongside batter-pitch-type-season.json (same
-    // ingestBatterPitchTypeSeasonPayload merge, same Promise.all) — this alias never
-    // existed on disk, so that second fetch has always thrown/been silently caught.
-    // Same "ship the same real data to every guessed filename" precedent already used
-    // for k-props.json/k_props.json elsewhere in this app, not a second computation.
-    await writeFile(path.join(DATA_DIR, 'batter-pitch-mix-advantage.json'), JSON.stringify(batterOut, null, 2) + '\n');
+    // Was also written to a second guessed path, batter-pitch-mix-advantage.json
+    // (app.js's loadBatterPitchTypeSeason() used to fetch both, same
+    // ingestBatterPitchTypeSeasonPayload merge) -- pure duplicate storage/git-churn
+    // for the exact same ~2.6MB payload with no reader needing the alternate.
+    // Consolidated to this one real name; see loadBatterPitchTypeSeason's own
+    // comment in app.js.
     const powerIndex = aggregateBatterPowerIndex(players);
     const powerIndexOut = { generatedAt: new Date().toISOString(), season: SEASON, players: powerIndex };
     await writeFile(path.join(DATA_DIR, 'batter-power-index.json'), JSON.stringify(powerIndexOut, null, 2) + '\n');
