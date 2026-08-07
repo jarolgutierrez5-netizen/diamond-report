@@ -3263,7 +3263,18 @@ function muTableColumns(pitcherHand) {
     { key: 'iso',     label: 'ISO',   dec: 3, pct0: true },
     { key: 'slg',     label: 'SLG',   dec: 3, pct0: true },
     { key: 'woba',    label: 'wOBA',  dec: 3, pct0: true },
-    { key: 'avgEV',   label: 'Avg EV', dec: 1, suffix: ' mph' },
+    // Avg EV was here but removed -- live-verified the batter AND pitcher
+    // pitch-arsenal leaderboard CSVs (both queried directly against Baseball
+    // Savant) simply don't publish an exit-velocity or barrel% column at all,
+    // for either side. rowToPitchStat's avgEV/barrelPct candidate names were
+    // guesses made before this environment could reach Savant to check; now
+    // confirmed none of them exist in the real response, so this cell has
+    // shown "–" for every batter under every pitch-type filter since this
+    // table launched -- looked exactly like a broken filter, not a genuinely
+    // missing data source. Left as a real gap rather than backfilled with an
+    // estimate; a future pass could derive it from Statcast Search's raw
+    // launch_speed field (same source sync-batter-pitch-type-hr.mjs already
+    // queries) if this signal is worth the added per-batter request cost.
     { key: 'whiffPct', label: 'Whiff%', dec: 1, suffix: '%' },
     { key: 'hr',      label: 'HR', dec: 0 },
     { key: 'platoonAvg', label: `AVG vs ${hl}`, dec: 3, pct0: true },
@@ -3410,7 +3421,6 @@ function _muHeatBG(colKey, val) {
     case 'iso':  return heatBG(val, 0.120, 0.220);
     case 'slg':  return heatBG(val, 0.370, 0.500);
     case 'woba': return heatBG(val, 0.290, 0.370);
-    case 'avgEV': return heatBG(val, 87, 92);
     case 'whiffPct': return heatBGInverted(val, 30, 15);
     // Same real league-average bands as the season avg/slg columns above -- these
     // are the batter's real AVG/SLG specifically against pitchers who throw the same
@@ -3445,7 +3455,10 @@ function isFavorableMatchupRow(stat) {
   if (stat.iso != null && stat.iso >= 0.220) signals++;
   if (stat.slg != null && stat.slg >= 0.500) signals++;
   if (stat.woba != null && stat.woba >= 0.370) signals++;
-  if (stat.avgEV != null && stat.avgEV >= 92) signals++;
+  // avgEV signal removed -- see muTableColumns' own comment; stat.avgEV is
+  // always null (Savant's pitch-arsenal leaderboard doesn't publish it), so
+  // this branch could never fire. MU_FAVORABLE_MIN_SIGNALS stays 3 unchanged
+  // -- this was already effectively "3 of 7 real signals," not 8.
   if (stat.whiffPct != null && stat.whiffPct <= 15) signals++;
   if (stat.platoonOps != null && stat.platoonOps >= 0.850) signals++;
   if (stat.kPct != null && stat.kPct <= 15) signals++;
