@@ -60,6 +60,12 @@ const TD_CATEGORIES_BY_POSITION = {
 };
 
 const FETCH_TIMEOUT_MS = 15000;
+// A 404 is a stable, immediate answer ("this season's gamelog doesn't exist"
+// -- real and expected for the current season during preseason/before Week 1
+// has been played), not a transient failure -- retrying it 3x with backoff
+// just burns ~3s per player for no benefit. Only real transient failures
+// (timeouts, 5xx, network errors) get the retry loop. e.status carries the
+// HTTP status through so callers can distinguish "not found" from "broken".
 async function fetchJSON(url, attempts = 3) {
   let lastErr;
   for (let i = 0; i < attempts; i++) {
@@ -67,10 +73,15 @@ async function fetchJSON(url, attempts = 3) {
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     try {
       const res = await fetch(url, { headers: { accept: 'application/json' }, signal: controller.signal });
-      if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+      if (!res.ok) {
+        const err = new Error(`HTTP ${res.status} for ${url}`);
+        err.status = res.status;
+        throw err;
+      }
       return await res.json();
     } catch (e) {
       lastErr = e.name === 'AbortError' ? new Error(`Timed out after ${FETCH_TIMEOUT_MS}ms for ${url}`) : e;
+      if (e.status === 404) break;
       if (i < attempts - 1) await new Promise(r => setTimeout(r, 1000 * (i + 1)));
     } finally {
       clearTimeout(timer);
@@ -128,14 +139,27 @@ async function main() {
   let updated = 0, failed = 0, noData = 0;
   let seasonUsedCounts = {};
   for (const p of players) {
-    try {
-      let result = null, seasonUsed = null;
-      for (const season of SEASONS_TRIED) {
+    let result = null, seasonUsed = null, lastError = null;
+    // Each season in SEASONS_TRIED gets its OWN try/catch -- a 404 (or any
+    // other failure) on the current season must fall through to the next
+    // season instead of aborting the whole player. A season=2026 404 during
+    // preseason is real and expected (that season's gamelog doesn't exist
+    // yet), not a reason to give up before ever trying 2025's real numbers.
+    for (const season of SEASONS_TRIED) {
+      try {
         const raw = await fetchJSON(gamelogURL(p.id, season));
         const r = extractSeasonTDRate(raw, p.position);
         if (r && r.games > 0) { result = r; seasonUsed = season; break; }
+      } catch (e) {
+        lastError = e;
+        // Only log genuine failures -- a 404 here just means "this season
+        // doesn't exist yet," which is the normal case for every player
+        // until the current season's Week 1 has been played, not an error
+        // worth a log line per player.
+        if (e.status !== 404) console.error(`Player-stats fetch failed for ${p.name} (${p.id}), season ${season}:`, e.message);
       }
-      if (!result) { noData++; continue; }
+    }
+    if (result) {
       out[p.id] = {
         name: p.name, position: p.position, teamAbbr: p.teamAbbr,
         season: seasonUsed, td: result.td, games: result.games,
@@ -143,9 +167,10 @@ async function main() {
       };
       seasonUsedCounts[seasonUsed] = (seasonUsedCounts[seasonUsed] || 0) + 1;
       updated++;
-    } catch (e) {
+    } else if (lastError && lastError.status !== 404) {
       failed++;
-      console.error(`Player-stats fetch failed for ${p.name} (${p.id}):`, e.message);
+    } else {
+      noData++;
     }
     // Same polite bounded-scope delay every other sync script in this repo
     // uses against a free, unauthenticated public endpoint -- this loop is a
