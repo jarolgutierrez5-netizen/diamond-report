@@ -29,11 +29,30 @@
 // year's real pitch count for that pitch type. Still bounded and cheap (~11 total
 // requests/day as of 2026, not 11-per-pitcher), morning-run only like the season pull
 // this shares its schema/parser with.
+//
+// Output scoping: the Savant leaderboard fetch itself is unavoidably whole-league (no
+// per-player filter exists on this endpoint), but every real consumer of the files this
+// writes -- app.js's board/matchup-modal loaders, update-tracker.mjs's buildBatterPool,
+// the zone-hr merge scripts -- only ever looks up a batter/pitcher who's actually in
+// today's games. Writing all ~760 pitchers/~620 batters the league-wide leaderboard
+// returns meant rewriting a multi-megabyte file from scratch 5x/day regardless of how
+// many of those players' stats actually changed, most of whom no reader ever looks up.
+// Filtered to today's probable starters (todaysProbablePitcherIds, same scope
+// sync-pitcher-zone-hr.mjs/sync-pitcher-rolling.mjs already use) and today's active
+// batters (todaysActiveBatterIds, same scope sync-batter-zone-hr.mjs already uses)
+// before writing, so the file only ever carries entries a reader can actually reach.
 // ─────────────────────────────────────────────────────────────────────────
 
 import { writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+// Circular at the module-graph level (sync-pitcher-zone-hr.mjs/sync-batter-zone-hr.mjs
+// both import parseCSV/PITCH_NAME_MAP back from this file below) -- safe in Node's ESM
+// since both sides only reference hoisted function declarations, never called until
+// main() runs long after both modules have finished evaluating. Verified directly
+// against a standalone circular-import test before relying on it here.
+import { todaysProbablePitcherIds } from './sync-pitcher-zone-hr.mjs';
+import { todaysActiveBatterIds } from './sync-batter-zone-hr.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, '..', 'data');
@@ -280,22 +299,57 @@ async function buildBatterPitchSeason() {
   return players;
 }
 
+// Narrows a whole-league {id: stat} object down to just the IDs in idMap (a
+// Map<id, name> from todaysProbablePitcherIds/todaysActiveBatterIds) -- see this
+// file's own header for why. idMap keys are numeric MLB IDs (from JSON); CSV-sourced
+// object keys are already string-coerced by normal JS property access, so String(id)
+// lookups line up correctly either way.
+function filterToIds(allPlayers, idMap) {
+  const out = {};
+  for (const id of idMap.keys()) {
+    const key = String(id);
+    if (allPlayers[key]) out[key] = allPlayers[key];
+  }
+  return out;
+}
+
 async function main() {
   await mkdir(DATA_DIR, { recursive: true });
 
-  let pitchers = {}, players = {};
-  let pitcherErr = null, batterErr = null;
+  // Fetched once, up front, so a failure here can block BOTH writes below (same as a
+  // real pitcherErr/batterErr) instead of silently degrading to an empty scope and
+  // wiping yesterday's real data -- see filterToIds' header comment for why this
+  // scoping exists at all.
+  let probablePitcherIds = null, activeBatterIds = null, scopeErr = null;
   try {
-    pitchers = await buildPitcherStatcast();
+    [probablePitcherIds, activeBatterIds] = await Promise.all([
+      todaysProbablePitcherIds(),
+      todaysActiveBatterIds(),
+    ]);
   } catch (e) {
-    pitcherErr = e.message;
-    console.error('Pitcher pitch-arsenal sync failed:', e.message);
+    scopeErr = e.message;
+    console.error("Failed to fetch today's probable pitchers/active batters — can't scope the leaderboard write safely, skipping both:", e.message);
   }
-  try {
-    players = await buildBatterPitchSeason();
-  } catch (e) {
-    batterErr = e.message;
-    console.error('Batter pitch-arsenal sync failed:', e.message);
+
+  let pitchers = {}, players = {};
+  let pitcherErr = scopeErr, batterErr = scopeErr;
+  if (!scopeErr) {
+    try {
+      const allPitchers = await buildPitcherStatcast();
+      pitchers = filterToIds(allPitchers, probablePitcherIds);
+      console.log(`Pitcher pitch-arsenal: kept ${Object.keys(pitchers).length}/${Object.keys(allPitchers).length} league-wide entries (today's probable starters).`);
+    } catch (e) {
+      pitcherErr = e.message;
+      console.error('Pitcher pitch-arsenal sync failed:', e.message);
+    }
+    try {
+      const allPlayers = await buildBatterPitchSeason();
+      players = filterToIds(allPlayers, activeBatterIds);
+      console.log(`Batter pitch-arsenal: kept ${Object.keys(players).length}/${Object.keys(allPlayers).length} league-wide entries (today's active batters).`);
+    } catch (e) {
+      batterErr = e.message;
+      console.error('Batter pitch-arsenal sync failed:', e.message);
+    }
   }
 
   // Career is a nice-to-have layered on top of the season data above, not a
