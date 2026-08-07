@@ -144,6 +144,18 @@ jobs:
         continue-on-error: true
         timeout-minutes: 25
 
+      # Same today's-active-batter scope/reasoning as the two steps above (morning
+      # only, roster doesn't change through the day), but a wider per-player Statcast
+      # Search window (current + 2 prior seasons, not single-season) -- see the
+      # script's own header for why that's bounded rather than a true since-2015 pull.
+      # Wider window means a heavier response per player than its season-only
+      # siblings, hence the longer timeout budget.
+      - name: Run batter career-window pitch-type HR sync
+        if: github.event.schedule == '4 11 * * *' || github.event_name == 'workflow_dispatch'
+        run: node scripts/sync-batter-pitch-type-hr.mjs
+        continue-on-error: true
+        timeout-minutes: 40
+
       # Same bounded per-probable-starter scope as the zone/HR step above (reuses its
       # todaysProbablePitcherIds/pitcherSearchURL), so it re-runs on every intraday
       # trigger too — a pitcher's last-3-starts velocity/usage/whiff trend doesn't
@@ -265,6 +277,18 @@ jobs:
           [ -f data/pitcher-2k-suppression.json ] && git add data/pitcher-2k-suppression.json
           [ -f data/batter-situational-props.json ] && git add data/batter-situational-props.json
           [ -f data/prop-market-odds.json ] && git add data/prop-market-odds.json
+          # batter-pitch-mix-advantage.json is a second guessed filename app.js's
+          # loadBatterPitchTypeSeason() also fetches for the exact same payload
+          # batter-pitch-type-season.json already carries -- sync-pitcher-statcast.mjs
+          # now writes both, same "ship the real data to every guessed alias" pattern
+          # as k-props.json/k_props.json elsewhere in this app.
+          [ -f data/batter-pitch-mix-advantage.json ] && git add data/batter-pitch-mix-advantage.json
+          # All three of these are the same real multi-season payload written to every
+          # filename app.js's loadBatterPitchTypeHr() guesses -- see
+          # sync-batter-pitch-type-hr.mjs's own header.
+          [ -f data/batter-pitch-type-hr.json ] && git add data/batter-pitch-type-hr.json
+          [ -f data/all-time-pitch-type-hr.json ] && git add data/all-time-pitch-type-hr.json
+          [ -f data/career-pitch-type-hr.json ] && git add data/career-pitch-type-hr.json
           if git diff --cached --quiet; then
             echo "No changes to sync — nothing to commit."
             exit 0

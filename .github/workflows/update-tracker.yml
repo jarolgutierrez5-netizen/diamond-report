@@ -59,6 +59,17 @@ jobs:
           BALLPARKPAL_API_KEY: ${{ secrets.BALLPARKPAL_API_KEY }}
         run: node scripts/update-tracker.mjs
 
+      # Independent of the tracker step above (no shared inputs/outputs) -- captures
+      # whichever official lineups MLB has posted by the time each of this workflow's
+      # three daily passes runs, which is exactly the same "lineups fill in through the
+      # day" problem this workflow's own 3-pass schedule (see the cron comments above)
+      # was already designed around for HR Threats capture. Real lineups only, never a
+      # projected/expected one -- see the script's own header.
+      - name: Sync today's confirmed batting lineups
+        run: node scripts/sync-lineups.mjs
+        continue-on-error: true
+        timeout-minutes: 5
+
       # Depends on data/tracker.json's just-graded prior-day results (for the recap
       # paragraph) and today's freshly-captured pool (for the storylines) -- must run
       # after the step above. Own try/catch around the schedule fetch inside the script
@@ -99,8 +110,9 @@ jobs:
           # copy and then discarded it, so it never once reached a commit. Confirmed via
           # job logs: the file has never existed on main despite the script succeeding.
           [ -f data/prop-market-odds.json ] && git add data/prop-market-odds.json
+          [ -f data/lineups.json ] && git add data/lineups.json
           if git diff --cached --quiet; then
-            echo "No changes to data/tracker.json, data/k-props.json, data/ballparkpal-comparison.json, data/drp-sim-comparison.json, data/prop-market-odds.json, data/daily-headlines.json, data/trending-players.json, data/featured-player.json, or data/performance-report.json — nothing to commit."
+            echo "No changes to data/tracker.json, data/k-props.json, data/ballparkpal-comparison.json, data/drp-sim-comparison.json, data/prop-market-odds.json, data/daily-headlines.json, data/trending-players.json, data/featured-player.json, data/performance-report.json, or data/lineups.json — nothing to commit."
             exit 0
           fi
           git config user.name "diamond-report-bot"
