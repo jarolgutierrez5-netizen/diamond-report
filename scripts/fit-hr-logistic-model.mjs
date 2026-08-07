@@ -196,28 +196,92 @@ function assignFolds(rows, k) {
   return sorted.map((r, i) => ({ row: r, fold: i % k }));
 }
 
-function buildFeatureRow(r) {
-  return [1, r.batterISO, r.pitcherHr9, r.pitcherWhip, r.parkFactor, r.windFactor, r.temperatureFactor, r.isOnFire ? 1 : 0, r.matchupEdge];
+// features param lets this build a reduced row for the ablation study below --
+// defaults to the full FEATURES list so every existing call site (main model fit)
+// is unaffected.
+function buildFeatureRow(r, features = FEATURES) {
+  return [1, ...features.map(f => (f === 'isOnFire' ? (r.isOnFire ? 1 : 0) : r[f]))];
 }
 
-function crossValidate(rows, lambda) {
+function crossValidate(rows, lambda, features = FEATURES) {
   const withFold = assignFolds(rows, N_FOLDS);
   const outOfFoldP = new Array(rows.length);
   const yAll = rows.map(r => (r.result === 'win' ? 1 : 0));
   for (let fold = 0; fold < N_FOLDS; fold++) {
     const trainIdx = [], testIdx = [];
     withFold.forEach((wf, i) => (wf.fold === fold ? testIdx : trainIdx).push(i));
-    const Xtrain = trainIdx.map(i => buildFeatureRow(withFold[i].row));
+    const Xtrain = trainIdx.map(i => buildFeatureRow(withFold[i].row, features));
     const ytrain = trainIdx.map(i => (withFold[i].row.result === 'win' ? 1 : 0));
     const { means, stds } = fitStandardizer(Xtrain);
     const XtrainStd = standardize(Xtrain, means, stds);
     const beta = fitLogistic(XtrainStd, ytrain, lambda);
-    const Xtest = testIdx.map(i => buildFeatureRow(withFold[i].row));
+    const Xtest = testIdx.map(i => buildFeatureRow(withFold[i].row, features));
     const XtestStd = standardize(Xtest, means, stds);
     const p = predict(XtestStd, beta);
     testIdx.forEach((idx, k) => { outOfFoldP[idx] = p[k]; });
   }
   return { p: outOfFoldP, y: yAll, rows: withFold.map(wf => wf.row) };
+}
+
+// Picks lambda by the same CV-log-loss grid search main() uses for the full model,
+// just reusable for an arbitrary feature subset -- the ablation study below needs
+// this per reduced feature set since a smaller model may legitimately want a
+// different regularization strength, not just the full model's own lambda reused.
+function selectLambda(rows, features) {
+  let best = null;
+  for (const lambda of LAMBDA_GRID) {
+    const cv = crossValidate(rows, lambda, features);
+    const ll = logLoss(cv.y, cv.p);
+    if (!best || ll < best.ll) best = { lambda, ll, cv };
+  }
+  return best;
+}
+
+// ── Leave-one-out feature ablation ──────────────────────────────────────────
+// Same idea as the "accuracy of model trained without feature" table in
+// https://lucaspauker.com/articles/home-run-modeling/ -- a fitted coefficient's
+// sign/magnitude alone doesn't say whether a feature is pulling real weight or
+// just correlating with something else already in the model; refitting WITHOUT
+// it and checking whether cross-validated performance actually drops is the
+// direct test. For each feature, drops it, re-selects lambda for that reduced
+// set (see selectLambda's own comment), and reports the CV metric deltas versus
+// the full model -- a feature whose removal barely moves AUC/log-loss is a
+// candidate to drop entirely next time FEATURES is revisited, the same
+// "measure before deciding" discipline this script already applies to
+// lambda/lineup-vs-legacy-formula comparisons above.
+function runFeatureAblation(trainable, fullAuc, fullBrier, fullLogLoss) {
+  return FEATURES.map(dropped => {
+    const reduced = FEATURES.filter(f => f !== dropped);
+    const { lambda, cv } = selectLambda(trainable, reduced);
+    const withoutAuc = auc(cv.y, cv.p);
+    const withoutBrier = brierScore(cv.y, cv.p);
+    const withoutLogLoss = logLoss(cv.y, cv.p);
+    return {
+      feature: dropped,
+      lambda,
+      aucWithout: withoutAuc,
+      // Positive deltaAuc = removing this feature HURT the model (feature is real
+      // signal); negative or ~0 = the model did fine without it.
+      deltaAuc: (fullAuc == null || withoutAuc == null) ? null : fullAuc - withoutAuc,
+      brierWithout: withoutBrier,
+      deltaBrier: withoutBrier - fullBrier, // positive = worse (Brier is lower-is-better)
+      logLossWithout: withoutLogLoss,
+      deltaLogLoss: withoutLogLoss - fullLogLoss, // positive = worse
+    };
+  }).sort((a, b) => (b.deltaAuc ?? -Infinity) - (a.deltaAuc ?? -Infinity));
+}
+
+function printAblationTable(rows) {
+  console.log('\nFeature ablation (leave-one-out, cross-validated -- see this file\'s header comment):');
+  console.log('Positive ΔAUC/ΔLog-loss = removing that feature made the model WORSE (real signal). Near-zero or negative = the model did fine without it.');
+  console.log(`  ${'Feature'.padEnd(20)}${'AUC w/o'.padStart(10)}${'ΔAUC'.padStart(9)}${'ΔLog-loss'.padStart(12)}${'ΔBrier'.padStart(10)}`);
+  for (const r of rows) {
+    const aucStr = r.aucWithout == null ? 'n/a' : r.aucWithout.toFixed(3);
+    const dAucStr = r.deltaAuc == null ? 'n/a' : (r.deltaAuc >= 0 ? '+' : '') + r.deltaAuc.toFixed(3);
+    const dLlStr = (r.deltaLogLoss >= 0 ? '+' : '') + r.deltaLogLoss.toFixed(4);
+    const dBrStr = (r.deltaBrier >= 0 ? '+' : '') + r.deltaBrier.toFixed(4);
+    console.log(`  ${r.feature.padEnd(20)}${aucStr.padStart(10)}${dAucStr.padStart(9)}${dLlStr.padStart(12)}${dBrStr.padStart(10)}`);
+  }
 }
 
 function bucketTable(rows, p, y) {
@@ -298,10 +362,13 @@ async function main() {
   printBucketTable('New model (cross-validated, out-of-fold predictions):', bucketTable(cv.rows, cv.p, cv.y));
   printBucketTable('Current formula (its own live "score" field):', bucketTable(legacyOnly, currentP, currentY));
 
+  const ablation = runFeatureAblation(trainable, cvAuc, cvBrier, cvLogLoss);
+  printAblationTable(ablation);
+
   // ── Full-data fit (for persisting/reviewing coefficients -- NOT used for the
   // cross-validated numbers above, which only ever score a fold on a model
   // that never saw it). ──
-  const Xfull = trainable.map(buildFeatureRow);
+  const Xfull = trainable.map(r => buildFeatureRow(r));
   const yfull = trainable.map(r => (r.result === 'win' ? 1 : 0));
   const { means, stds } = fitStandardizer(Xfull);
   const XfullStd = standardize(Xfull, means, stds);
@@ -321,6 +388,12 @@ async function main() {
     training: { n: trainable.length, wins, hitRate: wins / trainable.length },
     crossValidated: { nFolds: N_FOLDS, auc: cvAuc, brier: cvBrier, logLoss: cvLogLoss },
     comparisonToCurrentFormula: { auc: currentAuc, brier: currentBrier, logLoss: currentLogLoss, n: legacyOnly.length },
+    // Leave-one-out feature ablation (see runFeatureAblation's header comment) --
+    // persisted alongside the fit itself, not just printed, so the next person
+    // revisiting FEATURES can check which predictors are actually earning their
+    // place without re-running this script. deltaAuc close to 0 or negative for a
+    // feature means the model performed just as well (or better) without it.
+    featureAblation: ablation,
     note: 'app.js/update-tracker.mjs read this file live for HR probability scoring -- see predictHRLogistic in both. Not a report-only artifact.',
   };
 
