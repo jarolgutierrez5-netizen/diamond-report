@@ -243,6 +243,13 @@ jobs:
           # recent-form trend, etc.). `git add --` on an existing-or-not glob does not
           # error the way naming a literal missing path does.
           git add data/pitcher-statcast.json data/batter-pitch-type-season.json data/statcast-hot-hitters.json
+          # batter-power-index.json is written by the same sync-pitcher-statcast.mjs run
+          # as the two files hard-added above, but was missing from this list -- the
+          # script has been computing it successfully every run, this step just never
+          # staged it, so it silently never made it into a commit. Same story for
+          # batter-batted-balls.json from sync-batter-zone-hr.mjs below.
+          [ -f data/batter-power-index.json ] && git add data/batter-power-index.json
+          [ -f data/batter-batted-balls.json ] && git add data/batter-batted-balls.json
           [ -f data/park-factors.json ] && git add data/park-factors.json
           [ -f data/bullpen-fatigue.json ] && git add data/bullpen-fatigue.json
           [ -f data/umpire-tendency.json ] && git add data/umpire-tendency.json
