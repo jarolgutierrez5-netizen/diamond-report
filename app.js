@@ -3269,6 +3269,11 @@ function muTableColumns(pitcherHand) {
     { key: 'platoonAvg', label: `AVG vs ${hl}`, dec: 3, pct0: true },
     { key: 'platoonSlg', label: `SLG vs ${hl}`, dec: 3, pct0: true },
     { key: 'platoonOps', label: `OPS vs ${hl}`, dec: 3, pct0: true },
+    // Real season HR count against pitchers who throw the same hand as today's
+    // starter specifically (b.platoon.hr, same vl/vr statSplits fetch as the three
+    // rate columns above) -- distinct from the plain season `hr` column, which is
+    // every HR regardless of pitcher hand.
+    { key: 'platoonHR',  label: `HR vs ${hl}`,  dec: 0 },
     // Real season K% as a hitter (strikeOuts/PA) -- batter.kPct, same "already computed
     // for the K-prop cell's lineup average, now also surfaced per batter" data as there.
     { key: 'kPct', label: 'K%', dec: 1, suffix: '%' },
@@ -3518,6 +3523,7 @@ function pitcherMatchupTableHTML(pid, meta) {
     stat.platoonAvg = b.platoon?.avg ?? null;
     stat.platoonSlg = b.platoon?.slg ?? null;
     stat.platoonOps = b.platoon?.ops ?? null;
+    stat.platoonHR = b.platoon?.hr ?? null;
     stat.kPct = b.kPct ?? null;
     const seasonHR = parseInt(b.stats?.homeRuns);
     const seasonHRVal = Number.isFinite(seasonHR) ? seasonHR : null;
@@ -3553,8 +3559,9 @@ function pitcherMatchupTableHTML(pid, meta) {
   // since those cards are no longer shown alongside this table.
   const bodyRows = rows.map(({ batter, stat, seasonHR }) => {
     const cells = columns.map(c => {
-      if (c.key === 'hr') {
-        return `<td class="num" data-label="${c.label}">${stat.hr != null ? stat.hr : '–'}</td>`;
+      if (c.key === 'hr' || c.key === 'platoonHR') {
+        const v = stat[c.key];
+        return `<td class="num" data-label="${c.label}">${v != null ? v : '–'}</td>`;
       }
       const val = stat[c.key];
       const bg = _muHeatBG(c.key, val);
@@ -3653,7 +3660,13 @@ function openPitcherLineupModal(pidRaw) {
   if (!overlay || !body || !panel) return;
 
   openLineupModalPid = pid;
-  if (title) title.textContent = meta.pitcherName || 'Pitcher Analytics Dashboard';
+  // Real pitchHand from the MLB Stats API person object (see loadPitcherReport's own
+  // comment on where meta.pitcherHand comes from) -- same RHP/LHP label convention as
+  // the Matchup scouting table's muHandLabel(), just surfaced in the dashboard header
+  // too so it's visible before scrolling to any specific split.
+  const handLabel = (meta.pitcherHand === 'L' || meta.pitcherHand === 'R') ? muHandLabel(meta.pitcherHand) : null;
+  const handBadgeHTML = handLabel ? ` <span style="display:inline-flex;align-items:center;background:rgba(47,107,255,.14);border:1px solid rgba(47,107,255,.4);color:var(--accent2);border-radius:999px;padding:2px 9px;font-size:11px;font-weight:800;letter-spacing:.5px;vertical-align:middle" title="Throws ${handLabel === 'LHP' ? 'left' : 'right'}-handed">${handLabel}</span>` : '';
+  if (title) title.innerHTML = `${drEscAttr(meta.pitcherName || 'Pitcher Analytics Dashboard')}${handBadgeHTML}`;
   if (sub) sub.textContent = `Pitcher Analytics Dashboard${meta.teamAbbr && meta.oppAbbr ? ` · ${meta.teamAbbr} vs ${meta.oppAbbr}` : ''}`;
   body.innerHTML = '';
 
@@ -4110,7 +4123,7 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
       ? fetchJSON(`https://diamondreport.app/api/v1/people?personIds=${batterIdsForHand.join(',')}`).catch(() => null)
       : Promise.resolve(null);
 
-    // Real per-batter platoon split (AVG/OBP/SLG/OPS) against THIS specific pitcher's
+    // Real per-batter platoon split (AVG/OBP/SLG/OPS/HR) against THIS specific pitcher's
     // real throwing hand -- same statSplits/vl/vr endpoint and batterSplitForHand
     // extraction openMatchup already uses for one batter at a time, just paid for the
     // whole lineup here since opening a pitcher's full report is an explicit on-demand
@@ -4129,7 +4142,8 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
             const slg = split.slg != null ? parseFloat(split.slg) : null;
             const ops = split.ops != null ? parseFloat(split.ops) : (obp != null && slg != null ? +(obp + slg).toFixed(3) : null);
             const ab = split.atBats != null ? parseInt(split.atBats) : null;
-            return [id, { avg, obp, slg, ops, ab }];
+            const hr = split.homeRuns != null ? parseInt(split.homeRuns) : null;
+            return [id, { avg, obp, slg, ops, ab, hr }];
           } catch { return [id, null]; }
         })).then(pairs => Object.fromEntries(pairs))
       : Promise.resolve({});
@@ -4193,7 +4207,7 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
         // kept per-batter here too so the scouting table can show each hitter's own
         // real strikeout tendency instead of only the lineup-wide blend.
         kPct: pa > 0 ? +(so / pa * 100).toFixed(1) : null,
-        // Real platoon split (AVG/OBP/SLG/OPS) vs today's specific pitcher's throwing
+        // Real platoon split (AVG/OBP/SLG/OPS/HR) vs today's specific pitcher's throwing
         // hand -- null when the pitcher's hand isn't known yet or the fetch found no
         // real split for this batter, never fabricated.
         platoon: platoonById[b.person?.id] || null,
