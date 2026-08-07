@@ -15438,7 +15438,7 @@ function hrpSignalLegendHTML(seen){
   }).join('')+'</div>';
 }
 function hrpGradeCls(g){ return /^A/.test(g)?'hrpt-grade-a':/^B/.test(g)?'hrpt-grade-b':'hrpt-grade-c'; }
-var HRPT_COLS=[['Player',null],['HR%','hrProb'],['Grade',null],['Edge','matchupEdge'],['Zone','zoneFit'],['Pitch Mix',null],['HR L10',null],['OPS','ops'],['ISO','iso'],['Signals',null],['AVG','avg']];
+var HRPT_COLS=[['Player',null],['Pitcher',null],['HR%','hrProb'],['Grade',null],['Edge','matchupEdge'],['Zone','zoneFit'],['Pitch Mix',null],['HR L10',null],['OPS','ops'],['ISO','iso'],['Signals',null],['AVG','avg']];
 // Brighter-stop variant of the shared heatBG/heatBGInverted (styles.css'
 // heat-cell gradient), scoped to this table only -- the shared versions
 // stay untouched so Pitcher Report's own heat cells don't change.
@@ -15468,7 +15468,8 @@ function hrpTableRowHTML(r,rIdx,signals){
   var detailId='hrpt-detail-'+esc(r.id);
   var row='<tr class="hrpt-row dr-anim-in'+(hit?' hit':isMiss?' miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="animation-delay:'+(Math.min(rIdx,8)*20)+'ms" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" data-zone-fit-score="'+esc(r.zoneFitScore==null?'':r.zoneFitScore)+'" onclick="if(!event.target.closest(\'button,a,input,label\'))window.hrpToggleRowExpand(\''+detailId+'\')">'
     +'<td class="hrpt-player-cell">'+window.drWatchStarHTML(r.id,r.name)+'<img class="hrpt-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt="">'
-      +'<div class="hrpt-player-meta"><div class="hrpt-name">'+esc(r.name||'–')+'<span class="dr-row-lineup-badge-slot" id="lineup-badge-hr-'+esc(r.id)+'"></span></div><div class="hrpt-sub">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+(r.pitcherName?' · '+esc(r.pitcherName):'')+'</div></div></td>'
+      +'<div class="hrpt-player-meta"><div class="hrpt-name">'+esc(r.name||'–')+'<span class="dr-row-lineup-badge-slot" id="lineup-badge-hr-'+esc(r.id)+'"></span></div><div class="hrpt-sub">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+'</div></div></td>'
+    +'<td class="hrpt-pitcher-cell" data-label="Pitcher">'+(r.pitcherName?('<span class="hrpt-pitcher-name">'+esc(r.pitcherName)+'</span>'+(r.pitcherHand?'<span class="hrpt-pitcher-hand">'+(r.pitcherHand==='L'?'LHP':r.pitcherHand==='R'?'RHP':'')+'</span>':'')):'<span class="hrpt-dash">–</span>')+'</td>'
     +'<td class="hrpt-num" data-label="HR%"><strong class="hrpt-prob"><span class="hrpt-prob-num" data-target="'+p.toFixed(1)+'">0.0</span>%</strong></td>'
     +'<td class="hrpt-num" data-label="Grade"><span class="hrpt-grade '+hrpGradeCls(g)+'">'+esc(g)+'</span></td>'
     +'<td class="hrpt-num" data-label="Edge" style="background:'+(r.matchupEdge==null?'transparent':hrptHeatBGInverted(r.matchupEdge,64,45))+'">'+(r.matchupEdge==null?'–':r.matchupEdge)+'</td>'

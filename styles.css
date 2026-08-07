@@ -6896,24 +6896,25 @@ table.hrpt-table {
   border-collapse: collapse;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  min-width: 940px;
+  min-width: 1060px;
 }
 /* Percentage-based fixed layout instead of content-auto sizing -- reflows
    proportionally at any container width above the mobile collapse
    breakpoint, instead of being tuned for one screenshot's width. AVG (col
    11) is a short numeric value like OPS/ISO, so the extra room the old
    Lineup Status pill needed goes to Player and Signals instead. */
-.hrpt-table thead th:nth-child(1) { width: 26%; }
-.hrpt-table thead th:nth-child(2) { width: 8%; }
-.hrpt-table thead th:nth-child(3) { width: 6%; }
-.hrpt-table thead th:nth-child(4) { width: 7%; }
-.hrpt-table thead th:nth-child(5) { width: 7%; }
-.hrpt-table thead th:nth-child(6) { width: 8%; }
-.hrpt-table thead th:nth-child(7) { width: 6%; }
-.hrpt-table thead th:nth-child(8) { width: 7%; }
-.hrpt-table thead th:nth-child(9) { width: 7%; }
-.hrpt-table thead th:nth-child(10) { width: 11%; }
-.hrpt-table thead th:nth-child(11) { width: 7%; }
+.hrpt-table thead th:nth-child(1) { width: 23%; }
+.hrpt-table thead th:nth-child(2) { width: 12%; }
+.hrpt-table thead th:nth-child(3) { width: 7%; }
+.hrpt-table thead th:nth-child(4) { width: 5%; }
+.hrpt-table thead th:nth-child(5) { width: 6%; }
+.hrpt-table thead th:nth-child(6) { width: 6%; }
+.hrpt-table thead th:nth-child(7) { width: 7%; }
+.hrpt-table thead th:nth-child(8) { width: 5%; }
+.hrpt-table thead th:nth-child(9) { width: 6%; }
+.hrpt-table thead th:nth-child(10) { width: 6%; }
+.hrpt-table thead th:nth-child(11) { width: 11%; }
+.hrpt-table thead th:nth-child(12) { width: 6%; }
 .hrpt-table thead th {
   position: sticky;
   top: 0;
@@ -6959,6 +6960,10 @@ table.hrpt-table {
 .hrpt-player-meta { min-width: 0; }
 .hrpt-name { font-family: var(--font-body); font-size: 12.5px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 5px; white-space: nowrap; }
 .hrpt-sub { font-family: var(--font-body); font-size: 10px; color: var(--muted); white-space: nowrap; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; }
+
+.hrpt-pitcher-cell { font-family: var(--font-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hrpt-pitcher-name { font-size: 11.5px; font-weight: 700; color: var(--text); }
+.hrpt-pitcher-hand { font-size: 9px; font-weight: 800; color: var(--muted); margin-left: 5px; padding: 1px 5px; border: 1px solid var(--border); border-radius: 5px; vertical-align: middle; }
 
 .hrpt-prob { font-size: 15px; font-weight: 800; color: #8ec2ff; text-shadow: 0 0 12px rgba(91,157,255,.35); }
 .hrpt-grade { display: inline-block; font-family: var(--font-body); font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 6px; }
@@ -7071,7 +7076,7 @@ table.hrpt-table {
   table.hrpt-table { min-width: 0; }
   .hrpt-row { padding: 10px 12px 6px; border-radius: 10px; margin: 8px; border: 1px solid var(--border); }
   .hrpt-table td { padding: 5px 0; border: none; display: flex; align-items: center; justify-content: space-between; }
-  .hrpt-table td.hrpt-num::before { content: attr(data-label); font-family: var(--font-body); font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--muted2, var(--muted)); }
+  .hrpt-table td.hrpt-num::before, .hrpt-table td.hrpt-pitcher-cell::before { content: attr(data-label); font-family: var(--font-body); font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--muted2, var(--muted)); }
   .hrpt-player-cell { padding: 2px 0 8px; }
   .hrpt-detail-inner { grid-template-columns: 1fr; padding: 12px; }
   .hrpt-detail-row { margin: 0 8px 8px; }

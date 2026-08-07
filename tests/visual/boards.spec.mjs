@@ -25,6 +25,8 @@ test.describe('HR Threats board', () => {
     expect(headers.some(h => h.startsWith('hr l10'))).toBe(true);
     expect(headers.some(h => h.startsWith('avg'))).toBe(true);
     expect(headers.some(h => h.startsWith('lineup'))).toBe(false);
+    expect(headers.some(h => h.startsWith('pitcher'))).toBe(true);
+    await expect(page.locator('#hrp-row-1 .hrpt-pitcher-name')).toHaveText('Weak Pitcher');
 
     // The "○ Preliminary" confidence badge no longer renders on the HR% cell.
     await expect(page.locator('.dr-hrp-confidence-slot')).toHaveCount(0);
