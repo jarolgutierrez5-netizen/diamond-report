@@ -2,14 +2,17 @@
 // ─────────────────────────────────────────────────────────────────────────
 // Builds a real, multi-season "career-to-date" home-run-by-pitch-type split
 // per batter into data/batter-pitch-type-hr.json — app.js's
-// loadBatterPitchTypeHr() tries this exact file (plus two guessed alternate
-// names, all-time-pitch-type-hr.json and career-pitch-type-hr.json, same
-// content written to all three below), feeding batterPitchTypeHr, which the
-// Pitcher Matchup modal's Pitch Mix Advantage table prefers as its "Exact
-// career split" tier (getPitchTypeHrCount in app.js) ahead of the
-// season-only fallback it already falls back to today. None of the three
-// files existed until now — this script was simply never written, so that
-// preferred tier has always been skipped in favor of the season fallback.
+// loadBatterPitchTypeHr() fetches this exact file, feeding batterPitchTypeHr,
+// which the Pitcher Matchup modal's Pitch Mix Advantage table prefers as its
+// "Exact career split" tier (getPitchTypeHrCount in app.js) ahead of the
+// season-only fallback it already falls back to today. This file didn't
+// exist until now -- this script was simply never written, so that preferred
+// tier has always been skipped in favor of the season fallback. (Originally
+// also written to two guessed alternate filenames, all-time-pitch-type-hr.json
+// and career-pitch-type-hr.json, since app.js used to try all three -- both
+// were pure dead weight, tripling git storage/churn for identical bytes with
+// no reader ever actually needing the alternates. Consolidated to this one
+// real name.)
 //
 // Deliberately NOT a full since-2015 pull. A true career query for one
 // prolific batter can return 20k+ rows and take 10-20s+ per player (checked
@@ -146,10 +149,7 @@ async function main() {
     players,
   };
   const json = JSON.stringify(out, null, 2) + '\n';
-  // Written to all three names app.js's loadBatterPitchTypeHr() tries — see header.
   await writeFile(path.join(DATA_DIR, 'batter-pitch-type-hr.json'), json);
-  await writeFile(path.join(DATA_DIR, 'all-time-pitch-type-hr.json'), json);
-  await writeFile(path.join(DATA_DIR, 'career-pitch-type-hr.json'), json);
 }
 
 const isMain = import.meta.url === `file://${process.argv[1]}`;

@@ -2196,17 +2196,10 @@ async function loadBatterPitchTypeHr(force=false) {
   if (batterPitchTypeHrPromise && !force) return batterPitchTypeHrPromise;
   batterPitchTypeHrPromise = (async () => {
     batterPitchTypeHr = {};
-    const sources = [
-      `data/batter-pitch-type-hr.json`,
-      `data/all-time-pitch-type-hr.json`,
-      `data/career-pitch-type-hr.json`
-    ];
-    await Promise.all(sources.map(async url => {
-      try {
-        const data = await drFetchDailyJSON(url);
-        ingestBatterPitchTypeHrPayload(data);
-      } catch {}
-    }));
+    try {
+      const data = await drFetchDailyJSON(`data/batter-pitch-type-hr.json`);
+      ingestBatterPitchTypeHrPayload(data);
+    } catch {}
     batterPitchTypeHrLoaded = true;
     return batterPitchTypeHr;
   })();
@@ -2277,16 +2270,10 @@ async function loadBatterPitchTypeSeason(force=false) {
   if (batterPitchTypeSeasonPromise && !force) return batterPitchTypeSeasonPromise;
   batterPitchTypeSeasonPromise = (async () => {
     batterPitchTypeSeason = {};
-    const sources = [
-      `data/batter-pitch-type-season.json`,
-      `data/batter-pitch-mix-advantage.json`
-    ];
-    await Promise.all(sources.map(async url => {
-      try {
-        const data = await drFetchDailyJSON(url);
-        ingestBatterPitchTypeSeasonPayload(data);
-      } catch {}
-    }));
+    try {
+      const data = await drFetchDailyJSON(`data/batter-pitch-type-season.json`);
+      ingestBatterPitchTypeSeasonPayload(data);
+    } catch {}
     batterPitchTypeSeasonLoaded = true;
     return batterPitchTypeSeason;
   })();
@@ -2422,32 +2409,26 @@ async function loadSportsbookKLines(today) {
   if (sportsbookKLinesLoadedForDate === today) return;
   sportsbookKLinesByPitcher = {};
   sportsbookOddsByPitcher = {};
-  const urls = [
-    `data/k-props-${today}.json`,
-    `data/k_props_${today}.json`,
-    `data/k-props.json`,
-    `data/k_props.json`,
-    `data/props/k-props.json`,
-    `data/props/k_props.json`,
-    `k-props.json`
-  ];
+  // Only data/k-props.json is ever actually written (see
+  // update-tracker.mjs's K_PROPS_ODDS_PATH) -- the other 6 filename guesses this
+  // used to try (dated variants, underscore variants, a data/props/ subdirectory,
+  // a root-level copy) never existed on disk; every one was a dead fetch on every
+  // K Props board load.
   const sources = [];
   if (Array.isArray(window.DR_K_PROP_LINES)) sources.push(window.DR_K_PROP_LINES);
-  for (const url of urls) {
-    try {
-      const json = await drFetchDailyJSON(url);
-      if (Array.isArray(json)) sources.push(json);
-      else if (Array.isArray(json.props)) sources.push(json.props);
-      else if (Array.isArray(json.kProps)) sources.push(json.kProps);
-      else if (Array.isArray(json.lines)) sources.push(json.lines);
-      else if (json.pitchers && typeof json.pitchers === 'object') {
-        Object.entries(json.pitchers).forEach(([key, value]) => {
-          if (typeof value === 'object') indexSportsbookKLine({ ...value, pitcherId: value.pitcherId ?? key, pitcherName: value.pitcherName ?? key });
-          else indexSportsbookKLine({ pitcherId: key, line: value, pitcherName: key });
-        });
-      }
-    } catch {}
-  }
+  try {
+    const json = await drFetchDailyJSON(`data/k-props.json`);
+    if (Array.isArray(json)) sources.push(json);
+    else if (Array.isArray(json.props)) sources.push(json.props);
+    else if (Array.isArray(json.kProps)) sources.push(json.kProps);
+    else if (Array.isArray(json.lines)) sources.push(json.lines);
+    else if (json.pitchers && typeof json.pitchers === 'object') {
+      Object.entries(json.pitchers).forEach(([key, value]) => {
+        if (typeof value === 'object') indexSportsbookKLine({ ...value, pitcherId: value.pitcherId ?? key, pitcherName: value.pitcherName ?? key });
+        else indexSportsbookKLine({ pitcherId: key, line: value, pitcherName: key });
+      });
+    }
+  } catch {}
   sources.flat().forEach(row => { indexSportsbookKLine(row); indexSportsbookOdds(row); });
   sportsbookKLinesLoadedForDate = today;
 }
