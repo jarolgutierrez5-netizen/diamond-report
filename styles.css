@@ -3587,33 +3587,6 @@ select:focus-visible {
   margin-bottom: 16px;
 }
 
-/* "Simulate This Matchup" (Home Run row only, inside the Situational True Probability
-   box — see runHRMatchupSimulation in app.js). Styled off the same dark-chip family as
-   .hrp-matchup-btn rather than reusing it directly, since this button lives inline
-   under a .vuln-item instead of a card footer. */
-.hr-sim-btn {
-  background: #1a1a2e;
-  border: 1px solid var(--accent2);
-  color: var(--accent2);
-  font-size: 10px;
-  font-weight: 700;
-  padding: 5px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-family: 'Manrope', sans-serif;
-  letter-spacing: .3px;
-  white-space: nowrap;
-  transition: background .15s ease, color .15s ease;
-}
-.hr-sim-btn:hover:not(:disabled) {
-  background: var(--accent2);
-  color: #0a0f1c;
-}
-.hr-sim-btn:disabled {
-  opacity: .7;
-  cursor: default;
-}
-
 /* Batting lineup cards (Pitcher Report's Batting Lineup & Matchups panel) were a flat
    list of rows separated by a 1px bottom border only — no card surface, no depth.
    Give each batter its own glass card, matching the Phase 3 treatment already used
