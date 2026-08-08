@@ -45,4 +45,27 @@ jobs:
           git config user.name "diamond-report-bot"
           git config user.email "actions@users.noreply.github.com"
           git commit -m "Update season projections: World Series and MVP odds"
-          git push
+
+          # This runs at 12:11 UTC, ~2 hours before update-tracker.yml's own 14:07 UTC
+          # morning pass, but every scheduled workflow in this repo pushes to the same
+          # main and this one's concurrency group only serializes it against itself --
+          # see update-tracker.yml's own push step (run 31262562751, 2026-08-08) for a
+          # confirmed live instance of this exact race on a sibling workflow. Same
+          # retry+rebase loop as that fix and sync-statcast.yml's original one; -X theirs
+          # is safe here since season-projections.json is unique to this workflow, so a
+          # rebase onto a newer main is a no-op replay, never a real conflict.
+          for attempt in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push rejected (attempt $attempt/5) — main moved during this run. Fetching and rebasing..."
+            git fetch origin main
+            if ! git rebase -X theirs origin/main; then
+              echo "::error::Rebase onto origin/main failed even preferring our own side — aborting. This run's data was NOT pushed."
+              git rebase --abort
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "::error::Push still rejected after 5 attempts."
+          exit 1

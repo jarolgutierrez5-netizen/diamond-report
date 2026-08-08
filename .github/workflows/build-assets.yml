@@ -73,4 +73,29 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add app.min.js styles.min.css
           git commit -m "Rebuild app.min.js/styles.min.css from source"
-          git push
+
+          # The ref this ran on can move during this run -- most often on main, where
+          # update-tracker.yml/sync-statcast.yml/etc push independently on their own
+          # schedules (see update-tracker.yml's own push step for a confirmed live
+          # instance of this exact race, run 31262562751, 2026-08-08), but the same
+          # applies to any branch someone pushes to again mid-run. Unlike this repo's
+          # other auto-commit workflows, this one runs on whatever ref triggered it
+          # (github.ref_name), not always main, so the fetch/rebase target has to be
+          # dynamic too. -X theirs is safe here for the same reason as the others:
+          # app.min.js/styles.min.css are only ever written by this workflow, so a
+          # rebase onto a newer version of the same ref is a no-op replay.
+          for attempt in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push rejected (attempt $attempt/5) — ${{ github.ref_name }} moved during this run. Fetching and rebasing..."
+            git fetch origin "${{ github.ref_name }}"
+            if ! git rebase -X theirs "origin/${{ github.ref_name }}"; then
+              echo "::error::Rebase onto origin/${{ github.ref_name }} failed even preferring our own side — aborting. This run's rebuild was NOT pushed."
+              git rebase --abort
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "::error::Push still rejected after 5 attempts."
+          exit 1
