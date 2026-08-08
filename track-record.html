@@ -266,6 +266,16 @@
   <h2>Why week by week</h2>
   <p>A single day's record is mostly noise — a handful of picks either hit or they don't, and that says more about that day's games than about the model. Weekly buckets are large enough to smooth that out while still showing a real trend, not a season-to-date average that takes months to move. Weeks with no graded picks in a market show as a gap in that line rather than a false 0%.</p>
 
+  <h2>Why HR Threats gets its own chart</h2>
+  <p>HR Threats predicts one specific batter homering in one specific game — a realistic range is roughly 10-20%, not 50/50. Plotted on the same 0-100% axis as Game Picks and Strikeout Props above, it would always look like a flat line pinned near the bottom no matter how well it's actually doing, so it gets its own appropriately-scaled chart here instead.</p>
+
+  <div class="tr-chart-card">
+    <div class="dr-hub-section-head" style="margin-bottom:14px"><h2 style="font-size:15px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:#fff;margin:0">HR Threats: Weekly Win Rate</h2></div>
+    <div class="tr-chart-wrap" id="tr-hrwr-chart-wrap">
+      <div class="tr-empty" id="tr-hrwr-chart-empty">Loading chart…</div>
+    </div>
+  </div>
+
   <div class="tr-chart-card">
     <div class="dr-hub-section-head" style="margin-bottom:14px"><h2 style="font-size:15px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:#fff;margin:0">HR Threats: Projected vs Actual</h2></div>
     <div id="tr-hr-legend" class="tr-legend"></div>
@@ -276,7 +286,9 @@
   <p>Every HR Threats pick carries a real predicted probability the moment it's captured — summed across a day's graded picks, that's an honest "expected home run count" the model itself generated. This chart plots that expected count against how many of those same picks actually went deep, over the last 45 days. If Projected consistently runs above Actual, the model is overconfident; below, underconfident. This tracks Diamond Report's own picks specifically, not every home run hit across MLB that day.</p>
 
   <div class="dr-hub-section-head" style="margin:36px 0 4px"><h2 style="font-size:15px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:#fff;margin:0">Performance Breakdown</h2></div>
-  <p>Every loss isn't graded the same way here — a game decided by one run, a strikeout total that landed within one K of the line, or a real warning-track fly out that stayed in the park all get separated from the rest as a <strong>near miss</strong>, not lumped in with an outright miss. Pick a window below to see hits/near-misses/misses by market, by confidence level, by team, and which players had the highest real hit rate.</p>
+  <p>Every loss isn't graded the same way here — a game decided by one run, a strikeout total that landed within one K of the line, or a real warning-track fly out that stayed in the park all get separated from the rest as a <strong>near miss</strong>, not lumped in with an outright miss. Near misses still count as a loss in the Hit Rate figures below — they're broken out separately so you can see <em>how close</em> a pick came, not treated as a partial win. Pick a window below to see hits/near-misses/misses by market, by confidence level, by team, and which players had the highest real hit rate.</p>
+
+  <p class="tr-def-note">"Near miss" definitions — <strong>Game Picks:</strong> lost a one-run game. <strong>Strikeout Props:</strong> final K total within 1 strikeout of the line. <strong>HR Threats:</strong> no home run, but a real warning-track fly out (≥375ft — the same distance the "🚀 NEAR HR" chip uses) that same game. Confidence/team/leaderboard splits only show a real percentage once a market has at least 20 graded picks in that split (8 for an individual player on the leaderboard) — smaller samples are shown but marked as low-sample rather than hidden, since a single-digit sample can swing wildly and isn't a reliable signal either way.</p>
 
   <div class="tr-period-tabs" id="tr-period-tabs"></div>
   <select class="tr-period-select" id="tr-period-select" style="display:none"></select>
@@ -284,8 +296,6 @@
   <div id="tr-breakdown-root">
     <div class="tr-empty">Loading performance report…</div>
   </div>
-
-  <p class="tr-def-note">"Near miss" definitions — <strong>Game Picks:</strong> lost a one-run game. <strong>Strikeout Props:</strong> final K total within 1 strikeout of the line. <strong>HR Threats:</strong> no home run, but a real warning-track fly out (≥375ft — the same distance the "🚀 NEAR HR" chip uses) that same game. Confidence/team/leaderboard splits only show a real percentage once a market has at least 20 graded picks in that split (8 for an individual player on the leaderboard) — smaller samples are shown but marked as low-sample rather than hidden, since a single-digit sample can swing wildly and isn't a reliable signal either way.</p>
 
   <h2>Learn more</h2>
   <p>Read how these projections are actually built on the <a href="/methodology.html">Methodology page</a>, or head back to <a href="/">Diamond Report</a> for today's picks.</p>
@@ -316,6 +326,14 @@
     { key: 'kprop', label: 'Strikeout Props', color: '#d95926' },
     { key: 'hrThreat', label: 'HR Threats', color: '#199e70' },
   ];
+  // The "Weekly Win Rate By Market" chart/legend/table intentionally excludes
+  // HR Threats -- its realistic ceiling (~10-20%) is nothing like Game Picks/
+  // Strikeout Props' ~50/50, so sharing one 0-100% axis would always render
+  // it as a flat line pinned near the bottom regardless of how it's actually
+  // doing. HR Threats gets its own appropriately-scaled chart instead (see
+  // renderHRWinRateChart below). MARKETS itself stays all three -- the
+  // all-time stat cards and Performance Breakdown cards still want it.
+  var WIN_RATE_CHART_MARKETS = MARKETS.filter(function (m) { return m.key !== 'hrThreat'; });
 
   // marketKey is optional -- omit it (or pass a blended/cross-market number, like
   // the By Team and leaderboard tables below) to get the general 55/45 read.
@@ -396,7 +414,7 @@
   function renderLegend() {
     var el = document.getElementById('tr-legend');
     if (!el) return;
-    el.innerHTML = MARKETS.map(function (m) {
+    el.innerHTML = WIN_RATE_CHART_MARKETS.map(function (m) {
       return '<div class="tr-legend-item"><span class="tr-legend-swatch" style="background:' + m.color + '"></span>' + m.label + '</div>';
     }).join('');
   }
@@ -407,9 +425,9 @@
     var el = document.getElementById('tr-table-wrap');
     if (!el) return;
     if (!data.weekKeys.length) { el.innerHTML = '<div class="tr-empty">No graded picks yet this season.</div>'; return; }
-    var head = '<tr><th>Week of</th>' + MARKETS.map(function (m) { return '<th>' + m.label + '</th>'; }).join('') + '</tr>';
+    var head = '<tr><th>Week of</th>' + WIN_RATE_CHART_MARKETS.map(function (m) { return '<th>' + m.label + '</th>'; }).join('') + '</tr>';
     var rows = data.weekKeys.map(function (wk) {
-      var cells = MARKETS.map(function (m) {
+      var cells = WIN_RATE_CHART_MARKETS.map(function (m) {
         var w = data.byMarket[m.key][wk];
         if (!w) return '<td>—</td>';
         var pct = Math.round((w.wins / (w.wins + w.losses)) * 1000) / 10;
@@ -472,7 +490,7 @@
     // candidates are collected here and resolved for collisions afterward --
     // see the pass below, which is why nothing gets pushed to svgParts yet.
     var labelCandidates = [];
-    MARKETS.forEach(function (m) {
+    WIN_RATE_CHART_MARKETS.forEach(function (m) {
       var points = weekKeys.map(function (wk, i) {
         var w = data.byMarket[m.key][wk];
         if (!w) return null;
@@ -581,6 +599,128 @@
     hitRect.addEventListener('pointerleave', hideTooltip);
   }
 
+  function niceCeil(max) {
+    if (max <= 0) return 5;
+    var step = max > 40 ? 10 : max > 16 ? 5 : max > 6 ? 2 : 1;
+    return Math.ceil(max / step) * step;
+  }
+
+  // "HR Threats: Weekly Win Rate" -- same weekly win-rate numbers renderChart
+  // plots for Game Picks/Strikeout Props, but as its own single-series chart
+  // with a dynamic y-axis (niceCeil'd to the real weekly max, floored at 15
+  // so one strong week doesn't make the axis look maxed-out) instead of
+  // sharing their fixed 0-100% domain -- see WIN_RATE_CHART_MARKETS's comment
+  // above for why that sharing was actively misleading. Single series, so no
+  // label-collision pass is needed like renderChart's end-of-line labels.
+  function renderHRWinRateChart(data) {
+    var wrap = document.getElementById('tr-hrwr-chart-wrap');
+    var emptyEl = document.getElementById('tr-hrwr-chart-empty');
+    if (!wrap) return;
+    var weekKeys = data.weekKeys;
+    var hasAny = weekKeys.some(function (wk) { return data.byMarket.hrThreat[wk]; });
+    if (!hasAny) { if (emptyEl) emptyEl.textContent = 'No graded HR Threats picks yet this season.'; return; }
+    if (emptyEl) emptyEl.remove();
+
+    var W = 900, H = 260;
+    var marginLeft = 34, marginRight = 56, marginTop = 14, marginBottom = 30;
+    var plotW = W - marginLeft - marginRight;
+    var plotH = H - marginTop - marginBottom;
+    var n = weekKeys.length;
+    var xStep = n > 1 ? plotW / (n - 1) : 0;
+
+    var rawMax = 0;
+    weekKeys.forEach(function (wk) {
+      var w = data.byMarket.hrThreat[wk];
+      if (!w) return;
+      rawMax = Math.max(rawMax, (w.wins / (w.wins + w.losses)) * 100);
+    });
+    var yMax = niceCeil(Math.max(rawMax, 15));
+
+    function xAt(i) { return marginLeft + i * xStep; }
+    function yAt(pct) { return marginTop + plotH - (pct / yMax) * plotH; }
+
+    var svgParts = [];
+    svgParts.push('<svg class="tr-chart-svg" viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">');
+
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (f) {
+      var v = yMax * f;
+      var y = yAt(v);
+      svgParts.push('<line x1="' + marginLeft + '" y1="' + y + '" x2="' + (marginLeft + plotW) + '" y2="' + y +
+        '" stroke="rgba(255,255,255,.07)" stroke-width="1"/>');
+      svgParts.push('<text x="' + (marginLeft - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10.5" fill="#8fa3c8">' + Math.round(v) + '%</text>');
+    });
+
+    var labelStride = Math.max(1, Math.ceil(n / 8));
+    weekKeys.forEach(function (wk, i) {
+      if (i % labelStride !== 0 && i !== n - 1) return;
+      svgParts.push('<text x="' + xAt(i) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="10" fill="#8fa3c8">' + data.weekLabels[wk] + '</text>');
+    });
+
+    var color = '#199e70';
+    var points = weekKeys.map(function (wk, i) {
+      var w = data.byMarket.hrThreat[wk];
+      if (!w) return null;
+      return { i: i, pct: (w.wins / (w.wins + w.losses)) * 100 };
+    });
+    var run = [];
+    function flush() {
+      if (run.length < 2) { run = []; return; }
+      var d = run.map(function (p, idx) { return (idx === 0 ? 'M' : 'L') + xAt(p.i) + ',' + yAt(p.pct); }).join(' ');
+      svgParts.push('<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>');
+      run = [];
+    }
+    points.forEach(function (p) { if (p == null) { flush(); return; } run.push(p); });
+    flush();
+    points.forEach(function (p) {
+      if (p == null) return;
+      svgParts.push('<circle cx="' + xAt(p.i) + '" cy="' + yAt(p.pct) + '" r="4" fill="' + color + '" stroke="#0d0d1e" stroke-width="2"/>');
+    });
+
+    svgParts.push('<rect id="tr-hrwr-hit-rect" x="' + marginLeft + '" y="' + marginTop + '" width="' + plotW + '" height="' + plotH + '" fill="transparent" style="cursor:crosshair"/>');
+    svgParts.push('<line id="tr-hrwr-crosshair" x1="0" y1="' + marginTop + '" x2="0" y2="' + (marginTop + plotH) + '" stroke="rgba(255,255,255,.35)" stroke-width="1" style="display:none;pointer-events:none"/>');
+    svgParts.push('</svg>');
+    svgParts.push('<div class="tr-tooltip" id="tr-hrwr-tooltip"></div>');
+    wrap.innerHTML = svgParts.join('');
+
+    var svg = wrap.querySelector('.tr-chart-svg');
+    var hitRect = document.getElementById('tr-hrwr-hit-rect');
+    var crosshair = document.getElementById('tr-hrwr-crosshair');
+    var tooltip = document.getElementById('tr-hrwr-tooltip');
+
+    function showTooltip(i, clientX, clientY) {
+      var wk = weekKeys[i];
+      var w = data.byMarket.hrThreat[wk];
+      crosshair.setAttribute('x1', xAt(i));
+      crosshair.setAttribute('x2', xAt(i));
+      crosshair.style.display = '';
+      var valText = w ? (w.wins + '-' + w.losses + ' (' + (Math.round((w.wins / (w.wins + w.losses)) * 1000) / 10) + '%)') : 'no picks graded';
+      tooltip.innerHTML = '<div class="tr-tooltip-date">Week of ' + data.weekLabels[wk] + '</div>' +
+        '<div class="tr-tooltip-row"><span class="tr-tooltip-key" style="background:' + color + '"></span>' +
+        '<span class="tr-tooltip-name">HR Threats:</span> <span class="tr-tooltip-val">' + valText + '</span></div>';
+      tooltip.classList.add('visible');
+      var wrapRect = wrap.getBoundingClientRect();
+      var left = clientX - wrapRect.left + 14;
+      var top = clientY - wrapRect.top - 10;
+      if (left + 190 > wrapRect.width) left = clientX - wrapRect.left - 204;
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = Math.max(0, top) + 'px';
+    }
+    function hideTooltip() {
+      crosshair.style.display = 'none';
+      tooltip.classList.remove('visible');
+    }
+    function handleMove(evt) {
+      var svgRect = svg.getBoundingClientRect();
+      var scale = W / svgRect.width;
+      var xInViewBox = (evt.clientX - svgRect.left) * scale;
+      var i = Math.round((xInViewBox - marginLeft) / (xStep || 1));
+      i = Math.max(0, Math.min(n - 1, i));
+      showTooltip(i, evt.clientX, evt.clientY);
+    }
+    hitRect.addEventListener('pointermove', handleMove);
+    hitRect.addEventListener('pointerleave', hideTooltip);
+  }
+
   // "HR Threats: Projected vs Actual" -- a second hand-rolled inline SVG line
   // chart, same interaction pattern as renderChart above (crosshair + tooltip,
   // gaps for score-less days, real end labels), but NOT built by generalizing
@@ -595,11 +735,6 @@
     { key: 'expectedHRs', label: 'Projected', color: '#c98500' },
     { key: 'actualHRs', label: 'Actual', color: '#199e70' },
   ];
-  function niceCeil(max) {
-    if (max <= 0) return 5;
-    var step = max > 40 ? 10 : max > 16 ? 5 : max > 6 ? 2 : 1;
-    return Math.ceil(max / step) * step;
-  }
   function renderHRCalibrationChart(byDate) {
     var wrap = document.getElementById('tr-hr-chart-wrap');
     var emptyEl = document.getElementById('tr-hr-chart-empty');
@@ -923,16 +1058,19 @@
       renderChart(data);
       renderTable(data);
       bindTableToggle();
+      renderHRWinRateChart(data);
       renderHRCalibrationChart(report.byDate || {});
       initBreakdown(report);
     })
     .catch(function () {
       var stats = document.getElementById('tr-stats');
       var chartEmpty = document.getElementById('tr-chart-empty');
+      var hrwrChartEmpty = document.getElementById('tr-hrwr-chart-empty');
       var hrChartEmpty = document.getElementById('tr-hr-chart-empty');
       var breakdownRoot = document.getElementById('tr-breakdown-root');
       if (stats) stats.innerHTML = '<div class="tr-empty">Record data unavailable right now.</div>';
       if (chartEmpty) chartEmpty.textContent = 'Chart data unavailable right now.';
+      if (hrwrChartEmpty) hrwrChartEmpty.textContent = 'Chart data unavailable right now.';
       if (hrChartEmpty) hrChartEmpty.textContent = 'Chart data unavailable right now.';
       if (breakdownRoot) breakdownRoot.innerHTML = '<div class="tr-empty">Performance report unavailable right now.</div>';
     });
