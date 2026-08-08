@@ -7083,3 +7083,59 @@ table.hrpt-table {
   .hrpt-detail-row { margin: 0 8px 8px; }
   #hr-potential-content .hrpt-detail-row.hrpt-open { display: block !important; }
 }
+
+/* ── Simulate Game modal ─────────────────────────────────────────────── */
+/* This is the one caveat on the site stronger than the standard legal-page
+   disclaimer ("statistical projections, not guarantees") -- a single
+   simulated rollout is a much stronger, more specific-sounding claim than a
+   probability, so it gets its own bordered callout instead of blending into
+   .mu-empty's plain muted text. */
+.dr-sim-disclaimer {
+  border: 1px solid rgba(245, 197, 24, .35);
+  background: rgba(245, 197, 24, .07);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+.dr-sim-linescore {
+  overflow-x: auto;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(7, 15, 30, .5);
+}
+.dr-sim-linescore-row { display: flex; }
+.dr-sim-linescore-headrow { border-bottom: 1px solid var(--border); }
+.dr-sim-linescore-row:not(:last-child) { border-bottom: 1px solid rgba(255,255,255,.06); }
+.dr-sim-linescore-cell {
+  flex: 1 0 26px;
+  min-width: 26px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  padding: 7px 4px;
+}
+.dr-sim-linescore-team {
+  flex: 0 0 52px;
+  text-align: left;
+  font-weight: 800;
+  padding-left: 10px;
+}
+.dr-sim-linescore-head { color: var(--muted); font-size: 10.5px; }
+.dr-sim-linescore-total { flex: 0 0 40px; font-weight: 900; color: var(--accent2); border-left: 1px solid var(--border); }
+.dr-sim-plays { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.dr-sim-play-group { border-left: 2px solid rgba(47,107,255,.4); padding-left: 10px; }
+.dr-sim-play-inning {
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.dr-sim-pitcher-label { font-weight: 600; text-transform: none; letter-spacing: 0; opacity: .8; }
+.dr-sim-play-row { font-size: 13px; line-height: 1.5; color: var(--text); }
+.dr-sim-reroll-btn { width: 100%; }
