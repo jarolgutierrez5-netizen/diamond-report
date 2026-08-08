@@ -7247,7 +7247,12 @@ table.hrpt-table {
 .dr-abs-reel.dr-abs-landed .dr-abs-reel-window { animation: drAbsReelLand .5s ease-out; transform-origin: center; }
 
 /* ── Simulate Game plays: reuse the dr-abs-* reel/popup at compact size ── */
-.dr-sim-play-row { display: flex; align-items: center; gap: 8px; position: relative; }
+/* Grid, not flex, for the reel/text pairing -- a flex row lets each reel's
+   rendered width drift with its own label length ("XBH" vs "HR" vs "1B"),
+   so the sentence after it started at a different x-position per row. A
+   fixed first column guarantees every play's text lines up in one column
+   regardless of which outcome landed in the reel next to it. */
+.dr-sim-play-row { display: grid; grid-template-columns: 58px 1fr; align-items: center; gap: 8px; position: relative; }
 .dr-sim-play-row .dr-abs-reel-window { width: 58px; height: 26px; }
 .dr-sim-play-row .dr-abs-reel-face { font-size: 11px; }
 .dr-sim-play-text { opacity: 0; transition: opacity .25s ease; }
