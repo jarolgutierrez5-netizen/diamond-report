@@ -7167,3 +7167,80 @@ table.hrpt-table {
 
 .dr-sim-reroll-btn { transition: transform .12s ease; }
 .dr-sim-reroll-btn:active { transform: scale(.97); }
+
+/* ── Simulate At-Bats (Batter vs Pitcher modal, slot-machine reels) ───── */
+.dr-abs-reels {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  position: relative;
+}
+.dr-abs-reel-window {
+  width: 84px;
+  height: 52px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(7, 15, 30, .5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dr-abs-reel-face {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--text);
+  text-align: center;
+  padding: 0 4px;
+}
+.dr-abs-recap {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+  margin-bottom: 12px;
+  min-height: 1.5em;
+}
+.dr-abs-spin-btn { width: 100%; transition: transform .12s ease; }
+.dr-abs-spin-btn:active { transform: scale(.97); }
+.dr-abs-spin-btn:disabled { opacity: .6; }
+
+.dr-abs-popup {
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  transform: translate(-50%, -100%);
+  white-space: nowrap;
+  font-weight: 900;
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 197, 24, .55);
+  background: rgba(245, 197, 24, .14);
+  color: #fde68a;
+  animation: drAbsPopIn .4s cubic-bezier(.34,1.56,.64,1) both;
+  pointer-events: none;
+}
+.dr-abs-popup-hr {
+  border-color: rgba(46, 230, 166, .6);
+  background: rgba(46, 230, 166, .16);
+  color: #7ef7d0;
+}
+@keyframes drAbsPopIn {
+  0%   { opacity: 0; transform: translate(-50%, -70%) scale(.4); }
+  60%  { opacity: 1; transform: translate(-50%, -100%) scale(1.15); }
+  100% { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+}
+
+@keyframes drAbsReelSpin {
+  0%, 100% { transform: translateY(-3px); }
+  50% { transform: translateY(3px); }
+}
+.dr-abs-reel.dr-abs-spinning .dr-abs-reel-face { animation: drAbsReelSpin .12s linear infinite; }
+
+@keyframes drAbsReelLand {
+  0%   { transform: scale(1); filter: brightness(1) drop-shadow(0 0 0 rgba(47,107,255,0)); }
+  35%  { transform: scale(1.15); filter: brightness(1.4) drop-shadow(0 0 10px rgba(47,107,255,.7)); }
+  100% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 0 rgba(47,107,255,0)); }
+}
+.dr-abs-reel.dr-abs-landed .dr-abs-reel-window { animation: drAbsReelLand .5s ease-out; transform-origin: center; }

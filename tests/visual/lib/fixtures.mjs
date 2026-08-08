@@ -178,6 +178,69 @@ export async function openGameSim(page, { randomSeed = 0.05 } = {}) {
   await page.waitForTimeout(150);
 }
 
+// Deterministic Batter vs Pitcher matchup for the "Simulate At-Bats" slot
+// machine (openMatchup -> renderMatchupModal's new atbat-sim tab). Deliberately
+// extreme, unambiguous rate stats in the SAME family as GAME_SIM's
+// ALWAYS_WALK_BATTER/NEVER_WALK_PITCHER above -- here both sides are maxed
+// toward "home run every time" (batter all-HR AND pitcher a total gopher-ball
+// arm) so computeMatchupOutcomeDist's log5 combination makes 'hr' the
+// overwhelmingly dominant sampled outcome regardless of the exact seeded
+// Math.random sequence, which is what the popup-on-HR assertion needs to be
+// reliable rather than hand-deriving one exact LCG sequence.
+export const ATBAT_SIM_BATTER_ID = 601;
+export const ATBAT_SIM_PITCHER_ID = 602;
+export const ATBAT_SIM_BATTER_NAME = 'Sim Batter';
+export const ATBAT_SIM_PITCHER_NAME = 'Sim Pitcher';
+const ALWAYS_HR_BATTER = { plateAppearances: 600, hits: 600, homeRuns: 600, doubles: 0, triples: 0, baseOnBalls: 0, hitByPitch: 0, strikeOuts: 0 };
+const GOPHER_BALL_PITCHER = { battersFaced: 600, hits: 600, homeRuns: 600, baseOnBalls: 0, hitBatsmen: 0, strikeOuts: 0 };
+
+async function seedAtBatSimRoutes(page) {
+  // openMatchup's H2H/expected-stats/split fetches all hit .../people/<id>/stats?...
+  // -- a distinct, more specific path shape from the plain hydrate lookup
+  // below, so it needs its own route registered separately.
+  await page.route('**/api/v1/people/*/stats*', (route) => {
+    const url = route.request().url();
+    if (/sitCodes=/.test(url)) {
+      route.fulfill({ contentType: 'application/json', body: JSON.stringify({ stats: [{ splits: [] }] }) });
+      return;
+    }
+    const stat = /group=hitting/.test(url) ? ALWAYS_HR_BATTER : GOPHER_BALL_PITCHER;
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ stats: [{ splits: [{ stat }] }] }) });
+  });
+  await page.route('**/api/v1/people/*', (route) => {
+    const url = route.request().url();
+    const stat = /group=hitting/.test(url) ? ALWAYS_HR_BATTER : GOPHER_BALL_PITCHER;
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ people: [{ stats: [{ splits: [{ stat }] }] }] }) });
+  });
+}
+
+// Opens the Batter vs Pitcher modal directly via window.openMatchup (a real,
+// bare top-level function in app.js, reachable as a global exactly like
+// window.getRepoLineupForGame elsewhere in this file) rather than driving a
+// board card's own render pipeline to produce a clickable "Matchup" button --
+// same "exercise the real function directly" tradeoff openGameSim's fixture
+// already makes for its own click -> render chain.
+export async function openAtBatSim(page, { randomSeed = 0.05 } = {}) {
+  await blockExternalRequests(page);
+  await seedAtBatSimRoutes(page);
+  await page.addInitScript((seed) => {
+    let s = seed * 2 ** 31;
+    Math.random = () => {
+      s = (s * 1103515245 + 12345) % 2 ** 31;
+      return s / 2 ** 31;
+    };
+  }, randomSeed);
+  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+  await disableMotion(page);
+  await page.evaluate(({ batterId, batterName, pitcherId, pitcherName }) => {
+    const hub = document.getElementById('dr-landing-hub');
+    if (hub) hub.style.display = 'none';
+    window.openMatchup(batterId, batterName, pitcherId, pitcherName);
+  }, { batterId: ATBAT_SIM_BATTER_ID, batterName: ATBAT_SIM_BATTER_NAME, pitcherId: ATBAT_SIM_PITCHER_ID, pitcherName: ATBAT_SIM_PITCHER_NAME });
+  await page.waitForSelector('#mu-modal-overlay .mu-tab-btn[data-tab="atbat-sim"]', { timeout: 15000 });
+  await page.locator('.mu-tab-btn[data-tab="atbat-sim"]').click();
+}
+
 export async function openPropBoard(page, pane, rows = BOARD_ROWS) {
   await blockExternalRequests(page);
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
