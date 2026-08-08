@@ -2437,141 +2437,6 @@ function getSportsbookKLine(pitcherId, pitcherName) {
   return sportsbookKLinesByPitcher[String(pitcherId)] ?? sportsbookKLinesByPitcher[normalizeKPropName(pitcherName)] ?? null;
 }
 
-// ── Situational true-probability vs market implied probability ──────────
-// Two independent data sources, both already built server-side, brought
-// together client-side into a real "edge" number:
-//   1. data/prop-market-odds.json (scripts/update-tracker.mjs) — real
-//      sportsbook lines for EVERY quoted batter (not just Elite Picks), same
-//      batterLines odds-api pull that already existed, just persisted more
-//      broadly than before.
-//   2. data/batter-situational-props.json (scripts/sync-batter-situational-props.mjs)
-//      — the batter's own empirical HR/Hits/Total-Bases rate in plate
-//      appearances that actually resemble today's matchup (opposing hand,
-//      park tier, opposing-pitcher velocity tier), shrunk toward his season
-//      rate and converted to a whole-game probability.
-// Both are informational/comparison-only, same rule as every other market
-// chip on this site — neither ever changes hrProb or any other score.
-let propMarketOddsByPlayer = {};
-let propMarketOddsLoadedForDate = null;
-async function loadPropMarketOdds(today) {
-  if (propMarketOddsLoadedForDate === today) return;
-  propMarketOddsByPlayer = {};
-  try {
-    const data = await drFetchDailyJSON('data/prop-market-odds.json');
-    (data.players || []).forEach(p => {
-      if (!p.playerName) return;
-      propMarketOddsByPlayer[normalizeKPropName(p.playerName)] = p.markets || {};
-    });
-  } catch (e) {}
-  propMarketOddsLoadedForDate = today;
-}
-// marketKey matches the-odds-api's own market suffixes: home_runs, hits, total_bases.
-function getPropMarketOdds(batterName, marketKey) {
-  const entry = propMarketOddsByPlayer[normalizeKPropName(batterName)];
-  return entry?.[marketKey] ?? null;
-}
-
-let situationalProps = {};
-let situationalPropsLoaded = false;
-let situationalPropsPromise = null;
-async function loadSituationalProps(force = false) {
-  if (situationalPropsLoaded && !force) return situationalProps;
-  if (situationalPropsPromise && !force) return situationalPropsPromise;
-  situationalPropsPromise = (async () => {
-    try {
-      const data = await drFetchDailyJSON('data/batter-situational-props.json');
-      const players = data.players || {};
-      situationalProps = {};
-      Object.keys(players).forEach(id => { situationalProps[String(id)] = players[id]; });
-    } catch (e) {
-      situationalProps = {};
-    }
-    situationalPropsLoaded = true;
-    return situationalProps;
-  })();
-  return situationalPropsPromise;
-}
-
-// American odds -> implied probability, same formula as the Game Projections
-// Market chip (getMarketOdds above). Devigs using the paired over/under price
-// when both sides are actually quoted; falls back to the single quoted side's
-// raw (non-devigged) probability otherwise, clearly not the same thing, so
-// callers should label it accordingly rather than presenting it as devigged.
-function impliedProbFromAmerican(price) {
-  if (!Number.isFinite(price)) return null;
-  return price < 0 ? (-price) / (-price + 100) : 100 / (price + 100);
-}
-function marketImpliedProb(marketOdds) {
-  if (!marketOdds) return null;
-  const overP = impliedProbFromAmerican(marketOdds.overPrice);
-  const underP = impliedProbFromAmerican(marketOdds.underPrice);
-  if (overP == null) return null;
-  if (underP != null) return { pct: Math.round((overP / (overP + underP)) * 100), devigged: true };
-  return { pct: Math.round(overP * 100), devigged: false };
-}
-
-// Client-side Monte Carlo for the matchup modal's "Simulate This Matchup" button (HR
-// Threats). data/batter-situational-props.json's hr.trueProbPct is already the exact
-// closed-form answer for "at least one HR in paPerGame independent PAs at rate
-// perPARate" (gameProbFromPerPARate in sync-batter-situational-props.mjs) — running
-// real trials here doesn't produce a more accurate number, it lets the user watch that
-// same rate play out over N simulated games and see the natural game-to-game variance
-// around it, which the single percentage on its own doesn't convey.
-const HR_SIM_TRIALS = 20000;
-function simulateHRGameOutcomes(perPARate, paPerGame, trials = HR_SIM_TRIALS) {
-  const paLow = Math.floor(paPerGame), paHigh = Math.ceil(paPerGame);
-  const frac = paPerGame - paLow;
-  const hrCounts = [0, 0, 0]; // [0 HR, 1 HR, 2+ HR]
-  for (let t = 0; t < trials; t++) {
-    const pa = Math.random() < frac ? paHigh : paLow;
-    let hr = 0;
-    for (let i = 0; i < pa; i++) { if (Math.random() < perPARate) hr++; }
-    hrCounts[Math.min(hr, 2)]++;
-  }
-  return { trials, hrCounts, atLeastOnePct: +(((trials - hrCounts[0]) / trials) * 100).toFixed(1) };
-}
-
-// Wired to the 🎲 SIMULATE THIS MATCHUP button (see edgeHTML in renderMatchupModal).
-// The trial run itself is a synchronous loop over HR_SIM_TRIALS iterations — fast
-// enough (well under a frame) that there's nothing to actually wait on, but rendering
-// the button's own "Simulating…" state before computing (via rAF, so the browser
-// paints it first) makes the button feel like it did something rather than just
-// instantly swapping to a result.
-function runHRMatchupSimulation(btn) {
-  const batterId = btn.dataset.batterId;
-  const perPARate = parseFloat(btn.dataset.rate);
-  const modelPct = parseFloat(btn.dataset.truePct);
-  const resultEl = document.getElementById(`hr-sim-result-${batterId}`);
-  if (!resultEl || !Number.isFinite(perPARate)) return;
-  btn.disabled = true;
-  btn.textContent = '🎲 SIMULATING…';
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    const { trials, hrCounts, atLeastOnePct } = simulateHRGameOutcomes(perPARate, FANTASY_PROJECTED_PA);
-    const pct = n => +((n / trials) * 100).toFixed(1);
-    const bar = (label, count, color) => `
-      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-        <span style="width:56px;font-size:10px;color:var(--muted)">${label}</span>
-        <div style="flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden">
-          <div style="width:${pct(count)}%;height:100%;background:${color}"></div>
-        </div>
-        <span style="width:60px;text-align:right;font-size:10px;color:var(--text);font-family:'JetBrains Mono',monospace">${pct(count)}% (${count.toLocaleString()})</span>
-      </div>`;
-    const diff = Math.abs(atLeastOnePct - modelPct);
-    resultEl.innerHTML = `
-      <div style="margin-top:8px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
-        <div style="font-size:11px;color:var(--text)"><strong>🎲 Ran ${trials.toLocaleString()} simulated games</strong> at his ${(perPARate*100).toFixed(1)}% per-PA HR rate for this matchup:</div>
-        ${bar('0 HR', hrCounts[0], 'var(--muted)')}
-        ${bar('1 HR', hrCounts[1], 'var(--accent2)')}
-        ${bar('2+ HR', hrCounts[2], 'var(--green)')}
-        <div style="font-size:10px;color:var(--muted);margin-top:8px">At least 1 HR in <strong style="color:var(--text)">${atLeastOnePct}%</strong> of simulated games — model projection was ${modelPct}% (${diff < 1 ? 'matches' : `~${diff.toFixed(1)}pp sim variance`}). Re-run for a fresh random batch.</div>
-      </div>`;
-    resultEl.style.display = 'block';
-    btn.disabled = false;
-    btn.textContent = '🎲 SIMULATE AGAIN';
-  }));
-}
-window.runHRMatchupSimulation = runHRMatchupSimulation;
-
 // Shared K prop Over/Under: use the real sportsbook line when we have one, otherwise
 // fall back to the model's projection rounded to the nearest half (so there's never a push).
 // Single source of truth for the K prop line shown to users.
@@ -6187,8 +6052,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName, precomp
       fetchJSON(`https://diamondreport.app/api/v1/people/${batterId}/stats?stats=statSplits&group=hitting&sitCodes=vl,vr&season=2026`).catch(() => null),
       fetchJSON(`https://diamondreport.app/api/v1/people/${pitcherId}/stats?stats=statSplits&group=pitching&sitCodes=vl,vr&season=2026`).catch(() => null)
     ]);
-    const todayCDT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadBatterHRSpray(), loadBatterBattedBalls(), loadBatterParkHistory(), loadPitcherRolling(), loadPitcherCountPerf(), loadPitcherWorkload(), loadSituationalProps(), loadPropMarketOdds(todayCDT), loadBullpenFatigue(), loadParkFactors(), loadUmpireTendency(), getTodaySchedule('team').catch(() => [])]);
+    const preloadResults = await Promise.all([loadStatcastHotHitters(), loadPitcherStatcast(), loadBatterPitchTypeHr(), loadBatterPitchTypeSeason(), loadNearHRs(), loadRecentHRs(), loadBatterHRSpray(), loadBatterBattedBalls(), loadBatterParkHistory(), loadPitcherRolling(), loadPitcherCountPerf(), loadPitcherWorkload(), loadBullpenFatigue(), loadParkFactors(), loadUmpireTendency(), getTodaySchedule('team').catch(() => [])]);
     const todayGames = preloadResults[preloadResults.length - 1];
 
     const batterPerson = batterData.people?.[0] || {};
@@ -6207,7 +6071,6 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName, precomp
     const hrSprayList = batterHRSpray[String(batterId)] || null;
     const rollingProfile = pitcherRolling[String(pitcherId)] || null;
     const countPerfProfile = pitcherCountPerf[String(pitcherId)] || null;
-    const situationalProfile = situationalProps[String(batterId)] || null;
 
     // Bullpen fatigue is keyed to the PITCHER's own team (that's who the batter
     // would actually face in relief), so no home/away lookup needed for it.
@@ -6280,7 +6143,7 @@ async function openMatchup(batterId, batterName, pitcherId, pitcherName, precomp
     // until batterParkHistory has this batter's entry and it covers today's venue.
     const parkHistory = batterParkHistory[String(batterId)]?.[todayParkAbbr] || null;
 
-    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, hrSprayList, todayParkAbbr, rollingProfile, countPerfProfile, situationalProfile, bullpenInfo, parkHrIndex, tableSetters, precomputedZoneFitScore, parkHistory, umpireInfo });
+    renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson, pitcherPerson, batterSplits, pitcherSplits, h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList, recentHRList, hrSprayList, todayParkAbbr, rollingProfile, countPerfProfile, bullpenInfo, parkHrIndex, tableSetters, precomputedZoneFitScore, parkHistory, umpireInfo });
   } catch(e) {
     drShowError(body, "Couldn't load this matchup.", () => openMatchup(batterId, batterName, pitcherId, pitcherName));
   }
@@ -6428,7 +6291,7 @@ window.toggleZoneSection = function(headerEl, contentId) {
   if (arrow) arrow.textContent = isOpen ? '▸' : '▾';
 };
 
-function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, hrSprayList=null, todayParkAbbr=null, rollingProfile=null, countPerfProfile=null, situationalProfile=null, bullpenInfo=null, parkHrIndex=null, tableSetters=null, precomputedZoneFitScore=null, parkHistory=null, umpireInfo=null }) {
+function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId, batterPerson={}, pitcherPerson={}, batterSplits=[], pitcherSplits=[], h2h, bs, ps, bx, px, hotHitter, pitcherProfile, nearHRList=null, recentHRList=null, hrSprayList=null, todayParkAbbr=null, rollingProfile=null, countPerfProfile=null, bullpenInfo=null, parkHrIndex=null, tableSetters=null, precomputedZoneFitScore=null, parkHistory=null, umpireInfo=null }) {
   function fv(v, dec=3) {
     if (v==null||v===''||v==='---') return '–';
     const n = parseFloat(v); return isNaN(n) ? '–' : n.toFixed(dec).replace(/^0(\.)/, '$1');
@@ -7839,92 +7702,6 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       </div>`;
   })();
 
-  // ── Situational true probability vs market implied probability ──────────
-  // "True probability" here is deliberately NOT the same number as hrProb
-  // elsewhere on the site (that's a blended-season-rate formula) — this is
-  // the batter's own empirical rate in plate appearances that actually
-  // resemble today's matchup, shrunk toward his season rate, from
-  // data/batter-situational-props.json. "Implied probability" is the real
-  // sportsbook line from data/prop-market-odds.json, devigged when both
-  // sides are quoted. Edge = true - implied. Both null-safe and gracefully
-  // absent — this batter may not be in a confirmed lineup yet, or the
-  // market may not have posted a line for him.
-  const edgeHTML = (() => {
-    const shortName = batterName.split(' ').pop();
-
-    const situationalHTML = (() => {
-      if (!situationalProfile) return `
-        <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">Situational true-probability tracking for ${shortName} hasn't synced yet — this needs a confirmed starting-lineup spot today. The simulator below still works off his real season rate.</div>`;
-
-      const markets = [
-        { label: 'Home Run', oddsMarket: 'home_runs', data: situationalProfile.hr },
-        { label: 'Any Hit', oddsMarket: 'hits', data: situationalProfile.hits },
-        { label: '2+ Total Bases', oddsMarket: 'total_bases', data: situationalProfile.tb },
-      ];
-      const rows = markets.map(m => {
-        const trueProb = m.data?.trueProbPct;
-        if (trueProb == null) return '';
-        const marketOdds = getPropMarketOdds(batterName, m.oddsMarket);
-        const implied = marketImpliedProb(marketOdds);
-        const edge = implied != null ? trueProb - implied.pct : null;
-        const edgeTxt = edge != null
-          ? `<span style="color:${edge >= 5 ? 'var(--green)' : edge <= -5 ? '#f4a261' : 'var(--muted)'};font-weight:700">${edge > 0 ? '+' : ''}${edge}pp edge</span>`
-          : `<span style="color:var(--muted)">no real market line yet</span>`;
-        return `<div class="vuln-item">
-          <span class="vuln-icon">🎯</span>
-          <span style="color:var(--text)"><strong>${m.label}:</strong> ${trueProb}% true probability${implied != null ? ` vs ${implied.pct}% market implied${implied.devigged ? '' : ' (single-side, not devigged)'}` : ''} — ${edgeTxt}</span>
-        </div>`;
-      }).filter(Boolean).join('');
-      if (!rows) return `
-        <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">No situational markets computed yet for ${shortName}.</div>`;
-
-      const ctx = situationalProfile.context;
-      return `
-        <div class="vuln-box" style="margin-top:10px">
-          <div class="vuln-title">🎯 SITUATIONAL TRUE PROBABILITY <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(his own history vs today's exact matchup, shrunk toward season rate)</span></div>
-          ${rows}
-          <div style="font-size:10px;color:var(--muted);margin-top:6px">Based on ${situationalProfile.situationalPA} plate appearance(s) matching today's situation (vs ${ctx.oppHand}HP, ${ctx.parkTier} park${ctx.oppPowerTier ? `, ${ctx.oppPowerTier} arm` : ''}), out of ${situationalProfile.seasonPA} total PA this season.</div>
-        </div>`;
-    })();
-
-    // Simulator: prefers the richer situational rate (his own history vs THIS exact
-    // matchup shape) when it's synced, but no longer requires it -- previously the
-    // whole "Home Run Simulator" tab was just a "hasn't synced yet" note for any
-    // batter without confirmed-lineup situational tracking, which was most of them.
-    // Falls back to his real season per-PA HR rate (homeRuns/plateAppearances,
-    // already fetched for every matchup this modal opens), gated on a minimum real
-    // sample so a five-PA callup doesn't drive the simulator off noise. This is a
-    // DIFFERENT real number from situational true probability and from the board's
-    // own blended hrProb model (see the comment above this IIFE) -- labeled
-    // explicitly so it's never confused with either.
-    const HR_SIM_SEASON_MIN_PA = 40;
-    const seasonPA = parseInt(bs.plateAppearances) || 0;
-    const seasonHRCount = parseInt(bs.homeRuns) || 0;
-    const seasonRate = seasonPA >= HR_SIM_SEASON_MIN_PA ? seasonHRCount / seasonPA : null;
-    const seasonWholeGamePct = seasonRate != null ? +((1 - Math.pow(1 - seasonRate, FANTASY_PROJECTED_PA)) * 100).toFixed(1) : null;
-
-    const situationalRate = situationalProfile?.hr?.shrunkRate;
-    const situationalPct = situationalProfile?.hr?.trueProbPct;
-    const usingSituational = situationalRate != null && situationalPct != null;
-    const simRate = usingSituational ? situationalRate : seasonRate;
-    const simPct = usingSituational ? situationalPct : seasonWholeGamePct;
-    const simSourceNote = usingSituational
-      ? `today's situational true-probability rate above`
-      : `his real ${seasonPA}-PA season rate (${seasonHRCount} HR) — situational tracking for this exact matchup hasn't synced yet`;
-
-    const simHTML = simRate != null && simPct != null ? `
-      <div class="hr-sim-wrap" style="margin-top:12px">
-        <div class="zone-note" style="margin:0 0 6px">Simulates ${FANTASY_PROJECTED_PA} plate appearances per game using ${simSourceNote}.</div>
-        <button type="button" class="hr-sim-btn" id="hr-sim-btn-${batterId}"
-          data-batter-id="${batterId}" data-rate="${simRate}" data-true-pct="${simPct}"
-          onclick="runHRMatchupSimulation(this)">🎲 SIMULATE THIS MATCHUP</button>
-        <div class="hr-sim-result" id="hr-sim-result-${batterId}" style="display:none"></div>
-      </div>` : `
-      <div class="zone-note" style="margin-top:10px;color:var(--muted);font-size:11px">Not enough real plate appearances yet this season (needs ${HR_SIM_SEASON_MIN_PA}+) to run a simulation for ${shortName}.</div>`;
-
-    return `${situationalHTML}${simHTML}`;
-  })();
-
   // Roadmap 5.4 re-sort: Hot Streak Signal's own score/label comes first, then Recent
   // Contact + HR Spray Chart side by side (reusing .dr1041-zone-grid, the same
   // two-column/collapses-to-one-on-mobile layout Strike Zone + Attack Zone already
@@ -8001,44 +7778,6 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
   const pitcherChaseHTML = rollingProfile?.seasonChasePct != null
     ? `<div class="pr-chase-chip" title="Real swing rate on pitches outside the strike zone (Statcast zone 11-14), season vs last 3 starts">Chase% Induced (O-Swing): <strong>${rollingProfile.seasonChasePct.toFixed(1)}%</strong>${rollingProfile.rollingChasePct != null ? ` → <strong>${rollingProfile.rollingChasePct.toFixed(1)}%</strong> (L3)` : ''}</div>${typeof pitcherTrendIndicatorChipHTML === 'function' ? pitcherTrendIndicatorChipHTML(rollingProfile) : ''}`
     : '';
-
-  // ── HR probability multiplier breakdown (roadmap: additional data) -- park
-  // factor, hot-streak, and zone-overlap are each already computed by the real
-  // client-side HR model (loadHRPotential) to build the single HR% number on
-  // HR Threats/Game Projections cards, then discarded as local variables --
-  // never persisted or shown as their own numbers anywhere. Recomputed here
-  // from data already in this modal's own scope (parkHrIndex, onFireScore,
-  // the same batterZoneProfile/pitcherProfile.byZone the Combined Zones grid
-  // already renders) using the exact same real, shared formulas
-  // (zoneMatchupMultiplier/shrinkMult) rather than a second, drifting copy of
-  // the math. Weather isn't available in this modal's scope (no live game
-  // weather fetch happens here), so it's left out rather than faked.
-  const multiplierBreakdownHTML = (() => {
-    const rows = [];
-    if (parkHrIndex != null) {
-      const parkAdj = 1 + ((parkHrIndex - 100) / 100) * 0.5;
-      const pct = Math.round((parkAdj - 1) * 100);
-      rows.push({ icon: '🏟️', label: 'Park Factor', text: `Today's park HR index is ${Math.round(parkHrIndex)} (100 = neutral) — a real ${pct >= 0 ? '+' : ''}${pct}% adjustment to HR likelihood.` });
-    }
-    if (onFireScore) {
-      const hotMult = shrinkMult(1 + (onFireScore / 100) * 0.5);
-      const pct = Math.round((hotMult - 1) * 100);
-      rows.push({ icon: '🔥', label: 'Hot Streak', text: `On-Fire Score of ${onFireScore}/100 applies a real ${pct >= 0 ? '+' : ''}${pct}% adjustment (shrunk toward neutral, same as the live model).` });
-    }
-    if (typeof zoneMatchupMultiplier === 'function' && (batterZoneProfile || pitcherProfile?.byZone)) {
-      const zMult = zoneMatchupMultiplier(batterZoneProfile, pitcherProfile?.byZone);
-      if (zMult !== 1) {
-        const shrunkZ = shrinkMult(zMult);
-        const pct = Math.round((shrunkZ - 1) * 100);
-        rows.push({ icon: '🎯', label: 'Zone Overlap', text: `Real per-zone overlap between ${batterName.split(' ').pop()}'s hot zones and ${pitcherName.split(' ').pop()}'s weak zones applies a real ${pct >= 0 ? '+' : ''}${pct}% adjustment.` });
-      }
-    }
-    if (!rows.length) return '';
-    return `<div class="vuln-box" style="margin-top:10px">
-      <div class="vuln-title">⚙️ WHY THIS NUMBER — REAL MULTIPLIER BREAKDOWN</div>
-      ${rows.map(r => `<div class="vuln-item"><span class="vuln-icon">${r.icon}</span><span style="color:var(--text)"><strong>${r.label}:</strong> ${r.text}</span></div>`).join('')}
-    </div>`;
-  })();
 
   // ── Why Today? panel -- the one place that brings the rest of this modal
   // together instead of leaving it scattered across 7 tabs. Same rule-based
@@ -8270,7 +8009,6 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         <button type="button" class="mu-tab-btn" data-tab="edges" role="tab" aria-selected="false">🎯 Matchup Edges</button>
         <button type="button" class="mu-tab-btn" data-tab="splits" role="tab" aria-selected="false">🔀 Splits</button>
         <button type="button" class="mu-tab-btn" data-tab="spray" role="tab" aria-selected="false">📍 Spray Chart</button>
-        <button type="button" class="mu-tab-btn" data-tab="simulator" role="tab" aria-selected="false">🎲 Home Run Simulator</button>
         <button type="button" class="mu-tab-btn" data-tab="atbat-sim" role="tab" aria-selected="false">🎰 Simulate At-Bats</button>
       </div>
 
@@ -8416,12 +8154,6 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         ${hrSprayChartHTML}
         </div>
         ${hrZoneGridHTML}
-      </div>
-
-      <!-- Home Run Simulator -->
-      <div class="mu-tab-pane" data-tab="simulator">
-        ${edgeHTML}
-        ${multiplierBreakdownHTML}
       </div>
 
       <!-- Simulate At-Bats -->
@@ -8581,7 +8313,7 @@ document.addEventListener('click', function(e) {
 });
 
 // ── Matchup modal top-level tabs (Stats/Pitch Mix/H2H/Matchup Edges/
-// Splits/Spray Chart/Home Run Simulator) ────────────────────────────
+// Splits/Spray Chart/Simulate At-Bats) ────────────────────────────
 // Same delegated-click + pre-render-every-pane pattern as every toggle
 // above, scoped to [data-matchup-tabs] rather than the page-level
 // .gamepick-tab system (that one is coupled to #props/history.pushState/
