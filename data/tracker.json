@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-07T03:15:46.772Z",
+  "generatedAt": "2026-08-08T02:22:15.266Z",
   "market": {
     "drp": [
       {
@@ -4930,15 +4930,17 @@
         "homeTeam": "AZ",
         "pick": "AZ",
         "pickPct": 55,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "loss",
+        "actualWinner": "SD",
         "eraDiff": 1.41,
         "whipDiff": 0.124,
         "k9Diff": -1.08,
         "awayRecordPct": 0.513,
         "homeRecordPct": 0.53,
         "isDayGame": false,
-        "marketOdds": null
+        "marketOdds": null,
+        "scoreMargin": 4,
+        "nearMiss": false
       }
     ],
     "kprop": [
@@ -22771,13 +22773,13 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 3,
+        "finalIP": 4,
+        "finalPitches": 76,
+        "finalBB": 1,
+        "finalHits": 6,
+        "finalBF": 18,
         "k9": 7.23,
         "projIP": 4.73,
         "oppKpct": 0.199,
@@ -22836,7 +22838,8 @@
             "battingOrder": 9,
             "kPct": 0.32
           }
-        ]
+        ],
+        "nearMiss": true
       },
       {
         "key": "2026-08-06|KPROP|kohl drake",
@@ -22851,13 +22854,13 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 1,
+        "finalIP": 3.6666666666666665,
+        "finalPitches": 82,
+        "finalBB": 1,
+        "finalHits": 6,
+        "finalBF": 18,
         "k9": 8.31,
         "projIP": 4.33,
         "oppKpct": 0.201,
@@ -22916,7 +22919,8 @@
             "battingOrder": 9,
             "kPct": 0.215
           }
-        ]
+        ],
+        "nearMiss": false
       }
     ],
     "premium": [
@@ -74925,15 +74929,15 @@
   "allTime": {
     "drp": {
       "wins": 156,
-      "losses": 137,
+      "losses": 138,
       "pushes": 0,
-      "total": 293
+      "total": 294
     },
     "kprop": {
       "wins": 331,
-      "losses": 280,
+      "losses": 282,
       "pushes": 0,
-      "total": 611
+      "total": 613
     },
     "premium": {
       "wins": 116,
@@ -74948,5 +74952,5 @@
       "total": 1284
     }
   },
-  "oddsLastFetchedDate": "2026-08-06"
+  "oddsLastFetchedDate": "2026-08-07"
 }
