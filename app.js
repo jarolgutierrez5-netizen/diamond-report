@@ -6321,7 +6321,7 @@ function absOutcomeLabel(outcome) {
   return { hr: '💥 HR', xbh: '🚀 XBH', single: '🥎 1B', bb: '🚶 BB', k: '❌ K', out: '· Out' }[outcome] || '· Out';
 }
 
-function finishAtBatSim(outcomes, reelsBox, recapBox, spinBtn) {
+function finishAtBatSim(outcomes, popupZone, recapBox, spinBtn) {
   spinBtn.disabled = false;
   spinBtn.textContent = '🎰 Spin Again';
 
@@ -6332,13 +6332,16 @@ function finishAtBatSim(outcomes, reelsBox, recapBox, spinBtn) {
   // Pop-up only for the exciting outcomes -- an out/K/walk landing doesn't
   // deserve a celebration banner, same "only the exciting result gets a
   // pop" restraint the pick-hit celebration elsewhere on the site already
-  // follows (it only fires on a graded win, never on every result).
+  // follows (it only fires on a graded win, never on every result). Lands in
+  // its own reserved-height zone above the reels (not absolutely positioned
+  // over the reels themselves like the Simulate Game per-play popup is) so
+  // it never overlaps the disclaimer text above it.
   if (outcomes.some(function(o) { return o === 'hr' || o === 'xbh'; })) {
     const isHR = outcomes.some(function(o) { return o === 'hr'; });
     const popup = document.createElement('div');
     popup.className = 'dr-abs-popup' + (isHR ? ' dr-abs-popup-hr' : '');
     popup.textContent = isHR ? '💥 HOME RUN!' : '🚀 EXTRA-BASE HIT!';
-    reelsBox.appendChild(popup);
+    popupZone.appendChild(popup);
     setTimeout(function() { popup.remove(); }, 1300);
   }
 }
@@ -6348,7 +6351,8 @@ window.runAtBatSim = function() {
   const reelsBox = document.getElementById('dr-abs-reels');
   const recapBox = document.getElementById('dr-abs-recap');
   const spinBtn = document.getElementById('dr-abs-spin-btn');
-  if (!reelsBox || !recapBox || !spinBtn) return;
+  const popupZone = document.getElementById('dr-abs-popup-zone');
+  if (!reelsBox || !recapBox || !spinBtn || !popupZone) return;
 
   const dist = window.drSimComputeOutcomeDist(_abSimMatchup.bs, _abSimMatchup.ps);
   const outcomes = [0, 1, 2, 3].map(function() { return window.drSimSampleOutcome(dist); });
@@ -6362,7 +6366,7 @@ window.runAtBatSim = function() {
 
   spinBtn.disabled = true;
   recapBox.textContent = '';
-  reelsBox.querySelectorAll('.dr-abs-popup').forEach(function(p) { p.remove(); });
+  popupZone.querySelectorAll('.dr-abs-popup').forEach(function(p) { p.remove(); });
 
   const faces = reelsBox.querySelectorAll('.dr-abs-reel-face');
   const reels = reelsBox.querySelectorAll('.dr-abs-reel');
@@ -6385,7 +6389,7 @@ window.runAtBatSim = function() {
       face.textContent = absOutcomeLabel(outcome);
       reel.classList.add('dr-abs-landed');
       landedCount++;
-      if (landedCount === outcomes.length) finishAtBatSim(outcomes, reelsBox, recapBox, spinBtn);
+      if (landedCount === outcomes.length) finishAtBatSim(outcomes, popupZone, recapBox, spinBtn);
     }, 500 + i * 350);
   });
 };
@@ -8423,14 +8427,17 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <!-- Simulate At-Bats -->
       <div class="mu-tab-pane" data-tab="atbat-sim">
         <div class="dr-sim-disclaimer">🎰 These are 4 hypothetical simulated at-bats for ${batterName} against ${pitcherName}, not a prediction of today's actual results — spin again for a different hypothetical outcome.</div>
-        <div class="dr-abs-reels" id="dr-abs-reels">
-          <div class="dr-abs-reel"><div class="dr-abs-reel-window"><span class="dr-abs-reel-face">–</span></div></div>
-          <div class="dr-abs-reel"><div class="dr-abs-reel-window"><span class="dr-abs-reel-face">–</span></div></div>
-          <div class="dr-abs-reel"><div class="dr-abs-reel-window"><span class="dr-abs-reel-face">–</span></div></div>
-          <div class="dr-abs-reel"><div class="dr-abs-reel-window"><span class="dr-abs-reel-face">–</span></div></div>
+        <div class="dr-abs-popup-zone" id="dr-abs-popup-zone"></div>
+        <div class="dr-abs-machine">
+          <div class="dr-abs-reels" id="dr-abs-reels">
+            <div class="dr-abs-reel"><div class="dr-abs-reel-window"><span class="dr-abs-reel-face">–</span></div></div>
+            <div class="dr-abs-reel"><div class="dr-abs-reel-window"><span class="dr-abs-reel-face">–</span></div></div>
+            <div class="dr-abs-reel"><div class="dr-abs-reel-window"><span class="dr-abs-reel-face">–</span></div></div>
+            <div class="dr-abs-reel"><div class="dr-abs-reel-window"><span class="dr-abs-reel-face">–</span></div></div>
+          </div>
+          <div class="dr-abs-recap" id="dr-abs-recap"></div>
+          <button type="button" class="btn-lineup dr-abs-spin-btn" id="dr-abs-spin-btn" onclick="runAtBatSim()">🎰 Spin At-Bats</button>
         </div>
-        <div class="dr-abs-recap" id="dr-abs-recap"></div>
-        <button type="button" class="btn-lineup dr-abs-spin-btn" id="dr-abs-spin-btn" onclick="runAtBatSim()">🎰 Spin At-Bats</button>
       </div>
     </div>
 
