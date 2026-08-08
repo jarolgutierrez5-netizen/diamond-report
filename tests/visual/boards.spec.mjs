@@ -39,6 +39,7 @@ test.describe('HR Threats board', () => {
     expect(headers.some(h => h.startsWith('lineup'))).toBe(false);
     expect(headers.some(h => h.startsWith('pitcher'))).toBe(true);
     await expect(page.locator('#hrp-row-1 .hrpt-pitcher-name')).toHaveText('Weak Pitcher');
+    expect(headers.some(h => h.startsWith('overlap'))).toBe(true);
 
     // The "○ Preliminary" confidence badge no longer renders on the HR% cell.
     await expect(page.locator('.dr-hrp-confidence-slot')).toHaveCount(0);
@@ -50,6 +51,16 @@ test.describe('HR Threats board', () => {
     const sparseRow = page.locator('#hrp-row-3');
     await expect(sparseRow.locator('.hrpt-signals')).toContainText('😴');
     await expect(sparseRow.locator('td[data-label="Edge"]')).toHaveText('–');
+
+    // hrpOverlapPitches reads the module-scoped pitcherStatcast/
+    // batterPitchTypeSeason `let` bindings directly (they're not window
+    // properties, so this fixture can't seed real chip content the way
+    // pitchMixFavorable already ships as a static field on BOARD_ROWS
+    // itself) -- so the only thing verifiable here is the graceful-empty
+    // path. hrpOverlapPitches's own threshold logic (reused verbatim from
+    // isFavorableMatchupRow/normalizePitchTypeKey) is covered by an
+    // isolated unit check instead, not a browser fixture.
+    await expect(sparseRow.locator('.hrpt-overlap-cell')).toHaveText('–');
   });
 
   test('desktop: table row expands to a detail panel, and collapses again on a second click', async ({ page }) => {

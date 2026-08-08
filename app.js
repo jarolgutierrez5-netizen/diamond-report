@@ -15438,7 +15438,35 @@ function hrpSignalLegendHTML(seen){
   }).join('')+'</div>';
 }
 function hrpGradeCls(g){ return /^A/.test(g)?'hrpt-grade-a':/^B/.test(g)?'hrpt-grade-b':'hrpt-grade-c'; }
-var HRPT_COLS=[['Player',null],['Pitcher',null],['HR%','hrProb'],['Grade',null],['Edge','matchupEdge'],['Zone','zoneFit'],['Pitch Mix',null],['HR L10',null],['OPS','ops'],['ISO','iso'],['Signals',null],['AVG','avg']];
+var HRPT_COLS=[['Player',null],['Pitcher',null],['HR%','hrProb'],['Grade',null],['Edge','matchupEdge'],['Zone','zoneFit'],['Pitch Mix',null],['Overlap',null],['HR L10',null],['OPS','ops'],['ISO','iso'],['Signals',null],['AVG','avg']];
+// Which of the pitcher's own real pitch types the batter has a real,
+// individually-favorable sample against -- same isFavorableMatchupRow
+// threshold (20+ pitches seen, 3+ of avg/iso/slg/woba/whiffPct clearing a
+// real bar) the Pitcher Matchup modal's own Pitch Mix Advantage table
+// already uses, just evaluated per pitch type instead of blended across the
+// pitcher's whole arsenal like the Pitch Mix column's Favorable/Neutral
+// verdict is. The two can legitimately disagree -- a batter can clear the
+// blended bar without any single pitch individually clearing it, or vice
+// versa -- which is exactly why this exists as its own column rather than
+// replacing Pitch Mix: one is "the overall verdict," this is "the specific
+// receipts for it."
+var HRPT_PITCH_ABBR={fastball:'FB',sinker:'SI',slider:'SL',changeup:'CH',curveball:'CU',cutter:'CT',splitter:'SP',sweeper:'SW',knuckleball:'KN'};
+function hrpOverlapPitches(batterId,pitcherId){
+  var rows=batterPitchTypeSeason[String(batterId)];
+  var arsenal=(pitcherStatcast[String(pitcherId)]||{}).byPitch||[];
+  if(!rows||!arsenal.length) return [];
+  var out=[];
+  arsenal.forEach(function(p){
+    var key=normalizePitchTypeKey(p.name);
+    var r=rows[key];
+    if(!r) return;
+    var iso=(r.slg!=null&&r.avg!=null)?+(r.slg-r.avg).toFixed(3):null;
+    if(isFavorableMatchupRow({pitches:r.pitches,avg:r.avg,iso:iso,slg:r.slg,woba:r.woba,whiffPct:r.whiffPct})){
+      out.push([HRPT_PITCH_ABBR[key]||String(p.name||'').slice(0,2).toUpperCase(), p.name]);
+    }
+  });
+  return out;
+}
 // The dense table reads fine at desktop widths but its mobile collapse
 // (stacked label:value rows) got real user feedback as worse than the
 // original card layout on a phone -- so cards come back below 768px (same
@@ -15483,6 +15511,8 @@ function hrpTableRowHTML(r,rIdx,signals){
   var p=n(r.hrProb), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit;
   var g=grade(p), l10=dr113Last10HRValue(r);
   var signalsHTML=signals.length?signals.map(function(s){return '<span data-tip="'+esc(s[2])+'">'+s[0]+'</span>';}).join(''):'<span class="hrpt-dash">–</span>';
+  var overlap=r.pitcherId?hrpOverlapPitches(r.id,r.pitcherId):[];
+  var overlapHTML=overlap.length?overlap.map(function(o){return '<span class="hrpt-overlap-chip" data-tip="'+esc(o[1])+'">'+esc(o[0])+'</span>';}).join(''):'<span class="hrpt-dash">–</span>';
   var detailId='hrpt-detail-'+esc(r.id);
   var row='<tr class="hrpt-row dr-anim-in'+(hit?' hit':isMiss?' miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="animation-delay:'+(Math.min(rIdx,8)*20)+'ms" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" data-zone-fit-score="'+esc(r.zoneFitScore==null?'':r.zoneFitScore)+'" onclick="if(!event.target.closest(\'button,a,input,label\'))window.hrpToggleRowExpand(\''+detailId+'\')">'
     +'<td class="hrpt-player-cell">'+window.drWatchStarHTML(r.id,r.name)+'<img class="hrpt-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt="">'
@@ -15493,6 +15523,7 @@ function hrpTableRowHTML(r,rIdx,signals){
     +'<td class="hrpt-num" data-label="Edge" style="background:'+(r.matchupEdge==null?'transparent':hrptHeatBGInverted(r.matchupEdge,64,45))+'">'+(r.matchupEdge==null?'–':r.matchupEdge)+'</td>'
     +'<td class="hrpt-num" data-label="Zone" style="background:'+(r.zoneFitScore==null?'transparent':hrptHeatBGInverted(r.zoneFitScore,72,58))+'">'+(r.zoneFitScore==null?'–':r.zoneFitScore)+'</td>'
     +'<td class="hrpt-num" data-label="Pitch Mix"><span class="hrpt-mix-pill'+(r.pitchMixFavorable?' fav':'')+'">'+(r.pitchMixPitches!=null?(r.pitchMixFavorable?'Favorable':'Neutral'):'–')+'</span></td>'
+    +'<td class="hrpt-num hrpt-overlap-cell" data-label="Overlap">'+overlapHTML+'</td>'
     +'<td class="hrpt-num" data-label="HR L10" style="'+(n(l10)>=2?'color:var(--green)':'')+'">'+(l10==null?'–':l10)+'</td>'
     +'<td class="hrpt-num" data-label="OPS" style="background:'+(r.ops==null?'transparent':hrptHeatBGInverted(n(r.ops),.850,.700))+'">'+fmt3(r.ops)+'</td>'
     +'<td class="hrpt-num" data-label="ISO" style="background:'+(r.iso==null?'transparent':hrptHeatBGInverted(n(r.iso),.220,.140))+'">'+fmt3(r.iso)+'</td>'

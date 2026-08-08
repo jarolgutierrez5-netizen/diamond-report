@@ -6896,25 +6896,26 @@ table.hrpt-table {
   border-collapse: collapse;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  min-width: 1060px;
+  min-width: 1150px;
 }
 /* Percentage-based fixed layout instead of content-auto sizing -- reflows
    proportionally at any container width above the mobile collapse
    breakpoint, instead of being tuned for one screenshot's width. AVG (col
    11) is a short numeric value like OPS/ISO, so the extra room the old
    Lineup Status pill needed goes to Player and Signals instead. */
-.hrpt-table thead th:nth-child(1) { width: 23%; }
-.hrpt-table thead th:nth-child(2) { width: 12%; }
-.hrpt-table thead th:nth-child(3) { width: 7%; }
+.hrpt-table thead th:nth-child(1) { width: 20%; }
+.hrpt-table thead th:nth-child(2) { width: 10%; }
+.hrpt-table thead th:nth-child(3) { width: 6%; }
 .hrpt-table thead th:nth-child(4) { width: 5%; }
 .hrpt-table thead th:nth-child(5) { width: 6%; }
 .hrpt-table thead th:nth-child(6) { width: 6%; }
-.hrpt-table thead th:nth-child(7) { width: 7%; }
-.hrpt-table thead th:nth-child(8) { width: 5%; }
-.hrpt-table thead th:nth-child(9) { width: 6%; }
+.hrpt-table thead th:nth-child(7) { width: 6%; }
+.hrpt-table thead th:nth-child(8) { width: 9%; }
+.hrpt-table thead th:nth-child(9) { width: 5%; }
 .hrpt-table thead th:nth-child(10) { width: 6%; }
-.hrpt-table thead th:nth-child(11) { width: 11%; }
-.hrpt-table thead th:nth-child(12) { width: 6%; }
+.hrpt-table thead th:nth-child(11) { width: 6%; }
+.hrpt-table thead th:nth-child(12) { width: 9%; }
+.hrpt-table thead th:nth-child(13) { width: 6%; }
 .hrpt-table thead th {
   position: sticky;
   top: 0;
@@ -6978,6 +6979,23 @@ table.hrpt-table {
 .hrpt-signals span { cursor: help; line-height: 1; display: inline-block; transition: transform .15s ease; }
 .hrpt-signals span:hover { transform: scale(1.4); }
 .hrpt-dash { color: var(--muted2, var(--muted)); }
+
+.hrpt-overlap-cell { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px; }
+.hrpt-overlap-chip {
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: rgba(209, 169, 78, .16);
+  border: 1px solid rgba(209, 169, 78, .55);
+  color: #ffcf6b;
+  cursor: help;
+  transition: transform .15s ease;
+}
+.hrpt-overlap-chip:hover { transform: scale(1.12); }
 
 /* #hr-potential-content already carries a legacy blanket rule (an older,
    pre-card table layout) forcing `display:block !important` on every
