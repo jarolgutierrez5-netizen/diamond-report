@@ -9178,118 +9178,6 @@ async function loadNearHRsBoard() {
 }
 window.loadNearHRsBoard = loadNearHRsBoard;
 
-// ── Results tab: yesterday's graded HR Threats picks ──────────────────────
-// data/tracker.json's market.hrThreat[] has been captured + graded (win/loss vs.
-// real box-score home runs) by update-tracker.mjs since it shipped, but was never
-// surfaced anywhere in the UI -- purely internal bookkeeping until now. Same direct
-// fetch pattern as loadTrackerPicks() above (no dependency on the much larger
-// repoSourceStore DRP/K-Prop merge logic, which this doesn't need).
-let _hrThreatResultsCache = null;
-let _hrThreatResultsLoadPromise = null;
-// Tracks whether the most recent real fetch attempt actually failed (network
-// error or non-ok response), distinct from a genuinely empty [] result --
-// loadResultsBoard below needs to tell "nothing graded yet today" (real,
-// honest empty state) apart from "couldn't reach data/tracker.json at all"
-// (a real failure that deserves drShowError + a working retry, not a silent
-// empty board).
-let _hrThreatResultsLoadFailed = false;
-async function loadHRThreatResults(force=false) {
-  if (_hrThreatResultsCache && !force) return _hrThreatResultsCache;
-  if (_hrThreatResultsLoadPromise && !force) return _hrThreatResultsLoadPromise;
-  _hrThreatResultsLoadPromise = (async () => {
-    let list = [];
-    try {
-      const res = await fetch('./data/tracker.json', { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        list = Array.isArray(data?.market?.hrThreat) ? data.market.hrThreat : [];
-        _hrThreatResultsLoadFailed = false;
-      } else {
-        _hrThreatResultsLoadFailed = true;
-      }
-    } catch { _hrThreatResultsLoadFailed = true; }
-    _hrThreatResultsCache = list;
-    return list;
-  })();
-  return _hrThreatResultsLoadPromise;
-}
-window.loadHRThreatResults = loadHRThreatResults;
-
-function renderHRThreatResults() {
-  const el = document.getElementById('hr-results-content');
-  if (!el) return;
-  const countEl = document.getElementById('hr-results-count');
-  const list = _hrThreatResultsCache || [];
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yStr = yesterday.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-  // Hits only, per request -- misses (result === 'loss') are deliberately excluded
-  // from this board entirely, not just visually de-emphasized.
-  const graded = list.filter(r => r.date === yStr && r.result === 'win');
-
-  if (!graded.length) {
-    el.innerHTML = `<div class="mu-empty" style="color:var(--muted)">No graded HR Threat hits for ${yStr} yet — picks grade once yesterday's games go final.</div>`;
-    if (countEl) countEl.style.display = 'none';
-    return;
-  }
-
-  graded.sort((a, b) => (b.score || 0) - (a.score || 0));
-  const players = graded.filter(r => drMatchesSearch('results', r.playerName || ''));
-
-  if (!players.length) {
-    el.innerHTML = `<div class="mu-empty" style="color:var(--muted)">No players match your search.</div>`;
-    if (countEl) countEl.style.display = 'none';
-    return;
-  }
-
-  if (countEl) {
-    countEl.textContent = `${graded.length} Hit${graded.length !== 1 ? 's' : ''}`;
-    countEl.style.cssText = 'background:var(--accent);color:white;font-family:Manrope,sans-serif;font-size:12px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;letter-spacing:.5px;flex-shrink:0';
-  }
-
-  const hs = id => id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_32,q_auto:best/v1/people/${id}/headshot/67/current` : '';
-  el.innerHTML = players.map(r => {
-    const hasMatchup = r.playerId != null && r.pitcherId != null;
-    // Single-quoted JS string literals with embedded single quotes backslash-escaped
-    // (a real MLB name like "O'Neill" would otherwise break out of the attribute) --
-    // same escaping pattern used by the other openMatchup(...) onclick builders in
-    // this file (see safeName above), not JSON.stringify, which emits double quotes
-    // that collide with this double-quoted HTML attribute.
-    const safePlayerName = String(r.playerName || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-    const safePitcherName = String(r.pitcherName || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-    const clickAttrs = hasMatchup
-      ? `onclick="openMatchup(${Number(r.playerId)},'${safePlayerName}',${Number(r.pitcherId)},'${safePitcherName}')" style="cursor:pointer"`
-      : '';
-    return `<div class="stat-row" ${clickAttrs} style="align-items:center;flex-wrap:wrap">
-      <img src="${hs(r.playerId)}" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);flex-shrink:0" alt="" loading="lazy" decoding="async">
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <span style="font-size:13px;font-weight:600;color:var(--text)">${r.playerName || '–'}</span>
-          <span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.5px;background:rgba(80,200,120,.15);color:var(--green)">✅ HIT</span>
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">
-          ${r.team || '–'} vs ${r.opp || '–'}${r.pitcherName ? ` · ${r.pitcherName}` : ''} — ${r.actual != null ? `${r.actual} HR` : 'no HR'}${r.score != null ? ` · ${r.score} score` : ''}${hasMatchup ? ' · <span style="color:var(--accent2)">⚔ View Matchup</span>' : ''}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-window.renderHRThreatResults = renderHRThreatResults;
-
-async function loadResultsBoard(force=false) {
-  try {
-    await loadHRThreatResults(force);
-    if (_hrThreatResultsLoadFailed) {
-      drShowError(document.getElementById('hr-results-content'), "Couldn't load results.", () => loadResultsBoard(true));
-      return;
-    }
-    renderHRThreatResults();
-  } catch(e) {
-    drShowError(document.getElementById('hr-results-content'), "Couldn't load results.", () => loadResultsBoard(true));
-  }
-}
-window.loadResultsBoard = loadResultsBoard;
-
 // Same repo-fed-JSON-with-graceful-fallback pattern as loadNearHRs() above —
 // data/pitcher-rolling.json is keyed by pitcher ID already, so this just
 // normalizes the ID to a string for lookup consistency with the rest of the app.
@@ -14230,7 +14118,7 @@ if (document.readyState === 'loading') {
 
 /* ---- from <script id="prod-v8-70-performance-loader"> ---- */
 (function(){
-  const loaded = { game:false, pr:false, hr:false, k:false, props:false, deep:false, fantasy:false, nearhr:false, results:false };
+  const loaded = { game:false, pr:false, hr:false, k:false, props:false, deep:false, fantasy:false, nearhr:false };
   const idle = window.requestIdleCallback || function(cb){ return setTimeout(cb, 900); };
 
   window.__drLoadGamePickPaneData = function(pane){
@@ -14271,12 +14159,6 @@ if (document.readyState === 'loading') {
         try { if (typeof window.loadNearHRsBoard === 'function') window.loadNearHRsBoard(); } catch(e) {}
         return;
       }
-      if (pane === 'results') {
-        if (loaded.results) return;
-        loaded.results = true;
-        try { if (typeof window.loadResultsBoard === 'function') window.loadResultsBoard(); } catch(e) {}
-        return;
-      }
       if (pane === 'k') {
         if (loaded.k) return;
         loaded.k = true;
@@ -14315,7 +14197,7 @@ if (document.readyState === 'loading') {
 /* ---- from <script id="anonymous"> ---- */
 // PROD v8.44 — Game Picks inner tab controller with persistent state
 (function(){
-  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, fantasy: true, nearhr: true, results: true, nfltd: true };
+  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, fantasy: true, nearhr: true, nfltd: true };
 
   // Only the URL hash decides the pane on load (e.g. a shared #gamepick=premium
   // link). No localStorage fallback — a plain refresh/revisit with no hash
@@ -16638,7 +16520,6 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
     loadHubHeadlines();
     loadHRCarousel();
     loadTrendingPlayers();
-    loadResultsTeaser();
     loadHubNews();
     loadHubHRs();
     loadHubLeaders();
@@ -17474,7 +17355,7 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
       briefingItems.push({
         label: 'Yesterday’s Model Record', icon: '📋',
         title: recap.title, sub: recap.blurb,
-        run: function(){ applyHeadlineLink({ hash: '#gamepick=results' }); }
+        run: function(){ window.location.href = '/track-record.html'; }
       });
     }
 
@@ -17502,66 +17383,6 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
       };
     }
 
-    section.style.display = '';
-  }
-
-  // Projection Results teaser -- a compact, real "how the model's done"
-  // summary on the hub itself (yesterday's graded record from the same
-  // recap the Daily Briefing uses, plus the real all-time HR Threats record
-  // tracker.json already tracks -- the same market the Results pane this
-  // links to actually shows), so results are visible without opening a
-  // separate tab. Does not attempt to merge with the standalone
-  // track-record.html page -- that's a larger change, deliberately deferred.
-  var resultsTeaserLoaded = false;
-  function loadResultsTeaser(){
-    if (resultsTeaserLoaded) return;
-    resultsTeaserLoaded = true;
-    Promise.all([
-      drFetchDailyJSON('data/daily-headlines.json').catch(function(){ return null; }),
-      drFetchDailyJSON('data/tracker.json').catch(function(){ return null; })
-    ]).then(function(results){
-      renderResultsTeaser(results[0], results[1]);
-    });
-  }
-
-  // Green/red here follow the same rule as everywhere else on the site:
-  // color signals whether the record is actually good, not just "here's a
-  // number" -- a losing record in green would be a real semantic bug, not
-  // a style choice.
-  function resultsValueClass(wins, losses){
-    var total = wins + losses;
-    if (!total) return '';
-    return (wins / total >= 0.5) ? ' is-positive' : ' is-negative';
-  }
-
-  function renderResultsTeaser(headlinesData, trackerData){
-    var section = document.getElementById('dr-hub-results-teaser');
-    var content = document.getElementById('dr-hub-results-teaser-content');
-    if (!section || !content) return;
-
-    var headlines = (headlinesData && Array.isArray(headlinesData.headlines)) ? headlinesData.headlines : [];
-    var recap = headlines.filter(function(h){ return h.category === 'recap'; })[0];
-    var allTimeHR = trackerData && trackerData.allTime && trackerData.allTime.hrThreat;
-
-    if (!recap && !allTimeHR) { section.style.display = 'none'; return; }
-
-    var tiles = '';
-    if (recap) {
-      var m = /(\d+)\s*-\s*(\d+)/.exec(recap.title || '');
-      var recapCls = m ? resultsValueClass(parseInt(m[1], 10), parseInt(m[2], 10)) : '';
-      tiles += '<div class="dr-hub-results-tile"><span class="dr-hub-results-tile-label">Yesterday</span>' +
-        '<span class="dr-hub-results-tile-value' + recapCls + '">' + escapeHtml(recap.title.replace(/^Diamond Report went /, '')) + '</span>' +
-        '<span class="dr-hub-results-tile-sub">' + escapeHtml(recap.blurb || '') + '</span></div>';
-    }
-    if (allTimeHR && allTimeHR.total) {
-      var pct = allTimeHR.total ? (allTimeHR.wins / allTimeHR.total * 100) : 0;
-      tiles += '<div class="dr-hub-results-tile"><span class="dr-hub-results-tile-label">All-Time · HR Threats</span>' +
-        '<span class="dr-hub-results-tile-value' + resultsValueClass(allTimeHR.wins, allTimeHR.losses) + '">' + allTimeHR.wins + '-' + allTimeHR.losses + ' <small>(' + pct.toFixed(1) + '%)</small></span>' +
-        '<span class="dr-hub-results-tile-sub">' + allTimeHR.total + ' picks graded, in the open</span></div>';
-    }
-
-    content.innerHTML = tiles +
-      '<button type="button" class="dr-hub-results-cta" onclick="window.location.hash=\'gamepick=results\'">See full Results ›</button>';
     section.style.display = '';
   }
 
