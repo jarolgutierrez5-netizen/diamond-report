@@ -118,4 +118,33 @@ jobs:
           git config user.name "diamond-report-bot"
           git config user.email "actions@users.noreply.github.com"
           git commit -m "Update tracker: capture today's picks, grade prior day's results"
-          git push
+
+          # main can move during this run -- confirmed live 2026-08-08 (run 31262562751):
+          # this workflow's own concurrency group only serializes it against ITSELF, not
+          # against sync-statcast.yml/sync-transactions.yml/other workflows that also push
+          # to main on their own schedules. That run's plain `git push` was flat-out
+          # rejected ("fetch first") with no retry, so the whole run's picks capture +
+          # grading + headlines + performance report was silently discarded.
+          #
+          # Same retry+rebase loop as sync-statcast.yml/calibration-report.yml/
+          # sync-transactions.yml's own push step (see sync-statcast.yml's comment for the
+          # full rationale). -X theirs is safe here for the same reason it is there: every
+          # file this step stages (tracker.json, k-props.json, daily-headlines.json, etc.)
+          # is unique to this workflow -- no other workflow writes any of them -- so a
+          # rebase onto a newer main is a no-op fast-forward-style replay, never a real
+          # conflict.
+          for attempt in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push rejected (attempt $attempt/5) — main moved during this run. Fetching and rebasing..."
+            git fetch origin main
+            if ! git rebase -X theirs origin/main; then
+              echo "::error::Rebase onto origin/main failed even preferring our own side — aborting. This run's data was NOT pushed."
+              git rebase --abort
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "::error::Push still rejected after 5 attempts."
+          exit 1
