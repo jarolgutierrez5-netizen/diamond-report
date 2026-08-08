@@ -6864,3 +6864,237 @@ select:focus-visible {
 .dr-hub-headline-stat.is-neutral strong { color: var(--accent2); }
 .dr-hub-headline-stat.is-positive strong { color: var(--green); }
 .dr-hub-headline-stat.is-negative strong { color: var(--dr-red); }
+
+/* ── HR Threats: compact sortable table (replaced the old card grid) ────
+   Denser layout for scanning/sorting, narrative text moved into a
+   click-to-expand row instead of always-visible. Mirrors #pr-content's own
+   heat-cell + mobile label-chip collapse pattern for visual consistency. */
+
+.hrpt-shell {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.hrpt-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(7, 15, 30, .5);
+  font-family: var(--font-body);
+}
+.hrpt-legend-label { font-size: 9.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted2, var(--muted)); }
+.hrpt-legend-item { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+.hrpt-scroll { overflow-x: auto; }
+table.hrpt-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  min-width: 1150px;
+}
+/* Percentage-based fixed layout instead of content-auto sizing -- reflows
+   proportionally at any container width above the mobile collapse
+   breakpoint, instead of being tuned for one screenshot's width. Column
+   order here mirrors HRPT_COLS: HR%, Player, Pitcher, Edge, Zone, Pitch
+   Mix, Overlap, AVG, SLG, OPS, ISO, HR L10, Signals. SLG (col 9) is a
+   short numeric value like AVG/OPS/ISO, so it took the width Grade
+   freed up when that column was dropped in favor of it. */
+.hrpt-table thead th:nth-child(1) { width: 6%; }
+.hrpt-table thead th:nth-child(2) { width: 20%; }
+.hrpt-table thead th:nth-child(3) { width: 10%; }
+.hrpt-table thead th:nth-child(4) { width: 6%; }
+.hrpt-table thead th:nth-child(5) { width: 6%; }
+.hrpt-table thead th:nth-child(6) { width: 6%; }
+.hrpt-table thead th:nth-child(7) { width: 9%; }
+.hrpt-table thead th:nth-child(8) { width: 6%; }
+.hrpt-table thead th:nth-child(9) { width: 5%; }
+.hrpt-table thead th:nth-child(10) { width: 6%; }
+.hrpt-table thead th:nth-child(11) { width: 6%; }
+.hrpt-table thead th:nth-child(12) { width: 5%; }
+.hrpt-table thead th:nth-child(13) { width: 9%; }
+.hrpt-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface3, var(--surface2));
+  text-align: left;
+  padding: 10px;
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.hrpt-table thead th.hrpt-num { text-align: center; }
+.hrpt-table thead th.hrpt-sortable { cursor: pointer; transition: color .15s ease, text-shadow .15s ease; }
+.hrpt-table thead th.hrpt-sortable:hover { color: var(--text); }
+.hrpt-table thead th.hrpt-sortable.active { color: var(--accent2); text-shadow: 0 0 12px rgba(91,157,255,.55); }
+
+@keyframes hrptRowIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.hrpt-row.dr-anim-in { animation: hrptRowIn .4s cubic-bezier(.2,.8,.2,1) both; }
+.hrpt-row {
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+.hrpt-row:hover { background: rgba(47, 107, 255, .12); transform: translateX(3px); }
+.hrpt-row td[style*="background"] { transition: filter .18s ease; }
+.hrpt-row:hover td[style*="background"] { filter: brightness(1.22) saturate(1.15); }
+.hrpt-row.hit { box-shadow: inset 3px 0 0 var(--green); }
+.hrpt-row.miss { box-shadow: inset 3px 0 0 var(--dr-red, #ff4d6d); }
+@media (prefers-reduced-motion: reduce) {
+  .hrpt-row.dr-anim-in { animation: none; }
+  .hrpt-row, .hrpt-row td[style*="background"], .hrpt-detail-row.hrpt-open .hrpt-detail-inner { transition: none !important; animation: none !important; }
+}
+.hrpt-table td { padding: 8px 10px; vertical-align: middle; }
+.hrpt-table td.hrpt-num { text-align: center; font-size: 12.5px; }
+
+.hrpt-player-cell { display: flex; align-items: center; gap: 8px; min-width: 190px; }
+.hrpt-photo { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(147, 197, 253, .4); background: var(--surface2); flex-shrink: 0; }
+.hrpt-player-meta { min-width: 0; }
+.hrpt-name { font-family: var(--font-body); font-size: 12.5px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.hrpt-sub { font-family: var(--font-body); font-size: 10px; color: var(--muted); white-space: nowrap; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; }
+
+.hrpt-pitcher-cell { font-family: var(--font-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hrpt-pitcher-name { font-size: 11.5px; font-weight: 700; color: var(--text); }
+.hrpt-pitcher-hand { font-size: 9px; font-weight: 800; color: var(--muted); margin-left: 5px; padding: 1px 5px; border: 1px solid var(--border); border-radius: 5px; vertical-align: middle; }
+
+.hrpt-prob { font-size: 15px; font-weight: 800; color: #8ec2ff; text-shadow: 0 0 12px rgba(91,157,255,.35); }
+
+.hrpt-mix-pill { font-family: var(--font-body); font-size: 9.5px; font-weight: 700; padding: 3px 7px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
+.hrpt-mix-pill.fav { background: rgba(46, 230, 166, .14); border-color: rgba(46, 230, 166, .7); color: #4dffc4; }
+
+.hrpt-signals { font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.hrpt-signals span { cursor: help; line-height: 1; display: inline-block; transition: transform .15s ease; }
+.hrpt-signals span:hover { transform: scale(1.4); }
+.hrpt-dash { color: var(--muted2, var(--muted)); }
+
+.hrpt-overlap-cell { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px; }
+.hrpt-overlap-chip {
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: rgba(209, 169, 78, .16);
+  border: 1px solid rgba(209, 169, 78, .55);
+  color: #ffcf6b;
+  cursor: help;
+  transition: transform .15s ease;
+}
+.hrpt-overlap-chip:hover { transform: scale(1.12); }
+
+/* #hr-potential-content already carries a legacy blanket rule (an older,
+   pre-card table layout) forcing `display:block !important` on every
+   table/thead/tbody/tr/th/td inside it at <=768px -- harmless for the card
+   grid (no table markup there) but it clobbers this row's own collapsed
+   state. Override with equal specificity + !important, same targeted-fix
+   pattern the existing `#hr-potential-content thead{display:none!important}`
+   rule already uses for the same reason. */
+#hr-potential-content .hrpt-detail-row { display: none !important; }
+#hr-potential-content .hrpt-detail-row.hrpt-open { display: table-row !important; }
+@keyframes hrptDetailIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.hrpt-detail-row.hrpt-open .hrpt-detail-inner { animation: hrptDetailIn .3s cubic-bezier(.2,.8,.2,1) both; }
+.hrpt-detail-row td { padding: 0; border-bottom: 1px solid var(--border); }
+.hrpt-detail-inner {
+  font-family: var(--font-body);
+  padding: 16px;
+  background: rgba(6, 6, 15, .5);
+  display: grid;
+  grid-template-columns: minmax(0, 640px) 220px;
+  gap: 16px;
+  align-items: start;
+}
+.hrpt-box-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--accent2);
+  margin-bottom: 10px;
+}
+.hrpt-why-box {
+  background: rgba(13, 19, 34, .8);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.hrpt-why { font-size: 12px; color: var(--muted); line-height: 1.6; }
+/* The shared .vuln-item is display:flex, which blockifies every one of its
+   inline children -- the icon span, each text run, and the <strong> value --
+   into separate flex items laid out in a row. In the card view's much wider
+   .dr1027-why that's invisible (everything still fits on one row-ish flow),
+   but in this box's narrower width it fragments one sentence into several
+   independently-wrapping mini-columns. Switching to block + an
+   absolutely-positioned icon (instead of flex's gap/align-items) keeps the
+   same visual "icon in a left gutter, text flows normally" look without
+   blockifying the sentence's own inline content. Scoped to this box only --
+   the shared .vuln-item elsewhere (cards, the full matchup modal) keeps its
+   original flex layout, unaffected. */
+#hr-potential-content .hrpt-why-box .vuln-item {
+  display: block !important;
+  position: relative !important;
+  padding-left: 22px !important;
+}
+#hr-potential-content .hrpt-why-box .vuln-icon {
+  position: absolute !important;
+  left: 0 !important;
+  top: 1px !important;
+}
+.hrpt-detail-side {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  background: rgba(13, 19, 34, .8);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.hrpt-detail-stat { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; font-family: var(--font-mono); color: var(--text); }
+.hrpt-detail-stat span { font-family: var(--font-body); color: var(--muted); font-size: 11px; }
+.hrpt-open-full {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  align-self: stretch;
+  text-align: center;
+  margin-top: 4px;
+  transition: background .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.hrpt-open-full:hover { background: var(--accent2); border-color: var(--accent2); box-shadow: 0 0 16px rgba(91,157,255,.5); transform: translateY(-1px); }
+.hrpt-compare { display: flex; align-items: center; gap: 6px; font-family: var(--font-body); font-size: 10.5px; color: var(--muted); cursor: pointer; }
+
+/* 768px, not the 700px breakpoint used elsewhere in the file -- matches the
+   breakpoint #hr-potential-content's own pre-existing legacy rule above
+   already uses, so there's no narrow window where that rule has kicked in
+   (forcing table/tr/td to block) but this collapse styling hasn't yet. */
+@media (max-width: 768px) {
+  .hrp-view-toggle { margin-left: 0; }
+  table.hrpt-table, table.hrpt-table thead, table.hrpt-table tbody, .hrpt-table tr, .hrpt-table td { display: block; width: 100%; }
+  .hrpt-table thead { display: none; }
+  table.hrpt-table { min-width: 0; }
+  .hrpt-row { padding: 10px 12px 6px; border-radius: 10px; margin: 8px; border: 1px solid var(--border); }
+  .hrpt-table td { padding: 5px 0; border: none; display: flex; align-items: center; justify-content: space-between; }
+  .hrpt-table td.hrpt-num::before, .hrpt-table td.hrpt-pitcher-cell::before { content: attr(data-label); font-family: var(--font-body); font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--muted2, var(--muted)); }
+  .hrpt-player-cell { padding: 2px 0 8px; }
+  .hrpt-detail-inner { grid-template-columns: 1fr; padding: 12px; }
+  .hrpt-detail-row { margin: 0 8px 8px; }
+  #hr-potential-content .hrpt-detail-row.hrpt-open { display: block !important; }
+}
