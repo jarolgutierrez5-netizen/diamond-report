@@ -15169,10 +15169,10 @@ if (document.readyState === 'loading') {
   // Board default stays HR Probability (the board's whole point); Matchup Edge is an
   // opt-in alternate sort for a user who cares specifically about batter-vs-this-pitcher
   // production, independent of the park/weather/hot-streak factors baked into hrProb.
-  var HRP_SORT_KEYS=['hrProb','matchupEdge','zoneFit','ops','iso','avg'];
+  var HRP_SORT_KEYS=['hrProb','matchupEdge','zoneFit','ops','iso','avg','slg'];
   function getHRSortBy(){ return window.__hrpSortBy||'hrProb'; }
   window.setHRSort=function(val){ window.__hrpSortBy=HRP_SORT_KEYS.indexOf(val)>=0?val:'hrProb'; renderHRPTableV1032(); };
-  function hrSortValue(r){ var by=getHRSortBy(); if(by==='matchupEdge')return n(r.matchupEdge); if(by==='zoneFit')return n(r.zoneFitScore); if(by==='ops')return n(r.ops); if(by==='iso')return n(r.iso); if(by==='avg')return n(r.avg); return n(r.hrProb); }
+  function hrSortValue(r){ var by=getHRSortBy(); if(by==='matchupEdge')return n(r.matchupEdge); if(by==='zoneFit')return n(r.zoneFitScore); if(by==='ops')return n(r.ops); if(by==='iso')return n(r.iso); if(by==='avg')return n(r.avg); if(by==='slg')return n(r.slg); return n(r.hrProb); }
   function syncHRSortSelect(){ var sel=document.getElementById('hrp-sort-select'); if(sel) sel.value=getHRSortBy(); }
   function hasNearHR(id){ var evs=nearHRs&&nearHRs[String(id)]; return !!(evs&&evs.length); }
   // "Which game" filtering lives solely in the standardized filter bar's own Game Time
@@ -15437,8 +15437,7 @@ function hrpSignalLegendHTML(seen){
     return '<span class="hrpt-legend-item">'+icon+' '+esc(seen[icon])+'</span>';
   }).join('')+'</div>';
 }
-function hrpGradeCls(g){ return /^A/.test(g)?'hrpt-grade-a':/^B/.test(g)?'hrpt-grade-b':'hrpt-grade-c'; }
-var HRPT_COLS=[['Player',null],['Pitcher',null],['HR%','hrProb'],['Grade',null],['Edge','matchupEdge'],['Zone','zoneFit'],['Pitch Mix',null],['Overlap',null],['HR L10',null],['OPS','ops'],['ISO','iso'],['Signals',null],['AVG','avg']];
+var HRPT_COLS=[['HR%','hrProb'],['Player',null],['Pitcher',null],['Edge','matchupEdge'],['Zone','zoneFit'],['Pitch Mix',null],['Overlap',null],['AVG','avg'],['SLG','slg'],['OPS','ops'],['ISO','iso'],['HR L10',null],['Signals',null]];
 // Which of the pitcher's own real pitch types the batter has a real,
 // individually-favorable sample against -- same isFavorableMatchupRow
 // threshold (20+ pitches seen, 3+ of avg/iso/slg/woba/whiffPct clearing a
@@ -15509,26 +15508,26 @@ function hrpTableHeaderHTML(){
 }
 function hrpTableRowHTML(r,rIdx,signals){
   var p=n(r.hrProb), hit=isHit('hr',r), isFinal=String(r.timeLabel||'').toUpperCase()==='FINAL', isMiss=isFinal&&!hit;
-  var g=grade(p), l10=dr113Last10HRValue(r);
+  var l10=dr113Last10HRValue(r);
   var signalsHTML=signals.length?signals.map(function(s){return '<span data-tip="'+esc(s[2])+'">'+s[0]+'</span>';}).join(''):'<span class="hrpt-dash">–</span>';
   var overlap=r.pitcherId?hrpOverlapPitches(r.id,r.pitcherId):[];
   var overlapHTML=overlap.length?overlap.map(function(o){return '<span class="hrpt-overlap-chip" data-tip="'+esc(o[1])+'">'+esc(o[0])+'</span>';}).join(''):'<span class="hrpt-dash">–</span>';
   var detailId='hrpt-detail-'+esc(r.id);
   var row='<tr class="hrpt-row dr-anim-in'+(hit?' hit':isMiss?' miss':'')+'" id="hrp-row-'+esc(r.id)+'" style="animation-delay:'+(Math.min(rIdx,8)*20)+'ms" data-batter-id="'+esc(r.id)+'" data-batter-name="'+esc(r.name||'')+'" data-pitcher-id="'+esc(r.pitcherId||'')+'" data-pitcher-name="'+esc(r.pitcherName||'')+'" data-zone-fit-score="'+esc(r.zoneFitScore==null?'':r.zoneFitScore)+'" onclick="if(!event.target.closest(\'button,a,input,label\'))window.hrpToggleRowExpand(\''+detailId+'\')">'
+    +'<td class="hrpt-num" data-label="HR%"><strong class="hrpt-prob"><span class="hrpt-prob-num" data-target="'+p.toFixed(1)+'">0.0</span>%</strong></td>'
     +'<td class="hrpt-player-cell">'+window.drWatchStarHTML(r.id,r.name)+'<img class="hrpt-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt="">'
       +'<div class="hrpt-player-meta"><div class="hrpt-name">'+esc(r.name||'–')+'<span class="dr-row-lineup-badge-slot" id="lineup-badge-hr-'+esc(r.id)+'"></span></div><div class="hrpt-sub">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+'</div></div></td>'
     +'<td class="hrpt-pitcher-cell" data-label="Pitcher">'+(r.pitcherName?('<span class="hrpt-pitcher-name">'+esc(r.pitcherName)+'</span>'+(r.pitcherHand?'<span class="hrpt-pitcher-hand">'+(r.pitcherHand==='L'?'LHP':r.pitcherHand==='R'?'RHP':'')+'</span>':'')):'<span class="hrpt-dash">–</span>')+'</td>'
-    +'<td class="hrpt-num" data-label="HR%"><strong class="hrpt-prob"><span class="hrpt-prob-num" data-target="'+p.toFixed(1)+'">0.0</span>%</strong></td>'
-    +'<td class="hrpt-num" data-label="Grade"><span class="hrpt-grade '+hrpGradeCls(g)+'">'+esc(g)+'</span></td>'
     +'<td class="hrpt-num" data-label="Edge" style="background:'+(r.matchupEdge==null?'transparent':hrptHeatBGInverted(r.matchupEdge,64,45))+'">'+(r.matchupEdge==null?'–':r.matchupEdge)+'</td>'
     +'<td class="hrpt-num" data-label="Zone" style="background:'+(r.zoneFitScore==null?'transparent':hrptHeatBGInverted(r.zoneFitScore,72,58))+'">'+(r.zoneFitScore==null?'–':r.zoneFitScore)+'</td>'
     +'<td class="hrpt-num" data-label="Pitch Mix"><span class="hrpt-mix-pill'+(r.pitchMixFavorable?' fav':'')+'">'+(r.pitchMixPitches!=null?(r.pitchMixFavorable?'Favorable':'Neutral'):'–')+'</span></td>'
     +'<td class="hrpt-num hrpt-overlap-cell" data-label="Overlap">'+overlapHTML+'</td>'
-    +'<td class="hrpt-num" data-label="HR L10" style="'+(n(l10)>=2?'color:var(--green)':'')+'">'+(l10==null?'–':l10)+'</td>'
+    +'<td class="hrpt-num" data-label="AVG" style="background:'+(r.avg==null?'transparent':hrptHeatBGInverted(n(r.avg),.280,.220))+'">'+fmt3(r.avg)+'</td>'
+    +'<td class="hrpt-num" data-label="SLG" style="background:'+(r.slg==null?'transparent':hrptHeatBGInverted(n(r.slg),.470,.380))+'">'+fmt3(r.slg)+'</td>'
     +'<td class="hrpt-num" data-label="OPS" style="background:'+(r.ops==null?'transparent':hrptHeatBGInverted(n(r.ops),.850,.700))+'">'+fmt3(r.ops)+'</td>'
     +'<td class="hrpt-num" data-label="ISO" style="background:'+(r.iso==null?'transparent':hrptHeatBGInverted(n(r.iso),.220,.140))+'">'+fmt3(r.iso)+'</td>'
+    +'<td class="hrpt-num" data-label="HR L10" style="'+(n(l10)>=2?'color:var(--green)':'')+'">'+(l10==null?'–':l10)+'</td>'
     +'<td class="hrpt-num hrpt-signals" data-label="Signals">'+signalsHTML+'</td>'
-    +'<td class="hrpt-num" data-label="AVG" style="background:'+(r.avg==null?'transparent':hrptHeatBGInverted(n(r.avg),.280,.220))+'">'+fmt3(r.avg)+'</td>'
   +'</tr>';
   var detail='<tr class="hrpt-detail-row" id="'+detailId+'"><td colspan="'+HRPT_COLS.length+'"><div class="hrpt-detail-inner">'
     +'<div class="hrpt-why-box"><div class="hrpt-box-label">⚡ Scouting Report</div><div class="hrpt-why" id="hrp-scout-'+esc(r.id)+'-'+esc(r.pitcherId||0)+'">'+(r.pitcherId?'<span class="spin"></span> Loading scouting report…':'<span style="color:var(--muted)">No opposing pitcher assigned yet — scouting report unavailable.</span>')+'</div></div>'

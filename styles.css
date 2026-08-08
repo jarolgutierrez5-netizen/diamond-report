@@ -6900,22 +6900,24 @@ table.hrpt-table {
 }
 /* Percentage-based fixed layout instead of content-auto sizing -- reflows
    proportionally at any container width above the mobile collapse
-   breakpoint, instead of being tuned for one screenshot's width. AVG (col
-   11) is a short numeric value like OPS/ISO, so the extra room the old
-   Lineup Status pill needed goes to Player and Signals instead. */
-.hrpt-table thead th:nth-child(1) { width: 20%; }
-.hrpt-table thead th:nth-child(2) { width: 10%; }
-.hrpt-table thead th:nth-child(3) { width: 6%; }
-.hrpt-table thead th:nth-child(4) { width: 5%; }
+   breakpoint, instead of being tuned for one screenshot's width. Column
+   order here mirrors HRPT_COLS: HR%, Player, Pitcher, Edge, Zone, Pitch
+   Mix, Overlap, AVG, SLG, OPS, ISO, HR L10, Signals. SLG (col 9) is a
+   short numeric value like AVG/OPS/ISO, so it took the width Grade
+   freed up when that column was dropped in favor of it. */
+.hrpt-table thead th:nth-child(1) { width: 6%; }
+.hrpt-table thead th:nth-child(2) { width: 20%; }
+.hrpt-table thead th:nth-child(3) { width: 10%; }
+.hrpt-table thead th:nth-child(4) { width: 6%; }
 .hrpt-table thead th:nth-child(5) { width: 6%; }
 .hrpt-table thead th:nth-child(6) { width: 6%; }
-.hrpt-table thead th:nth-child(7) { width: 6%; }
-.hrpt-table thead th:nth-child(8) { width: 9%; }
+.hrpt-table thead th:nth-child(7) { width: 9%; }
+.hrpt-table thead th:nth-child(8) { width: 6%; }
 .hrpt-table thead th:nth-child(9) { width: 5%; }
 .hrpt-table thead th:nth-child(10) { width: 6%; }
 .hrpt-table thead th:nth-child(11) { width: 6%; }
-.hrpt-table thead th:nth-child(12) { width: 9%; }
-.hrpt-table thead th:nth-child(13) { width: 6%; }
+.hrpt-table thead th:nth-child(12) { width: 5%; }
+.hrpt-table thead th:nth-child(13) { width: 9%; }
 .hrpt-table thead th {
   position: sticky;
   top: 0;
@@ -6967,10 +6969,6 @@ table.hrpt-table {
 .hrpt-pitcher-hand { font-size: 9px; font-weight: 800; color: var(--muted); margin-left: 5px; padding: 1px 5px; border: 1px solid var(--border); border-radius: 5px; vertical-align: middle; }
 
 .hrpt-prob { font-size: 15px; font-weight: 800; color: #8ec2ff; text-shadow: 0 0 12px rgba(91,157,255,.35); }
-.hrpt-grade { display: inline-block; font-family: var(--font-body); font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 6px; }
-.hrpt-grade-a { background: rgba(46, 230, 166, .26); color: #4dffc4; border: 1px solid rgba(46, 230, 166, .65); text-shadow: 0 0 10px rgba(46,230,166,.5); }
-.hrpt-grade-b { background: rgba(91, 157, 255, .24); color: #8ec2ff; border: 1px solid rgba(91, 157, 255, .65); text-shadow: 0 0 10px rgba(91,157,255,.5); }
-.hrpt-grade-c { background: rgba(209, 169, 78, .26); color: #ffcf6b; border: 1px solid rgba(209, 169, 78, .65); text-shadow: 0 0 10px rgba(209,169,78,.4); }
 
 .hrpt-mix-pill { font-family: var(--font-body); font-size: 9.5px; font-weight: 700; padding: 3px 7px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
 .hrpt-mix-pill.fav { background: rgba(46, 230, 166, .14); border-color: rgba(46, 230, 166, .7); color: #4dffc4; }
