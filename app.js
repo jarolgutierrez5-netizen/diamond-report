@@ -14934,6 +14934,25 @@ if (document.readyState === 'loading') {
   // ── Exact port of update-tracker.mjs's log5 outcome-distribution model ──
   var LEAGUE_AVG_PA_RATES = { hr: 0.031, xbh: 0.049, single: 0.140, bb: 0.085, k: 0.225 };
 
+  // Client-only addition on top of the ported model (deliberately NOT mirrored
+  // back into update-tracker.mjs's validated DRP win-probability engine --
+  // that one's calibration is already backtested against real graded outcomes
+  // in data/drp-sim-comparison.json, and re-validating it is a bigger exercise
+  // than this feature needs). A batter's/pitcher's own season rate is used
+  // at full strength today regardless of sample size, so a hot 40-PA start
+  // gets treated as a true talent level -- combined with a similarly extreme
+  // pitcher via log5, that's what was producing HR-heavy, blowout-leaning
+  // rollouts. Each rate is instead blended toward the league average with a
+  // "prior" worth of PAs before going into log5, sized per stat to roughly
+  // match how fast that stat actually stabilizes in real seasons (a common,
+  // rarer event like a HR needs far more PAs to trust than a K does) -- a
+  // qualified full-season regular is barely affected, a 40-PA sample is
+  // pulled hard toward average.
+  var SHRINK_PRIOR_PA = { hr: 300, xbh: 200, single: 200, bb: 120, k: 60 };
+  function shrinkRate(count, sampleSize, leagueRate, priorPA) {
+    return (count + priorPA * leagueRate) / (sampleSize + priorPA);
+  }
+
   function log5(pBatter, pPitcher, pLeague) {
     if (!(pLeague > 0) || !(pLeague < 1)) return pBatter;
     var a = Math.max(0.001, Math.min(0.999, pBatter));
@@ -14951,7 +14970,13 @@ if (document.readyState === 'loading') {
     var bSingle = Math.max(0, bHits - bHR - bXBH);
     var bBB = n(batterStat.baseOnBalls) + n(batterStat.hitByPitch);
     var bK = n(batterStat.strikeOuts);
-    var batterRates = { hr: bHR / bPA, xbh: bXBH / bPA, single: bSingle / bPA, bb: bBB / bPA, k: bK / bPA };
+    var batterRates = {
+      hr: shrinkRate(bHR, bPA, LEAGUE_AVG_PA_RATES.hr, SHRINK_PRIOR_PA.hr),
+      xbh: shrinkRate(bXBH, bPA, LEAGUE_AVG_PA_RATES.xbh, SHRINK_PRIOR_PA.xbh),
+      single: shrinkRate(bSingle, bPA, LEAGUE_AVG_PA_RATES.single, SHRINK_PRIOR_PA.single),
+      bb: shrinkRate(bBB, bPA, LEAGUE_AVG_PA_RATES.bb, SHRINK_PRIOR_PA.bb),
+      k: shrinkRate(bK, bPA, LEAGUE_AVG_PA_RATES.k, SHRINK_PRIOR_PA.k)
+    };
 
     var pBF = n(pitcherStat.battersFaced) || 1;
     var pHits = n(pitcherStat.hits), pHR = n(pitcherStat.homeRuns);
@@ -14963,7 +14988,13 @@ if (document.readyState === 'loading') {
     var pSingle = pNonHRHits - pXBH;
     var pBB = n(pitcherStat.baseOnBalls) + n(pitcherStat.hitBatsmen);
     var pK = n(pitcherStat.strikeOuts);
-    var pitcherRates = { hr: pHR / pBF, xbh: pXBH / pBF, single: pSingle / pBF, bb: pBB / pBF, k: pK / pBF };
+    var pitcherRates = {
+      hr: shrinkRate(pHR, pBF, LEAGUE_AVG_PA_RATES.hr, SHRINK_PRIOR_PA.hr),
+      xbh: shrinkRate(pXBH, pBF, LEAGUE_AVG_PA_RATES.xbh, SHRINK_PRIOR_PA.xbh),
+      single: shrinkRate(pSingle, pBF, LEAGUE_AVG_PA_RATES.single, SHRINK_PRIOR_PA.single),
+      bb: shrinkRate(pBB, pBF, LEAGUE_AVG_PA_RATES.bb, SHRINK_PRIOR_PA.bb),
+      k: shrinkRate(pK, pBF, LEAGUE_AVG_PA_RATES.k, SHRINK_PRIOR_PA.k)
+    };
 
     var dist = {};
     ['hr', 'xbh', 'single', 'bb', 'k'].forEach(function(key) {
