@@ -7170,11 +7170,28 @@ table.hrpt-table {
 .dr-sim-reroll-btn:disabled { opacity: .6; }
 
 /* ── Simulate At-Bats (Batter vs Pitcher modal, slot-machine reels) ───── */
+/* Reserved-height zone above the machine panel for the HR/XBH pop-up --
+   giving it its own slot (rather than absolutely positioning it over the
+   reels, like the Simulate Game per-play popup does) guarantees it never
+   overlaps the disclaimer text above it, with no layout shift when it
+   appears/disappears. */
+.dr-abs-popup-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+}
+.dr-abs-machine {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(47,107,255,.08), rgba(7,15,30,.35));
+  padding: 18px 16px 16px;
+}
 .dr-abs-reels {
   display: flex;
+  justify-content: center;
   gap: 10px;
-  margin-bottom: 12px;
-  position: relative;
+  margin-bottom: 14px;
 }
 .dr-abs-reel-window {
   width: 84px;
@@ -7199,9 +7216,11 @@ table.hrpt-table {
   font-size: 13px;
   line-height: 1.5;
   color: var(--muted);
+  text-align: center;
   margin-bottom: 12px;
   min-height: 1.5em;
 }
+.dr-abs-recap:empty { margin-bottom: 0; }
 .dr-abs-spin-btn { width: 100%; transition: transform .12s ease; }
 .dr-abs-spin-btn:active { transform: scale(.97); }
 .dr-abs-spin-btn:disabled { opacity: .6; }
@@ -7221,6 +7240,19 @@ table.hrpt-table {
   color: #fde68a;
   animation: drAbsPopIn .4s cubic-bezier(.34,1.56,.64,1) both;
   pointer-events: none;
+}
+/* Simulate At-Bats' own popup lives inside the reserved-height zone above
+   (normal flow, not floating over the reels), so it needs a plain
+   scale/opacity entrance instead of drAbsPopIn's translate-based one, which
+   assumes absolute positioning (used by the Simulate Game per-play popup). */
+.dr-abs-popup-zone .dr-abs-popup {
+  position: static;
+  animation: drAbsPopInStatic .4s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes drAbsPopInStatic {
+  0%   { opacity: 0; transform: scale(.4); }
+  60%  { opacity: 1; transform: scale(1.15); }
+  100% { opacity: 1; transform: scale(1); }
 }
 .dr-abs-popup-hr {
   border-color: rgba(46, 230, 166, .6);
