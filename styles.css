@@ -7139,3 +7139,31 @@ table.hrpt-table {
 .dr-sim-pitcher-label { font-weight: 600; text-transform: none; letter-spacing: 0; opacity: .8; }
 .dr-sim-play-row { font-size: 13px; line-height: 1.5; color: var(--text); }
 .dr-sim-reroll-btn { width: 100%; }
+
+/* Entrance/reveal motion -- scoped narrowly to this feature's own classes so
+   nothing here touches the shared .mu-modal used by every other pop-out on
+   the site. Already covered by the site's blanket
+   @media(prefers-reduced-motion:reduce) rule (collapses every animation to
+   .001ms), so no separate reduced-motion branch is needed here. */
+@keyframes drSimModalIn {
+  from { opacity: 0; transform: scale(.96) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+#dr-sim-modal-overlay .mu-modal { animation: drSimModalIn .28s cubic-bezier(.2,.8,.2,1) both; }
+
+@keyframes drSimPlayIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.dr-sim-play-group { animation: drSimPlayIn .3s cubic-bezier(.2,.8,.2,1) both; }
+
+.dr-sim-loading { display: flex; align-items: center; gap: 8px; }
+@keyframes drSimDiceSpin {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-22deg); }
+  75% { transform: rotate(22deg); }
+}
+.dr-sim-dice { display: inline-block; font-size: 16px; animation: drSimDiceSpin .7s ease-in-out infinite; }
+
+.dr-sim-reroll-btn { transition: transform .12s ease; }
+.dr-sim-reroll-btn:active { transform: scale(.97); }
