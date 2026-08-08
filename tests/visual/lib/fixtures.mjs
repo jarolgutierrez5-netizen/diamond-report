@@ -118,15 +118,31 @@ const GAME_SIM_HOME_LINEUP = Array.from({ length: 9 }, (_, i) => ({ id: 801 + i,
 // realistic-but-messy stat line.
 const ALWAYS_WALK_BATTER = { plateAppearances: 600, hits: 0, homeRuns: 0, doubles: 0, triples: 0, baseOnBalls: 600, hitByPitch: 0, strikeOuts: 0 };
 const NEVER_WALK_PITCHER = { battersFaced: 600, hits: 0, homeRuns: 0, baseOnBalls: 0, hitBatsmen: 0, strikeOuts: 0 };
+// Same "opposite extreme" pair as the At-Bats slot machine's own HR-prone
+// fixture -- used when a test needs a scoring play to be a home run
+// specifically (for the reel pop-up), rather than the walk-driven scoreline
+// the default pair above produces.
+// NOT maxed to 100%/0% like the At-Bats tab's single-PA fixture -- a full
+// game replays plate appearances in a while(outs<3) loop per half-inning, so
+// leaving strikeouts at a real, healthy rate for both sides matters here:
+// pushing 'hr' too close to 100% starves the 'k'/'out' probability mass the
+// loop depends on to ever terminate. A 50/50 HR-or-K batter against a very
+// homer-prone (5x league average) but otherwise ordinary pitcher still makes
+// 'hr' the overwhelming favorite among outcomes that actually score a run,
+// while keeping strikeouts common enough that every half-inning ends fast.
+const GAME_SIM_ALWAYS_HR_BATTER = { plateAppearances: 600, hits: 300, homeRuns: 300, doubles: 0, triples: 0, baseOnBalls: 0, hitByPitch: 0, strikeOuts: 300 };
+const GAME_SIM_GOPHER_BALL_PITCHER = { battersFaced: 600, hits: 150, homeRuns: 90, baseOnBalls: 45, hitBatsmen: 0, strikeOuts: 150 };
 
-async function seedGameSimRoutes(page) {
+async function seedGameSimRoutes(page, hrProne = false) {
+  const battingStat = hrProne ? GAME_SIM_ALWAYS_HR_BATTER : ALWAYS_WALK_BATTER;
+  const pitchingStat = hrProne ? GAME_SIM_GOPHER_BALL_PITCHER : NEVER_WALK_PITCHER;
   await page.route('**/api/v1/people/*', (route) => {
     const url = route.request().url();
-    const stat = /group=hitting/.test(url) ? ALWAYS_WALK_BATTER : NEVER_WALK_PITCHER;
+    const stat = /group=hitting/.test(url) ? battingStat : pitchingStat;
     route.fulfill({ contentType: 'application/json', body: JSON.stringify({ people: [{ stats: [{ splits: [{ stat }] }] }] }) });
   });
   await page.route('**/api/v1/teams/*/stats*', (route) => {
-    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ stats: [{ splits: [{ stat: NEVER_WALK_PITCHER }] }] }) });
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ stats: [{ splits: [{ stat: pitchingStat }] }] }) });
   });
 }
 
@@ -142,9 +158,9 @@ async function seedGameSimRoutes(page) {
 // function — same "stub the public function directly" house preference as
 // seedRows above), and seeds Math.random to a fixed sequence before any app
 // script runs so the single-trial rollout is exactly reproducible.
-export async function openGameSim(page, { randomSeed = 0.05 } = {}) {
+export async function openGameSim(page, { randomSeed = 0.05, hrProne = false } = {}) {
   await blockExternalRequests(page);
-  await seedGameSimRoutes(page);
+  await seedGameSimRoutes(page, hrProne);
   // Simple linear-congruential PRNG, seeded, deterministic across runs —
   // Math.random() itself can't be seeded, and this is the one piece of new
   // fixture infrastructure a Monte Carlo feature needs that nothing else in

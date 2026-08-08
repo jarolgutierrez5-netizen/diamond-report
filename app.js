@@ -15074,7 +15074,7 @@ if (document.readyState === 'loading') {
       runs += result.scorers.length;
       if (result.scorers.length) {
         var scorerNames = result.scorers.map(function(i) { return lineupNames[i] || 'A runner'; });
-        plays.push(gameSimPlayText(batterName, outcome, scorerNames));
+        plays.push({ text: gameSimPlayText(batterName, outcome, scorerNames), outcome: outcome });
       }
     }
     if (plays.length) playLog.push({ inning: inningNum, half: halfLabel, pitcherLabel: pitcherLabel, plays: plays });
@@ -15267,7 +15267,12 @@ if (document.readyState === 'loading') {
       ? sim.playLog.map(function(grp, idx) {
           return '<div class="dr-sim-play-group" style="animation-delay:' + (Math.min(idx, 10) * 70) + 'ms">'
             + '<div class="dr-sim-play-inning">' + esc(fmtInningHalf(grp.inning, grp.half)) + ' <span class="dr-sim-pitcher-label">vs ' + esc(grp.pitcherLabel) + '</span></div>'
-            + grp.plays.map(function(t) { return '<div class="dr-sim-play-row">' + esc(t) + '</div>'; }).join('')
+            + grp.plays.map(function(p) {
+                return '<div class="dr-sim-play-row" data-outcome="' + esc(p.outcome) + '">'
+                  + '<span class="dr-abs-reel"><span class="dr-abs-reel-window"><span class="dr-abs-reel-face">–</span></span></span>'
+                  + '<span class="dr-sim-play-text">' + esc(p.text) + '</span>'
+                + '</div>';
+              }).join('')
           + '</div>';
         }).join('')
       : '<div class="mu-empty">No runs crossed the plate in this simulated rollout.</div>';
@@ -15280,6 +15285,62 @@ if (document.readyState === 'loading') {
       + '</div>'
       + '<div class="dr-sim-plays">' + playsHTML + '</div>'
       + '<button type="button" class="btn-lineup dr-sim-reroll-btn" onclick="runGameSim(' + gamePk + ')">🎲 Simulate Again</button>';
+  }
+
+  // Same slot-machine mechanic as the Batter vs Pitcher modal's "Simulate
+  // At-Bats" tab (window.runAtBatSim/absOutcomeLabel, both top-level and
+  // reachable here via normal JS scope lookup, same as animateCountUp
+  // already is below) -- reused rather than re-implemented, just applied per
+  // SCORING play here instead of a fixed 4-reel row, since a rollout can have
+  // anywhere from 0 to a dozen+ scoring plays. Every row lands in game order
+  // (root.querySelectorAll already returns them inning-by-inning), capped so
+  // a long high-scoring game doesn't leave the last plays crawling in.
+  function animateGameSimPlays(root) {
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var allLabels = ['hr', 'xbh', 'single', 'bb', 'k', 'out'].map(absOutcomeLabel);
+    var rows = root.querySelectorAll('.dr-sim-play-row');
+    // Reroll button stays disabled until every reel has landed and cleared
+    // its own interval -- not just UX polish, this also guards a real bug: a
+    // reroll clicked while a prior render's cosmetic Math.random()-driven
+    // cycling is still ticking in the background (setInterval callbacks keep
+    // firing on orphaned elements even after body.innerHTML replaces them)
+    // would steal draws from the shared Math.random() stream the NEW
+    // simulation depends on, desyncing it from a seeded/reproducible
+    // sequence. Same guard shape as the At-Bats tab's spin button.
+    var rerollBtn = root.querySelector('.dr-sim-reroll-btn');
+    var pending = rows.length;
+    if (rerollBtn && pending) rerollBtn.disabled = true;
+    function playLanded() {
+      pending--;
+      if (pending <= 0 && rerollBtn) rerollBtn.disabled = false;
+    }
+    rows.forEach(function(row, i) {
+      var outcome = row.dataset.outcome;
+      var face = row.querySelector('.dr-abs-reel-face');
+      var text = row.querySelector('.dr-sim-play-text');
+      var spinTimer = null;
+      if (!reduced) {
+        row.querySelector('.dr-abs-reel').classList.add('dr-abs-spinning');
+        spinTimer = setInterval(function() {
+          face.textContent = allLabels[Math.floor(Math.random() * allLabels.length)];
+        }, 70);
+      }
+      setTimeout(function() {
+        if (spinTimer) clearInterval(spinTimer);
+        row.querySelector('.dr-abs-reel').classList.remove('dr-abs-spinning');
+        face.textContent = absOutcomeLabel(outcome);
+        row.querySelector('.dr-abs-reel').classList.add('dr-abs-landed');
+        text.classList.add('dr-sim-play-text-in');
+        if (outcome === 'hr') {
+          var popup = document.createElement('div');
+          popup.className = 'dr-abs-popup dr-abs-popup-hr';
+          popup.textContent = '💥 HOME RUN!';
+          row.appendChild(popup);
+          setTimeout(function() { popup.remove(); }, 1300);
+        }
+        playLanded();
+      }, 300 + Math.min(i, 12) * 260);
+    });
   }
 
   // ctx is only actually needed on the FIRST build of a given gamePk (a
@@ -15307,6 +15368,7 @@ if (document.readyState === 'loading') {
       body.querySelectorAll('.dr-sim-total-num').forEach(function(el) {
         animateCountUp(el, parseFloat(el.dataset.target), 0, 550);
       });
+      animateGameSimPlays(body);
     }).catch(function() {
       body.innerHTML = '<div class="mu-empty">Could not simulate this game right now.</div>';
     });

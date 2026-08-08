@@ -7167,6 +7167,7 @@ table.hrpt-table {
 
 .dr-sim-reroll-btn { transition: transform .12s ease; }
 .dr-sim-reroll-btn:active { transform: scale(.97); }
+.dr-sim-reroll-btn:disabled { opacity: .6; }
 
 /* ── Simulate At-Bats (Batter vs Pitcher modal, slot-machine reels) ───── */
 .dr-abs-reels {
@@ -7244,3 +7245,11 @@ table.hrpt-table {
   100% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 0 rgba(47,107,255,0)); }
 }
 .dr-abs-reel.dr-abs-landed .dr-abs-reel-window { animation: drAbsReelLand .5s ease-out; transform-origin: center; }
+
+/* ── Simulate Game plays: reuse the dr-abs-* reel/popup at compact size ── */
+.dr-sim-play-row { display: flex; align-items: center; gap: 8px; position: relative; }
+.dr-sim-play-row .dr-abs-reel-window { width: 58px; height: 26px; }
+.dr-sim-play-row .dr-abs-reel-face { font-size: 11px; }
+.dr-sim-play-text { opacity: 0; transition: opacity .25s ease; }
+.dr-sim-play-text.dr-sim-play-text-in { opacity: 1; }
+.dr-sim-play-row .dr-abs-popup { font-size: 12px; padding: 5px 10px; }

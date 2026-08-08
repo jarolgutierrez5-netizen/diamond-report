@@ -42,17 +42,54 @@ test.describe('Simulate Game', () => {
     // The fixture's batters always walk and the pitchers never do -- bases
     // load fast, so at least one real "X walks. Y scores." scoring play is a
     // deterministic near-certainty for this seed, and is exactly the format
-    // ("player, verb, player scores") the feature exists to produce.
-    await expect(body.locator('.dr-sim-play-row').first()).toContainText('scores.');
+    // ("player, verb, player scores") the feature exists to produce. The real
+    // sentence text is in the DOM immediately (only its opacity is animated
+    // by the reel-landing sequence), so this doesn't need to wait for the
+    // slot-machine reel beside it to land.
+    await expect(body.locator('.dr-sim-play-text').first()).toContainText('scores.');
 
-    const firstPlayText = await body.locator('.dr-sim-play-row').first().textContent();
-    await body.locator('.dr-sim-reroll-btn').click();
-    await page.waitForTimeout(150);
-    // Re-roll with the SAME seeded Math.random sequence (fixture seeds it
-    // once at page load, not per-click) reproduces the exact same rollout --
-    // a legitimate regression guard that re-rolling doesn't silently no-op.
-    const secondPlayText = await body.locator('.dr-sim-play-row').first().textContent();
-    expect(secondPlayText).toBe(firstPlayText);
+    // The reroll button stays disabled until every play's reel has landed
+    // (see animateGameSimPlays) so a click can't kick off a second
+    // simulation while the first render's cosmetic Math.random() reel-
+    // cycling is still running in the background -- that would steal draws
+    // from the shared Math.random() stream and make even the FIRST play of
+    // the *next* roll unpredictable. Playwright's click() already waits for
+    // the button to become enabled, so no manual timing wait is needed here.
+    //
+    // Note: a reroll is NOT expected to reproduce the same rollout as the
+    // first click, even under this fixture's seeded Math.random -- it
+    // deliberately continues consuming the same global sequence rather than
+    // re-seeding, so it draws a fresh, different set of outcomes each time
+    // (that's the whole point of "Simulate Again"). This just verifies the
+    // reroll mechanism itself actually re-simulates and re-renders.
+    const reroll = body.locator('.dr-sim-reroll-btn');
+    await reroll.click();
+    await expect(reroll).toBeDisabled();
+    await expect(body.locator('.dr-sim-linescore')).toBeVisible();
+    await expect(body.locator('.dr-sim-play-text').first()).toContainText('scores.');
+    await expect(reroll).toBeEnabled({ timeout: 8000 });
+  });
+
+  test('pops a HOME RUN badge on a scoring play that lands as a home run', async ({ page }) => {
+    await openGameSim(page, { hrProne: true });
+    await page.locator('[data-dr-sim-btn]').click();
+
+    const body = page.locator('#dr-sim-modal-body');
+    await expect(body.locator('.dr-sim-play-row').first()).toBeVisible();
+
+    // The fixture's HR-prone stat pair makes 'hr' the overwhelmingly dominant
+    // sampled outcome among scoring plays, so the first play's reel should
+    // land on HR and pop the badge shortly after.
+    const popup = body.locator('.dr-abs-popup-hr').first();
+    await expect(popup).toBeVisible({ timeout: 2000 });
+    await expect(popup).toHaveText('💥 HOME RUN!');
+    // A high-scoring HR-heavy rollout can have several HR plays landing in
+    // sequence, each popping its own one-shot badge -- so `.first()` can stay
+    // "visible" for a while as one replaces another. Instead of racing that,
+    // wait past the full staggered landing window (capped at 12 plays' worth
+    // of delay) plus a cleanup cycle, then confirm none linger at all.
+    await page.waitForTimeout(5000);
+    await expect(body.locator('.dr-abs-popup-hr')).toHaveCount(0);
   });
 
   test('shows a graceful message when lineups are not posted', async ({ page }) => {
