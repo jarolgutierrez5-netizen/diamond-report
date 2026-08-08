@@ -856,6 +856,22 @@
 </div>
 </div>
 
+<!-- Games Today: Simulate Game pop-out -->
+<div class="mu-modal-overlay" id="dr-sim-modal-overlay" onclick="if(event.target===this)closeGameSim()" style="display:none">
+<div class="mu-modal">
+<div class="mu-modal-head">
+<div>
+<div class="mu-modal-title" id="dr-sim-modal-title">SIMULATED GAME</div>
+<div class="mu-modal-sub" id="dr-sim-modal-sub"></div>
+</div>
+<button class="mu-close" onclick="closeGameSim()">✕</button>
+</div>
+<div class="mu-modal-body" id="dr-sim-modal-body">
+<span class="spin"></span> Simulating game…
+    </div>
+</div>
+</div>
+
 
 <!-- prod removed: v5-1-die-api-guard-stats debug widget targeted elements (die-api-network, die-api-cache, etc.) that no longer exist in the page; it was polling every 2s for nothing. -->
 

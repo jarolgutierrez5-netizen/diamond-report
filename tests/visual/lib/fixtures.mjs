@@ -101,6 +101,83 @@ export async function openHRBoard(page, rows = BOARD_ROWS) {
   await page.waitForTimeout(200);
 }
 
+// A deterministic real-shaped (9-batter) lineup matchup for the Simulate
+// Game feature -- gameSimReady() gates on a real 9-man lineup (same as
+// production, real MLB lineups are always 9), so the fixture has to match
+// that shape for the "button enables" path to actually exercise it.
+export const GAME_SIM_GAME_PK = 999001;
+export const GAME_SIM_AWAY_ABBR = 'NYY';
+export const GAME_SIM_HOME_ABBR = 'BOS';
+const GAME_SIM_AWAY_LINEUP = Array.from({ length: 9 }, (_, i) => ({ id: 701 + i, name: `Away ${i + 1}`, pos: 'OF' }));
+const GAME_SIM_HOME_LINEUP = Array.from({ length: 9 }, (_, i) => ({ id: 801 + i, name: `Home ${i + 1}`, pos: 'OF' }));
+// Deliberately extreme, unambiguous rate stats -- the away lineup always
+// walks (guaranteeing a real, assertable "X walks. Y scores." once bases
+// fill), the home pitcher entry is unhittable, so the deterministic
+// Math.random() sequence below produces a small, exactly-predictable
+// scoreline instead of something that has to be re-derived by hand from a
+// realistic-but-messy stat line.
+const ALWAYS_WALK_BATTER = { plateAppearances: 600, hits: 0, homeRuns: 0, doubles: 0, triples: 0, baseOnBalls: 600, hitByPitch: 0, strikeOuts: 0 };
+const NEVER_WALK_PITCHER = { battersFaced: 600, hits: 0, homeRuns: 0, baseOnBalls: 0, hitBatsmen: 0, strikeOuts: 0 };
+
+async function seedGameSimRoutes(page) {
+  await page.route('**/api/v1/people/*', (route) => {
+    const url = route.request().url();
+    const stat = /group=hitting/.test(url) ? ALWAYS_WALK_BATTER : NEVER_WALK_PITCHER;
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ people: [{ stats: [{ splits: [{ stat }] }] }] }) });
+  });
+  await page.route('**/api/v1/teams/*/stats*', (route) => {
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ stats: [{ splits: [{ stat: NEVER_WALK_PITCHER }] }] }) });
+  });
+}
+
+// Seeds a single deterministic Simulate Game button for GAME_SIM_GAME_PK
+// with both lineups confirmed. Injects the button directly with the exact
+// markup/onclick shape the real Game Projections card (loadGameProps,
+// app.js) produces, rather than driving that card's own real network-heavy
+// render pipeline (weather/odds/standings/etc, all orthogonal to this
+// feature and already its own thing to test) — this exercises the real
+// click -> openGameSim -> runGameSim -> buildGameSimMatchup -> render flow
+// exactly as production wires it, just without reconstructing the card
+// around it. Stubs getRepoLineupForGame directly (a real top-level
+// function — same "stub the public function directly" house preference as
+// seedRows above), and seeds Math.random to a fixed sequence before any app
+// script runs so the single-trial rollout is exactly reproducible.
+export async function openGameSim(page, { randomSeed = 0.05 } = {}) {
+  await blockExternalRequests(page);
+  await seedGameSimRoutes(page);
+  // Simple linear-congruential PRNG, seeded, deterministic across runs —
+  // Math.random() itself can't be seeded, and this is the one piece of new
+  // fixture infrastructure a Monte Carlo feature needs that nothing else in
+  // this suite required before it.
+  await page.addInitScript((seed) => {
+    let s = seed * 2 ** 31;
+    Math.random = () => {
+      s = (s * 1103515245 + 12345) % 2 ** 31;
+      return s / 2 ** 31;
+    };
+  }, randomSeed);
+  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+  await disableMotion(page);
+  await page.evaluate(({ gamePk, awayAbbr, homeAbbr, awayLineup, homeLineup }) => {
+    const hub = document.getElementById('dr-landing-hub');
+    if (hub) hub.style.display = 'none';
+    const props = document.getElementById('props');
+    if (props) { props.classList.add('active'); props.style.display = ''; }
+    window.showGamePickPane('game');
+    window.loadRepoLineups = async () => null;
+    window.getRepoLineupForGame = (pk, side) => {
+      if (pk !== gamePk) return null;
+      return { confirmed: true, lineup: side === 'away' ? awayLineup : homeLineup };
+    };
+    const el = document.getElementById('gameprops-content');
+    if (el) el.innerHTML = `<div class="gp-card" data-game-pk="${gamePk}">
+      <button type="button" class="btn-lineup dr-sim-btn" disabled data-dr-sim-btn data-gamepk="${gamePk}" title="Checking again automatically once lineups post" onclick="event.stopPropagation();openGameSim(${gamePk},'${awayAbbr}','${homeAbbr}','${awayAbbr}','${homeAbbr}',147,111,601,'Away Starter',602,'Home Starter')">🔒 Lineups not posted yet</button>
+    </div>`;
+    if (typeof window.refreshGameSimButtonStates === 'function') window.refreshGameSimButtonStates();
+  }, { gamePk: GAME_SIM_GAME_PK, awayAbbr: GAME_SIM_AWAY_ABBR, homeAbbr: GAME_SIM_HOME_ABBR, awayLineup: GAME_SIM_AWAY_LINEUP, homeLineup: GAME_SIM_HOME_LINEUP });
+  await page.waitForTimeout(150);
+}
+
 export async function openPropBoard(page, pane, rows = BOARD_ROWS) {
   await blockExternalRequests(page);
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });

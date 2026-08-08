@@ -1586,6 +1586,7 @@ async function loadScores() {
     if (typeof window.DiamondRefreshLockedGameProjectionScores === 'function') {
       window.DiamondRefreshLockedGameProjectionScores();
     }
+    if (typeof window.refreshGameSimButtonStates === 'function') window.refreshGameSimButtonStates();
     window._lastLiveGames = live; // cache for Props tab re-activation
     // v8.71 performance: do not load HR/K sidebar data during the default page reload.
     // Those datasets are now hydrated only when the HR or Strikeout pane is opened.
@@ -5865,6 +5866,13 @@ async function loadGameProps() {
         <button class="btn-lineup dr1027-details-btn" onclick="toggleGameDetails(this)" style="margin-top:8px">▼ PARK &amp; WEATHER DETAILS</button>
         <div class="gp-details-panel pr-expand-panel" style="display:none;margin-top:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px">${parkWeatherHTML}</div>
         <button class="btn-lineup" onclick="event.stopPropagation();openTeamMatchup(${awayTeamId},${homeTeamId},'${awayTeamName}','${homeTeamName}','${awayAbbr}','${homeAbbr}',${g.gamePk ?? 'null'},${awayP?.id ?? 'null'},'${(awayP?.fullName||'').replace(/'/g,"\\'")}',${homeP?.id ?? 'null'},'${(homeP?.fullName||'').replace(/'/g,"\\'")}')" style="margin-top:8px">🏟 GAME CENTER</button>
+        <!-- Starts disabled -- window.refreshGameSimButtonStates (Simulate Game
+             IIFE) flips it on once BOTH teams' real lineups are confirmed, same
+             "real lineups only, no fallback" gate HR Threats already relies on
+             (getRepoLineupForGame). Bakes in the team/pitcher ids this card
+             already fetched, so openGameSim never needs its own schedule
+             lookup for them. -->
+        <button type="button" class="btn-lineup dr-sim-btn" disabled data-dr-sim-btn data-gamepk="${g.gamePk}" title="Checking again automatically once lineups post" onclick="event.stopPropagation();openGameSim(${g.gamePk ?? 'null'},'${awayAbbr}','${homeAbbr}','${awayTeamName}','${homeTeamName}',${awayTeamId},${homeTeamId},${awayP?.id ?? 'null'},'${(awayP?.fullName||'').replace(/'/g,"\\'")}',${homeP?.id ?? 'null'},'${(homeP?.fullName||'').replace(/'/g,"\\'")}')" style="margin-top:8px">🔒 Lineups not posted yet</button>
         <div class="gp-live-result-zone" data-live-score-badge="1" style="margin-top:8px">${resultBadge || ''}</div>
       </div>`, resultCorrect };
     }));
@@ -5919,6 +5927,7 @@ async function loadGameProps() {
     // Diamond Report Pick data for every game is now in window.drWinProbStore —
     // the pick immediately instead of waiting for a score change.
     if (window.refreshFavoredPills) window.refreshFavoredPills();
+    if (window.refreshGameSimButtonStates) window.refreshGameSimButtonStates();
 
   } catch(e) {
     // Deliberately leaves the DOM alone rather than writing a raw error here --
@@ -14785,6 +14794,423 @@ if (document.readyState === 'loading') {
       if (poissonSample(lambda) > threshold) successes++;
     }
     return Math.max(1, Math.min(99, Math.round((successes / TRIALS) * 100)));
+  };
+})();
+
+/* ---- Simulate Game: client-side game simulation with scoring plays ---- */
+// Ports the base-out-state Monte Carlo engine already built (and shadow-tested
+// against real graded outcomes -- see data/drp-sim-comparison.json) for Game
+// Picks calibration in scripts/update-tracker.mjs's "DRP Game Simulation"
+// phases 1-2. log5/computeMatchupOutcomeDist/sampleOutcome/advanceRunners
+// below are an exact port of that file's own functions of the same name --
+// same league-average reference rates, same simplified (not a real 24-state
+// Retrosheet transition matrix) baserunning heuristics, same known
+// simplifications (pitcher XBH/single split borrowed from the batter's own
+// split, 2B/3B lumped into one "xbh" bucket). See update-tracker.mjs's own
+// comments for the full reasoning; not repeated here.
+//
+// What's genuinely new here (the Node original never needed it, since it
+// only ever returned aggregate win%/runs across 1000 trials for calibration):
+// advanceRunners tracks WHICH lineup slot is on each base (not just whether a
+// base is occupied), so a scoring play can name the real batter/runner, and
+// the half-inning/game loop builds a play-by-play log of scoring plays only.
+// Runs a single trial by default (re-rollable via the "Simulate Again"
+// button) instead of 1000, since the point here is a readable story, not a
+// stable aggregate estimate.
+(function(){
+  if (window.__DR_GAME_SIM__) return; window.__DR_GAME_SIM__ = true;
+
+  function n(v, fallback) { v = Number(v); return Number.isFinite(v) ? v : (fallback == null ? 0 : fallback); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+  // ── Exact port of update-tracker.mjs's log5 outcome-distribution model ──
+  var LEAGUE_AVG_PA_RATES = { hr: 0.031, xbh: 0.049, single: 0.140, bb: 0.085, k: 0.225 };
+
+  function log5(pBatter, pPitcher, pLeague) {
+    if (!(pLeague > 0) || !(pLeague < 1)) return pBatter;
+    var a = Math.max(0.001, Math.min(0.999, pBatter));
+    var b = Math.max(0.001, Math.min(0.999, pPitcher));
+    var c = Math.max(0.001, Math.min(0.999, pLeague));
+    var num = (a * b) / c;
+    var den = num + ((1 - a) * (1 - b)) / (1 - c);
+    return den > 0 ? num / den : a;
+  }
+
+  function computeMatchupOutcomeDist(batterStat, pitcherStat) {
+    var bPA = n(batterStat.plateAppearances) || 1;
+    var bHits = n(batterStat.hits), bHR = n(batterStat.homeRuns);
+    var bXBH = n(batterStat.doubles) + n(batterStat.triples);
+    var bSingle = Math.max(0, bHits - bHR - bXBH);
+    var bBB = n(batterStat.baseOnBalls) + n(batterStat.hitByPitch);
+    var bK = n(batterStat.strikeOuts);
+    var batterRates = { hr: bHR / bPA, xbh: bXBH / bPA, single: bSingle / bPA, bb: bBB / bPA, k: bK / bPA };
+
+    var pBF = n(pitcherStat.battersFaced) || 1;
+    var pHits = n(pitcherStat.hits), pHR = n(pitcherStat.homeRuns);
+    var pNonHRHits = Math.max(0, pHits - pHR);
+    var bXBHShareOfHits = (bXBH + bSingle) > 0
+      ? bXBH / (bXBH + bSingle)
+      : LEAGUE_AVG_PA_RATES.xbh / (LEAGUE_AVG_PA_RATES.xbh + LEAGUE_AVG_PA_RATES.single);
+    var pXBH = pNonHRHits * bXBHShareOfHits;
+    var pSingle = pNonHRHits - pXBH;
+    var pBB = n(pitcherStat.baseOnBalls) + n(pitcherStat.hitBatsmen);
+    var pK = n(pitcherStat.strikeOuts);
+    var pitcherRates = { hr: pHR / pBF, xbh: pXBH / pBF, single: pSingle / pBF, bb: pBB / pBF, k: pK / pBF };
+
+    var dist = {};
+    ['hr', 'xbh', 'single', 'bb', 'k'].forEach(function(key) {
+      dist[key] = log5(batterRates[key], pitcherRates[key], LEAGUE_AVG_PA_RATES[key]);
+    });
+    var usedMass = dist.hr + dist.xbh + dist.single + dist.bb + dist.k;
+    dist.out = Math.max(0, 1 - usedMass);
+    var total = usedMass + dist.out;
+    if (total > 0 && Math.abs(total - 1) > 1e-9) {
+      ['hr', 'xbh', 'single', 'bb', 'k', 'out'].forEach(function(key) { dist[key] /= total; });
+    }
+    return dist;
+  }
+
+  function sampleOutcome(dist) {
+    var r = Math.random(), cum = 0;
+    var keys = ['hr', 'xbh', 'single', 'bb', 'k', 'out'];
+    for (var i = 0; i < keys.length; i++) {
+      cum += dist[keys[i]];
+      if (r < cum) return keys[i];
+    }
+    return 'out';
+  }
+
+  // Same bases/heuristics as update-tracker.mjs's advanceRunners, plus a
+  // parallel `slots` map (batting-order index per occupied base) so a
+  // scoring play can name who scored. Mirrors each boolean assignment 1:1,
+  // including the "xbh" branch's unconditional third-base occupancy (the
+  // batter is the only guaranteed new baserunner on that play, so that slot
+  // defaults to the batter) -- not reinterpreting the original's base-state
+  // bookkeeping, since it's already validated against real graded outcomes.
+  function advanceRunners(bases, slots, outcome, outsBeforePlay, batterSlot) {
+    var b = { first: bases.first, second: bases.second, third: bases.third };
+    var s = { first: slots.first, second: slots.second, third: slots.third };
+    var scorers = [];
+    function score(slot) { if (slot != null) scorers.push(slot); }
+
+    if (outcome === 'hr') {
+      score(s.third); score(s.second); score(s.first); scorers.push(batterSlot);
+      return { bases: { first: false, second: false, third: false }, slots: { first: null, second: null, third: null }, scorers: scorers };
+    }
+    if (outcome === 'xbh') {
+      score(s.third); score(s.second);
+      var runnerFrom1st = b.first, slotFrom1st = s.first;
+      return { bases: { first: false, second: runnerFrom1st, third: true },
+        slots: { first: null, second: runnerFrom1st ? slotFrom1st : null, third: batterSlot }, scorers: scorers };
+    }
+    if (outcome === 'single') {
+      if (b.third) score(s.third);
+      var newThird = false, newThirdSlot = null;
+      if (b.second) {
+        if (Math.random() < 0.60) score(s.second); else { newThird = true; newThirdSlot = s.second; }
+      }
+      return { bases: { first: true, second: b.first, third: newThird },
+        slots: { first: batterSlot, second: b.first ? s.first : null, third: newThirdSlot }, scorers: scorers };
+    }
+    if (outcome === 'bb') {
+      if (b.first) {
+        if (b.second) {
+          if (b.third) score(s.third);
+          return { bases: { first: true, second: true, third: true },
+            slots: { first: batterSlot, second: s.first, third: s.second }, scorers: scorers };
+        }
+        return { bases: { first: true, second: true, third: b.third },
+          slots: { first: batterSlot, second: s.first, third: s.third }, scorers: scorers };
+      }
+      return { bases: { first: true, second: b.second, third: b.third },
+        slots: { first: batterSlot, second: s.second, third: s.third }, scorers: scorers };
+    }
+    if (outcome === 'k') {
+      return { bases: b, slots: s, scorers: scorers };
+    }
+    // outcome === 'out' (ball in play) -- approximate sac-fly scoring chance.
+    if (b.third && outsBeforePlay < 2 && Math.random() < 0.35) {
+      score(s.third);
+      return { bases: { first: b.first, second: b.second, third: false },
+        slots: { first: s.first, second: s.second, third: null }, scorers: scorers };
+    }
+    return { bases: b, slots: s, scorers: scorers };
+  }
+
+  function gameSimPlayText(batterName, outcome, scorerNames) {
+    if (outcome === 'hr') {
+      var onBase = scorerNames.length - 1;
+      return batterName + ' homers' + (onBase > 0 ? ' (' + onBase + ' on)' : '') + '.';
+    }
+    var verb = outcome === 'xbh' ? 'doubles' : outcome === 'single' ? 'singles' : outcome === 'bb' ? 'walks' : 'hits a sacrifice fly';
+    return batterName + ' ' + verb + '. ' + scorerNames.map(function(nm) { return nm + ' scores.'; }).join(' ');
+  }
+
+  // lineupStats/lineupNames: parallel 9-entry arrays (real lineup order).
+  // pitcherStatFn(): current pitcher's stat object for this PA -- lets the
+  // caller swap starter -> bullpen mid-inning without this function knowing.
+  // pitcherLabel: a snapshot string ("Gerrit Cole" or "the bullpen") for this
+  // half-inning's group header -- computed once per half by the caller
+  // rather than per play, same simplification the underlying model already
+  // accepts for the starter/bullpen swap point itself.
+  function simulateHalfInningWithLog(lineupStats, lineupNames, battingIdxRef, pitcherStatFn, pitcherLabel, inningNum, halfLabel, playLog) {
+    var outs = 0, runs = 0;
+    var bases = { first: false, second: false, third: false };
+    var slots = { first: null, second: null, third: null };
+    var plays = [];
+    while (outs < 3) {
+      var slot = battingIdxRef.i % lineupStats.length;
+      var batterStat = lineupStats[slot];
+      var batterName = lineupNames[slot] || 'The batter';
+      battingIdxRef.i++;
+      var dist = computeMatchupOutcomeDist(batterStat, pitcherStatFn());
+      var outcome = sampleOutcome(dist);
+      var wasOut = (outcome === 'k' || outcome === 'out');
+      if (wasOut) outs++;
+      var outsBeforePlay = outs - (wasOut ? 1 : 0);
+      var result = advanceRunners(bases, slots, outcome, outsBeforePlay, slot);
+      bases = result.bases; slots = result.slots;
+      runs += result.scorers.length;
+      if (result.scorers.length) {
+        var scorerNames = result.scorers.map(function(i) { return lineupNames[i] || 'A runner'; });
+        plays.push(gameSimPlayText(batterName, outcome, scorerNames));
+      }
+    }
+    if (plays.length) playLog.push({ inning: inningNum, half: halfLabel, pitcherLabel: pitcherLabel, plays: plays });
+    return runs;
+  }
+
+  // Picks the starter's stat/label until they've faced ~22 batters (roughly a
+  // 5-inning outing, same STARTER_BATTERS_FACED_LIMIT as the Node original),
+  // then the team's bullpen aggregate stat for the rest of the game. The
+  // label falls back to the literal string "the bullpen" once the starter is
+  // pulled rather than naming a specific reliever -- data/bullpen-fatigue.json
+  // only has team-level fatigue tiers, never per-reliever identity, and this
+  // app never fabricates a specific name it doesn't actually have.
+  var STARTER_BATTERS_FACED_LIMIT = 22;
+  function makeGameSimPitcher(starterStat, starterName, bullpenStat, battersFacedRef) {
+    return {
+      statFn: function() {
+        battersFacedRef.i++;
+        return battersFacedRef.i <= STARTER_BATTERS_FACED_LIMIT ? starterStat : bullpenStat;
+      },
+      currentLabel: function() {
+        return battersFacedRef.i <= STARTER_BATTERS_FACED_LIMIT ? starterName : 'the bullpen';
+      }
+    };
+  }
+
+  // One full simulated game with a play-by-play log. Same MAX_INNINGS=12 cap
+  // and same "always play the bottom 9th regardless of who's leading"
+  // simplification as simulateOneGame in update-tracker.mjs -- kept for
+  // behavioral parity with that validated model, not just laziness.
+  function simulateOneGameWithLog(m) {
+    var awayIdx = { i: 0 }, homeIdx = { i: 0 };
+    var awayBF = { i: 0 }, homeBF = { i: 0 };
+    var awayPitcher = makeGameSimPitcher(m.homeStarterStat, m.homeStarterName, m.homeBullpenStat, homeBF); // away bats vs home's pitching
+    var homePitcher = makeGameSimPitcher(m.awayStarterStat, m.awayStarterName, m.awayBullpenStat, awayBF); // home bats vs away's pitching
+    var awayRuns = 0, homeRuns = 0;
+    var inningLineAway = [], inningLineHome = [];
+    var playLog = [];
+    var MAX_INNINGS = 12;
+
+    for (var inning = 1; inning <= 9 || (awayRuns === homeRuns && inning <= MAX_INNINGS); inning++) {
+      var awayHalfRuns = simulateHalfInningWithLog(m.awayLineupStats, m.awayLineupNames, awayIdx, awayPitcher.statFn, awayPitcher.currentLabel(), inning, 'top', playLog);
+      awayRuns += awayHalfRuns;
+      inningLineAway.push(awayHalfRuns);
+      var homeHalfRuns = simulateHalfInningWithLog(m.homeLineupStats, m.homeLineupNames, homeIdx, homePitcher.statFn, homePitcher.currentLabel(), inning, 'bottom', playLog);
+      homeRuns += homeHalfRuns;
+      inningLineHome.push(homeHalfRuns);
+    }
+    return { awayRuns: awayRuns, homeRuns: homeRuns, inningLineAway: inningLineAway, inningLineHome: inningLineHome, playLog: playLog };
+  }
+
+  // Public entry point -- kept as its own name (not simulateDRPGame, which is
+  // Node-only and returns aggregates across many trials) so a future
+  // "simulate this matchup N times" aggregate feature could reuse the same
+  // engine without a rewrite.
+  window.simulateGameNarrative = function(matchup) {
+    return simulateOneGameWithLog(matchup);
+  };
+
+  // ── Real data wiring ──────────────────────────────────────────────────
+  // Real, MLB-confirmed lineups (never a fallback/projected one), season
+  // batter/pitcher rate stats, and a team pitching aggregate as the bullpen
+  // proxy -- all fetched the same way + from the same endpoints already used
+  // elsewhere in this file for other boards, just not previously assembled
+  // together for a single matchup.
+  var _gameSimBatterCache = {};
+  function fetchBatterSeasonStat(id) {
+    if (_gameSimBatterCache[id]) return _gameSimBatterCache[id];
+    var p = fetchJSON('https://diamondreport.app/api/v1/people/' + id + '?hydrate=stats(group=hitting,type=season,season=2026)')
+      .then(function(d) { return (d.people && d.people[0] && d.people[0].stats && d.people[0].stats[0] && d.people[0].stats[0].splits && d.people[0].stats[0].splits[0] && d.people[0].stats[0].splits[0].stat) || {}; })
+      .catch(function() { return {}; });
+    _gameSimBatterCache[id] = p;
+    return p;
+  }
+  var _gameSimPitcherCache = {};
+  function fetchPitcherSeasonStat(id) {
+    if (_gameSimPitcherCache[id]) return _gameSimPitcherCache[id];
+    var p = fetchJSON('https://diamondreport.app/api/v1/people/' + id + '?hydrate=stats(group=pitching,type=season,season=2026)')
+      .then(function(d) { return (d.people && d.people[0] && d.people[0].stats && d.people[0].stats[0] && d.people[0].stats[0].splits && d.people[0].stats[0].splits[0] && d.people[0].stats[0].splits[0].stat) || {}; })
+      .catch(function() { return {}; });
+    _gameSimPitcherCache[id] = p;
+    return p;
+  }
+  // Bullpen proxy: the team's own season pitching totals, NOT
+  // teamSeasonPitchingTotals (app.js's existing helper) -- that one only
+  // extracts {er, ip} for a different caller, discarding the
+  // hits/HR/BB/K/battersFaced fields computeMatchupOutcomeDist actually needs.
+  var _gameSimTeamPitchingCache = {};
+  function fetchTeamPitchingStatFull(teamId) {
+    if (_gameSimTeamPitchingCache[teamId]) return _gameSimTeamPitchingCache[teamId];
+    var p = fetchJSON('https://diamondreport.app/api/v1/teams/' + teamId + '/stats?stats=season&group=pitching&season=2026')
+      .then(function(d) { return (d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat) || {}; })
+      .catch(function() { return {}; });
+    _gameSimTeamPitchingCache[teamId] = p;
+    return p;
+  }
+
+  // Team ids + probable pitcher ids/names are baked into the Simulate Game
+  // button's onclick by the Game Projections card that renders it (it
+  // already fetched them for its own model) -- ctx carries them through
+  // rather than this doing its own getTodaySchedule('team,probablePitcher')
+  // lookup, which the Games Today scoreboard section (gameCard/upcomingCard,
+  // #scores) can't provide since it's built from a narrower schedule hydrate
+  // and, as of this feature, is legacy/hidden-by-default markup anyway.
+  async function buildGameSimMatchup(gamePk, ctx) {
+    await loadRepoLineups();
+    var awayEntry = getRepoLineupForGame(gamePk, 'away');
+    var homeEntry = getRepoLineupForGame(gamePk, 'home');
+    if (!awayEntry || !awayEntry.lineup || awayEntry.lineup.length < 9 || !awayEntry.confirmed) return null;
+    if (!homeEntry || !homeEntry.lineup || homeEntry.lineup.length < 9 || !homeEntry.confirmed) return null;
+    if (!ctx || ctx.awayPitcherId == null || ctx.homePitcherId == null) return null;
+
+    var awayLineup = awayEntry.lineup.slice(0, 9);
+    var homeLineup = homeEntry.lineup.slice(0, 9);
+
+    var results = await Promise.all([
+      Promise.all(awayLineup.map(function(b) { return fetchBatterSeasonStat(b.id); })),
+      Promise.all(homeLineup.map(function(b) { return fetchBatterSeasonStat(b.id); })),
+      fetchPitcherSeasonStat(ctx.awayPitcherId),
+      fetchPitcherSeasonStat(ctx.homePitcherId),
+      fetchTeamPitchingStatFull(ctx.awayTeamId),
+      fetchTeamPitchingStatFull(ctx.homeTeamId)
+    ]);
+
+    return {
+      awayLineupStats: results[0], awayLineupNames: awayLineup.map(function(b) { return b.name; }),
+      awayStarterStat: results[2], awayStarterName: ctx.awayPitcherName || 'the starter', awayBullpenStat: results[4],
+      homeLineupStats: results[1], homeLineupNames: homeLineup.map(function(b) { return b.name; }),
+      homeStarterStat: results[3], homeStarterName: ctx.homePitcherName || 'the starter', homeBullpenStat: results[5],
+      awayAbbr: ctx.awayAbbr, homeAbbr: ctx.homeAbbr
+    };
+  }
+
+  var _gameSimMatchupCache = {};
+  function getOrBuildMatchup(gamePk, ctx) {
+    if (_gameSimMatchupCache[gamePk]) return _gameSimMatchupCache[gamePk];
+    var p = buildGameSimMatchup(gamePk, ctx).then(function(m) { if (!m) delete _gameSimMatchupCache[gamePk]; return m; });
+    _gameSimMatchupCache[gamePk] = p;
+    return p;
+  }
+
+  // ── Gating: card buttons start disabled, enabled once BOTH lineups post ──
+  function gameSimReady(gamePk) {
+    var away = getRepoLineupForGame(gamePk, 'away');
+    var home = getRepoLineupForGame(gamePk, 'home');
+    return !!(away && away.lineup && away.lineup.length >= 9 && away.confirmed
+      && home && home.lineup && home.lineup.length >= 9 && home.confirmed);
+  }
+  window.refreshGameSimButtonStates = function() {
+    document.querySelectorAll('[data-dr-sim-btn]').forEach(function(btn) {
+      var gamePk = Number(btn.getAttribute('data-gamepk'));
+      var ready = gamePk && gameSimReady(gamePk);
+      btn.disabled = !ready;
+      btn.textContent = ready ? '🎲 Simulate Game' : '🔒 Lineups not posted yet';
+      btn.title = ready ? 'Run a hypothetical simulated rollout of this game' : 'Checking again automatically once lineups post';
+    });
+  };
+  loadRepoLineups().then(function() { window.refreshGameSimButtonStates(); });
+
+  // ── Modal UI ─────────────────────────────────────────────────────────
+  function fmtInningHalf(inning, half) {
+    var suffix = inning === 1 ? 'st' : inning === 2 ? 'nd' : inning === 3 ? 'rd' : 'th';
+    return (half === 'top' ? '▲' : '▼') + ' ' + inning + suffix;
+  }
+
+  function renderGameSimResult(sim, gamePk, awayAbbr, homeAbbr) {
+    var totalAway = sim.inningLineAway.reduce(function(a, b) { return a + b; }, 0);
+    var totalHome = sim.inningLineHome.reduce(function(a, b) { return a + b; }, 0);
+    var innCount = Math.max(sim.inningLineAway.length, sim.inningLineHome.length);
+    var innHeaders = '', awayRow = '', homeRow = '';
+    for (var i = 0; i < innCount; i++) {
+      innHeaders += '<div class="dr-sim-linescore-cell dr-sim-linescore-head">' + (i + 1) + '</div>';
+      awayRow += '<div class="dr-sim-linescore-cell">' + (sim.inningLineAway[i] != null ? sim.inningLineAway[i] : '–') + '</div>';
+      homeRow += '<div class="dr-sim-linescore-cell">' + (sim.inningLineHome[i] != null ? sim.inningLineHome[i] : '–') + '</div>';
+    }
+    var playsHTML = sim.playLog.length
+      ? sim.playLog.map(function(grp) {
+          return '<div class="dr-sim-play-group">'
+            + '<div class="dr-sim-play-inning">' + esc(fmtInningHalf(grp.inning, grp.half)) + ' <span class="dr-sim-pitcher-label">vs ' + esc(grp.pitcherLabel) + '</span></div>'
+            + grp.plays.map(function(t) { return '<div class="dr-sim-play-row">' + esc(t) + '</div>'; }).join('')
+          + '</div>';
+        }).join('')
+      : '<div class="mu-empty">No runs crossed the plate in this simulated rollout.</div>';
+
+    return '<div class="mu-empty dr-sim-disclaimer">🎲 This is one random simulated rollout of this matchup, not a prediction of what will actually happen. Real games don’t play out like a dice roll — hit Simulate Again for a different hypothetical outcome.</div>'
+      + '<div class="dr-sim-linescore">'
+        + '<div class="dr-sim-linescore-row dr-sim-linescore-headrow"><div class="dr-sim-linescore-cell dr-sim-linescore-team"></div>' + innHeaders + '<div class="dr-sim-linescore-cell dr-sim-linescore-head">R</div></div>'
+        + '<div class="dr-sim-linescore-row"><div class="dr-sim-linescore-cell dr-sim-linescore-team">' + esc(awayAbbr) + '</div>' + awayRow + '<div class="dr-sim-linescore-cell dr-sim-linescore-total">' + totalAway + '</div></div>'
+        + '<div class="dr-sim-linescore-row"><div class="dr-sim-linescore-cell dr-sim-linescore-team">' + esc(homeAbbr) + '</div>' + homeRow + '<div class="dr-sim-linescore-cell dr-sim-linescore-total">' + totalHome + '</div></div>'
+      + '</div>'
+      + '<div class="dr-sim-plays">' + playsHTML + '</div>'
+      + '<button type="button" class="btn-lineup dr-sim-reroll-btn" onclick="runGameSim(' + gamePk + ')">🎲 Simulate Again</button>';
+  }
+
+  // ctx is only actually needed on the FIRST build of a given gamePk (a
+  // "Simulate Again" click just calls this with no ctx, relying on
+  // getOrBuildMatchup's cache already being populated from the initial open)
+  // -- kept as a parameter here anyway rather than stashed on some shared
+  // mutable variable, so a stale ctx from a different game can never leak
+  // into this one's build.
+  window.runGameSim = function(gamePk, ctx) {
+    var body = document.getElementById('dr-sim-modal-body');
+    if (!body) return;
+    body.innerHTML = '<span class="spin"></span> Simulating game…';
+    getOrBuildMatchup(gamePk, ctx).then(function(matchup) {
+      if (!matchup) {
+        body.innerHTML = '<div class="mu-empty">Lineups aren’t posted for this game yet — check back closer to first pitch.</div>';
+        return;
+      }
+      var sim = simulateOneGameWithLog(matchup);
+      body.innerHTML = renderGameSimResult(sim, gamePk, matchup.awayAbbr, matchup.homeAbbr);
+    }).catch(function() {
+      body.innerHTML = '<div class="mu-empty">Could not simulate this game right now.</div>';
+    });
+  };
+
+  window.openGameSim = function(gamePk, awayAbbr, homeAbbr, awayName, homeName, awayTeamId, homeTeamId, awayPitcherId, awayPitcherName, homePitcherId, homePitcherName) {
+    var overlay = document.getElementById('dr-sim-modal-overlay');
+    var title = document.getElementById('dr-sim-modal-title');
+    var sub = document.getElementById('dr-sim-modal-sub');
+    if (!overlay) return;
+    if (title) title.textContent = (awayName || awayAbbr) + ' @ ' + (homeName || homeAbbr);
+    if (sub) sub.textContent = 'Simulated Game';
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    window.runGameSim(gamePk, {
+      awayAbbr: awayAbbr, homeAbbr: homeAbbr,
+      awayTeamId: awayTeamId, homeTeamId: homeTeamId,
+      awayPitcherId: awayPitcherId, awayPitcherName: awayPitcherName,
+      homePitcherId: homePitcherId, homePitcherName: homePitcherName
+    });
+  };
+
+  window.closeGameSim = function() {
+    var overlay = document.getElementById('dr-sim-modal-overlay');
+    if (overlay) overlay.style.display = 'none';
+    document.body.style.overflow = '';
   };
 })();
 
