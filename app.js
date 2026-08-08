@@ -15149,9 +15149,14 @@ if (document.readyState === 'loading') {
       awayRow += '<div class="dr-sim-linescore-cell">' + (sim.inningLineAway[i] != null ? sim.inningLineAway[i] : '–') + '</div>';
       homeRow += '<div class="dr-sim-linescore-cell">' + (sim.inningLineHome[i] != null ? sim.inningLineHome[i] : '–') + '</div>';
     }
+    // Staggered reveal (same Math.min(idx,N)*ms-delay pattern the HR Threats
+    // table's own dr-anim-in rows use) so a multi-inning rollout tells its
+    // story play group by play group instead of all landing at once -- capped
+    // at 10 groups' worth of delay so a long extra-innings game doesn't leave
+    // the last few groups waiting several seconds to appear.
     var playsHTML = sim.playLog.length
-      ? sim.playLog.map(function(grp) {
-          return '<div class="dr-sim-play-group">'
+      ? sim.playLog.map(function(grp, idx) {
+          return '<div class="dr-sim-play-group" style="animation-delay:' + (Math.min(idx, 10) * 70) + 'ms">'
             + '<div class="dr-sim-play-inning">' + esc(fmtInningHalf(grp.inning, grp.half)) + ' <span class="dr-sim-pitcher-label">vs ' + esc(grp.pitcherLabel) + '</span></div>'
             + grp.plays.map(function(t) { return '<div class="dr-sim-play-row">' + esc(t) + '</div>'; }).join('')
           + '</div>';
@@ -15161,8 +15166,8 @@ if (document.readyState === 'loading') {
     return '<div class="mu-empty dr-sim-disclaimer">🎲 This is one random simulated rollout of this matchup, not a prediction of what will actually happen. Real games don’t play out like a dice roll — hit Simulate Again for a different hypothetical outcome.</div>'
       + '<div class="dr-sim-linescore">'
         + '<div class="dr-sim-linescore-row dr-sim-linescore-headrow"><div class="dr-sim-linescore-cell dr-sim-linescore-team"></div>' + innHeaders + '<div class="dr-sim-linescore-cell dr-sim-linescore-head">R</div></div>'
-        + '<div class="dr-sim-linescore-row"><div class="dr-sim-linescore-cell dr-sim-linescore-team">' + esc(awayAbbr) + '</div>' + awayRow + '<div class="dr-sim-linescore-cell dr-sim-linescore-total">' + totalAway + '</div></div>'
-        + '<div class="dr-sim-linescore-row"><div class="dr-sim-linescore-cell dr-sim-linescore-team">' + esc(homeAbbr) + '</div>' + homeRow + '<div class="dr-sim-linescore-cell dr-sim-linescore-total">' + totalHome + '</div></div>'
+        + '<div class="dr-sim-linescore-row"><div class="dr-sim-linescore-cell dr-sim-linescore-team">' + esc(awayAbbr) + '</div>' + awayRow + '<div class="dr-sim-linescore-cell dr-sim-linescore-total"><span class="dr-sim-total-num" data-target="' + totalAway + '">0</span></div></div>'
+        + '<div class="dr-sim-linescore-row"><div class="dr-sim-linescore-cell dr-sim-linescore-team">' + esc(homeAbbr) + '</div>' + homeRow + '<div class="dr-sim-linescore-cell dr-sim-linescore-total"><span class="dr-sim-total-num" data-target="' + totalHome + '">0</span></div></div>'
       + '</div>'
       + '<div class="dr-sim-plays">' + playsHTML + '</div>'
       + '<button type="button" class="btn-lineup dr-sim-reroll-btn" onclick="runGameSim(' + gamePk + ')">🎲 Simulate Again</button>';
@@ -15177,7 +15182,7 @@ if (document.readyState === 'loading') {
   window.runGameSim = function(gamePk, ctx) {
     var body = document.getElementById('dr-sim-modal-body');
     if (!body) return;
-    body.innerHTML = '<span class="spin"></span> Simulating game…';
+    body.innerHTML = '<div class="mu-empty dr-sim-loading"><span class="dr-sim-dice">🎲</span> Simulating game…</div>';
     getOrBuildMatchup(gamePk, ctx).then(function(matchup) {
       if (!matchup) {
         body.innerHTML = '<div class="mu-empty">Lineups aren’t posted for this game yet — check back closer to first pitch.</div>';
@@ -15185,6 +15190,14 @@ if (document.readyState === 'loading') {
       }
       var sim = simulateOneGameWithLog(matchup);
       body.innerHTML = renderGameSimResult(sim, gamePk, matchup.awayAbbr, matchup.homeAbbr);
+      // Headline run totals count up from 0 (same animateCountUp already used
+      // for the HR Threats table's HR% cell) rather than snapping straight to
+      // the final score -- the individual inning cells stay static, small
+      // enough already that counting each one up would read as noise, not
+      // motion.
+      body.querySelectorAll('.dr-sim-total-num').forEach(function(el) {
+        animateCountUp(el, parseFloat(el.dataset.target), 0, 550);
+      });
     }).catch(function() {
       body.innerHTML = '<div class="mu-empty">Could not simulate this game right now.</div>';
     });
