@@ -6308,6 +6308,88 @@ function animateCountUp(el, endValue, decimals = 0, duration = 700) {
   requestAnimationFrame(step);
 }
 
+// ── Simulate At-Bats (Batter vs Pitcher modal, "🎰 Simulate At-Bats" tab) ──
+// A slot-machine presentation of window.drSimComputeOutcomeDist/
+// drSimSampleOutcome -- the Simulate Game engine's outcome-distribution model
+// (see that feature's IIFE), applied to just THIS batter and THIS pitcher.
+// No lineup/inning machinery needed here since it's always the same two
+// players, unlike a full game rollout. _abSimMatchup is re-set by
+// renderMatchupModal on every modal open/re-render.
+let _abSimMatchup = null;
+
+function absOutcomeLabel(outcome) {
+  return { hr: '💥 HR', xbh: '🚀 XBH', single: '🥎 1B', bb: '🚶 BB', k: '❌ K', out: '· Out' }[outcome] || '· Out';
+}
+
+function finishAtBatSim(outcomes, reelsBox, recapBox, spinBtn) {
+  spinBtn.disabled = false;
+  spinBtn.textContent = '🎰 Spin Again';
+
+  const hits = outcomes.filter(function(o) { return o === 'single' || o === 'xbh' || o === 'hr'; }).length;
+  const hrCount = outcomes.filter(function(o) { return o === 'hr'; }).length;
+  recapBox.textContent = outcomes.map(absOutcomeLabel).join(' · ') + ' — ' + hits + ' hit' + (hits === 1 ? '' : 's') + (hrCount ? ', ' + hrCount + ' HR' : '') + ' in this hypothetical 4-AB stretch.';
+
+  // Pop-up only for the exciting outcomes -- an out/K/walk landing doesn't
+  // deserve a celebration banner, same "only the exciting result gets a
+  // pop" restraint the pick-hit celebration elsewhere on the site already
+  // follows (it only fires on a graded win, never on every result).
+  if (outcomes.some(function(o) { return o === 'hr' || o === 'xbh'; })) {
+    const isHR = outcomes.some(function(o) { return o === 'hr'; });
+    const popup = document.createElement('div');
+    popup.className = 'dr-abs-popup' + (isHR ? ' dr-abs-popup-hr' : '');
+    popup.textContent = isHR ? '💥 HOME RUN!' : '🚀 EXTRA-BASE HIT!';
+    reelsBox.appendChild(popup);
+    setTimeout(function() { popup.remove(); }, 1300);
+  }
+}
+
+window.runAtBatSim = function() {
+  if (!_abSimMatchup) return;
+  const reelsBox = document.getElementById('dr-abs-reels');
+  const recapBox = document.getElementById('dr-abs-recap');
+  const spinBtn = document.getElementById('dr-abs-spin-btn');
+  if (!reelsBox || !recapBox || !spinBtn) return;
+
+  const dist = window.drSimComputeOutcomeDist(_abSimMatchup.bs, _abSimMatchup.ps);
+  const outcomes = [0, 1, 2, 3].map(function() { return window.drSimSampleOutcome(dist); });
+  const allLabels = ['hr', 'xbh', 'single', 'bb', 'k', 'out'].map(absOutcomeLabel);
+  // Text-swap cycling is JS, not CSS, so the site's blanket
+  // prefers-reduced-motion rule (which only collapses animation/transition
+  // *durations*) doesn't cover it -- same explicit check animateCountUp
+  // above already takes. The staggered landing order is kept either way
+  // (that's a sequential reveal, not motion), only the cycling is skipped.
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  spinBtn.disabled = true;
+  recapBox.textContent = '';
+  reelsBox.querySelectorAll('.dr-abs-popup').forEach(function(p) { p.remove(); });
+
+  const faces = reelsBox.querySelectorAll('.dr-abs-reel-face');
+  const reels = reelsBox.querySelectorAll('.dr-abs-reel');
+  let landedCount = 0;
+
+  outcomes.forEach(function(outcome, i) {
+    const face = faces[i], reel = reels[i];
+    reel.classList.remove('dr-abs-landed');
+    let spinTimer = null;
+    if (!reduced) {
+      reel.classList.add('dr-abs-spinning');
+      spinTimer = setInterval(function() {
+        face.textContent = allLabels[Math.floor(Math.random() * allLabels.length)];
+      }, 70);
+    }
+    // Staggered stop, left to right, like a real slot machine.
+    setTimeout(function() {
+      if (spinTimer) clearInterval(spinTimer);
+      reel.classList.remove('dr-abs-spinning');
+      face.textContent = absOutcomeLabel(outcome);
+      reel.classList.add('dr-abs-landed');
+      landedCount++;
+      if (landedCount === outcomes.length) finishAtBatSim(outcomes, reelsBox, recapBox, spinBtn);
+    }, 500 + i * 350);
+  });
+};
+
 // Flips every .dr1027-meter-fill/.dr-pchart-fill[data-fill] under `root` from
 // its markup width:0 to its real target width one frame later, so the CSS
 // width transition (styles.css) actually plays instead of snapping straight
@@ -8162,6 +8244,11 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         </div>
       </div>`;
 
+  // Stashed for window.runAtBatSim() -- the Spin At-Bats button's onclick takes
+  // no args (bs/ps are full stat objects, too large/unsafe to embed inline),
+  // so it reads this instead. Re-set on every modal open/re-render.
+  _abSimMatchup = { batterName: batterName, pitcherName: pitcherName, bs: bs, ps: ps };
+
   body.innerHTML = `
     ${matchupSummaryHTML}
     ${hh.rosterStatus ? `
@@ -8180,6 +8267,7 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         <button type="button" class="mu-tab-btn" data-tab="splits" role="tab" aria-selected="false">🔀 Splits</button>
         <button type="button" class="mu-tab-btn" data-tab="spray" role="tab" aria-selected="false">📍 Spray Chart</button>
         <button type="button" class="mu-tab-btn" data-tab="simulator" role="tab" aria-selected="false">🎲 Home Run Simulator</button>
+        <button type="button" class="mu-tab-btn" data-tab="atbat-sim" role="tab" aria-selected="false">🎰 Simulate At-Bats</button>
       </div>
 
       <!-- Why Today? -->
@@ -8330,6 +8418,19 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
       <div class="mu-tab-pane" data-tab="simulator">
         ${edgeHTML}
         ${multiplierBreakdownHTML}
+      </div>
+
+      <!-- Simulate At-Bats -->
+      <div class="mu-tab-pane" data-tab="atbat-sim">
+        <div class="dr-sim-disclaimer">🎰 These are 4 hypothetical simulated at-bats for ${batterName} against ${pitcherName}, not a prediction of today's actual results — spin again for a different hypothetical outcome.</div>
+        <div class="dr-abs-reels" id="dr-abs-reels">
+          <div class="dr-abs-reel"><div class="dr-abs-reel-window"><span class="dr-abs-reel-face">–</span></div></div>
+          <div class="dr-abs-reel"><div class="dr-abs-reel-window"><span class="dr-abs-reel-face">–</span></div></div>
+          <div class="dr-abs-reel"><div class="dr-abs-reel-window"><span class="dr-abs-reel-face">–</span></div></div>
+          <div class="dr-abs-reel"><div class="dr-abs-reel-window"><span class="dr-abs-reel-face">–</span></div></div>
+        </div>
+        <div class="dr-abs-recap" id="dr-abs-recap"></div>
+        <button type="button" class="btn-lineup dr-abs-spin-btn" id="dr-abs-spin-btn" onclick="runAtBatSim()">🎰 Spin At-Bats</button>
       </div>
     </div>
 
@@ -15032,6 +15133,14 @@ if (document.readyState === 'loading') {
   window.simulateGameNarrative = function(matchup) {
     return simulateOneGameWithLog(matchup);
   };
+
+  // Exposes the pure outcome-distribution model (not the lineup/inning
+  // machinery above it) so other features needing a single batter-vs-pitcher
+  // plate-appearance outcome -- e.g. the Batter vs Pitcher modal's "Simulate
+  // At-Bats" slot machine -- can reuse the exact same validated model instead
+  // of re-porting log5/computeMatchupOutcomeDist a third time.
+  window.drSimComputeOutcomeDist = computeMatchupOutcomeDist;
+  window.drSimSampleOutcome = sampleOutcome;
 
   // ── Real data wiring ──────────────────────────────────────────────────
   // Real, MLB-confirmed lineups (never a fallback/projected one), season
