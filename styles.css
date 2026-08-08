@@ -6828,7 +6828,25 @@ select:focus-visible {
 .hrpt-legend-label { font-size: 9.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted2, var(--muted)); }
 .hrpt-legend-item { font-size: 11px; color: var(--muted); white-space: nowrap; }
 
-.hrpt-scroll { overflow-x: auto; }
+.hrpt-scroll { overflow-x: auto; position: relative; }
+/* Fade hint at the scroll container's trailing edge when there's more table
+   to the right -- same visual language and JS (drUpdateFilterScrollHint,
+   generalized below) as the horizontally-scrolling filter bar already uses,
+   so a tablet user gets the same "there's more, swipe" affordance instead of
+   a horizontal scrollbar being the only clue. */
+.hrpt-scroll::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 2px;
+  width: 28px;
+  background: linear-gradient(to right, transparent, rgba(5,9,18,.92) 75%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+.hrpt-scroll.dr-filter-row-has-more::after { opacity: 1; }
 table.hrpt-table {
   width: 100%;
   table-layout: fixed;
@@ -6837,6 +6855,16 @@ table.hrpt-table {
   font-variant-numeric: tabular-nums;
   min-width: 1150px;
 }
+/* #props, #props * {min-width:0} (a broad flex/grid-shrink reset elsewhere in
+   this file, unscoped by any media query) is an ID selector, so it silently
+   beat table.hrpt-table's own min-width above on specificity alone --
+   defeating the horizontal-scroll fallback and instead letting every column
+   get squeezed to fit, which only actually looked broken (truncated
+   headers/badges, wrapped icons) at container widths below ~1150px, i.e.
+   tablets in portrait (iPad Air/Pro 820-1024px) -- desktop containers are
+   already wider than 1150px so the defeat was invisible there. Re-asserted
+   with matching #props + class specificity to win. */
+#props table.hrpt-table { min-width: 1150px; }
 /* Percentage-based fixed layout instead of content-auto sizing -- reflows
    proportionally at any container width above the mobile collapse
    breakpoint, instead of being tuned for one screenshot's width. Column
@@ -6898,6 +6926,24 @@ table.hrpt-table {
 .hrpt-table td.hrpt-num { text-align: center; font-size: 12.5px; }
 
 .hrpt-player-cell { display: flex; align-items: center; gap: 8px; min-width: 190px; }
+/* .dr-watch-star is styled for a tall card's corner badge (position:absolute,
+   top/right:10px -- see its own rule) and was never adapted for this compact
+   table row: with no positioned ancestor of its own, it fell through to
+   whatever ancestor further up happened to be positioned, so every row's star
+   collapsed onto that one shared spot instead of sitting in its own row.
+   Overridden here to lay out as a normal (small) flex item next to the photo
+   instead, same fix family as everything else on this row that got sized
+   down from its card-view original. */
+.hrpt-player-cell .dr-watch-star {
+  position: static;
+  width: 20px;
+  height: 20px;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  font-size: 13px;
+  flex-shrink: 0;
+  box-shadow: none;
+}
 .hrpt-photo { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(147, 197, 253, .4); background: var(--surface2); flex-shrink: 0; }
 .hrpt-player-meta { min-width: 0; }
 .hrpt-name { font-family: var(--font-body); font-size: 12.5px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 5px; white-space: nowrap; }

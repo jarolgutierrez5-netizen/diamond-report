@@ -9026,7 +9026,11 @@ function drUpdateFilterScrollHint(row) {
   row.classList.toggle('dr-filter-row-has-more', canScroll && !atEnd);
 }
 function drInitFilterScrollHints() {
-  document.querySelectorAll('.dr-filter-row').forEach(row => {
+  // .hrpt-scroll (the HR Threats table's horizontal-scroll wrapper) reuses
+  // this same generic scroll/resize-driven class toggle -- drUpdateFilterScrollHint
+  // only reads scrollWidth/clientWidth/scrollLeft off whatever element it's
+  // given, nothing filter-row-specific, so no new function was needed.
+  document.querySelectorAll('.dr-filter-row, .hrpt-scroll').forEach(row => {
     if (!row.__drScrollHintInit) {
       row.__drScrollHintInit = true;
       row.addEventListener('scroll', () => drUpdateFilterScrollHint(row), { passive: true });
