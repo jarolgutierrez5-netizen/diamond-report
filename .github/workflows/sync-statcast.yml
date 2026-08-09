@@ -95,6 +95,14 @@ jobs:
         continue-on-error: true
         timeout-minutes: 5
 
+      # Wider 14-day window than bullpen-fatigue's 2-day one (see the script's own
+      # header) -- walks far more games per team, so it gets a much longer timeout.
+      - name: Run bullpen HR-rate sync (real relievers-only HR-allowed rate, 14-day window)
+        if: github.event.schedule == '4 11 * * *' || github.event_name == 'workflow_dispatch'
+        run: node scripts/sync-bullpen-hr-rate.mjs
+        continue-on-error: true
+        timeout-minutes: 30
+
       # Same once-daily, day-lag-window reasoning as the bullpen-fatigue step above
       # (yesterday's games need to have actually finished before their real K/BB
       # totals mean anything) -- also looks up today's schedule for each game's
@@ -278,6 +286,7 @@ jobs:
           [ -f data/batter-batted-balls.json ] && git add data/batter-batted-balls.json
           [ -f data/park-factors.json ] && git add data/park-factors.json
           [ -f data/bullpen-fatigue.json ] && git add data/bullpen-fatigue.json
+          [ -f data/bullpen-hr-rate.json ] && git add data/bullpen-hr-rate.json
           [ -f data/umpire-tendency.json ] && git add data/umpire-tendency.json
           [ -f data/ballparkpal-hr-factors.json ] && git add data/ballparkpal-hr-factors.json
           [ -f data/ballparkpal-game-factors.json ] && git add data/ballparkpal-game-factors.json

@@ -979,6 +979,12 @@ const PITCHER_2K_SUPPRESSION_PATH = path.join(__dirname, '..', 'data', 'pitcher-
 // PITCHER_2K_SUPPRESSION_PATH above, so most rows outside that scope fall back to a
 // neutral (no-scaling) share, same graceful degradation.
 const PITCHER_WORKLOAD_PATH = path.join(__dirname, '..', 'data', 'pitcher-workload.json');
+// scripts/sync-bullpen-hr-rate.mjs -- real, relievers-only HR-allowed rate per team
+// (14-day rolling window, already shrunk toward league average). Used by
+// computeLiveHRScore below to give startBFShare's discounted starter-weight
+// somewhere real to go instead of just inflating batterWeight (see that function's
+// own comment). Keyed by team abbreviation, not pitcher id.
+const BULLPEN_HR_RATE_PATH = path.join(__dirname, '..', 'data', 'bullpen-hr-rate.json');
 const LEAGUE_AVG_XSLG = 0.400; // same scale as LEAGUE_AVG_SLG; MLB-wide xSLG runs close to actual SLG
 const LEAGUE_AVG_HARD_HIT_PCT = 36; // percent; roughly MLB seasonal average hard-hit rate
 const STATCAST_MIN_PITCHES = 100; // below this, a player's aggregate is too thin a sample to trust
@@ -1241,6 +1247,22 @@ async function loadPitcherWorkloadIndex() {
     // no-op — file not yet synced this run; every row falls back to a neutral share
   }
   return pitcherWorkloadCache;
+}
+
+let bullpenHrRateCache = null;
+async function loadBullpenHrRateIndex() {
+  if (bullpenHrRateCache) return bullpenHrRateCache;
+  bullpenHrRateCache = new Map();
+  try {
+    const raw = await readFile(BULLPEN_HR_RATE_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    for (const [abbr, t] of Object.entries(data?.teams || {})) {
+      if (Number.isFinite(t?.shrunkRate)) bullpenHrRateCache.set(abbr, t);
+    }
+  } catch {
+    // no-op — file not yet synced this run; every row falls back to league average
+  }
+  return bullpenHrRateCache;
 }
 
 // Converts an aggregate xSLG/hard-hit% into a bounded multiplier on the corresponding
@@ -1874,12 +1896,14 @@ function liveOnFireScore(row, statcastHotHitters) {
     (avgExitVelo >= 91 ? 6 : avgExitVelo >= 89 ? 3 : 0), 0, 100
   );
 }
-// Mirrors app.js's loadHRPotential hrPerPA/hrProb block exactly: batterRate (shrunk
-// box-score HR/AB) blended 60/40 with pitcherRate (HR/9-derived), park-adjusted, then
-// the hot-hitter read folded in as a bounded rate multiplier (shrunk by the same
-// HR_MULT_SHRINKAGE this file already auto-tunes) before simulateHRGameOdds runs --
-// same fix already shipped client-side for the score-bucket ranking problem the
-// calibration report surfaced.
+// Mirrors app.js's loadHRPotential hrPerPA/hrProb block: batterRate (shrunk box-score
+// HR/AB) blended with pitcherRate (HR/9-derived) and bullpenRate (real relievers-only
+// HR-allowed rate, see BULLPEN_HR_RATE_PATH), workload-share-weighted so a quick-hook
+// starter's discounted weight goes to the bullpen instead of just inflating the
+// batter's own rate, then park/zone-matchup-adjusted and the hot-hitter read folded in
+// as a bounded rate multiplier (shrunk by the same HR_MULT_SHRINKAGE this file already
+// auto-tunes) before simulateHRGameOdds runs -- same formula already shipped
+// client-side for the score-bucket ranking problem the calibration report surfaced.
 const HRP_MIN_AB_FOR_RATE = 40;
 const HRP_LEAGUE_AVG_HR_RATE = 0.031;
 function computeLiveHRScore(row, statcastHotHitters, weatherHRMult = 1) {
@@ -1900,9 +1924,22 @@ function computeLiveHRScore(row, statcastHotHitters, weatherHRMult = 1) {
   // Workload-scaled pitcher weight -- see startBFShare's own comment at
   // PITCHER_WORKLOAD_PATH above; row.startBFShare defaults to 1 (old flat weight,
   // unscaled) for any row built before that field existed.
-  const pitcherWeight = 0.4 * (row.startBFShare != null ? row.startBFShare : 1);
-  const batterWeight = 1 - pitcherWeight;
-  const hrPerPA = ((batterRate * batterWeight) + (pitcherRate * pitcherWeight)) * parkAdj * shrinkMult(hotMult) * weatherHRMult;
+  const startBFShare = row.startBFShare != null ? row.startBFShare : 1;
+  const pitcherWeight = 0.4 * startBFShare;
+  // Bullpen -- the weight startBFShare discounts away from a quick-hook starter used
+  // to just flow into batterWeight below; now it goes to a real relievers-only rate
+  // instead (see BULLPEN_HR_RATE_PATH above), same redesign as app.js's client-side
+  // port. row.bullpenRate defaults to league average for any row built before that
+  // field existed (bullpenWeight will be 0 too in that case, so it's inert either way).
+  const bullpenRate = row.bullpenRate != null ? row.bullpenRate : HRP_LEAGUE_AVG_HR_RATE;
+  const bullpenWeight = 0.4 * (1 - startBFShare);
+  const batterWeight = 1 - pitcherWeight - bullpenWeight;
+  // zoneMatchupMult was already computed by every caller (buildBatterPool) but never
+  // actually passed into this function -- a real drift from the client formula this
+  // mirrors, fixed here rather than left to compound further while touching this
+  // function anyway. Defaults to neutral (1) for any row that doesn't have it.
+  const zoneMult = row.zoneMatchupMult != null ? row.zoneMatchupMult : 1;
+  const hrPerPA = ((batterRate * batterWeight) + (pitcherRate * pitcherWeight) + (bullpenRate * bullpenWeight)) * parkAdj * shrinkMult(hotMult) * weatherHRMult * zoneMult;
   const logisticFeatures = { batterISO: row.iso, pitcherHr9: row.pitcherHr9, pitcherWhip: row.pitcherWhip, parkFactor: row.parkFactor, windFactor: row.windFactor, temperatureFactor: row.temperatureFactor, isOnFire: onFireScore >= 70, matchupEdge: row.matchupEdge, startBFShare: row.startBFShare };
   return simulateHRGameOdds(hrPerPA, row.battingOrder, logisticFeatures);
 }
@@ -2371,6 +2408,7 @@ async function buildBatterPool(games, season) {
   const pitcherStatcastIndex = await loadPitcherStatcastPowerIndex();
   const pitcher2kSuppressionIndex = await loadPitcher2kSuppressionIndex();
   const pitcherWorkloadIndex = await loadPitcherWorkloadIndex();
+  const bullpenHrRateIndex = await loadBullpenHrRateIndex();
   const statcastHotHittersIndex = await loadStatcastHotHittersIndex();
   const nearHRsIndex = await loadNearHRsIndex();
   const rows = [];
@@ -2401,6 +2439,11 @@ async function buildBatterPool(games, season) {
         : 1;
       const teamAbbr = g.teams[side].team.abbreviation;
       const oppAbbr = g.teams[opp].team.abbreviation;
+      // Real relievers-only HR-allowed rate for the PITCHING team (oppAbbr) -- see
+      // BULLPEN_HR_RATE_PATH comment above. Same graceful league-average fallback
+      // computeLiveHRScore's own client-side port already uses.
+      const bullpenEntry = bullpenHrRateIndex.get(oppAbbr) || null;
+      const bullpenRate = (bullpenEntry && bullpenEntry.reliable) ? bullpenEntry.shrunkRate : HRP_LEAGUE_AVG_HR_RATE;
       const batters = await battersForSide(g, side);
       // Computed once per team here (cached), not once per batter -- every batter on
       // this side shares the same team schedule / doubleheader status.
@@ -2512,7 +2555,7 @@ async function buildBatterPool(games, season) {
           pitcherHr9: n(pitcherStat.homeRunsPer9), pitcherWhip, parkFactor: rowParkFactor, battingOrder,
           windFactor: windPowerFactor(g.weather), temperatureFactor: temperaturePowerFactor(g.weather),
           last10HR: recent?.hr || 0, isFavorable, statcast: statcastIndex.get(String(pid)) || null, matchupEdge,
-          startBFShare,
+          startBFShare, bullpenRate, zoneMatchupMult,
         }, statcastHotHittersIndex, weatherHRMult);
         return {
           id: pid, name: person.fullName, teamAbbr, oppAbbr, gamePk: g.gamePk,
