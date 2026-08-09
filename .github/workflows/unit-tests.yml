@@ -1,0 +1,38 @@
+name: Unit tests
+
+# Runs the scoring/formula unit tests in tests/unit against
+# scripts/update-tracker.mjs -- the server-side model that actually selects
+# and grades real HR Threats/K Props/Diamond Report picks. Zero dependencies
+# (Node's built-in node:test runner), so no install step is needed.
+
+on:
+  push:
+    paths:
+      - 'scripts/update-tracker.mjs'
+      - 'tests/unit/**'
+  pull_request:
+    paths:
+      - 'scripts/update-tracker.mjs'
+      - 'tests/unit/**'
+
+concurrency:
+  group: unit-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tests/unit
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run unit tests
+        run: node --test
