@@ -1972,11 +1972,22 @@ function scoreForMarket(marketKey, row) {
     // -- battedBallPowerIndex is generic over both. Neutral (1x) with no Statcast
     // coverage or too thin a sample, same as the batter side.
     const pitcherRate = boxScorePitcherRate * shrinkMult(battedBallPowerIndex(row.pitcherStatcast));
-    // Wind and temperature (see windPowerFactor/temperaturePowerFactor above) both
-    // affect the whole park/game environment equally regardless of who's hitting or
-    // pitching, so they're applied once to the combined rate rather than to the
-    // batter/pitcher components separately -- applying either twice would double-count
-    // the same physical effect.
+    // Wind, temperature, and park (see windPowerFactor/temperaturePowerFactor and
+    // parkAdj below) all affect the whole park/game environment equally regardless of
+    // who's hitting or pitching, so they're applied once to the combined rate rather
+    // than to the batter/pitcher components separately -- applying any of them twice
+    // would double-count the same physical effect.
+    // Park factor -- same formula buildBatterModel/computeLiveHRScore already use
+    // elsewhere in this file (neutral at parkFactor=100). row.parkFactor was already
+    // being computed and threaded into logisticFeatures below for the fitted model,
+    // but never actually applied to this legacy hrPerPA itself -- a real gap (not a
+    // documented simplification, see this file's own header comment) that meant the
+    // non-logistic-model fallback path scored a hitter identically in Coors Field and
+    // a pitcher's park. Fixed here, applied the same way as wind/temperature (shrunk,
+    // once, on the combined rate) rather than computeLiveHRScore's unshrunk direct
+    // multiply, matching this function's own existing treatment of every other
+    // environmental factor.
+    const parkAdj = 1 + (((row.parkFactor ?? 100) - 100) / 100) * 0.5;
     // Zone-matchup correction (see zoneMatchupMultiplier's header comment) -- pre-computed
     // in buildBatterPool (row.zoneMatchupMult) from the real zone maps already resolved
     // there, same "compute once outside scoreForMarket, apply with shrinkMult here" shape
@@ -1989,7 +2000,7 @@ function scoreForMarket(marketKey, row) {
     // report evidence this addresses.
     const pitcherWeight = 0.4 * (row.startBFShare != null ? row.startBFShare : 1);
     const batterWeight = 1 - pitcherWeight;
-    const hrPerPA = (batterRate * batterWeight + pitcherRate * pitcherWeight) * shrinkMult(row.windFactor || 1) * shrinkMult(row.temperatureFactor || 1) * shrinkMult(row.zoneMatchupMult || 1);
+    const hrPerPA = (batterRate * batterWeight + pitcherRate * pitcherWeight) * shrinkMult(row.windFactor || 1) * shrinkMult(row.temperatureFactor || 1) * shrinkMult(row.zoneMatchupMult || 1) * shrinkMult(parkAdj);
     const logisticFeatures = { batterISO: row.iso, pitcherHr9: row.pitcherHr9, pitcherWhip: row.pitcherWhip, parkFactor: row.parkFactor, windFactor: row.windFactor, temperatureFactor: row.temperatureFactor, isOnFire: row.isHot, matchupEdge: row.matchupEdge, startBFShare: row.startBFShare };
     return simulateHRGameOdds(hrPerPA, row.battingOrder, logisticFeatures);
   }
