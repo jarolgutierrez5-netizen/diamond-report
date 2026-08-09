@@ -5582,6 +5582,38 @@ select:focus-visible {
 .dr-mu-lineup-status.expected {
   color: #fbbf24;
 }
+/* platoonSplitBannerHTML (app.js) -- only shown when every "vs Hand" column
+   is blocked for a real, actionable reason (pitcher hand unresolved, or a
+   shared fetch failure), not for the common case of one batter genuinely
+   having no real split yet. */
+.dr-mu-platoon-warn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, .1);
+  border: 1px solid rgba(251, 191, 36, .35);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+}
+.dr-mu-platoon-warn button {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 800;
+  color: #0a0e1a;
+  background: #fbbf24;
+  border: none;
+  border-radius: 999px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.dr-mu-platoon-warn button:disabled {
+  opacity: .6;
+  cursor: default;
+}
 .dr-mu-table.dr-mu-density-compact td,
 .dr-mu-table.dr-mu-density-compact th {
   padding: 5px 8px;

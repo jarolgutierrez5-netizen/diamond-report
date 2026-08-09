@@ -3382,6 +3382,23 @@ function pitcherMatchupLineupStatusHTML(cacheEntry) {
   return '';
 }
 
+// Real, actionable message for the two genuinely-broken platoon-split states
+// (see fetchPlatoonSplits' own header comment) -- shown only when EVERY
+// batter in the lineup is blocked for the same reason, since that's the
+// signature of an actual problem (the pitcher's hand not resolved yet, or a
+// shared fetch failure) rather than individual batters just not having a
+// real vs-hand sample yet (which stays as quiet, unremarkable dashes -- not
+// every blank cell is a bug). A mix of 'ok' and 'no-data'/'error' rows means
+// most of the table loaded fine, so no banner fires for that case either.
+function platoonSplitBannerHTML(pid, lineup) {
+  const statuses = lineup.map(b => b.platoon?.status || 'unknown-hand');
+  if (!statuses.length || !statuses.every(s => s === 'unknown-hand' || s === 'error')) return '';
+  const reason = statuses[0] === 'unknown-hand'
+    ? "this pitcher's throwing hand hasn't been confirmed yet"
+    : 'a network hiccup while loading';
+  return `<div class="dr-mu-platoon-warn">⚠️ "vs Hand" columns unavailable — ${reason}. <button type="button" data-mu-retry-platoon="${pid}">Retry</button></div>`;
+}
+
 function pitcherMatchupTableHTML(pid, meta) {
   const state = _muTableState(pid);
   const cacheKey = `${meta.gamePk}-${meta.side}`;
@@ -3457,6 +3474,7 @@ function pitcherMatchupTableHTML(pid, meta) {
 
   return `
     ${pitcherMatchupLineupStatusHTML(cacheEntry)}
+    ${platoonSplitBannerHTML(pid, lineup)}
     ${pitcherMatchupChipsHTML(pid, state)}
     ${pitcherMatchupControlsHTML(pid, state, meta.pitcherHand)}
     <div class="dr1041-table-wrap dr-mu-table-wrap"><table class="dr1041-pitch-table dr-mu-table dr-mu-density-${state.density}">
@@ -3471,6 +3489,39 @@ function renderPitcherMatchupTable(pid, meta, wrap) {
   if (!wrap.isConnected) return;
   wrap.innerHTML = pitcherMatchupTableHTML(pid, meta);
 }
+
+// Manual retry for platoonSplitBannerHTML's button -- re-fetches only the
+// "vs Hand" columns (not the whole lineup/boxscore) and re-renders the table
+// in place. When the pitcher's own hand still isn't known on meta (the most
+// common real cause every row goes blank -- see fetchPlatoonSplits' header
+// comment), tries to resolve it fresh first via a single /people/{id} call
+// and, if that succeeds, updates lineupMeta[pid] so it's fixed for any future
+// re-render too, not just this one retry.
+window.retryPlatoonSplits = async function(pid) {
+  const meta = lineupMeta[pid];
+  const wrap = document.getElementById(`pr-matchup-table-${pid}`);
+  if (!meta || !wrap) return;
+  const cacheKey = `${meta.gamePk}-${meta.side}`;
+  const cacheEntry = lineupCache[cacheKey];
+  if (!cacheEntry?.lineup?.length) return;
+  const btn = wrap.querySelector('[data-mu-retry-platoon]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Retrying…'; }
+  let pitcherHand = meta.pitcherHand;
+  if (pitcherHand !== 'L' && pitcherHand !== 'R') {
+    try {
+      const d = await fetchJSON(`https://diamondreport.app/api/v1/people/${pid}`);
+      const resolved = handCode(d?.people?.[0], 'pitchHand');
+      if (resolved === 'L' || resolved === 'R') {
+        pitcherHand = resolved;
+        meta.pitcherHand = resolved;
+      }
+    } catch {}
+  }
+  const batterIds = cacheEntry.lineup.map(b => b.id).filter(Boolean);
+  const platoonById = await fetchPlatoonSplits(batterIds, pitcherHand);
+  cacheEntry.lineup.forEach(b => { b.platoon = platoonById[b.id] || { status: 'unknown-hand' }; });
+  renderPitcherMatchupTable(pid, meta, wrap);
+};
 
 // Delegated so re-rendering the table (which replaces its DOM) never loses the
 // click wiring -- same pattern as the existing [data-pstats-toggle] handler.
@@ -3507,6 +3558,12 @@ document.addEventListener('click', (e) => {
       _muTableState(pid).density = densityBtn.getAttribute('data-mu-density');
       renderPitcherMatchupTable(pid, meta, wrap);
     }
+    return;
+  }
+  const retryBtn = e.target.closest('[data-mu-retry-platoon]');
+  if (retryBtn) {
+    e.stopPropagation();
+    window.retryPlatoonSplits(retryBtn.getAttribute('data-mu-retry-platoon'));
   }
 });
 document.addEventListener('change', (e) => {
@@ -3923,6 +3980,45 @@ function appendRosterReferenceSection(container, title, icon, people, statGroup)
   container.appendChild(section);
 }
 
+// Real per-batter platoon split (AVG/OBP/SLG/OPS/HR) against a specific pitcher
+// hand -- same statSplits/vl,vr endpoint and batterSplitForHand extraction
+// fetchAndRenderLineup's own inline version of this used to do inline, now
+// pulled out so window.retryPlatoonSplits below can take the exact same path
+// on a manual retry instead of duplicating it.
+//
+// Every entry gets a `status` field ('ok'/'no-data'/'error'/'unknown-hand')
+// alongside whatever real values it found. Before this, a real fetch failure
+// and a real "this rookie has no vs-hand at-bats yet" were both just `null`,
+// indistinguishable from each other or from the (very common) case of the
+// pitcher's own throwing hand not being known yet -- all three silently
+// rendered as the exact same blank dashes across every column for every
+// batter, with no way for a user to tell "this table is broken" from "there's
+// genuinely nothing to show" or to do anything about it beyond reloading the
+// whole page and hoping. pitcherMatchupTableHTML's platoonSplitBannerHTML
+// reads this status to show a real, actionable message only for the two
+// genuinely-broken cases.
+async function fetchPlatoonSplits(batterIds, pitcherHand) {
+  if (!(pitcherHand === 'L' || pitcherHand === 'R') || !batterIds.length) {
+    return Object.fromEntries(batterIds.map(id => [id, { status: 'unknown-hand' }]));
+  }
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+  const pairs = await Promise.all(batterIds.map(async id => {
+    try {
+      const d = await fetchJSON(`https://diamondreport.app/api/v1/people/${id}/stats?stats=statSplits&group=hitting&sitCodes=vl,vr&season=${today.slice(0, 4)}`);
+      const split = batterSplitForHand(d?.stats?.[0]?.splits || [], pitcherHand);
+      if (!split) return [id, { status: 'no-data' }];
+      const avg = split.avg != null ? parseFloat(split.avg) : null;
+      const obp = split.obp != null ? parseFloat(split.obp) : null;
+      const slg = split.slg != null ? parseFloat(split.slg) : null;
+      const ops = split.ops != null ? parseFloat(split.ops) : (obp != null && slg != null ? +(obp + slg).toFixed(3) : null);
+      const ab = split.atBats != null ? parseInt(split.atBats) : null;
+      const hr = split.homeRuns != null ? parseInt(split.homeRuns) : null;
+      return [id, { status: 'ok', avg, obp, slg, ops, ab, hr }];
+    } catch { return [id, { status: 'error' }]; }
+  }));
+  return Object.fromEntries(pairs);
+}
+
 async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTeamId, pitcherHr9, pitcherIp, skipEnrichment = false, bypassPRGuards = false, pitcherHand = null) {
   const pid = normalizePitcherId(pitcherId);
   const panel = document.getElementById(`panel-${pid}`);
@@ -4008,24 +4104,11 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
     // whole lineup here since opening a pitcher's full report is an explicit on-demand
     // click, not part of the always-on HR Threats board. One request per batter (not
     // gated on a minimum AB -- degrades to whatever real sample exists, same convention
-    // as openMatchup's own split fetch, never fabricated). Skipped entirely when the
-    // pitcher's own throwing hand isn't known yet.
-    const platoonSplitPromise = (pitcherHand === 'L' || pitcherHand === 'R') && batterIdsForHand.length
-      ? Promise.all(batterIdsForHand.map(async id => {
-          try {
-            const d = await fetchJSON(`https://diamondreport.app/api/v1/people/${id}/stats?stats=statSplits&group=hitting&sitCodes=vl,vr&season=${today.slice(0,4)}`);
-            const split = batterSplitForHand(d?.stats?.[0]?.splits || [], pitcherHand);
-            if (!split) return [id, null];
-            const avg = split.avg != null ? parseFloat(split.avg) : null;
-            const obp = split.obp != null ? parseFloat(split.obp) : null;
-            const slg = split.slg != null ? parseFloat(split.slg) : null;
-            const ops = split.ops != null ? parseFloat(split.ops) : (obp != null && slg != null ? +(obp + slg).toFixed(3) : null);
-            const ab = split.atBats != null ? parseInt(split.atBats) : null;
-            const hr = split.homeRuns != null ? parseInt(split.homeRuns) : null;
-            return [id, { avg, obp, slg, ops, ab, hr }];
-          } catch { return [id, null]; }
-        })).then(pairs => Object.fromEntries(pairs))
-      : Promise.resolve({});
+    // as openMatchup's own split fetch, never fabricated). fetchPlatoonSplits itself
+    // handles the "pitcher's own throwing hand isn't known yet" case (returns every
+    // batter tagged 'unknown-hand' rather than skipping silently) -- see its own header
+    // comment, and window.retryPlatoonSplits below for the manual-retry path this feeds.
+    const platoonSplitPromise = fetchPlatoonSplits(batterIdsForHand, pitcherHand);
 
     // Fast path: use stats already in the boxscore, skip per-batter API calls.
     // K Props lineup expand uses this — saves ~18 API calls and renders instantly.
@@ -4087,9 +4170,9 @@ async function fetchAndRenderLineup(pitcherId, pitcherName, gamePk, side, oppTea
         // real strikeout tendency instead of only the lineup-wide blend.
         kPct: pa > 0 ? +(so / pa * 100).toFixed(1) : null,
         // Real platoon split (AVG/OBP/SLG/OPS/HR) vs today's specific pitcher's throwing
-        // hand -- null when the pitcher's hand isn't known yet or the fetch found no
-        // real split for this batter, never fabricated.
-        platoon: platoonById[b.person?.id] || null,
+        // hand -- see fetchPlatoonSplits' own header comment for the status field
+        // ('ok'/'no-data'/'error'/'unknown-hand'); values are never fabricated.
+        platoon: platoonById[b.person?.id] || { status: 'unknown-hand' },
       };
     });
 
