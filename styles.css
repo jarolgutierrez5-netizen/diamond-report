@@ -2211,54 +2211,6 @@ body.dr-hub-sport-nba .dr-hub-layout {
   height: 1px;
   background: rgba(255,255,255,.08);
 }
-.dr-hub-news-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-}
-.dr-hub-news-card {
-  background: rgba(17,24,39,.55);
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 14px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: border-color .15s ease;
-  display: block;
-  text-decoration: none;
-  color: inherit;
-  width: 100%;
-  padding: 0;
-  font: inherit;
-  text-align: left;
-  appearance: none;
-}
-.dr-hub-news-card:hover {
-  border-color: rgba(47,107,255,.4);
-}
-.dr-hub-news-card img {
-  width: 100%;
-  aspect-ratio: 16/9;
-  object-fit: cover;
-  display: block;
-  background: #111;
-}
-.dr-hub-news-body {
-  padding: 12px 14px 14px;
-}
-.dr-hub-news-headline {
-  font-weight: 800;
-  font-size: 13.5px;
-  line-height: 1.35;
-  margin-bottom: 6px;
-  color: #fff;
-}
-.dr-hub-news-card.lead .dr-hub-news-headline {
-  font-size: 17px;
-}
-.dr-hub-news-meta {
-  font-size: 10.5px;
-  color: #8fa3c8;
-}
 .dr-hub-news-more {
   display: block;
   margin: 16px auto 0;
@@ -2313,48 +2265,6 @@ body.dr-hub-sport-nba .dr-hub-layout {
   }
   .dr-hub-sport-badge {
     margin-top: 6px;
-  }
-  .dr-hub-news-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Tablet range (iPad portrait/landscape and similar): the base rule's 3
-   fixed columns, each with a full-width 16:9 image, made every card feel
-   oversized for what's meant to be a compact headlines list — even 2
-   columns still meant ~300px-tall images. Switching to a single-column
-   list with a small fixed-size thumbnail beside the text (rather than
-   stacked above it) reads as an actual list instead. Only wide
-   desktop/laptop widths (>=1280px) get the image-forward grid card. */
-@media (min-width: 768px) and (max-width: 1279px) {
-  .dr-hub-news-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-  .dr-hub-news-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .dr-hub-news-card img {
-    width: 110px;
-    height: 72px;
-    aspect-ratio: auto;
-    flex-shrink: 0;
-    border-radius: 10px;
-  }
-  .dr-hub-news-body {
-    padding: 10px 14px 10px 0;
-  }
-  .dr-hub-news-headline {
-    font-size: 13px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .dr-hub-news-card.lead .dr-hub-news-headline {
-    font-size: 13px;
   }
 }
 
@@ -3176,12 +3086,10 @@ select:focus-visible {
   opacity: .7;
   font-weight: 800;
 }
-/* Same ESPN "Around the Leagues" card shape (.dr-hub-news-card below) --
-   full-bleed 16:9 photo on top with no border/gap under it, padded text body
-   underneath -- rather than the small round-avatar layout this used before,
-   so the two feeds read as one consistent card language. A headline with no
-   real player photo (weather, recap, etc.) simply renders without the image
-   area instead of a fabricated placeholder. */
+/* Full-bleed 16:9 photo on top with no border/gap under it, padded text body
+   underneath -- rather than the small round-avatar layout this used before.
+   A headline with no real player photo (weather, recap, etc.) simply
+   renders without the image area instead of a fabricated placeholder. */
 .dr-hub-headline-card {
   background: rgba(255,255,255,.035);
   border: 1px solid rgba(255,255,255,.08);
@@ -3354,11 +3262,11 @@ select:focus-visible {
   border-color: rgba(255,255,255,.18);
   background: rgba(255,255,255,.05);
 }
-/* Same full-bleed-photo-on-top shape as .dr-hub-headline-photo-big/.dr-hub-news-card
-   img above -- the chart bleeds to a fixed 16:9 banner instead of sitting in
-   a small padded box, so this card and the ESPN-style headline cards read as
-   one consistent layout. The SVG itself still uses preserveAspectRatio="xMidYMid
-   meet" so it letterboxes cleanly inside the wider frame rather than stretching. */
+/* Same full-bleed-photo-on-top shape as .dr-hub-headline-photo-big img above
+   -- the chart bleeds to a fixed 16:9 banner instead of sitting in a small
+   padded box, so this card and the headline cards read as one consistent
+   layout. The SVG itself still uses preserveAspectRatio="xMidYMid meet" so
+   it letterboxes cleanly inside the wider frame rather than stretching. */
 .dr-hub-trending-visual {
   background: rgba(0,0,0,.32);
   aspect-ratio: 16 / 9;
@@ -4872,14 +4780,6 @@ select:focus-visible {
 .dr-hub-headline-card.dr-anim-in {
   animation: dr-headline-card-in .38s cubic-bezier(.2,.8,.2,1) both;
 }
-.dr-hub-news-card {
-  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
-}
-.dr-hub-news-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(0,0,0,.24);
-}
-
 /* Progress-meter -- animates its fill width in on render to explain a
    state (HR Probability on HR Threats cards, how-close-to-a-fence on Near
    HRs cards) at a glance, without repeating the number the card already

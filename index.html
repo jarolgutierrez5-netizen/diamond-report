@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026080923">
+<link rel="stylesheet" href="styles.min.css?v=2026080925">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -219,17 +219,15 @@
     <h1 class="dr-hub-title">Today</h1>
     <div class="dr-hub-sub">Everything you need to understand today's games — in one place. Headlines, live scores, and model-driven projections, every pick graded in the open.</div>
 
-    <!-- Multi-Sport News and Navigation (roadmap 3.x) -- these tabs filter the
-         feed below (headlines/news/scoreboard/leaders) by sport without leaving
-         the hub. "All Sports" (default) shows the combined feed; NBA is the
-         only sport still "coming soon" -- real filtered ESPN news plus an
-         honest launching-soon notice instead of fabricated leaderboards,
-         since it has no real board reachable yet (see setActiveSport's
-         isOtherSport check). MLB/NFL/WNBA are all treated the same real, live
-         way instead: real filtered ESPN news, no "coming soon" collapse, and
-         each one's card (dr-hub-baseball-card/dr-hub-nfl-card/dr-hub-wnba-card)
-         navigates straight into its own real gamepick-pane instead of staying
-         on the hub. See setActiveSport in the hub IIFE at the end of app.js. -->
+    <!-- Multi-Sport Navigation (roadmap 3.x) -- these tabs filter which sport
+         card reads "current" and drive setActiveSport's honest launching-soon
+         notice for NBA, the only sport still without a real board reachable
+         from here. MLB/NFL/WNBA are all live instead: each one's card
+         (dr-hub-baseball-card/dr-hub-nfl-card/dr-hub-wnba-card) navigates
+         straight into its own real gamepick-pane on click instead of staying
+         on the hub. (The ESPN "Around the Leagues" news grid this section
+         used to also filter has been removed entirely.) See setActiveSport
+         in the hub IIFE at the end of app.js. -->
     <div class="dr-hub-sporttabs" id="dr-hub-sporttabs" role="tablist" aria-label="Filter by sport">
       <button type="button" class="dr-hub-sporttab active" data-sport="all" role="tab" aria-selected="true">All Sports</button>
       <button type="button" class="dr-hub-sporttab" data-sport="MLB" role="tab" aria-selected="false">MLB</button>
@@ -333,11 +331,12 @@
     <!-- Diamond Report Headlines (roadmap 3.2) — proprietary, data-driven editorial
          headlines generated daily by scripts/generate-headlines.mjs from this site's
          own model/trend/leaderboard/injury/weather/notable-performance signals (real
-         numbers, not spun filler; see that script's header comment). Placed ahead of
-         the ESPN news grid below on purpose: this is the site's original written
-         content, not a repackaged third-party feed. Each card links to the related
-         board (see applyHeadlineLink in app.js) and, when a real clip exists, opens
-         it in the same in-site video modal the HR highlights already use. -->
+         numbers, not spun filler; see that script's header comment) -- this is the
+         site's original written content, not a repackaged third-party feed (the ESPN
+         "Around the Leagues" news grid that previously sat below this section has
+         been removed entirely). Each card links to the related board (see
+         applyHeadlineLink in app.js) and, when a real clip exists, opens it in the
+         same in-site video modal the HR highlights already use. -->
     <div class="dr-hub-headlines" id="dr-hub-headlines" style="display:none">
       <div class="dr-hub-section-head"><span class="dr-hub-section-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5H5a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8z"/><path d="M11.5 2.5V8H17"/><path d="M7 11h6M7 14h4"/></svg></span><h2>Diamond Report Headlines</h2><span class="dr-hub-section-line"></span></div>
       <!-- Built dynamically by renderHeadlineFilters in app.js -- one chip per
@@ -372,13 +371,13 @@
     </div>
 
     <div class="dr-hub-layout">
-      <div class="dr-hub-main">
-        <div class="dr-hub-news" id="dr-hub-news" style="display:none">
-          <div class="dr-hub-section-head"><span class="dr-hub-section-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><path d="M6 7.5h8M6 10.5h8M6 13.5h5"/></svg></span><h2 id="dr-hub-news-heading">Around the Leagues</h2><span class="dr-hub-section-line"></span></div>
-          <div class="dr-hub-news-grid" id="dr-hub-news-grid"></div>
-          <button type="button" id="dr-hub-news-more" class="dr-hub-news-more" style="display:none">View More</button>
-        </div>
-      </div>
+      <!-- Empty on purpose -- kept as the grid's left-column placeholder (see
+           .dr-hub-layout's grid-template-columns: 1fr 360px at ≥1000px in
+           styles.css) now that the ESPN "Around the Leagues" news grid this
+           used to hold has been removed; deleting this wrapper entirely would
+           leave .dr-hub-side as the grid's only item, which auto-places into
+           the wide 1fr column instead of its intended narrow 360px one. -->
+      <div class="dr-hub-main"></div>
 
       <div class="dr-hub-side" id="dr-hub-side">
         <div class="dr-hub-hr">
@@ -432,23 +431,6 @@
   </div>
 </section>
 
-<!-- News summary popup — keeps readers on-site for the headline + short
-     summary ESPN's free API gives us; links out only for the full story
-     (their API doesn't expose full article bodies). Populated/opened by
-     the hub IIFE at the end of app.js. -->
-<div id="dr-hub-news-modal" class="dr-hub-news-modal" aria-hidden="true">
-  <div class="dr-hub-news-modal-overlay" id="dr-hub-news-modal-overlay"></div>
-  <div class="dr-hub-news-modal-panel" role="dialog" aria-modal="true" aria-labelledby="dr-hub-news-modal-title">
-    <button type="button" class="dr-hub-news-modal-close" id="dr-hub-news-modal-close" aria-label="Close">✕</button>
-    <img id="dr-hub-news-modal-img" class="dr-hub-news-modal-img" alt="" style="display:none">
-    <div class="dr-hub-news-modal-body">
-      <div class="dr-hub-news-modal-meta" id="dr-hub-news-modal-meta"></div>
-      <h3 id="dr-hub-news-modal-title" class="dr-hub-news-modal-title"></h3>
-      <p id="dr-hub-news-modal-desc" class="dr-hub-news-modal-desc"></p>
-      <a id="dr-hub-news-modal-link" class="dr-hub-news-modal-link" href="#" target="_blank" rel="noopener noreferrer">Read full story on ESPN →</a>
-    </div>
-  </div>
-</div>
 
 <!-- Home run clip popup — plays the direct video in place when the game's
      content feed returns a playable clip URL; the card itself falls back to
@@ -1079,7 +1061,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026080923" defer></script>
+<script src="app.min.js?v=2026080925" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->

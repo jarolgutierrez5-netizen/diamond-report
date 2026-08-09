@@ -17343,10 +17343,6 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
 // same non-invasive wrap pattern already used elsewhere in this file (see
 // window.showGamePickPane wraps above).
 (function(){
-  var newsLoaded = false;
-  var newsArticlesAll = [];
-  var newsArticles = [];
-  var newsVisibleCount = 10;
   var headlinesAll = [];
   var headlinesVisibleCount = 6;
   var activeHeadlineCategory = 'all';
@@ -17376,7 +17372,6 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
     loadHubHeadlines();
     loadHRCarousel();
     loadTrendingPlayers();
-    loadHubNews();
     loadHubHRs();
     loadHubLeaders();
     loadHubProjections();
@@ -17390,19 +17385,15 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
     if (scoreboardTimer) { clearInterval(scoreboardTimer); scoreboardTimer = null; }
   }
 
-  // Multi-Sport News and Navigation (roadmap 3.x): switches which sport the
-  // hub feed is scoped to. "all" (default) is the combined feed across every
-  // sport we cover; "MLB" is the same feed narrowed to MLB; "NFL"/"NBA" have
-  // no real analytics behind them yet, so they show real filtered ESPN news
-  // (applyNewsSportFilter) plus an honest "launching soon" notice in place of
-  // the MLB-only Diamond Report Headlines/scoreboard/leaders modules -- see
-  // the body.dr-hub-sport-nfl/nba rules in styles.css that force those
-  // sections hidden regardless of their own lazy-loaders' display state.
-  // NBA is the only sport left with no real board behind it -- NFL joined
-  // MLB/WNBA as a genuinely live section once its Anytime TD board was
-  // hub-linked, so it's no longer in isOtherSport/this text below.
+  // Multi-Sport Navigation (roadmap 3.x): switches which sport the hub is
+  // scoped to and which card reads "current". NBA is the only sport with no
+  // real board behind it yet, so it alone shows an honest "launching soon"
+  // notice in place of the MLB-only Diamond Report Headlines/scoreboard/
+  // leaders modules -- see the body.dr-hub-sport-nba rule in styles.css that
+  // force-hides those sections regardless of their own lazy-loaders' display
+  // state. MLB/NFL/WNBA are all genuinely live instead.
   var SPORT_COMINGSOON_TEXT = {
-    NBA: "NBA projections and leaderboards are in the works. In the meantime, here's what's happening around the NBA:"
+    NBA: "NBA projections and leaderboards are in the works."
   };
   function setActiveSport(sport){
     if (activeSport === sport) return;
@@ -17424,8 +17415,6 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
     var comingSoonText = document.getElementById('dr-hub-sport-comingsoon-text');
     if (comingSoon) comingSoon.style.display = isOtherSport ? '' : 'none';
     if (comingSoonText) comingSoonText.textContent = isOtherSport ? (SPORT_COMINGSOON_TEXT[sport] || '') : '';
-
-    if (newsArticlesAll.length) applyNewsSportFilter();
 
     updateMobileMenuSport(sport);
   }
@@ -17450,137 +17439,6 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
   function escapeHtml(s){
     return String(s || '').replace(/[&<>"']/g, function(c){
       return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
-    });
-  }
-
-  function timeAgo(iso){
-    var t = new Date(iso).getTime();
-    if (!t || isNaN(t)) return '';
-    var minutes = Math.max(1, Math.round((Date.now() - t) / 60000));
-    if (minutes < 60) return minutes + 'm ago';
-    var hours = Math.round(minutes / 60);
-    if (hours < 24) return hours + 'h ago';
-    return Math.round(hours / 24) + 'd ago';
-  }
-
-  function renderHubNews(articles){
-    var section = document.getElementById('dr-hub-news');
-    var grid = document.getElementById('dr-hub-news-grid');
-    if (!section || !grid || !articles || !articles.length) return;
-    newsArticlesAll = articles;
-    applyNewsSportFilter();
-
-    var moreBtn = document.getElementById('dr-hub-news-more');
-    if (moreBtn && !moreBtn.dataset.drBound) {
-      moreBtn.dataset.drBound = '1';
-      moreBtn.addEventListener('click', function(){
-        newsVisibleCount = Math.min(newsVisibleCount + 10, newsArticles.length);
-        renderNewsGrid();
-      });
-    }
-  }
-
-  // Re-scopes the already-fetched, already-league-tagged news feed (see
-  // fetchLeagueNews/loadHubNews) to the currently selected sport tab -- "All
-  // Sports" shows the full merged feed, a specific sport shows just that
-  // league's real articles. No new fetch, no fabricated content: this is the
-  // same data loadHubNews always pulled, just filtered client-side.
-  function applyNewsSportFilter(){
-    var section = document.getElementById('dr-hub-news');
-    var heading = document.getElementById('dr-hub-news-heading');
-    if (!section) return;
-    newsArticles = activeSport === 'all' ? newsArticlesAll : newsArticlesAll.filter(function(a){ return a.league === activeSport; });
-    newsVisibleCount = Math.min(10, newsArticles.length);
-    if (heading) heading.textContent = activeSport === 'all' ? 'Around the Leagues' : 'Around ' + activeSport;
-    if (!newsArticles.length) { section.style.display = 'none'; return; }
-    renderNewsGrid();
-    section.style.display = '';
-  }
-
-  function renderNewsGrid(){
-    var grid = document.getElementById('dr-hub-news-grid');
-    if (!grid) return;
-    var visible = newsArticles.slice(0, newsVisibleCount);
-    grid.innerHTML = visible.map(function(a, i){
-      var img = a && a.images && a.images[0] && a.images[0].url;
-      var when = timeAgo(a && a.published);
-      return (
-        '<button type="button" class="dr-hub-news-card dr-anim-in' + (i === 0 ? ' lead' : '') + '" style="animation-delay:' + (Math.min(i, 8) * 25) + 'ms" data-news-idx="' + i + '">' +
-          (img ? '<img src="' + escapeHtml(img) + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">' : '') +
-          '<div class="dr-hub-news-body">' +
-            '<div class="dr-hub-news-headline">' + escapeHtml(a && a.headline) + '</div>' +
-            '<div class="dr-hub-news-meta">ESPN' + (a.league ? ' · ' + a.league : '') + (when ? ' · ' + when : '') + '</div>' +
-          '</div>' +
-        '</button>'
-      );
-    }).join('');
-
-    grid.querySelectorAll('.dr-hub-news-card').forEach(function(card){
-      card.addEventListener('click', function(){
-        var idx = Number(card.getAttribute('data-news-idx'));
-        openNewsModal(visible[idx]);
-      });
-    });
-
-    var moreBtn = document.getElementById('dr-hub-news-more');
-    if (moreBtn) moreBtn.style.display = newsVisibleCount < newsArticles.length ? '' : 'none';
-  }
-
-  function openNewsModal(a){
-    var modal = document.getElementById('dr-hub-news-modal');
-    if (!modal || !a) return;
-    var img = a.images && a.images[0] && a.images[0].url;
-    var href = a.links && a.links.web && a.links.web.href;
-    var when = timeAgo(a.published);
-
-    var imgEl = document.getElementById('dr-hub-news-modal-img');
-    if (img) { imgEl.src = img; imgEl.style.display = ''; imgEl.onerror = function(){ imgEl.style.display = 'none'; }; }
-    else { imgEl.style.display = 'none'; }
-
-    document.getElementById('dr-hub-news-modal-meta').textContent = 'ESPN' + (a.league ? ' · ' + a.league : '') + (when ? ' · ' + when : '');
-    document.getElementById('dr-hub-news-modal-title').textContent = a.headline || '';
-    var descEl = document.getElementById('dr-hub-news-modal-desc');
-    if (a.description) { descEl.textContent = a.description; descEl.style.display = ''; }
-    else { descEl.style.display = 'none'; }
-    var linkEl = document.getElementById('dr-hub-news-modal-link');
-    if (href) { linkEl.href = href; linkEl.style.display = ''; }
-    else { linkEl.style.display = 'none'; }
-
-    modal.classList.add('open');
-    modal.setAttribute('aria-hidden', 'false');
-  }
-
-  function closeNewsModal(){
-    var modal = document.getElementById('dr-hub-news-modal');
-    if (!modal) return;
-    modal.classList.remove('open');
-    modal.setAttribute('aria-hidden', 'true');
-  }
-
-  function fetchLeagueNews(url, league){
-    return fetch(url)
-      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function(data){
-        var articles = (data && data.articles) || [];
-        articles.forEach(function(a){ a.league = league; });
-        return articles;
-      })
-      .catch(function(){ return []; });
-  }
-
-  function loadHubNews(){
-    if (newsLoaded) return;
-    newsLoaded = true;
-    Promise.all([
-      fetchLeagueNews('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=50', 'MLB'),
-      fetchLeagueNews('https://site.api.espn.com/apis/site/v2/sports/football/nfl/news?limit=30', 'NFL'),
-      fetchLeagueNews('https://site.api.espn.com/apis/site/v2/sports/basketball/nba/news?limit=30', 'NBA'),
-      fetchLeagueNews('https://site.api.espn.com/apis/site/v2/sports/basketball/wnba/news?limit=30', 'WNBA')
-    ]).then(function(results){
-      var merged = results[0].concat(results[1]).concat(results[2]).concat(results[3]).sort(function(a, b){
-        return new Date(b.published) - new Date(a.published);
-      });
-      renderHubNews(merged);
     });
   }
 
@@ -18584,11 +18442,10 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
       card.setAttribute('data-category', h.category || '');
       card.addEventListener('click', function(){ openHeadlineModal(h); });
 
-      // Same ESPN "Around the Leagues" card shape (renderHubNews below) --
-      // a full-bleed photo on top, no gap/border under it, rather than the
-      // old small round avatar. Only rendered when there's a real player
-      // photo to show; a headline with none (weather, recap, etc.) just
-      // skips straight to the text body.
+      // Full-bleed photo on top, no gap/border under it, rather than the old
+      // small round avatar. Only rendered when there's a real player photo
+      // to show; a headline with none (weather, recap, etc.) just skips
+      // straight to the text body.
       var playerId = h.link && h.link.playerId;
       if (playerId) {
         var photo = document.createElement('img');
@@ -19402,17 +19259,6 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
     var hub = document.getElementById('dr-landing-hub');
     if (!hub) return;
 
-    var modalClose = document.getElementById('dr-hub-news-modal-close');
-    var modalOverlay = document.getElementById('dr-hub-news-modal-overlay');
-    if (modalClose && !modalClose.dataset.drHubReady) {
-      modalClose.dataset.drHubReady = '1';
-      modalClose.addEventListener('click', closeNewsModal);
-    }
-    if (modalOverlay && !modalOverlay.dataset.drHubReady) {
-      modalOverlay.dataset.drHubReady = '1';
-      modalOverlay.addEventListener('click', closeNewsModal);
-    }
-
     var hrModalClose = document.getElementById('dr-hub-hr-modal-close');
     var hrModalOverlay = document.getElementById('dr-hub-hr-modal-overlay');
     if (hrModalClose && !hrModalClose.dataset.drHubReady) {
@@ -19453,7 +19299,7 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
     }
 
     document.addEventListener('keydown', function(e){
-      if (e.key === 'Escape') { closeNewsModal(); closeHRVideoModal(); closeLeaderModal(); closeHeadlineModal(); }
+      if (e.key === 'Escape') { closeHRVideoModal(); closeLeaderModal(); closeHeadlineModal(); }
     });
 
     var baseballCard = document.getElementById('dr-hub-baseball-card');
