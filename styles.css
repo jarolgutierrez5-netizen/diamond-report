@@ -3062,6 +3062,22 @@ select:focus-visible {
 .gp-ou-badge.neg { border-color: #ff4d6d66; color: #ff4d6d; }
 .gp-ou-badge.neu { border-color: var(--border); color: var(--muted); }
 
+/* Hourly forecast strip inside the Park & Weather Details panel
+   (hourlyStripHTML, app.js) -- horizontal-scroll/thin-scrollbar convention
+   matches #kprops-content .kprops-sticky-sort elsewhere in this file, so a
+   5-slot strip never forces the whole .gp-card wider. */
+.gp-hourly-strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  padding-bottom: 4px;
+}
+.gp-hourly-strip::-webkit-scrollbar { height: 5px; }
+.gp-hourly-strip::-webkit-scrollbar-thumb { background: rgba(74,158,255,.45); border-radius: 999px; }
+
 /* Every "Loading X…" state across the site uses the same <div class="mu-empty">
    <span class="spin">…text pattern — rather than editing each of the ~14 call
    sites individually, add the same shimmer language as .dr-v9-skeleton above
