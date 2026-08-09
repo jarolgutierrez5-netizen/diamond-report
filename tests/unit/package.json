@@ -1,0 +1,9 @@
+{
+  "name": "diamond-report-unit-tests",
+  "private": true,
+  "type": "module",
+  "description": "Unit tests for the scoring/formula functions scripts/update-tracker.mjs exports -- the server-side model that actually selects and grades real HR Threats/K Props/Diamond Report picks (as opposed to tests/visual, which covers on-page rendering). Zero dependencies: uses Node's built-in node:test runner, same 'no root package.json/node_modules' reasoning as the rest of the repo (see .github/workflows/build-assets.yml and tests/visual/package.json) -- there's simply nothing to install.",
+  "scripts": {
+    "test": "node --test"
+  }
+}

@@ -3000,4 +3000,5 @@ export {
   loadModelParams, MODEL_PARAMS_PATH, DEFAULT_MODEL_PARAMS, shrinkMult, calibrateHRProb,
   loadHRLogisticModel, predictHRLogistic,
   computeIsHot,
+  computeLiveHRScore, liveOnFireScore, liveFallbackHotHitterProfile,
 };
