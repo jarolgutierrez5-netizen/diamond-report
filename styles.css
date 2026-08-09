@@ -5179,62 +5179,28 @@ select:focus-visible {
   width: auto;
 }
 
-/* Near HRs board card parity (roadmap "Motion and Interaction Design" --
-   "make the player cards for the Near HR tab the same as the HR section").
-   The card itself (.dr1027-hr-card / -head / -photo / -name / -meta / -score
-   / -chip-row) is already a generic, unscoped component shared with HR
-   Threats above -- only the card LIST's grid layout needs its own rule here,
-   scoped to #near-hrs-content the same way HR Threats scopes its grid to
-   #hr-potential-content elsewhere in this file. */
-#near-hrs-content .dr1027-hr-card-list {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  align-items: stretch;
-  width: 100%;
-  max-width: 100%;
-}
-@media (max-width: 1180px) {
-  #near-hrs-content .dr1027-hr-card-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-  }
-}
-@media (max-width: 640px) {
-  #near-hrs-content .dr1027-hr-card-list {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-}
-
-/* Near HR detail popup (opened by clicking a Near HRs card) -- reuses the
-   shared .mu-modal-overlay chrome (same as the Batter vs Pitcher modal) but
-   renders synchronously from data already in memory (window.nearHRs), no
-   fetch, so opening it never delays on data access. */
-.near-hr-detail-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-.near-hr-detail-head img {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 1px solid rgba(147,197,253,.55);
-  background: #07111f;
-  flex-shrink: 0;
-}
-.near-hr-detail-count {
-  font-size: 17px;
-  font-weight: 900;
-  color: #fff;
-}
-.near-hr-detail-sub {
-  font-size: 11.5px;
-  color: var(--muted);
-  margin-top: 2px;
+/* Near HRs board table parity ("fix the Near HR section, make it look
+   similar to the HR Threats table"). The table itself (.hrpt-shell/-scroll/
+   -table/-row/-photo/-name/-detail-row, etc.) is already a generic, unscoped
+   component shared with HR Threats' own table (see the .hrpt- rules further
+   down this file) -- only the click-to-expand detail row's display toggle is
+   scoped per-board there (#hr-potential-content .hrpt-detail-row), extended
+   to include #near-hrs-content alongside it, same pattern.
+   Each expanded row's event list reuses .near-hr-detail-list/-row/-icon/
+   -text/-meta/-link below -- originally built for a now-removed detail
+   modal, kept as-is since the row layout they describe (icon + distance/velo/
+   angle + date/matchup + a real Watch link) is exactly what an expanded Near
+   HRs table row needs too.
+   The Near HRs pane's .dr-dashboard-grid (index.html) only ever holds one
+   panel -- unlike HR Threats' own grid (.dr-hr-grid), which has a second
+   "HRs from Projection" panel filling out its own second column -- but the
+   base .dr-dashboard-grid rule elsewhere in this file still reserves a
+   second minmax(320px,.9fr) column regardless, leaving the table cramped
+   into ~60% of the available width with real columns (Video, especially)
+   cut off. Single-column override, scoped to just this one pane so HR
+   Threats' genuinely two-panel grid is untouched. */
+#gamepick-pane-nearhr .dr-dashboard-grid {
+  grid-template-columns: 1fr;
 }
 .near-hr-detail-list {
   display: flex;
@@ -6960,8 +6926,8 @@ table.hrpt-table {
    state. Override with equal specificity + !important, same targeted-fix
    pattern the existing `#hr-potential-content thead{display:none!important}`
    rule already uses for the same reason. */
-#hr-potential-content .hrpt-detail-row { display: none !important; }
-#hr-potential-content .hrpt-detail-row.hrpt-open { display: table-row !important; }
+#hr-potential-content .hrpt-detail-row, #near-hrs-content .hrpt-detail-row { display: none !important; }
+#hr-potential-content .hrpt-detail-row.hrpt-open, #near-hrs-content .hrpt-detail-row.hrpt-open { display: table-row !important; }
 @keyframes hrptDetailIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 .hrpt-detail-row.hrpt-open .hrpt-detail-inner { animation: hrptDetailIn .3s cubic-bezier(.2,.8,.2,1) both; }
 .hrpt-detail-row td { padding: 0; border-bottom: 1px solid var(--border); }
@@ -7054,7 +7020,7 @@ table.hrpt-table {
   .hrpt-player-cell { padding: 2px 0 8px; }
   .hrpt-detail-inner { grid-template-columns: 1fr; padding: 12px; }
   .hrpt-detail-row { margin: 0 8px 8px; }
-  #hr-potential-content .hrpt-detail-row.hrpt-open { display: block !important; }
+  #hr-potential-content .hrpt-detail-row.hrpt-open, #near-hrs-content .hrpt-detail-row.hrpt-open { display: block !important; }
 }
 
 /* ── Simulate Game modal ─────────────────────────────────────────────── */

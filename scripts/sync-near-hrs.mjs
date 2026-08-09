@@ -165,7 +165,10 @@ function collectPlayIdEntries(node, out, depth = 0, context = {}) {
   const nextContext = { inning, abNumber, batter };
 
   const playId = node.play_id || node.playId;
-  if (playId) out.push({ playId, inning, abNumber, batter });
+  // seq: out.length at push time -- the candidate's position in this game's
+  // own collection order, used by resolveEventVideo() below to pick the
+  // LAST-thrown pitch when an at-bat has more than one real candidate.
+  if (playId) out.push({ playId, inning, abNumber, batter, seq: out.length });
 
   for (const key of Object.keys(node)) collectPlayIdEntries(node[key], out, depth + 1, nextContext);
 }
@@ -210,24 +213,40 @@ function normalizedBatterId(raw) {
   return Number.isFinite(n) ? String(n) : null;
 }
 
-// A prior run's [diagnostic] sample candidate showed a real gf entry --
-// {playId, inning:9, abNumber:76, batter:572233} -- exactly the plain-
-// numeric shape resolveEventVideo() already expects, disproving the
-// batter-field-shape hypothesis normalizedBatterId() targeted (it's a
-// harmless generalization to keep, just not the actual fix). Still 0/N
-// matches after that fix shipped, so the mismatch is most likely in
-// inning/abNumber themselves -- e.g. Statcast Search CSV's at_bat_number
-// using a different scope/counting convention than the gf feed's
-// abNumber. Logged once, comparing one real zero-match event's own
-// inning/abNumber against the full shape of its game's candidate pool,
-// to see the actual discrepancy directly instead of guessing again.
+// A 2026-08-08 production run (this sandbox can't reach Savant, but GitHub
+// Actions can, so its own log output is the live verification this file's
+// header caveat asks for) logged a real zero-match example: event wants
+// abNumber=74 (7 raw matches), and the same short abNumber sequence
+// (73x6, 74x2, 75x5) recurred near-identically 2-3 times across that one
+// game's candidate pool. Two things were being conflated by the old "must be
+// exactly 1 raw candidate" check:
+//   1. The same real play embedded at more than one path in the gf JSON
+//      tree (collectPlayIdEntries walks the whole tree, so a play echoed in
+//      e.g. both a per-team log and a scoreboard section gets counted
+//      twice) -- these duplicates always carry an IDENTICAL playId, so
+//      deduping by playId collapses them back down. That's correcting a
+//      counting bug, not guessing between real alternatives.
+//   2. A real at-bat can have several pitches (fouls, takes) before the one
+//      that ends it -- every pitch in that at-bat shares the same
+//      inning+abNumber (confirmed by this same file's own
+//      computeLast10BattedBalls(): Statcast Search returns one CSV row per
+//      pitch, sharing one at_bat_number, and only the very last row of each
+//      at-bat carries a non-empty `events`). Once deduped, if more than one
+//      distinct pitch remains for an abNumber, the one we want is always the
+//      LAST one thrown -- an at-bat definitionally ends on its final pitch
+//      (walk, strikeout, HBP, or contact), and every event resolved here IS
+//      a contact outcome. `seq` (collection order, see collectPlayIdEntries)
+//      stands in for chronological order, so the highest-seq survivor is a
+//      deterministic pick given what an at-bat actually is, not a
+//      probabilistic guess among otherwise-equal candidates.
 let sampleMismatchLogged = false;
 
-// Resolves a videoUrl for one near-HR event in place, only when the
-// inning+at-bat combination matches exactly one candidate from the game's
-// feed (batter id, when it's usable, narrows further but never disqualifies
-// a match on its own -- see normalizedBatterId()). Silent no-op (event keeps
-// videoUrl:null) on anything less than a certain match.
+// Resolves a videoUrl for one near-HR event in place: filters the game's gf
+// candidates down to this exact inning+at-bat(+batter, when usable -- see
+// normalizedBatterId()), dedupes by playId, then picks the last-thrown pitch
+// among whatever distinct plays remain (see the block comment above for why
+// both steps are safe, not guesses). Silent no-op (event keeps videoUrl:null)
+// only when literally nothing in the game's feed matches this at-bat at all.
 async function resolveEventVideo(event) {
   if (event._gamePk == null || event._inning == null || event._abNumber == null || event._batterId == null) return;
   const candidates = await fetchGameVideoCandidates(event._gamePk);
@@ -237,8 +256,19 @@ async function resolveEventVideo(event) {
     const cBatter = normalizedBatterId(c.batter);
     return cBatter == null || cBatter === String(event._batterId);
   });
-  if (matches.length === 1) {
-    event.videoUrl = savantVideoURL(matches[0].playId);
+  // Dedup keeps each playId's FIRST occurrence (lowest seq), not JS Map's
+  // default last-write-wins -- a duplicate tree path can re-echo an earlier
+  // play later in traversal order, and keeping that later echo's seq would
+  // wrongly make an earlier real pitch look like it came after a later one.
+  const firstSeenByPlayId = new Map();
+  for (const c of matches) {
+    const prev = firstSeenByPlayId.get(c.playId);
+    if (prev == null || c.seq < prev.seq) firstSeenByPlayId.set(c.playId, c);
+  }
+  const uniqueByPlayId = Array.from(firstSeenByPlayId.values());
+  if (uniqueByPlayId.length >= 1) {
+    const chosen = uniqueByPlayId.reduce((a, b) => (b.seq > a.seq ? b : a));
+    event.videoUrl = savantVideoURL(chosen.playId);
   } else if (!sampleMismatchLogged && candidates.length) {
     sampleMismatchLogged = true;
     const sameInning = candidates.filter(c => String(c.inning) === String(event._inning));
