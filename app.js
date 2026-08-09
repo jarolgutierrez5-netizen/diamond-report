@@ -8894,11 +8894,15 @@ function drInitFilterScrollHints() {
 window.drInitFilterScrollHints = drInitFilterScrollHints;
 
 // Renders the Near HRs board (Home Runs pane, third panel) as a dense table
-// -- same visual language and expand-on-click interaction as the HR Threats
-// table (roadmap request: "make it look similar to the HR Threats table"),
-// reusing that table's own shared, unscoped CSS classes (.hrpt-shell/-scroll/
-// -table/-row/-photo/-name/-detail-row, etc. -- see styles.css) and
-// window.hrpToggleRowExpand()'s click-to-expand behavior. Note this file is a
+// on desktop/tablet -- same visual language and expand-on-click interaction
+// as the HR Threats table (roadmap request: "make it look similar to the HR
+// Threats table"), reusing that table's own shared, unscoped CSS classes
+// (.hrpt-shell/-scroll/-table/-row/-photo/-name/-detail-row, etc. -- see
+// styles.css) and window.hrpToggleRowExpand()'s click-to-expand behavior --
+// and as a card list on mobile (<=768px, same breakpoint/rationale as HR
+// Threats' own table<->card switch: a dense table's mobile label:value
+// collapse reads worse on a phone than the original card layout, direct
+// user feedback on HR Threats prompted the same fallback there). Note this file is a
 // concatenation of many originally-separate <script> tags (see the "from
 // <script id=...>" markers throughout) and several, including the one HR
 // Threats' own table helpers (hrptHeatBG/hrptHeatBGInverted/hrpTableRowHTML)
@@ -8976,6 +8980,60 @@ function nearHRTableRowHTML(p, idx) {
   const detail = `<tr class="hrpt-detail-row" id="${detailId}"><td colspan="${NEARHRT_COLS.length}"><div class="hrpt-detail-inner" style="grid-template-columns:1fr"><div class="hrpt-why-box" style="grid-column:1/-1"><div class="hrpt-box-label">🚀 All Near-HR Events · Last 10 Games</div><div class="near-hr-detail-list dr-anim-in">${eventRows || '<div class="mu-empty">No near-HR events found.</div>'}</div></div></div></td></tr>`;
   return row + detail;
 }
+// Card rendering for mobile (<=768px) -- reuses the exact .dr1027-hr-card
+// component HR Threats' own card fallback already uses (photo/name/meta
+// header, score box, chip row, meter, all free via the shared, unscoped
+// class names in styles.css), plus a native <details> disclosure for the
+// full event list so every Watch link is directly reachable without the
+// table's click-to-expand-row interaction, which has no card equivalent.
+function nearHRCardHTML(p, idx) {
+  const hs = id => id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/${id}/headshot/67/current` : '';
+  const byDate = p.events.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const longest = p.events[0];
+  const mostRecent = byDate[0];
+  const hasVideo = byDate.some(e => e.videoUrl);
+  const pct = Math.max(8, Math.min(100, Math.round(((longest?.distance || 0) / NEAR_HR_FENCE_REF_FT) * 100)));
+  const chips = [
+    `<span class="dr1027-chip"><b>Longest</b> ${Math.round(longest?.distance || 0)} ft</span>`,
+    `<span class="dr1027-chip"><b>Most Recent</b> ${drEscAttr(mostRecent?.date || '–')}</span>`,
+  ];
+  if (longest?.exitVelo != null) chips.push(`<span class="dr1027-chip"><b>Exit Velo</b> ${longest.exitVelo.toFixed(1)} mph</span>`);
+  if (mostRecent?.matchup) chips.push(`<span class="dr1027-chip"><b>vs</b> ${drEscAttr(mostRecent.matchup)}</span>`);
+  if (hasVideo) chips.push(`<span class="dr1027-chip dr1019-label-chip"><b>▶ Video</b> Available</span>`);
+  const eventRows = byDate.map(ev => `
+    <div class="near-hr-detail-row">
+      <span class="near-hr-detail-icon">🚀</span>
+      <div class="near-hr-detail-text">
+        <div><strong>${Math.round(ev.distance || 0)} ft</strong>${ev.exitVelo != null ? ` · ${ev.exitVelo.toFixed(1)} mph` : ''}${ev.launchAngle != null ? ` · ${Math.round(ev.launchAngle)}° launch` : ''}</div>
+        <div class="near-hr-detail-meta">${ev.date || ''}${ev.matchup ? ` · ${ev.matchup}` : ''}</div>
+      </div>
+      ${ev.videoUrl ? `<a href="${ev.videoUrl}" target="_blank" rel="noopener" class="near-hr-detail-link">Watch ▸</a>` : ''}
+    </div>`).join('');
+  return `<div class="dr1027-hr-card dr-anim-in" style="animation-delay:${Math.min(idx, 8) * 25}ms">`
+    + `<div class="dr1027-hr-head">`
+    + `<img class="dr1027-hr-photo" loading="lazy" decoding="async" src="${hs(p.id)}" onerror="this.style.visibility='hidden'" alt="">`
+    + `<div><div class="dr1027-hr-name">${drEscAttr(p.name)}</div><div class="dr1027-hr-meta">${drEscAttr(p.teamAbbr || '–')} · Warning-Track Power</div></div>`
+    + `<div class="dr1027-hr-score"><strong>${p.events.length}</strong><span>Near HR${p.events.length !== 1 ? 's' : ''}</span><em>Last 10 Games</em></div>`
+    + `</div>`
+    + `<div class="dr1027-chip-row">${chips.join('')}</div>`
+    + `<div class="dr1027-meter" title="Longest near-miss vs. a typical ${NEAR_HR_FENCE_REF_FT}ft fence (estimate)"><div class="dr1027-meter-label"><span>How Close</span><span>${pct}%</span></div><div class="dr1027-meter-track"><div class="dr1027-meter-fill" data-fill="${pct}%"></div></div></div>`
+    + `<details class="dr-hrp-breakdown"><summary>All ${p.events.length} event${p.events.length !== 1 ? 's' : ''} & video links</summary><div class="near-hr-detail-list dr-anim-in">${eventRows}</div></details>`
+    + `</div>`;
+}
+// Re-renders on crossing the 768px breakpoint (not on every resize pixel),
+// and only while the Near HRs pane is actually the one on screen -- same
+// pattern as HR Threats' own table<->card resize listener.
+let _nearHRLastViewMode = null;
+(function(){
+  let t = null;
+  window.addEventListener('resize', function(){
+    clearTimeout(t);
+    t = setTimeout(function(){
+      const mode = (window.innerWidth <= 768) ? 'cards' : 'table';
+      if (mode !== _nearHRLastViewMode && document.getElementById('near-hrs-content')) renderNearHRs();
+    }, 200);
+  });
+})();
 function renderNearHRs() {
   const el = document.getElementById('near-hrs-content');
   if (!el) return;
@@ -9014,8 +9072,16 @@ function renderNearHRs() {
     countEl.style.cssText = 'background:var(--accent);color:white;font-family:Manrope,sans-serif;font-size:12px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;letter-spacing:.5px;flex-shrink:0';
   }
 
-  const tableBody = players.map((p, i) => nearHRTableRowHTML(p, i)).join('');
-  el.innerHTML = `<div class="hrpt-shell"><div class="hrpt-scroll"><table class="hrpt-table nearhrt-table"><thead><tr>${nearHRTableHeaderHTML()}</tr></thead><tbody>${tableBody}</tbody></table></div></div>`;
+  const viewMode = (window.innerWidth <= 768) ? 'cards' : 'table';
+  _nearHRLastViewMode = viewMode;
+  if (viewMode === 'table') {
+    const tableBody = players.map((p, i) => nearHRTableRowHTML(p, i)).join('');
+    el.innerHTML = `<div class="hrpt-shell"><div class="hrpt-scroll"><table class="hrpt-table nearhrt-table"><thead><tr>${nearHRTableHeaderHTML()}</tr></thead><tbody>${tableBody}</tbody></table></div></div>`;
+  } else {
+    const cards = players.map((p, i) => nearHRCardHTML(p, i)).join('');
+    el.innerHTML = `<div class="dr1027-hr-card-list">${cards}</div>`;
+    drFillMeters(el);
+  }
 }
 window.renderNearHRs = renderNearHRs;
 
