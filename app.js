@@ -17398,8 +17398,10 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
   // the MLB-only Diamond Report Headlines/scoreboard/leaders modules -- see
   // the body.dr-hub-sport-nfl/nba rules in styles.css that force those
   // sections hidden regardless of their own lazy-loaders' display state.
+  // NBA is the only sport left with no real board behind it -- NFL joined
+  // MLB/WNBA as a genuinely live section once its Anytime TD board was
+  // hub-linked, so it's no longer in isOtherSport/this text below.
   var SPORT_COMINGSOON_TEXT = {
-    NFL: "NFL projections and leaderboards are launching for the 2026 season. In the meantime, here's what's happening around the NFL:",
     NBA: "NBA projections and leaderboards are in the works. In the meantime, here's what's happening around the NBA:"
   };
   function setActiveSport(sport){
@@ -17417,7 +17419,7 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
       card.classList.toggle('current', card.getAttribute('data-sport') === sport);
     });
 
-    var isOtherSport = sport === 'NFL' || sport === 'NBA';
+    var isOtherSport = sport === 'NBA';
     var comingSoon = document.getElementById('dr-hub-sport-comingsoon');
     var comingSoonText = document.getElementById('dr-hub-sport-comingsoon-text');
     if (comingSoon) comingSoon.style.display = isOtherSport ? '' : 'none';
@@ -17432,11 +17434,10 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
   // shortcuts (.dr-menu-item[data-tab]) -- previously a single fixed MLB-only
   // list regardless of which sport was active. Each item now also carries a
   // data-sport (see index.html), and this keeps the drawer showing only the
-  // active sport's boards -- 'all'/'MLB'/'NFL'/'NBA' still show the MLB list
-  // (the only board any of those actually has today; NFL's own board isn't
-  // hub-linked yet), 'WNBA' shows the WNBA list.
+  // active sport's boards. NBA (the only sport with no real board yet) falls
+  // back to the MLB list, same as 'all' does.
   function updateMobileMenuSport(sport){
-    var showSport = sport === 'WNBA' ? 'WNBA' : 'MLB';
+    var showSport = (sport === 'NFL' || sport === 'WNBA') ? sport : 'MLB';
     document.querySelectorAll('.dr-menu-item[data-sport]').forEach(function(item){
       // .dr-menu-item itself carries "display:flex !important" in styles.css --
       // toggling item.style.display here would silently lose to that rule, so
@@ -19474,21 +19475,30 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
       tab.addEventListener('click', function(){ setActiveSport(tab.getAttribute('data-sport')); });
     });
 
+    // Real and live -- mirrors the baseball card's real navigation into its
+    // board instead of staying on the hub.
     var nflCard = document.getElementById('dr-hub-nfl-card');
     if (nflCard && !nflCard.dataset.drHubReady) {
       nflCard.dataset.drHubReady = '1';
-      nflCard.addEventListener('click', function(){ setActiveSport('NFL'); });
+      nflCard.addEventListener('click', function(){
+        setActiveSport('NFL');
+        hideHub();
+        if (!hashIsGamepick()) {
+          try { window.location.hash = 'gamepick=nfltd'; } catch(e) {}
+        }
+        if (typeof window.showGamePickPane === 'function') window.showGamePickPane('nfltd');
+      });
     }
+    // NBA still has no real board behind it -- stays on the hub and only
+    // filters news, unlike the MLB/NFL/WNBA cards.
     var nbaCard = document.getElementById('dr-hub-nba-card');
     if (nbaCard && !nbaCard.dataset.drHubReady) {
       nbaCard.dataset.drHubReady = '1';
       nbaCard.addEventListener('click', function(){ setActiveSport('NBA'); });
     }
 
-    // Unlike the NFL/NBA cards above (which stay on the hub and only filter
-    // news, since neither has a board actually reachable from here yet), the
-    // WNBA card is real and live -- mirrors the baseball card's real
-    // navigation into its board instead of the "soon" dead end.
+    // Real and live -- mirrors the baseball card's real navigation into its
+    // board instead of the "soon" dead end.
     var wnbaCard = document.getElementById('dr-hub-wnba-card');
     if (wnbaCard && !wnbaCard.dataset.drHubReady) {
       wnbaCard.dataset.drHubReady = '1';

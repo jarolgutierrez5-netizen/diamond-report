@@ -3,32 +3,52 @@
 // Real season touchdown rate per skill-position player -- the base input the
 // Anytime TD props board scores from. Reads data/nfl-rosters.json (written by
 // sync-nfl-rosters.mjs) for the player universe, then pulls each player's own
-// game log from ESPN's public site API and sums real touchdowns (passing for
-// QBs, rushing+receiving for RB/WR/TE/FB) across games actually played this
-// season, most-recent-season-with-real-games-first (regular season 2026 once
-// it exists, falling back to 2025's real final numbers during preseason/
-// before Week 1 has been played, rather than fabricating a rate from zero
-// current-season games).
+// real game log from ESPN and sums real rushing+receiving touchdowns (never
+// passing -- a QB throwing a TD isn't "scoring" it himself) across games
+// actually played.
 //
-// Per-player gamelog endpoint shape (site.api.espn.com/.../athletes/{id}/
-// gamelog) is the same shape public ESPN API wrappers document -- a
-// `seasonTypes[].categories[]` list (one entry per stat group: passing/
-// rushing/receiving/etc.), each with its own `labels` (stat column names)
-// and per-category `events{}` map of real per-game stat rows, PLUS an
-// aggregate `totals` array in the same column order as `labels`. This
-// script looks up whichever category's labels contain a "TD" column and
-// reads that category's `totals` entry directly (season total, no need to
-// sum every game) plus that category's real games-played count (the
-// `events` map's own key count) for the rate denominator.
+// REWRITTEN against a real, live-verified response (the original version of
+// this script was written blind in a sandbox with no route to ESPN, per its
+// own now-removed caveat, and its assumed shape turned out wrong in two real
+// ways once actually checked against a live response):
 //
-// Same unverified-in-this-sandbox caveat as every other script in this new
-// NFL groundwork: this sandbox has no route to site.api.espn.com to confirm
-// the shape above against a live response. Loud schema check + per-player
-// try/catch (same defensive pattern as the MLB Statcast scripts) so one
-// player's unexpected shape can't take down the whole run -- but treat the
-// very first scheduled run as unverified until its own log output (and the
-// resulting data/nfl-player-stats.json) is manually checked against a real,
-// known player's real season TD total.
+// 1. Endpoint host: the plain site.api.espn.com/apis/site/v2/sports/football/
+//    nfl/athletes/{id}/gamelog host this script originally used returns a
+//    bare `{"code":404}` for every real player tested (including Patrick
+//    Mahomes' real ESPN id) -- same class of gap already found and fixed for
+//    WNBA's player-stats sync. The web API host below --
+//    site.web.api.espn.com/apis/common/v3/sports/football/nfl/athletes/{id}/
+//    gamelog -- is the one that actually works, confirmed live with real
+//    2025-season passing/rushing/receiving lines. It also has no `?season=`
+//    parameter needed -- omitting it returns whichever season the endpoint
+//    itself considers current/most-recently-real (confirmed: for a player
+//    with no 2026 games logged yet during preseason, it correctly defaulted
+//    to 2025's real completed season data, with no season-fallback loop
+//    needed on this end).
+//
+// 2. Response shape: NOT the assumed `seasonTypes[].categories[].labels`
+//    (one labels[] per category). The real shape has ONE flat top-level
+//    `labels` array covering every stat group concatenated together (e.g. a
+//    QB: passing columns then rushing columns appended after), so "TD"
+//    appears MORE THAN ONCE in `labels` with no reliable fixed index -- a
+//    QB's rushing TD is at a different index than a WR's or a TE's (a TE's
+//    rushing block even orders TD differently than an RB's: TE is
+//    ...AVG,LNG,TD while RB is ...AVG,TD,LNG). The real, reliable way to
+//    find each category's real column range is the response's own top-level
+//    `categories` array -- `[{name:'passing',count:11},{name:'rushing',
+//    count:5}]` -- which gives each category's real column count in the
+//    same left-to-right order as `labels`, confirmed live across a QB
+//    (passing+rushing), an RB (rushing+receiving+fumbles), and a TE
+//    (receiving+rushing+fumbles, note the reversed order vs. the RB).
+//
+// Real per-game rows live at `seasonTypes[].categories[].events[]`, each
+// `{eventId, stats:[...]}` with `stats` in the same order as the top-level
+// `labels`. This script sums across every category under a non-Preseason
+// `seasonType` (explicitly skips any whose displayName contains
+// "Preseason", same defensive skip as sync-wnba-player-stats.mjs -- a real
+// concern once the current NFL season's own preseason games start showing
+// up here, which would otherwise mix a handful of backup-heavy exhibition
+// snaps into what's meant to be a real regular-season rate).
 // ─────────────────────────────────────────────────────────────────────────
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
@@ -40,32 +60,16 @@ const DATA_DIR = path.join(__dirname, '..', 'data');
 const ROSTERS_PATH = path.join(DATA_DIR, 'nfl-rosters.json');
 const PLAYER_STATS_PATH = path.join(DATA_DIR, 'nfl-player-stats.json');
 
-// Tried newest-season-first -- whichever season actually has real games
-// played (a non-zero games count) wins. During preseason/before Week 1,
-// the current season legitimately has zero real games yet, so this falls
-// back to last season's real final numbers rather than reporting a
-// fabricated zero rate for every player in the league.
-const SEASONS_TRIED = [new Date().getFullYear(), new Date().getFullYear() - 1];
-
-const TD_LABEL_RE = /TD/i;
-// Which stat categories count toward "Anytime TD" for each position -- a
-// rushing or receiving score counts for anyone, a passing TD only counts
-// for the player who threw it (not an "Anytime TD" scoring event himself).
-const TD_CATEGORIES_BY_POSITION = {
-  QB: ['rushing'],
-  RB: ['rushing', 'receiving'],
-  WR: ['rushing', 'receiving'],
-  TE: ['rushing', 'receiving'],
-  FB: ['rushing', 'receiving'],
-};
+// "Anytime TD" only ever counts a player's own rushing or receiving scores --
+// never passing. Derived from the response's own real `categories[]` rather
+// than a hardcoded position map, so it adapts to whatever categories ESPN's
+// data actually reports for that specific player instead of guessing.
+const TD_CATEGORY_NAMES = new Set(['rushing', 'receiving']);
 
 const FETCH_TIMEOUT_MS = 15000;
-// A 404 is a stable, immediate answer ("this season's gamelog doesn't exist"
-// -- real and expected for the current season during preseason/before Week 1
-// has been played), not a transient failure -- retrying it 3x with backoff
-// just burns ~3s per player for no benefit. Only real transient failures
-// (timeouts, 5xx, network errors) get the retry loop. e.status carries the
-// HTTP status through so callers can distinguish "not found" from "broken".
+// A 404 is a stable, immediate answer (this player has no gamelog on record)
+// not a transient failure, so it isn't worth the retry loop -- same
+// distinction sync-wnba-player-stats.mjs makes via e.status.
 async function fetchJSON(url, attempts = 3) {
   let lastErr;
   for (let i = 0; i < attempts; i++) {
@@ -90,35 +94,79 @@ async function fetchJSON(url, attempts = 3) {
   throw lastErr;
 }
 
-function gamelogURL(playerId, season) {
-  return `https://site.api.espn.com/apis/site/v2/sports/football/nfl/athletes/${playerId}/gamelog?season=${season}`;
+function gamelogURL(playerId) {
+  return `https://site.web.api.espn.com/apis/common/v3/sports/football/nfl/athletes/${playerId}/gamelog`;
 }
 
-// Sums real TDs + real games-played across every category relevant to this
-// player's position (see TD_CATEGORIES_BY_POSITION), for one season's
-// gamelog response. Returns null (not zero) if the response has no usable
-// categories at all -- distinct from a real, confirmed 0 TDs on a real
-// nonzero games count.
-function extractSeasonTDRate(raw, position) {
-  const wantedCategoryNames = TD_CATEGORIES_BY_POSITION[position] || [];
-  const seasonTypes = raw?.seasonTypes;
+// Real absolute "TD" column indices within the flat `labels` array, one per
+// rushing/receiving category this player's real data actually has (a QB
+// with only passing+rushing gets one; an RB/TE with rushing+receiving gets
+// two; a pure receiver gets one). Empty for a player with neither category
+// (e.g. a QB whose only scoring category is passing, which never counts).
+function tdColumnIndexes(labels, categories) {
+  let offset = 0;
+  const idxs = [];
+  for (const cat of categories) {
+    const count = Number(cat?.count) || 0;
+    if (TD_CATEGORY_NAMES.has(String(cat?.name))) {
+      const local = labels.slice(offset, offset + count).indexOf('TD');
+      if (local !== -1) idxs.push(offset + local);
+    }
+    offset += count;
+  }
+  return idxs;
+}
+
+// Pulls every real per-game TD total (summed across whichever real
+// rushing/receiving columns this player's data has) from the current
+// season's real regular-season rows (Preseason seasonTypes explicitly
+// skipped), plus the real season number the response itself reports.
+// Returns null (not an empty/zero result) if the response has no usable
+// rows at all -- distinct from a real, confirmed scoreless game, and
+// distinct from a QB with no rushing/receiving category (also legitimately
+// excluded, not an error).
+function extractSeasonTDRows(raw) {
+  const labels = raw?.labels;
+  const categories = raw?.categories;
+  // A response with only a `filters` key and no `labels`/`seasonTypes` at
+  // all is real and expected for a player with no logged games on record --
+  // distinct from an actual shape surprise, which only throws when
+  // seasonTypes exists but labels/categories doesn't (a real anomaly worth
+  // a loud failure, not a silent skip).
+  if (!Array.isArray(labels) || !Array.isArray(categories)) {
+    if (!Array.isArray(raw?.seasonTypes)) return null;
+    throw new Error('unexpected gamelog shape (seasonTypes present but no labels[]/categories[])');
+  }
+  const tdIdxs = tdColumnIndexes(labels, categories);
+  if (!tdIdxs.length) return null; // e.g. a QB with only a passing category
+
+  const seasonValue = raw?.filters?.find(f => f?.name === 'season')?.value;
+  const season = Number(seasonValue) || null;
+
+  const seasonTypes = raw.seasonTypes;
   if (!Array.isArray(seasonTypes)) throw new Error('unexpected gamelog shape (no seasonTypes[])');
-  let td = 0, games = 0, foundAnyCategory = false;
+
+  const games = [];
   for (const st of seasonTypes) {
+    const name = String(st?.displayName || '');
+    if (/preseason/i.test(name)) continue;
     for (const cat of st?.categories || []) {
-      const catName = String(cat?.name || cat?.displayName || '').toLowerCase();
-      if (!wantedCategoryNames.some(w => catName.includes(w))) continue;
-      const labels = cat?.labels || cat?.displayLabels || [];
-      const tdIdx = labels.findIndex(l => TD_LABEL_RE.test(String(l)));
-      if (tdIdx === -1 || !Array.isArray(cat.totals)) continue;
-      const catTD = Number(cat.totals[tdIdx]);
-      const catGames = cat?.events && typeof cat.events === 'object' ? Object.keys(cat.events).length : 0;
-      if (Number.isFinite(catTD)) { td += catTD; foundAnyCategory = true; }
-      games = Math.max(games, catGames);
+      for (const ev of cat?.events || []) {
+        const stats = ev?.stats;
+        if (!Array.isArray(stats)) continue;
+        const td = tdIdxs.reduce((sum, i) => sum + (Number(stats[i]) || 0), 0);
+        games.push(td);
+      }
     }
   }
-  if (!foundAnyCategory) return null;
-  return { td, games };
+  if (!games.length) return null;
+  return { games, season };
+}
+
+function summarize(rows) {
+  const games = rows.games.length;
+  const td = rows.games.reduce((a, b) => a + b, 0);
+  return { season: rows.season, td, games, tdPerGame: +(td / games).toFixed(3) };
 }
 
 async function main() {
@@ -137,45 +185,29 @@ async function main() {
 
   const out = {};
   let updated = 0, failed = 0, noData = 0;
-  let seasonUsedCounts = {};
+  const seasonUsedCounts = {};
   for (const p of players) {
-    let result = null, seasonUsed = null, lastError = null;
-    // Each season in SEASONS_TRIED gets its OWN try/catch -- a 404 (or any
-    // other failure) on the current season must fall through to the next
-    // season instead of aborting the whole player. A season=2026 404 during
-    // preseason is real and expected (that season's gamelog doesn't exist
-    // yet), not a reason to give up before ever trying 2025's real numbers.
-    for (const season of SEASONS_TRIED) {
-      try {
-        const raw = await fetchJSON(gamelogURL(p.id, season));
-        const r = extractSeasonTDRate(raw, p.position);
-        if (r && r.games > 0) { result = r; seasonUsed = season; break; }
-      } catch (e) {
-        lastError = e;
-        // Only log genuine failures -- a 404 here just means "this season
-        // doesn't exist yet," which is the normal case for every player
-        // until the current season's Week 1 has been played, not an error
-        // worth a log line per player.
-        if (e.status !== 404) console.error(`Player-stats fetch failed for ${p.name} (${p.id}), season ${season}:`, e.message);
+    try {
+      const raw = await fetchJSON(gamelogURL(p.id));
+      const rows = extractSeasonTDRows(raw);
+      if (rows) {
+        const s = summarize(rows);
+        out[p.id] = { name: p.name, position: p.position, teamAbbr: p.teamAbbr, ...s };
+        seasonUsedCounts[s.season] = (seasonUsedCounts[s.season] || 0) + 1;
+        updated++;
+      } else {
+        noData++;
+      }
+    } catch (e) {
+      if (e.status === 404) {
+        noData++;
+      } else {
+        failed++;
+        console.error(`Player-stats fetch failed for ${p.name} (${p.id}):`, e.message);
       }
     }
-    if (result) {
-      out[p.id] = {
-        name: p.name, position: p.position, teamAbbr: p.teamAbbr,
-        season: seasonUsed, td: result.td, games: result.games,
-        tdPerGame: +(result.td / result.games).toFixed(3),
-      };
-      seasonUsedCounts[seasonUsed] = (seasonUsedCounts[seasonUsed] || 0) + 1;
-      updated++;
-    } else if (lastError && lastError.status !== 404) {
-      failed++;
-    } else {
-      noData++;
-    }
     // Same polite bounded-scope delay every other sync script in this repo
-    // uses against a free, unauthenticated public endpoint -- this loop is a
-    // similar order of magnitude to the MLB batter Statcast sync's ~250-400
-    // player scope.
+    // uses against a free, unauthenticated public endpoint.
     await new Promise(r => setTimeout(r, 350));
   }
 
@@ -191,4 +223,4 @@ if (isMain) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { extractSeasonTDRate, gamelogURL, TD_CATEGORIES_BY_POSITION, main };
+export { extractSeasonTDRows, tdColumnIndexes, summarize, gamelogURL, TD_CATEGORY_NAMES, main };
