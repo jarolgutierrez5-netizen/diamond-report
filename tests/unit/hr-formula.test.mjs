@@ -71,29 +71,26 @@ describe('scoreForMarket(hr) -- real pick-selection formula', () => {
     assert.ok(inward < neutral, `wind in(${inward}) should be below neutral(${neutral})`);
   });
 
-  // FLAGGED GAP, not a designed simplification -- discovered while writing this
-  // suite, confirmed by direct comparison: scoreForMarket('hr')'s legacy
-  // hrPerPA (the path used whenever the fitted logistic model hasn't loaded,
-  // which is every environment without data/hr-logistic-model.json) has no
-  // parkAdj term at all -- row.parkFactor only ever reaches this function
-  // inside logisticFeatures, i.e. it's invisible to the fallback formula that
-  // actually selects/grades real picks whenever the logistic model is
-  // unavailable. computeLiveHRScore (the client-display mirror, tested below)
-  // DOES apply parkAdj, so the two formulas disagree on this specific input.
-  // update-tracker.mjs's own "Known simplifications" header comment lists a
-  // few deliberate gaps vs. the live client model (no weather factor for the
-  // DR Pick, etc.) but does not mention this one -- this looks like an
-  // unintentional drift, not a documented choice. Left unfixed here on
-  // purpose: changing what actually grades real picks needs the same
-  // backtest/recalibration care as any other scoreForMarket change (see the
-  // bullpen-HR-rate blend's own explicit scope boundary), not a silent fix
-  // bundled into a test-harness PR. This test documents the CURRENT behavior
-  // so it can't regress further unnoticed, and so it fails loudly (forcing an
-  // intentional update) the moment someone does fix it.
-  test('KNOWN GAP: parkFactor currently has zero effect on the legacy (non-logistic-model) score', () => {
-    const cold = scoreForMarket('hr', baseRow({ parkFactor: 70 }));
-    const hot = scoreForMarket('hr', baseRow({ parkFactor: 200 }));
-    assert.equal(hot, cold, 'if this fails, scoreForMarket now responds to parkFactor -- update/remove this test, it was documenting a real gap, not desired behavior');
+  test('a hitter-friendly park raises the score; a pitcher-friendly park lowers it', () => {
+    // Was a real gap until this test's own PR: scoreForMarket('hr')'s legacy
+    // hrPerPA (the path used whenever the fitted logistic model hasn't
+    // loaded) had no parkAdj term at all -- row.parkFactor only ever reached
+    // this function inside logisticFeatures, invisible to the fallback
+    // formula that actually selects/grades real picks whenever the logistic
+    // model is unavailable, even though computeLiveHRScore's own client
+    // mirror (tested below) already applied it correctly. Fixed alongside
+    // this test -- see parkAdj in scoreForMarket's hr branch.
+    const neutral = scoreForMarket('hr', baseRow({ parkFactor: 100 }));
+    const hitterFriendly = scoreForMarket('hr', baseRow({ parkFactor: 130 }));
+    const pitcherFriendly = scoreForMarket('hr', baseRow({ parkFactor: 70 }));
+    assert.ok(hitterFriendly > neutral, `hitter-friendly(${hitterFriendly}) should exceed neutral(${neutral})`);
+    assert.ok(pitcherFriendly < neutral, `pitcher-friendly(${pitcherFriendly}) should be below neutral(${neutral})`);
+  });
+
+  test('a missing parkFactor defaults to neutral rather than throwing', () => {
+    const withDefault = scoreForMarket('hr', baseRow({ parkFactor: undefined }));
+    const explicit100 = scoreForMarket('hr', baseRow({ parkFactor: 100 }));
+    assert.equal(withDefault, explicit100);
   });
 
   test('a quick-hook starter (low startBFShare) pulls the score toward the bullpen matchup', () => {
