@@ -101,12 +101,33 @@ function batterSearchURL(batterId) {
   return `${SEARCH_BASE}?${params.toString()}`;
 }
 
-// Video link for a specific Statcast play — the same play_id -> sporty-videos
-// URL scheme Baseball Savant's own site uses to embed a single play's clip.
-// Unverified live in this sandbox like everything else above; a row without
-// a play_id just gets no link rather than a broken one.
-function savantVideoURL(playId) {
-  return playId ? `https://baseballsavant.mlb.com/sporty-videos?playId=${playId}` : null;
+// Resolves a specific Statcast play_id to a DIRECT, playable video URL --
+// not Baseball Savant's own sporty-videos HTML page, so the site can play
+// the clip in its own video-modal UI (window.openHRVideoModal, already used
+// elsewhere for other HR clips) instead of sending a user off-site.
+//
+// The sporty-videos page (https://baseballsavant.mlb.com/sporty-videos?playId=…)
+// itself embeds the real clip as a plain <video><source src="….mp4"></video>
+// tag -- confirmed live via a direct curl fetch of a real playId
+// (2026-08-09): the page has no X-Frame-Options/CSP framing restriction
+// either, but extracting the direct .mp4 is strictly better than an iframe
+// (native <video> playback, no Savant page chrome/nav visible, one real
+// asset instead of a whole embedded page). The .mp4 URL itself is per-video
+// and not derivable from playId alone (an opaque encoded token, not a
+// pattern), so this fetches the HTML page and regexes out that one <source
+// src> value -- the whole page's markup isn't otherwise used. Returns null
+// (never a broken/guessed URL) if the page fetch fails or the page's markup
+// doesn't contain the expected <source> tag.
+async function savantVideoURL(playId) {
+  if (!playId) return null;
+  try {
+    const html = await fetchText(`https://baseballsavant.mlb.com/sporty-videos?playId=${playId}`, 2);
+    const match = html.match(/<source\s+src="([^"]+\.mp4)"/i);
+    return match ? match[1] : null;
+  } catch (e) {
+    console.warn(`sporty-videos fetch failed for playId=${playId}:`, e.message);
+    return null;
+  }
 }
 
 // ── Video lookup ────────────────────────────────────────────────────────
@@ -268,7 +289,7 @@ async function resolveEventVideo(event) {
   const uniqueByPlayId = Array.from(firstSeenByPlayId.values());
   if (uniqueByPlayId.length >= 1) {
     const chosen = uniqueByPlayId.reduce((a, b) => (b.seq > a.seq ? b : a));
-    event.videoUrl = savantVideoURL(chosen.playId);
+    event.videoUrl = await savantVideoURL(chosen.playId);
   } else if (!sampleMismatchLogged && candidates.length) {
     sampleMismatchLogged = true;
     const sameInning = candidates.filter(c => String(c.inning) === String(event._inning));
@@ -289,7 +310,12 @@ async function resolveVideosAndStrip(playersMap) {
         videoAttempted++;
         const isNewGame = !gfCache.has(event._gamePk);
         try { await resolveEventVideo(event); } catch (e) { console.error(`video lookup failed for batter ${id} on ${event.date}:`, e.message); }
-        if (event.videoUrl) withVideo++;
+        // resolveEventVideo's own savantVideoURL() fetch (sporty-videos, to
+        // extract the direct .mp4) is a second, separate real request beyond
+        // the /gf feed's own pacing below -- only fires when a unique match
+        // was actually found, but still worth its own light pacing rather
+        // than firing back-to-back with no gap at all.
+        if (event.videoUrl) { withVideo++; await new Promise(r => setTimeout(r, 200)); }
         // Only pace ourselves on an actual new request to baseballsavant.mlb.com/gf
         // — repeat hits on an already-cached game_pk are free.
         if (isNewGame) await new Promise(r => setTimeout(r, 300));
