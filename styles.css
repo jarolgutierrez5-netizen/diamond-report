@@ -1576,12 +1576,40 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
 /* ── Pitcher Report: starting-pitcher list as a single heat-mapped table
    (replaces the old stacked .pr-mobile-card list — one row per pitcher, same
    .pr-stats-table look the summary row already used, plus a left-aligned
-   pitcher cell). Clicking a row opens BATTING LINEUP & MATCHUPS in the
-   shared .mu-modal pop-out instead of expanding a row inline. */
+   pitcher cell). Each row's batter-vs-hand matchup table renders inline right
+   below it (see .pr-inline-matchup-row) with no click needed; clicking the
+   row itself still opens the full Pitcher Analytics Dashboard pop-out for
+   drivers/arsenal/performance/environment/bullpen support. */
 .pr-starters-table {
   min-width: 900px !important;
   border-collapse: separate !important;
   border-spacing: 0 !important;
+}
+/* The matchup table nested inside this cell is a completely different table
+   (.dr-mu-table) with its own left-aligned, wrapping, non-heat-mapped cells —
+   override every .pr-starters-table td default (centered/nowrap/mono/heat
+   padding) rather than let them leak into it. Higher specificity than
+   ".pr-starters-table td" (two classes vs one) wins regardless of rule order. */
+.pr-starters-table td.pr-inline-matchup-cell {
+  padding: 0 !important;
+  text-align: left !important;
+  white-space: normal !important;
+  font-family: var(--font-body) !important;
+  color: var(--text) !important;
+  background: var(--surface) !important;
+  border-bottom: 3px solid rgba(0,0,0,.45) !important;
+  /* Overrides ".pr-starters-table tbody td:first-child"'s sticky-left pin --
+     this cell already spans the full row (colspan) so pinning it does
+     nothing useful and risks fighting the nested table's own horizontal
+     scroll container. */
+  position: static !important;
+  left: auto !important;
+}
+.pr-starters-table tr.pr-inline-matchup-row:last-child td {
+  border-bottom: none !important;
+}
+.pr-inline-matchup-wrap {
+  padding: 10px 12px 14px !important;
 }
 .pr-starters-table td, .pr-starters-table th {
   white-space: nowrap !important;
@@ -4307,7 +4335,21 @@ select:focus-visible {
     border: 1px solid var(--border) !important;
     border-radius: 14px !important;
     padding: 10px !important;
-    margin-bottom: 10px !important;
+    margin-bottom: 0 !important;
+  }
+  /* .pr-row-tr's own card already carries the bottom margin between pitchers
+     (set to 0 above) so this inline matchup card sits flush under its own
+     pitcher's card instead of floating in the gap before the next one. */
+  .pr-inline-matchup-row {
+    display: block !important;
+    margin: 6px 0 10px !important;
+  }
+  .pr-inline-matchup-row td.pr-inline-matchup-cell {
+    display: block !important;
+    background: linear-gradient(180deg, rgba(17,26,45,.6), rgba(14,23,40,.65)) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 14px !important;
+    border-bottom: 1px solid var(--border) !important;
   }
   .pr-starters-table td {
     padding: 0 !important;
