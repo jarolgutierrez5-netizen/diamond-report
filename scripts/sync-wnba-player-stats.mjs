@@ -1,13 +1,18 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// Real per-game scoring for every rostered WNBA player -- the base input the
-// "15+ Points Probability" board scores from (app.js: wnbaPointsCardHTML /
-// wnbaPointsConfidenceScore / wnbaPointsRisk). Reads data/wnba-rosters.json
-// (written by sync-wnba-rosters.mjs) for the player universe, then pulls each
-// player's own real game log from ESPN and computes, entirely from real
-// per-game point totals (no fabricated/derived inputs):
+// Real per-game scoring line for every rostered WNBA player -- the base
+// input the "15+ Points Probability" board scores from (app.js:
+// wnbaPointsCardHTML / wnbaPointsConfidenceScore / wnbaPointsRisk). Reads
+// data/wnba-rosters.json (written by sync-wnba-rosters.mjs) for the player
+// universe, then pulls each player's own real game log from ESPN and
+// computes, entirely from real per-game totals (no fabricated/derived
+// inputs):
 //   - games: real games played this season
-//   - ptsPerGame: real season scoring average
+//   - ptsPerGame / rebPerGame / astPerGame / threesPerGame: real season
+//     per-game averages for points, rebounds, assists, and made 3-pointers
+//   - praPerGame: points+rebounds+assists per game -- a real sum of the
+//     three real averages above, the same combined-stat prop shape real
+//     sportsbooks call "PRA", not a separately modeled number
 //   - ptsStdDev: real population standard deviation of per-game points --
 //     the consistency signal wnbaPointsConfidenceScore uses (a volatile
 //     boom/bust scorer is lower-confidence than a consistent one at the same
@@ -26,18 +31,20 @@
 // real 2026-season response (32 real games, real PTS/REB/AST/etc. per game).
 //
 // Response shape (confirmed live): a single top-level `labels` array (stat
-// column names, e.g. PTS at a confirmed index of 1) applies to every game
-// row -- unlike NFL's per-category labels, WNBA's gamelog has one flat label
-// set for the whole response. Real per-game rows live at
-// `seasonTypes[].categories[].events[]`, each `{eventId, stats:[...]}` with
-// `stats` in the same order as the top-level `labels` (string values, e.g.
-// "26" for points, "10-25" for made-attempted splits which this script
-// doesn't need). Categories are grouped by calendar month (e.g. "august",
+// column names -- confirmed order: MIN,PTS,REB,AST,STL,BLK,TO,FG,FG%,3PT,
+// 3P%,FT,FT%,PF) applies to every game row -- unlike NFL's per-category
+// labels, WNBA's gamelog has one flat label set for the whole response. Real
+// per-game rows live at `seasonTypes[].categories[].events[]`, each
+// `{eventId, stats:[...]}` with `stats` in the same order as the top-level
+// `labels` (string values -- most are plain numbers like "26" for points,
+// but the 3PT column is a real "made-attempted" split like "1-3", so it's
+// parsed by taking the substring before the "-" rather than Number()'d
+// directly). Categories are grouped by calendar month (e.g. "august",
 // "july"), not by stat type like NFL's passing/rushing/receiving groups --
 // this script sums across every category under a "Regular Season"
 // `seasonType` and explicitly skips any `seasonType` whose name contains
-// "Preseason", so a handful of early exhibition-game point totals can't
-// quietly inflate/dilute the real regular-season rate.
+// "Preseason", so a handful of early exhibition-game totals can't quietly
+// inflate/dilute the real regular-season rate.
 // ─────────────────────────────────────────────────────────────────────────
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
@@ -84,11 +91,24 @@ function gamelogURL(playerId) {
   return `https://site.web.api.espn.com/apis/common/v3/sports/basketball/wnba/athletes/${playerId}/gamelog`;
 }
 
-// Pulls every real per-game point total from the current season's real
-// regular-season rows (Preseason seasonTypes explicitly skipped). Returns
-// null (not an empty/zero result) if the response has no usable regular-
-// season rows at all -- distinct from a real, confirmed 0-point game.
-function extractSeasonPoints(raw) {
+// Parses a single raw stat cell into a real number. Most columns are plain
+// numeric strings ("26"); the 3PT column is a real "made-attempted" split
+// ("1-3") -- only the made count (the part before "-") is a real makes
+// total, so that's what's parsed out rather than Number()'ing the whole
+// string into NaN.
+function parseStatCell(v) {
+  if (v == null) return NaN;
+  const s = String(v);
+  const made = s.includes('-') ? s.split('-')[0] : s;
+  return Number(made);
+}
+
+// Pulls every real per-game {pts, reb, ast, threes} line from the current
+// season's real regular-season rows (Preseason seasonTypes explicitly
+// skipped). Returns null (not an empty/zero result) if the response has no
+// usable regular-season rows at all -- distinct from a real, confirmed
+// scoreless game.
+function extractSeasonRows(raw) {
   const labels = raw?.labels;
   // A response with only a `filters` key and no `labels`/`seasonTypes` at all
   // is real and expected for a player with no logged games this season (a
@@ -100,38 +120,64 @@ function extractSeasonPoints(raw) {
     if (!Array.isArray(raw?.seasonTypes)) return null;
     throw new Error('unexpected gamelog shape (seasonTypes present but no top-level labels[])');
   }
-  const ptsIdx = labels.indexOf('PTS');
-  if (ptsIdx === -1) throw new Error('no PTS column in gamelog labels');
+  const idx = { pts: labels.indexOf('PTS'), reb: labels.indexOf('REB'), ast: labels.indexOf('AST'), threes: labels.indexOf('3PT') };
+  if (idx.pts === -1) throw new Error('no PTS column in gamelog labels');
   const seasonTypes = raw?.seasonTypes;
   if (!Array.isArray(seasonTypes)) throw new Error('unexpected gamelog shape (no seasonTypes[])');
 
-  const pts = [];
+  const rows = [];
   for (const st of seasonTypes) {
     const name = String(st?.displayName || '');
     if (/preseason/i.test(name)) continue;
     for (const cat of st?.categories || []) {
       for (const ev of cat?.events || []) {
-        const v = Number(ev?.stats?.[ptsIdx]);
-        if (Number.isFinite(v)) pts.push(v);
+        const stats = ev?.stats;
+        if (!Array.isArray(stats)) continue;
+        const pts = Number(stats[idx.pts]);
+        if (!Number.isFinite(pts)) continue;
+        rows.push({
+          pts,
+          reb: idx.reb !== -1 ? Number(stats[idx.reb]) : NaN,
+          ast: idx.ast !== -1 ? Number(stats[idx.ast]) : NaN,
+          threes: idx.threes !== -1 ? parseStatCell(stats[idx.threes]) : NaN,
+        });
       }
     }
   }
-  if (!pts.length) return null;
-  return pts;
+  if (!rows.length) return null;
+  return rows;
 }
 
-function summarize(pts) {
-  const games = pts.length;
-  const ptsPerGame = pts.reduce((a, b) => a + b, 0) / games;
-  const variance = pts.reduce((a, b) => a + (b - ptsPerGame) ** 2, 0) / games;
+// Mean of a real per-game stat, skipping any individual game that column
+// wasn't available for (e.g. a genuinely missing 3PT cell) rather than
+// treating a missing value as a real 0 -- returns null (not 0) if no game
+// had a usable value for this stat at all.
+function meanOf(rows, key) {
+  const vals = rows.map(r => r[key]).filter(Number.isFinite);
+  if (!vals.length) return null;
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+
+function summarize(rows) {
+  const games = rows.length;
+  const ptsPerGame = meanOf(rows, 'pts');
+  const variance = rows.reduce((a, r) => a + (r.pts - ptsPerGame) ** 2, 0) / games;
   const ptsStdDev = Math.sqrt(variance);
-  const gamesWith15Plus = pts.filter(v => v >= POINTS_THRESHOLD).length;
+  const gamesWith15Plus = rows.filter(r => r.pts >= POINTS_THRESHOLD).length;
+  const rebPerGame = meanOf(rows, 'reb');
+  const astPerGame = meanOf(rows, 'ast');
+  const threesPerGame = meanOf(rows, 'threes');
+  const praPerGame = (rebPerGame != null && astPerGame != null) ? ptsPerGame + rebPerGame + astPerGame : null;
   return {
     games,
     ptsPerGame: +ptsPerGame.toFixed(2),
     ptsStdDev: +ptsStdDev.toFixed(2),
     gamesWith15Plus,
     prob15Plus: Math.round((gamesWith15Plus / games) * 100),
+    rebPerGame: rebPerGame != null ? +rebPerGame.toFixed(2) : null,
+    astPerGame: astPerGame != null ? +astPerGame.toFixed(2) : null,
+    threesPerGame: threesPerGame != null ? +threesPerGame.toFixed(2) : null,
+    praPerGame: praPerGame != null ? +praPerGame.toFixed(2) : null,
   };
 }
 
@@ -155,11 +201,11 @@ async function main() {
   for (const p of players) {
     try {
       const raw = await fetchJSON(gamelogURL(p.id));
-      const pts = extractSeasonPoints(raw);
-      if (pts) {
+      const rows = extractSeasonRows(raw);
+      if (rows) {
         out[p.id] = {
           name: p.name, position: p.position, teamAbbr: p.teamAbbr,
-          season, ...summarize(pts),
+          season, ...summarize(rows),
         };
         updated++;
       } else {
@@ -190,4 +236,4 @@ if (isMain) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { extractSeasonPoints, summarize, gamelogURL, POINTS_THRESHOLD, main };
+export { extractSeasonRows, summarize, gamelogURL, POINTS_THRESHOLD, main };
