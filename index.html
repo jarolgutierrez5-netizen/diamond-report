@@ -190,6 +190,7 @@
     <button type="button" data-tab="hrrbi" data-sport="MLB" class="dr-menu-item">📈 Hits+Runs+RBI</button>
     <button type="button" data-tab="pr" data-sport="MLB" class="dr-menu-item">📋 Pitcher Report</button>
     <button type="button" data-tab="fantasy" data-sport="MLB" class="dr-menu-item">🏆 Fantasy Points [Beta]</button>
+    <button type="button" data-tab="nfltd" data-sport="NFL" class="dr-menu-item dr-menu-item-hidden">🏈 NFL Anytime TD</button>
     <button type="button" data-tab="wnbapts" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA 15+ PTS</button>
   </div>
 </div>
@@ -220,16 +221,15 @@
 
     <!-- Multi-Sport News and Navigation (roadmap 3.x) -- these tabs filter the
          feed below (headlines/news/scoreboard/leaders) by sport without leaving
-         the hub. "All Sports" (default) shows the combined feed; MLB shows the
-         full real analytics/news stack; NFL/NBA show real filtered ESPN news
-         (already fetched by loadHubNews) plus an honest "launching soon" notice
-         instead of fabricated leaderboards/projections, since neither has a
-         real board reachable yet. WNBA is treated like MLB instead -- real
-         filtered ESPN WNBA news, no "coming soon" collapse (see setActiveSport's
-         isOtherSport check) -- because its card is real and live: clicking it
-         navigates straight into gamepick-pane-wnbapts, same as the MLB card
-         does for gamepick-pane-game, instead of staying on the hub. See
-         setActiveSport in the hub IIFE at the end of app.js. -->
+         the hub. "All Sports" (default) shows the combined feed; NBA is the
+         only sport still "coming soon" -- real filtered ESPN news plus an
+         honest launching-soon notice instead of fabricated leaderboards,
+         since it has no real board reachable yet (see setActiveSport's
+         isOtherSport check). MLB/NFL/WNBA are all treated the same real, live
+         way instead: real filtered ESPN news, no "coming soon" collapse, and
+         each one's card (dr-hub-baseball-card/dr-hub-nfl-card/dr-hub-wnba-card)
+         navigates straight into its own real gamepick-pane instead of staying
+         on the hub. See setActiveSport in the hub IIFE at the end of app.js. -->
     <div class="dr-hub-sporttabs" id="dr-hub-sporttabs" role="tablist" aria-label="Filter by sport">
       <button type="button" class="dr-hub-sporttab active" data-sport="all" role="tab" aria-selected="true">All Sports</button>
       <button type="button" class="dr-hub-sporttab" data-sport="MLB" role="tab" aria-selected="false">MLB</button>
@@ -247,12 +247,12 @@
           <span class="dr-hub-sport-badge">● Live — Enter Projections</span>
         </span>
       </button>
-      <button type="button" class="dr-hub-sport-card soon" id="dr-hub-nfl-card" data-sport="NFL">
+      <button type="button" class="dr-hub-sport-card live" id="dr-hub-nfl-card" data-sport="NFL">
         <span class="dr-hub-sport-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 10c2-4.3 5.7-6.5 7.2-6.5s5.2 2.2 7.2 6.5c-2 4.3-5.7 6.5-7.2 6.5s-5.2-2.2-7.2-6.5z"/><path d="M5.2 10h9.6" stroke-width="1.1"/><path d="M8 8.7v2.6M10 8.4v3.2M12 8.7v2.6" stroke-width="1"/></svg></span>
         <span class="dr-hub-sport-text">
           <span class="dr-hub-sport-title">NFL</span>
-          <span class="dr-hub-sport-desc">NFL projections launching for the 2026 season.</span>
-          <span class="dr-hub-sport-badge">Coming September</span>
+          <span class="dr-hub-sport-desc">Real season touchdown rate, modeled as a live Anytime TD probability board.</span>
+          <span class="dr-hub-sport-badge">● Live — Enter Projections</span>
         </span>
       </button>
       <button type="button" class="dr-hub-sport-card soon" id="dr-hub-nba-card" data-sport="NBA">

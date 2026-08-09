@@ -2172,22 +2172,19 @@ html body.dr-hub-active main {
   margin: 0;
 }
 /* Multi-Sport News and Navigation: MLB-only real modules (Diamond Report
-   Headlines, today's scoreboard, projections/leaders rail) have no NFL/NBA
-   data behind them yet, so they're force-hidden -- via !important, so it wins
-   over the inline display:'' each section's own lazy-loader sets once its
-   (MLB-only) fetch resolves, regardless of load timing -- whenever an NFL/NBA
-   sport tab is active. The real, already-fetched ESPN news for that league
-   still shows in #dr-hub-news, filtered by setActiveSport/applyNewsSportFilter
-   in app.js. */
-body.dr-hub-sport-nfl #dr-hub-headlines,
-body.dr-hub-sport-nfl #dr-hub-scoreboard,
-body.dr-hub-sport-nfl #dr-hub-side,
+   Headlines, today's scoreboard, projections/leaders rail) have no NBA data
+   behind them yet (NFL/WNBA graduated to real, hub-linked boards -- see
+   dr-hub-nfl-card/dr-hub-wnba-card's click handlers in app.js), so they're
+   force-hidden -- via !important, so it wins over the inline display:'' each
+   section's own lazy-loader sets once its (MLB-only) fetch resolves,
+   regardless of load timing -- whenever the NBA sport tab is active. The
+   real, already-fetched ESPN news for that league still shows in
+   #dr-hub-news, filtered by setActiveSport/applyNewsSportFilter in app.js. */
 body.dr-hub-sport-nba #dr-hub-headlines,
 body.dr-hub-sport-nba #dr-hub-scoreboard,
 body.dr-hub-sport-nba #dr-hub-side {
   display: none !important;
 }
-body.dr-hub-sport-nfl .dr-hub-layout,
 body.dr-hub-sport-nba .dr-hub-layout {
   grid-template-columns: 1fr;
 }

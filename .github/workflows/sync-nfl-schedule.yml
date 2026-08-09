@@ -1,10 +1,13 @@
-name: Sync NFL Schedule (groundwork)
+name: Sync NFL Schedule
 
-# Manual trigger only for now — nothing in app.js reads data/nfl-*.json yet,
-# so there's no reason to run this on a schedule until the football section
-# is actually being built. Switch to a `schedule:` cron (mirroring
-# update-tracker.yml) once that work starts, closer to kickoff.
+# Now runs on a real daily cron -- the Anytime TD board (app.js:
+# renderNFLTDBoard) is hub-linked and reads data/nfl-*.json live, same
+# reasoning as sync-wnba.yml's own switch away from workflow_dispatch-only.
+# 11:24 UTC, a few minutes off MLB's (11:04) and WNBA's (11:14) morning syncs
+# so the three don't all start at once.
 on:
+  schedule:
+    - cron: '24 11 * * *'
   workflow_dispatch: {}
 
 permissions:
