@@ -8893,19 +8893,89 @@ function drInitFilterScrollHints() {
 }
 window.drInitFilterScrollHints = drInitFilterScrollHints;
 
-// Renders the Near HRs board (Home Runs pane, third panel) — one card per
-// batter with 1+ warning-track fly outs in their last 10 games, sorted by
-// event count (most near-misses first) then longest single distance.
-// Card markup deliberately mirrors HR Threats' .dr1027-hr-card component
-// (roadmap "Motion and Interaction Design": "make the player cards for the
-// Near HR tab the same as the HR section") -- same photo/name/meta header,
-// score box, chip row, hover elevation, all free via the shared class names
-// (see styles.css); only the card list's grid layout needed its own rule,
-// scoped to #near-hrs-content the same way HR Threats scopes to
-// #hr-potential-content. Clicking a card opens openNearHRDetail() below,
-// which shows the full near-HR event list (not just the most recent) with
-// real Watch links, synchronously from data already in memory -- no fetch,
-// so it can't delay on data access.
+// Renders the Near HRs board (Home Runs pane, third panel) as a dense table
+// -- same visual language and expand-on-click interaction as the HR Threats
+// table (roadmap request: "make it look similar to the HR Threats table"),
+// reusing that table's own shared, unscoped CSS classes (.hrpt-shell/-scroll/
+// -table/-row/-photo/-name/-detail-row, etc. -- see styles.css) and
+// window.hrpToggleRowExpand()'s click-to-expand behavior. Note this file is a
+// concatenation of many originally-separate <script> tags (see the "from
+// <script id=...>" markers throughout) and several, including the one HR
+// Threats' own table helpers (hrptHeatBG/hrptHeatBGInverted/hrpTableRowHTML)
+// live in, are wrapped in a private (function(){...})() closure rather than
+// this file's shared top-level scope -- so this can reuse their CSS output
+// but not call their JS directly; nearHRHeatBGInverted() below is a small
+// local copy of the same heat-cell color formula for that reason, matching
+// this file's existing convention of duplicating small per-block helpers
+// (esc/n, etc.) rather than reaching across closures. One row per batter with
+// 1+ warning-track fly outs in their last 10 games, sorted by event count
+// (most near-misses first) then longest single distance (or by Longest
+// first, via the sortable column header). Real Watch ▸ links
+// (data/near-hrs.json's videoUrl, synced by scripts/sync-near-hrs.mjs) show
+// wherever a clip has been resolved; the expanded detail row lists every
+// event, not just the most recent, each with its own link when one exists.
+const NEAR_HR_FENCE_REF_FT = 400;
+// Mirrors scripts/sync-near-hrs.mjs's own NEAR_HR_MIN_DISTANCE_FT -- the
+// floor a fly out has to clear to count as a "near miss" at all, so nothing
+// in this table's Longest column ever reads as red/bad.
+const NEAR_HR_MIN_DISTANCE_FT = 375;
+// Local copy of hrptHeatBG/hrptHeatBGInverted's exact color formula (see
+// this section's header comment for why it can't just be called directly) --
+// green above goodAbove, red below badBelow, blended between.
+function nearHRHeatBG(val, goodBelow, badAbove) {
+  if (val == null) return 'transparent';
+  const mid = (goodBelow + badAbove) / 2, half = (badAbove - goodBelow) / 2 || 1;
+  let t = 1 + (val - mid) / half; t = Math.max(0, Math.min(2, t));
+  const green = [8, 92, 58], neu = [16, 25, 44], red = [96, 26, 38];
+  const a = t <= 1 ? green : neu, b = t <= 1 ? neu : red, lt = t <= 1 ? t : t - 1;
+  const rgb = a.map((c, i) => Math.round(c + (b[i] - c) * lt));
+  return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+}
+function nearHRHeatBGInverted(val, goodAbove, badBelow) { return nearHRHeatBG(val == null ? null : -val, -goodAbove, -badBelow); }
+function getNearHRSortBy(){ return window.__nearHRSortBy || 'events'; }
+window.setNearHRSort = function(val){
+  window.__nearHRSortBy = (val === 'longest') ? 'longest' : 'events';
+  renderNearHRs();
+};
+const NEARHRT_COLS = [['Player', null], ['Near HRs', 'events'], ['Longest', 'longest'], ['Exit Velo', null], ['Launch', null], ['Most Recent', null], ['Video', null]];
+function nearHRTableHeaderHTML(){
+  const by = getNearHRSortBy();
+  return NEARHRT_COLS.map(c => {
+    const label = c[0], key = c[1];
+    if (!key) return '<th' + (label === 'Player' ? '' : ' class="hrpt-num"') + '>' + label + '</th>';
+    const active = by === key;
+    return '<th class="hrpt-num hrpt-sortable' + (active ? ' active' : '') + '" onclick="window.setNearHRSort(\'' + key + '\')" title="Sort by ' + label + '">' + label + (active ? ' ▾' : '') + '</th>';
+  }).join('');
+}
+function nearHRTableRowHTML(p, idx) {
+  const hs = id => id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/${id}/headshot/67/current` : '';
+  const byDate = p.events.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const longest = p.events[0];
+  const mostRecent = byDate[0];
+  const firstWithVideo = byDate.find(e => e.videoUrl);
+  const detailId = 'nearhr-detail-' + drEscAttr(p.id);
+  const eventRows = byDate.map(ev => `
+    <div class="near-hr-detail-row">
+      <span class="near-hr-detail-icon">🚀</span>
+      <div class="near-hr-detail-text">
+        <div><strong>${Math.round(ev.distance || 0)} ft</strong>${ev.exitVelo != null ? ` · ${ev.exitVelo.toFixed(1)} mph` : ''}${ev.launchAngle != null ? ` · ${Math.round(ev.launchAngle)}° launch` : ''}</div>
+        <div class="near-hr-detail-meta">${ev.date || ''}${ev.matchup ? ` · ${ev.matchup}` : ''}</div>
+      </div>
+      ${ev.videoUrl ? `<a href="${ev.videoUrl}" target="_blank" rel="noopener" class="near-hr-detail-link">Watch ▸</a>` : ''}
+    </div>`).join('');
+  const row = `<tr class="hrpt-row dr-anim-in" id="nearhr-row-${drEscAttr(p.id)}" style="animation-delay:${Math.min(idx, 8) * 20}ms" onclick="if(!event.target.closest('a'))window.hrpToggleRowExpand('${detailId}')">`
+    + `<td class="hrpt-player-cell"><img class="hrpt-photo" loading="lazy" decoding="async" src="${hs(p.id)}" onerror="this.style.visibility='hidden'" alt="">`
+      + `<div class="hrpt-player-meta"><div class="hrpt-name">${drEscAttr(p.name)}</div><div class="hrpt-sub">${drEscAttr(p.teamAbbr || '–')} · Warning-Track Power</div></div></td>`
+    + `<td class="hrpt-num" data-label="Near HRs"><strong class="hrpt-prob">${p.events.length}</strong></td>`
+    + `<td class="hrpt-num" data-label="Longest" style="background:${longest ? nearHRHeatBGInverted(longest.distance, NEAR_HR_FENCE_REF_FT, NEAR_HR_MIN_DISTANCE_FT) : 'transparent'}">${longest ? Math.round(longest.distance) + ' ft' : '<span class="hrpt-dash">–</span>'}</td>`
+    + `<td class="hrpt-num" data-label="Exit Velo">${longest && longest.exitVelo != null ? longest.exitVelo.toFixed(1) + ' mph' : '<span class="hrpt-dash">–</span>'}</td>`
+    + `<td class="hrpt-num" data-label="Launch">${longest && longest.launchAngle != null ? Math.round(longest.launchAngle) + '°' : '<span class="hrpt-dash">–</span>'}</td>`
+    + `<td class="hrpt-pitcher-cell" data-label="Most Recent">${mostRecent ? (`<span class="hrpt-pitcher-name">${drEscAttr(mostRecent.date || '–')}</span>` + (mostRecent.matchup ? `<span class="hrpt-pitcher-hand">${drEscAttr(mostRecent.matchup)}</span>` : '')) : '<span class="hrpt-dash">–</span>'}</td>`
+    + `<td class="hrpt-num" data-label="Video">${firstWithVideo ? `<a href="${firstWithVideo.videoUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="near-hr-detail-link">▶ Watch</a>` : '<span class="hrpt-dash">–</span>'}</td>`
+  + `</tr>`;
+  const detail = `<tr class="hrpt-detail-row" id="${detailId}"><td colspan="${NEARHRT_COLS.length}"><div class="hrpt-detail-inner" style="grid-template-columns:1fr"><div class="hrpt-why-box" style="grid-column:1/-1"><div class="hrpt-box-label">🚀 All Near-HR Events · Last 10 Games</div><div class="near-hr-detail-list dr-anim-in">${eventRows || '<div class="mu-empty">No near-HR events found.</div>'}</div></div></div></td></tr>`;
+  return row + detail;
+}
 function renderNearHRs() {
   const el = document.getElementById('near-hrs-content');
   if (!el) return;
@@ -8928,7 +8998,10 @@ function renderNearHRs() {
     };
   }).filter(p => drMatchesSearch('nearhr', p.name));
 
-  players.sort((a, b) => b.events.length - a.events.length || (b.events[0]?.distance || 0) - (a.events[0]?.distance || 0));
+  const sortBy = getNearHRSortBy();
+  players.sort((a, b) => sortBy === 'longest'
+    ? ((b.events[0]?.distance || 0) - (a.events[0]?.distance || 0)) || (b.events.length - a.events.length)
+    : (b.events.length - a.events.length) || ((b.events[0]?.distance || 0) - (a.events[0]?.distance || 0)));
 
   if (!players.length) {
     el.innerHTML = `<div class="mu-empty" style="color:var(--muted)">No players match your search.</div>`;
@@ -8941,86 +9014,10 @@ function renderNearHRs() {
     countEl.style.cssText = 'background:var(--accent);color:white;font-family:Manrope,sans-serif;font-size:12px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;letter-spacing:.5px;flex-shrink:0';
   }
 
-  const hs = id => id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/${id}/headshot/67/current` : '';
-  // Reference fence distance used only to express "how close" a player's
-  // longest near-miss was as an at-a-glance meter -- not an official stat,
-  // labeled plainly as an estimate in the meter's own caption.
-  const FENCE_REF_FT = 400;
-
-  const cards = players.map((p, i) => {
-    const longest = p.events[0];
-    const mostRecent = p.events.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
-    const pct = Math.max(8, Math.min(100, Math.round(((longest?.distance || 0) / FENCE_REF_FT) * 100)));
-    const chips = [
-      `<span class="dr1027-chip"><b>Longest</b> ${Math.round(longest?.distance || 0)} ft</span>`,
-      `<span class="dr1027-chip"><b>Most Recent</b> ${drEscAttr(mostRecent?.date || '–')}</span>`
-    ];
-    if (longest?.exitVelo != null) chips.push(`<span class="dr1027-chip"><b>Exit Velo</b> ${longest.exitVelo.toFixed(1)} mph</span>`);
-    if (mostRecent?.matchup) chips.push(`<span class="dr1027-chip"><b>vs</b> ${drEscAttr(mostRecent.matchup)}</span>`);
-    return `<div class="dr1027-hr-card dr-anim-in" style="cursor:pointer;animation-delay:${Math.min(i, 8) * 25}ms" data-batter-id="${drEscAttr(p.id)}" data-batter-name="${drEscAttr(p.name)}" onclick="if(!event.target.closest('button,a')){var d=this.dataset;openNearHRDetail(+d.batterId,d.batterName);}">`
-      + `<div class="dr1027-hr-head">`
-      + `<img class="dr1027-hr-photo" loading="lazy" decoding="async" src="${hs(p.id)}" onerror="this.style.visibility='hidden'" alt="">`
-      + `<div><div class="dr1027-hr-name">${drEscAttr(p.name)}</div><div class="dr1027-hr-meta">${drEscAttr(p.teamAbbr || '–')} · Warning-Track Power</div></div>`
-      + `<div class="dr1027-hr-score"><strong>${p.events.length}</strong><span>Near HR${p.events.length !== 1 ? 's' : ''}</span><em>Last 10 Games</em></div>`
-      + `</div>`
-      + `<div class="dr1027-chip-row">${chips.join('')}</div>`
-      + `<div class="dr1027-meter" title="Longest near-miss vs. a typical ${FENCE_REF_FT}ft fence (estimate)"><div class="dr1027-meter-label"><span>How Close</span><span>${pct}%</span></div><div class="dr1027-meter-track"><div class="dr1027-meter-fill" data-fill="${pct}%"></div></div></div>`
-      + `</div>`;
-  }).join('');
-
-  el.innerHTML = `<div class="dr1027-hr-card-list">${cards}</div>`;
-  drFillMeters(el);
+  const tableBody = players.map((p, i) => nearHRTableRowHTML(p, i)).join('');
+  el.innerHTML = `<div class="hrpt-shell"><div class="hrpt-scroll"><table class="hrpt-table nearhrt-table"><thead><tr>${nearHRTableHeaderHTML()}</tr></thead><tbody>${tableBody}</tbody></table></div></div>`;
 }
 window.renderNearHRs = renderNearHRs;
-
-// Opens the shared Batter vs Pitcher modal chrome (#mu-modal-overlay) to show
-// a Near HRs card's full event list -- every warning-track fly out in the
-// player's last 10 games, not just the most recent one, each with a real
-// "Watch ▸" link when a clip exists (data/near-hrs.json, synced via
-// scripts/sync-near-hrs.mjs's gf-feed lookup). Deliberately does NOT reuse
-// openMatchup()/renderMatchupModal(): those need a real opposing pitcher id
-// for several live fetches (H2H, pitcher season stats, etc.) that the Near
-// HRs board has no data for, and would show an error instead of the near-HR
-// content this is supposed to display. Renders synchronously from the
-// nearHRs object already in memory (loaded once by loadNearHRsBoard when
-// this pane first opened), so there's no fetch and no loading state at all.
-function openNearHRDetail(batterId, batterName) {
-  const overlay = document.getElementById('mu-modal-overlay');
-  const body = document.getElementById('mu-modal-body');
-  const title = document.getElementById('mu-modal-title');
-  const sub = document.getElementById('mu-modal-sub');
-  if (!overlay || !body || !title || !sub) return;
-
-  const events = (nearHRs[String(batterId)] || []).slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-  title.textContent = batterName || 'Near Home Runs';
-  sub.textContent = 'Warning-Track Power · Last 10 Games';
-
-  const hs = id => id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/${id}/headshot/67/current` : '';
-  const rows = events.map(n => `
-    <div class="near-hr-detail-row">
-      <span class="near-hr-detail-icon">🚀</span>
-      <div class="near-hr-detail-text">
-        <div><strong>${Math.round(n.distance || 0)} ft</strong>${n.exitVelo != null ? ` · ${n.exitVelo.toFixed(1)} mph` : ''}${n.launchAngle != null ? ` · ${Math.round(n.launchAngle)}° launch` : ''}</div>
-        <div class="near-hr-detail-meta">${n.date || ''}${n.matchup ? ` · ${n.matchup}` : ''}</div>
-      </div>
-      ${n.videoUrl ? `<a href="${n.videoUrl}" target="_blank" rel="noopener" class="near-hr-detail-link">Watch ▸</a>` : ''}
-    </div>`).join('');
-
-  body.innerHTML = `
-    <div class="near-hr-detail-head">
-      <img src="${hs(batterId)}" alt="" loading="lazy" decoding="async" onerror="this.style.visibility='hidden'">
-      <div>
-        <div class="near-hr-detail-count">${events.length} Near Home Run${events.length !== 1 ? 's' : ''}</div>
-        <div class="near-hr-detail-sub">Warning-track fly outs (375+ ft) in the last 10 games</div>
-      </div>
-    </div>
-    <div class="near-hr-detail-list dr-anim-in">${rows || '<div class="mu-empty">No near-HR events found.</div>'}</div>
-  `;
-
-  overlay.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-}
-window.openNearHRDetail = openNearHRDetail;
 
 async function loadNearHRsBoard() {
   try {
