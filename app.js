@@ -3112,6 +3112,16 @@ function _muTableState(pid) {
   return pitcherMatchupTableState[pid];
 }
 
+// A given pid's matchup table can now be on-page in more than one place at
+// once (the always-visible inline copy under its Pitcher Report row, and the
+// Pitcher Analytics Dashboard modal's copy if a user has it open) -- both
+// share the same _muTableState(pid), so a chip/sort/density/retry click in
+// either place re-renders every live copy via data-mu-wrap-pid instead of a
+// single hardcoded element id.
+function muWrapsForPid(pid) {
+  return Array.from(document.querySelectorAll(`[data-mu-wrap-pid="${pid}"]`));
+}
+
 // Real platoon split (AVG/SLG/OPS) against today's specific pitcher's real throwing
 // hand -- fetchAndRenderLineup's per-batter statSplits fetch (batter.platoon), not the
 // pitch-mix store the other columns read from. Labels are built dynamically off the
@@ -3499,13 +3509,15 @@ function renderPitcherMatchupTable(pid, meta, wrap) {
 // re-render too, not just this one retry.
 window.retryPlatoonSplits = async function(pid) {
   const meta = lineupMeta[pid];
-  const wrap = document.getElementById(`pr-matchup-table-${pid}`);
-  if (!meta || !wrap) return;
+  const wraps = muWrapsForPid(pid);
+  if (!meta || !wraps.length) return;
   const cacheKey = `${meta.gamePk}-${meta.side}`;
   const cacheEntry = lineupCache[cacheKey];
   if (!cacheEntry?.lineup?.length) return;
-  const btn = wrap.querySelector('[data-mu-retry-platoon]');
-  if (btn) { btn.disabled = true; btn.textContent = 'Retrying…'; }
+  wraps.forEach(wrap => {
+    const btn = wrap.querySelector('[data-mu-retry-platoon]');
+    if (btn) { btn.disabled = true; btn.textContent = 'Retrying…'; }
+  });
   let pitcherHand = meta.pitcherHand;
   if (pitcherHand !== 'L' && pitcherHand !== 'R') {
     try {
@@ -3520,7 +3532,7 @@ window.retryPlatoonSplits = async function(pid) {
   const batterIds = cacheEntry.lineup.map(b => b.id).filter(Boolean);
   const platoonById = await fetchPlatoonSplits(batterIds, pitcherHand);
   cacheEntry.lineup.forEach(b => { b.platoon = platoonById[b.id] || { status: 'unknown-hand' }; });
-  renderPitcherMatchupTable(pid, meta, wrap);
+  muWrapsForPid(pid).forEach(wrap => renderPitcherMatchupTable(pid, meta, wrap));
 };
 
 // Delegated so re-rendering the table (which replaces its DOM) never loses the
@@ -3530,10 +3542,10 @@ document.addEventListener('click', (e) => {
   if (chip) {
     const pid = chip.getAttribute('data-mu-pid');
     const meta = lineupMeta[pid];
-    const wrap = document.getElementById(`pr-matchup-table-${pid}`);
-    if (meta && wrap) {
+    const wraps = muWrapsForPid(pid);
+    if (meta && wraps.length) {
       _muTableState(pid).pitch = chip.getAttribute('data-mu-chip');
-      renderPitcherMatchupTable(pid, meta, wrap);
+      wraps.forEach(wrap => renderPitcherMatchupTable(pid, meta, wrap));
     }
     return;
   }
@@ -3541,11 +3553,11 @@ document.addEventListener('click', (e) => {
   if (sortDirBtn) {
     const pid = sortDirBtn.getAttribute('data-mu-sort-dir');
     const meta = lineupMeta[pid];
-    const wrap = document.getElementById(`pr-matchup-table-${pid}`);
-    if (meta && wrap) {
+    const wraps = muWrapsForPid(pid);
+    if (meta && wraps.length) {
       const state = _muTableState(pid);
       state.sortDir = state.sortDir === 'desc' ? 'asc' : 'desc';
-      renderPitcherMatchupTable(pid, meta, wrap);
+      wraps.forEach(wrap => renderPitcherMatchupTable(pid, meta, wrap));
     }
     return;
   }
@@ -3553,10 +3565,10 @@ document.addEventListener('click', (e) => {
   if (densityBtn) {
     const pid = densityBtn.closest('[data-mu-pid]')?.getAttribute('data-mu-pid');
     const meta = pid && lineupMeta[pid];
-    const wrap = pid && document.getElementById(`pr-matchup-table-${pid}`);
-    if (meta && wrap) {
+    const wraps = pid ? muWrapsForPid(pid) : [];
+    if (meta && wraps.length) {
       _muTableState(pid).density = densityBtn.getAttribute('data-mu-density');
-      renderPitcherMatchupTable(pid, meta, wrap);
+      wraps.forEach(wrap => renderPitcherMatchupTable(pid, meta, wrap));
     }
     return;
   }
@@ -3571,10 +3583,10 @@ document.addEventListener('change', (e) => {
   if (sel) {
     const pid = sel.getAttribute('data-mu-sort-key');
     const meta = lineupMeta[pid];
-    const wrap = document.getElementById(`pr-matchup-table-${pid}`);
-    if (meta && wrap) {
+    const wraps = muWrapsForPid(pid);
+    if (meta && wraps.length) {
       _muTableState(pid).sortKey = sel.value;
-      renderPitcherMatchupTable(pid, meta, wrap);
+      wraps.forEach(wrap => renderPitcherMatchupTable(pid, meta, wrap));
     }
   }
 });
@@ -3625,6 +3637,7 @@ function openPitcherLineupModal(pidRaw) {
   matchupWrap.id = `pr-matchup-${pid}`;
   const matchupTableWrap = document.createElement('div');
   matchupTableWrap.id = `pr-matchup-table-${pid}`;
+  matchupTableWrap.setAttribute('data-mu-wrap-pid', pid);
   matchupTableWrap.innerHTML = `<div style="padding:10px 0;color:var(--muted);font-size:12px"><span class="spin"></span> Loading matchup scouting table…</div>`;
   matchupWrap.appendChild(matchupTableWrap);
   // The old per-batter lineup card list is now redundant with the scouting
@@ -3782,7 +3795,7 @@ function renderPRTable() {
             <div class="pr-mobile-time" style="color:${p.timeColor};font-weight:${p.timeLabel.includes('LIVE')?700:400}">${p.timeLabel}</div>
             <div class="pr-lineup-hint" style="display:inline-flex;align-items:center;gap:4px;margin-top:5px;padding:3px 8px;border-radius:999px;background:rgba(47,107,255,.12);border:1px solid rgba(47,107,255,.35);color:var(--accent2);font-size:9px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap">
               <svg width="10" height="10" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M6.5 7.5h7M6.5 10h7M6.5 12.5h4"/></svg>
-              View ${p.oppAbbr || 'Opponent'} Lineup
+              Full Analytics Dashboard
             </div>
           </div>
         </td>
@@ -3799,15 +3812,29 @@ function renderPRTable() {
         ${plainCell(`<span style="color:${r.kpg>=7?'var(--green)':r.kpg>=5?'var(--text)':'var(--muted)'}">${r.kpg??'–'}</span>`, 'Average Strikeouts per Game Started', 'K/GM')}
       </tr>`;
 
+    // Batter-vs-hand matchup table, shown inline under every starter's row by
+    // default (no click needed) instead of only inside the row's pop-out
+    // Analytics Dashboard -- ensureInlineMatchupTable fills this in right
+    // after the table is inserted into the DOM below. Shares data-mu-wrap-pid
+    // with the modal's own copy of this table (see muWrapsForPid) so a chip/
+    // sort/density change anywhere re-renders every visible copy in sync.
+    const inlineRow = `<tr class="pr-inline-matchup-row" id="pr-inline-row-${pid}">
+      <td class="pr-inline-matchup-cell" colspan="12">
+        <div class="pr-inline-matchup-wrap" id="pr-inline-matchup-${pid}" data-mu-wrap-pid="${pid}">
+          <div class="mu-empty" style="padding:10px 0;color:var(--muted);font-size:12px"><span class="spin"></span> Loading ${drEscAttr(p.oppAbbr || 'opposing')} lineup…</div>
+        </div>
+      </td>
+    </tr>`;
+
     // Hidden, off-row lineup panel — kept alive independent of the table row
     // markup so HR Threats' pre-lineup fallback (loadHRPotential) can keep
     // warming lineupCache via fetchAndRenderLineup even when no modal is
     // open. The pop-out modal borrows this exact node (by id) when opened.
     const panel = `<div class="pr-expand-panel" id="panel-${pid}" style="display:none"><span class="spin"></span> Loading lineup…</div>`;
 
-    return { row, panel };
+    return { pid, row, inlineRow, panel };
   });
-  const rows = rowsAndPanels.map(x => x.row).join('');
+  const rows = rowsAndPanels.map(x => x.row + x.inlineRow).join('');
   const hiddenPanels = rowsAndPanels.map(x => x.panel).join('');
 
   const prSortBtns = PR_SORT_FIELDS.map(({key,label}) => {
@@ -3856,8 +3883,34 @@ function renderPRTable() {
       <span class="pr-legend-note">2026 season</span>
     </div>`;
 
+  rowsAndPanels.forEach(({ pid }) => {
+    ensureInlineMatchupTable(pid, lineupMeta[pid], document.getElementById(`pr-inline-matchup-${pid}`));
+  });
   rehydrateOpenLineupModal();
   drRestoreSearchFocus(__searchFocus);
+}
+
+// Populates (and, on repeat renderPRTable calls, keeps warm) the always-visible
+// inline matchup table under a Pitcher Report row -- same three-step pattern
+// openPitcherLineupModal already uses for its own copy of this table: render
+// immediately from whatever's cached (pitcherMatchupTableHTML's own "Waiting
+// for lineup…" fallback covers the pre-cache case), kick off the lineup fetch
+// if nothing's cached/in flight yet, and re-render once the pitch-mix stores
+// it also depends on finish loading. muWrapsForPid (not the single wrap
+// passed in) is used for the async re-renders so this stays in sync with an
+// open Analytics Dashboard modal for the same pitcher, if there is one.
+function ensureInlineMatchupTable(pid, meta, wrap) {
+  if (!wrap || !meta) return;
+  const cacheKey = `${meta.gamePk}-${meta.side}`;
+  if (!lineupCache[cacheKey] && !lineupLoading.has(pid)) {
+    fetchAndRenderLineup(pid, meta.pitcherName, meta.gamePk, meta.side, meta.oppTeamId, meta.pitcherHr9, meta.pitcherIp, false, true, meta.pitcherHand)
+      .then(() => { muWrapsForPid(pid).forEach(w => renderPitcherMatchupTable(pid, meta, w)); })
+      .catch(() => {});
+  }
+  Promise.all([loadPitcherStatcast(), loadBatterPitchTypeSeason()]).then(() => {
+    muWrapsForPid(pid).forEach(w => renderPitcherMatchupTable(pid, meta, w));
+  });
+  renderPitcherMatchupTable(pid, meta, wrap);
 }
 
 
