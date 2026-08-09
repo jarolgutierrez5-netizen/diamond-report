@@ -10175,6 +10175,10 @@ function wnbaPointsCardHTML(r) {
     </div>
     <div class="dr109-chiprow">
       <span class="dr109-chip"><span>Season PPG:</span><strong>${r.ptsPerGame != null ? r.ptsPerGame.toFixed(1) : '–'}</strong></span>
+      <span class="dr109-chip"><span>RPG:</span><strong>${r.rebPerGame != null ? r.rebPerGame.toFixed(1) : '–'}</strong></span>
+      <span class="dr109-chip"><span>APG:</span><strong>${r.astPerGame != null ? r.astPerGame.toFixed(1) : '–'}</strong></span>
+      <span class="dr109-chip"><span>3PM:</span><strong>${r.threesPerGame != null ? r.threesPerGame.toFixed(1) : '–'}</strong></span>
+      <span class="dr109-chip"><span>PRA:</span><strong>${r.praPerGame != null ? r.praPerGame.toFixed(1) : '–'}</strong></span>
       <span class="dr109-chip"><span>Games:</span><strong>${r.games != null ? r.games : '–'}</strong></span>
       <span class="dr109-chip ${cushion >= 1 ? 'good' : cushion >= 0 ? 'warn' : 'stat-cushion'}"><span>Cushion:</span><strong>${cushionText}</strong></span>
       <span class="dr109-chip ${risk === 'Low' ? 'good' : risk === 'Medium' ? 'warn' : 'bad'}"><span>Risk:</span><strong>${risk}</strong></span>
@@ -10218,7 +10222,7 @@ async function renderWNBAPointsBoard() {
     return;
   }
   el.innerHTML = `<div class="dr109-summary"><div class="dr109-title">🏀 <span>${fantasyEsc(nextDate)} SLATE</span></div>`
-    + `<p class="dr109-copy">Real season scoring rate per rostered player (${fantasyEsc(rows[0].season)} season), modeled as a raw empirical probability of scoring ${WNBA_POINTS_LINE}+ points tonight -- the real share of this player's own games this season that cleared ${WNBA_POINTS_LINE} points, not a derived estimate. Cushion is real season PPG vs. the ${WNBA_POINTS_LINE}-point line; Risk blends that cushion with real sample size and real scoring consistency. Early model -- no opponent defense adjustment yet.</p></div>`
+    + `<p class="dr109-copy">Real season scoring rate per rostered player (${fantasyEsc(rows[0].season)} season), modeled as a raw empirical probability of scoring ${WNBA_POINTS_LINE}+ points tonight -- the real share of this player's own games this season that cleared ${WNBA_POINTS_LINE} points, not a derived estimate. RPG/APG/3PM/PRA are each real season per-game averages, not projections. Cushion is real season PPG vs. the ${WNBA_POINTS_LINE}-point line; Risk blends that cushion with real sample size and real scoring consistency. Early model -- no opponent defense adjustment yet.</p></div>`
     + rows.map(wnbaPointsCardHTML).join('');
 }
 window.renderWNBAPointsBoard = renderWNBAPointsBoard;
@@ -16473,7 +16477,11 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
   // Picks were removed entirely -- the "Coming Soon" gate (showPremiumGate/
   // PREMIUM_PANES) that used to sit in front of the first three no longer has
   // anything to gate, so it's gone too rather than kept around pointing at nothing.
-  var FREE_PANES = new Set(['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','fantasy','nearhr']);
+  // 'nfltd'/'wnbapts' were missing here even after being added to app.js's own
+  // VALID panes object -- a pre-existing gap for nfltd (its board has no menu
+  // entry to expose the bug), a real one for wnbapts now that the drawer has
+  // an entry pointing at it (see index.html's #dr-mobile-drawer).
+  var FREE_PANES = new Set(['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','fantasy','nearhr','nfltd','wnbapts']);
 
   function normalizePane(pane){
     return String(pane || 'game').trim();
@@ -17416,6 +17424,26 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
     if (comingSoonText) comingSoonText.textContent = isOtherSport ? (SPORT_COMINGSOON_TEXT[sport] || '') : '';
 
     if (newsArticlesAll.length) applyNewsSportFilter();
+
+    updateMobileMenuSport(sport);
+  }
+
+  // The mobile hamburger drawer (#dr-mobile-drawer, index.html) lists board
+  // shortcuts (.dr-menu-item[data-tab]) -- previously a single fixed MLB-only
+  // list regardless of which sport was active. Each item now also carries a
+  // data-sport (see index.html), and this keeps the drawer showing only the
+  // active sport's boards -- 'all'/'MLB'/'NFL'/'NBA' still show the MLB list
+  // (the only board any of those actually has today; NFL's own board isn't
+  // hub-linked yet), 'WNBA' shows the WNBA list.
+  function updateMobileMenuSport(sport){
+    var showSport = sport === 'WNBA' ? 'WNBA' : 'MLB';
+    document.querySelectorAll('.dr-menu-item[data-sport]').forEach(function(item){
+      // .dr-menu-item itself carries "display:flex !important" in styles.css --
+      // toggling item.style.display here would silently lose to that rule, so
+      // this toggles a higher-specificity class instead (see
+      // #dr-mobile-drawer .dr-menu-item.dr-menu-item-hidden in styles.css).
+      item.classList.toggle('dr-menu-item-hidden', item.getAttribute('data-sport') !== showSport);
+    });
   }
 
   function escapeHtml(s){

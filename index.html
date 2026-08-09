@@ -179,17 +179,18 @@
   <div class="dr-mobile-drawer-inner">
     <div class="dr-mobile-drawer-title">Diamond Report</div>
     <button type="button" class="dr-mobile-close" id="dr-mobile-close" aria-label="Close menu">✕</button>
-    <button type="button" data-tab="game" class="dr-menu-item">📊 Games Today</button>
-    <button type="button" data-tab="hr" class="dr-menu-item">🔥 Home Runs</button>
-    <button type="button" data-tab="nearhr" class="dr-menu-item">🚀 Near HRs</button>
-    <button type="button" data-tab="k" class="dr-menu-item">🎯 Strikeouts</button>
-    <button type="button" data-tab="hits" class="dr-menu-item">⚾ Hits</button>
-    <button type="button" data-tab="rbis" class="dr-menu-item">💰 RBIs</button>
-    <button type="button" data-tab="tb" class="dr-menu-item">💎 Total Bases</button>
-    <button type="button" data-tab="sb" class="dr-menu-item">🏃 Stolen Bases</button>
-    <button type="button" data-tab="hrrbi" class="dr-menu-item">📈 Hits+Runs+RBI</button>
-    <button type="button" data-tab="pr" class="dr-menu-item">📋 Pitcher Report</button>
-    <button type="button" data-tab="fantasy" class="dr-menu-item">🏆 Fantasy Points [Beta]</button>
+    <button type="button" data-tab="game" data-sport="MLB" class="dr-menu-item">📊 Games Today</button>
+    <button type="button" data-tab="hr" data-sport="MLB" class="dr-menu-item">🔥 Home Runs</button>
+    <button type="button" data-tab="nearhr" data-sport="MLB" class="dr-menu-item">🚀 Near HRs</button>
+    <button type="button" data-tab="k" data-sport="MLB" class="dr-menu-item">🎯 Strikeouts</button>
+    <button type="button" data-tab="hits" data-sport="MLB" class="dr-menu-item">⚾ Hits</button>
+    <button type="button" data-tab="rbis" data-sport="MLB" class="dr-menu-item">💰 RBIs</button>
+    <button type="button" data-tab="tb" data-sport="MLB" class="dr-menu-item">💎 Total Bases</button>
+    <button type="button" data-tab="sb" data-sport="MLB" class="dr-menu-item">🏃 Stolen Bases</button>
+    <button type="button" data-tab="hrrbi" data-sport="MLB" class="dr-menu-item">📈 Hits+Runs+RBI</button>
+    <button type="button" data-tab="pr" data-sport="MLB" class="dr-menu-item">📋 Pitcher Report</button>
+    <button type="button" data-tab="fantasy" data-sport="MLB" class="dr-menu-item">🏆 Fantasy Points [Beta]</button>
+    <button type="button" data-tab="wnbapts" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA 15+ PTS</button>
   </div>
 </div>
 
@@ -744,7 +745,7 @@
       <div class="dr-panel-head">
         <div>
           <p class="section-title">WNBA <span>15+ Points Probability</span></p>
-          <small>Real season scoring rate per rostered player, modeled as a raw empirical probability of a 15+ point game. Cushion/Risk mirror the K Props board's real-line-vs-projection read. Early model -- no opponent defense adjustment yet.</small>
+          <small>Real season scoring rate per rostered player, modeled as a raw empirical probability of a 15+ point game, plus real RPG/APG/3PM/PRA per-game averages. Cushion/Risk mirror the K Props board's real-line-vs-projection read. Early model -- no opponent defense adjustment yet.</small>
         </div>
       </div>
       <div id="wnba-points-content" class="dr-panel-body dr-scroll-tall">

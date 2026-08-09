@@ -188,6 +188,13 @@ main {
   -webkit-appearance:none !important;
   white-space:normal !important;
 }
+/* Higher specificity than ".dr-menu-item"'s own "display:flex !important"
+   above (two classes + the #id vs one class + the #id) so this reliably wins
+   regardless of source order -- see updateMobileMenuSport in app.js, which
+   toggles this instead of item.style.display for exactly that reason. */
+#dr-mobile-drawer .dr-menu-item.dr-menu-item-hidden{
+  display:none !important;
+}
 #dr-mobile-drawer .dr-menu-item:hover,
 #dr-mobile-drawer .dr-menu-item:focus{
   color:#ffffff !important;
