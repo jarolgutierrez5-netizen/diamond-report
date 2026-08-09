@@ -4817,30 +4817,58 @@ const _weatherCache = new Map();
 // is live/imminent, `current` already IS game-time weather, so there's no reason
 // to prefer a forecast bucket over the real live reading.
 function pickWeatherHourly(wd, gameTimestamp) {
-  if (!gameTimestamp || gameTimestamp <= Date.now() + 20 * 60 * 1000) return { c: wd.current, forecast: false };
+  const useForecast = !!gameTimestamp && gameTimestamp > Date.now() + 20 * 60 * 1000;
+  const anchor = useForecast ? gameTimestamp : Date.now();
   const h = wd.hourly;
-  if (!h?.time?.length) return { c: wd.current, forecast: false };
-  let bestIdx = -1, bestDiff = Infinity;
-  for (let i = 0; i < h.time.length; i++) {
-    // Open-Meteo's hourly.time strings are naive ("2026-08-02T19:00") in the
-    // timezone we requested (GMT, forced below) — appending "Z" is required or
-    // Date() parses them in the browser's local zone instead of UTC.
-    const diff = Math.abs(new Date(h.time[i] + 'Z').getTime() - gameTimestamp);
-    if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+  let hourlySlice = [];
+  if (h?.time?.length) {
+    let bestIdx = -1, bestDiff = Infinity;
+    for (let i = 0; i < h.time.length; i++) {
+      // Open-Meteo's hourly.time strings are naive ("2026-08-02T19:00") in the
+      // timezone we requested (GMT, forced below) — appending "Z" is required or
+      // Date() parses them in the browser's local zone instead of UTC.
+      const diff = Math.abs(new Date(h.time[i] + 'Z').getTime() - anchor);
+      if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+    }
+    if (bestIdx >= 0) {
+      // Up to 5 consecutive hours starting at the anchor (first pitch when
+      // still pre-game, "now" once the game's underway) -- same closest-
+      // real-bucket lookup already used for the single-point `c` below, just
+      // kept as a short forward slice instead of collapsed to one value, for
+      // the hourly forecast strip.
+      const HOURLY_SLICE_SIZE = 5;
+      for (let i = bestIdx; i < Math.min(h.time.length, bestIdx + HOURLY_SLICE_SIZE); i++) {
+        hourlySlice.push({
+          time: h.time[i],
+          temp: Math.round(h.temperature_2m[i]),
+          precip: h.precipitation[i],
+          // Real Open-Meteo field (%), NOT derived from precip (mm) -- a rain
+          // amount and a rain probability are different quantities, see this
+          // fetch's own &hourly= comment above.
+          precipProb: Array.isArray(h.precipitation_probability) ? h.precipitation_probability[i] : null,
+          wind: Math.round(h.windspeed_10m[i]),
+          windDir: h.winddirection_10m[i],
+          code: h.weathercode[i],
+        });
+      }
+      if (useForecast) {
+        return {
+          c: {
+            temperature_2m: h.temperature_2m[bestIdx],
+            relative_humidity_2m: h.relative_humidity_2m[bestIdx],
+            windspeed_10m: h.windspeed_10m[bestIdx],
+            winddirection_10m: h.winddirection_10m[bestIdx],
+            precipitation: h.precipitation[bestIdx],
+            pressure_msl: h.pressure_msl[bestIdx],
+            weathercode: h.weathercode[bestIdx],
+          },
+          forecast: true,
+          hourlySlice,
+        };
+      }
+    }
   }
-  if (bestIdx < 0) return { c: wd.current, forecast: false };
-  return {
-    c: {
-      temperature_2m: h.temperature_2m[bestIdx],
-      relative_humidity_2m: h.relative_humidity_2m[bestIdx],
-      windspeed_10m: h.windspeed_10m[bestIdx],
-      winddirection_10m: h.winddirection_10m[bestIdx],
-      precipitation: h.precipitation[bestIdx],
-      pressure_msl: h.pressure_msl[bestIdx],
-      weathercode: h.weathercode[bestIdx],
-    },
-    forecast: true,
-  };
+  return { c: wd.current, forecast: false, hourlySlice };
 }
 async function fetchGameWeather(homeAbbr, awayAbbr, gameTimestamp) {
   // Retractable-roof parks (ARI, HOU, MIA, MIL, SEA, TEX, TOR) are frequently played
@@ -4864,12 +4892,18 @@ async function fetchGameWeather(homeAbbr, awayAbbr, gameTimestamp) {
       // hourly+forecast_days=2 (timezone forced to GMT) backs pickWeatherHourly's
       // pre-game first-pitch lookup above; forecast_days=2 covers a UTC day rollover
       // for late West Coast games without inflating the payload further.
-      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,relative_humidity_2m,windspeed_10m,winddirection_10m,precipitation,pressure_msl,weathercode&hourly=temperature_2m,relative_humidity_2m,windspeed_10m,winddirection_10m,precipitation,pressure_msl,weathercode&forecast_days=2&timezone=GMT&temperature_unit=fahrenheit&windspeed_unit=mph`);
+      // precipitation_probability is hourly-only (Open-Meteo has no "current"
+      // variant of it -- a probability is inherently a forecast concept, there's
+      // no "current probability of rain"), so it's added only to &hourly=, not
+      // &current=. Used by the hourly forecast strip below; the existing
+      // current-point weather.precip elsewhere in this file stays as `precipitation`
+      // (real millimeters, not a probability) exactly as it already was.
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,relative_humidity_2m,windspeed_10m,winddirection_10m,precipitation,pressure_msl,weathercode&hourly=temperature_2m,relative_humidity_2m,windspeed_10m,winddirection_10m,precipitation,precipitation_probability,pressure_msl,weathercode&forecast_days=2&timezone=GMT&temperature_unit=fahrenheit&windspeed_unit=mph`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       wd = await res.json();
       _weatherCache.set(wKey, wd);
     }
-    const { c, forecast } = pickWeatherHourly(wd, gameTimestamp);
+    const { c, forecast, hourlySlice } = pickWeatherHourly(wd, gameTimestamp);
     return {
       temp: Math.round(c.temperature_2m),
       humidity: c.relative_humidity_2m,
@@ -4879,6 +4913,7 @@ async function fetchGameWeather(homeAbbr, awayAbbr, gameTimestamp) {
       pressureMsl: c.pressure_msl,
       code: c.weathercode,
       isForecast: forecast,
+      hourlyForecast: hourlySlice || [],
     };
   } catch { return null; }
 }
@@ -5598,6 +5633,12 @@ async function loadGameProps() {
       // nothing here is computed fresh or feeds back into scoring.
       const densityPct = Math.round((densityMultForDisplay - 1) * 100);
       const windPct = Math.round((windMultForDisplay - 1) * 100);
+      // Combined headline stat (same air-density * wind math as the two center
+      // bars above, and the same combined-multiplier shape environmentImpactData
+      // already uses elsewhere for the HR Threats board's own "HR Environment"
+      // chip) -- no new calculation, just a single prominent number instead of
+      // only ever showing the two components separately.
+      const hrWeatherPct = Math.round((densityMultForDisplay * windMultForDisplay - 1) * 100);
       // Ballpark Pal's own independently-modeled weather-only HR effect (licensed
       // API, see scripts/sync-ballparkpal.mjs) — a second, differently-computed
       // number next to our own DIY air-density/wind figure above. Purely a
@@ -5628,11 +5669,15 @@ async function loadGameProps() {
         bpWeatherPct != null ? centerBar('🌐 Ballpark Pal', bpWeatherPct, 15, `${bpWeatherPct > 0 ? '+' : ''}${bpWeatherPct}%`) : '',
         centerBar('🏟️ Park Factor', parkFactorVal - 100, 30, `${parkFactorVal}`),
       ].filter(Boolean).join('');
-      const windArrow = (weather && Number.isFinite(weather.windDir))
-        // Arrow points the direction the wind is blowing TOWARD (windDir is
-        // meteorological "blowing FROM", so +180 flips it) — 0deg (N) = up.
-        ? `<span style="display:inline-block;transform:rotate(${(weather.windDir + 180) % 360}deg);font-size:20px;line-height:1">↑</span>`
+      // impact/windDiamond/carryPill replace the old single rotated-arrow span
+      // with a small schematic field diagram -- see windDiamondSVG's own
+      // header comment for why it's deliberately the same generic shape for
+      // every park rather than a real per-stadium orientation.
+      const impact = weather ? windEffect(weather.windDir, homeAbbr) : 'cross';
+      const windDiamond = (weather && Number.isFinite(weather.windDir))
+        ? windDiamondSVG(weather.windDir, weather.wind, impact)
         : '';
+      const carryPill = weather ? windCarryPillHTML(windPct, impact) : '';
       const parkWeatherHTML = weather ? `
         <div style="padding:12px 14px">
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -5641,11 +5686,16 @@ async function loadGameProps() {
               <div style="font-size:20px;font-weight:700;color:var(--text);line-height:1.1">${weather.temp}°F</div>
               <div style="font-size:11px;color:var(--muted)">${weatherCodeLabel(weather.code)} · ${stadiumName || homeAbbr}${weather.isForecast ? ' · forecast for first pitch' : ''}</div>
             </div>
-            <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
-              ${windArrow}
+            <div style="text-align:center;min-width:64px">
+              <div style="font-size:18px;font-weight:800;color:${hrWeatherPct >= 5 ? '#2ee6a6' : hrWeatherPct <= -5 ? '#ff4d6d' : 'var(--text)'}">${hrWeatherPct > 0 ? '+' : ''}${hrWeatherPct}%</div>
+              <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">HR Weather</div>
+            </div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+              ${windDiamond}
               <div>
                 <div style="font-size:13px;font-weight:600;color:var(--text)">${weather.wind}mph</div>
                 <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${compassLabel(weather.windDir)}</div>
+                ${carryPill}
               </div>
             </div>
           </div>
@@ -5654,6 +5704,7 @@ async function loadGameProps() {
             <span>🔽 Pressure: ${weather.pressureMsl != null ? `${Math.round(weather.pressureMsl)} hPa` : '–'}</span>
           </div>
           <div style="display:flex;flex-direction:column;gap:7px">${effectBars}</div>
+          ${hourlyStripHTML(weather.hourlyForecast)}
         </div>` : `
         <div style="padding:12px 14px">
           <div style="font-size:12px;color:var(--muted);margin-bottom:10px">🏟️ ${stadiumName || homeAbbr} — ${stadiumCoords[homeAbbr]?.dome && !stadiumCoords[homeAbbr]?.retractable ? 'fixed dome, weather neutral' : 'weather unavailable'}</div>
@@ -5929,6 +5980,69 @@ function weatherCodeEmoji(code) {
   if ([71, 73, 75].includes(code)) return '❄️';
   if ([95, 96, 99].includes(code)) return '⛈️';
   return '🌡️';
+}
+
+// Small schematic wind-direction diagram for the Park & Weather panel --
+// deliberately the SAME generic field shape for every park (no real
+// per-stadium orientation/bearing data exists anywhere in this repo, only
+// windEffect()'s own crude "wind toward 60-150deg = out" bucket, which this
+// reuses rather than inventing a fake precision the data doesn't support).
+// Reuses the exact generic wall-fan path the HR spray chart's own no-real-
+// park-dims fallback already draws (see hrSprayChartHTML, "M plateX,plateY L
+// 45,75 Q plateX,18 W-45,75 Z") so this reads as the same family of diagram
+// as the rest of the site, not a one-off. The arrow itself is a line +
+// triangular head rotated the same "blowing FROM -> +180 for blowing TOWARD"
+// way the single-glyph arrow it replaces already did; length nudges up
+// slightly with wind speed (clamped) so a stronger wind visibly reads as
+// stronger, not just differently colored.
+function windDiamondSVG(windDir, windMph, impact) {
+  const W = 90, H = 76, plateX = W / 2, plateY = H - 10;
+  const color = impact === 'out' ? '#2ee6a6' : impact === 'in' ? '#ff4d6d' : 'var(--muted)';
+  const wallPath = `M ${plateX},${plateY} L 12,20 Q ${plateX},4 ${W - 12},20 Z`;
+  const angle = (Number(windDir) + 180) % 360;
+  const len = Math.max(16, Math.min(30, 16 + (Number(windMph) || 0) * 0.6));
+  const tipY = plateY - len;
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:52px;height:44px;flex-shrink:0" aria-hidden="true">
+    <path d="${wallPath}" fill="#0d1a12" stroke="rgba(90,180,120,.32)" stroke-width="1.25"/>
+    <rect x="${plateX - 3}" y="${plateY - 2.5}" width="6" height="5" fill="#e8e8e8" transform="rotate(45 ${plateX} ${plateY})"/>
+    <g transform="rotate(${angle.toFixed(1)} ${plateX} ${plateY})">
+      <line x1="${plateX}" y1="${plateY}" x2="${plateX}" y2="${tipY.toFixed(1)}" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
+      <polygon points="${plateX - 4},${(tipY + 6).toFixed(1)} ${plateX + 4},${(tipY + 6).toFixed(1)} ${plateX},${tipY.toFixed(1)}" fill="${color}"/>
+    </g>
+  </svg>`;
+}
+// "Winds Out/In +X% carry" pill next to the wind diamond -- windPct is the
+// exact same number the "💨 Wind" center bar below already plots (see
+// windPct at this panel's build site), just surfaced as its own headline
+// pill instead of only inside the detailed bar breakdown.
+function windCarryPillHTML(windPct, impact) {
+  if (impact === 'cross' || !windPct) return '';
+  const color = impact === 'out' ? '#2ee6a6' : '#ff4d6d';
+  const label = impact === 'out' ? 'WINDS OUT' : 'WINDS IN';
+  return `<div style="display:inline-flex;align-items:center;gap:4px;margin-top:3px;padding:2px 7px;border-radius:999px;background:${color}22;border:1px solid ${color}55;font-size:9px;font-weight:800;color:${color};white-space:nowrap">${label} ${windPct > 0 ? '+' : ''}${windPct}% carry</div>`;
+}
+// Hourly forecast strip -- real data (see pickWeatherHourly's hourlySlice,
+// threaded through fetchGameWeather as weather.hourlyForecast), just never
+// rendered anywhere before now. Horizontally scrollable row, same overflow-
+// x:auto/hide-scrollbar convention #kprops-content's .kprops-sticky-sort
+// already uses, so a 5-slot strip doesn't force the whole card wider.
+// Renders nothing when there's no hourly data (dome team, fetch failure,
+// live game past Open-Meteo's window) -- same graceful-empty convention as
+// every other display-only piece of this panel.
+function hourlyStripHTML(hourlyForecast) {
+  if (!hourlyForecast || !hourlyForecast.length) return '';
+  const slots = hourlyForecast.map(h => {
+    const hour = new Date(h.time + 'Z').getUTCHours();
+    const label = hour === 0 ? '12A' : hour < 12 ? `${hour}A` : hour === 12 ? '12P' : `${hour - 12}P`;
+    return `<div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:44px;padding:6px 4px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+      <span style="font-size:9px;color:var(--muted);font-weight:700">${label}</span>
+      <span style="font-size:15px;line-height:1">${weatherCodeEmoji(h.code)}</span>
+      <span style="font-size:11px;font-weight:700;color:var(--text)">${h.temp}°</span>
+      <span style="font-size:8px;color:#5b9dff">${h.precipProb != null ? Math.round(h.precipProb) + '%' : '–'}</span>
+      <span style="font-size:8px;color:var(--muted)">${h.wind}mph</span>
+    </div>`;
+  }).join('');
+  return `<div class="gp-hourly-strip" style="margin-top:10px">${slots}</div>`;
 }
 
 // ── Air-density-based weather model (replaces the old flat wind-bucket/temp-
