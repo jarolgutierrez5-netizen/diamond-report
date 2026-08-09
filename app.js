@@ -7724,11 +7724,20 @@ function renderMatchupModal(body, { batterName, pitcherName, batterId, pitcherId
         <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#5b8def;opacity:.6;margin-right:4px"></span>Near-miss (375+ ft)</span>
       </div>`;
 
+    // .replace(/'/g,"\\'") -- these values are embedded as single-quoted JS
+    // string arguments INSIDE an onclick="..." attribute, a different escaping
+    // context from a plain HTML attribute value: the browser's HTML parser
+    // decodes entities (e.g. drEscAttr's ' -> &#39;) before ever handing the
+    // attribute text to the JS engine, so an HTML-entity escape would silently
+    // decode back into a real quote and break out of the string (e.g. a name
+    // like "O'Neill"). Same convention already used elsewhere in this file for
+    // names inlined into an onclick(...) call (see openMatchup's own bName).
+    const jsq = s => String(s == null ? '' : s).replace(/'/g, "\\'");
     const rows = mostRecentFirst.map(n => `
       <div class="vuln-item">
         <span class="vuln-icon">${n.kind === 'hr' ? '💥' : '🚀'}</span>
         <span style="color:var(--text)">
-          <strong>${Math.round(n.distance)} ft</strong>${n.exitVelo != null ? ` · ${n.exitVelo.toFixed(1)} mph` : ''}${n.launchAngle != null ? ` · ${Math.round(n.launchAngle)}° launch` : ''} — ${n.date}${n.matchup ? ` (${n.matchup})` : ''}${n.videoUrl ? ` · <a href="${n.videoUrl}" target="_blank" rel="noopener" style="color:var(--accent2)">Watch ▸</a>` : ''}
+          <strong>${Math.round(n.distance)} ft</strong>${n.exitVelo != null ? ` · ${n.exitVelo.toFixed(1)} mph` : ''}${n.launchAngle != null ? ` · ${Math.round(n.launchAngle)}° launch` : ''} — ${n.date}${n.matchup ? ` (${n.matchup})` : ''}${n.videoUrl ? ` · <button type="button" style="color:var(--accent2);background:none;border:none;padding:0;font:inherit;cursor:pointer;text-decoration:underline" onclick="event.stopPropagation();window.openHRVideoModal && window.openHRVideoModal('${jsq(shortName)} — ${n.kind === 'hr' ? 'Home Run' : 'Near Miss'}','${jsq(n.date || '')}${n.matchup ? jsq(' · ' + n.matchup) : ''}','${jsq(n.videoUrl)}')">Watch ▸</button>` : ''}
         </span>
       </div>`).join('');
 
@@ -9050,12 +9059,15 @@ function nearHRHeatBG(val, goodBelow, badAbove) {
   return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
 }
 function nearHRHeatBGInverted(val, goodAbove, badBelow) { return nearHRHeatBG(val == null ? null : -val, -goodAbove, -badBelow); }
-function getNearHRSortBy(){ return window.__nearHRSortBy || 'events'; }
+// Defaults to 'recent' (most recent event first) rather than 'events' (most
+// total near-misses first) -- the more useful default for a board that's
+// fundamentally about "what just happened," not a season-long leaderboard.
+function getNearHRSortBy(){ return window.__nearHRSortBy || 'recent'; }
 window.setNearHRSort = function(val){
-  window.__nearHRSortBy = (val === 'longest') ? 'longest' : 'events';
+  window.__nearHRSortBy = (val === 'longest' || val === 'recent') ? val : 'events';
   renderNearHRs();
 };
-const NEARHRT_COLS = [['Player', null], ['Near HRs', 'events'], ['Longest', 'longest'], ['Exit Velo', null], ['Launch', null], ['Most Recent', null], ['Video', null]];
+const NEARHRT_COLS = [['Player', null], ['Near HRs', 'events'], ['Longest', 'longest'], ['Exit Velo', null], ['Launch', null], ['Most Recent', 'recent'], ['Video', null]];
 function nearHRTableHeaderHTML(){
   const by = getNearHRSortBy();
   return NEARHRT_COLS.map(c => {
@@ -9065,6 +9077,14 @@ function nearHRTableHeaderHTML(){
     return '<th class="hrpt-num hrpt-sortable' + (active ? ' active' : '') + '" onclick="window.setNearHRSort(\'' + key + '\')" title="Sort by ' + label + '">' + label + (active ? ' ▾' : '') + '</th>';
   }).join('');
 }
+// Escapes a value for embedding as a single-quoted JS string argument INSIDE
+// an onclick="..." attribute -- a different context from drEscAttr's plain
+// HTML-attribute-value escaping (the browser's HTML parser decodes entities
+// before handing the attribute text to the JS engine, so drEscAttr's
+// ' -> &#39; would decode back into a real quote and break out of the
+// string, e.g. a name like "O'Neill"). Same convention already used
+// elsewhere in this file (see openMatchup's own bName escaping).
+function jsq(s) { return String(s == null ? '' : s).replace(/'/g, "\\'"); }
 function nearHRTableRowHTML(p, idx) {
   const hs = id => id ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_60,q_auto:best/v1/people/${id}/headshot/67/current` : '';
   const byDate = p.events.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -9072,6 +9092,14 @@ function nearHRTableRowHTML(p, idx) {
   const mostRecent = byDate[0];
   const firstWithVideo = byDate.find(e => e.videoUrl);
   const detailId = 'nearhr-detail-' + drEscAttr(p.id);
+  // Watch links open the site's own in-page video modal (window.openHRVideoModal,
+  // already used elsewhere for other real HR clips) instead of sending the user
+  // to Baseball Savant's page in a new tab -- data/near-hrs.json's videoUrl is
+  // now a direct playable clip, not a Savant page link (see
+  // scripts/sync-near-hrs.mjs's savantVideoURL).
+  const watchBtn = (ev, label) => ev.videoUrl
+    ? `<button type="button" class="near-hr-detail-link" onclick="event.stopPropagation();window.openHRVideoModal && window.openHRVideoModal('${jsq(p.name)} — Near HR','${jsq(ev.date || '')}${ev.matchup ? jsq(' · ' + ev.matchup) : ''}','${jsq(ev.videoUrl)}')">${label}</button>`
+    : '';
   const eventRows = byDate.map(ev => `
     <div class="near-hr-detail-row">
       <span class="near-hr-detail-icon">🚀</span>
@@ -9079,9 +9107,9 @@ function nearHRTableRowHTML(p, idx) {
         <div><strong>${Math.round(ev.distance || 0)} ft</strong>${ev.exitVelo != null ? ` · ${ev.exitVelo.toFixed(1)} mph` : ''}${ev.launchAngle != null ? ` · ${Math.round(ev.launchAngle)}° launch` : ''}</div>
         <div class="near-hr-detail-meta">${ev.date || ''}${ev.matchup ? ` · ${ev.matchup}` : ''}</div>
       </div>
-      ${ev.videoUrl ? `<a href="${ev.videoUrl}" target="_blank" rel="noopener" class="near-hr-detail-link">Watch ▸</a>` : ''}
+      ${watchBtn(ev, 'Watch ▸')}
     </div>`).join('');
-  const row = `<tr class="hrpt-row dr-anim-in" id="nearhr-row-${drEscAttr(p.id)}" style="animation-delay:${Math.min(idx, 8) * 20}ms" onclick="if(!event.target.closest('a'))window.hrpToggleRowExpand('${detailId}')">`
+  const row = `<tr class="hrpt-row dr-anim-in" id="nearhr-row-${drEscAttr(p.id)}" style="animation-delay:${Math.min(idx, 8) * 20}ms" onclick="if(!event.target.closest('button'))window.hrpToggleRowExpand('${detailId}')">`
     + `<td class="hrpt-player-cell"><img class="hrpt-photo" loading="lazy" decoding="async" src="${hs(p.id)}" onerror="this.style.visibility='hidden'" alt="">`
       + `<div class="hrpt-player-meta"><div class="hrpt-name">${drEscAttr(p.name)}</div><div class="hrpt-sub">${drEscAttr(p.teamAbbr || '–')} · Warning-Track Power</div></div></td>`
     + `<td class="hrpt-num" data-label="Near HRs"><strong class="hrpt-prob">${p.events.length}</strong></td>`
@@ -9089,7 +9117,7 @@ function nearHRTableRowHTML(p, idx) {
     + `<td class="hrpt-num" data-label="Exit Velo">${longest && longest.exitVelo != null ? longest.exitVelo.toFixed(1) + ' mph' : '<span class="hrpt-dash">–</span>'}</td>`
     + `<td class="hrpt-num" data-label="Launch">${longest && longest.launchAngle != null ? Math.round(longest.launchAngle) + '°' : '<span class="hrpt-dash">–</span>'}</td>`
     + `<td class="hrpt-pitcher-cell" data-label="Most Recent">${mostRecent ? (`<span class="hrpt-pitcher-name">${drEscAttr(mostRecent.date || '–')}</span>` + (mostRecent.matchup ? `<span class="hrpt-pitcher-hand">${drEscAttr(mostRecent.matchup)}</span>` : '')) : '<span class="hrpt-dash">–</span>'}</td>`
-    + `<td class="hrpt-num" data-label="Video">${firstWithVideo ? `<a href="${firstWithVideo.videoUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="near-hr-detail-link">▶ Watch</a>` : '<span class="hrpt-dash">–</span>'}</td>`
+    + `<td class="hrpt-num" data-label="Video">${firstWithVideo ? watchBtn(firstWithVideo, '▶ Watch') : '<span class="hrpt-dash">–</span>'}</td>`
   + `</tr>`;
   const detail = `<tr class="hrpt-detail-row" id="${detailId}"><td colspan="${NEARHRT_COLS.length}"><div class="hrpt-detail-inner" style="grid-template-columns:1fr"><div class="hrpt-why-box" style="grid-column:1/-1"><div class="hrpt-box-label">🚀 All Near-HR Events · Last 10 Games</div><div class="near-hr-detail-list dr-anim-in">${eventRows || '<div class="mu-empty">No near-HR events found.</div>'}</div></div></div></td></tr>`;
   return row + detail;
@@ -9121,7 +9149,7 @@ function nearHRCardHTML(p, idx) {
         <div><strong>${Math.round(ev.distance || 0)} ft</strong>${ev.exitVelo != null ? ` · ${ev.exitVelo.toFixed(1)} mph` : ''}${ev.launchAngle != null ? ` · ${Math.round(ev.launchAngle)}° launch` : ''}</div>
         <div class="near-hr-detail-meta">${ev.date || ''}${ev.matchup ? ` · ${ev.matchup}` : ''}</div>
       </div>
-      ${ev.videoUrl ? `<a href="${ev.videoUrl}" target="_blank" rel="noopener" class="near-hr-detail-link">Watch ▸</a>` : ''}
+      ${ev.videoUrl ? `<button type="button" class="near-hr-detail-link" onclick="event.stopPropagation();window.openHRVideoModal && window.openHRVideoModal('${jsq(p.name)} — Near HR','${jsq(ev.date || '')}${ev.matchup ? jsq(' · ' + ev.matchup) : ''}','${jsq(ev.videoUrl)}')">Watch ▸</button>` : ''}
     </div>`).join('');
   return `<div class="dr1027-hr-card dr-anim-in" style="animation-delay:${Math.min(idx, 8) * 25}ms">`
     + `<div class="dr1027-hr-head">`
@@ -9170,10 +9198,15 @@ function renderNearHRs() {
     };
   }).filter(p => drMatchesSearch('nearhr', p.name));
 
+  // "YYYY-MM-DD" strings sort correctly with plain string comparison -- no
+  // need to parse into real Date objects just to find each player's latest event.
+  const mostRecentDate = p => p.events.reduce((m, e) => (e.date && e.date > m) ? e.date : m, '');
   const sortBy = getNearHRSortBy();
-  players.sort((a, b) => sortBy === 'longest'
-    ? ((b.events[0]?.distance || 0) - (a.events[0]?.distance || 0)) || (b.events.length - a.events.length)
-    : (b.events.length - a.events.length) || ((b.events[0]?.distance || 0) - (a.events[0]?.distance || 0)));
+  players.sort((a, b) => {
+    if (sortBy === 'longest') return ((b.events[0]?.distance || 0) - (a.events[0]?.distance || 0)) || (b.events.length - a.events.length);
+    if (sortBy === 'recent') return mostRecentDate(b).localeCompare(mostRecentDate(a)) || (b.events.length - a.events.length);
+    return (b.events.length - a.events.length) || ((b.events[0]?.distance || 0) - (a.events[0]?.distance || 0));
+  });
 
   if (!players.length) {
     el.innerHTML = `<div class="mu-empty" style="color:var(--muted)">No players match your search.</div>`;
@@ -17425,6 +17458,15 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
     modal.setAttribute('aria-hidden', 'true');
     if (video) { video.pause(); video.removeAttribute('src'); video.load(); }
   }
+  // Exposed on window so other, differently-scoped parts of this file (this
+  // whole file is a concatenation of many once-separate <script> tags, each
+  // its own closure -- see the "from <script id=...>" markers throughout)
+  // can reuse this exact same in-site video player instead of each building
+  // their own modal. First reused by the Near HRs board's Watch links (see
+  // nearHRTableRowHTML/nearHRCardHTML), which used to link out to Baseball
+  // Savant's own page in a new tab.
+  window.openHRVideoModal = openHRVideoModal;
+  window.closeHRVideoModal = closeHRVideoModal;
 
   function renderHubHRs(list, dayLabel){
     var container = document.getElementById('dr-hub-hr-list');
