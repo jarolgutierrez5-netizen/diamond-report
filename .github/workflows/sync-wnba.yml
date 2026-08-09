@@ -1,0 +1,64 @@
+name: Sync WNBA Data
+
+# Unlike sync-nfl-schedule.yml (workflow_dispatch-only, since nothing reads
+# its output yet), this one runs a real daily cron -- the "15+ Points
+# Probability" board (app.js: renderWNBAPointsBoard) reads data/wnba-*.json
+# immediately, so a stale/missing sync would show live on the site. Same
+# morning slot as MLB's sync-statcast.yml (11:04 UTC), offset a few minutes
+# so the two workflows don't start at the exact same time.
+on:
+  schedule:
+    - cron: '14 11 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-wnba
+  cancel-in-progress: false
+
+jobs:
+  sync-wnba:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run WNBA schedule sync
+        run: node scripts/sync-wnba-schedule.mjs
+
+      # Depends on data/wnba-teams.json from the step above (either freshly
+      # written this run, or already on disk from a prior run).
+      - name: Run WNBA roster sync
+        run: node scripts/sync-wnba-rosters.mjs
+        continue-on-error: true
+        timeout-minutes: 10
+
+      # Depends on data/wnba-rosters.json from the step above. ~200 players
+      # across 15 teams, similar bounded scope to the NFL player-stats sync.
+      # Allowed to fail without red-Xing the schedule/roster steps above it,
+      # same reasoning as the NFL/MLB workflows' own optional steps.
+      - name: Run WNBA player season-stats sync (real 15+ points rate per player)
+        run: node scripts/sync-wnba-player-stats.mjs
+        continue-on-error: true
+        timeout-minutes: 20
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "diamond-report-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/wnba-teams.json data/wnba-schedule.json
+          [ -f data/wnba-rosters.json ] && git add data/wnba-rosters.json
+          [ -f data/wnba-player-stats.json ] && git add data/wnba-player-stats.json
+          if git diff --cached --quiet; then
+            echo "No changes — nothing to commit."
+            exit 0
+          fi
+          git commit -m "Sync WNBA teams/schedule/rosters/player stats"
+          git push

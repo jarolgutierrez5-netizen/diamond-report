@@ -10097,6 +10097,132 @@ async function renderNFLTDBoard() {
 }
 window.renderNFLTDBoard = renderNFLTDBoard;
 
+// ── WNBA 15+ Points Probability (first real WNBA board) ────────────────────
+// Real per-game scoring rate (data/wnba-player-stats.json, scripts/sync-wnba-
+// player-stats.mjs) turned into a raw empirical probability -- P(15+ points) =
+// (real games this season with 15+ points) / (real games played) -- no
+// Poisson/normal-distribution derivation, just a count of real outcomes, same
+// "honest first cut" spirit as the NFL Anytime TD board above (no opponent-
+// defense adjustment yet either).
+//
+// Cushion/Risk mirror the K Props board's drKConfidenceScore/cushion pattern
+// (see drKConfidenceScore above): K Props diffs a real projection against a
+// real sportsbook line when one exists. No free per-player WNBA points line
+// exists (ESPN's odds only cover team spread/moneyline/total), so this board
+// uses a fixed real threshold of 15 (a realistic, commonly-used WNBA scoring
+// prop value, not an invented number) as the one line for both the
+// probability above and the cushion below.
+const WNBA_POINTS_LINE = 15;
+
+// cushion = the player's own real season PPG vs. the fixed line -- self-
+// referential (own average vs. a fixed real number) rather than market-
+// referential (proj vs. a real sportsbook line) like K Props' cushion, since
+// no real per-player market line exists to diff against here.
+function wnbaPointsCushion(r) {
+  return +(Number(r.ptsPerGame) - WNBA_POINTS_LINE).toFixed(1);
+}
+
+// Confidence score built entirely from real, already-synced numbers: the
+// cushion above (bigger real average-over-the-line -> more confidence),
+// real sample size (more logged games -> more confidence, small-sample
+// penalty for a handful of games), and real scoring consistency (ptsStdDev --
+// a volatile boom/bust scorer is lower-confidence than a steady one at the
+// same average). Same baseline+weighted-terms+clamp shape as
+// drKConfidenceScore, just re-tuned for points-per-game's larger natural
+// range vs. strikeout cushion's typically ±1-3 range.
+function wnbaPointsConfidenceScore(r) {
+  const cushion = wnbaPointsCushion(r);
+  const games = Math.max(0, Number(r.games) || 0);
+  const stdDev = Math.max(0, Number(r.ptsStdDev) || 0);
+  let score = 55;
+  score += cushion * 2.6;
+  score += Math.min(games, 20) * 0.6; // sample-size confidence, capped so a long season doesn't dominate
+  score -= stdDev * 2.2; // consistency penalty
+  return Math.round(Math.max(20, Math.min(95, score)));
+}
+// Same Low/Medium/High threshold shape K Props' risk chip uses (app.js:
+// drKConfidenceScore's caller: conf >= 74 ? 'Low' : conf >= 62 ? 'Medium' : 'High').
+function wnbaPointsRisk(r) {
+  const conf = wnbaPointsConfidenceScore(r);
+  return conf >= 74 ? 'Low' : conf >= 62 ? 'Medium' : 'High';
+}
+
+let wnbaPointsDataPromise = null;
+async function loadWNBAPointsData(force = false) {
+  if (wnbaPointsDataPromise && !force) return wnbaPointsDataPromise;
+  wnbaPointsDataPromise = (async () => {
+    const [scheduleData, statsData] = await Promise.all([
+      drFetchDailyJSON('data/wnba-schedule.json').catch(() => null),
+      drFetchDailyJSON('data/wnba-player-stats.json').catch(() => null),
+    ]);
+    return { schedule: (scheduleData && scheduleData.events) || [], players: (statsData && statsData.players) || {} };
+  })();
+  return wnbaPointsDataPromise;
+}
+
+function wnbaPointsCardHTML(r) {
+  const cushion = wnbaPointsCushion(r);
+  const cushionText = `${cushion >= 0 ? '+' : ''}${cushion.toFixed(1)}`;
+  const risk = wnbaPointsRisk(r);
+  const scoreCls = r.prob15Plus >= 55 ? 'good' : '';
+  return `<div class="dr109-card${scoreCls ? ' prop-hit' : ''}">
+    <div class="dr109-card-head">
+      <div class="dr109-player"><div style="min-width:0">
+        <div class="dr109-name">${fantasyEsc(r.name || 'Player')}</div>
+        <div class="dr109-meta">${fantasyEsc(r.position || '')} · ${fantasyEsc(r.teamAbbr || '')} vs ${fantasyEsc(r.oppAbbr || '')}</div>
+      </div></div>
+      <div class="dr109-score">${r.prob15Plus}%<small>15+ PTS</small></div>
+    </div>
+    <div class="dr109-chiprow">
+      <span class="dr109-chip"><span>Season PPG:</span><strong>${r.ptsPerGame != null ? r.ptsPerGame.toFixed(1) : '–'}</strong></span>
+      <span class="dr109-chip"><span>Games:</span><strong>${r.games != null ? r.games : '–'}</strong></span>
+      <span class="dr109-chip ${cushion >= 1 ? 'good' : cushion >= 0 ? 'warn' : 'stat-cushion'}"><span>Cushion:</span><strong>${cushionText}</strong></span>
+      <span class="dr109-chip ${risk === 'Low' ? 'good' : risk === 'Medium' ? 'warn' : 'bad'}"><span>Risk:</span><strong>${risk}</strong></span>
+    </div>
+  </div>`;
+}
+
+async function renderWNBAPointsBoard() {
+  const el = document.getElementById('wnba-points-content');
+  if (!el) return;
+  let data;
+  try {
+    data = await loadWNBAPointsData();
+  } catch (e) {
+    el.innerHTML = '<div class="mu-empty">Couldn\'t load WNBA data. Check back shortly.</div>';
+    return;
+  }
+  const upcoming = (data.schedule || []).filter(g => !g.completed && g.date).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  if (!upcoming.length) {
+    el.innerHTML = '<div class="mu-empty">No upcoming WNBA games found. Check back closer to tip-off.</div>';
+    return;
+  }
+  // Same "nearest upcoming calendar date" scoping the NFL board uses for its
+  // slate -- whichever real date has the next tip-off, not a fixed "today"
+  // that could legitimately have zero games on it.
+  const nextDate = upcoming[0].date.slice(0, 10);
+  const slateGames = upcoming.filter(g => (g.date || '').slice(0, 10) === nextDate);
+  const oppByTeam = {};
+  slateGames.forEach(g => {
+    if (g.home && g.away && g.home.abbreviation && g.away.abbreviation) {
+      oppByTeam[g.home.abbreviation] = g.away.abbreviation;
+      oppByTeam[g.away.abbreviation] = g.home.abbreviation;
+    }
+  });
+  const rows = Object.values(data.players || {})
+    .filter(p => p.teamAbbr && oppByTeam[p.teamAbbr] != null && p.prob15Plus != null)
+    .map(p => Object.assign({}, p, { oppAbbr: oppByTeam[p.teamAbbr] }))
+    .sort((a, b) => b.prob15Plus - a.prob15Plus);
+  if (!rows.length) {
+    el.innerHTML = `<div class="mu-empty">No player season stats synced yet for the ${fantasyEsc(nextDate)} slate. Check back once the daily sync has run.</div>`;
+    return;
+  }
+  el.innerHTML = `<div class="dr109-summary"><div class="dr109-title">🏀 <span>${fantasyEsc(nextDate)} SLATE</span></div>`
+    + `<p class="dr109-copy">Real season scoring rate per rostered player (${fantasyEsc(rows[0].season)} season), modeled as a raw empirical probability of scoring ${WNBA_POINTS_LINE}+ points tonight -- the real share of this player's own games this season that cleared ${WNBA_POINTS_LINE} points, not a derived estimate. Cushion is real season PPG vs. the ${WNBA_POINTS_LINE}-point line; Risk blends that cushion with real sample size and real scoring consistency. Early model -- no opponent defense adjustment yet.</p></div>`
+    + rows.map(wnbaPointsCardHTML).join('');
+}
+window.renderWNBAPointsBoard = renderWNBAPointsBoard;
+
 // ── 5AM HR POTENTIAL REFRESH ─────────────────────────────────────────
 // Checks on load and reschedules daily — handles cases where tab wasn't open at 5am
 const HR_POTENTIAL_STORAGE_KEY = 'hrp_last_loaded_date';
@@ -14384,7 +14510,7 @@ if (document.readyState === 'loading') {
 /* ---- from <script id="anonymous"> ---- */
 // PROD v8.44 — Game Picks inner tab controller with persistent state
 (function(){
-  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, fantasy: true, nearhr: true, nfltd: true };
+  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, fantasy: true, nearhr: true, nfltd: true, wnbapts: true };
 
   // Only the URL hash decides the pane on load (e.g. a shared #gamepick=premium
   // link). No localStorage fallback — a plain refresh/revisit with no hash
@@ -14466,6 +14592,10 @@ if (document.readyState === 'loading') {
     if (pane === 'nfltd') {
       setTimeout(function(){ if (typeof window.renderNFLTDBoard === 'function') window.renderNFLTDBoard(); }, 30);
       setTimeout(function(){ if (typeof window.renderNFLTDBoard === 'function') window.renderNFLTDBoard(); }, 900);
+    }
+    if (pane === 'wnbapts') {
+      setTimeout(function(){ if (typeof window.renderWNBAPointsBoard === 'function') window.renderWNBAPointsBoard(); }, 30);
+      setTimeout(function(){ if (typeof window.renderWNBAPointsBoard === 'function') window.renderWNBAPointsBoard(); }, 900);
     }
   }
 
@@ -17267,7 +17397,7 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
   function setActiveSport(sport){
     if (activeSport === sport) return;
     activeSport = sport;
-    document.body.classList.remove('dr-hub-sport-all', 'dr-hub-sport-mlb', 'dr-hub-sport-nfl', 'dr-hub-sport-nba');
+    document.body.classList.remove('dr-hub-sport-all', 'dr-hub-sport-mlb', 'dr-hub-sport-nfl', 'dr-hub-sport-nba', 'dr-hub-sport-wnba');
     document.body.classList.add('dr-hub-sport-' + sport.toLowerCase());
 
     document.querySelectorAll('.dr-hub-sporttab').forEach(function(btn){
@@ -17415,9 +17545,10 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
     Promise.all([
       fetchLeagueNews('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=50', 'MLB'),
       fetchLeagueNews('https://site.api.espn.com/apis/site/v2/sports/football/nfl/news?limit=30', 'NFL'),
-      fetchLeagueNews('https://site.api.espn.com/apis/site/v2/sports/basketball/nba/news?limit=30', 'NBA')
+      fetchLeagueNews('https://site.api.espn.com/apis/site/v2/sports/basketball/nba/news?limit=30', 'NBA'),
+      fetchLeagueNews('https://site.api.espn.com/apis/site/v2/sports/basketball/wnba/news?limit=30', 'WNBA')
     ]).then(function(results){
-      var merged = results[0].concat(results[1]).concat(results[2]).sort(function(a, b){
+      var merged = results[0].concat(results[1]).concat(results[2]).concat(results[3]).sort(function(a, b){
         return new Date(b.published) - new Date(a.published);
       });
       renderHubNews(merged);
@@ -19324,6 +19455,23 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
     if (nbaCard && !nbaCard.dataset.drHubReady) {
       nbaCard.dataset.drHubReady = '1';
       nbaCard.addEventListener('click', function(){ setActiveSport('NBA'); });
+    }
+
+    // Unlike the NFL/NBA cards above (which stay on the hub and only filter
+    // news, since neither has a board actually reachable from here yet), the
+    // WNBA card is real and live -- mirrors the baseball card's real
+    // navigation into its board instead of the "soon" dead end.
+    var wnbaCard = document.getElementById('dr-hub-wnba-card');
+    if (wnbaCard && !wnbaCard.dataset.drHubReady) {
+      wnbaCard.dataset.drHubReady = '1';
+      wnbaCard.addEventListener('click', function(){
+        setActiveSport('WNBA');
+        hideHub();
+        if (!hashIsGamepick()) {
+          try { window.location.hash = 'gamepick=wnbapts'; } catch(e) {}
+        }
+        if (typeof window.showGamePickPane === 'function') window.showGamePickPane('wnbapts');
+      });
     }
 
     var logo = document.getElementById('dr-header-logo');

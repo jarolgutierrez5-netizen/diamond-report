@@ -222,13 +222,19 @@
          the hub. "All Sports" (default) shows the combined feed; MLB shows the
          full real analytics/news stack; NFL/NBA show real filtered ESPN news
          (already fetched by loadHubNews) plus an honest "launching soon" notice
-         instead of fabricated leaderboards/projections. See setActiveSport in
-         the hub IIFE at the end of app.js. -->
+         instead of fabricated leaderboards/projections, since neither has a
+         real board reachable yet. WNBA is treated like MLB instead -- real
+         filtered ESPN WNBA news, no "coming soon" collapse (see setActiveSport's
+         isOtherSport check) -- because its card is real and live: clicking it
+         navigates straight into gamepick-pane-wnbapts, same as the MLB card
+         does for gamepick-pane-game, instead of staying on the hub. See
+         setActiveSport in the hub IIFE at the end of app.js. -->
     <div class="dr-hub-sporttabs" id="dr-hub-sporttabs" role="tablist" aria-label="Filter by sport">
       <button type="button" class="dr-hub-sporttab active" data-sport="all" role="tab" aria-selected="true">All Sports</button>
       <button type="button" class="dr-hub-sporttab" data-sport="MLB" role="tab" aria-selected="false">MLB</button>
       <button type="button" class="dr-hub-sporttab" data-sport="NFL" role="tab" aria-selected="false">NFL</button>
       <button type="button" class="dr-hub-sporttab" data-sport="NBA" role="tab" aria-selected="false">NBA</button>
+      <button type="button" class="dr-hub-sporttab" data-sport="WNBA" role="tab" aria-selected="false">WNBA</button>
     </div>
 
     <div class="dr-hub-sports">
@@ -254,6 +260,14 @@
           <span class="dr-hub-sport-title">NBA</span>
           <span class="dr-hub-sport-desc">NBA projections in the works.</span>
           <span class="dr-hub-sport-badge">Coming Soon</span>
+        </span>
+      </button>
+      <button type="button" class="dr-hub-sport-card live" id="dr-hub-wnba-card" data-sport="WNBA">
+        <span class="dr-hub-sport-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14" stroke-width="1.15"/><path d="M4.9 5.1c1.9 1.7 3 3 3 4.9s-1.1 3.2-3 4.9M15.1 5.1c-1.9 1.7-3 3-3 4.9s1.1 3.2 3 4.9" stroke-width="1.1"/></svg></span>
+        <span class="dr-hub-sport-text">
+          <span class="dr-hub-sport-title">WNBA</span>
+          <span class="dr-hub-sport-desc">Real season scoring rate, modeled as a live 15+ Points probability board.</span>
+          <span class="dr-hub-sport-badge">● Live — Enter Projections</span>
         </span>
       </button>
     </div>
@@ -559,6 +573,7 @@
     <button class="gamepick-tab" id="gamepick-tab-pr" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-pr" data-gamepick-pane="pr" onclick="showGamePickPane('pr')">📋 Pitcher Report</button>
     <button class="gamepick-tab" id="gamepick-tab-fantasy" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-fantasy" data-gamepick-pane="fantasy" onclick="showGamePickPane('fantasy')">🏆 Fantasy Points [Beta]</button>
     <button class="gamepick-tab" id="gamepick-tab-nfltd" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-nfltd" data-gamepick-pane="nfltd" onclick="showGamePickPane('nfltd')">🏈 NFL Anytime TD</button>
+    <button class="gamepick-tab" id="gamepick-tab-wnbapts" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnbapts" data-gamepick-pane="wnbapts" onclick="showGamePickPane('wnbapts')">🏀 WNBA 15+ PTS</button>
   </div>
 </div>
 
@@ -709,6 +724,31 @@
       </div>
       <div id="nfl-td-content" class="dr-panel-body dr-scroll-tall">
         <div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading NFL props…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- First real WNBA board -- 15+ Points Probability for the next real
+     upcoming slate. Real season scoring rate (data/wnba-player-stats.json,
+     scripts/sync-wnba-player-stats.mjs) expressed as a raw empirical rate --
+     the real share of this player's own games this season with 15+ points --
+     plus a Cushion (real season PPG vs. a fixed 15-point line) and a Risk
+     read (Low/Medium/High), mirroring the K Props board's cushion/risk
+     pattern. Same "honest first cut, no opponent defense adjustment yet"
+     precedent as the NFL board above. -->
+<div class="gamepick-pane" id="gamepick-pane-wnbapts" role="tabpanel" aria-labelledby="gamepick-tab-wnbapts" data-gamepick-pane="wnbapts" hidden>
+  <div class="dr-center-label">🏀 WNBA 15+ Points Probability</div>
+  <div class="dr-dashboard-grid">
+    <div class="dr-panel dr-panel-large dr-panel-fresh">
+      <div class="dr-panel-head">
+        <div>
+          <p class="section-title">WNBA <span>15+ Points Probability</span></p>
+          <small>Real season scoring rate per rostered player, modeled as a raw empirical probability of a 15+ point game. Cushion/Risk mirror the K Props board's real-line-vs-projection read. Early model -- no opponent defense adjustment yet.</small>
+        </div>
+      </div>
+      <div id="wnba-points-content" class="dr-panel-body dr-scroll-tall">
+        <div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading WNBA props…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div>
       </div>
     </div>
   </div>
