@@ -77,6 +77,37 @@
         "slope": 0.95,
         "intercept": 3
       }
+    },
+    {
+      "at": "2026-08-10T16:11:03.095Z",
+      "param": "HR_MULT_SHRINKAGE",
+      "effectiveSince": "2026-07-20",
+      "excludedPreEffective": 362,
+      "nLow": 638,
+      "nHigh": 299,
+      "lowHitRate": 0.13322884012539185,
+      "highHitRate": 0.15384615384615385,
+      "z": -0.8482905707719238,
+      "decision": "skip",
+      "reason": "not statistically significant",
+      "current": 0.6
+    },
+    {
+      "at": "2026-08-10T16:11:03.096Z",
+      "param": "HR_SCORE_CALIBRATION",
+      "effectiveSince": "2026-08-06",
+      "excludedPreEffective": 1284,
+      "n": 15,
+      "fittedSlope": null,
+      "fittedIntercept": null,
+      "seSlope": null,
+      "tSlope": null,
+      "decision": "skip",
+      "reason": "sample size gate not met",
+      "current": {
+        "slope": 0.95,
+        "intercept": 3
+      }
     }
   ]
 }
