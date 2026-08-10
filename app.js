@@ -10177,20 +10177,14 @@ async function renderNFLTDBoard() {
 window.renderNFLTDBoard = renderNFLTDBoard;
 
 // ── WNBA prop board family (Points/Rebounds/Assists/3-Pointers Made/PRA) ───
-// Real per-game rates (data/wnba-player-stats.json, scripts/sync-wnba-player-
-// stats.mjs) turned into raw empirical probabilities -- P(stat >= line) =
-// (real games this season clearing that board's line) / (real games played)
-// -- no Poisson/normal-distribution derivation, just a count of real
-// outcomes, same "honest first cut" spirit as the NFL Anytime TD board above
-// (no opponent-defense adjustment yet either).
-//
-// Cushion/Risk mirror the K Props board's drKConfidenceScore/cushion pattern:
-// K Props diffs a real projection against a real sportsbook line when one
-// exists. No free per-player WNBA prop line exists (ESPN's odds only cover
-// team spread/moneyline/total), so each board uses a fixed real threshold,
-// data-calibrated near the ~85-90th percentile of that stat across the whole
-// rostered player pool (see scripts/sync-wnba-player-stats.mjs's header),
-// as the one line for both the probability above and the cushion below.
+// Each card's headline is the player's own real season per-game average --
+// a real individual projection, same "the model projects N Ks" framing the
+// K Props board uses (app.js: p.projK), NOT a probability against one fixed
+// universal line the way the Hits/RBIs/Total Bases/Stolen Bases boards work.
+// WNBA has no real opponent-defense data to adjust these against yet, so the
+// honest individual projection here IS the player's own real season average
+// itself -- not a fabricated matchup-adjusted number, and not everyone
+// measured against the same arbitrary cutoff regardless of their real usage.
 //
 // One config-driven engine serves all 5 boards (same house pattern the MLB
 // Hits/RBIs/Total Bases/Stolen Bases/Hits+Runs+RBI family already uses --
@@ -10199,77 +10193,44 @@ window.renderNFLTDBoard = renderNFLTDBoard;
 const WNBA_PROP_BOARDS = {
   points: {
     key: 'points', searchKey: 'wnbapts', contentId: 'wnba-points-content',
-    icon: '🏀', label: '15+ Points', shortLabel: '15+ PTS', summaryLabel: 'WNBA 15+ POINTS DATA',
-    line: 15, probField: 'prob15Plus', avgField: 'ptsPerGame', avgLabel: 'PPG', stdDevField: 'ptsStdDev',
-    // Weights below are re-tuned per board so the confidence-score clamp
-    // isn't blown past by every player -- each pair scales the original
-    // points-tuned 2.6/2.2 by 15/line, since a raw points-scale cushion
-    // weight applied to (say) PRA's much larger natural cushion range would
-    // pin almost every player to the clamp floor/ceiling.
-    cushionWeight: 2.6, stdDevWeight: 2.2,
-    sortFields: [{ key: 'prob15Plus', label: 'Prob' }, { key: 'ptsPerGame', label: 'PPG' }, { key: 'cushion', label: 'Cushion' }, { key: 'games', label: 'Games' }],
+    icon: '🏀', label: 'Points', avgField: 'ptsPerGame', avgLabel: 'PPG', avgFullLabel: 'Points Per Game', stdDevField: 'ptsStdDev',
+    sortFields: [{ key: 'ptsPerGame', label: 'PPG' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
   },
   rebounds: {
     key: 'rebounds', searchKey: 'wnbareb', contentId: 'wnba-rebounds-content',
-    icon: '🏀', label: '6+ Rebounds', shortLabel: '6+ REB', summaryLabel: 'WNBA 6+ REBOUNDS DATA',
-    line: 6, probField: 'probRebLine', avgField: 'rebPerGame', avgLabel: 'RPG', stdDevField: 'rebStdDev',
-    cushionWeight: 6.5, stdDevWeight: 5.5,
-    sortFields: [{ key: 'probRebLine', label: 'Prob' }, { key: 'rebPerGame', label: 'RPG' }, { key: 'cushion', label: 'Cushion' }, { key: 'games', label: 'Games' }],
+    icon: '🏀', label: 'Rebounds', avgField: 'rebPerGame', avgLabel: 'RPG', avgFullLabel: 'Rebounds Per Game', stdDevField: 'rebStdDev',
+    sortFields: [{ key: 'rebPerGame', label: 'RPG' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
   },
   assists: {
     key: 'assists', searchKey: 'wnbaast', contentId: 'wnba-assists-content',
-    icon: '🏀', label: '4+ Assists', shortLabel: '4+ AST', summaryLabel: 'WNBA 4+ ASSISTS DATA',
-    line: 4, probField: 'probAstLine', avgField: 'astPerGame', avgLabel: 'APG', stdDevField: 'astStdDev',
-    cushionWeight: 9.75, stdDevWeight: 8.25,
-    sortFields: [{ key: 'probAstLine', label: 'Prob' }, { key: 'astPerGame', label: 'APG' }, { key: 'cushion', label: 'Cushion' }, { key: 'games', label: 'Games' }],
+    icon: '🏀', label: 'Assists', avgField: 'astPerGame', avgLabel: 'APG', avgFullLabel: 'Assists Per Game', stdDevField: 'astStdDev',
+    sortFields: [{ key: 'astPerGame', label: 'APG' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
   },
   threes: {
     key: 'threes', searchKey: 'wnba3pm', contentId: 'wnba-threes-content',
-    icon: '🏀', label: '2+ 3-Pointers Made', shortLabel: '2+ 3PM', summaryLabel: 'WNBA 2+ 3-POINTERS MADE DATA',
-    line: 2, probField: 'prob3PMLine', avgField: 'threesPerGame', avgLabel: '3PM', stdDevField: 'threesStdDev',
-    cushionWeight: 19.5, stdDevWeight: 16.5,
-    sortFields: [{ key: 'prob3PMLine', label: 'Prob' }, { key: 'threesPerGame', label: '3PM' }, { key: 'cushion', label: 'Cushion' }, { key: 'games', label: 'Games' }],
+    icon: '🏀', label: '3-Pointers Made', avgField: 'threesPerGame', avgLabel: '3PM', avgFullLabel: '3-Pointers Made Per Game', stdDevField: 'threesStdDev',
+    sortFields: [{ key: 'threesPerGame', label: '3PM' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
   },
   pra: {
     key: 'pra', searchKey: 'wnbapra', contentId: 'wnba-pra-content',
-    icon: '🏀', label: '25+ PRA', shortLabel: '25+ PRA', summaryLabel: 'WNBA 25+ PRA DATA',
-    line: 25, probField: 'probPRALine', avgField: 'praPerGame', avgLabel: 'PRA', stdDevField: 'praStdDev',
-    cushionWeight: 1.56, stdDevWeight: 1.32,
-    sortFields: [{ key: 'probPRALine', label: 'Prob' }, { key: 'praPerGame', label: 'PRA' }, { key: 'cushion', label: 'Cushion' }, { key: 'games', label: 'Games' }],
+    icon: '🏀', label: 'PRA', avgField: 'praPerGame', avgLabel: 'PRA', avgFullLabel: 'Points+Rebounds+Assists Per Game', stdDevField: 'praStdDev',
+    sortFields: [{ key: 'praPerGame', label: 'PRA' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
   },
 };
 
-// cushion = the player's own real season average vs. this board's fixed
-// line -- self-referential (own average vs. a fixed real number) rather than
-// market-referential (proj vs. a real sportsbook line) like K Props' cushion,
-// since no real per-player market line exists to diff against here.
-function wnbaStatCushion(cfg, r) {
-  return +(Number(r[cfg.avgField]) - cfg.line).toFixed(1);
-}
-
-// Confidence score built entirely from real, already-synced numbers: the
-// cushion above (bigger real average-over-the-line -> more confidence),
-// real sample size (more logged games -> more confidence, small-sample
-// penalty for a handful of games), and real consistency (this board's
-// stdDev field -- a volatile boom/bust player is lower-confidence than a
-// steady one at the same average). Same baseline+weighted-terms+clamp shape
-// as drKConfidenceScore, just re-tuned per board (see cushionWeight/
-// stdDevWeight above) for each stat's own natural numeric range.
-function wnbaStatConfidenceScore(cfg, r) {
-  const cushion = wnbaStatCushion(cfg, r);
-  const games = Math.max(0, Number(r.games) || 0);
-  const stdDev = Math.max(0, Number(r[cfg.stdDevField]) || 0);
-  let score = 55;
-  score += cushion * cfg.cushionWeight;
-  score += Math.min(games, 20) * 0.6; // sample-size confidence, capped so a long season doesn't dominate
-  score -= stdDev * cfg.stdDevWeight; // consistency penalty
-  return Math.round(Math.max(20, Math.min(95, score)));
-}
-// Same Low/Medium/High threshold shape K Props' risk chip uses (app.js:
-// drKConfidenceScore's caller: conf >= 74 ? 'Low' : conf >= 62 ? 'Medium' : 'High').
-function wnbaStatRisk(cfg, r) {
-  const conf = wnbaStatConfidenceScore(cfg, r);
-  return conf >= 74 ? 'Low' : conf >= 62 ? 'Medium' : 'High';
+// Real coefficient-of-variation read (stdDev relative to the player's own
+// average) -- doesn't need a fixed line to compute, unlike the old cushion/
+// risk pattern, so it survives the move away from universal thresholds.
+// Steady/Moderate/Volatile bands chosen so a genuinely streaky boom-bust
+// player (CV above ~0.6) reads differently from a steady rotation player
+// (CV below ~0.35), same three-tier shape the old Risk chip used.
+function wnbaStatConsistency(cfg, r) {
+  const avg = Number(r[cfg.avgField]);
+  const stdDev = Number(r[cfg.stdDevField]);
+  if (!(avg > 0) || !Number.isFinite(stdDev)) return { cv: null, label: '–' };
+  const cv = stdDev / avg;
+  const label = cv < 0.35 ? 'Steady' : cv < 0.6 ? 'Moderate' : 'Volatile';
+  return { cv, label };
 }
 
 // Schedule + player-stats data is identical across all 5 boards -- one
@@ -10309,19 +10270,17 @@ function setWNBAPropGameFilter(boardKey, value) {
 
 function wnbaPropSummaryHTML(cfg, rows) {
   if (!rows.length) return '';
-  const byProb = rows.slice().sort((a, b) => b[cfg.probField] - a[cfg.probField]);
-  const top = byProb[0];
-  const sample = byProb.slice(0, Math.min(8, byProb.length));
-  const avg = Math.round(sample.reduce((a, p) => a + p[cfg.probField], 0) / sample.length);
-  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">${cfg.icon} EXPANDED <span>${cfg.summaryLabel}</span></div><p class="dr1027-summary-copy">Real season rate per rostered player, modeled as a raw empirical probability of clearing the ${cfg.label} line tonight -- the real share of this player's own games this season that cleared it. Early model -- no opponent defense adjustment yet.</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>${avg}%</b><span>Board Avg Probability</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>${cfg.label}</b><span>Primary Signal</span></div></div></div>`;
+  const byAvg = rows.slice().sort((a, b) => b[cfg.avgField] - a[cfg.avgField]);
+  const top = byAvg[0];
+  const sample = byAvg.slice(0, Math.min(8, byAvg.length));
+  const avg = (sample.reduce((a, p) => a + p[cfg.avgField], 0) / sample.length).toFixed(1);
+  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">${cfg.icon} EXPANDED <span>WNBA ${cfg.label.toUpperCase()} PROJECTIONS</span></div><p class="dr1027-summary-copy">Real season ${cfg.avgFullLabel.toLowerCase()} per rostered player -- each player's own real season average, the individual projection this board scores from. Early model -- no opponent defense adjustment yet.</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Projected</span></div><div class="dr1027-summary-metric"><b>${avg}</b><span>Board Avg ${cfg.avgLabel}</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>${cfg.label}</b><span>Primary Signal</span></div></div></div>`;
 }
 
-function wnbaPropCardHTML(cfg, r) {
-  const cushion = wnbaStatCushion(cfg, r);
-  const cushionText = `${cushion >= 0 ? '+' : ''}${cushion.toFixed(1)}`;
-  const risk = wnbaStatRisk(cfg, r);
-  const prob = r[cfg.probField];
-  const scoreCls = prob >= 55 ? 'good' : '';
+function wnbaPropCardHTML(cfg, r, topCutoff) {
+  const avgVal = r[cfg.avgField];
+  const consistency = wnbaStatConsistency(cfg, r);
+  const scoreCls = (topCutoff != null && avgVal != null && avgVal >= topCutoff) ? 'good' : '';
   return `<div class="dr109-card${scoreCls ? ' prop-hit' : ''}">
     ${window.drWatchStarHTML('wnba-' + r.id, r.name)}
     <div class="dr109-card-head">
@@ -10332,7 +10291,7 @@ function wnbaPropCardHTML(cfg, r) {
           <div class="dr109-meta">${fantasyEsc(r.position || '')} · ${fantasyEsc(r.teamAbbr || '')} vs ${fantasyEsc(r.oppAbbr || '')}</div>
         </div>
       </div>
-      <div class="dr109-score">${prob != null ? prob : '–'}%<small>${cfg.shortLabel}</small></div>
+      <div class="dr109-score">${avgVal != null ? avgVal.toFixed(1) : '–'}<small>Proj ${cfg.avgLabel}</small></div>
     </div>
     <div class="dr109-chiprow">
       <span class="dr109-chip"><span>Season PPG:</span><strong>${r.ptsPerGame != null ? r.ptsPerGame.toFixed(1) : '–'}</strong></span>
@@ -10341,8 +10300,7 @@ function wnbaPropCardHTML(cfg, r) {
       <span class="dr109-chip"><span>3PM:</span><strong>${r.threesPerGame != null ? r.threesPerGame.toFixed(1) : '–'}</strong></span>
       <span class="dr109-chip"><span>PRA:</span><strong>${r.praPerGame != null ? r.praPerGame.toFixed(1) : '–'}</strong></span>
       <span class="dr109-chip"><span>Games:</span><strong>${r.games != null ? r.games : '–'}</strong></span>
-      <span class="dr109-chip ${cushion >= 1 ? 'good' : cushion >= 0 ? 'warn' : 'stat-cushion'}"><span>Cushion:</span><strong>${cushionText}</strong></span>
-      <span class="dr109-chip ${risk === 'Low' ? 'good' : risk === 'Medium' ? 'warn' : 'bad'}"><span>Risk:</span><strong>${risk}</strong></span>
+      <span class="dr109-chip ${consistency.label === 'Steady' ? 'good' : consistency.label === 'Moderate' ? 'warn' : consistency.label === 'Volatile' ? 'bad' : ''}"><span>Consistency:</span><strong>${consistency.label}</strong></span>
     </div>
   </div>`;
 }
@@ -10377,8 +10335,11 @@ async function renderWNBAPropBoard(cfg) {
     }
   });
   const allRows = Object.entries(data.players || {})
-    .filter(([id, p]) => p.teamAbbr && oppByTeam[p.teamAbbr] != null && p[cfg.probField] != null)
-    .map(([id, p]) => Object.assign({ id }, p, { oppAbbr: oppByTeam[p.teamAbbr], cushion: wnbaStatCushion(cfg, p) }));
+    .filter(([id, p]) => p.teamAbbr && oppByTeam[p.teamAbbr] != null && p[cfg.avgField] != null)
+    .map(([id, p]) => {
+      const consistency = wnbaStatConsistency(cfg, p);
+      return Object.assign({ id }, p, { oppAbbr: oppByTeam[p.teamAbbr], consistency: consistency.cv != null ? -consistency.cv : null });
+    });
   if (!allRows.length) {
     el.innerHTML = `<div class="mu-empty">No player season stats synced yet for the ${fantasyEsc(nextDate)} slate. Check back once the daily sync has run.</div>`;
     return;
@@ -10399,18 +10360,30 @@ async function renderWNBAPropBoard(cfg) {
       return st.gameFilter === gid || st.gameFilter === gidRev;
     });
   }
-  const sortKey = st.sort || cfg.probField;
-  rows = rows.slice().sort((a, b) => (b[sortKey] - a[sortKey]) * st.sortDir);
+  const sortKey = st.sort || cfg.avgField;
+  rows = rows.slice().sort((a, b) => {
+    const av = a[sortKey], bv = b[sortKey];
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    return (bv - av) * st.sortDir;
+  });
 
   const sortBtns = cfg.sortFields.map(({ key, label }) => {
-    const active = (st.sort || cfg.probField) === key;
+    const active = (st.sort || cfg.avgField) === key;
     const arrow = active ? (st.sortDir === 1 ? ' ↓' : ' ↑') : '';
     return `<button onclick="wnbaPropSortBy('${cfg.key}','${key}')" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${active ? 'var(--accent2)' : 'var(--border)'};background:${active ? 'rgba(47,107,255,.12)' : 'var(--surface2)'};color:${active ? 'var(--accent2)' : 'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">${label}${arrow}</button>`;
   }).join('');
 
+  // Top-quartile highlight computed fresh from this render's own real values
+  // -- relative to the actual field's real distribution, not a fixed
+  // universal cutoff applied to every player regardless of position/role.
+  const sortedVals = allRows.map(p => p[cfg.avgField]).filter(v => v != null).sort((a, b) => b - a);
+  const topCutoff = sortedVals.length ? sortedVals[Math.max(0, Math.floor(sortedVals.length * 0.25) - 1)] : null;
+
   const noMatches = !rows.length && ((window.__drBoardSearch[cfg.searchKey] || '').trim() || st.gameFilter);
   el.innerHTML = `<div class="dr109-summary"><div class="dr109-title">${cfg.icon} <span>${fantasyEsc(nextDate)} SLATE</span></div>`
-    + `<p class="dr109-copy">Real season ${cfg.avgLabel} rate per rostered player (${fantasyEsc(allRows[0].season)} season), modeled as a raw empirical probability of clearing ${cfg.label} tonight -- the real share of this player's own games this season that cleared the line, not a derived estimate. PPG/RPG/APG/3PM/PRA are each real season per-game averages, not projections. Cushion is real season ${cfg.avgLabel} vs. this board's line; Risk blends that cushion with real sample size and real consistency. Early model -- no opponent defense adjustment yet.</p></div>`
+    + `<p class="dr109-copy">Real season ${cfg.avgFullLabel.toLowerCase()} per rostered player (${fantasyEsc(allRows[0].season)} season) -- each player's own real season average, shown directly as their individual projection for tonight, not a probability against a fixed universal line. Consistency reads real season volatility (stdDev relative to their own average). Early model -- no opponent defense adjustment yet.</p></div>`
     + wnbaPropSummaryHTML(cfg, allRows)
     + `<div class="dr109-filter-row kprops-sticky-sort" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">
         <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">GAME:</span>
@@ -10420,7 +10393,7 @@ async function renderWNBAPropBoard(cfg) {
         <button onclick="wnbaPropSortBy('${cfg.key}',null)" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:3px 8px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0">RESET</button>
         ${drSearchInputHTML(cfg.searchKey, cfg.searchKey + '-search-input', 'Search players…', `drSetBoardSearch('${cfg.searchKey}',this.value,function(){renderWNBAPropBoard(WNBA_PROP_BOARDS.${cfg.key});})`)}
       </div>`
-    + (noMatches ? `<div class="mu-empty" style="padding:24px">No players match the current search/filter.</div>` : rows.map(r => wnbaPropCardHTML(cfg, r)).join(''));
+    + (noMatches ? `<div class="mu-empty" style="padding:24px">No players match the current search/filter.</div>` : rows.map(r => wnbaPropCardHTML(cfg, r, topCutoff)).join(''));
   drRestoreSearchFocus(__searchFocus);
 }
 

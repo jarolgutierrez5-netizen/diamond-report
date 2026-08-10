@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026081003">
+<link rel="stylesheet" href="styles.min.css?v=2026081004">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -146,14 +146,14 @@
   <span class="dr-top-nav-cat-btn dr-top-nav-cat-soon" title="Coming soon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14" stroke-width="1.15"/><path d="M4.9 5.1c1.9 1.7 3 3 3 4.9s-1.1 3.2-3 4.9M15.1 5.1c-1.9 1.7-3 3-3 4.9s1.1 3.2 3 4.9" stroke-width="1.1"/></svg><span>NBA</span><em>Soon</em></span>
   <!-- WNBA has 5 boards now (Points/Rebounds/Assists/3-Pointers Made/PRA),
        so it's a real dropdown like Baseball's, not a single pill. -->
-  <button type="button" class="dr-top-nav-cat-btn" id="dr-top-nav-wnba-btn" aria-expanded="false" aria-controls="dr-top-nav-wnba-menu"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14" stroke-width="1.15"/><path d="M4.9 5.1c1.9 1.7 3 3 3 4.9s-1.1 3.2-3 4.9M15.1 5.1c-1.9 1.7-3 3-3 4.9s1.1 3.2 3 4.9" stroke-width="1.1"/></svg><span>WNBA</span><span class="dr-top-nav-cat-current" id="dr-top-nav-wnba-current">15+ Points</span><svg class="dr-top-nav-chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5l3 3 3-3"/></svg></button>
+  <button type="button" class="dr-top-nav-cat-btn" id="dr-top-nav-wnba-btn" aria-expanded="false" aria-controls="dr-top-nav-wnba-menu"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14" stroke-width="1.15"/><path d="M4.9 5.1c1.9 1.7 3 3 3 4.9s-1.1 3.2-3 4.9M15.1 5.1c-1.9 1.7-3 3-3 4.9s1.1 3.2 3 4.9" stroke-width="1.1"/></svg><span>WNBA</span><span class="dr-top-nav-cat-current" id="dr-top-nav-wnba-current">Points</span><svg class="dr-top-nav-chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5l3 3 3-3"/></svg></button>
 </div>
 <div class="dr-top-nav-menu" id="dr-top-nav-wnba-menu" aria-hidden="true">
-  <button type="button" data-gamepick-pane="wnbapts" data-sport="WNBA" class="dr-top-nav-tab active"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14" stroke-width="1.15"/></svg><span>15+ Points</span></button>
-  <button type="button" data-gamepick-pane="wnbareb" data-sport="WNBA" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3a7 7 0 1 0 .001 0z"/><path d="M10 3v14M3 10h14" stroke-width="1"/></svg><span>6+ Rebounds</span></button>
-  <button type="button" data-gamepick-pane="wnbaast" data-sport="WNBA" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15.5l4.5-9 3 4 2.5-5.5L17 12"/></svg><span>4+ Assists</span></button>
-  <button type="button" data-gamepick-pane="wnba3pm" data-sport="WNBA" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8.2L10 3l4.5 5.2L10 17z"/></svg><span>2+ 3-Pointers Made</span></button>
-  <button type="button" data-gamepick-pane="wnbapra" data-sport="WNBA" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.5V9M10 16.5V4M16 16.5v-6.5"/><path d="M2.5 16.5h15"/></svg><span>25+ PRA</span></button>
+  <button type="button" data-gamepick-pane="wnbapts" data-sport="WNBA" class="dr-top-nav-tab active"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14" stroke-width="1.15"/></svg><span>Points</span></button>
+  <button type="button" data-gamepick-pane="wnbareb" data-sport="WNBA" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3a7 7 0 1 0 .001 0z"/><path d="M10 3v14M3 10h14" stroke-width="1"/></svg><span>Rebounds</span></button>
+  <button type="button" data-gamepick-pane="wnbaast" data-sport="WNBA" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15.5l4.5-9 3 4 2.5-5.5L17 12"/></svg><span>Assists</span></button>
+  <button type="button" data-gamepick-pane="wnba3pm" data-sport="WNBA" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8.2L10 3l4.5 5.2L10 17z"/></svg><span>3-Pointers Made</span></button>
+  <button type="button" data-gamepick-pane="wnbapra" data-sport="WNBA" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.5V9M10 16.5V4M16 16.5v-6.5"/><path d="M2.5 16.5h15"/></svg><span>PRA</span></button>
 </div>
 <!-- Deliberately a sibling of .dr-top-nav-inner, not nested inside it -- that
      row has overflow-x:auto for the narrow-viewport scroll fallback, and CSS
@@ -205,11 +205,11 @@
     <button type="button" data-tab="pr" data-sport="MLB" class="dr-menu-item">📋 Pitcher Report</button>
     <button type="button" data-tab="fantasy" data-sport="MLB" class="dr-menu-item">🏆 Fantasy Points [Beta]</button>
     <button type="button" data-tab="nfltd" data-sport="NFL" class="dr-menu-item dr-menu-item-hidden">🏈 NFL Anytime TD</button>
-    <button type="button" data-tab="wnbapts" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA 15+ PTS</button>
-    <button type="button" data-tab="wnbareb" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA 6+ REB</button>
-    <button type="button" data-tab="wnbaast" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA 4+ AST</button>
-    <button type="button" data-tab="wnba3pm" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA 2+ 3PM</button>
-    <button type="button" data-tab="wnbapra" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA 25+ PRA</button>
+    <button type="button" data-tab="wnbapts" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA Points</button>
+    <button type="button" data-tab="wnbareb" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA Rebounds</button>
+    <button type="button" data-tab="wnbaast" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA Assists</button>
+    <button type="button" data-tab="wnba3pm" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA 3-Pointers Made</button>
+    <button type="button" data-tab="wnbapra" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA PRA</button>
   </div>
 </div>
 
@@ -285,7 +285,7 @@
         <span class="dr-hub-sport-icon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14" stroke-width="1.15"/><path d="M4.9 5.1c1.9 1.7 3 3 3 4.9s-1.1 3.2-3 4.9M15.1 5.1c-1.9 1.7-3 3-3 4.9s1.1 3.2 3 4.9" stroke-width="1.1"/></svg></span>
         <span class="dr-hub-sport-text">
           <span class="dr-hub-sport-title">WNBA</span>
-          <span class="dr-hub-sport-desc">Real season scoring rate, modeled as a live 15+ Points probability board.</span>
+          <span class="dr-hub-sport-desc">Real season per-game averages, modeled as live individual player projections.</span>
           <span class="dr-hub-sport-badge">● Live — Enter Projections</span>
         </span>
       </button>
@@ -592,11 +592,11 @@
     <button class="gamepick-tab" id="gamepick-tab-pr" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-pr" data-gamepick-pane="pr" onclick="showGamePickPane('pr')">📋 Pitcher Report</button>
     <button class="gamepick-tab" id="gamepick-tab-fantasy" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-fantasy" data-gamepick-pane="fantasy" onclick="showGamePickPane('fantasy')">🏆 Fantasy Points [Beta]</button>
     <button class="gamepick-tab" id="gamepick-tab-nfltd" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-nfltd" data-gamepick-pane="nfltd" onclick="showGamePickPane('nfltd')">🏈 NFL Anytime TD</button>
-    <button class="gamepick-tab" id="gamepick-tab-wnbapts" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnbapts" data-gamepick-pane="wnbapts" onclick="showGamePickPane('wnbapts')">🏀 WNBA 15+ PTS</button>
-    <button class="gamepick-tab" id="gamepick-tab-wnbareb" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnbareb" data-gamepick-pane="wnbareb" onclick="showGamePickPane('wnbareb')">🏀 WNBA 6+ REB</button>
-    <button class="gamepick-tab" id="gamepick-tab-wnbaast" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnbaast" data-gamepick-pane="wnbaast" onclick="showGamePickPane('wnbaast')">🏀 WNBA 4+ AST</button>
-    <button class="gamepick-tab" id="gamepick-tab-wnba3pm" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnba3pm" data-gamepick-pane="wnba3pm" onclick="showGamePickPane('wnba3pm')">🏀 WNBA 2+ 3PM</button>
-    <button class="gamepick-tab" id="gamepick-tab-wnbapra" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnbapra" data-gamepick-pane="wnbapra" onclick="showGamePickPane('wnbapra')">🏀 WNBA 25+ PRA</button>
+    <button class="gamepick-tab" id="gamepick-tab-wnbapts" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnbapts" data-gamepick-pane="wnbapts" onclick="showGamePickPane('wnbapts')">🏀 WNBA Points</button>
+    <button class="gamepick-tab" id="gamepick-tab-wnbareb" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnbareb" data-gamepick-pane="wnbareb" onclick="showGamePickPane('wnbareb')">🏀 WNBA Rebounds</button>
+    <button class="gamepick-tab" id="gamepick-tab-wnbaast" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnbaast" data-gamepick-pane="wnbaast" onclick="showGamePickPane('wnbaast')">🏀 WNBA Assists</button>
+    <button class="gamepick-tab" id="gamepick-tab-wnba3pm" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnba3pm" data-gamepick-pane="wnba3pm" onclick="showGamePickPane('wnba3pm')">🏀 WNBA 3-Pointers Made</button>
+    <button class="gamepick-tab" id="gamepick-tab-wnbapra" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnbapra" data-gamepick-pane="wnbapra" onclick="showGamePickPane('wnbapra')">🏀 WNBA PRA</button>
   </div>
 </div>
 
@@ -752,22 +752,23 @@
   </div>
 </div>
 
-<!-- First real WNBA board -- 15+ Points Probability for the next real
-     upcoming slate. Real season scoring rate (data/wnba-player-stats.json,
-     scripts/sync-wnba-player-stats.mjs) expressed as a raw empirical rate --
-     the real share of this player's own games this season with 15+ points --
-     plus a Cushion (real season PPG vs. a fixed 15-point line) and a Risk
-     read (Low/Medium/High), mirroring the K Props board's cushion/risk
-     pattern. Same "honest first cut, no opponent defense adjustment yet"
-     precedent as the NFL board above. -->
+<!-- First real WNBA board -- Points Projections for the next real upcoming
+     slate. Real season scoring rate (data/wnba-player-stats.json, scripts/
+     sync-wnba-player-stats.mjs) shown directly as each player's own real
+     season PPG -- their individual projection for tonight, same "the model
+     projects N Ks" framing the K Props board uses, not a probability
+     against a fixed universal line. Consistency reads real season
+     volatility (stdDev relative to their own average). Same "honest first
+     cut, no opponent defense adjustment yet" precedent as the NFL board
+     above. -->
 <div class="gamepick-pane" id="gamepick-pane-wnbapts" role="tabpanel" aria-labelledby="gamepick-tab-wnbapts" data-gamepick-pane="wnbapts" hidden>
-  <div class="dr-center-label">🏀 WNBA 15+ Points Probability</div>
+  <div class="dr-center-label">🏀 WNBA Points Projections</div>
   <div class="dr-dashboard-grid">
     <div class="dr-panel dr-panel-large dr-panel-fresh">
       <div class="dr-panel-head">
         <div>
-          <p class="section-title">WNBA <span>15+ Points Probability</span></p>
-          <small>Real season scoring rate per rostered player, modeled as a raw empirical probability of a 15+ point game, plus real RPG/APG/3PM/PRA per-game averages. Cushion/Risk mirror the K Props board's real-line-vs-projection read. Early model -- no opponent defense adjustment yet.</small>
+          <p class="section-title">WNBA <span>Points Projections</span></p>
+          <small>Real season PPG per rostered player, shown directly as their individual scoring projection for tonight -- plus real RPG/APG/3PM/PRA per-game averages and a Consistency read. Early model -- no opponent defense adjustment yet.</small>
         </div>
       </div>
       <div id="wnba-points-content" class="dr-panel-body dr-scroll-tall">
@@ -777,18 +778,17 @@
   </div>
 </div>
 
-<!-- Rest of the WNBA prop board family -- same real per-game data, cushion/
-     risk pattern, and "honest first cut" caveat as the Points board above,
-     just a different fixed line + headline stat per board (app.js:
-     WNBA_PROP_BOARDS). -->
+<!-- Rest of the WNBA prop board family -- same real per-game data and
+     "honest first cut" caveat as the Points board above, just a different
+     headline stat per board (app.js: WNBA_PROP_BOARDS). -->
 <div class="gamepick-pane" id="gamepick-pane-wnbareb" role="tabpanel" aria-labelledby="gamepick-tab-wnbareb" data-gamepick-pane="wnbareb" hidden>
-  <div class="dr-center-label">🏀 WNBA 6+ Rebounds Probability</div>
+  <div class="dr-center-label">🏀 WNBA Rebounds Projections</div>
   <div class="dr-dashboard-grid">
     <div class="dr-panel dr-panel-large dr-panel-fresh">
       <div class="dr-panel-head">
         <div>
-          <p class="section-title">WNBA <span>6+ Rebounds Probability</span></p>
-          <small>Real season rebounding rate per rostered player, modeled as a raw empirical probability of a 6+ rebound game, plus real PPG/APG/3PM/PRA per-game averages. Cushion/Risk mirror the K Props board's real-line-vs-projection read. Early model -- no opponent defense adjustment yet.</small>
+          <p class="section-title">WNBA <span>Rebounds Projections</span></p>
+          <small>Real season RPG per rostered player, shown directly as their individual rebounding projection for tonight -- plus real PPG/APG/3PM/PRA per-game averages and a Consistency read. Early model -- no opponent defense adjustment yet.</small>
         </div>
       </div>
       <div id="wnba-rebounds-content" class="dr-panel-body dr-scroll-tall">
@@ -799,13 +799,13 @@
 </div>
 
 <div class="gamepick-pane" id="gamepick-pane-wnbaast" role="tabpanel" aria-labelledby="gamepick-tab-wnbaast" data-gamepick-pane="wnbaast" hidden>
-  <div class="dr-center-label">🏀 WNBA 4+ Assists Probability</div>
+  <div class="dr-center-label">🏀 WNBA Assists Projections</div>
   <div class="dr-dashboard-grid">
     <div class="dr-panel dr-panel-large dr-panel-fresh">
       <div class="dr-panel-head">
         <div>
-          <p class="section-title">WNBA <span>4+ Assists Probability</span></p>
-          <small>Real season playmaking rate per rostered player, modeled as a raw empirical probability of a 4+ assist game, plus real PPG/RPG/3PM/PRA per-game averages. Cushion/Risk mirror the K Props board's real-line-vs-projection read. Early model -- no opponent defense adjustment yet.</small>
+          <p class="section-title">WNBA <span>Assists Projections</span></p>
+          <small>Real season APG per rostered player, shown directly as their individual playmaking projection for tonight -- plus real PPG/RPG/3PM/PRA per-game averages and a Consistency read. Early model -- no opponent defense adjustment yet.</small>
         </div>
       </div>
       <div id="wnba-assists-content" class="dr-panel-body dr-scroll-tall">
@@ -816,13 +816,13 @@
 </div>
 
 <div class="gamepick-pane" id="gamepick-pane-wnba3pm" role="tabpanel" aria-labelledby="gamepick-tab-wnba3pm" data-gamepick-pane="wnba3pm" hidden>
-  <div class="dr-center-label">🏀 WNBA 2+ 3-Pointers Made Probability</div>
+  <div class="dr-center-label">🏀 WNBA 3-Pointers Made Projections</div>
   <div class="dr-dashboard-grid">
     <div class="dr-panel dr-panel-large dr-panel-fresh">
       <div class="dr-panel-head">
         <div>
-          <p class="section-title">WNBA <span>2+ 3-Pointers Made Probability</span></p>
-          <small>Real season 3-point rate per rostered player, modeled as a raw empirical probability of a 2+ made-3 game, plus real PPG/RPG/APG/PRA per-game averages. Cushion/Risk mirror the K Props board's real-line-vs-projection read. Early model -- no opponent defense adjustment yet.</small>
+          <p class="section-title">WNBA <span>3-Pointers Made Projections</span></p>
+          <small>Real season 3PM per rostered player, shown directly as their individual 3-point projection for tonight -- plus real PPG/RPG/APG/PRA per-game averages and a Consistency read. Early model -- no opponent defense adjustment yet.</small>
         </div>
       </div>
       <div id="wnba-threes-content" class="dr-panel-body dr-scroll-tall">
@@ -833,13 +833,13 @@
 </div>
 
 <div class="gamepick-pane" id="gamepick-pane-wnbapra" role="tabpanel" aria-labelledby="gamepick-tab-wnbapra" data-gamepick-pane="wnbapra" hidden>
-  <div class="dr-center-label">🏀 WNBA 25+ PRA Probability</div>
+  <div class="dr-center-label">🏀 WNBA PRA Projections</div>
   <div class="dr-dashboard-grid">
     <div class="dr-panel dr-panel-large dr-panel-fresh">
       <div class="dr-panel-head">
         <div>
-          <p class="section-title">WNBA <span>25+ PRA Probability</span></p>
-          <small>Real season combined points+rebounds+assists rate per rostered player, modeled as a raw empirical probability of a 25+ PRA game, plus real PPG/RPG/APG/3PM per-game averages. Cushion/Risk mirror the K Props board's real-line-vs-projection read. Early model -- no opponent defense adjustment yet.</small>
+          <p class="section-title">WNBA <span>PRA Projections</span></p>
+          <small>Real season combined points+rebounds+assists per rostered player, shown directly as their individual PRA projection for tonight -- plus real PPG/RPG/APG/3PM per-game averages and a Consistency read. Early model -- no opponent defense adjustment yet.</small>
         </div>
       </div>
       <div id="wnba-pra-content" class="dr-panel-body dr-scroll-tall">
@@ -1173,7 +1173,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026081003" defer></script>
+<script src="app.min.js?v=2026081004" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
