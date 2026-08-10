@@ -10197,6 +10197,12 @@ const WNBA_PROP_BOARDS = {
   points: {
     key: 'points', searchKey: 'wnbapts', contentId: 'wnba-points-content',
     icon: '🏀', label: 'Points', avgField: 'ptsPerGame', avgLabel: 'PPG', avgFullLabel: 'Points Per Game', stdDevField: 'ptsStdDev',
+    // The headline number is a single-game projection for tonight (real
+    // season average, defense-adjusted when possible), not a season rate --
+    // projLabel drops the "per game" framing avgLabel correctly keeps for
+    // the season-average chip below it, so "Proj Points" doesn't read like
+    // a season stat the way "Proj PPG" did.
+    projLabel: 'Points',
     // Real opponent points-allowed per team (ESPN standings). No other
     // board has a matching defenseStatKey yet -- see header comment above.
     defenseStatKey: 'avgPointsAgainst',
@@ -10205,21 +10211,25 @@ const WNBA_PROP_BOARDS = {
   rebounds: {
     key: 'rebounds', searchKey: 'wnbareb', contentId: 'wnba-rebounds-content',
     icon: '🏀', label: 'Rebounds', avgField: 'rebPerGame', avgLabel: 'RPG', avgFullLabel: 'Rebounds Per Game', stdDevField: 'rebStdDev',
+    projLabel: 'Rebounds',
     sortFields: [{ key: 'projAvg', label: 'RPG' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
   },
   assists: {
     key: 'assists', searchKey: 'wnbaast', contentId: 'wnba-assists-content',
     icon: '🏀', label: 'Assists', avgField: 'astPerGame', avgLabel: 'APG', avgFullLabel: 'Assists Per Game', stdDevField: 'astStdDev',
+    projLabel: 'Assists',
     sortFields: [{ key: 'projAvg', label: 'APG' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
   },
   threes: {
     key: 'threes', searchKey: 'wnba3pm', contentId: 'wnba-threes-content',
     icon: '🏀', label: '3-Pointers Made', avgField: 'threesPerGame', avgLabel: '3PM', avgFullLabel: '3-Pointers Made Per Game', stdDevField: 'threesStdDev',
+    projLabel: '3-Pointers',
     sortFields: [{ key: 'projAvg', label: '3PM' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
   },
   pra: {
     key: 'pra', searchKey: 'wnbapra', contentId: 'wnba-pra-content',
     icon: '🏀', label: 'PRA', avgField: 'praPerGame', avgLabel: 'PRA', avgFullLabel: 'Points+Rebounds+Assists Per Game', stdDevField: 'praStdDev',
+    projLabel: 'PRA',
     sortFields: [{ key: 'projAvg', label: 'PRA' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
   },
 };
@@ -10303,7 +10313,7 @@ function wnbaPropSummaryHTML(cfg, rows) {
   const copy = hasDefense
     ? `Real season ${cfg.avgFullLabel.toLowerCase()} per rostered player, adjusted for real opponent scoring defense (ESPN standings) where a real matchup exists -- the individual projection this board scores from.`
     : `Real season ${cfg.avgFullLabel.toLowerCase()} per rostered player -- each player's own real season average, the individual projection this board scores from. Early model -- no opponent defense adjustment yet.`;
-  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">${cfg.icon} EXPANDED <span>WNBA ${cfg.label.toUpperCase()} PROJECTIONS</span></div><p class="dr1027-summary-copy">${copy}</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Projected</span></div><div class="dr1027-summary-metric"><b>${avg}</b><span>Board Avg ${cfg.avgLabel}</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>${cfg.label}</b><span>Primary Signal</span></div></div></div>`;
+  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">${cfg.icon} EXPANDED <span>WNBA ${cfg.label.toUpperCase()} PROJECTIONS</span></div><p class="dr1027-summary-copy">${copy}</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Projected</span></div><div class="dr1027-summary-metric"><b>${avg}</b><span>Board Avg ${cfg.projLabel}</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>${cfg.label}</b><span>Primary Signal</span></div></div></div>`;
 }
 
 function wnbaPropCardHTML(cfg, r, topCutoff) {
@@ -10322,7 +10332,7 @@ function wnbaPropCardHTML(cfg, r, topCutoff) {
           <div class="dr109-meta">${fantasyEsc(r.position || '')} · ${fantasyEsc(r.teamAbbr || '')} vs ${fantasyEsc(r.oppAbbr || '')}</div>
         </div>
       </div>
-      <div class="dr109-score">${projAvg != null ? projAvg.toFixed(1) : '–'}<small>Proj ${cfg.avgLabel}</small></div>
+      <div class="dr109-score">${projAvg != null ? projAvg.toFixed(1) : '–'}<small>Proj ${cfg.projLabel}</small></div>
     </div>
     <div class="dr109-chiprow">
       <span class="dr109-chip"><span>Season PPG:</span><strong>${r.ptsPerGame != null ? r.ptsPerGame.toFixed(1) : '–'}</strong></span>
