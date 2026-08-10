@@ -109,7 +109,7 @@ test.describe('WNBA Rebounds board (representative of the WNBA_PROP_BOARDS point
     const card = page.locator('#wnba-rebounds-content .dr109-card').first();
     await expect(card.locator('.dr109-score')).toContainText('9.4');
     await expect(card.locator('.dr109-score')).not.toContainText('%');
-    await expect(card.locator('.dr109-score small')).toHaveText('Proj RPG');
+    await expect(card.locator('.dr109-score small')).toHaveText('Proj Rebounds');
     await expect(card.locator('.dr109-chip', { hasText: 'RPG' })).toContainText('9.4');
     await expect(card.locator('.dr109-chip', { hasText: 'Consistency' })).toBeVisible();
     await expect(card.locator('.dr-watch-star')).toHaveCount(1);
