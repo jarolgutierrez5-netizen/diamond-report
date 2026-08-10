@@ -1231,6 +1231,12 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
   #tb-props-content,
   #sb-props-content,
   #hrrbi-props-content,
+  #nfl-td-content,
+  #wnba-points-content,
+  #wnba-rebounds-content,
+  #wnba-assists-content,
+  #wnba-threes-content,
+  #wnba-pra-content,
   #kprops-content > div[style*="overflow-x"]{
     grid-template-columns:1fr !important;
   }
