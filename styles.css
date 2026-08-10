@@ -984,21 +984,27 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #nfl-td-content > .dr109-summary,
 #nfl-td-content > .dr109-filter-row,
 #nfl-td-content > .mu-empty,
+#nfl-td-content > .dr1027-hr-summary,
 #wnba-points-content > .dr109-summary,
 #wnba-points-content > .dr109-filter-row,
 #wnba-points-content > .mu-empty,
+#wnba-points-content > .dr1027-hr-summary,
 #wnba-rebounds-content > .dr109-summary,
 #wnba-rebounds-content > .dr109-filter-row,
 #wnba-rebounds-content > .mu-empty,
+#wnba-rebounds-content > .dr1027-hr-summary,
 #wnba-assists-content > .dr109-summary,
 #wnba-assists-content > .dr109-filter-row,
 #wnba-assists-content > .mu-empty,
+#wnba-assists-content > .dr1027-hr-summary,
 #wnba-threes-content > .dr109-summary,
 #wnba-threes-content > .dr109-filter-row,
 #wnba-threes-content > .mu-empty,
+#wnba-threes-content > .dr1027-hr-summary,
 #wnba-pra-content > .dr109-summary,
 #wnba-pra-content > .dr109-filter-row,
-#wnba-pra-content > .mu-empty{
+#wnba-pra-content > .mu-empty,
+#wnba-pra-content > .dr1027-hr-summary{
   grid-column:1 / -1 !important;
 }
 
@@ -3893,6 +3899,108 @@ select:focus-visible {
 }
 @media (max-width: 700px) {
   #kprops-content .dr1027-summary-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+/* Same gap as the #kprops-content block above, for the NFL Anytime TD and
+   WNBA prop boards' own Expanded Data summary banners (nflTDSummaryHTML/
+   wnbaPropSummaryHTML, app.js) -- they reuse the same .dr1027-* classes,
+   but that actual box/grid styling was only ever scoped to
+   #hr-potential-content/#kprops-content, so it silently never applied here:
+   the summary metrics fell back to plain stacked block rows instead of a
+   4-col grid of card boxes. */
+#nfl-td-content .dr1027-hr-summary,
+#wnba-points-content .dr1027-hr-summary,
+#wnba-rebounds-content .dr1027-hr-summary,
+#wnba-assists-content .dr1027-hr-summary,
+#wnba-threes-content .dr1027-hr-summary,
+#wnba-pra-content .dr1027-hr-summary {
+  border: 1px solid rgba(64,170,255,.32);
+  background: linear-gradient(145deg, rgba(13,31,52,.94), rgba(5,12,24,.98));
+  border-radius: 16px;
+  padding: 12px;
+  margin: 0 0 12px;
+}
+#nfl-td-content .dr1027-summary-grid,
+#wnba-points-content .dr1027-summary-grid,
+#wnba-rebounds-content .dr1027-summary-grid,
+#wnba-assists-content .dr1027-summary-grid,
+#wnba-threes-content .dr1027-summary-grid,
+#wnba-pra-content .dr1027-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 8px;
+}
+#nfl-td-content .dr1027-summary-metric,
+#wnba-points-content .dr1027-summary-metric,
+#wnba-rebounds-content .dr1027-summary-metric,
+#wnba-assists-content .dr1027-summary-metric,
+#wnba-threes-content .dr1027-summary-metric,
+#wnba-pra-content .dr1027-summary-metric {
+  border: 1px solid rgba(44,108,190,.55);
+  border-radius: 10px;
+  background: rgba(7,15,30,.72);
+  padding: 9px 10px;
+  min-width: 0;
+}
+#nfl-td-content .dr1027-summary-metric b,
+#wnba-points-content .dr1027-summary-metric b,
+#wnba-rebounds-content .dr1027-summary-metric b,
+#wnba-assists-content .dr1027-summary-metric b,
+#wnba-threes-content .dr1027-summary-metric b,
+#wnba-pra-content .dr1027-summary-metric b {
+  display: block;
+  color: #f8fafc;
+  font-size: 16px;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#nfl-td-content .dr1027-summary-metric span,
+#wnba-points-content .dr1027-summary-metric span,
+#wnba-rebounds-content .dr1027-summary-metric span,
+#wnba-assists-content .dr1027-summary-metric span,
+#wnba-threes-content .dr1027-summary-metric span,
+#wnba-pra-content .dr1027-summary-metric span {
+  display: block;
+  color: #94a3bd;
+  font-size: 8px;
+  text-transform: uppercase;
+  font-weight: 900;
+  letter-spacing: .05em;
+  margin-top: 4px;
+}
+#nfl-td-content .dr1027-summary-title,
+#wnba-points-content .dr1027-summary-title,
+#wnba-rebounds-content .dr1027-summary-title,
+#wnba-assists-content .dr1027-summary-title,
+#wnba-threes-content .dr1027-summary-title,
+#wnba-pra-content .dr1027-summary-title {
+  font-size: 13px;
+  font-weight: 950;
+  color: #f5f7ff;
+  margin-bottom: 7px;
+}
+#nfl-td-content .dr1027-summary-copy,
+#wnba-points-content .dr1027-summary-copy,
+#wnba-rebounds-content .dr1027-summary-copy,
+#wnba-assists-content .dr1027-summary-copy,
+#wnba-threes-content .dr1027-summary-copy,
+#wnba-pra-content .dr1027-summary-copy {
+  color: #aab7d2;
+  font-size: 11px;
+  line-height: 1.42;
+  margin: 0 0 10px;
+}
+@media (max-width: 700px) {
+  #nfl-td-content .dr1027-summary-grid,
+  #wnba-points-content .dr1027-summary-grid,
+  #wnba-rebounds-content .dr1027-summary-grid,
+  #wnba-assists-content .dr1027-summary-grid,
+  #wnba-threes-content .dr1027-summary-grid,
+  #wnba-pra-content .dr1027-summary-grid {
     grid-template-columns: 1fr 1fr !important;
   }
 }
