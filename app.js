@@ -17435,6 +17435,11 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
       btn.classList.toggle('active', isActive);
       if (isActive) current = btn.querySelector('span') ? btn.querySelector('span').textContent : '';
     });
+    // NFL/WNBA's own single-board pills (not part of the Baseball dropdown)
+    // get the same active highlight directly on the pill itself.
+    header.querySelectorAll('.dr-top-nav-cat-btn[data-gamepick-pane]').forEach(function(btn){
+      btn.classList.toggle('active', btn.getAttribute('data-gamepick-pane') === pane);
+    });
     var label = document.getElementById('dr-top-nav-baseball-current');
     if (label && current) label.textContent = current;
   }
@@ -17464,6 +17469,22 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
         var pane = btn.getAttribute('data-gamepick-pane');
         syncActive(header, pane);
         if (catBtn && menu) closeMenu(catBtn, menu);
+        if (typeof window.DiamondNavigateToPane === 'function') window.DiamondNavigateToPane(pane);
+      });
+    });
+    // NFL/WNBA: single-board categories, no dropdown -- clicking routes
+    // straight into that sport's one board. Also flips the sport context
+    // (body class, mobile drawer filtering) the same way the hub cards'
+    // own click handlers already do via setActiveSport, since this desktop
+    // pill is a second, independent entry point into the same pane.
+    header.querySelectorAll('.dr-top-nav-cat-btn[data-gamepick-pane][data-sport]').forEach(function(btn){
+      if (btn.dataset.drTopNavReady) return;
+      btn.dataset.drTopNavReady = '1';
+      btn.addEventListener('click', function(){
+        var pane = btn.getAttribute('data-gamepick-pane');
+        var sport = btn.getAttribute('data-sport');
+        if (typeof window.setActiveSport === 'function') window.setActiveSport(sport);
+        syncActive(header, pane);
         if (typeof window.DiamondNavigateToPane === 'function') window.DiamondNavigateToPane(pane);
       });
     });
@@ -17577,6 +17598,7 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
 
     updateMobileMenuSport(sport);
   }
+  window.setActiveSport = setActiveSport;
 
   // The mobile hamburger drawer (#dr-mobile-drawer, index.html) lists board
   // shortcuts (.dr-menu-item[data-tab]) -- previously a single fixed MLB-only

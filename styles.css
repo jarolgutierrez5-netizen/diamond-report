@@ -1777,6 +1777,14 @@ h1, .dr-prediction-hero h1, .section-title, .dr-panel-head .section-title, .pr-c
   background: rgba(47,107,255,.14);
   border-color: rgba(47,107,255,.42);
 }
+/* NFL/WNBA's single-board pills (no dropdown, so no aria-expanded of their
+   own) get the same highlight directly via .active when their one board is
+   the currently-open pane -- set/cleared by syncActive in app.js. */
+.dr-top-nav-cat-btn.active {
+  background: rgba(47,107,255,.14);
+  border-color: rgba(47,107,255,.42);
+  color: #fff;
+}
 .dr-top-nav-cat-current {
   color: #5b9dff;
   font-weight: 600;
