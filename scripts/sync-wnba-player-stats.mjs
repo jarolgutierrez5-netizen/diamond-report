@@ -1,25 +1,32 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
 // Real per-game scoring line for every rostered WNBA player -- the base
-// input the "15+ Points Probability" board scores from (app.js:
-// wnbaPointsCardHTML / wnbaPointsConfidenceScore / wnbaPointsRisk). Reads
-// data/wnba-rosters.json (written by sync-wnba-rosters.mjs) for the player
-// universe, then pulls each player's own real game log from ESPN and
-// computes, entirely from real per-game totals (no fabricated/derived
-// inputs):
+// input the WNBA prop board family scores from (app.js: wnbaPropCardHTML /
+// wnbaStatConfidenceScore / wnbaStatRisk, one board each for Points/
+// Rebounds/Assists/3-Pointers Made/PRA). Reads data/wnba-rosters.json
+// (written by sync-wnba-rosters.mjs) for the player universe, then pulls
+// each player's own real game log from ESPN and computes, entirely from
+// real per-game totals (no fabricated/derived inputs):
 //   - games: real games played this season
 //   - ptsPerGame / rebPerGame / astPerGame / threesPerGame: real season
 //     per-game averages for points, rebounds, assists, and made 3-pointers
 //   - praPerGame: points+rebounds+assists per game -- a real sum of the
 //     three real averages above, the same combined-stat prop shape real
 //     sportsbooks call "PRA", not a separately modeled number
-//   - ptsStdDev: real population standard deviation of per-game points --
-//     the consistency signal wnbaPointsConfidenceScore uses (a volatile
-//     boom/bust scorer is lower-confidence than a consistent one at the same
-//     average)
-//   - gamesWith15Plus / prob15Plus: raw empirical rate of real games with
-//     15+ points, no Poisson/normal-distribution derivation -- just a count
-//     of real outcomes divided by real games played.
+//   - {pts,reb,ast,threes,pra}StdDev: real population standard deviation of
+//     each per-game stat -- the consistency signal wnbaStatConfidenceScore
+//     uses per board (a volatile boom/bust player is lower-confidence than a
+//     consistent one at the same average)
+//   - gamesWith{15Plus,RebLine,AstLine,3PMLine,PRALine} / {prob15Plus,
+//     probRebLine,probAstLine,prob3PMLine,probPRALine}: raw empirical rate
+//     of real games clearing each board's own fixed line, no Poisson/
+//     normal-distribution derivation -- just a count of real outcomes
+//     divided by real games played (or games with a usable value for that
+//     specific stat, since a column can be legitimately missing for some
+//     games). PRA's per-game value is computed only from games where both
+//     REB and AST were actually logged that game, not from combining the
+//     three season averages (which can each have a different real sample
+//     size when a column is spottily missing).
 //
 // IMPORTANT endpoint note (confirmed live during planning, not a guess):
 // the plain site.api.espn.com/apis/site/v2/sports/basketball/wnba/athletes/
@@ -56,7 +63,17 @@ const DATA_DIR = path.join(__dirname, '..', 'data');
 const ROSTERS_PATH = path.join(DATA_DIR, 'wnba-rosters.json');
 const PLAYER_STATS_PATH = path.join(DATA_DIR, 'wnba-player-stats.json');
 
+// All 5 lines are calibrated the same way: near the p85-90 percentile of the
+// stat across the WHOLE rostered WNBA player pool (not just starters), the
+// same relative selectivity the original 15-point line landed at (average
+// prob15Plus across the full roster is only ~20%) -- so every board reads
+// as a real, meaningfully-selective "starter-level" threshold rather than a
+// median-crossing coin flip.
 const POINTS_THRESHOLD = 15;
+const REB_LINE = 6;
+const AST_LINE = 4;
+const THREES_LINE = 2;
+const PRA_LINE = 25;
 
 const FETCH_TIMEOUT_MS = 15000;
 // A 404 is a stable, immediate answer (this player has no gamelog on record
@@ -158,26 +175,65 @@ function meanOf(rows, key) {
   return vals.reduce((a, b) => a + b, 0) / vals.length;
 }
 
+// Real population stdDev + real empirical "games clearing this line" rate
+// for one stat's plain array of real per-game values. Shared by every board
+// (points/rebounds/assists/threes/pra) instead of repeating the same three
+// lines of math five times. Returns nulls (not zeros) when there's no usable
+// data for this stat at all, same "missing, not zero" convention meanOf uses.
+function lineStats(values, line) {
+  const games = values.length;
+  if (!games) return { stdDev: null, gamesWithLine: null, probLine: null };
+  const mean = values.reduce((a, b) => a + b, 0) / games;
+  const variance = values.reduce((a, v) => a + (v - mean) ** 2, 0) / games;
+  const gamesWithLine = values.filter(v => v >= line).length;
+  return {
+    stdDev: +Math.sqrt(variance).toFixed(2),
+    gamesWithLine,
+    probLine: Math.round((gamesWithLine / games) * 100),
+  };
+}
+
 function summarize(rows) {
   const games = rows.length;
+
   const ptsPerGame = meanOf(rows, 'pts');
-  const variance = rows.reduce((a, r) => a + (r.pts - ptsPerGame) ** 2, 0) / games;
-  const ptsStdDev = Math.sqrt(variance);
-  const gamesWith15Plus = rows.filter(r => r.pts >= POINTS_THRESHOLD).length;
+  const ptsLine = lineStats(rows.map(r => r.pts).filter(Number.isFinite), POINTS_THRESHOLD);
+
   const rebPerGame = meanOf(rows, 'reb');
+  const rebLine = lineStats(rows.map(r => r.reb).filter(Number.isFinite), REB_LINE);
+
   const astPerGame = meanOf(rows, 'ast');
+  const astLine = lineStats(rows.map(r => r.ast).filter(Number.isFinite), AST_LINE);
+
   const threesPerGame = meanOf(rows, 'threes');
+  const threesLine = lineStats(rows.map(r => r.threes).filter(Number.isFinite), THREES_LINE);
+
   const praPerGame = (rebPerGame != null && astPerGame != null) ? ptsPerGame + rebPerGame + astPerGame : null;
+  const praVals = rows.filter(r => Number.isFinite(r.reb) && Number.isFinite(r.ast)).map(r => r.pts + r.reb + r.ast);
+  const praLine = lineStats(praVals, PRA_LINE);
+
   return {
     games,
     ptsPerGame: +ptsPerGame.toFixed(2),
-    ptsStdDev: +ptsStdDev.toFixed(2),
-    gamesWith15Plus,
-    prob15Plus: Math.round((gamesWith15Plus / games) * 100),
+    ptsStdDev: ptsLine.stdDev,
+    gamesWith15Plus: ptsLine.gamesWithLine,
+    prob15Plus: ptsLine.probLine,
     rebPerGame: rebPerGame != null ? +rebPerGame.toFixed(2) : null,
+    rebStdDev: rebLine.stdDev,
+    gamesWithRebLine: rebLine.gamesWithLine,
+    probRebLine: rebLine.probLine,
     astPerGame: astPerGame != null ? +astPerGame.toFixed(2) : null,
+    astStdDev: astLine.stdDev,
+    gamesWithAstLine: astLine.gamesWithLine,
+    probAstLine: astLine.probLine,
     threesPerGame: threesPerGame != null ? +threesPerGame.toFixed(2) : null,
+    threesStdDev: threesLine.stdDev,
+    gamesWith3PMLine: threesLine.gamesWithLine,
+    prob3PMLine: threesLine.probLine,
     praPerGame: praPerGame != null ? +praPerGame.toFixed(2) : null,
+    praStdDev: praLine.stdDev,
+    gamesWithPRALine: praLine.gamesWithLine,
+    probPRALine: praLine.probLine,
   };
 }
 
@@ -236,4 +292,4 @@ if (isMain) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { extractSeasonRows, summarize, gamelogURL, POINTS_THRESHOLD, main };
+export { extractSeasonRows, summarize, lineStats, gamelogURL, POINTS_THRESHOLD, REB_LINE, AST_LINE, THREES_LINE, PRA_LINE, main };

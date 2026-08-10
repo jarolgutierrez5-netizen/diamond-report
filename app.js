@@ -10176,103 +10176,152 @@ async function renderNFLTDBoard() {
 }
 window.renderNFLTDBoard = renderNFLTDBoard;
 
-// ── WNBA 15+ Points Probability (first real WNBA board) ────────────────────
-// Real per-game scoring rate (data/wnba-player-stats.json, scripts/sync-wnba-
-// player-stats.mjs) turned into a raw empirical probability -- P(15+ points) =
-// (real games this season with 15+ points) / (real games played) -- no
-// Poisson/normal-distribution derivation, just a count of real outcomes, same
-// "honest first cut" spirit as the NFL Anytime TD board above (no opponent-
-// defense adjustment yet either).
+// ── WNBA prop board family (Points/Rebounds/Assists/3-Pointers Made/PRA) ───
+// Real per-game rates (data/wnba-player-stats.json, scripts/sync-wnba-player-
+// stats.mjs) turned into raw empirical probabilities -- P(stat >= line) =
+// (real games this season clearing that board's line) / (real games played)
+// -- no Poisson/normal-distribution derivation, just a count of real
+// outcomes, same "honest first cut" spirit as the NFL Anytime TD board above
+// (no opponent-defense adjustment yet either).
 //
-// Cushion/Risk mirror the K Props board's drKConfidenceScore/cushion pattern
-// (see drKConfidenceScore above): K Props diffs a real projection against a
-// real sportsbook line when one exists. No free per-player WNBA points line
-// exists (ESPN's odds only cover team spread/moneyline/total), so this board
-// uses a fixed real threshold of 15 (a realistic, commonly-used WNBA scoring
-// prop value, not an invented number) as the one line for both the
-// probability above and the cushion below.
-const WNBA_POINTS_LINE = 15;
+// Cushion/Risk mirror the K Props board's drKConfidenceScore/cushion pattern:
+// K Props diffs a real projection against a real sportsbook line when one
+// exists. No free per-player WNBA prop line exists (ESPN's odds only cover
+// team spread/moneyline/total), so each board uses a fixed real threshold,
+// data-calibrated near the ~85-90th percentile of that stat across the whole
+// rostered player pool (see scripts/sync-wnba-player-stats.mjs's header),
+// as the one line for both the probability above and the cushion below.
+//
+// One config-driven engine serves all 5 boards (same house pattern the MLB
+// Hits/RBIs/Total Bases/Stolen Bases/Hits+Runs+RBI family already uses --
+// a type-keyed render() rather than 5 near-duplicate functions) instead of
+// copy-pasting the points board four more times.
+const WNBA_PROP_BOARDS = {
+  points: {
+    key: 'points', searchKey: 'wnbapts', contentId: 'wnba-points-content',
+    icon: '🏀', label: '15+ Points', shortLabel: '15+ PTS', summaryLabel: 'WNBA 15+ POINTS DATA',
+    line: 15, probField: 'prob15Plus', avgField: 'ptsPerGame', avgLabel: 'PPG', stdDevField: 'ptsStdDev',
+    // Weights below are re-tuned per board so the confidence-score clamp
+    // isn't blown past by every player -- each pair scales the original
+    // points-tuned 2.6/2.2 by 15/line, since a raw points-scale cushion
+    // weight applied to (say) PRA's much larger natural cushion range would
+    // pin almost every player to the clamp floor/ceiling.
+    cushionWeight: 2.6, stdDevWeight: 2.2,
+    sortFields: [{ key: 'prob15Plus', label: 'Prob' }, { key: 'ptsPerGame', label: 'PPG' }, { key: 'cushion', label: 'Cushion' }, { key: 'games', label: 'Games' }],
+  },
+  rebounds: {
+    key: 'rebounds', searchKey: 'wnbareb', contentId: 'wnba-rebounds-content',
+    icon: '🏀', label: '6+ Rebounds', shortLabel: '6+ REB', summaryLabel: 'WNBA 6+ REBOUNDS DATA',
+    line: 6, probField: 'probRebLine', avgField: 'rebPerGame', avgLabel: 'RPG', stdDevField: 'rebStdDev',
+    cushionWeight: 6.5, stdDevWeight: 5.5,
+    sortFields: [{ key: 'probRebLine', label: 'Prob' }, { key: 'rebPerGame', label: 'RPG' }, { key: 'cushion', label: 'Cushion' }, { key: 'games', label: 'Games' }],
+  },
+  assists: {
+    key: 'assists', searchKey: 'wnbaast', contentId: 'wnba-assists-content',
+    icon: '🏀', label: '4+ Assists', shortLabel: '4+ AST', summaryLabel: 'WNBA 4+ ASSISTS DATA',
+    line: 4, probField: 'probAstLine', avgField: 'astPerGame', avgLabel: 'APG', stdDevField: 'astStdDev',
+    cushionWeight: 9.75, stdDevWeight: 8.25,
+    sortFields: [{ key: 'probAstLine', label: 'Prob' }, { key: 'astPerGame', label: 'APG' }, { key: 'cushion', label: 'Cushion' }, { key: 'games', label: 'Games' }],
+  },
+  threes: {
+    key: 'threes', searchKey: 'wnba3pm', contentId: 'wnba-threes-content',
+    icon: '🏀', label: '2+ 3-Pointers Made', shortLabel: '2+ 3PM', summaryLabel: 'WNBA 2+ 3-POINTERS MADE DATA',
+    line: 2, probField: 'prob3PMLine', avgField: 'threesPerGame', avgLabel: '3PM', stdDevField: 'threesStdDev',
+    cushionWeight: 19.5, stdDevWeight: 16.5,
+    sortFields: [{ key: 'prob3PMLine', label: 'Prob' }, { key: 'threesPerGame', label: '3PM' }, { key: 'cushion', label: 'Cushion' }, { key: 'games', label: 'Games' }],
+  },
+  pra: {
+    key: 'pra', searchKey: 'wnbapra', contentId: 'wnba-pra-content',
+    icon: '🏀', label: '25+ PRA', shortLabel: '25+ PRA', summaryLabel: 'WNBA 25+ PRA DATA',
+    line: 25, probField: 'probPRALine', avgField: 'praPerGame', avgLabel: 'PRA', stdDevField: 'praStdDev',
+    cushionWeight: 1.56, stdDevWeight: 1.32,
+    sortFields: [{ key: 'probPRALine', label: 'Prob' }, { key: 'praPerGame', label: 'PRA' }, { key: 'cushion', label: 'Cushion' }, { key: 'games', label: 'Games' }],
+  },
+};
 
-// cushion = the player's own real season PPG vs. the fixed line -- self-
-// referential (own average vs. a fixed real number) rather than market-
-// referential (proj vs. a real sportsbook line) like K Props' cushion, since
-// no real per-player market line exists to diff against here.
-function wnbaPointsCushion(r) {
-  return +(Number(r.ptsPerGame) - WNBA_POINTS_LINE).toFixed(1);
+// cushion = the player's own real season average vs. this board's fixed
+// line -- self-referential (own average vs. a fixed real number) rather than
+// market-referential (proj vs. a real sportsbook line) like K Props' cushion,
+// since no real per-player market line exists to diff against here.
+function wnbaStatCushion(cfg, r) {
+  return +(Number(r[cfg.avgField]) - cfg.line).toFixed(1);
 }
 
 // Confidence score built entirely from real, already-synced numbers: the
 // cushion above (bigger real average-over-the-line -> more confidence),
 // real sample size (more logged games -> more confidence, small-sample
-// penalty for a handful of games), and real scoring consistency (ptsStdDev --
-// a volatile boom/bust scorer is lower-confidence than a steady one at the
-// same average). Same baseline+weighted-terms+clamp shape as
-// drKConfidenceScore, just re-tuned for points-per-game's larger natural
-// range vs. strikeout cushion's typically ±1-3 range.
-function wnbaPointsConfidenceScore(r) {
-  const cushion = wnbaPointsCushion(r);
+// penalty for a handful of games), and real consistency (this board's
+// stdDev field -- a volatile boom/bust player is lower-confidence than a
+// steady one at the same average). Same baseline+weighted-terms+clamp shape
+// as drKConfidenceScore, just re-tuned per board (see cushionWeight/
+// stdDevWeight above) for each stat's own natural numeric range.
+function wnbaStatConfidenceScore(cfg, r) {
+  const cushion = wnbaStatCushion(cfg, r);
   const games = Math.max(0, Number(r.games) || 0);
-  const stdDev = Math.max(0, Number(r.ptsStdDev) || 0);
+  const stdDev = Math.max(0, Number(r[cfg.stdDevField]) || 0);
   let score = 55;
-  score += cushion * 2.6;
+  score += cushion * cfg.cushionWeight;
   score += Math.min(games, 20) * 0.6; // sample-size confidence, capped so a long season doesn't dominate
-  score -= stdDev * 2.2; // consistency penalty
+  score -= stdDev * cfg.stdDevWeight; // consistency penalty
   return Math.round(Math.max(20, Math.min(95, score)));
 }
 // Same Low/Medium/High threshold shape K Props' risk chip uses (app.js:
 // drKConfidenceScore's caller: conf >= 74 ? 'Low' : conf >= 62 ? 'Medium' : 'High').
-function wnbaPointsRisk(r) {
-  const conf = wnbaPointsConfidenceScore(r);
+function wnbaStatRisk(cfg, r) {
+  const conf = wnbaStatConfidenceScore(cfg, r);
   return conf >= 74 ? 'Low' : conf >= 62 ? 'Medium' : 'High';
 }
 
-let wnbaPointsDataPromise = null;
-async function loadWNBAPointsData(force = false) {
-  if (wnbaPointsDataPromise && !force) return wnbaPointsDataPromise;
-  wnbaPointsDataPromise = (async () => {
+// Schedule + player-stats data is identical across all 5 boards -- one
+// shared fetch/cache rather than 5 separate ones.
+let wnbaPropDataPromise = null;
+async function loadWNBAPropData(force = false) {
+  if (wnbaPropDataPromise && !force) return wnbaPropDataPromise;
+  wnbaPropDataPromise = (async () => {
     const [scheduleData, statsData] = await Promise.all([
       drFetchDailyJSON('data/wnba-schedule.json').catch(() => null),
       drFetchDailyJSON('data/wnba-player-stats.json').catch(() => null),
     ]);
     return { schedule: (scheduleData && scheduleData.events) || [], players: (statsData && statsData.players) || {} };
   })();
-  return wnbaPointsDataPromise;
+  return wnbaPropDataPromise;
 }
 
-let _wnbaPtsSort = null;
-let _wnbaPtsSortDir = 1;
-let _wnbaPtsGameFilter = '';
-const WNBA_PTS_SORT_FIELDS = [
-  { key: 'prob15Plus', label: 'Prob' },
-  { key: 'ptsPerGame', label: 'PPG' },
-  { key: 'cushion', label: 'Cushion' },
-  { key: 'games', label: 'Games' },
-];
-function wnbaPointsSortBy(key) {
-  if (_wnbaPtsSort === key) { _wnbaPtsSortDir *= -1; }
-  else { _wnbaPtsSort = key; _wnbaPtsSortDir = 1; }
-  if (!key) { _wnbaPtsSort = null; _wnbaPtsSortDir = 1; }
-  renderWNBAPointsBoard();
+// Sort/filter state keyed by board (cfg.key) instead of separate module-level
+// `let`s per board -- mirrors the MLB prop-intelligence engine's edgeFilters[type]/
+// gameFilters[type] shape for the same "one engine, many boards" reason.
+const _wnbaPropState = {};
+function wnbaPropStateFor(key) {
+  if (!_wnbaPropState[key]) _wnbaPropState[key] = { sort: null, sortDir: 1, gameFilter: '' };
+  return _wnbaPropState[key];
 }
-function setWNBAPtsGameFilter(value) {
-  _wnbaPtsGameFilter = value || '';
-  renderWNBAPointsBoard();
+function wnbaPropSortBy(boardKey, key) {
+  const st = wnbaPropStateFor(boardKey);
+  if (st.sort === key) { st.sortDir *= -1; }
+  else { st.sort = key; st.sortDir = 1; }
+  if (!key) { st.sort = null; st.sortDir = 1; }
+  renderWNBAPropBoard(WNBA_PROP_BOARDS[boardKey]);
+}
+function setWNBAPropGameFilter(boardKey, value) {
+  wnbaPropStateFor(boardKey).gameFilter = value || '';
+  renderWNBAPropBoard(WNBA_PROP_BOARDS[boardKey]);
 }
 
-function wnbaPointsSummaryHTML(rows) {
+function wnbaPropSummaryHTML(cfg, rows) {
   if (!rows.length) return '';
-  const byProb = rows.slice().sort((a, b) => b.prob15Plus - a.prob15Plus);
+  const byProb = rows.slice().sort((a, b) => b[cfg.probField] - a[cfg.probField]);
   const top = byProb[0];
   const sample = byProb.slice(0, Math.min(8, byProb.length));
-  const avg = Math.round(sample.reduce((a, p) => a + p.prob15Plus, 0) / sample.length);
-  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">🏀 EXPANDED <span>WNBA 15+ POINTS DATA</span></div><p class="dr1027-summary-copy">Real season scoring rate per rostered player, modeled as a raw empirical probability of scoring ${WNBA_POINTS_LINE}+ points tonight -- the real share of this player's own games this season that cleared ${WNBA_POINTS_LINE} points. Early model -- no opponent defense adjustment yet.</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>${avg}%</b><span>Board Avg Probability</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>15+ Points</b><span>Primary Signal</span></div></div></div>`;
+  const avg = Math.round(sample.reduce((a, p) => a + p[cfg.probField], 0) / sample.length);
+  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">${cfg.icon} EXPANDED <span>${cfg.summaryLabel}</span></div><p class="dr1027-summary-copy">Real season rate per rostered player, modeled as a raw empirical probability of clearing the ${cfg.label} line tonight -- the real share of this player's own games this season that cleared it. Early model -- no opponent defense adjustment yet.</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>${avg}%</b><span>Board Avg Probability</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>${cfg.label}</b><span>Primary Signal</span></div></div></div>`;
 }
 
-function wnbaPointsCardHTML(r) {
-  const cushion = wnbaPointsCushion(r);
+function wnbaPropCardHTML(cfg, r) {
+  const cushion = wnbaStatCushion(cfg, r);
   const cushionText = `${cushion >= 0 ? '+' : ''}${cushion.toFixed(1)}`;
-  const risk = wnbaPointsRisk(r);
-  const scoreCls = r.prob15Plus >= 55 ? 'good' : '';
+  const risk = wnbaStatRisk(cfg, r);
+  const prob = r[cfg.probField];
+  const scoreCls = prob >= 55 ? 'good' : '';
   return `<div class="dr109-card${scoreCls ? ' prop-hit' : ''}">
     ${window.drWatchStarHTML('wnba-' + r.id, r.name)}
     <div class="dr109-card-head">
@@ -10283,7 +10332,7 @@ function wnbaPointsCardHTML(r) {
           <div class="dr109-meta">${fantasyEsc(r.position || '')} · ${fantasyEsc(r.teamAbbr || '')} vs ${fantasyEsc(r.oppAbbr || '')}</div>
         </div>
       </div>
-      <div class="dr109-score">${r.prob15Plus}%<small>15+ PTS</small></div>
+      <div class="dr109-score">${prob != null ? prob : '–'}%<small>${cfg.shortLabel}</small></div>
     </div>
     <div class="dr109-chiprow">
       <span class="dr109-chip"><span>Season PPG:</span><strong>${r.ptsPerGame != null ? r.ptsPerGame.toFixed(1) : '–'}</strong></span>
@@ -10298,13 +10347,14 @@ function wnbaPointsCardHTML(r) {
   </div>`;
 }
 
-async function renderWNBAPointsBoard() {
-  const el = document.getElementById('wnba-points-content');
+async function renderWNBAPropBoard(cfg) {
+  const el = document.getElementById(cfg.contentId);
   if (!el) return;
-  const __searchFocus = drCaptureSearchFocus('wnbapts-search-input');
+  const st = wnbaPropStateFor(cfg.key);
+  const __searchFocus = drCaptureSearchFocus(cfg.searchKey + '-search-input');
   let data;
   try {
-    data = await loadWNBAPointsData();
+    data = await loadWNBAPropData();
   } catch (e) {
     el.innerHTML = '<div class="mu-empty">Couldn\'t load WNBA data. Check back shortly.</div>';
     return;
@@ -10327,8 +10377,8 @@ async function renderWNBAPointsBoard() {
     }
   });
   const allRows = Object.entries(data.players || {})
-    .filter(([id, p]) => p.teamAbbr && oppByTeam[p.teamAbbr] != null && p.prob15Plus != null)
-    .map(([id, p]) => Object.assign({ id }, p, { oppAbbr: oppByTeam[p.teamAbbr], cushion: wnbaPointsCushion(p) }));
+    .filter(([id, p]) => p.teamAbbr && oppByTeam[p.teamAbbr] != null && p[cfg.probField] != null)
+    .map(([id, p]) => Object.assign({ id }, p, { oppAbbr: oppByTeam[p.teamAbbr], cushion: wnbaStatCushion(cfg, p) }));
   if (!allRows.length) {
     el.innerHTML = `<div class="mu-empty">No player season stats synced yet for the ${fantasyEsc(nextDate)} slate. Check back once the daily sync has run.</div>`;
     return;
@@ -10337,43 +10387,56 @@ async function renderWNBAPointsBoard() {
   const gameOptsHTML = ['<option value="">All Games</option>'].concat(
     slateGames.filter(g => g.home && g.away).map(g => {
       const gid = g.away.abbreviation + '@' + g.home.abbreviation;
-      return `<option value="${gid}"${_wnbaPtsGameFilter === gid ? ' selected' : ''}>${g.away.abbreviation} @ ${g.home.abbreviation}</option>`;
+      return `<option value="${gid}"${st.gameFilter === gid ? ' selected' : ''}>${g.away.abbreviation} @ ${g.home.abbreviation}</option>`;
     })
   ).join('');
 
-  let rows = allRows.filter(p => drMatchesSearch('wnbapts', p.name));
-  if (_wnbaPtsGameFilter) {
+  let rows = allRows.filter(p => drMatchesSearch(cfg.searchKey, p.name));
+  if (st.gameFilter) {
     rows = rows.filter(p => {
       const opp = oppByTeam[p.teamAbbr];
       const gid = p.teamAbbr + '@' + opp, gidRev = opp + '@' + p.teamAbbr;
-      return _wnbaPtsGameFilter === gid || _wnbaPtsGameFilter === gidRev;
+      return st.gameFilter === gid || st.gameFilter === gidRev;
     });
   }
-  const sortKey = _wnbaPtsSort || 'prob15Plus';
-  rows = rows.slice().sort((a, b) => (b[sortKey] - a[sortKey]) * _wnbaPtsSortDir);
+  const sortKey = st.sort || cfg.probField;
+  rows = rows.slice().sort((a, b) => (b[sortKey] - a[sortKey]) * st.sortDir);
 
-  const sortBtns = WNBA_PTS_SORT_FIELDS.map(({ key, label }) => {
-    const active = (_wnbaPtsSort || 'prob15Plus') === key;
-    const arrow = active ? (_wnbaPtsSortDir === 1 ? ' ↓' : ' ↑') : '';
-    return `<button onclick="wnbaPointsSortBy('${key}')" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${active ? 'var(--accent2)' : 'var(--border)'};background:${active ? 'rgba(47,107,255,.12)' : 'var(--surface2)'};color:${active ? 'var(--accent2)' : 'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">${label}${arrow}</button>`;
+  const sortBtns = cfg.sortFields.map(({ key, label }) => {
+    const active = (st.sort || cfg.probField) === key;
+    const arrow = active ? (st.sortDir === 1 ? ' ↓' : ' ↑') : '';
+    return `<button onclick="wnbaPropSortBy('${cfg.key}','${key}')" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${active ? 'var(--accent2)' : 'var(--border)'};background:${active ? 'rgba(47,107,255,.12)' : 'var(--surface2)'};color:${active ? 'var(--accent2)' : 'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">${label}${arrow}</button>`;
   }).join('');
 
-  const noMatches = !rows.length && ((window.__drBoardSearch.wnbapts || '').trim() || _wnbaPtsGameFilter);
-  el.innerHTML = `<div class="dr109-summary"><div class="dr109-title">🏀 <span>${fantasyEsc(nextDate)} SLATE</span></div>`
-    + `<p class="dr109-copy">Real season scoring rate per rostered player (${fantasyEsc(allRows[0].season)} season), modeled as a raw empirical probability of scoring ${WNBA_POINTS_LINE}+ points tonight -- the real share of this player's own games this season that cleared ${WNBA_POINTS_LINE} points, not a derived estimate. RPG/APG/3PM/PRA are each real season per-game averages, not projections. Cushion is real season PPG vs. the ${WNBA_POINTS_LINE}-point line; Risk blends that cushion with real sample size and real scoring consistency. Early model -- no opponent defense adjustment yet.</p></div>`
-    + wnbaPointsSummaryHTML(allRows)
+  const noMatches = !rows.length && ((window.__drBoardSearch[cfg.searchKey] || '').trim() || st.gameFilter);
+  el.innerHTML = `<div class="dr109-summary"><div class="dr109-title">${cfg.icon} <span>${fantasyEsc(nextDate)} SLATE</span></div>`
+    + `<p class="dr109-copy">Real season ${cfg.avgLabel} rate per rostered player (${fantasyEsc(allRows[0].season)} season), modeled as a raw empirical probability of clearing ${cfg.label} tonight -- the real share of this player's own games this season that cleared the line, not a derived estimate. PPG/RPG/APG/3PM/PRA are each real season per-game averages, not projections. Cushion is real season ${cfg.avgLabel} vs. this board's line; Risk blends that cushion with real sample size and real consistency. Early model -- no opponent defense adjustment yet.</p></div>`
+    + wnbaPropSummaryHTML(cfg, allRows)
     + `<div class="dr109-filter-row kprops-sticky-sort" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">
         <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">GAME:</span>
-        <select onchange="setWNBAPtsGameFilter(this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;flex-shrink:0">${gameOptsHTML}</select>
+        <select onchange="setWNBAPropGameFilter('${cfg.key}',this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;flex-shrink:0">${gameOptsHTML}</select>
         <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">SORT:</span>
         ${sortBtns}
-        <button onclick="wnbaPointsSortBy(null)" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:3px 8px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0">RESET</button>
-        ${drSearchInputHTML('wnbapts', 'wnbapts-search-input', 'Search players…', "drSetBoardSearch('wnbapts',this.value,renderWNBAPointsBoard)")}
+        <button onclick="wnbaPropSortBy('${cfg.key}',null)" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:3px 8px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0">RESET</button>
+        ${drSearchInputHTML(cfg.searchKey, cfg.searchKey + '-search-input', 'Search players…', `drSetBoardSearch('${cfg.searchKey}',this.value,function(){renderWNBAPropBoard(WNBA_PROP_BOARDS.${cfg.key});})`)}
       </div>`
-    + (noMatches ? `<div class="mu-empty" style="padding:24px">No players match the current search/filter.</div>` : rows.map(wnbaPointsCardHTML).join(''));
+    + (noMatches ? `<div class="mu-empty" style="padding:24px">No players match the current search/filter.</div>` : rows.map(r => wnbaPropCardHTML(cfg, r)).join(''));
   drRestoreSearchFocus(__searchFocus);
 }
+
+// Thin wrappers keep the existing public API (renderWNBAPointsBoard was
+// already relied on by activateGamePickPane's setTimeout triggers) and add
+// one per new board.
+function renderWNBAPointsBoard() { return renderWNBAPropBoard(WNBA_PROP_BOARDS.points); }
 window.renderWNBAPointsBoard = renderWNBAPointsBoard;
+function renderWNBARebBoard() { return renderWNBAPropBoard(WNBA_PROP_BOARDS.rebounds); }
+window.renderWNBARebBoard = renderWNBARebBoard;
+function renderWNBAAstBoard() { return renderWNBAPropBoard(WNBA_PROP_BOARDS.assists); }
+window.renderWNBAAstBoard = renderWNBAAstBoard;
+function renderWNBA3PMBoard() { return renderWNBAPropBoard(WNBA_PROP_BOARDS.threes); }
+window.renderWNBA3PMBoard = renderWNBA3PMBoard;
+function renderWNBAPRABoard() { return renderWNBAPropBoard(WNBA_PROP_BOARDS.pra); }
+window.renderWNBAPRABoard = renderWNBAPRABoard;
 
 // ── 5AM HR POTENTIAL REFRESH ─────────────────────────────────────────
 // Checks on load and reschedules daily — handles cases where tab wasn't open at 5am
@@ -14662,7 +14725,7 @@ if (document.readyState === 'loading') {
 /* ---- from <script id="anonymous"> ---- */
 // PROD v8.44 — Game Picks inner tab controller with persistent state
 (function(){
-  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, fantasy: true, nearhr: true, nfltd: true, wnbapts: true };
+  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, fantasy: true, nearhr: true, nfltd: true, wnbapts: true, wnbareb: true, wnbaast: true, wnba3pm: true, wnbapra: true };
 
   // Only the URL hash decides the pane on load (e.g. a shared #gamepick=premium
   // link). No localStorage fallback — a plain refresh/revisit with no hash
@@ -14745,9 +14808,11 @@ if (document.readyState === 'loading') {
       setTimeout(function(){ if (typeof window.renderNFLTDBoard === 'function') window.renderNFLTDBoard(); }, 30);
       setTimeout(function(){ if (typeof window.renderNFLTDBoard === 'function') window.renderNFLTDBoard(); }, 900);
     }
-    if (pane === 'wnbapts') {
-      setTimeout(function(){ if (typeof window.renderWNBAPointsBoard === 'function') window.renderWNBAPointsBoard(); }, 30);
-      setTimeout(function(){ if (typeof window.renderWNBAPointsBoard === 'function') window.renderWNBAPointsBoard(); }, 900);
+    var WNBA_PANE_RENDER_FN = { wnbapts: 'renderWNBAPointsBoard', wnbareb: 'renderWNBARebBoard', wnbaast: 'renderWNBAAstBoard', wnba3pm: 'renderWNBA3PMBoard', wnbapra: 'renderWNBAPRABoard' };
+    if (WNBA_PANE_RENDER_FN[pane]) {
+      var wnbaFnName = WNBA_PANE_RENDER_FN[pane];
+      setTimeout(function(){ if (typeof window[wnbaFnName] === 'function') window[wnbaFnName](); }, 30);
+      setTimeout(function(){ if (typeof window[wnbaFnName] === 'function') window[wnbaFnName](); }, 900);
     }
   }
 
@@ -16629,7 +16694,7 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
   // VALID panes object -- a pre-existing gap for nfltd (its board has no menu
   // entry to expose the bug), a real one for wnbapts now that the drawer has
   // an entry pointing at it (see index.html's #dr-mobile-drawer).
-  var FREE_PANES = new Set(['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','fantasy','nearhr','nfltd','wnbapts']);
+  var FREE_PANES = new Set(['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','fantasy','nearhr','nfltd','wnbapts','wnbareb','wnbaast','wnba3pm','wnbapra']);
 
   function normalizePane(pane){
     return String(pane || 'game').trim();
@@ -17408,12 +17473,23 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
 // and this nav lives outside #props — so it would never get found by that
 // scoped query.
 (function(){
-  function closeMenu(catBtn, menu){
-    menu.classList.remove('open');
-    menu.setAttribute('aria-hidden', 'true');
-    catBtn.setAttribute('aria-expanded', 'false');
+  // One descriptor per real dropdown category (Baseball, WNBA -- each has
+  // more than one board). NFL stays a single plain pill (one board, no
+  // dropdown) and isn't in this list -- its click handling lives in the
+  // separate `.dr-top-nav-cat-btn[data-gamepick-pane][data-sport]` query
+  // below, which only matches elements that carry those attributes directly
+  // (dropdown trigger buttons don't).
+  var DROPDOWN_DEFS = [
+    { key: 'baseball', btnId: 'dr-top-nav-baseball-btn', menuId: 'dr-top-nav-baseball-menu', currentId: 'dr-top-nav-baseball-current' },
+    { key: 'wnba', btnId: 'dr-top-nav-wnba-btn', menuId: 'dr-top-nav-wnba-menu', currentId: 'dr-top-nav-wnba-current' },
+  ];
+
+  function closeMenu(dd){
+    dd.menu.classList.remove('open');
+    dd.menu.setAttribute('aria-hidden', 'true');
+    dd.catBtn.setAttribute('aria-expanded', 'false');
   }
-  function openMenu(catBtn, menu, header){
+  function openMenu(dd, header){
     // .dr-top-nav-menu lives as a sibling of .dr-top-nav-inner (not nested
     // inside it) so that row's own overflow-x:auto scroll fallback can't
     // clip it -- see the comment in index.html. That means it isn't
@@ -17422,61 +17498,91 @@ function renderHRPTableV1032(){ var el=document.getElementById('hr-potential-con
     // narrower widths), relative to .header -- the nearest positioned
     // ancestor now that this nav lives inside it.
     var headerRect = header.getBoundingClientRect();
-    var btnRect = catBtn.getBoundingClientRect();
-    menu.style.left = (btnRect.left - headerRect.left) + 'px';
-    menu.classList.add('open');
-    menu.setAttribute('aria-hidden', 'false');
-    catBtn.setAttribute('aria-expanded', 'true');
+    var btnRect = dd.catBtn.getBoundingClientRect();
+    dd.menu.style.left = (btnRect.left - headerRect.left) + 'px';
+    dd.menu.classList.add('open');
+    dd.menu.setAttribute('aria-hidden', 'false');
+    dd.catBtn.setAttribute('aria-expanded', 'true');
+  }
+  function closeAllMenus(except){
+    DROPDOWN_DEFS.forEach(function(dd){
+      if (dd !== except && dd.menu && dd.menu.classList.contains('open')) closeMenu(dd);
+    });
+  }
+  function dropdownOwning(el){
+    var menuEl = el.closest ? el.closest('.dr-top-nav-menu') : null;
+    if (!menuEl) return null;
+    for (var i = 0; i < DROPDOWN_DEFS.length; i++) {
+      if (DROPDOWN_DEFS[i].menu === menuEl) return DROPDOWN_DEFS[i];
+    }
+    return null;
   }
   function syncActive(header, pane){
-    var current = null;
     header.querySelectorAll('.dr-top-nav-tab[data-gamepick-pane]').forEach(function(btn){
       var isActive = btn.getAttribute('data-gamepick-pane') === pane;
       btn.classList.toggle('active', isActive);
-      if (isActive) current = btn.querySelector('span') ? btn.querySelector('span').textContent : '';
+      if (isActive) {
+        var dd = dropdownOwning(btn);
+        if (dd) {
+          if (dd.currentLabel) dd.currentLabel.textContent = btn.querySelector('span') ? btn.querySelector('span').textContent : '';
+          if (dd.catBtn) dd.catBtn.classList.add('active');
+        }
+      }
     });
-    // NFL/WNBA's own single-board pills (not part of the Baseball dropdown)
-    // get the same active highlight directly on the pill itself.
+    DROPDOWN_DEFS.forEach(function(dd){
+      if (!dd.catBtn) return;
+      var hasActiveTab = dd.menu && dd.menu.querySelector('.dr-top-nav-tab.active[data-gamepick-pane="' + pane + '"]');
+      if (!hasActiveTab) dd.catBtn.classList.remove('active');
+    });
+    // NFL's own single-board pill (not part of any dropdown) gets the same
+    // active highlight directly on the pill itself.
     header.querySelectorAll('.dr-top-nav-cat-btn[data-gamepick-pane]').forEach(function(btn){
       btn.classList.toggle('active', btn.getAttribute('data-gamepick-pane') === pane);
     });
-    var label = document.getElementById('dr-top-nav-baseball-current');
-    if (label && current) label.textContent = current;
   }
   function bind(){
     var header = document.querySelector('.header');
     if (!header) return;
-    var catBtn = document.getElementById('dr-top-nav-baseball-btn');
-    var menu = document.getElementById('dr-top-nav-baseball-menu');
-    if (catBtn && menu && !catBtn.dataset.drTopNavReady) {
-      catBtn.dataset.drTopNavReady = '1';
-      catBtn.addEventListener('click', function(e){
+
+    DROPDOWN_DEFS.forEach(function(dd){
+      dd.catBtn = document.getElementById(dd.btnId);
+      dd.menu = document.getElementById(dd.menuId);
+      dd.currentLabel = document.getElementById(dd.currentId);
+      if (!dd.catBtn || !dd.menu || dd.catBtn.dataset.drTopNavReady) return;
+      dd.catBtn.dataset.drTopNavReady = '1';
+      dd.catBtn.addEventListener('click', function(e){
         e.stopPropagation();
-        if (menu.classList.contains('open')) closeMenu(catBtn, menu);
-        else openMenu(catBtn, menu, header);
+        if (dd.menu.classList.contains('open')) closeMenu(dd);
+        else { closeAllMenus(dd); openMenu(dd, header); }
       });
-      document.addEventListener('click', function(e){
-        if (menu.classList.contains('open') && !menu.contains(e.target) && e.target !== catBtn) closeMenu(catBtn, menu);
+    });
+    document.addEventListener('click', function(e){
+      DROPDOWN_DEFS.forEach(function(dd){
+        if (dd.menu && dd.menu.classList.contains('open') && !dd.menu.contains(e.target) && e.target !== dd.catBtn) closeMenu(dd);
       });
-      document.addEventListener('keydown', function(e){
-        if (e.key === 'Escape' && menu.classList.contains('open')) closeMenu(catBtn, menu);
-      });
-    }
+    });
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape') closeAllMenus(null);
+    });
+
     header.querySelectorAll('.dr-top-nav-tab[data-gamepick-pane]').forEach(function(btn){
       if (btn.dataset.drTopNavReady) return;
       btn.dataset.drTopNavReady = '1';
       btn.addEventListener('click', function(){
         var pane = btn.getAttribute('data-gamepick-pane');
+        var sport = btn.getAttribute('data-sport');
+        if (sport && typeof window.setActiveSport === 'function') window.setActiveSport(sport);
         syncActive(header, pane);
-        if (catBtn && menu) closeMenu(catBtn, menu);
+        var owner = dropdownOwning(btn);
+        if (owner) closeMenu(owner);
         if (typeof window.DiamondNavigateToPane === 'function') window.DiamondNavigateToPane(pane);
       });
     });
-    // NFL/WNBA: single-board categories, no dropdown -- clicking routes
-    // straight into that sport's one board. Also flips the sport context
-    // (body class, mobile drawer filtering) the same way the hub cards'
-    // own click handlers already do via setActiveSport, since this desktop
-    // pill is a second, independent entry point into the same pane.
+    // NFL: a single-board category, no dropdown -- clicking routes straight
+    // into that sport's one board. Also flips the sport context (body class,
+    // mobile drawer filtering) the same way the hub cards' own click
+    // handlers already do via setActiveSport, since this desktop pill is a
+    // second, independent entry point into the same pane.
     header.querySelectorAll('.dr-top-nav-cat-btn[data-gamepick-pane][data-sport]').forEach(function(btn){
       if (btn.dataset.drTopNavReady) return;
       btn.dataset.drTopNavReady = '1';

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openHRBoard, openPropBoard, BOARD_ROWS } from './lib/fixtures.mjs';
+import { openHRBoard, openPropBoard, openWNBAPropBoard, BOARD_ROWS } from './lib/fixtures.mjs';
 
 test.describe('HR Threats board', () => {
   // The dense table's mobile collapse (stacked label:value rows) read worse
@@ -100,6 +100,18 @@ test.describe('RBI board (representative of the shared hits/rbi/tb/sb/hrrbi card
   test('card list renders primary chips + full-breakdown disclosure', async ({ page }) => {
     await openPropBoard(page, 'rbis', BOARD_ROWS);
     await expect(page.locator('#rbis-props-content')).toHaveScreenshot('rbi-board.png');
+  });
+});
+
+test.describe('WNBA Rebounds board (representative of the WNBA_PROP_BOARDS points/rebounds/assists/threes/pra family)', () => {
+  test('card renders the board-specific headline stat, real chip row, and summary banner', async ({ page }) => {
+    await openWNBAPropBoard(page, 'wnbareb');
+    const card = page.locator('#wnba-rebounds-content .dr109-card').first();
+    await expect(card.locator('.dr109-score')).toContainText('75%');
+    await expect(card.locator('.dr109-score small')).toHaveText('6+ REB');
+    await expect(card.locator('.dr109-chip', { hasText: 'RPG' })).toContainText('9.4');
+    await expect(card.locator('.dr-watch-star')).toHaveCount(1);
+    await expect(page.locator('#wnba-rebounds-content .dr1027-hr-summary')).toContainText('Rotation Starter');
   });
 });
 
