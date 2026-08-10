@@ -271,3 +271,37 @@ export async function openPropBoard(page, pane, rows = BOARD_ROWS) {
   await page.evaluate(() => { window.renderPropIntelligencePanes(); });
   await page.waitForTimeout(200);
 }
+
+const WNBA_SCHEDULE = {
+  events: [
+    { date: '2026-08-11T23:00Z', completed: false, home: { abbreviation: 'LVA' }, away: { abbreviation: 'NYL' } },
+  ],
+};
+// One deterministic real-shaped player per board key -- covers the app.js
+// WNBA_PROP_BOARDS engine's shared card/summary path (headshot, watch star,
+// cushion/risk, all 5 season averages) without needing real synced data.
+export const WNBA_PLAYERS = {
+  w1: {
+    name: 'Rotation Starter', position: 'F', teamAbbr: 'LVA', headshot: 'https://example.test/w1.png', season: 2026,
+    games: 20, ptsPerGame: 14.9, ptsStdDev: 3.4, gamesWith15Plus: 8, prob15Plus: 40,
+    rebPerGame: 9.4, rebStdDev: 2.1, gamesWithRebLine: 15, probRebLine: 75,
+    astPerGame: 2.3, astStdDev: 1.1, gamesWithAstLine: 3, probAstLine: 15,
+    threesPerGame: 0.4, threesStdDev: 0.6, gamesWith3PMLine: 1, prob3PMLine: 5,
+    praPerGame: 26.6, praStdDev: 5.0, gamesWithPRALine: 12, probPRALine: 60,
+  },
+};
+
+// Opens a WNBA prop board (renderWNBAPropBoard's config-driven engine, app.js)
+// via real fetch mocks for data/wnba-schedule.json + data/wnba-player-stats.json
+// rather than seeding a window global directly -- that data flows through
+// loadWNBAPropData's own drFetchDailyJSON call, so this is the fixture-level
+// equivalent of seedRows for this board family.
+export async function openWNBAPropBoard(page, pane, players = WNBA_PLAYERS) {
+  await blockExternalRequests(page);
+  await page.route('**/data/wnba-schedule.json*', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(WNBA_SCHEDULE) }));
+  await page.route('**/data/wnba-player-stats.json*', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ updatedAt: new Date().toISOString(), players }) }));
+  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+  await disableMotion(page);
+  await page.evaluate((pane) => { window.showGamePickPane(pane); }, pane);
+  await page.waitForTimeout(400);
+}
