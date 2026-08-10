@@ -10036,14 +10036,53 @@ async function loadNFLTDData(force = false) {
   return nflTDDataPromise;
 }
 
+// Sort/filter state -- same module-level var + toggle-on-reclick shape as
+// kPropsSortBy (app.js:12145): dir 1 = default (shown as ↓, higher first
+// since every sort field here is "more is more relevant"), -1 = reversed.
+let _nflTDSort = null;
+let _nflTDSortDir = 1;
+let _nflTDGameFilter = '';
+const NFL_TD_SORT_FIELDS = [
+  { key: 'prob', label: 'Prob' },
+  { key: 'td', label: 'TD' },
+  { key: 'games', label: 'Games' },
+];
+function nflTDSortBy(key) {
+  if (_nflTDSort === key) { _nflTDSortDir *= -1; }
+  else { _nflTDSort = key; _nflTDSortDir = 1; }
+  if (!key) { _nflTDSort = null; _nflTDSortDir = 1; }
+  renderNFLTDBoard();
+}
+function setNFLTDGameFilter(value) {
+  _nflTDGameFilter = value || '';
+  renderNFLTDBoard();
+}
+
+// Real computed banner, mirroring drKSummaryHTML's shape (app.js:11757) and
+// the shared .dr1027-hr-summary class K Props/HR Threats already reuse --
+// Top Rated/Board Avg/Scanned/Primary Signal, all pulled from this render's
+// own real rows (same numbers already on each card, nothing new computed).
+function nflTDSummaryHTML(rows) {
+  if (!rows.length) return '';
+  const byProb = rows.slice().sort((a, b) => b.prob - a.prob);
+  const top = byProb[0];
+  const sample = byProb.slice(0, Math.min(8, byProb.length));
+  const avg = Math.round(sample.reduce((a, p) => a + p.prob, 0) / sample.length);
+  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">🏈 EXPANDED <span>NFL ANYTIME TD DATA</span></div><p class="dr1027-summary-copy">Real season touchdown rate per skill-position player, modeled as at-least-one-TD-this-game probability. Early model — no opponent defense adjustment yet.</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>${avg}%</b><span>Board Avg Probability</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>Anytime TD</b><span>Primary Signal</span></div></div></div>`;
+}
+
 function nflTDCardHTML(r) {
   const scoreCls = r.prob >= 55 ? 'good' : '';
   return `<div class="dr109-card${scoreCls ? ' prop-hit' : ''}">
+    ${window.drWatchStarHTML('nfl-' + r.id, r.name)}
     <div class="dr109-card-head">
-      <div class="dr109-player"><div style="min-width:0">
-        <div class="dr109-name">${fantasyEsc(r.name || 'Player')}</div>
-        <div class="dr109-meta">${fantasyEsc(r.position || '')} · ${fantasyEsc(r.teamAbbr || '')} vs ${fantasyEsc(r.oppAbbr || '')}</div>
-      </div></div>
+      <div class="dr109-player">
+        <img loading="lazy" src="${r.headshot || ''}" onerror="this.style.display='none'" alt="">
+        <div style="min-width:0">
+          <div class="dr109-name">${fantasyEsc(r.name || 'Player')}</div>
+          <div class="dr109-meta">${fantasyEsc(r.position || '')} · ${fantasyEsc(r.teamAbbr || '')} vs ${fantasyEsc(r.oppAbbr || '')}</div>
+        </div>
+      </div>
       <div class="dr109-score">${r.prob}%<small>Anytime TD</small></div>
     </div>
     <div class="dr109-chiprow">
@@ -10058,6 +10097,7 @@ function nflTDCardHTML(r) {
 async function renderNFLTDBoard() {
   const el = document.getElementById('nfl-td-content');
   if (!el) return;
+  const __searchFocus = drCaptureSearchFocus('nfltd-search-input');
   let data;
   try {
     data = await loadNFLTDData();
@@ -10083,17 +10123,56 @@ async function renderNFLTDBoard() {
       oppByTeam[g.away.abbreviation] = g.home.abbreviation;
     }
   });
-  const rows = Object.values(data.players || {})
-    .filter(p => p.teamAbbr && oppByTeam[p.teamAbbr] != null && p.tdPerGame != null)
-    .map(p => Object.assign({}, p, { oppAbbr: oppByTeam[p.teamAbbr], prob: nflAnytimeTDProb(p.tdPerGame) }))
-    .sort((a, b) => b.prob - a.prob);
-  if (!rows.length) {
+  const allRows = Object.entries(data.players || {})
+    .filter(([id, p]) => p.teamAbbr && oppByTeam[p.teamAbbr] != null && p.tdPerGame != null)
+    .map(([id, p]) => Object.assign({ id }, p, { oppAbbr: oppByTeam[p.teamAbbr], prob: nflAnytimeTDProb(p.tdPerGame) }));
+  if (!allRows.length) {
     el.innerHTML = `<div class="mu-empty">No player season stats synced yet for the ${fantasyEsc(nextDate)} slate. Check back once the daily sync has run.</div>`;
     return;
   }
+
+  // Game filter dropdown -- real games on this slate, keyed by a stable
+  // away@home team-abbreviation pair since NFL's real schedule data (see
+  // sync-nfl-schedule.mjs) doesn't carry a per-player game id the way MLB's
+  // gamePk does.
+  const gameOptsHTML = ['<option value="">All Games</option>'].concat(
+    slateGames.filter(g => g.home && g.away).map(g => {
+      const gid = g.away.abbreviation + '@' + g.home.abbreviation;
+      return `<option value="${gid}"${_nflTDGameFilter === gid ? ' selected' : ''}>${g.away.abbreviation} @ ${g.home.abbreviation}</option>`;
+    })
+  ).join('');
+
+  let rows = allRows.filter(p => drMatchesSearch('nfltd', p.name));
+  if (_nflTDGameFilter) {
+    rows = rows.filter(p => {
+      const opp = oppByTeam[p.teamAbbr];
+      const gid = p.teamAbbr + '@' + opp, gidRev = opp + '@' + p.teamAbbr;
+      return _nflTDGameFilter === gid || _nflTDGameFilter === gidRev;
+    });
+  }
+  const sortKey = _nflTDSort || 'prob';
+  rows = rows.slice().sort((a, b) => (b[sortKey] - a[sortKey]) * _nflTDSortDir);
+
+  const sortBtns = NFL_TD_SORT_FIELDS.map(({ key, label }) => {
+    const active = (_nflTDSort || 'prob') === key;
+    const arrow = active ? (_nflTDSortDir === 1 ? ' ↓' : ' ↑') : '';
+    return `<button onclick="nflTDSortBy('${key}')" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${active ? 'var(--accent2)' : 'var(--border)'};background:${active ? 'rgba(47,107,255,.12)' : 'var(--surface2)'};color:${active ? 'var(--accent2)' : 'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">${label}${arrow}</button>`;
+  }).join('');
+
+  const noMatches = !rows.length && ((window.__drBoardSearch.nfltd || '').trim() || _nflTDGameFilter);
   el.innerHTML = `<div class="dr109-summary"><div class="dr109-title">🏈 <span>${fantasyEsc(nextDate)} SLATE</span></div>`
-    + `<p class="dr109-copy">Real season touchdown rate per skill-position player (${fantasyEsc(rows[0].season)} season), modeled as at-least-one-TD-this-game probability. Early model — no opponent defense adjustment yet, values are generated from the active synced roster/stats data.</p></div>`
-    + rows.map(nflTDCardHTML).join('');
+    + `<p class="dr109-copy">Real season touchdown rate per skill-position player (${fantasyEsc(allRows[0].season)} season), modeled as at-least-one-TD-this-game probability. Early model — no opponent defense adjustment yet, values are generated from the active synced roster/stats data.</p></div>`
+    + nflTDSummaryHTML(allRows)
+    + `<div class="dr109-filter-row kprops-sticky-sort" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">
+        <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">GAME:</span>
+        <select onchange="setNFLTDGameFilter(this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;flex-shrink:0">${gameOptsHTML}</select>
+        <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">SORT:</span>
+        ${sortBtns}
+        <button onclick="nflTDSortBy(null)" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:3px 8px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0">RESET</button>
+        ${drSearchInputHTML('nfltd', 'nfltd-search-input', 'Search players…', "drSetBoardSearch('nfltd',this.value,renderNFLTDBoard)")}
+      </div>`
+    + (noMatches ? `<div class="mu-empty" style="padding:24px">No players match the current search/filter.</div>` : rows.map(nflTDCardHTML).join(''));
+  drRestoreSearchFocus(__searchFocus);
 }
 window.renderNFLTDBoard = renderNFLTDBoard;
 
@@ -10160,17 +10239,50 @@ async function loadWNBAPointsData(force = false) {
   return wnbaPointsDataPromise;
 }
 
+let _wnbaPtsSort = null;
+let _wnbaPtsSortDir = 1;
+let _wnbaPtsGameFilter = '';
+const WNBA_PTS_SORT_FIELDS = [
+  { key: 'prob15Plus', label: 'Prob' },
+  { key: 'ptsPerGame', label: 'PPG' },
+  { key: 'cushion', label: 'Cushion' },
+  { key: 'games', label: 'Games' },
+];
+function wnbaPointsSortBy(key) {
+  if (_wnbaPtsSort === key) { _wnbaPtsSortDir *= -1; }
+  else { _wnbaPtsSort = key; _wnbaPtsSortDir = 1; }
+  if (!key) { _wnbaPtsSort = null; _wnbaPtsSortDir = 1; }
+  renderWNBAPointsBoard();
+}
+function setWNBAPtsGameFilter(value) {
+  _wnbaPtsGameFilter = value || '';
+  renderWNBAPointsBoard();
+}
+
+function wnbaPointsSummaryHTML(rows) {
+  if (!rows.length) return '';
+  const byProb = rows.slice().sort((a, b) => b.prob15Plus - a.prob15Plus);
+  const top = byProb[0];
+  const sample = byProb.slice(0, Math.min(8, byProb.length));
+  const avg = Math.round(sample.reduce((a, p) => a + p.prob15Plus, 0) / sample.length);
+  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">🏀 EXPANDED <span>WNBA 15+ POINTS DATA</span></div><p class="dr1027-summary-copy">Real season scoring rate per rostered player, modeled as a raw empirical probability of scoring ${WNBA_POINTS_LINE}+ points tonight -- the real share of this player's own games this season that cleared ${WNBA_POINTS_LINE} points. Early model -- no opponent defense adjustment yet.</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>${avg}%</b><span>Board Avg Probability</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>15+ Points</b><span>Primary Signal</span></div></div></div>`;
+}
+
 function wnbaPointsCardHTML(r) {
   const cushion = wnbaPointsCushion(r);
   const cushionText = `${cushion >= 0 ? '+' : ''}${cushion.toFixed(1)}`;
   const risk = wnbaPointsRisk(r);
   const scoreCls = r.prob15Plus >= 55 ? 'good' : '';
   return `<div class="dr109-card${scoreCls ? ' prop-hit' : ''}">
+    ${window.drWatchStarHTML('wnba-' + r.id, r.name)}
     <div class="dr109-card-head">
-      <div class="dr109-player"><div style="min-width:0">
-        <div class="dr109-name">${fantasyEsc(r.name || 'Player')}</div>
-        <div class="dr109-meta">${fantasyEsc(r.position || '')} · ${fantasyEsc(r.teamAbbr || '')} vs ${fantasyEsc(r.oppAbbr || '')}</div>
-      </div></div>
+      <div class="dr109-player">
+        <img loading="lazy" src="${r.headshot || ''}" onerror="this.style.display='none'" alt="">
+        <div style="min-width:0">
+          <div class="dr109-name">${fantasyEsc(r.name || 'Player')}</div>
+          <div class="dr109-meta">${fantasyEsc(r.position || '')} · ${fantasyEsc(r.teamAbbr || '')} vs ${fantasyEsc(r.oppAbbr || '')}</div>
+        </div>
+      </div>
       <div class="dr109-score">${r.prob15Plus}%<small>15+ PTS</small></div>
     </div>
     <div class="dr109-chiprow">
@@ -10189,6 +10301,7 @@ function wnbaPointsCardHTML(r) {
 async function renderWNBAPointsBoard() {
   const el = document.getElementById('wnba-points-content');
   if (!el) return;
+  const __searchFocus = drCaptureSearchFocus('wnbapts-search-input');
   let data;
   try {
     data = await loadWNBAPointsData();
@@ -10213,17 +10326,52 @@ async function renderWNBAPointsBoard() {
       oppByTeam[g.away.abbreviation] = g.home.abbreviation;
     }
   });
-  const rows = Object.values(data.players || {})
-    .filter(p => p.teamAbbr && oppByTeam[p.teamAbbr] != null && p.prob15Plus != null)
-    .map(p => Object.assign({}, p, { oppAbbr: oppByTeam[p.teamAbbr] }))
-    .sort((a, b) => b.prob15Plus - a.prob15Plus);
-  if (!rows.length) {
+  const allRows = Object.entries(data.players || {})
+    .filter(([id, p]) => p.teamAbbr && oppByTeam[p.teamAbbr] != null && p.prob15Plus != null)
+    .map(([id, p]) => Object.assign({ id }, p, { oppAbbr: oppByTeam[p.teamAbbr], cushion: wnbaPointsCushion(p) }));
+  if (!allRows.length) {
     el.innerHTML = `<div class="mu-empty">No player season stats synced yet for the ${fantasyEsc(nextDate)} slate. Check back once the daily sync has run.</div>`;
     return;
   }
+
+  const gameOptsHTML = ['<option value="">All Games</option>'].concat(
+    slateGames.filter(g => g.home && g.away).map(g => {
+      const gid = g.away.abbreviation + '@' + g.home.abbreviation;
+      return `<option value="${gid}"${_wnbaPtsGameFilter === gid ? ' selected' : ''}>${g.away.abbreviation} @ ${g.home.abbreviation}</option>`;
+    })
+  ).join('');
+
+  let rows = allRows.filter(p => drMatchesSearch('wnbapts', p.name));
+  if (_wnbaPtsGameFilter) {
+    rows = rows.filter(p => {
+      const opp = oppByTeam[p.teamAbbr];
+      const gid = p.teamAbbr + '@' + opp, gidRev = opp + '@' + p.teamAbbr;
+      return _wnbaPtsGameFilter === gid || _wnbaPtsGameFilter === gidRev;
+    });
+  }
+  const sortKey = _wnbaPtsSort || 'prob15Plus';
+  rows = rows.slice().sort((a, b) => (b[sortKey] - a[sortKey]) * _wnbaPtsSortDir);
+
+  const sortBtns = WNBA_PTS_SORT_FIELDS.map(({ key, label }) => {
+    const active = (_wnbaPtsSort || 'prob15Plus') === key;
+    const arrow = active ? (_wnbaPtsSortDir === 1 ? ' ↓' : ' ↑') : '';
+    return `<button onclick="wnbaPointsSortBy('${key}')" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${active ? 'var(--accent2)' : 'var(--border)'};background:${active ? 'rgba(47,107,255,.12)' : 'var(--surface2)'};color:${active ? 'var(--accent2)' : 'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">${label}${arrow}</button>`;
+  }).join('');
+
+  const noMatches = !rows.length && ((window.__drBoardSearch.wnbapts || '').trim() || _wnbaPtsGameFilter);
   el.innerHTML = `<div class="dr109-summary"><div class="dr109-title">🏀 <span>${fantasyEsc(nextDate)} SLATE</span></div>`
-    + `<p class="dr109-copy">Real season scoring rate per rostered player (${fantasyEsc(rows[0].season)} season), modeled as a raw empirical probability of scoring ${WNBA_POINTS_LINE}+ points tonight -- the real share of this player's own games this season that cleared ${WNBA_POINTS_LINE} points, not a derived estimate. RPG/APG/3PM/PRA are each real season per-game averages, not projections. Cushion is real season PPG vs. the ${WNBA_POINTS_LINE}-point line; Risk blends that cushion with real sample size and real scoring consistency. Early model -- no opponent defense adjustment yet.</p></div>`
-    + rows.map(wnbaPointsCardHTML).join('');
+    + `<p class="dr109-copy">Real season scoring rate per rostered player (${fantasyEsc(allRows[0].season)} season), modeled as a raw empirical probability of scoring ${WNBA_POINTS_LINE}+ points tonight -- the real share of this player's own games this season that cleared ${WNBA_POINTS_LINE} points, not a derived estimate. RPG/APG/3PM/PRA are each real season per-game averages, not projections. Cushion is real season PPG vs. the ${WNBA_POINTS_LINE}-point line; Risk blends that cushion with real sample size and real scoring consistency. Early model -- no opponent defense adjustment yet.</p></div>`
+    + wnbaPointsSummaryHTML(allRows)
+    + `<div class="dr109-filter-row kprops-sticky-sort" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">
+        <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">GAME:</span>
+        <select onchange="setWNBAPtsGameFilter(this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;flex-shrink:0">${gameOptsHTML}</select>
+        <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">SORT:</span>
+        ${sortBtns}
+        <button onclick="wnbaPointsSortBy(null)" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:3px 8px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0">RESET</button>
+        ${drSearchInputHTML('wnbapts', 'wnbapts-search-input', 'Search players…', "drSetBoardSearch('wnbapts',this.value,renderWNBAPointsBoard)")}
+      </div>`
+    + (noMatches ? `<div class="mu-empty" style="padding:24px">No players match the current search/filter.</div>` : rows.map(wnbaPointsCardHTML).join(''));
+  drRestoreSearchFocus(__searchFocus);
 }
 window.renderWNBAPointsBoard = renderWNBAPointsBoard;
 

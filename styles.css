@@ -853,7 +853,9 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
   #rbis-props-content,
   #tb-props-content,
   #sb-props-content,
-  #hrrbi-props-content {
+  #hrrbi-props-content,
+  #nfl-td-content,
+  #wnba-points-content {
     max-height: none !important;
     height: auto !important;
     overflow: visible !important;
@@ -871,7 +873,9 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
   #rbis-props-content.dr-scroll-tall,
   #tb-props-content.dr-scroll-tall,
   #sb-props-content.dr-scroll-tall,
-  #hrrbi-props-content.dr-scroll-tall {
+  #hrrbi-props-content.dr-scroll-tall,
+  #nfl-td-content.dr-scroll-tall,
+  #wnba-points-content.dr-scroll-tall {
     max-height: none !important;
     overflow: visible !important;
   }
@@ -895,7 +899,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
     -webkit-overflow-scrolling: auto !important;
   }
 
-  #gameprops-content .game-card, #hits-props-content .dr109-card, #rbis-props-content .dr109-card, #tb-props-content .dr109-card, #sb-props-content .dr109-card, #hrrbi-props-content .dr109-card {
+  #gameprops-content .game-card, #hits-props-content .dr109-card, #rbis-props-content .dr109-card, #tb-props-content .dr109-card, #sb-props-content .dr109-card, #hrrbi-props-content .dr109-card, #nfl-td-content .dr109-card, #wnba-points-content .dr109-card {
     max-width: 100% !important;
     min-width: 0 !important;
     box-sizing: border-box !important;
@@ -926,7 +930,9 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #rbis-props-content,
 #tb-props-content,
 #sb-props-content,
-#hrrbi-props-content{
+#hrrbi-props-content,
+#nfl-td-content,
+#wnba-points-content{
   --dr-prop-card-gap: 14px;
   --dr-prop-card-min-h: 286px;
 }
@@ -936,7 +942,9 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #rbis-props-content,
 #tb-props-content,
 #sb-props-content,
-#hrrbi-props-content{
+#hrrbi-props-content,
+#nfl-td-content,
+#wnba-points-content{
   display:grid !important;
   grid-template-columns:repeat(3,minmax(0,1fr)) !important;
   align-items:stretch !important;
@@ -956,7 +964,13 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #sb-props-content > .mu-empty,
 #hrrbi-props-content > .dr109-summary,
 #hrrbi-props-content > .dr109-filter-row,
-#hrrbi-props-content > .mu-empty{
+#hrrbi-props-content > .mu-empty,
+#nfl-td-content > .dr109-summary,
+#nfl-td-content > .dr109-filter-row,
+#nfl-td-content > .mu-empty,
+#wnba-points-content > .dr109-summary,
+#wnba-points-content > .dr109-filter-row,
+#wnba-points-content > .mu-empty{
   grid-column:1 / -1 !important;
 }
 
@@ -978,7 +992,9 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #rbis-props-content .dr109-card,
 #tb-props-content .dr109-card,
 #sb-props-content .dr109-card,
-#hrrbi-props-content .dr109-card{
+#hrrbi-props-content .dr109-card,
+#nfl-td-content .dr109-card,
+#wnba-points-content .dr109-card{
   min-height:var(--dr-prop-card-min-h) !important;
   /* Was height:100% + overflow:hidden — a hard, fixed height that clipped
      (or, once overflow was made visible, let overflow spill out and get
@@ -1003,7 +1019,9 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #rbis-props-content .dr109-card-head,
 #tb-props-content .dr109-card-head,
 #sb-props-content .dr109-card-head,
-#hrrbi-props-content .dr109-card-head{
+#hrrbi-props-content .dr109-card-head,
+#nfl-td-content .dr109-card-head,
+#wnba-points-content .dr109-card-head{
   min-height:58px !important;
   align-items:flex-start !important;
 }
@@ -1012,7 +1030,9 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #rbis-props-content .dr109-name,
 #tb-props-content .dr109-name,
 #sb-props-content .dr109-name,
-#hrrbi-props-content .dr109-name{
+#hrrbi-props-content .dr109-name,
+#nfl-td-content .dr109-name,
+#wnba-points-content .dr109-name{
   display:-webkit-box !important;
   -webkit-line-clamp:2 !important;
   -webkit-box-orient:vertical !important;
@@ -1024,7 +1044,9 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #rbis-props-content .dr109-meta,
 #tb-props-content .dr109-meta,
 #sb-props-content .dr109-meta,
-#hrrbi-props-content .dr109-meta{
+#hrrbi-props-content .dr109-meta,
+#nfl-td-content .dr109-meta,
+#wnba-points-content .dr109-meta{
   white-space:nowrap !important;
   overflow:hidden !important;
   text-overflow:ellipsis !important;
@@ -1045,7 +1067,9 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #rbis-props-content .dr109-chiprow,
 #tb-props-content .dr109-chiprow,
 #sb-props-content .dr109-chiprow,
-#hrrbi-props-content .dr109-chiprow{
+#hrrbi-props-content .dr109-chiprow,
+#nfl-td-content .dr109-chiprow,
+#wnba-points-content .dr109-chiprow{
   align-content:flex-start !important;
   min-height:78px !important;
 }
@@ -1054,7 +1078,9 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #rbis-props-content .dr109-chip,
 #tb-props-content .dr109-chip,
 #sb-props-content .dr109-chip,
-#hrrbi-props-content .dr109-chip{
+#hrrbi-props-content .dr109-chip,
+#nfl-td-content .dr109-chip,
+#wnba-points-content .dr109-chip{
   min-width:0 !important;
 }
 #kprops-content .dr109-chip span,
@@ -1068,7 +1094,11 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #rbis-props-content .dr109-chip strong,
 #tb-props-content .dr109-chip strong,
 #sb-props-content .dr109-chip strong,
-#hrrbi-props-content .dr109-chip strong{
+#hrrbi-props-content .dr109-chip strong,
+#nfl-td-content .dr109-chip span,
+#nfl-td-content .dr109-chip strong,
+#wnba-points-content .dr109-chip span,
+#wnba-points-content .dr109-chip strong{
   white-space:nowrap !important;
 }
 
@@ -1080,7 +1110,9 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #rbis-props-content .dr109-reason,
 #tb-props-content .dr109-reason,
 #sb-props-content .dr109-reason,
-#hrrbi-props-content .dr109-reason{
+#hrrbi-props-content .dr109-reason,
+#nfl-td-content .dr109-reason,
+#wnba-points-content .dr109-reason{
   min-height:64px !important;
   /* Without this, the flex column (.dr109-card) reports a fixed min-height
      to the CSS grid's row-sizing pass without accounting for real content
@@ -1097,6 +1129,8 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
   #tb-props-content,
   #sb-props-content,
   #hrrbi-props-content,
+  #nfl-td-content,
+  #wnba-points-content,
   #kprops-content > div[style*="overflow-x"]{
     grid-template-columns:repeat(2,minmax(0,1fr)) !important;
   }
@@ -1107,6 +1141,8 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
   #tb-props-content,
   #sb-props-content,
   #hrrbi-props-content,
+  #nfl-td-content,
+  #wnba-points-content,
   #kprops-content > div[style*="overflow-x"]{
     grid-template-columns:repeat(2,minmax(0,1fr)) !important;
   }
@@ -1125,7 +1161,9 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
   #rbis-props-content .dr109-card,
   #tb-props-content .dr109-card,
   #sb-props-content .dr109-card,
-  #hrrbi-props-content .dr109-card{
+  #hrrbi-props-content .dr109-card,
+  #nfl-td-content .dr109-card,
+  #wnba-points-content .dr109-card{
     min-height:0 !important;
     height:auto !important;
     overflow:visible !important;
@@ -1141,7 +1179,9 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
   #rbis-props-content .dr109-chiprow,
   #tb-props-content .dr109-chiprow,
   #sb-props-content .dr109-chiprow,
-  #hrrbi-props-content .dr109-chiprow{
+  #hrrbi-props-content .dr109-chiprow,
+  #nfl-td-content .dr109-chiprow,
+  #wnba-points-content .dr109-chiprow{
     max-height:none !important;
     overflow:visible !important;
   }

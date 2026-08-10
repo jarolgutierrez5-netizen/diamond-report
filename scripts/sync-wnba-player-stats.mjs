@@ -204,7 +204,7 @@ async function main() {
       const rows = extractSeasonRows(raw);
       if (rows) {
         out[p.id] = {
-          name: p.name, position: p.position, teamAbbr: p.teamAbbr,
+          name: p.name, position: p.position, teamAbbr: p.teamAbbr, headshot: p.headshot || null,
           season, ...summarize(rows),
         };
         updated++;
