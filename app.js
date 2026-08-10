@@ -10321,7 +10321,16 @@ function wnbaPropCardHTML(cfg, r, topCutoff) {
   const consistency = wnbaStatConsistency(cfg, r);
   const scoreCls = (topCutoff != null && projAvg != null && projAvg >= topCutoff) ? 'good' : '';
   const defAdj = r.defenseAdj;
-  const matchupPct = defAdj ? Math.round((defAdj.ratio - 1) * 100) : null;
+  // Same cushion = projection - reference shape K Props' cushion uses
+  // (app.js: strikeoutCushion = projK - recLineNum), just with the
+  // reference being the player's own real season average rather than a
+  // real sportsbook line -- no free per-player WNBA market line exists to
+  // diff against (same reasoning wnbaStatCushion's original version used),
+  // so this stays honestly self-referential rather than faking a market
+  // number. Only shown when a real defense adjustment actually moved the
+  // projection off the raw average (Points board only, for now).
+  const cushion = defAdj && projAvg != null ? +(projAvg - r[cfg.avgField]).toFixed(1) : null;
+  const cushionText = cushion != null ? `${cushion >= 0 ? '+' : ''}${cushion.toFixed(1)}` : null;
   return `<div class="dr109-card${scoreCls ? ' prop-hit' : ''}">
     ${window.drWatchStarHTML('wnba-' + r.id, r.name)}
     <div class="dr109-card-head">
@@ -10342,7 +10351,7 @@ function wnbaPropCardHTML(cfg, r, topCutoff) {
       <span class="dr109-chip"><span>PRA:</span><strong>${r.praPerGame != null ? r.praPerGame.toFixed(1) : '–'}</strong></span>
       <span class="dr109-chip"><span>Games:</span><strong>${r.games != null ? r.games : '–'}</strong></span>
       <span class="dr109-chip ${consistency.label === 'Steady' ? 'good' : consistency.label === 'Moderate' ? 'warn' : consistency.label === 'Volatile' ? 'bad' : ''}"><span>Consistency:</span><strong>${consistency.label}</strong></span>
-      ${defAdj ? `<span class="dr109-chip ${matchupPct > 0 ? 'good' : matchupPct < 0 ? 'bad' : ''}" title="${fantasyEsc(r.oppAbbr)} allows real ${defAdj.oppVal.toFixed(1)} PPG vs. a real ${defAdj.leagueAvg.toFixed(1)} PPG league average"><span>Matchup:</span><strong>${fantasyEsc(r.oppAbbr)} ${matchupPct >= 0 ? '+' : ''}${matchupPct}%</strong></span>` : ''}
+      ${cushion != null ? `<span class="dr109-chip ${cushion >= 1 ? 'good' : cushion >= 0 ? 'warn' : 'stat-cushion'}" title="vs. ${fantasyEsc(r.oppAbbr)}, who allows real ${defAdj.oppVal.toFixed(1)} PPG vs. a real ${defAdj.leagueAvg.toFixed(1)} PPG league average"><span>Cushion:</span><strong>${cushionText}</strong></span>` : ''}
     </div>
   </div>`;
 }
@@ -10432,7 +10441,7 @@ async function renderWNBAPropBoard(cfg) {
 
   const hasDefense = allRows.some(r => r.defenseAdj);
   const boardCopy = hasDefense
-    ? `Real season ${cfg.avgFullLabel.toLowerCase()} per rostered player (${fantasyEsc(allRows[0].season)} season), adjusted for real opponent scoring defense (ESPN standings' real points-allowed per team) where tonight's real opponent has one -- the Matchup chip shows the real adjustment. Consistency reads real season volatility (stdDev relative to their own average).`
+    ? `Real season ${cfg.avgFullLabel.toLowerCase()} per rostered player (${fantasyEsc(allRows[0].season)} season), adjusted for real opponent scoring defense (ESPN standings' real points-allowed per team) where tonight's real opponent has one -- the Cushion chip shows the real point gap between tonight's adjusted projection and their season average. Consistency reads real season volatility (stdDev relative to their own average).`
     : `Real season ${cfg.avgFullLabel.toLowerCase()} per rostered player (${fantasyEsc(allRows[0].season)} season) -- each player's own real season average, shown directly as their individual projection for tonight, not a probability against a fixed universal line. Consistency reads real season volatility (stdDev relative to their own average). Early model -- no opponent defense adjustment yet.`;
   const noMatches = !rows.length && ((window.__drBoardSearch[cfg.searchKey] || '').trim() || st.gameFilter);
   el.innerHTML = `<div class="dr109-summary"><div class="dr109-title">${cfg.icon} <span>${fantasyEsc(nextDate)} SLATE</span></div>`
