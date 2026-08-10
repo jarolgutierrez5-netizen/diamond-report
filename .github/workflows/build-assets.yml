@@ -1,23 +1,28 @@
 name: Build minified assets
 
 # This repo has no build step at deploy time (Cloudflare Workers/Netlify both serve
-# the repo root as-is — see wrangler.jsonc). Instead, whenever app.js or styles.css
-# change, this regenerates app.min.js/styles.min.css — the files index.html actually
-# loads — and commits them back to the same branch, so PR previews and production
-# both always serve an up-to-date minified build without needing a real build step
-# on either hosting platform.
+# the repo root as-is — see wrangler.jsonc). Instead, whenever app.js, nfl-wnba-
+# props.js, or styles.css change, this regenerates the matching .min files — the
+# ones index.html actually loads — and commits them back to the same branch, so PR
+# previews and production both always serve an up-to-date minified build without
+# needing a real build step on either hosting platform.
 #
-# app.js is real production JS (no eval/new Function, no reflection on function
-# names, nothing depends on exact variable naming across scope boundaries), so
-# terser's compress+mangle (-c -m) is safe here — verified with a full Playwright
-# regression pass (every board's render path, no console/runtime errors) plus the
-# existing targeted test suite, all green against the compressed+mangled output.
-# -c -m is NOT passed --toplevel, so top-level (global-scope) function/variable
-# names are left untouched — every onclick="someFn(...)" in index.html and every
-# window.someFn = ... assignment keeps working; only names local to a function
-# body or IIFE get shortened. This cuts the shipped bundle by roughly a quarter
-# (559KB -> 428KB minified, ~150KB -> ~123KB gzipped) versus the previous
-# comments/whitespace-only build.
+# nfl-wnba-props.js is the first slice extracted out of app.js during a file-size
+# scoping pass (see that file's own header comment) — a plain classic script loaded
+# via its own <script> tag right after app.min.js in index.html, sharing the same
+# runtime global scope. It gets the exact same treatment as app.js below.
+#
+# app.js (and nfl-wnba-props.js) is real production JS (no eval/new Function, no
+# reflection on function names, nothing depends on exact variable naming across
+# scope boundaries), so terser's compress+mangle (-c -m) is safe here — verified
+# with a full Playwright regression pass (every board's render path, no console/
+# runtime errors) plus the existing targeted test suite, all green against the
+# compressed+mangled output. -c -m is NOT passed --toplevel, so top-level (global-
+# scope) function/variable names are left untouched — every onclick="someFn(...)"
+# in index.html and every window.someFn = ... assignment keeps working; only names
+# local to a function body or IIFE get shortened. This cuts the shipped bundle by
+# roughly a quarter (559KB -> 428KB minified, ~150KB -> ~123KB gzipped) versus the
+# previous comments/whitespace-only build.
 #
 # Local rebuilds MUST use this exact command (same terser version, same flags) —
 # a mismatched local build previously caused this job to immediately re-commit a
@@ -33,6 +38,7 @@ on:
   push:
     paths:
       - 'app.js'
+      - 'nfl-wnba-props.js'
       - 'styles.css'
 
 permissions:
@@ -60,19 +66,22 @@ jobs:
       - name: Minify app.js (compress + mangle, non-toplevel — see comment above)
         run: npx --yes terser@5.49.0 app.js -c -m --comments false -o app.min.js
 
+      - name: Minify nfl-wnba-props.js (compress + mangle, non-toplevel — see comment above)
+        run: npx --yes terser@5.49.0 nfl-wnba-props.js -c -m --comments false -o nfl-wnba-props.min.js
+
       - name: Minify styles.css (safe token-level minification, no restructuring)
         run: npx --yes csso-cli@4.0.2 styles.css --no-restructure --comments none -o styles.min.css
 
       - name: Commit and push if changed
         run: |
-          if git diff --quiet -- app.min.js styles.min.css; then
-            echo "No changes to app.min.js/styles.min.css — nothing to commit."
+          if git diff --quiet -- app.min.js nfl-wnba-props.min.js styles.min.css; then
+            echo "No changes to app.min.js/nfl-wnba-props.min.js/styles.min.css — nothing to commit."
             exit 0
           fi
           git config user.name "diamond-report-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add app.min.js styles.min.css
-          git commit -m "Rebuild app.min.js/styles.min.css from source"
+          git add app.min.js nfl-wnba-props.min.js styles.min.css
+          git commit -m "Rebuild app.min.js/nfl-wnba-props.min.js/styles.min.css from source"
 
           # The ref this ran on can move during this run -- most often on main, where
           # update-tracker.yml/sync-statcast.yml/etc push independently on their own

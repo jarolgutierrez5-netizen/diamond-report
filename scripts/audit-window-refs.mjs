@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// Scans app.js for `window.NAME(...)` call sites with no matching definition
-// anywhere in the file -- the exact failure mode behind a real regression this
+// Scans app.js AND nfl-wnba-props.js (the first slice extracted out of app.js
+// during a file-size scoping pass -- see that file's own header comment) for
+// `window.NAME(...)` call sites with no matching definition anywhere across
+// BOTH files -- both are plain classic scripts sharing one global scope at
+// runtime (nfl-wnba-props.js loads right after app.min.js in index.html), so
+// a definition in either file satisfies a call site in the other. This is the
+// exact failure mode behind a real regression this
 // session: a "dead code" cleanup deleted a fully live IIFE (window.simulatePropOdds/
 // simulateSBOdds/simulateHRGameOdds/simulateKOdds/estimateGamePA) alongside a
 // genuinely dead one. Every caller used the `window.X ? window.X(...) : <fallback>`
@@ -30,7 +35,12 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const APP_JS_PATH = path.join(__dirname, '..', 'app.js');
+const REPO_ROOT = path.join(__dirname, '..');
+// Every plain classic script index.html loads that shares the one runtime
+// global scope with app.js -- add a new file here the same way it's added to
+// index.html's own <script> list, in load order, whenever a future slice gets
+// extracted out of app.js.
+const SCAN_FILES = ['app.js', 'nfl-wnba-props.js'];
 
 // Known-safe gaps: guarded call sites (typeof window.X === 'function' checks) whose
 // absence causes an optional enhancement to silently no-op, not a wrong/degraded
@@ -54,33 +64,37 @@ const NATIVE_GLOBALS = new Set([
 ]);
 
 function main() {
-  const src = readFileSync(APP_JS_PATH, 'utf8');
-  const lines = src.split('\n');
-
   const defined = new Set();
+  const called = new Map(); // name -> array of "file:line" strings
+  let totalLines = 0;
 
-  // Explicit `window.NAME = ` assignments anywhere in the file (any nesting level).
-  for (const m of src.matchAll(/window\.([A-Za-z_$][A-Za-z0-9_$]*)\s*=(?!=)/g)) {
-    defined.add(m[1]);
-  }
+  for (const fileName of SCAN_FILES) {
+    const src = readFileSync(path.join(REPO_ROOT, fileName), 'utf8');
+    const lines = src.split('\n');
+    totalLines += lines.length;
 
-  // True top-level `function NAME(`/`var NAME =` declarations (column-0, not nested
-  // inside any IIFE) -- these auto-attach to window; see header comment.
-  for (const line of lines) {
-    let m = line.match(/^(?:async\s+)?function\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*\(/);
-    if (m) { defined.add(m[1]); continue; }
-    if (/^var\s+/.test(line)) {
-      for (const vm of line.matchAll(/([A-Za-z_$][A-Za-z0-9_$]*)\s*=/g)) defined.add(vm[1]);
+    // Explicit `window.NAME = ` assignments anywhere in the file (any nesting level).
+    for (const m of src.matchAll(/window\.([A-Za-z_$][A-Za-z0-9_$]*)\s*=(?!=)/g)) {
+      defined.add(m[1]);
     }
-  }
 
-  // Every `window.NAME(` call site -- a real invocation, not just a truthiness check.
-  const called = new Map(); // name -> array of 1-indexed line numbers
-  for (let i = 0; i < lines.length; i++) {
-    for (const m of lines[i].matchAll(/window\.([A-Za-z_$][A-Za-z0-9_$]*)\s*\(/g)) {
-      const name = m[1];
-      if (!called.has(name)) called.set(name, []);
-      called.get(name).push(i + 1);
+    // True top-level `function NAME(`/`var NAME =` declarations (column-0, not nested
+    // inside any IIFE) -- these auto-attach to window; see header comment.
+    for (const line of lines) {
+      let m = line.match(/^(?:async\s+)?function\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*\(/);
+      if (m) { defined.add(m[1]); continue; }
+      if (/^var\s+/.test(line)) {
+        for (const vm of line.matchAll(/([A-Za-z_$][A-Za-z0-9_$]*)\s*=/g)) defined.add(vm[1]);
+      }
+    }
+
+    // Every `window.NAME(` call site -- a real invocation, not just a truthiness check.
+    for (let i = 0; i < lines.length; i++) {
+      for (const m of lines[i].matchAll(/window\.([A-Za-z_$][A-Za-z0-9_$]*)\s*\(/g)) {
+        const name = m[1];
+        if (!called.has(name)) called.set(name, []);
+        called.get(name).push(`${fileName}:${i + 1}`);
+      }
     }
   }
 
@@ -93,7 +107,7 @@ function main() {
     broken.push({ name, callLines });
   }
 
-  console.log(`Scanned ${lines.length} lines of app.js.`);
+  console.log(`Scanned ${totalLines} lines across ${SCAN_FILES.join(', ')}.`);
   console.log(`window.* names called as functions: ${called.size}`);
   console.log(`window.* names with a definition: ${defined.size}`);
 
