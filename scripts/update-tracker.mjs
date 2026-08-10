@@ -1625,7 +1625,14 @@ function simulateSBOdds(row) {
   const gamesPlayed = seasonAB > 0 ? Math.max(1, seasonAB / 3.8) : 1;
   const sbPerGame = seasonAB > 0 ? (sb / gamesPlayed) : 0;
   const pAtt = (row.pitcherSbAllowed || 0) + (row.pitcherCsAllowed || 0);
-  const batterySuppression = pAtt >= 5 ? clamp(1 - ((row.pitcherSbAllowed / pAtt) - 0.72) * 0.6, 0.7, 1.3) : 1;
+  // pitcherSbAllowed/pAtt is the real SUCCESS RATE of steal attempts against this
+  // battery -- high means a WEAK battery (runners usually succeed against him),
+  // low means a STRONG one (good pop time / catcher arm, runners get thrown out).
+  // A weak battery should make stealing MORE attractive (raise the multiplier
+  // above 1); a strong one should deter it (multiplier below 1). This was
+  // inverted (1 - delta instead of 1 + delta), so a strong battery was boosting
+  // predicted SB odds and a weak one was suppressing them -- backwards.
+  const batterySuppression = pAtt >= 5 ? clamp(1 + ((row.pitcherSbAllowed / pAtt) - 0.72) * 0.6, 0.7, 1.3) : 1;
   const lambda = clamp(sbPerGame * batterySuppression, 0.01, 1.2);
   let successes = 0;
   for (let t = 0; t < MC_TRIALS; t++) {
