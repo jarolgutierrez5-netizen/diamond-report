@@ -104,12 +104,14 @@ test.describe('RBI board (representative of the shared hits/rbi/tb/sb/hrrbi card
 });
 
 test.describe('WNBA Rebounds board (representative of the WNBA_PROP_BOARDS points/rebounds/assists/threes/pra family)', () => {
-  test('card renders the board-specific headline stat, real chip row, and summary banner', async ({ page }) => {
+  test('card renders the player\'s own real average as the projection headline, real chip row, and summary banner', async ({ page }) => {
     await openWNBAPropBoard(page, 'wnbareb');
     const card = page.locator('#wnba-rebounds-content .dr109-card').first();
-    await expect(card.locator('.dr109-score')).toContainText('75%');
-    await expect(card.locator('.dr109-score small')).toHaveText('6+ REB');
+    await expect(card.locator('.dr109-score')).toContainText('9.4');
+    await expect(card.locator('.dr109-score')).not.toContainText('%');
+    await expect(card.locator('.dr109-score small')).toHaveText('Proj RPG');
     await expect(card.locator('.dr109-chip', { hasText: 'RPG' })).toContainText('9.4');
+    await expect(card.locator('.dr109-chip', { hasText: 'Consistency' })).toBeVisible();
     await expect(card.locator('.dr-watch-star')).toHaveCount(1);
     await expect(page.locator('#wnba-rebounds-content .dr1027-hr-summary')).toContainText('Rotation Starter');
   });
