@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026081005">
+<link rel="stylesheet" href="styles.min.css?v=2026081006">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -754,13 +754,17 @@
 
 <!-- First real WNBA board -- Points Projections for the next real upcoming
      slate. Real season scoring rate (data/wnba-player-stats.json, scripts/
-     sync-wnba-player-stats.mjs) shown directly as each player's own real
-     season PPG -- their individual projection for tonight, same "the model
-     projects N Ks" framing the K Props board uses, not a probability
-     against a fixed universal line. Consistency reads real season
-     volatility (stdDev relative to their own average). Same "honest first
-     cut, no opponent defense adjustment yet" precedent as the NFL board
-     above. -->
+     sync-wnba-player-stats.mjs), adjusted for real opponent scoring defense
+     (data/wnba-team-defense.json, scripts/sync-wnba-team-defense.mjs --
+     ESPN's real avgPointsAgainst per team) where tonight's real opponent has
+     one -- their individual projection for tonight, same "the model projects
+     N Ks" framing the K Props board uses, not a probability against a fixed
+     universal line. Consistency reads real season volatility (stdDev
+     relative to their own average). Rebounds/Assists/3PM/PRA below don't
+     have a real opponent-allowed data source yet (ESPN's standings only
+     publishes points-against), so they keep the "honest first cut, no
+     opponent defense adjustment yet" precedent the NFL board above also
+     carries. -->
 <div class="gamepick-pane" id="gamepick-pane-wnbapts" role="tabpanel" aria-labelledby="gamepick-tab-wnbapts" data-gamepick-pane="wnbapts" hidden>
   <div class="dr-center-label">🏀 WNBA Points Projections</div>
   <div class="dr-dashboard-grid">
@@ -768,7 +772,7 @@
       <div class="dr-panel-head">
         <div>
           <p class="section-title">WNBA <span>Points Projections</span></p>
-          <small>Real season PPG per rostered player, shown directly as their individual scoring projection for tonight -- plus real RPG/APG/3PM/PRA per-game averages and a Consistency read. Early model -- no opponent defense adjustment yet.</small>
+          <small>Real season PPG per rostered player, adjusted for real opponent scoring defense (ESPN standings) as their individual scoring projection for tonight -- plus real RPG/APG/3PM/PRA per-game averages and a Consistency read.</small>
         </div>
       </div>
       <div id="wnba-points-content" class="dr-panel-body dr-scroll-tall">
@@ -1173,7 +1177,7 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026081005" defer></script>
+<script src="app.min.js?v=2026081006" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
