@@ -15273,7 +15273,11 @@ if (document.readyState === 'loading') {
     var gamesPlayed = seasonAB > 0 ? Math.max(1, seasonAB / 3.8) : 1; // ~3.8 AB/game typical
     var sbPerGame = seasonAB > 0 ? (sb / gamesPlayed) : 0;
     var pAtt = n(row.pitcherSbAllowed, 0) + n(row.pitcherCsAllowed, 0);
-    var batterySuppression = pAtt >= 5 ? clamp(1 - ((n(row.pitcherSbAllowed, 0) / pAtt) - 0.72) * 0.6, 0.7, 1.3) : 1;
+    // Same fix as scripts/update-tracker.mjs's simulateSBOdds -- see its comment.
+    // pitcherSbAllowed/pAtt is the success rate of steals AGAINST this battery;
+    // a weak battery (high value) should raise the multiplier, a strong one
+    // (low value) should lower it. Was inverted (1 - delta).
+    var batterySuppression = pAtt >= 5 ? clamp(1 + ((n(row.pitcherSbAllowed, 0) / pAtt) - 0.72) * 0.6, 0.7, 1.3) : 1;
     var lambda = clamp(sbPerGame * batterySuppression, 0.01, 1.2);
 
     var successes = 0;
