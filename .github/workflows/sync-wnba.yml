@@ -44,10 +44,18 @@ jobs:
       # across 15 teams, similar bounded scope to the NFL player-stats sync.
       # Allowed to fail without red-Xing the schedule/roster steps above it,
       # same reasoning as the NFL/MLB workflows' own optional steps.
-      - name: Run WNBA player season-stats sync (real 15+ points rate per player)
+      - name: Run WNBA player season-stats sync (real per-player projections)
         run: node scripts/sync-wnba-player-stats.mjs
         continue-on-error: true
         timeout-minutes: 20
+
+      # Independent of the steps above -- reads ESPN's standings endpoint
+      # directly, not any other synced file. Real opponent points-allowed
+      # per team, behind the Points board's defense-adjusted projection.
+      - name: Run WNBA team defense sync (real opponent points allowed)
+        run: node scripts/sync-wnba-team-defense.mjs
+        continue-on-error: true
+        timeout-minutes: 5
 
       - name: Commit and push if changed
         run: |
@@ -56,9 +64,10 @@ jobs:
           git add data/wnba-teams.json data/wnba-schedule.json
           [ -f data/wnba-rosters.json ] && git add data/wnba-rosters.json
           [ -f data/wnba-player-stats.json ] && git add data/wnba-player-stats.json
+          [ -f data/wnba-team-defense.json ] && git add data/wnba-team-defense.json
           if git diff --cached --quiet; then
             echo "No changes — nothing to commit."
             exit 0
           fi
-          git commit -m "Sync WNBA teams/schedule/rosters/player stats"
+          git commit -m "Sync WNBA teams/schedule/rosters/player stats/team defense"
           git push

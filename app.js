@@ -10181,10 +10181,13 @@ window.renderNFLTDBoard = renderNFLTDBoard;
 // a real individual projection, same "the model projects N Ks" framing the
 // K Props board uses (app.js: p.projK), NOT a probability against one fixed
 // universal line the way the Hits/RBIs/Total Bases/Stolen Bases boards work.
-// WNBA has no real opponent-defense data to adjust these against yet, so the
-// honest individual projection here IS the player's own real season average
-// itself -- not a fabricated matchup-adjusted number, and not everyone
-// measured against the same arbitrary cutoff regardless of their real usage.
+// The Points board additionally adjusts that projection by real opponent
+// scoring defense (data/wnba-team-defense.json, scripts/sync-wnba-team-
+// defense.mjs -- ESPN's real avgPointsAgainst per team). Rebounds/Assists/
+// 3PM/PRA have no equivalent real opponent-allowed data yet (ESPN's
+// standings only publishes points-against, not rebounds/assists/3PM-
+// against), so those boards' projection stays the unadjusted real season
+// average rather than faking an adjustment with no real signal behind it.
 //
 // One config-driven engine serves all 5 boards (same house pattern the MLB
 // Hits/RBIs/Total Bases/Stolen Bases/Hits+Runs+RBI family already uses --
@@ -10194,29 +10197,46 @@ const WNBA_PROP_BOARDS = {
   points: {
     key: 'points', searchKey: 'wnbapts', contentId: 'wnba-points-content',
     icon: '🏀', label: 'Points', avgField: 'ptsPerGame', avgLabel: 'PPG', avgFullLabel: 'Points Per Game', stdDevField: 'ptsStdDev',
-    sortFields: [{ key: 'ptsPerGame', label: 'PPG' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
+    // Real opponent points-allowed per team (ESPN standings). No other
+    // board has a matching defenseStatKey yet -- see header comment above.
+    defenseStatKey: 'avgPointsAgainst',
+    sortFields: [{ key: 'projAvg', label: 'PPG' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
   },
   rebounds: {
     key: 'rebounds', searchKey: 'wnbareb', contentId: 'wnba-rebounds-content',
     icon: '🏀', label: 'Rebounds', avgField: 'rebPerGame', avgLabel: 'RPG', avgFullLabel: 'Rebounds Per Game', stdDevField: 'rebStdDev',
-    sortFields: [{ key: 'rebPerGame', label: 'RPG' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
+    sortFields: [{ key: 'projAvg', label: 'RPG' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
   },
   assists: {
     key: 'assists', searchKey: 'wnbaast', contentId: 'wnba-assists-content',
     icon: '🏀', label: 'Assists', avgField: 'astPerGame', avgLabel: 'APG', avgFullLabel: 'Assists Per Game', stdDevField: 'astStdDev',
-    sortFields: [{ key: 'astPerGame', label: 'APG' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
+    sortFields: [{ key: 'projAvg', label: 'APG' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
   },
   threes: {
     key: 'threes', searchKey: 'wnba3pm', contentId: 'wnba-threes-content',
     icon: '🏀', label: '3-Pointers Made', avgField: 'threesPerGame', avgLabel: '3PM', avgFullLabel: '3-Pointers Made Per Game', stdDevField: 'threesStdDev',
-    sortFields: [{ key: 'threesPerGame', label: '3PM' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
+    sortFields: [{ key: 'projAvg', label: '3PM' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
   },
   pra: {
     key: 'pra', searchKey: 'wnbapra', contentId: 'wnba-pra-content',
     icon: '🏀', label: 'PRA', avgField: 'praPerGame', avgLabel: 'PRA', avgFullLabel: 'Points+Rebounds+Assists Per Game', stdDevField: 'praStdDev',
-    sortFields: [{ key: 'praPerGame', label: 'PRA' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
+    sortFields: [{ key: 'projAvg', label: 'PRA' }, { key: 'consistency', label: 'Consistency' }, { key: 'games', label: 'Games' }],
   },
 };
+
+// Real opponent-defense adjustment for boards with a real per-team signal
+// behind them (only Points has one so far). Returns null -- not a fabricated
+// neutral ratio -- when the board has no defenseStatKey, or the specific
+// opponent/league-average values aren't available, same "no data, no
+// adjustment" honesty as every other null-guarded read in this engine.
+function wnbaDefenseAdjustment(cfg, oppAbbr, teamDefense) {
+  if (!cfg.defenseStatKey || !teamDefense) return null;
+  const oppTeam = teamDefense.teams && teamDefense.teams[oppAbbr];
+  const oppVal = oppTeam && oppTeam[cfg.defenseStatKey];
+  const leagueAvg = teamDefense.leagueAvgPointsAgainst;
+  if (oppVal == null || !(leagueAvg > 0)) return null;
+  return { ratio: oppVal / leagueAvg, oppVal, leagueAvg };
+}
 
 // Real coefficient-of-variation read (stdDev relative to the player's own
 // average) -- doesn't need a fixed line to compute, unlike the old cushion/
@@ -10233,17 +10253,22 @@ function wnbaStatConsistency(cfg, r) {
   return { cv, label };
 }
 
-// Schedule + player-stats data is identical across all 5 boards -- one
-// shared fetch/cache rather than 5 separate ones.
+// Schedule + player-stats + team-defense data is identical across all 5
+// boards -- one shared fetch/cache rather than 5 separate ones.
 let wnbaPropDataPromise = null;
 async function loadWNBAPropData(force = false) {
   if (wnbaPropDataPromise && !force) return wnbaPropDataPromise;
   wnbaPropDataPromise = (async () => {
-    const [scheduleData, statsData] = await Promise.all([
+    const [scheduleData, statsData, teamDefenseData] = await Promise.all([
       drFetchDailyJSON('data/wnba-schedule.json').catch(() => null),
       drFetchDailyJSON('data/wnba-player-stats.json').catch(() => null),
+      drFetchDailyJSON('data/wnba-team-defense.json').catch(() => null),
     ]);
-    return { schedule: (scheduleData && scheduleData.events) || [], players: (statsData && statsData.players) || {} };
+    return {
+      schedule: (scheduleData && scheduleData.events) || [],
+      players: (statsData && statsData.players) || {},
+      teamDefense: teamDefenseData || null,
+    };
   })();
   return wnbaPropDataPromise;
 }
@@ -10270,17 +10295,23 @@ function setWNBAPropGameFilter(boardKey, value) {
 
 function wnbaPropSummaryHTML(cfg, rows) {
   if (!rows.length) return '';
-  const byAvg = rows.slice().sort((a, b) => b[cfg.avgField] - a[cfg.avgField]);
+  const byAvg = rows.slice().sort((a, b) => b.projAvg - a.projAvg);
   const top = byAvg[0];
   const sample = byAvg.slice(0, Math.min(8, byAvg.length));
-  const avg = (sample.reduce((a, p) => a + p[cfg.avgField], 0) / sample.length).toFixed(1);
-  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">${cfg.icon} EXPANDED <span>WNBA ${cfg.label.toUpperCase()} PROJECTIONS</span></div><p class="dr1027-summary-copy">Real season ${cfg.avgFullLabel.toLowerCase()} per rostered player -- each player's own real season average, the individual projection this board scores from. Early model -- no opponent defense adjustment yet.</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Projected</span></div><div class="dr1027-summary-metric"><b>${avg}</b><span>Board Avg ${cfg.avgLabel}</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>${cfg.label}</b><span>Primary Signal</span></div></div></div>`;
+  const avg = (sample.reduce((a, p) => a + p.projAvg, 0) / sample.length).toFixed(1);
+  const hasDefense = rows.some(r => r.defenseAdj);
+  const copy = hasDefense
+    ? `Real season ${cfg.avgFullLabel.toLowerCase()} per rostered player, adjusted for real opponent scoring defense (ESPN standings) where a real matchup exists -- the individual projection this board scores from.`
+    : `Real season ${cfg.avgFullLabel.toLowerCase()} per rostered player -- each player's own real season average, the individual projection this board scores from. Early model -- no opponent defense adjustment yet.`;
+  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">${cfg.icon} EXPANDED <span>WNBA ${cfg.label.toUpperCase()} PROJECTIONS</span></div><p class="dr1027-summary-copy">${copy}</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Projected</span></div><div class="dr1027-summary-metric"><b>${avg}</b><span>Board Avg ${cfg.avgLabel}</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>${cfg.label}</b><span>Primary Signal</span></div></div></div>`;
 }
 
 function wnbaPropCardHTML(cfg, r, topCutoff) {
-  const avgVal = r[cfg.avgField];
+  const projAvg = r.projAvg;
   const consistency = wnbaStatConsistency(cfg, r);
-  const scoreCls = (topCutoff != null && avgVal != null && avgVal >= topCutoff) ? 'good' : '';
+  const scoreCls = (topCutoff != null && projAvg != null && projAvg >= topCutoff) ? 'good' : '';
+  const defAdj = r.defenseAdj;
+  const matchupPct = defAdj ? Math.round((defAdj.ratio - 1) * 100) : null;
   return `<div class="dr109-card${scoreCls ? ' prop-hit' : ''}">
     ${window.drWatchStarHTML('wnba-' + r.id, r.name)}
     <div class="dr109-card-head">
@@ -10291,7 +10322,7 @@ function wnbaPropCardHTML(cfg, r, topCutoff) {
           <div class="dr109-meta">${fantasyEsc(r.position || '')} · ${fantasyEsc(r.teamAbbr || '')} vs ${fantasyEsc(r.oppAbbr || '')}</div>
         </div>
       </div>
-      <div class="dr109-score">${avgVal != null ? avgVal.toFixed(1) : '–'}<small>Proj ${cfg.avgLabel}</small></div>
+      <div class="dr109-score">${projAvg != null ? projAvg.toFixed(1) : '–'}<small>Proj ${cfg.avgLabel}</small></div>
     </div>
     <div class="dr109-chiprow">
       <span class="dr109-chip"><span>Season PPG:</span><strong>${r.ptsPerGame != null ? r.ptsPerGame.toFixed(1) : '–'}</strong></span>
@@ -10301,6 +10332,7 @@ function wnbaPropCardHTML(cfg, r, topCutoff) {
       <span class="dr109-chip"><span>PRA:</span><strong>${r.praPerGame != null ? r.praPerGame.toFixed(1) : '–'}</strong></span>
       <span class="dr109-chip"><span>Games:</span><strong>${r.games != null ? r.games : '–'}</strong></span>
       <span class="dr109-chip ${consistency.label === 'Steady' ? 'good' : consistency.label === 'Moderate' ? 'warn' : consistency.label === 'Volatile' ? 'bad' : ''}"><span>Consistency:</span><strong>${consistency.label}</strong></span>
+      ${defAdj ? `<span class="dr109-chip ${matchupPct > 0 ? 'good' : matchupPct < 0 ? 'bad' : ''}" title="${fantasyEsc(r.oppAbbr)} allows real ${defAdj.oppVal.toFixed(1)} PPG vs. a real ${defAdj.leagueAvg.toFixed(1)} PPG league average"><span>Matchup:</span><strong>${fantasyEsc(r.oppAbbr)} ${matchupPct >= 0 ? '+' : ''}${matchupPct}%</strong></span>` : ''}
     </div>
   </div>`;
 }
@@ -10337,8 +10369,15 @@ async function renderWNBAPropBoard(cfg) {
   const allRows = Object.entries(data.players || {})
     .filter(([id, p]) => p.teamAbbr && oppByTeam[p.teamAbbr] != null && p[cfg.avgField] != null)
     .map(([id, p]) => {
+      const oppAbbr = oppByTeam[p.teamAbbr];
       const consistency = wnbaStatConsistency(cfg, p);
-      return Object.assign({ id }, p, { oppAbbr: oppByTeam[p.teamAbbr], consistency: consistency.cv != null ? -consistency.cv : null });
+      const defenseAdj = wnbaDefenseAdjustment(cfg, oppAbbr, data.teamDefense);
+      const rawAvg = p[cfg.avgField];
+      const projAvg = defenseAdj ? +(rawAvg * defenseAdj.ratio).toFixed(1) : rawAvg;
+      return Object.assign({ id }, p, {
+        oppAbbr, projAvg, defenseAdj,
+        consistency: consistency.cv != null ? -consistency.cv : null,
+      });
     });
   if (!allRows.length) {
     el.innerHTML = `<div class="mu-empty">No player season stats synced yet for the ${fantasyEsc(nextDate)} slate. Check back once the daily sync has run.</div>`;
@@ -10360,7 +10399,7 @@ async function renderWNBAPropBoard(cfg) {
       return st.gameFilter === gid || st.gameFilter === gidRev;
     });
   }
-  const sortKey = st.sort || cfg.avgField;
+  const sortKey = st.sort || 'projAvg';
   rows = rows.slice().sort((a, b) => {
     const av = a[sortKey], bv = b[sortKey];
     if (av == null && bv == null) return 0;
@@ -10370,7 +10409,7 @@ async function renderWNBAPropBoard(cfg) {
   });
 
   const sortBtns = cfg.sortFields.map(({ key, label }) => {
-    const active = (st.sort || cfg.avgField) === key;
+    const active = (st.sort || 'projAvg') === key;
     const arrow = active ? (st.sortDir === 1 ? ' ↓' : ' ↑') : '';
     return `<button onclick="wnbaPropSortBy('${cfg.key}','${key}')" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${active ? 'var(--accent2)' : 'var(--border)'};background:${active ? 'rgba(47,107,255,.12)' : 'var(--surface2)'};color:${active ? 'var(--accent2)' : 'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">${label}${arrow}</button>`;
   }).join('');
@@ -10378,12 +10417,16 @@ async function renderWNBAPropBoard(cfg) {
   // Top-quartile highlight computed fresh from this render's own real values
   // -- relative to the actual field's real distribution, not a fixed
   // universal cutoff applied to every player regardless of position/role.
-  const sortedVals = allRows.map(p => p[cfg.avgField]).filter(v => v != null).sort((a, b) => b - a);
+  const sortedVals = allRows.map(p => p.projAvg).filter(v => v != null).sort((a, b) => b - a);
   const topCutoff = sortedVals.length ? sortedVals[Math.max(0, Math.floor(sortedVals.length * 0.25) - 1)] : null;
 
+  const hasDefense = allRows.some(r => r.defenseAdj);
+  const boardCopy = hasDefense
+    ? `Real season ${cfg.avgFullLabel.toLowerCase()} per rostered player (${fantasyEsc(allRows[0].season)} season), adjusted for real opponent scoring defense (ESPN standings' real points-allowed per team) where tonight's real opponent has one -- the Matchup chip shows the real adjustment. Consistency reads real season volatility (stdDev relative to their own average).`
+    : `Real season ${cfg.avgFullLabel.toLowerCase()} per rostered player (${fantasyEsc(allRows[0].season)} season) -- each player's own real season average, shown directly as their individual projection for tonight, not a probability against a fixed universal line. Consistency reads real season volatility (stdDev relative to their own average). Early model -- no opponent defense adjustment yet.`;
   const noMatches = !rows.length && ((window.__drBoardSearch[cfg.searchKey] || '').trim() || st.gameFilter);
   el.innerHTML = `<div class="dr109-summary"><div class="dr109-title">${cfg.icon} <span>${fantasyEsc(nextDate)} SLATE</span></div>`
-    + `<p class="dr109-copy">Real season ${cfg.avgFullLabel.toLowerCase()} per rostered player (${fantasyEsc(allRows[0].season)} season) -- each player's own real season average, shown directly as their individual projection for tonight, not a probability against a fixed universal line. Consistency reads real season volatility (stdDev relative to their own average). Early model -- no opponent defense adjustment yet.</p></div>`
+    + `<p class="dr109-copy">${boardCopy}</p></div>`
     + wnbaPropSummaryHTML(cfg, allRows)
     + `<div class="dr109-filter-row kprops-sticky-sort" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">
         <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">GAME:</span>
