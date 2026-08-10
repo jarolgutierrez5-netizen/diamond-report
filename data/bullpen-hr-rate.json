@@ -1,226 +1,58 @@
 {
-  "generatedAt": "2026-08-09T14:32:13.386Z",
-  "windowStart": "2026-07-26",
-  "windowEnd": "2026-08-08",
+  "generatedAt": "2026-08-10T11:56:41.734Z",
+  "windowStart": "2026-07-27",
+  "windowEnd": "2026-08-09",
   "leagueAvgRate": 0.031,
   "teams": {
     "ATH": {
       "gamesFound": 13,
-      "relieverBF": 251,
+      "relieverBF": 230,
       "relieverHR": 9,
-      "rawRate": 0.0359,
-      "shrunkRate": 0.0332,
+      "rawRate": 0.0391,
+      "shrunkRate": 0.0345,
       "reliable": true
     },
     "PIT": {
       "gamesFound": 14,
-      "relieverBF": 257,
+      "relieverBF": 273,
       "relieverHR": 3,
-      "rawRate": 0.0117,
-      "shrunkRate": 0.0221,
+      "rawRate": 0.011,
+      "shrunkRate": 0.0215,
       "reliable": true
     },
     "SD": {
       "gamesFound": 13,
-      "relieverBF": 247,
+      "relieverBF": 245,
       "relieverHR": 5,
-      "rawRate": 0.0202,
-      "shrunkRate": 0.0261,
+      "rawRate": 0.0204,
+      "shrunkRate": 0.0262,
       "reliable": true
     },
     "SEA": {
       "gamesFound": 13,
-      "relieverBF": 180,
-      "relieverHR": 11,
-      "rawRate": 0.0611,
-      "shrunkRate": 0.0423,
+      "relieverBF": 187,
+      "relieverHR": 10,
+      "rawRate": 0.0535,
+      "shrunkRate": 0.0396,
       "reliable": true
     },
     "SF": {
       "gamesFound": 13,
-      "relieverBF": 231,
+      "relieverBF": 226,
       "relieverHR": 2,
-      "rawRate": 0.0087,
-      "shrunkRate": 0.0213,
+      "rawRate": 0.0088,
+      "shrunkRate": 0.0215,
       "reliable": true
     },
     "STL": {
       "gamesFound": 13,
-      "relieverBF": 219,
-      "relieverHR": 7,
-      "rawRate": 0.032,
-      "shrunkRate": 0.0314,
+      "relieverBF": 214,
+      "relieverHR": 8,
+      "rawRate": 0.0374,
+      "shrunkRate": 0.0337,
       "reliable": true
     },
     "TB": {
-      "gamesFound": 12,
-      "relieverBF": 208,
-      "relieverHR": 7,
-      "rawRate": 0.0337,
-      "shrunkRate": 0.0321,
-      "reliable": true
-    },
-    "TEX": {
-      "gamesFound": 13,
-      "relieverBF": 210,
-      "relieverHR": 7,
-      "rawRate": 0.0333,
-      "shrunkRate": 0.032,
-      "reliable": true
-    },
-    "TOR": {
-      "gamesFound": 13,
-      "relieverBF": 242,
-      "relieverHR": 5,
-      "rawRate": 0.0207,
-      "shrunkRate": 0.0264,
-      "reliable": true
-    },
-    "MIN": {
-      "gamesFound": 12,
-      "relieverBF": 166,
-      "relieverHR": 3,
-      "rawRate": 0.0181,
-      "shrunkRate": 0.0264,
-      "reliable": true
-    },
-    "PHI": {
-      "gamesFound": 13,
-      "relieverBF": 196,
-      "relieverHR": 5,
-      "rawRate": 0.0255,
-      "shrunkRate": 0.0288,
-      "reliable": true
-    },
-    "ATL": {
-      "gamesFound": 14,
-      "relieverBF": 225,
-      "relieverHR": 7,
-      "rawRate": 0.0311,
-      "shrunkRate": 0.031,
-      "reliable": true
-    },
-    "CWS": {
-      "gamesFound": 13,
-      "relieverBF": 274,
-      "relieverHR": 6,
-      "rawRate": 0.0219,
-      "shrunkRate": 0.0267,
-      "reliable": true
-    },
-    "MIA": {
-      "gamesFound": 13,
-      "relieverBF": 185,
-      "relieverHR": 7,
-      "rawRate": 0.0378,
-      "shrunkRate": 0.0336,
-      "reliable": true
-    },
-    "NYY": {
-      "gamesFound": 13,
-      "relieverBF": 216,
-      "relieverHR": 11,
-      "rawRate": 0.0509,
-      "shrunkRate": 0.0393,
-      "reliable": true
-    },
-    "MIL": {
-      "gamesFound": 13,
-      "relieverBF": 193,
-      "relieverHR": 4,
-      "rawRate": 0.0207,
-      "shrunkRate": 0.027,
-      "reliable": true
-    },
-    "LAA": {
-      "gamesFound": 12,
-      "relieverBF": 222,
-      "relieverHR": 4,
-      "rawRate": 0.018,
-      "shrunkRate": 0.0255,
-      "reliable": true
-    },
-    "AZ": {
-      "gamesFound": 13,
-      "relieverBF": 202,
-      "relieverHR": 8,
-      "rawRate": 0.0396,
-      "shrunkRate": 0.0345,
-      "reliable": true
-    },
-    "BAL": {
-      "gamesFound": 12,
-      "relieverBF": 188,
-      "relieverHR": 4,
-      "rawRate": 0.0213,
-      "shrunkRate": 0.0273,
-      "reliable": true
-    },
-    "BOS": {
-      "gamesFound": 13,
-      "relieverBF": 205,
-      "relieverHR": 4,
-      "rawRate": 0.0195,
-      "shrunkRate": 0.0263,
-      "reliable": true
-    },
-    "CHC": {
-      "gamesFound": 14,
-      "relieverBF": 193,
-      "relieverHR": 4,
-      "rawRate": 0.0207,
-      "shrunkRate": 0.027,
-      "reliable": true
-    },
-    "CIN": {
-      "gamesFound": 14,
-      "relieverBF": 225,
-      "relieverHR": 3,
-      "rawRate": 0.0133,
-      "shrunkRate": 0.0234,
-      "reliable": true
-    },
-    "CLE": {
-      "gamesFound": 13,
-      "relieverBF": 210,
-      "relieverHR": 5,
-      "rawRate": 0.0238,
-      "shrunkRate": 0.028,
-      "reliable": true
-    },
-    "COL": {
-      "gamesFound": 11,
-      "relieverBF": 171,
-      "relieverHR": 4,
-      "rawRate": 0.0234,
-      "shrunkRate": 0.0282,
-      "reliable": true
-    },
-    "DET": {
-      "gamesFound": 12,
-      "relieverBF": 170,
-      "relieverHR": 6,
-      "rawRate": 0.0353,
-      "shrunkRate": 0.0326,
-      "reliable": true
-    },
-    "HOU": {
-      "gamesFound": 12,
-      "relieverBF": 182,
-      "relieverHR": 7,
-      "rawRate": 0.0385,
-      "shrunkRate": 0.0338,
-      "reliable": true
-    },
-    "KC": {
-      "gamesFound": 12,
-      "relieverBF": 176,
-      "relieverHR": 6,
-      "rawRate": 0.0341,
-      "shrunkRate": 0.0321,
-      "reliable": true
-    },
-    "LAD": {
       "gamesFound": 12,
       "relieverBF": 213,
       "relieverHR": 7,
@@ -228,20 +60,188 @@
       "shrunkRate": 0.0318,
       "reliable": true
     },
+    "TEX": {
+      "gamesFound": 13,
+      "relieverBF": 220,
+      "relieverHR": 7,
+      "rawRate": 0.0318,
+      "shrunkRate": 0.0313,
+      "reliable": true
+    },
+    "TOR": {
+      "gamesFound": 13,
+      "relieverBF": 259,
+      "relieverHR": 5,
+      "rawRate": 0.0193,
+      "shrunkRate": 0.0256,
+      "reliable": true
+    },
+    "MIN": {
+      "gamesFound": 12,
+      "relieverBF": 168,
+      "relieverHR": 2,
+      "rawRate": 0.0119,
+      "shrunkRate": 0.0241,
+      "reliable": true
+    },
+    "PHI": {
+      "gamesFound": 13,
+      "relieverBF": 205,
+      "relieverHR": 4,
+      "rawRate": 0.0195,
+      "shrunkRate": 0.0263,
+      "reliable": true
+    },
+    "ATL": {
+      "gamesFound": 14,
+      "relieverBF": 217,
+      "relieverHR": 7,
+      "rawRate": 0.0323,
+      "shrunkRate": 0.0315,
+      "reliable": true
+    },
+    "CWS": {
+      "gamesFound": 13,
+      "relieverBF": 288,
+      "relieverHR": 6,
+      "rawRate": 0.0208,
+      "shrunkRate": 0.026,
+      "reliable": true
+    },
+    "MIA": {
+      "gamesFound": 13,
+      "relieverBF": 189,
+      "relieverHR": 5,
+      "rawRate": 0.0265,
+      "shrunkRate": 0.0292,
+      "reliable": true
+    },
+    "NYY": {
+      "gamesFound": 13,
+      "relieverBF": 201,
+      "relieverHR": 11,
+      "rawRate": 0.0547,
+      "shrunkRate": 0.0405,
+      "reliable": true
+    },
+    "MIL": {
+      "gamesFound": 13,
+      "relieverBF": 195,
+      "relieverHR": 3,
+      "rawRate": 0.0154,
+      "shrunkRate": 0.0248,
+      "reliable": true
+    },
+    "LAA": {
+      "gamesFound": 12,
+      "relieverBF": 228,
+      "relieverHR": 6,
+      "rawRate": 0.0263,
+      "shrunkRate": 0.029,
+      "reliable": true
+    },
+    "AZ": {
+      "gamesFound": 13,
+      "relieverBF": 186,
+      "relieverHR": 6,
+      "rawRate": 0.0323,
+      "shrunkRate": 0.0315,
+      "reliable": true
+    },
+    "BAL": {
+      "gamesFound": 12,
+      "relieverBF": 184,
+      "relieverHR": 4,
+      "rawRate": 0.0217,
+      "shrunkRate": 0.0275,
+      "reliable": true
+    },
+    "BOS": {
+      "gamesFound": 13,
+      "relieverBF": 216,
+      "relieverHR": 4,
+      "rawRate": 0.0185,
+      "shrunkRate": 0.0258,
+      "reliable": true
+    },
+    "CHC": {
+      "gamesFound": 14,
+      "relieverBF": 183,
+      "relieverHR": 4,
+      "rawRate": 0.0219,
+      "shrunkRate": 0.0275,
+      "reliable": true
+    },
+    "CIN": {
+      "gamesFound": 14,
+      "relieverBF": 219,
+      "relieverHR": 3,
+      "rawRate": 0.0137,
+      "shrunkRate": 0.0237,
+      "reliable": true
+    },
+    "CLE": {
+      "gamesFound": 13,
+      "relieverBF": 242,
+      "relieverHR": 6,
+      "rawRate": 0.0248,
+      "shrunkRate": 0.0282,
+      "reliable": true
+    },
+    "COL": {
+      "gamesFound": 11,
+      "relieverBF": 170,
+      "relieverHR": 4,
+      "rawRate": 0.0235,
+      "shrunkRate": 0.0283,
+      "reliable": true
+    },
+    "DET": {
+      "gamesFound": 12,
+      "relieverBF": 169,
+      "relieverHR": 5,
+      "rawRate": 0.0296,
+      "shrunkRate": 0.0305,
+      "reliable": true
+    },
+    "HOU": {
+      "gamesFound": 12,
+      "relieverBF": 178,
+      "relieverHR": 6,
+      "rawRate": 0.0337,
+      "shrunkRate": 0.032,
+      "reliable": true
+    },
+    "KC": {
+      "gamesFound": 12,
+      "relieverBF": 179,
+      "relieverHR": 8,
+      "rawRate": 0.0447,
+      "shrunkRate": 0.0361,
+      "reliable": true
+    },
+    "LAD": {
+      "gamesFound": 12,
+      "relieverBF": 210,
+      "relieverHR": 5,
+      "rawRate": 0.0238,
+      "shrunkRate": 0.028,
+      "reliable": true
+    },
     "WSH": {
       "gamesFound": 14,
-      "relieverBF": 232,
+      "relieverBF": 226,
       "relieverHR": 4,
-      "rawRate": 0.0172,
-      "shrunkRate": 0.025,
+      "rawRate": 0.0177,
+      "shrunkRate": 0.0253,
       "reliable": true
     },
     "NYM": {
       "gamesFound": 14,
-      "relieverBF": 216,
+      "relieverBF": 204,
       "relieverHR": 3,
-      "rawRate": 0.0139,
-      "shrunkRate": 0.0238,
+      "rawRate": 0.0147,
+      "shrunkRate": 0.0244,
       "reliable": true
     }
   }
