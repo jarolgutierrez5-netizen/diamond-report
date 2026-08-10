@@ -192,7 +192,7 @@ async function main() {
       const rows = extractSeasonTDRows(raw);
       if (rows) {
         const s = summarize(rows);
-        out[p.id] = { name: p.name, position: p.position, teamAbbr: p.teamAbbr, ...s };
+        out[p.id] = { name: p.name, position: p.position, teamAbbr: p.teamAbbr, headshot: p.headshot || null, ...s };
         seasonUsedCounts[s.season] = (seasonUsedCounts[s.season] || 0) + 1;
         updated++;
       } else {
