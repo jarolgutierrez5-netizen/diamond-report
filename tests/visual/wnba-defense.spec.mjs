@@ -20,7 +20,7 @@ const TEAM_DEFENSE = {
 };
 
 test.describe('WNBA Points board opponent-defense adjustment', () => {
-  test('headline projection is defense-adjusted, Matchup chip shows the real ratio', async ({ page }) => {
+  test('headline projection is defense-adjusted, Cushion chip shows the real point gap', async ({ page }) => {
     await blockExternalRequests(page);
     await page.route('**/data/wnba-schedule.json*', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(SCHEDULE) }));
     await page.route('**/data/wnba-player-stats.json*', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ updatedAt: new Date().toISOString(), players: PLAYERS }) }));
@@ -37,13 +37,14 @@ test.describe('WNBA Points board opponent-defense adjustment', () => {
     await page.waitForTimeout(400);
 
     // NY player faces LV, who allows 100 PPG vs. an 80 PPG league average
-    // (ratio 1.25) -- real 10.0 PPG raw average becomes a real 12.5 Proj PPG.
+    // (ratio 1.25) -- real 10.0 PPG raw average becomes a real 12.5 Proj
+    // Points, a real +2.5 cushion over their own season average.
     const card = page.locator('#wnba-points-content .dr109-card').first();
     await expect(card.locator('.dr109-score')).toContainText('12.5');
+    await expect(card.locator('.dr109-score small')).toHaveText('Proj Points');
     await expect(card.locator('.dr109-chip', { hasText: 'Season PPG' })).toContainText('10.0');
-    const matchup = card.locator('.dr109-chip', { hasText: 'Matchup' });
-    await expect(matchup).toContainText('LV');
-    await expect(matchup).toContainText('+25%');
-    await expect(matchup).toHaveClass(/good/);
+    const cushion = card.locator('.dr109-chip', { hasText: 'Cushion' });
+    await expect(cushion).toContainText('+2.5');
+    await expect(cushion).toHaveClass(/good/);
   });
 });
