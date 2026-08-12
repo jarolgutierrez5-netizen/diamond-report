@@ -10519,6 +10519,11 @@ async function loadHRPotential() {
     await loadBatterPitchTypeSeason().catch(() => {});
     await loadPitcherWorkload().catch(() => {});
     await loadBullpenHrRate().catch(() => {});
+    // Real recent reliever workload (Fresh/Normal/Taxed/Gassed, last-2-days pitch
+    // counts -- see sync-bullpen-fatigue.mjs). Already synced and already shown as a
+    // display-only chip elsewhere on the site (pitcher panel, Game Props), but never
+    // fed into any score anywhere -- this is the first real scoring use of it.
+    await loadBullpenFatigue().catch(() => {});
     const games = await getTodaySchedule('team,probablePitcher');
     await loadActivePlayerIdsForGames(games).catch(() => {});
 
@@ -10940,7 +10945,24 @@ async function loadHRPotential() {
           // behavior, just applied as a rate multiplier instead of a flat point add-on.
           const hotMult = 1 + (clampNum(hotProfile.onFireScore, 0, 100) / 100) * 0.5;
           const shrunkHotMult = shrinkMult(hotMult);
-          const hrPerPA = ((batterRate*batterWeight)+(pitcherRate*pitcherWeight)+(bullpenRate*bullpenWeight)) * parkAdj * shrunkHotMult * weatherHRMult * zoneMult;
+          // Real opposing-bullpen fatigue (Fresh/Normal/Taxed/Gassed, last-2-days
+          // reliever pitch counts -- data/bullpen-fatigue.json, see
+          // sync-bullpen-fatigue.mjs). This exact tier data already exists and is
+          // already shown as a chip elsewhere on the site, but until now was never
+          // fed into any score anywhere -- this is that first real use. A modest,
+          // bounded multiplier (same shape as every other optional signal here --
+          // hotMult/battedBallMult/weatherHRMult all clamp to a narrow band around
+          // 1x), reasoning: a taxed/gassed pen leans on lower-leverage arms who get
+          // hit harder, so it should raise the batter's odds a little, not swing
+          // them. No prior established weight exists for this signal anywhere in
+          // the codebase to reuse (unlike BvP history's nextDayHRPotentialModel
+          // precedent) -- an honest first cut, not a calibrated one yet.
+          const bullpenFatigueTier = oppAbbr ? bullpenFatigue[oppAbbr]?.tier : null;
+          const bullpenFatigueMult = bullpenFatigueTier === 'Gassed' ? 1.10
+            : bullpenFatigueTier === 'Taxed' ? 1.05
+            : bullpenFatigueTier === 'Fresh' ? 0.97
+            : 1;
+          const hrPerPA = ((batterRate*batterWeight)+(pitcherRate*pitcherWeight)+(bullpenRate*bullpenWeight)) * parkAdj * shrunkHotMult * weatherHRMult * zoneMult * bullpenFatigueMult;
           // Lineup slot (1-9), computed here (not just below with the display battingOrder)
           // so it can feed the per-PA count the HR simulation runs — same 3-digit MLB
           // battingOrder code as the display field derives from.
