@@ -11149,7 +11149,7 @@ async function loadHRPotential() {
             // can re-run the real simulateHRGameOdds with one real factor neutralized at a
             // time instead of fabricating point contributions that don't trace back to
             // this formula.
-            batterRate, pitcherRate, bullpenRate, parkAdj, shrunkHotMult, zoneMult, hrPerPA,
+            batterRate, pitcherRate, bullpenRate, bullpenFatigueTier, parkAdj, shrunkHotMult, zoneMult, hrPerPA,
             // Real workload-derived blend weights (see startBFShare above) -- stored so
             // the decomposition's own probWith reproduces the exact same blend the real
             // hrPerPA used, instead of drifting back to the old flat 0.6/0.4 for a
@@ -16036,7 +16036,7 @@ function hrpSignalLegendHTML(seen){
     return '<span class="hrpt-legend-item">'+icon+' '+esc(seen[icon])+'</span>';
   }).join('')+'</div>';
 }
-var HRPT_COLS=[['Player',null],['Pitcher',null],['Edge','matchupEdge'],['Zone','zoneFit'],['Pitch Mix',null],['Overlap',null],['AVG','avg'],['SLG','slg'],['OPS','ops'],['ISO','iso'],['HR L10',null],['Signals',null]];
+var HRPT_COLS=[['Player',null],['Pitcher',null],['Bullpen',null],['Edge','matchupEdge'],['Zone','zoneFit'],['Pitch Mix',null],['Overlap',null],['AVG','avg'],['SLG','slg'],['OPS','ops'],['ISO','iso'],['HR L10',null],['Signals',null]];
 // Which of the pitcher's own real pitch types the batter has a real,
 // individually-favorable sample against -- same isFavorableMatchupRow
 // threshold (20+ pitches seen, 3+ of avg/iso/slg/woba/whiffPct clearing a
@@ -16116,6 +16116,7 @@ function hrpTableRowHTML(r,rIdx,signals){
     +'<td class="hrpt-player-cell">'+window.drWatchStarHTML(r.id,r.name)+'<img class="hrpt-photo" loading="lazy" decoding="async" src="'+hs(r.id)+'" onerror="this.style.visibility=\'hidden\'" alt="">'
       +'<div class="hrpt-player-meta"><div class="hrpt-name">'+esc(r.name||'–')+'<span class="dr-row-lineup-badge-slot" id="lineup-badge-hr-'+esc(r.id)+'"></span></div><div class="hrpt-sub">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+'</div></div></td>'
     +'<td class="hrpt-pitcher-cell" data-label="Pitcher">'+(r.pitcherName?('<span class="hrpt-pitcher-name">'+esc(r.pitcherName)+'</span>'+(r.pitcherHand?'<span class="hrpt-pitcher-hand">'+(r.pitcherHand==='L'?'LHP':r.pitcherHand==='R'?'RHP':'')+'</span>':'')):'<span class="hrpt-dash">–</span>')+'</td>'
+    +'<td class="hrpt-num" data-label="Bullpen" style="color:'+(r.bullpenFatigueTier==='Fresh'?'var(--green)':r.bullpenFatigueTier==='Gassed'?'#f87171':r.bullpenFatigueTier==='Taxed'?'#fbbf24':'inherit')+'">'+(r.bullpenFatigueTier?esc(r.bullpenFatigueTier):'<span class="hrpt-dash">–</span>')+'</td>'
     +'<td class="hrpt-num" data-label="Edge" style="background:'+(r.matchupEdge==null?'transparent':hrptHeatBGInverted(r.matchupEdge,64,45))+'">'+(r.matchupEdge==null?'–':r.matchupEdge)+'</td>'
     +'<td class="hrpt-num" data-label="Zone" style="background:'+(r.zoneFitScore==null?'transparent':hrptHeatBGInverted(r.zoneFitScore,72,58))+'">'+(r.zoneFitScore==null?'–':r.zoneFitScore)+'</td>'
     +'<td class="hrpt-num" data-label="Pitch Mix"><span class="hrpt-mix-pill'+(r.pitchMixFavorable?' fav':'')+'">'+(r.pitchMixPitches!=null?(r.pitchMixFavorable?'Favorable':'Neutral'):'–')+'</span></td>'
