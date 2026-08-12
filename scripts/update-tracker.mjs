@@ -1679,30 +1679,40 @@ function simulateHRGameOdds(pPerPA, battingOrder, logisticFeatures) {
   // available (model not yet loaded, or a feature genuinely missing for this row).
   const logisticP = logisticFeatures ? predictHRLogistic(logisticFeatures) : null;
   __hrLastScoreSource = logisticP != null ? 'logistic' : 'legacy';
-  if (logisticP != null) return logisticP;
-  pPerPA = clamp(pPerPA || 0.03, 0, 0.5);
-  const dist = paDistribution(estimatePA(battingOrder));
-  let prob = 0;
-  for (const k in dist) { prob += dist[k] * (1 - Math.pow(1 - pPerPA, Number(k))); }
-  // Was hard-capped at 25 with no floor, unlike every other market's 1-99 range —
-  // real per-game HR probability for a genuinely elite matchup can exceed 25%, so
-  // the old cap flattened great and mediocre matchups into the same narrow band
-  // and made ranking/selection nearly meaningless. See analyze-hr-matchups.mjs.
-  //
-  // calibrateHRProb (below) applies a real, evidence-tuned final correction here --
-  // analyze-hr-matchups.mjs's calibration report showed the raw simulated
-  // probability above is systematically overconfident, and increasingly so at the
-  // high end (the 30%+ bucket predicted 33.2% but actually hit only 15.1% --
-  // roughly 2x overstated), a compounding-overconfidence signature: several of
-  // the individually-shrunk multipliers feeding hrPerPA above tend to move
-  // together for the same real underlying "good matchup," so multiplying them
-  // double-counts one real signal as several. shrinkMult already dampens each
-  // factor individually; this is the missing final step that recalibrates the
-  // combined OUTPUT against real observed outcomes, same "measure, then
-  // correct" discipline as shrinkMult/tune-model-params.mjs, applied at the one
-  // choke point every HR probability (server score, live-score snapshot, and
-  // the identical client formula in app.js) already passes through.
-  return Math.max(1, Math.min(99, Math.round(calibrateHRProb(prob * 100))));
+  let raw;
+  if (logisticP != null) {
+    raw = logisticP;
+  } else {
+    pPerPA = clamp(pPerPA || 0.03, 0, 0.5);
+    const dist = paDistribution(estimatePA(battingOrder));
+    let prob = 0;
+    for (const k in dist) { prob += dist[k] * (1 - Math.pow(1 - pPerPA, Number(k))); }
+    // Was hard-capped at 25 with no floor, unlike every other market's 1-99 range —
+    // real per-game HR probability for a genuinely elite matchup can exceed 25%, so
+    // the old cap flattened great and mediocre matchups into the same narrow band
+    // and made ranking/selection nearly meaningless. See analyze-hr-matchups.mjs.
+    //
+    // calibrateHRProb (below) applies a real, evidence-tuned final correction here --
+    // analyze-hr-matchups.mjs's calibration report showed the raw simulated
+    // probability above is systematically overconfident, and increasingly so at the
+    // high end (the 30%+ bucket predicted 33.2% but actually hit only 15.1% --
+    // roughly 2x overstated), a compounding-overconfidence signature: several of
+    // the individually-shrunk multipliers feeding hrPerPA above tend to move
+    // together for the same real underlying "good matchup," so multiplying them
+    // double-counts one real signal as several. shrinkMult already dampens each
+    // factor individually; this is the missing final step that recalibrates the
+    // combined OUTPUT against real observed outcomes, same "measure, then
+    // correct" discipline as shrinkMult/tune-model-params.mjs, applied at the one
+    // choke point every HR probability (server score, live-score snapshot, and
+    // the identical client formula in app.js) already passes through.
+    raw = calibrateHRProb(prob * 100);
+  }
+  // Isotonic residual correction (see applyIsotonicCalibration above) -- applied
+  // uniformly regardless of source, unlike calibrateHRProb which only ever ran
+  // on the legacy path. Closes that gap: the logistic path previously received
+  // no post-hoc correction at all. No-op (returns raw unchanged) until
+  // scripts/fit-hr-isotonic-calibration.mjs's own weekly gate activates it.
+  return Math.max(1, Math.min(99, Math.round(applyIsotonicCalibration(raw))));
 }
 
 // A pitcher's box-score HR/9 is allowed-per-9-innings, i.e. per 27 outs -- but a
@@ -1802,6 +1812,50 @@ function shrinkMult(m) {
 // otherwise.
 function calibrateHRProb(rawPct) {
   return modelParams.HR_SCORE_CALIBRATION_INTERCEPT + modelParams.HR_SCORE_CALIBRATION_SLOPE * rawPct;
+}
+
+// Isotonic (monotonic step-function) residual correction, layered ON TOP of
+// whatever calibrateHRProb/predictHRLogistic already produced -- see
+// scripts/fit-hr-isotonic-calibration.mjs for the fit and
+// data/hr-isotonic-calibration.json for the persisted breakpoints. Fixes what
+// a linear slope/intercept structurally can't: calibrateHRProb can only
+// rescale the score-vs-outcome curve, never uncross a non-monotonic
+// miscalibration (data/calibration-report.md showed a 22-24% score bucket
+// hitting at a LOWER real rate than an 18% bucket). Fit weekly, unattended,
+// against real graded outcomes with a cross-validated Brier-score gate before
+// it's ever trusted live -- see that script's header for the full rationale.
+// Ships inactive (identity passthrough) until the fitted script's own gate is
+// cleared, exactly like every other tunable in this file.
+const HR_ISOTONIC_CALIBRATION_PATH = path.join(__dirname, '..', 'data', 'hr-isotonic-calibration.json');
+let hrIsotonicCalibration = null;
+async function loadHRIsotonicCalibration() {
+  try {
+    const raw = await readFile(HR_ISOTONIC_CALIBRATION_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.active && Array.isArray(parsed.breakpoints) && parsed.breakpoints.length) hrIsotonicCalibration = parsed;
+  } catch (e) {
+    // Missing/invalid/inactive file -- leave hrIsotonicCalibration null, same
+    // graceful-fallback discipline as loadHRLogisticModel below.
+  }
+}
+// Piecewise-linear interpolation between fitted breakpoints (exact port of
+// fit-hr-isotonic-calibration.mjs's own interpolate()); clamps to the
+// first/last breakpoint's y outside the fitted range rather than
+// extrapolating past real data. Returns rawPct unchanged when no active
+// calibration has been fit yet.
+function applyIsotonicCalibration(rawPct) {
+  const bp = hrIsotonicCalibration?.breakpoints;
+  if (!bp || !bp.length) return rawPct;
+  if (rawPct <= bp[0].x) return bp[0].y * 100;
+  if (rawPct >= bp[bp.length - 1].x) return bp[bp.length - 1].y * 100;
+  for (let i = 0; i < bp.length - 1; i++) {
+    const a = bp[i], b = bp[i + 1];
+    if (rawPct >= a.x && rawPct <= b.x) {
+      const t = (b.x === a.x) ? 0 : (rawPct - a.x) / (b.x - a.x);
+      return (a.y + t * (b.y - a.y)) * 100;
+    }
+  }
+  return bp[bp.length - 1].y * 100;
 }
 
 // Fitted logistic-regression alternative to the calibrateHRProb linear correction above
@@ -2959,6 +3013,7 @@ async function gradePending(store) {
 async function main() {
   await loadModelParams();
   await loadHRLogisticModel();
+  await loadHRIsotonicCalibration();
   const store = await loadTracker();
   await gradePending(store);
 
@@ -3017,6 +3072,7 @@ export {
   gradeDRPSimComparison, captureDRPSimComparisonToday,
   loadModelParams, MODEL_PARAMS_PATH, DEFAULT_MODEL_PARAMS, shrinkMult, calibrateHRProb,
   loadHRLogisticModel, predictHRLogistic,
+  loadHRIsotonicCalibration, applyIsotonicCalibration,
   computeIsHot,
   computeLiveHRScore, liveOnFireScore, liveFallbackHotHitterProfile,
 };

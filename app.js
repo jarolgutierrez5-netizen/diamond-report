@@ -1719,6 +1719,44 @@ let hrCalibrationSlope = 1, hrCalibrationIntercept = 0;
 function shrinkMult(m) { return 1 + (m - 1) * hrMultShrinkage; }
 // Exact port of update-tracker.mjs's calibrateHRProb.
 function calibrateHRProb(rawPct) { return hrCalibrationIntercept + hrCalibrationSlope * rawPct; }
+// Isotonic (monotonic step-function) residual correction, layered on top of
+// whatever calibrateHRProb/predictHRLogistic already produced -- exact port of
+// update-tracker.mjs's applyIsotonicCalibration/loadHRIsotonicCalibration; see
+// that file's comment and scripts/fit-hr-isotonic-calibration.mjs for the full
+// rationale (fixes non-monotonic miscalibration a linear slope/intercept can't
+// touch). Applied uniformly regardless of source (logistic or legacy), unlike
+// calibrateHRProb which only ever ran on the legacy path. No-op until the
+// weekly fit script's own cross-validated gate activates it.
+let hrIsotonicBreakpoints = null;
+let _hrIsotonicLoadPromise = null;
+async function loadHRIsotonicCalibration() {
+  if (_hrIsotonicLoadPromise) return _hrIsotonicLoadPromise;
+  _hrIsotonicLoadPromise = (async () => {
+    try {
+      const res = await fetch('./data/hr-isotonic-calibration.json', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.active && Array.isArray(data.breakpoints) && data.breakpoints.length) hrIsotonicBreakpoints = data.breakpoints;
+      }
+    } catch {}
+    return hrIsotonicBreakpoints;
+  })();
+  return _hrIsotonicLoadPromise;
+}
+function applyIsotonicCalibration(rawPct) {
+  const bp = hrIsotonicBreakpoints;
+  if (!bp || !bp.length) return rawPct;
+  if (rawPct <= bp[0].x) return bp[0].y * 100;
+  if (rawPct >= bp[bp.length - 1].x) return bp[bp.length - 1].y * 100;
+  for (let i = 0; i < bp.length - 1; i++) {
+    const a = bp[i], b = bp[i + 1];
+    if (rawPct >= a.x && rawPct <= b.x) {
+      const t = (b.x === a.x) ? 0 : (rawPct - a.x) / (b.x - a.x);
+      return (a.y + t * (b.y - a.y)) * 100;
+    }
+  }
+  return bp[bp.length - 1].y * 100;
+}
 // Fitted logistic-regression alternative to the calibrateHRProb linear correction above
 // (see scripts/fit-hr-logistic-model.mjs for the fit itself and data/hr-logistic-model.json
 // for the persisted coefficients). Cross-validated against the same graded picks the
@@ -10510,6 +10548,7 @@ async function loadHRPotential() {
     await loadBallparkPalFactors().catch(() => {});
     await loadHRModelParams().catch(() => {});
     await loadHRLogisticModel().catch(() => {});
+    await loadHRIsotonicCalibration().catch(() => {});
     await loadBatterPowerIndex().catch(() => {});
     // Needed for the Matchup Edge stat (computeMatchupEdgeScore) — batter-pitch-type-season.json
     // is a real ~1.6MB file, previously deliberately kept lazy (only loaded when a user opens a
@@ -14956,19 +14995,26 @@ if (document.readyState === 'loading') {
     // available (model not yet loaded, or a feature genuinely missing for this row).
     var logisticP = logisticFeatures ? predictHRLogistic(logisticFeatures) : null;
     window.__hrLastScoreSource = logisticP != null ? 'logistic' : 'legacy';
-    if (logisticP != null) return logisticP;
-    pPerPA = clamp(n(pPerPA, 0.03), 0, 0.5);
-    var dist = paDistribution(estimatePA(battingOrder));
-    var prob = 0;
-    for (var k in dist) { prob += dist[k] * (1 - Math.pow(1 - pPerPA, Number(k))); }
-    // Was hard-capped at 25 with no floor, unlike every other market's 1-99 range —
-    // real per-game HR probability for a genuinely elite matchup can exceed 25%, so
-    // the old cap flattened great and mediocre matchups into the same narrow band
-    // and made ranking/selection nearly meaningless. See Elite Picks HR record audit.
-    // Final calibration correction (auto-tuned against graded outcomes; identity by
-    // default) compresses compounding overconfidence from multiplying several
-    // correlated shrunk multipliers together. See Elite Picks HR calibration report.
-    return Math.max(1, Math.min(99, Math.round(calibrateHRProb(prob * 100))));
+    var raw;
+    if (logisticP != null) {
+      raw = logisticP;
+    } else {
+      pPerPA = clamp(n(pPerPA, 0.03), 0, 0.5);
+      var dist = paDistribution(estimatePA(battingOrder));
+      var prob = 0;
+      for (var k in dist) { prob += dist[k] * (1 - Math.pow(1 - pPerPA, Number(k))); }
+      // Was hard-capped at 25 with no floor, unlike every other market's 1-99 range —
+      // real per-game HR probability for a genuinely elite matchup can exceed 25%, so
+      // the old cap flattened great and mediocre matchups into the same narrow band
+      // and made ranking/selection nearly meaningless. See Elite Picks HR record audit.
+      // Final calibration correction (auto-tuned against graded outcomes; identity by
+      // default) compresses compounding overconfidence from multiplying several
+      // correlated shrunk multipliers together. See Elite Picks HR calibration report.
+      raw = calibrateHRProb(prob * 100);
+    }
+    // Isotonic residual correction (see applyIsotonicCalibration above) --
+    // uniform across both sources, no-op until the weekly fit activates it.
+    return Math.max(1, Math.min(99, Math.round(applyIsotonicCalibration(raw))));
   };
   window.simulateKOdds = function(projK, line) {
     var lambda = clamp(n(projK, 4.5), 0.3, 15);

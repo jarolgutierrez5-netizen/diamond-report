@@ -15,6 +15,14 @@ name: Weekly model calibration report
 # (adjusted or not) is appended to data/model-tuning-log.json, so the report and the
 # tuning log always land in the same commit as a matched pair: what the data showed,
 # and what (if anything) was done about it.
+#
+# Then runs fit-hr-isotonic-calibration.mjs (see that file's own header) -- a weekly,
+# unattended, cross-validated fit of an isotonic (monotonic step-function) residual
+# correction for HR Threats, layered on top of tune-model-params.mjs's linear
+# correction to fix non-monotonic miscalibration a straight line structurally can't.
+# Only ever touches data/hr-isotonic-calibration.json, gated behind its own
+# cross-validated Brier-score improvement bar, and logs every run (activated,
+# refreshed, or skipped) to the same data/model-tuning-log.json.
 
 on:
   schedule:
@@ -45,6 +53,9 @@ jobs:
 
       - name: Run model parameter auto-tune
         run: node scripts/tune-model-params.mjs
+
+      - name: Run HR isotonic calibration fit
+        run: node scripts/fit-hr-isotonic-calibration.mjs
 
       - name: Run calibration reports
         run: |
@@ -79,7 +90,7 @@ jobs:
           # that doesn't exist is a hard error, not a no-op, so model-tuning-log.json
           # (which doesn't exist until the tuner's first-ever adjustment or skip) is
           # added conditionally rather than named directly.
-          git add data/calibration-report.md data/model-params.json
+          git add data/calibration-report.md data/model-params.json data/hr-isotonic-calibration.json
           [ -f data/model-tuning-log.json ] && git add data/model-tuning-log.json
           if git diff --cached --quiet; then
             echo "No changes to commit."
@@ -87,7 +98,7 @@ jobs:
           fi
           git config user.name "diamond-report-bot"
           git config user.email "actions@users.noreply.github.com"
-          git commit -m "Weekly model calibration report + parameter auto-tune check"
+          git commit -m "Weekly model calibration report + parameter/isotonic auto-tune check"
 
           # main can move during this run -- confirmed live on 2026-07-28 (run 30301535470):
           # this workflow's own concurrency group only serializes it against ITSELF, not
@@ -100,8 +111,9 @@ jobs:
           # Same retry+rebase loop as sync-statcast.yml's own push step (see its comment
           # for the full rationale). -X theirs is even safer here than there: the files
           # this step ever touches (calibration-report.md, model-params.json,
-          # model-tuning-log.json) share no overlap at all with what update-tracker.yml/
-          # other workflows write, so a rebase onto a newer main never actually hits a
+          # hr-isotonic-calibration.json, model-tuning-log.json) share no overlap at all
+          # with what update-tracker.yml/other workflows write, so a rebase onto a newer
+          # main never actually hits a
           # real conflict -- it's a no-op fast-forward-style replay in practice, this
           # flag just guards the (currently unseen) case where the SAME workflow overlaps
           # itself, exactly like sync-statcast.yml's own precedent.
