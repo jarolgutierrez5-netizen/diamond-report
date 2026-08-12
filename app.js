@@ -15698,7 +15698,7 @@ if (document.readyState === 'loading') {
   // itself. With multiple players starred, whichever one still cleared the floor was the
   // only one that could ever show, which read as "only one shows up" even though every
   // star had registered correctly in localStorage.
-  function getHRRows(){ return rows().filter(function(r){return n(r.hrProb)>0 && (window.drIsWatchlisted(r.id) || (r.topHrThreat && n(r.hrProb)>=3) || n(r.hrProb)>=7) && drMatchesSearch('hr', r.name);}); }
+  function getHRRows(){ return rows().filter(function(r){return n(r.hrProb)>0 && drMatchesSearch('hr', r.name);}); }
   function getFilters(){ if(!window.__hrpFilterSet) window.__hrpFilterSet=new Set(); return window.__hrpFilterSet; }
   // Board default stays HR Probability (the board's whole point); Matchup Edge is an
   // opt-in alternate sort for a user who cares specifically about batter-vs-this-pitcher
