@@ -10968,7 +10968,15 @@ async function loadHRPotential() {
           // -- predictHRLogistic only reads keys the currently-fitted model.features
           // lists, so this is inert against the live model until that refit adds it.
           const hrLogisticFeatures = { batterISO: earlyIso, pitcherHr9, pitcherWhip, parkFactor: gameParkFactor, windFactor: 1, temperatureFactor: 1, isOnFire: hotProfile.onFireScore >= 70, matchupEdge, startBFShare };
-          const baseHrProb = window.simulateHRGameOdds ? window.simulateHRGameOdds(hrPerPA, battingOrder, hrLogisticFeatures) : Math.min(hrPerPA*100,25);
+          const baseHrProbRaw = window.simulateHRGameOdds ? window.simulateHRGameOdds(hrPerPA, battingOrder, hrLogisticFeatures) : Math.min(hrPerPA*100,25);
+          // Real batter-vs-pitcher HR history now feeds the score itself, not just the
+          // informational "vs Pitcher" chip -- same modest, capped weighting
+          // nextDayHRPotentialModel already uses for this exact signal (vsPitcherBoost,
+          // Math.min(hrVsPitcher*2,6)), reused here for consistency between the two
+          // models. Folded into baseHrProb (not just the final hrProb) so it survives
+          // applyHotHitterBoost's later re-application, which reads baseHrProb as its
+          // stable anchor on every progressive-render cycle.
+          const baseHrProb = (hrVsPitcher && hrVsPitcher > 0) ? Math.min(99, baseHrProbRaw + Math.min(hrVsPitcher * 2, 6)) : baseHrProbRaw;
           const hrScoreSource = window.__hrLastScoreSource || 'legacy';
           let hrProb=baseHrProb;
           const hrInLast8=(logs||[]).slice(0,8).some(g2=>parseInt(g2.stat?.homeRuns)>0);
