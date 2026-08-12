@@ -1308,9 +1308,9 @@ async function recentPitchingForm(pid, starts = 5) {
 // Blends a season-long stat with its recent-form counterpart. Recent form's influence
 // scales with how much recent innings support it (capped at 50%) — a thin recent sample
 // shouldn't swing a projection as much as a real 5-start stretch would.
-function blendRecentForm(seasonVal, recent, key) {
+function blendRecentForm(seasonVal, recent, key, maxWeight = 0.5) {
   if (!recent || !Number.isFinite(recent[key]) || !(recent.ip > 0)) return seasonVal;
-  const weight = Math.max(0, Math.min(0.5, recent.ip / 25));
+  const weight = Math.max(0, Math.min(maxWeight, recent.ip / 25));
   return seasonVal * (1 - weight) + recent[key] * weight;
 }
 
@@ -10664,8 +10664,18 @@ async function loadHRPotential() {
           // stretch scored identically to one pitching exactly like his season average.
           // Fetched once per pitcher here (not per batter), same as everything else in
           // this outer per-pitcher scope.
+          //
+          // Capped at a LOWER max weight (0.20) than ERA/WHIP/K9's default 0.5 --
+          // those are high-frequency events (hits/walks/strikeouts happen many times a
+          // start), so 25+ recent innings is a reasonably stable read. Home runs
+          // allowed are rare and high-variance -- a starter going 5 starts with 1 HR
+          // allowed is mostly luck, not a real skill change. Full-weighting that noisy
+          // a sample let one unusually strong (or weak) recent stretch from the
+          // opposing pitcher swing a real power threat's score more than the sample
+          // actually supports, capable of burying a legitimate threat under a small,
+          // mostly-variance-driven pitcher stretch.
           const pitcherRecentForm = await recentPitchingForm(pitcher.id).catch(() => null);
-          pitcherHr9 = blendRecentForm(pitcherHr9, pitcherRecentForm, 'hr9');
+          pitcherHr9 = blendRecentForm(pitcherHr9, pitcherRecentForm, 'hr9', 0.20);
           // Stolen bases/caught stealing allowed while this pitcher is on the mound — a
           // practical stand-in for catcher caught-stealing% (true catcher-specific data
           // would need identifying and querying the starting catcher separately, which
