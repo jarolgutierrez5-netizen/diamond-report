@@ -1281,7 +1281,7 @@ async function recentPitchingForm(pid, starts = 5) {
       const d = await fetchJSON(`https://diamondreport.app/api/v1/people/${pid}/stats?stats=lastXGames&group=pitching&season=2026&limit=${starts}&gameType=R`);
       const splits = d?.stats?.[0]?.splits || [];
       if (!splits.length) return null;
-      let ip = 0, er = 0, bb = 0, h = 0, k = 0;
+      let ip = 0, er = 0, bb = 0, h = 0, k = 0, hrAllowed = 0;
       splits.forEach(s => {
         const st = s.stat || {};
         // Same innings-pitched parsing convention already used everywhere else in this
@@ -1293,9 +1293,10 @@ async function recentPitchingForm(pid, starts = 5) {
         bb += parseInt(st.baseOnBalls) || 0;
         h += parseInt(st.hits) || 0;
         k += parseInt(st.strikeOuts) || 0;
+        hrAllowed += parseInt(st.homeRuns) || 0;
       });
       if (ip <= 0) return null;
-      return { starts: splits.length, ip, era: (er * 9) / ip, whip: (bb + h) / ip, k9: (k * 9) / ip };
+      return { starts: splits.length, ip, era: (er * 9) / ip, whip: (bb + h) / ip, k9: (k * 9) / ip, hr9: (hrAllowed * 9) / ip };
     } catch (e) { return null; }
   })();
   _recentFormCache[key + '_p'] = p;
@@ -10524,6 +10525,11 @@ async function loadHRPotential() {
     // display-only chip elsewhere on the site (pitcher panel, Game Props), but never
     // fed into any score anywhere -- this is the first real scoring use of it.
     await loadBullpenFatigue().catch(() => {});
+    // Real per-batter career AB/HR at each specific ballpark (data/batter-park-history.json,
+    // see sync-batter-park-history.mjs). Already synced and already shown in the matchup
+    // detail modal, but never fed into any score -- everyone at a given park today got
+    // the same generic park factor regardless of a batter's own real track record there.
+    await loadBatterParkHistory().catch(() => {});
     const games = await getTodaySchedule('team,probablePitcher');
     await loadActivePlayerIdsForGames(games).catch(() => {});
 
@@ -10652,6 +10658,14 @@ async function loadHRPotential() {
           pitcherHr9=parseFloat(ps.homeRunsPer9)||0; pitcherAvg=parseFloat(ps.avg)||.240;
           pitcherSlg=parseFloat(ps.slg)||.380; pitcherWhip=parseFloat(ps.whip)||1.25;
           pitcherK9=parseFloat(ps.strikeoutsPer9Inn)||8;
+          // Real recent-form HR/9 blend, same recentPitchingForm/blendRecentForm pair
+          // Game Props already uses for ERA/WHIP/K9 -- pitcherHr9 above was season-long
+          // only, so a starter on a genuine recent homer-prone or homer-suppressing
+          // stretch scored identically to one pitching exactly like his season average.
+          // Fetched once per pitcher here (not per batter), same as everything else in
+          // this outer per-pitcher scope.
+          const pitcherRecentForm = await recentPitchingForm(pitcher.id).catch(() => null);
+          pitcherHr9 = blendRecentForm(pitcherHr9, pitcherRecentForm, 'hr9');
           // Stolen bases/caught stealing allowed while this pitcher is on the mound — a
           // practical stand-in for catcher caught-stealing% (true catcher-specific data
           // would need identifying and querying the starting catcher separately, which
@@ -10843,7 +10857,37 @@ async function loadHRPotential() {
           // average, 40+ AB = fully trust the batter's own rate).
           const HRP_MIN_AB_FOR_RATE = 40;
           const HRP_LEAGUE_AVG_HR_RATE = 0.031; // ~1 HR per 32 AB, roughly MLB seasonal average
-          const rawBatterRate = ab>0?hr/ab:0;
+          const seasonBatterRate = ab>0?hr/ab:0;
+          // Real platoon split (this batter's own HR rate vs LHP/RHP specifically,
+          // matched to today's actual opposing pitcher's hand) -- batterSplitsForEdge is
+          // already fetched above for Matchup Edge, so this costs no extra request. Same
+          // 50-AB-sample-cap/30%-max-weight blend already established server-side (see
+          // scripts/update-tracker.mjs's buildBatterPool SPLIT_MAX_AB/SPLIT_MAX_WEIGHT),
+          // reused here instead of inventing a new weight, just never wired into the
+          // live board's own hrProb before now -- only into the separate Matchup Edge
+          // display stat.
+          const handSplit = pitcherHandForEdge ? batterSplitForHand(batterSplitsForEdge, pitcherHandForEdge) : null;
+          const splitAB = handSplit ? (parseInt(handSplit.atBats) || 0) : 0;
+          const splitHR = handSplit ? (parseInt(handSplit.homeRuns) || 0) : 0;
+          const SPLIT_MAX_AB = 50, SPLIT_MAX_WEIGHT = 0.30;
+          const splitWeight = splitAB > 0 ? Math.min(splitAB, SPLIT_MAX_AB) / SPLIT_MAX_AB * SPLIT_MAX_WEIGHT : 0;
+          const seasonPlusSplitRate = splitWeight > 0
+            ? seasonBatterRate * (1 - splitWeight) + (splitHR / splitAB) * splitWeight
+            : seasonBatterRate;
+          // Real batter-specific history at today's actual ballpark (not the generic
+          // park-factor number every batter at this game shares) -- already synced,
+          // already shown in the matchup detail modal, never fed into a score before.
+          // Smaller cap/weight than the platoon split above: a player's own history at
+          // one specific park is a noisier, thinner-sample signal than a full-season
+          // platoon split, so it's trusted less even at a "full" sample.
+          const parkHistoryEntry = batterParkHistory[String(pid)]?.[gameHomeAbbr] || null;
+          const parkAB = parkHistoryEntry ? (parseInt(parkHistoryEntry.ab) || 0) : 0;
+          const parkHR = parkHistoryEntry ? (parseInt(parkHistoryEntry.hr) || 0) : 0;
+          const PARK_MAX_AB = 30, PARK_MAX_WEIGHT = 0.15;
+          const parkHistoryWeight = parkAB > 0 ? Math.min(parkAB, PARK_MAX_AB) / PARK_MAX_AB * PARK_MAX_WEIGHT : 0;
+          const rawBatterRate = parkHistoryWeight > 0
+            ? seasonPlusSplitRate * (1 - parkHistoryWeight) + (parkHR / parkAB) * parkHistoryWeight
+            : seasonPlusSplitRate;
           const hrpSampleWeight = Math.min(ab, HRP_MIN_AB_FOR_RATE) / HRP_MIN_AB_FOR_RATE;
           // rawBatterRate and HRP_LEAGUE_AVG_HR_RATE are both HR-per-AT-BAT, so their
           // blend is too; the 0.88 factor converts the blended result to HR-per-PLATE-
