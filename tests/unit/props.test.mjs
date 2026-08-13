@@ -63,22 +63,16 @@ describe('simulateSBOdds', () => {
     );
   });
 
-  // FLAGGED GAP, not a designed choice -- discovered while writing this test.
-  // batterySuppression's own formula (`1 - (pitcherSbAllowed/pAtt - 0.72) * 0.6`)
-  // does the OPPOSITE of what its name says: a battery that actually catches
-  // most attempted runners (a LOW pitcherSbAllowed/pAtt success-rate-allowed)
-  // comes out with batterySuppression > 1 (MORE predicted attempts), and a
-  // leaky battery that lets most attempts succeed comes out < 1 (FEWER
-  // predicted attempts) -- backwards from real base-stealing strategy, where
-  // runners run more against a battery they expect to beat, not less. Left
-  // unfixed here on purpose, same reasoning as the scoreForMarket('hr')
-  // parkFactor gap in hr-formula.test.mjs: this feeds simulateSBOdds, which
-  // is itself part of scoreForMarket -- the real pick-selection/grading path
-  // -- so fixing the sign needs the same backtest-aware care as any other
-  // scoreForMarket change, not a silent fix bundled into a test-harness PR.
-  // This test documents the CURRENT (inverted) behavior so a future fix has
-  // to touch this test intentionally instead of it just going stale.
-  test('KNOWN GAP: batterySuppression is currently inverted -- a battery good at throwing runners out boosts predicted attempts', () => {
+  // batterySuppression's formula in update-tracker.mjs/app.js is
+  // `1 + (pitcherSbAllowed/pAtt - 0.72) * 0.6` -- this test previously
+  // documented that formula as `1 - (...)`, an inverted sign under which a
+  // battery good at throwing runners out (a LOW success-rate-allowed) would
+  // have boosted predicted attempts instead of suppressing them, backwards
+  // from real base-stealing strategy. That's since been fixed to the `1 +`
+  // form on the live formula; this test now verifies the CORRECT direction
+  // holds (a strong battery suppresses predicted attempts, a leaky one
+  // encourages them) instead of pinning the old inverted behavior.
+  test('batterySuppression: a battery good at throwing runners out scores lower than a leaky one', () => {
     const goodDefense = simulateSBOdds({
       stolenBases: 15, caughtStealing: 3, atBats: 400,
       pitcherSbAllowed: 2, pitcherCsAllowed: 10, // ~17% success rate allowed -- a strong battery
@@ -88,8 +82,8 @@ describe('simulateSBOdds', () => {
       pitcherSbAllowed: 20, pitcherCsAllowed: 2, // ~91% success rate allowed -- a weak battery
     });
     assert.ok(
-      goodDefense > leakyDefense,
-      `if this fails, the inversion was fixed -- update/remove this test, it was documenting a real gap, not desired behavior. Got goodDefense(${goodDefense}) leakyDefense(${leakyDefense})`
+      goodDefense < leakyDefense,
+      `expected a strong battery(${goodDefense}) to suppress predicted attempts below a leaky one(${leakyDefense})`
     );
   });
 
