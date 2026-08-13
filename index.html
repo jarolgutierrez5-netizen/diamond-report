@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026081205">
+<link rel="stylesheet" href="styles.min.css?v=2026081301">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -672,19 +672,6 @@
       </div>
       <div id="hrp-legend-footer" style="font-size:10px;color:var(--muted);line-height:1.8;padding:8px 12px;border-top:1px solid var(--border);background:var(--surface);border-radius:0 0 8px 8px"></div>
     </div>
-
-    <div class="dr-panel dr-panel-fresh">
-      <div class="dr-panel-head">
-        <div>
-          <p class="section-title">✅ HRs <span>from Projection</span></p>
-          <small>Only home runs that came from Diamond Report projections.</small>
-        </div>
-        <span id="proj-hits-count" class="dr-count-pill"></span>
-      </div>
-      <div id="proj-hits-content" class="dr-panel-body dr-scroll-tall">
-        <div class="mu-empty" style="color:var(--muted)">Loading HRs from Projection…</div>
-      </div>
-    </div>
   </div>
 
   <div id="hr-compare-bar" style="display:none">
@@ -908,7 +895,12 @@
   </div>
 </div>
 
-<!-- Hidden compatibility container: keeps existing live HR updater safe while the public layout now only shows HRs from Projection. -->
+<!-- Hidden compatibility container: loadHRsToday() (app.js) still needs somewhere to write its
+     legacy DOM output, but the HR Threats board itself now highlights a listed player's row
+     green in place once they homer (see renderHRPTableV1032), so this recap no longer has a
+     visible home on the page -- loadHRsToday() keeps running purely for its other real side
+     effects (window.__drHRsToday for News Central's Home Run Highlights, the live HR/K
+     banners, back-to-back/heater streak detection). -->
 <div style="display:none!important" aria-hidden="true">
   <span id="hrs-today-count"></span>
   <div id="hrs-today-content"></div>
@@ -1176,8 +1168,8 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026081205" defer></script>
-<script src="nfl-wnba-props.min.js?v=2026081205" defer></script>
+<script src="app.min.js?v=2026081301" defer></script>
+<script src="nfl-wnba-props.min.js?v=2026081301" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->

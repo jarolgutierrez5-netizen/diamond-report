@@ -10062,10 +10062,6 @@ function setHRPLastLoadedDate(dateStr) {
 
 function loadHRPotentialWithRetry() {
   return loadHRPotential().then(() => {
-    // Re-run HRs Today after HR Potential is available so the
-    // "HRs Completed from Projection" panel cross-references real rows on first load.
-    if (typeof loadHRsToday === 'function') loadHRsToday();
-
     if (!hrpRows.length) {
       // Lineups not posted yet — retry in 15 minutes
       if (hrpRetryTimer) clearTimeout(hrpRetryTimer);
@@ -11523,8 +11519,6 @@ async function loadHRsToday() {
       if (el) el.innerHTML=`<div class="mu-empty">No HRs at this time.</div>`;
       const countEl = document.getElementById('hrs-today-count');
       if (countEl) countEl.style.display = 'none';
-      const projEl = document.getElementById('proj-hits-content');
-      if (projEl) projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">No HR's Completed from Projections Yet</div>`;
       return;
     }
 
@@ -11581,36 +11575,6 @@ async function loadHRsToday() {
       🔥 <strong>BACK TO BACK</strong> — Hit a home run yesterday and today<br>
       👑 <strong>ON A HEATER</strong> — Hit home runs 3+ consecutive days
     </div>` : '');
-
-    // HR's Completed from Projection — cross-reference HRs with hrpRows
-    const projEl = document.getElementById('proj-hits-content');
-    if (projEl) {
-      const projHits = allHRs.filter(h => hrpRows.some(r => r.id === h.id));
-      if (!projHits.length) {
-        projEl.innerHTML = `<div class="mu-empty" style="color:var(--muted)">No HR's Completed from Projections Yet</div>`;
-        const phCount = document.getElementById('proj-hits-count');
-        if (phCount) phCount.style.display = 'none';
-      } else {
-        const phCount = document.getElementById('proj-hits-count');
-        if (phCount) { phCount.textContent = `${projHits.length} Hit${projHits.length!==1?'s':''}`; phCount.style.cssText = 'background:var(--green);color:#0a0e1a;font-family:Manrope,sans-serif;font-size:12px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;letter-spacing:.5px;flex-shrink:0'; }
-        projEl.innerHTML = projHits.map(h => {
-          const proj = hrpRows.find(r => r.id === h.id);
-          return `<div class="stat-row" style="background:linear-gradient(90deg,#0d2a1a,#0a1a10);border-left:3px solid var(--green)">
-            <img src="${hs(h.id)}" style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--green);flex-shrink:0" alt="" loading="lazy" decoding="async">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:13px;font-weight:700;color:var(--green);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">✓ ${h.name}</div>
-              <div style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px">
-                ${h.teamAbbr} vs ${h.gameLabel.replace(h.teamAbbr+' @ ','').replace('@ '+h.teamAbbr,'')} · Proj: ${proj?proj.hrProb.toFixed(1)+'% HR prob':'–'}
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-              <div class="stat-row-num" style="color:var(--green)">${h.hrs}</div>
-              <div style="font-size:12px;color:var(--green);font-family:'JetBrains Mono',monospace">HR</div>
-            </div>
-          </div>`;
-        }).join('');
-      }
-    }
   } catch(e) {
     const el2=document.getElementById('hrs-today-content');
     if(el2) drShowError(el2, "Couldn't load today's HRs.", loadHRsToday);
@@ -14215,8 +14179,7 @@ if (!DR_STATIC_DAILY_DUMP) {
 // ── ROBUST FIRST-LOAD BOOTSTRAP ──────────────────────────────────────
 // Keeps the first page visit from requiring a manual reload. The boot runs after
 // the full script is parsed, then warms the modules whose panels depend on each
-// other: HR Potential -> HRs Completed from Projection, Pitcher Report -> lineups,
-// and live scores -> HR/K banners.
+// other: Pitcher Report -> lineups, and live scores -> HR/K banners.
 let diamondReportBooted = false;
 function bootDiamondReportStartup() {
   if (diamondReportBooted) return;
