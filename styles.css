@@ -7092,7 +7092,7 @@ table.hrpt-table {
   border-collapse: collapse;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  min-width: 1220px;
+  min-width: 1314px;
 }
 /* #props, #props * {min-width:0} (a broad flex/grid-shrink reset elsewhere in
    this file, unscoped by any media query) is an ID selector, so it silently
@@ -7103,7 +7103,7 @@ table.hrpt-table {
    tablets in portrait (iPad Air/Pro 820-1024px) -- desktop containers are
    already wider than 1150px so the defeat was invisible there. Re-asserted
    with matching #props + class specificity to win. */
-#props table.hrpt-table { min-width: 1220px; }
+#props table.hrpt-table { min-width: 1314px; }
 /* Percentage-based fixed layout instead of content-auto sizing -- reflows
    proportionally at any container width above the mobile collapse
    breakpoint, instead of being tuned for one screenshot's width. Column
@@ -7172,8 +7172,14 @@ table.hrpt-table {
    each other with every later column shifted left to fill the gap -- an isolated flex
    <td> with normal table-cell neighbors on both sides, like hrpt-overlap-cell/
    hrpt-signals elsewhere in this row, doesn't trigger it). Wrapping the flex layout in
-   an inner div keeps the <td> itself a plain table-cell for layout purposes. */
-.hrpt-player-cell { min-width: 190px; }
+   an inner div keeps the <td> itself a plain table-cell for layout purposes.
+
+   Column widths (this cell included) are set by the <colgroup>/<col> HRPT_COL_WIDTHS
+   generates in app.js, not by any min-width here -- verified locally that min-width on
+   a table-cell simply isn't part of the table-layout:fixed column-sizing algorithm real
+   browsers use (only an explicit width, which <col> provides, actually counts), which
+   is how Team ended up ~450px wide with Player squeezed to ~110px despite their
+   min-width declarations saying the opposite. */
 .hrpt-player-cell-inner { display: flex; align-items: center; gap: 8px; }
 /* .dr-watch-star is styled for a tall card's corner badge (position:absolute,
    top/right:10px -- see its own rule) and was never adapted for this compact
@@ -7203,7 +7209,6 @@ table.hrpt-table {
    own scannable logo+abbr column between Player and Pitcher, same request as the
    pitcher-hand-badge alignment fix above -- a fixed-width column reads faster at a
    glance than parsing it out of a "TEAM · POS · vs OPP" subtext string). */
-.hrpt-team-cell { min-width: 60px; }
 .hrpt-team-cell-inner { display: flex; align-items: center; gap: 6px; }
 .hrpt-team-logo { width: 22px; height: 22px; object-fit: contain; flex-shrink: 0; }
 .hrpt-team-abbr { font-family: var(--font-body); font-size: 11px; font-weight: 800; color: var(--text); }
