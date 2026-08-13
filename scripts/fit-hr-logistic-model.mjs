@@ -41,6 +41,13 @@
 // -- despite similarly good day-by-day coverage since 2026-08-01, intersected
 // with every OTHER feature here it only reaches 193 graded rows (27 wins),
 // too thin to add a 9th predictor reliably; revisit once that catches up.
+// batterBarrelPct (added 2026-08-13, see captureHRThreatToday) has zero historical
+// coverage as of this writing -- it's now a real scoring input (barrelPowerIndex,
+// deliberately weighted higher than batterISO's role here on the theory that barrel
+// rate is the more predictive signal), but shipped ahead of any fit against real
+// outcomes. Revisit once enough graded rows carry it to check whether the fitted
+// coefficient actually agrees with that hand-picked weight, same as every other
+// field in this list earned its spot by coverage, not by launch date.
 // batterOPS and pitcherSlgAllowed were dropped for redundancy: OPS/ISO
 // correlate at r=0.66 (ISO is the more HR-specific signal), and
 // pitcherHr9/pitcherSlgAllowed correlate at r=0.83 (HR9 is the more direct

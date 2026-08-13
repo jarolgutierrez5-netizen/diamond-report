@@ -1285,6 +1285,17 @@ function battedBallPowerIndex(statcast) {
   const avgRatio = ratios.reduce((a, b) => a + b, 0) / ratios.length;
   return clamp(avgRatio, 0.7, 1.5);
 }
+// Standalone barrel-rate correction -- exact port of app.js's own copy of this function;
+// see its header comment there for the full rationale (deliberately separate from
+// battedBallPowerIndex above rather than folded into its ratio blend, wider clamp on
+// purpose since barrel% is meant to carry more weight than ISO's current role, not yet
+// backtested against this project's own graded outcomes -- the isotonic calibration
+// layer is the safety net).
+const LEAGUE_AVG_BARREL_PCT = 7; // MLB league-average barrel rate per batted ball, Statcast era
+function barrelPowerIndex(barrelPct) {
+  if (barrelPct == null) return 1;
+  return clamp(barrelPct / LEAGUE_AVG_BARREL_PCT, 0.6, 1.6);
+}
 
 // Zone-matchup correction -- exact port of app.js's own copy of this function (kept as
 // two independent copies, same reasoning as battedBallPowerIndex above: one client, one
@@ -1977,7 +1988,11 @@ function computeLiveHRScore(row, statcastHotHitters, weatherHRMult = 1) {
   // this function mirrors now also applies (see app.js's loadHRPotential). row.statcast
   // is already populated by buildBatterPool from the same statcastIndex
   // scoreForMarket uses, so this needs no separate data source.
-  const batterRate = boxScoreBatterRate * shrinkMult(battedBallPowerIndex(row.statcast));
+  // Barrel-rate correction (see barrelPowerIndex's own header comment) -- exact port of
+  // app.js's own copy, same dual-key (id + lowercased name) lookup as liveOnFireScore
+  // above uses for the same statcastHotHitters index.
+  const hhForBarrel = statcastHotHitters.get(String(row.id)) || statcastHotHitters.get(String(row.name || '').toLowerCase());
+  const batterRate = boxScoreBatterRate * shrinkMult(battedBallPowerIndex(row.statcast)) * shrinkMult(barrelPowerIndex(hhForBarrel && hhForBarrel.barrelPct != null ? n(hhForBarrel.barrelPct) : null));
   const pitcherRate = row.pitcherHr9 > 0 ? row.pitcherHr9 / 38 : 0.03;
   const parkAdj = 1 + ((row.parkFactor - 100) / 100) * 0.5;
   const onFireScore = liveOnFireScore(row, statcastHotHitters);
@@ -2022,7 +2037,11 @@ function scoreForMarket(marketKey, row) {
     // applied here rather than to the combined rate the way windFactor/temperatureFactor
     // are, since they're specific to this batter/team, not the whole park/game
     // environment.
+    // Barrel-rate correction (see barrelPowerIndex's own header comment) -- row.barrelPct
+    // is attached by buildBatterPool from the same statcastHotHittersIndex
+    // computeLiveHRScore/liveOnFireScore already read.
     const batterRate = boxScoreBatterRate * shrinkMult(battedBallPowerIndex(row.statcast))
+      * shrinkMult(barrelPowerIndex(row.barrelPct ?? null))
       * shrinkMult(row.fatigueFactor || 1) * shrinkMult(row.homeRoadFactor || 1);
     // Prefer this specific pitcher's own real batters-faced-per-9 (pitcherBFper9) when
     // their season stat line has enough innings to trust it; fall back to the league-
@@ -2629,6 +2648,12 @@ async function buildBatterPool(games, season) {
           last10HR: recent?.hr || 0, isFavorable, statcast: statcastIndex.get(String(pid)) || null, matchupEdge,
           startBFShare, bullpenRate, zoneMatchupMult,
         }, statcastHotHittersIndex, weatherHRMult);
+        // Real season barrel rate, consumed by scoreForMarket('hr')'s barrelPowerIndex
+        // correction (see that function's own comment) -- same dual-key lookup as
+        // computeLiveHRScore/liveOnFireScore above use for this same index.
+        const barrelPct = statcastHotHittersIndex.get(String(pid))?.barrelPct
+          ?? statcastHotHittersIndex.get(String(person.fullName || '').toLowerCase())?.barrelPct
+          ?? null;
         return {
           id: pid, name: person.fullName, teamAbbr, oppAbbr, gamePk: g.gamePk,
           pitcherId: pitcher.id, pitcherName: pitcher.fullName,
@@ -2638,6 +2663,7 @@ async function buildBatterPool(games, season) {
           pitcherBFper9: pitcherBattersFacedPer9(pitcherStat),
           pitcherAvgAllowed, pitcherSlgAllowed, pitcherWhip, parkFactor: rowParkFactor,
           isFavorable, isHot, isDrought, isDue, hasNearHR, statcast: statcastIndex.get(String(pid)) || null,
+          barrelPct,
           // `recent` (recentBattingForm's real lastXGames window) is already fetched
           // above for the isHot/isDrought/recency-blend inputs -- its real .hr count
           // wasn't previously stored on the row itself. Zero extra fetch.
@@ -2718,6 +2744,11 @@ async function captureHRThreatToday(store, pool) {
       pitcherHr9: r.pitcherHr9 ?? null, pitcherAvgAllowed: r.pitcherAvgAllowed ?? null,
       pitcherSlgAllowed: r.pitcherSlgAllowed ?? null, pitcherWhip: r.pitcherWhip ?? null,
       batterOPS: r.ops ?? null, batterISO: r.iso ?? null,
+      // Real season barrel rate at pick time -- now a real scoring input (see
+      // barrelPowerIndex/scoreForMarket('hr')'s own comments), captured so a future
+      // fit-hr-logistic-model.mjs refit can weigh it against real graded outcomes
+      // properly instead of the hand-picked multiplier it ships with today.
+      batterBarrelPct: r.barrelPct ?? null,
       // Real season AB total at pick time -- r.atBats already exists on the pool row
       // (used to gate pool eligibility via POOL_MIN_AB) but was never actually
       // persisted here, so there's been no way to check whether the model's real
@@ -3057,7 +3088,7 @@ export {
   simulatePropOdds, simulateSBOdds, simulateHRGameOdds, scoreForMarket,
   fetchOddsLookup, normalizeName,
   loadEspnEventIds, fetchGameMoneyline,
-  loadStatcastPowerIndex, loadPitcherStatcastPowerIndex, loadPitcher2kSuppressionIndex, battedBallPowerIndex, zoneMatchupMultiplier,
+  loadStatcastPowerIndex, loadPitcherStatcastPowerIndex, loadPitcher2kSuppressionIndex, battedBallPowerIndex, barrelPowerIndex, zoneMatchupMultiplier,
   computeZoneFitServer, zoneValsFromByZoneServer,
   computeMatchupEdgeScore, battingSplitVsHand,
   parseInningsPitched, pitcherBattersFacedPer9,

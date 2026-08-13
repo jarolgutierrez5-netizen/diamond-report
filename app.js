@@ -1832,6 +1832,31 @@ function battedBallPowerIndex(statcast) {
   const avgRatio = ratios.reduce((a, b) => a + b, 0) / ratios.length;
   return clampNum(avgRatio, 0.7, 1.5);
 }
+// Standalone barrel-rate correction -- deliberately NOT folded into
+// battedBallPowerIndex's own xSLG/hard-hit% blend above, which would just average it
+// down to a fraction of its own real weight. Barrel% (the share of batted balls hit at
+// the exit-velocity/launch-angle combination Statcast defines as "barreled") is
+// generally the single most predictive quality-of-contact signal for future HR
+// production -- more stable year-over-year and less park/luck-influenced than ISO,
+// which until now was the ONLY quality-of-contact-adjacent signal with real, direct
+// weight in HR Probability (predictHRLogistic's batterISO feature). Barrel% itself was
+// only ever a diluted ~17-of-100-point slice of the separate hot-streak composite
+// (getStatcastHotHitterProfile) -- this gives it real, standalone, actually-prioritized
+// influence instead. Wider clamp than battedBallPowerIndex's [0.7,1.5] on purpose: this
+// is meant to carry more weight, not the same weight.
+//
+// Not yet backtested against this project's own real graded outcomes -- barrel% has
+// never been captured on a graded HR Threats pick before now (see
+// captureHRThreatToday's own comment). The isotonic calibration layer
+// (applyIsotonicCalibration) is the safety net here, same as for every other signal in
+// this formula: if this ends up overconfident in aggregate, that shows up as a real,
+// measurable miscalibration the weekly fit corrects -- ship it, then let the data check
+// it, same discipline as everything else in this file.
+const LEAGUE_AVG_BARREL_PCT = 7; // MLB league-average barrel rate per batted ball, Statcast era
+function barrelPowerIndex(barrelPct) {
+  if (barrelPct == null) return 1;
+  return clampNum(barrelPct / LEAGUE_AVG_BARREL_PCT, 0.6, 1.6);
+}
 // Zone-matchup correction -- exact port of update-tracker.mjs's zoneMatchupMultiplier.
 // Real per-zone wOBA overlap between a batter's own hot zones (batterZoneProfiles/
 // batterZoneProfilesByHand, sync-batter-zone-hr.mjs) and a pitcher's own weak zones
@@ -10947,7 +10972,13 @@ async function loadHRPotential() {
           // scripts/update-tracker.mjs). Neutral (1x) with no coverage, same graceful
           // degradation as every other optional signal here.
           const battedBallMult = shrinkMult(battedBallPowerIndex(batterPowerIndex[String(pid)]));
-          const batterRate = boxScoreBatterRate * battedBallMult;
+          // Barrel-rate correction (see barrelPowerIndex's own header comment for why
+          // this is a separate, standalone multiplier rather than folded into
+          // battedBallMult above). statcastHotHitters is keyed by both id and lowercased
+          // name, same dual-key lookup every other consumer of this store already uses.
+          const hhForBarrel = statcastHotHitters[String(pid)] || statcastHotHitters[String(b.player.person?.fullName || '').toLowerCase()];
+          const barrelMult = shrinkMult(barrelPowerIndex(hhForBarrel && hhForBarrel.barrelPct != null ? n(hhForBarrel.barrelPct) : null));
+          const batterRate = boxScoreBatterRate * battedBallMult * barrelMult;
           // Zone-matchup correction (see zoneMatchupMultiplier's header comment) -- real
           // wOBA overlap between this batter's own hot zones and this pitcher's own weak
           // zones. Batter side is conditioned on today's actual pitcher throwing hand
