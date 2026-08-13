@@ -11305,168 +11305,15 @@ async function loadHRPotential() {
   }
 }
 
-function renderHRPTable() {
-  const el = document.getElementById('hr-potential-content');
-  if (!el || !hrpRows.length) {
-    if (el) el.innerHTML = hrpRetryTimer
-      ? `<div class="mu-empty">Lineups not posted yet — automatically checking again in 15 min.<br><span style="font-size:10px;color:var(--muted)">No need to refresh, this updates itself.</span></div>`
-      : `<div class="mu-empty"><span class="spin"></span> Loading HR Projections…</div>`;
-    return;
-  }
-
-  // Multi-select filter logic. Empty set = show all.
-  const hasFilter = hrpFilters.size > 0;
-  let displayRows = (hasFilter
-    ? hrpRows.filter(r => {
-        if (hrpFilters.has('onfire') && (r.isOnFire || Number(r.onFireScore||0) >= 70 || Number(r.hotBoostPct||0) >= 4.5)) return true;
-        if (hrpFilters.has('drought') && r.isDrought) return true;
-        if (hrpFilters.has('due') && r.isDue) return true;
-        if (hrpFilters.has('favorable') && r.isFavorable) return true;
-        return false;
-      })
-    : [...hrpRows]
-  // HRP_BOARD_MIN_PROB: bare inclusion floor. hrProb here is a single-PA batter/pitcher
-  // rate blend (see hrProb() above), not a full-game simulation — realistic values run
-  // more like a 2-6% league-average range than double digits, so the prior 10%/5% bars
-  // (raised from 8% to cut weak signals) required a player be several times better than
-  // average just to clear the flat floor. Combined with topHrThreat only flagging the
-  // single best hitter per pitcher matchup, the board was landing around ~18 players on
-  // a normal slate regardless of how many other batters had a real case. Eased to 7%/3%
-  // and topHrThreat now covers the top 2 per matchup (see where it's set, above) to
-  // widen the shortlist without dropping the floor back to "everyone clears it."
-  ).filter(isActiveForHRThreat).filter(r => (r.topHrThreat && r.hrProb >= 3) || r.hrProb >= 7).filter(r => drMatchesSearch('hr', r.name));
-
-  // Update button active states
-  const allActive = !hasFilter;
-  document.getElementById('filter-all-btn')?.classList.toggle('active', allActive);
-  ['onfire','top','drought','due','favorable'].forEach(f => {
-    document.getElementById(`filter-${f}-btn`)?.classList.toggle('active', hrpFilters.has(f));
-  });
-
-  const sorted = [...displayRows].sort((a,b) => {
-    if (hrpFilters.has('onfire')) {
-      const aScore = Number(a.onFireScore || 0), bScore = Number(b.onFireScore || 0);
-      if (aScore !== bScore) return bScore - aScore;
-      const aBoost = Number(a.hotBoostPct || 0), bBoost = Number(b.hotBoostPct || 0);
-      if (aBoost !== bBoost) return bBoost - aBoost;
-    }
-    if (hrpFilters.has('drought')) {
-      const aMatch = a.isDrought ? 1 : 0, bMatch = b.isDrought ? 1 : 0;
-      if (aMatch !== bMatch) return bMatch - aMatch;
-    }
-    if (hrpFilters.has('due')) {
-      const aMatch = a.isDue ? 1 : 0, bMatch = b.isDue ? 1 : 0;
-      if (aMatch !== bMatch) return bMatch - aMatch;
-    }
-    if (hrpFilters.has('favorable')) {
-      const aMatch = a.isFavorable ? 1 : 0, bMatch = b.isFavorable ? 1 : 0;
-      if (aMatch !== bMatch) return bMatch - aMatch;
-    }
-    const av = a[hrpSortCol], bv = b[hrpSortCol];
-    if (av==null&&bv==null) return 0;
-    if (av==null) return 1; if (bv==null) return -1;
-    const primary = (av-bv)*hrpSortDir;
-    if (primary !== 0) return primary;
-    return (b.hrProb || 0) - (a.hrProb || 0);
-  });
-
-  if (!sorted.length) {
-    el.innerHTML = `<div class="mu-empty" style="padding:24px">No players match the selected filters. Try combining fewer filters, or select ALL to reset.</div>`;
-    return;
-  }
-
-  const hs = id => `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_80,q_auto:best/v1/people/${id}/headshot/67/current`;
-  const tl = abbr => { const tid = teamIds[abbr]; return tid ? `<img class="dr1017-team-logo" src="https://www.mlbstatic.com/team-logos/${tid}.svg" alt="" loading="lazy" decoding="async">` : ''; };
-  const fmt3 = v => Number(v)>0 ? Number(v).toFixed(3).replace(/^0/,'') : '–';
-  const num = v => Number.isFinite(Number(v)) ? Number(v) : 0;
-  const gradeFor = pct => pct >= 12 ? 'A+' : pct >= 10 ? 'A' : pct >= 8 ? 'B+' : pct >= 6 ? 'B' : 'C';
-  const riskFor = r => (r.hrProb >= 10 && (r.ops >= .800 || r.iso >= .200)) ? 'MEDIUM' : (r.hrProb >= 8 ? 'ELEVATED' : 'HIGH');
-  const classify = (good, mid) => good ? 'green' : mid ? 'gold' : 'blue';
-  const whyText = r => {
-    const bits = [];
-    if (r.topHrThreat || r.hrProb >= 8) bits.push('top HR threat signal');
-    if (r.isOnFire) bits.push(`hot-hitter boost${r.onFireScore ? ` (${Math.round(r.onFireScore)})` : ''}`);
-    if (r.isFavorable) bits.push('favorable pitcher matchup');
-    if (r.isDue) bits.push('due profile');
-    if (r.isDrought) bits.push('HR drought angle');
-    if (r.iso >= .200) bits.push('plus ISO power');
-    if (r.ops >= .800) bits.push('strong OPS');
-    const support = bits.length ? bits.join(', ') : 'power profile and matchup context';
-    const pitcher = r.pitcherName ? ` against ${r.pitcherName}` : '';
-    return `${r.name} grades at ${Number(r.hrProb||0).toFixed(1)}% HR probability${pitcher} because the model combines ${support}, season HR rate, recent trend, and pitcher HR/9 baseline. Opponent context: ${r.oppAbbr}.`;
-  };
-
-  const cards = sorted.map(r => {
-    const isLive = String(r.timeLabel||'').includes('LIVE');
-    const isFinal = r.timeLabel === 'FINAL';
-    const homerToday = (r.todayHR > 0) && (isLive || isFinal);
-    const pct = Number(r.hrProb || 0);
-    const grade = gradeFor(pct);
-    const risk = riskFor(r);
-    const hotBoost = Number(r.hotBoostPct || 0);
-    const cardCls = homerToday ? ' hr-today-row' : isLive ? ' hrp-live-row' : '';
-    const pitcherLabel = r.pitcherName ? `vs ${r.pitcherName}` : `vs ${r.oppAbbr}`;
-    const tags = [];
-    if (homerToday) tags.push(`<span class="dr1017-chip gold"><b>HR Today:</b> ${r.todayHR}</span>`);
-    if (r.topHrThreat || pct >= 8) tags.push(`<span class="dr1017-chip gold"><b>Threat:</b> Top HR</span>`);
-    if (r.isOnFire) tags.push(`<span class="dr1017-chip red"><b>On Fire:</b> ${Math.round(r.onFireScore||0)}</span>`);
-    if (r.isFavorable) tags.push(`<span class="dr1017-chip green"><b>Matchup:</b> Favorable</span>`);
-    if (r.isDue) tags.push(`<span class="dr1017-chip gold"><b>Due:</b> Yes</span>`);
-    if (r.isDrought) tags.push(`<span class="dr1017-chip red"><b>Drought:</b> Yes</span>`);
-
-    const statChips = [
-      `<span class="dr1017-chip green"><b>HR Prob:</b> ${pct.toFixed(1)}%</span>`,
-      `<span class="dr1017-chip blue"><b>Season HR:</b> ${r.hrSeason || '–'}</span>`,
-      `<span class="dr1017-chip ${classify((r.last10HR||0)>=2,(r.last10HR||0)>=1)}"><b>Last 10 HR:</b> ${r.last10HR ?? '–'}</span>`,
-      `<span class="dr1017-chip ${classify(r.ops>=.850,r.ops>=.700)}"><b>OPS:</b> ${fmt3(r.ops)}</span>`,
-      `<span class="dr1017-chip ${classify(r.iso>=.200,r.iso>=.140)}"><b>ISO:</b> ${fmt3(r.iso)}</span>`,
-      `<span class="dr1017-chip ${classify(r.avg>=.280,r.avg>=.240)}"><b>AVG:</b> ${fmt3(r.avg)}</span>`,
-      hotBoost ? `<span class="dr1017-chip gold"><b>Hot Boost:</b> +${hotBoost.toFixed(1)}</span>` : '',
-      r.hrVsPitcher != null ? `<span class="dr1017-chip ${r.hrVsPitcher>0?'gold':'blue'}"><b>vs Pitcher:</b> ${r.hrVsPitcher} HR</span>` : '',
-      ...tags,
-      ...(r.hotHitter?.tags||[]).slice(0,3).map(t=>`<span class="dr1017-chip blue"><b>Signal:</b> ${t}</span>`)
-    ].filter(Boolean).slice(0,12).join('');
-
-    return `<div class="dr1017-hr-card${cardCls}" id="hrp-row-${r.id}">
-      <div class="dr1017-hr-main">
-        <img class="dr1017-hr-photo" src="${hs(r.id)}" alt="" loading="lazy" decoding="async">
-        <div class="dr1017-hr-info">
-          <div class="dr1017-hr-title-row">
-            <div>
-              <div class="dr1017-hr-name" style="color:${homerToday?'var(--accent2)':'var(--text)'}">${r.name}</div>
-              <div class="dr1017-hr-meta">${tl(r.teamAbbr)} ${r.teamAbbr} · ${r.pos} · ${pitcherLabel} ${tl(r.oppAbbr)} · ${r.timeLabel || ''}</div>
-            </div>
-            <div class="dr1017-hr-score">
-              <strong>${pct.toFixed(1)}%</strong>
-              <span>HR PROBABILITY</span>
-              <em>GRADE ${grade}</em>
-            </div>
-          </div>
-          <div class="dr1017-hr-chips">${statChips}</div>
-          <div class="dr1017-hr-why">${whyText(r)}</div>
-          <button class="hrp-matchup-btn dr1017-matchup-btn"
-            data-batter-id="${r.id}"
-            data-batter-name="${String(r.name).replace(/"/g,'&quot;')}"
-            data-pitcher-id="${r.pitcherId}"
-            data-pitcher-name="${String(r.pitcherName||'').replace(/"/g,'&quot;')}"
-            onclick="const d=this.dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName)">
-            ⚔ PITCHER MATCHUP
-          </button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-
-  el.innerHTML = `<div class="dr1017-hr-card-list">${cards}</div>`;
-
-  const footer = document.getElementById('hrp-legend-footer');
-  if (footer) footer.innerHTML = `
-    HR Prob = batter HR/AB + pitcher HR/9 baseline, then boosted by Hot Hitter data: xwOBA trend, Hard-Hit %, Sweet-Spot %, Barrels, Bat Speed, Blasts, and rolling 5–10 game power signals when repo data exists.<br>
-    🔥 <strong>ON FIRE</strong> — Recent contact quality / rolling batted-ball trend boost applied to HR Potential<br>
-    🔴 <strong>DROUGHT</strong> — No home run in the last 8 games (due for one)<br>
-    ⚠️ <strong>DUE</strong> — Drought player with 2+ supporting signals: power profile (ISO ≥ .170), favorable matchup, strong OPS (≥ .750), or proven HR hitter (8+ HRs) in a deep drought.<br>
-    🟢 <strong>FAVORABLE MATCHUP</strong> — Batter has OPS ≥ .800 against a pitcher allowing high AVG or WHIP ≥ 1.25`;
-}
+// The original renderHRPTable() card-only renderer lived here (v10.17-era). Fully
+// dead since window.renderHRPTable got reassigned to renderHRPTableV1032 further down
+// this file -- top-level function declarations and window.* share one binding, so
+// every bare renderHRPTable() call elsewhere (all inside async callbacks/handlers that
+// only run after the whole script has parsed) already resolved to renderHRPTableV1032
+// by call time, never this body. Confirmed dead via a failing Playwright test earlier
+// this project when an edit here had zero effect on the live board. Removed rather than
+// left as a standing trap for the next person (or agent) who greps for this name and
+// edits the wrong function.
 
 // hrpFilters is a Set for multi-select. Empty Set = 'all'.
 const hrpFilters = new Set();
@@ -15685,10 +15532,19 @@ if (document.readyState === 'loading') {
   // that window-exposed dispatcher, called with the specific type/id the
   // filter bar was rendered for.
   window.__drPropIntelRenderOne = function(type, id){ render(type, id, true); };
-  function markHRHits(){ try{ rows().forEach(function(r){ if(actual('hr',r)>=1){ ['#hrp-row-'+r.id].forEach(function(sel){ var el=document.querySelector(sel); if(el){ el.classList.add('hr-hit'); if(!el.querySelector('.hr-hit-badge')){ var chipBox=el.querySelector('.dr1017-hr-chips,.dr1026-chip-row'); if(chipBox) chipBox.insertAdjacentHTML('afterbegin','<span class="hr-hit-badge">✓ HR Projection Hit</span>'); } } }); } }); }catch(e){} }
-  var oldHR=window.renderHRPTable; if(typeof oldHR==='function'){ window.renderHRPTable=function(){ var out=oldHR.apply(this,arguments); setTimeout(markHRHits,0); return out; }; }
-  var oldPane=window.showGamePickPane; if(typeof oldPane==='function' && !oldPane.__v1030){ var wrap=function(p){ var out=oldPane.apply(this,arguments); setTimeout(function(){ if(['hits','rbis','tb','sb','hrrbi'].indexOf(p)>=0) window.renderPropIntelligencePanes(); if(p==='hr') markHRHits(); },80); return out; }; wrap.__v1030=true; window.showGamePickPane=wrap; }
-  document.addEventListener('DOMContentLoaded',function(){ setTimeout(function(){ if(window.renderPropIntelligencePanes) window.renderPropIntelligencePanes(); markHRHits(); },900); setTimeout(function(){ if(window.renderPropIntelligencePanes) window.renderPropIntelligencePanes(); markHRHits(); },2600); });
+  // markHRHits (a legacy hit-marking sweep for an older card template generation,
+  // .dr1017-hr-chips/.dr1026-chip-row) was removed here -- renderHRPTableV1032's own
+  // row/card templates already compute hit status inline on every render (the
+  // .hit/.projection-hit class + ✓ Projection Hit badge), so this had become fully
+  // redundant. It was also silently broken: its own window.renderHRPTable wrapper ran
+  // before renderHRPTableV1032 was ever assigned to that name later in the file, so
+  // the wrap never actually attached on the main render path -- it only ever fired via
+  // the two paths below, applying a harmless-looking but real redundant .hr-hit CSS
+  // class (a second green glow stacked on the modern styling) while its badge-insertion
+  // silently no-opped against selectors (.dr1017-hr-chips/.dr1026-chip-row) that don't
+  // exist in the current markup at all.
+  var oldPane=window.showGamePickPane; if(typeof oldPane==='function' && !oldPane.__v1030){ var wrap=function(p){ var out=oldPane.apply(this,arguments); setTimeout(function(){ if(['hits','rbis','tb','sb','hrrbi'].indexOf(p)>=0) window.renderPropIntelligencePanes(); },80); return out; }; wrap.__v1030=true; window.showGamePickPane=wrap; }
+  document.addEventListener('DOMContentLoaded',function(){ setTimeout(function(){ if(window.renderPropIntelligencePanes) window.renderPropIntelligencePanes(); },900); setTimeout(function(){ if(window.renderPropIntelligencePanes) window.renderPropIntelligencePanes(); },2600); });
 })();
 
 /* ---- from <script id="prod-v10-32-prop-hit-authority-js"> ---- */
@@ -16108,7 +15964,7 @@ function hrpSignalLegendHTML(seen){
     return '<span class="hrpt-legend-item">'+icon+' '+esc(seen[icon])+'</span>';
   }).join('')+'</div>';
 }
-var HRPT_COLS=[['Player',null],['Pitcher',null],['Bullpen',null],['Edge','matchupEdge'],['Zone','zoneFit'],['Pitch Mix',null],['Overlap',null],['AVG','avg'],['SLG','slg'],['OPS','ops'],['ISO','iso'],['HR L10',null],['Signals',null]];
+var HRPT_COLS=[['Player',null],['Pitcher',null],['Bullpen',null,"The OPPOSING team's bullpen fatigue -- Fresh/Normal/Taxed/Gassed, based on real last-2-days reliever pitch counts, not a season average. A taxed/gassed pen means weaker relief behind their starter if he struggles."],['Edge','matchupEdge'],['Zone','zoneFit'],['Pitch Mix',null],['Overlap',null],['AVG','avg'],['SLG','slg'],['OPS','ops'],['ISO','iso'],['HR L10',null],['Signals',null]];
 // Which of the pitcher's own real pitch types the batter has a real,
 // individually-favorable sample against -- same isFavorableMatchupRow
 // threshold (20+ pitches seen, 3+ of avg/iso/slg/woba/whiffPct clearing a
@@ -16171,10 +16027,10 @@ function hrptHeatBGInverted(val, goodAbove, badBelow){ return hrptHeatBG(val==nu
 function hrpTableHeaderHTML(){
   var by=getHRSortBy();
   return HRPT_COLS.map(function(c){
-    var label=c[0], key=c[1];
-    if(!key) return '<th'+(label==='Player'?'':' class="hrpt-num"')+'>'+esc(label)+'</th>';
+    var label=c[0], key=c[1], tip=c[2];
+    if(!key) return '<th'+(label==='Player'?'':' class="hrpt-num"')+(tip?' title="'+esc(tip)+'"':'')+'>'+esc(label)+'</th>';
     var active=by===key;
-    return '<th class="hrpt-num hrpt-sortable'+(active?' active':'')+'" onclick="window.setHRSort(\''+key+'\')" title="Sort by '+esc(label)+'">'+esc(label)+(active?' ▾':'')+'</th>';
+    return '<th class="hrpt-num hrpt-sortable'+(active?' active':'')+'" onclick="window.setHRSort(\''+key+'\')" title="'+esc(tip||('Sort by '+label))+'">'+esc(label)+(active?' ▾':'')+'</th>';
   }).join('');
 }
 function hrpTableRowHTML(r,rIdx,signals){
