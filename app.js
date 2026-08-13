@@ -11300,8 +11300,18 @@ async function loadHRPotential() {
     const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
     if (refresh) refresh.textContent = `Last updated ${now}`;
   } catch(e) {
+    // Log + rethrow instead of swallowing: loadHRPotentialWithRetry's .then() branch
+    // (not .catch()) unconditionally overwrites hr-potential-content with the generic
+    // "Lineups not posted yet" message whenever hrpRows is empty, which used to clobber
+    // this exact error UI a moment after it was set -- a real crash anywhere in the
+    // batter/pitcher pipeline above was indistinguishable from an honest "still waiting
+    // on lineups" state, and never showed up in the console either. Rethrowing routes
+    // this into loadHRPotentialWithRetry's .catch() branch instead, which only resets
+    // the retry timer and leaves this error message (and its Retry action) on screen.
+    console.error('[HR Threats] loadHRPotential failed:', e);
     const el2 = document.getElementById('hr-potential-content');
     if (el2) drShowError(el2, "Couldn't load HR Threats.", loadHRPotential);
+    throw e;
   }
 }
 

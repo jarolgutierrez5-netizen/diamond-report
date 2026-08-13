@@ -25,18 +25,26 @@
   // `schedule:` blocks are removed from the workflow YAML files once this is confirmed
   // working) the schedule: entries in sync-statcast.yml / update-tracker.yml /
   // generate-projections.yml / calibration-report.yml.
+  //
+  // Exactly 5 entries -- Cloudflare Workers Free caps cron triggers at 5 PER ACCOUNT
+  // (not per Worker), confirmed the hard way: a real `wrangler deploy` with the
+  // previous 10-entry list uploaded the site fine but then failed outright trying to
+  // register triggers ("Workers Free limit of 5 cron triggers", code 10072), leaving
+  // whichever subset from a prior deploy already existed in an undocumented partial
+  // state. The 4 real workflows (sync-statcast.yml's 5 daily runs, update-tracker.yml's
+  // 3, generate-projections.yml's 1, calibration-report.yml's weekly 1 -- 10 firings
+  // total) now share these 5 time slots instead of getting one slot each -- see
+  // scheduled-sync.js's CRON_MAP for which workflow(s) fire at which slot, including
+  // calibration-report.yml's day-of-week check (a cron field can't express "this
+  // workflow only, and only on Mondays, at a slot three other workflows also use every
+  // day" -- that condition lives in JS instead of costing a 6th trigger slot).
   "triggers": {
     "crons": [
       "4 11 * * *",
       "9 14 * * *",
       "9 17 * * *",
       "9 20 * * *",
-      "9 23 * * *",
-      "7 14 * * *",
-      "13 20 * * *",
-      "19 0 * * *",
-      "11 12 * * *",
-      "22 15 * * 1"
+      "9 23 * * *"
     ]
   }
 }
