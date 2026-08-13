@@ -7165,7 +7165,16 @@ table.hrpt-table {
 .hrpt-table td { padding: 8px 10px; vertical-align: middle; }
 .hrpt-table td.hrpt-num { text-align: center; font-size: 12.5px; }
 
-.hrpt-player-cell { display: flex; align-items: center; gap: 8px; min-width: 190px; }
+/* display:flex lives on hrpt-player-cell-inner, not this <td> itself -- Chromium's
+   table-layout:fixed collapses consecutive display:flex <td> siblings into a single
+   column and stacks them vertically instead of laying them out side by side (verified
+   locally: Player/Team/Pitcher, three flex <td>s in a row, rendered stacked on top of
+   each other with every later column shifted left to fill the gap -- an isolated flex
+   <td> with normal table-cell neighbors on both sides, like hrpt-overlap-cell/
+   hrpt-signals elsewhere in this row, doesn't trigger it). Wrapping the flex layout in
+   an inner div keeps the <td> itself a plain table-cell for layout purposes. */
+.hrpt-player-cell { min-width: 190px; }
+.hrpt-player-cell-inner { display: flex; align-items: center; gap: 8px; }
 /* .dr-watch-star is styled for a tall card's corner badge (position:absolute,
    top/right:10px -- see its own rule) and was never adapted for this compact
    table row: with no positioned ancestor of its own, it fell through to
@@ -7194,7 +7203,8 @@ table.hrpt-table {
    own scannable logo+abbr column between Player and Pitcher, same request as the
    pitcher-hand-badge alignment fix above -- a fixed-width column reads faster at a
    glance than parsing it out of a "TEAM · POS · vs OPP" subtext string). */
-.hrpt-team-cell { display: flex; align-items: center; gap: 6px; min-width: 60px; }
+.hrpt-team-cell { min-width: 60px; }
+.hrpt-team-cell-inner { display: flex; align-items: center; gap: 6px; }
 .hrpt-team-logo { width: 22px; height: 22px; object-fit: contain; flex-shrink: 0; }
 .hrpt-team-abbr { font-family: var(--font-body); font-size: 11px; font-weight: 800; color: var(--text); }
 
@@ -7207,7 +7217,8 @@ table.hrpt-table {
    ellipsis-truncation (min-width:0 lets it actually shrink inside the flex row,
    which a block-level nowrap+ellipsis on the parent alone can't do once a sibling
    flex item is present) so a long name truncates instead of pushing the badge further. */
-.hrpt-pitcher-cell { font-family: var(--font-body); display: flex; align-items: center; justify-content: space-between; gap: 6px; overflow: hidden; }
+.hrpt-pitcher-cell { font-family: var(--font-body); overflow: hidden; }
+.hrpt-pitcher-cell-inner { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .hrpt-pitcher-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; font-weight: 700; color: var(--text); }
 .hrpt-pitcher-hand { flex: 0 0 auto; font-size: 9px; font-weight: 800; color: var(--muted); padding: 1px 5px; border: 1px solid var(--border); border-radius: 5px; }
 
