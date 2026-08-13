@@ -7189,9 +7189,18 @@ table.hrpt-table {
 .hrpt-name { font-family: var(--font-body); font-size: 12.5px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 5px; white-space: nowrap; }
 .hrpt-sub { font-family: var(--font-body); font-size: 10px; color: var(--muted); white-space: nowrap; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; }
 
-.hrpt-pitcher-cell { font-family: var(--font-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hrpt-pitcher-name { font-size: 11.5px; font-weight: 700; color: var(--text); }
-.hrpt-pitcher-hand { font-size: 9px; font-weight: 800; color: var(--muted); margin-left: 5px; padding: 1px 5px; border: 1px solid var(--border); border-radius: 5px; vertical-align: middle; }
+/* display:flex + justify-content:space-between (not the old plain nowrap-ellipsis
+   cell) so hrpt-pitcher-hand always sits at a fixed distance from the cell's right
+   edge -- previously it just trailed directly after the name text, so its horizontal
+   position tracked each row's own name length (a long name like "Braxton Ashcraft"
+   pushed RHP/LHP far right, a short one like "Max Scherzer" left it much closer in),
+   reading as misaligned badges down the column. hrpt-pitcher-name now owns the
+   ellipsis-truncation (min-width:0 lets it actually shrink inside the flex row,
+   which a block-level nowrap+ellipsis on the parent alone can't do once a sibling
+   flex item is present) so a long name truncates instead of pushing the badge further. */
+.hrpt-pitcher-cell { font-family: var(--font-body); display: flex; align-items: center; justify-content: space-between; gap: 6px; overflow: hidden; }
+.hrpt-pitcher-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; font-weight: 700; color: var(--text); }
+.hrpt-pitcher-hand { flex: 0 0 auto; font-size: 9px; font-weight: 800; color: var(--muted); padding: 1px 5px; border: 1px solid var(--border); border-radius: 5px; }
 
 .hrpt-prob { font-size: 15px; font-weight: 800; color: #8ec2ff; text-shadow: 0 0 12px rgba(91,157,255,.35); }
 
