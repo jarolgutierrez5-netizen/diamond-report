@@ -108,6 +108,28 @@
         "slope": 0.95,
         "intercept": 3
       }
+    },
+    {
+      "at": "2026-08-12T23:19:20.637Z",
+      "param": "HR_ISOTONIC_CALIBRATION",
+      "n": 1311,
+      "foldsRun": 5,
+      "meanIsoBrier": 0.11522379459422556,
+      "meanBaseBrier": 0.12321105891334028,
+      "improvement": 0.007987264319114715,
+      "foldWinFraction": 1,
+      "decision": "activate",
+      "breakpoints": 2,
+      "effectiveSince": "2026-08-12",
+      "active": true
+    },
+    {
+      "at": "2026-08-12T23:21:50.405Z",
+      "param": "HR_ISOTONIC_CALIBRATION",
+      "n": 0,
+      "decision": "skip",
+      "reason": "sample size gate not met",
+      "active": true
     }
   ]
 }

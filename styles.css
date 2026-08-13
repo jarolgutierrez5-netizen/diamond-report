@@ -7157,7 +7157,8 @@ table.hrpt-table {
 .hrpt-row:hover { background: rgba(47, 107, 255, .12); transform: translateX(3px); }
 .hrpt-row td[style*="background"] { transition: filter .18s ease; }
 .hrpt-row:hover td[style*="background"] { filter: brightness(1.22) saturate(1.15); }
-.hrpt-row.hit { box-shadow: inset 3px 0 0 var(--green); }
+.hrpt-row.hit { background: rgba(46,230,166,.16) !important; box-shadow: inset 4px 0 0 var(--green); }
+.hrpt-row.hit:hover { background: rgba(46,230,166,.24) !important; transform: translateX(3px); }
 .hrpt-row.miss { box-shadow: inset 3px 0 0 var(--dr-red, #ff4d6d); }
 @media (prefers-reduced-motion: reduce) {
   .hrpt-row.dr-anim-in { animation: none; }
