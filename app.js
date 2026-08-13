@@ -10977,7 +10977,16 @@ async function loadHRPotential() {
           // battedBallMult above). statcastHotHitters is keyed by both id and lowercased
           // name, same dual-key lookup every other consumer of this store already uses.
           const hhForBarrel = statcastHotHitters[String(pid)] || statcastHotHitters[String(b.player.person?.fullName || '').toLowerCase()];
-          const barrelMult = shrinkMult(barrelPowerIndex(hhForBarrel && hhForBarrel.barrelPct != null ? n(hhForBarrel.barrelPct) : null));
+          // n(...) doesn't exist in this function's scope -- that's a rendering-code-only
+          // helper defined inside a separate, later IIFE (five other local copies of it
+          // exist in this file, none reachable from here). Every real batter with
+          // Statcast barrel data threw a ReferenceError here, and because this whole
+          // per-batter block runs inside a Promise.all (see batterRowsForPitcher below),
+          // one crashing batter rejected the entire pitcher-side/game/board load -- the
+          // exact silent-crash-behind-"Lineups not posted yet" bug this file's own catch
+          // block comment (see loadHRPotential's own catch, further down) warns about.
+          const barrelPctNum = hhForBarrel ? parseFloat(hhForBarrel.barrelPct) : NaN;
+          const barrelMult = shrinkMult(barrelPowerIndex(Number.isFinite(barrelPctNum) ? barrelPctNum : null));
           const batterRate = boxScoreBatterRate * battedBallMult * barrelMult;
           // Zone-matchup correction (see zoneMatchupMultiplier's header comment) -- real
           // wOBA overlap between this batter's own hot zones and this pitcher's own weak
