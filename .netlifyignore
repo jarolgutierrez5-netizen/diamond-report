@@ -1,0 +1,16 @@
+# Same purpose as .assetsignore (Cloudflare Workers Assets), for whichever requests
+# actually route through Netlify -- this repo deploys to both platforms (see
+# build-assets.yml's own header comment) with no build step on either, so nothing
+# else stops a full repo-root static deploy from serving these directories over
+# HTTP, .git included. See .assetsignore's own history: a real deploy log showed
+# .git/index, .git/logs/HEAD, and eventually the full packed object history
+# (pack-*.pack/.idx/.rev) uploaded as public static assets on Cloudflare before that
+# was caught -- this exists so the same class of exposure can't happen here too,
+# whether or not Netlify turns out to be in diamondreport.app's actual request path.
+video/
+.git/
+.github/
+.wrangler/
+.claude/
+tests/
+node_modules/
