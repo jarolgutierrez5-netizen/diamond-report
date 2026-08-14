@@ -1,114 +1,6 @@
 {
-  "updatedAt": "2026-08-13T12:05:37.263Z",
+  "updatedAt": "2026-08-14T12:04:03.415Z",
   "events": [
-    {
-      "id": "401873272",
-      "date": "2026-08-13T23:00Z",
-      "name": "Detroit Lions at Cincinnati Bengals",
-      "shortName": "DET @ CIN",
-      "status": "STATUS_SCHEDULED",
-      "completed": false,
-      "home": {
-        "teamId": "4",
-        "abbreviation": "CIN",
-        "score": "0"
-      },
-      "away": {
-        "teamId": "8",
-        "abbreviation": "DET",
-        "score": "0"
-      }
-    },
-    {
-      "id": "401873275",
-      "date": "2026-08-13T23:00Z",
-      "name": "Green Bay Packers at Pittsburgh Steelers",
-      "shortName": "GB @ PIT",
-      "status": "STATUS_SCHEDULED",
-      "completed": false,
-      "home": {
-        "teamId": "23",
-        "abbreviation": "PIT",
-        "score": "0"
-      },
-      "away": {
-        "teamId": "9",
-        "abbreviation": "GB",
-        "score": "0"
-      }
-    },
-    {
-      "id": "401873273",
-      "date": "2026-08-13T23:30Z",
-      "name": "Indianapolis Colts at New England Patriots",
-      "shortName": "IND @ NE",
-      "status": "STATUS_SCHEDULED",
-      "completed": false,
-      "home": {
-        "teamId": "17",
-        "abbreviation": "NE",
-        "score": "0"
-      },
-      "away": {
-        "teamId": "11",
-        "abbreviation": "IND",
-        "score": "0"
-      }
-    },
-    {
-      "id": "401873640",
-      "date": "2026-08-14T00:00Z",
-      "name": "Arizona Cardinals at Las Vegas Raiders",
-      "shortName": "ARI @ LV",
-      "status": "STATUS_SCHEDULED",
-      "completed": false,
-      "home": {
-        "teamId": "13",
-        "abbreviation": "LV",
-        "score": "0"
-      },
-      "away": {
-        "teamId": "22",
-        "abbreviation": "ARI",
-        "score": "0"
-      }
-    },
-    {
-      "id": "401873274",
-      "date": "2026-08-14T00:00Z",
-      "name": "Los Angeles Chargers at Houston Texans",
-      "shortName": "LAC @ HOU",
-      "status": "STATUS_SCHEDULED",
-      "completed": false,
-      "home": {
-        "teamId": "34",
-        "abbreviation": "HOU",
-        "score": "0"
-      },
-      "away": {
-        "teamId": "24",
-        "abbreviation": "LAC",
-        "score": "0"
-      }
-    },
-    {
-      "id": "401874392",
-      "date": "2026-08-14T01:00Z",
-      "name": "Tennessee Titans at San Francisco 49ers",
-      "shortName": "TEN @ SF",
-      "status": "STATUS_SCHEDULED",
-      "completed": false,
-      "home": {
-        "teamId": "25",
-        "abbreviation": "SF",
-        "score": "0"
-      },
-      "away": {
-        "teamId": "10",
-        "abbreviation": "TEN",
-        "score": "0"
-      }
-    },
     {
       "id": "401873278",
       "date": "2026-08-14T23:00Z",
@@ -161,6 +53,114 @@
         "teamId": "15",
         "abbreviation": "MIA",
         "score": "0"
+      }
+    },
+    {
+      "id": "401873272",
+      "date": "2026-08-13T23:00Z",
+      "name": "Detroit Lions at Cincinnati Bengals",
+      "shortName": "DET @ CIN",
+      "status": "STATUS_FINAL",
+      "completed": true,
+      "home": {
+        "teamId": "4",
+        "abbreviation": "CIN",
+        "score": "16"
+      },
+      "away": {
+        "teamId": "8",
+        "abbreviation": "DET",
+        "score": "14"
+      }
+    },
+    {
+      "id": "401873275",
+      "date": "2026-08-13T23:00Z",
+      "name": "Green Bay Packers at Pittsburgh Steelers",
+      "shortName": "GB @ PIT",
+      "status": "STATUS_FINAL",
+      "completed": true,
+      "home": {
+        "teamId": "23",
+        "abbreviation": "PIT",
+        "score": "28"
+      },
+      "away": {
+        "teamId": "9",
+        "abbreviation": "GB",
+        "score": "9"
+      }
+    },
+    {
+      "id": "401873273",
+      "date": "2026-08-13T23:30Z",
+      "name": "Indianapolis Colts at New England Patriots",
+      "shortName": "IND @ NE",
+      "status": "STATUS_FINAL",
+      "completed": true,
+      "home": {
+        "teamId": "17",
+        "abbreviation": "NE",
+        "score": "13"
+      },
+      "away": {
+        "teamId": "11",
+        "abbreviation": "IND",
+        "score": "13"
+      }
+    },
+    {
+      "id": "401873640",
+      "date": "2026-08-14T00:00Z",
+      "name": "Arizona Cardinals at Las Vegas Raiders",
+      "shortName": "ARI @ LV",
+      "status": "STATUS_FINAL",
+      "completed": true,
+      "home": {
+        "teamId": "13",
+        "abbreviation": "LV",
+        "score": "14"
+      },
+      "away": {
+        "teamId": "22",
+        "abbreviation": "ARI",
+        "score": "27"
+      }
+    },
+    {
+      "id": "401873274",
+      "date": "2026-08-14T00:00Z",
+      "name": "Los Angeles Chargers at Houston Texans",
+      "shortName": "LAC @ HOU",
+      "status": "STATUS_FINAL",
+      "completed": true,
+      "home": {
+        "teamId": "34",
+        "abbreviation": "HOU",
+        "score": "7"
+      },
+      "away": {
+        "teamId": "24",
+        "abbreviation": "LAC",
+        "score": "27"
+      }
+    },
+    {
+      "id": "401874392",
+      "date": "2026-08-14T01:00Z",
+      "name": "Tennessee Titans at San Francisco 49ers",
+      "shortName": "TEN @ SF",
+      "status": "STATUS_FINAL",
+      "completed": true,
+      "home": {
+        "teamId": "25",
+        "abbreviation": "SF",
+        "score": "13"
+      },
+      "away": {
+        "teamId": "10",
+        "abbreviation": "TEN",
+        "score": "19"
       }
     },
     {
