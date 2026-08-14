@@ -1,49 +1,53 @@
 {
-  "date": "2026-08-13",
-  "generatedAt": "2026-08-13T21:02:14.464Z",
+  "date": "2026-08-14",
+  "generatedAt": "2026-08-14T15:02:13.873Z",
   "player": {
-    "id": 680664,
-    "name": "Eduardo Valencia",
-    "teamAbbr": "DET",
-    "oppAbbr": "CLE",
-    "gamePk": 824238,
-    "pitcherId": 800048,
-    "pitcherName": "Parker Messick",
-    "liveScore": 40,
-    "spotlightScore": 47,
-    "avg": 0.3865546896551724,
-    "obp": 0.4098282,
-    "slg": 0.7995923793103449,
-    "ops": 1.224,
-    "iso": 0.41303768965517246,
-    "hrSeason": 4,
-    "atBats": 41,
-    "last10HR": 4,
-    "isHot": true,
-    "isFavorable": false,
-    "isDrought": false,
-    "isDue": false,
+    "id": 670541,
+    "name": "Yordan Alvarez",
+    "teamAbbr": "HOU",
+    "oppAbbr": "SEA",
+    "gamePk": 824159,
+    "pitcherId": 669923,
+    "pitcherName": "George Kirby",
+    "liveScore": 44,
+    "spotlightScore": 50,
+    "avg": 0.3228478378378378,
+    "obp": 0.44057565217391303,
+    "slg": 0.5822793243243244,
+    "ops": 1.057,
+    "iso": 0.25943148648648656,
+    "hrSeason": 35,
+    "atBats": 435,
+    "last10HR": 0,
+    "isHot": false,
+    "isFavorable": true,
+    "isDrought": true,
+    "isDue": true,
     "hasNearHR": false,
-    "matchupEdge": 76,
+    "matchupEdge": 88,
     "statcast": {
-      "xslg": 0.653951724137931,
-      "hardHitPct": 59.44068965517241,
-      "pitches": 170
+      "xslg": 0.6975787401574803,
+      "hardHitPct": 53.73666338582677,
+      "pitches": 2032
     },
     "reasons": [
       {
         "icon": "💣",
-        "text": "Projects at a real 40.0% HR probability today, from the same model behind the HR Threats board."
+        "text": "Projects at a real 44.0% HR probability today, from the same model behind the HR Threats board."
       },
       {
-        "icon": "🔥",
-        "text": "On a real hot streak — 4 HR over the last 10 games."
+        "icon": "✅",
+        "text": "Favorable matchup — a real 1.057 OPS bat against a pitcher who's given up real contact this season."
       },
       {
         "icon": "⚔️",
-        "text": "Real Matchup Edge score of 76 against today's specific starter, Parker Messick."
+        "text": "Real Matchup Edge score of 88 against today's specific starter, George Kirby."
+      },
+      {
+        "icon": "⚡",
+        "text": "In a real power drought the model flags as due to break."
       }
     ],
-    "confirmedToday": false
+    "confirmedToday": true
   }
 }
