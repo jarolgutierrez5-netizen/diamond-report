@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026081304">
+<link rel="stylesheet" href="styles.min.css?v=2026081305">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -163,6 +163,7 @@
      positioned ancestor now that this lives inside it). -->
 <div class="dr-top-nav-menu" id="dr-top-nav-baseball-menu" aria-hidden="true">
   <button type="button" data-gamepick-pane="nearhr" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15.5l4.5-9 3 4 2.5-5.5L17 12"/><circle cx="16.5" cy="3.5" r="1.2"/></svg><span>Near HRs</span></button>
+  <button type="button" data-gamepick-pane="players" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.2" cy="6.5" r="2.8"/><path d="M2 17c0-3 2.3-5.2 5.2-5.2S12.4 14 12.4 17"/><circle cx="14.5" cy="7.5" r="2.2"/><path d="M13 11.5c2.4.2 4 2.1 4 5"/></svg><span>Players</span></button>
   <button type="button" data-gamepick-pane="game" class="dr-top-nav-tab active"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="15" height="13" rx="2.5"/><path d="M2.5 8h15"/><path d="M6.5 2.5v3M13.5 2.5v3"/></svg><span>Games Today</span></button>
   <button type="button" data-gamepick-pane="hr" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8c.9 2.7-2.4 3.7-2.4 6.8a2.4 2.4 0 0 0 4.8 0c0-.8-.4-1.5-.8-2 .2 1.2-.8 1.6-1 .8-.4-1.1.8-1.7.6-3.7-.1-1.6-1.2-1.9-1.2-1.9z"/><path d="M7.2 11.5A3.4 3.4 0 0 0 10 17a3.4 3.4 0 0 0 3.3-4.3"/></svg><span>Home Runs</span></button>
   <button type="button" data-gamepick-pane="k" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2.5L4.5 11h4.2L8 17.5l6.5-9h-4.2z"/></svg><span>Strikeouts</span></button>
@@ -196,6 +197,7 @@
     <button type="button" data-tab="game" data-sport="MLB" class="dr-menu-item">📊 Games Today</button>
     <button type="button" data-tab="hr" data-sport="MLB" class="dr-menu-item">🔥 Home Runs</button>
     <button type="button" data-tab="nearhr" data-sport="MLB" class="dr-menu-item">🚀 Near HRs</button>
+    <button type="button" data-tab="players" data-sport="MLB" class="dr-menu-item">👥 Players</button>
     <button type="button" data-tab="k" data-sport="MLB" class="dr-menu-item">🎯 Strikeouts</button>
     <button type="button" data-tab="hits" data-sport="MLB" class="dr-menu-item">⚾ Hits</button>
     <button type="button" data-tab="rbis" data-sport="MLB" class="dr-menu-item">💰 RBIs</button>
@@ -581,6 +583,7 @@
 <div class="gamepick-tabs-wrap" aria-label="Game Picks section navigation">
   <div class="gamepick-tabs" role="tablist" aria-label="Game Picks Centers">
     <button class="gamepick-tab" id="gamepick-tab-nearhr" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-nearhr" data-gamepick-pane="nearhr" onclick="showGamePickPane('nearhr')">🚀 Near HRs</button>
+    <button class="gamepick-tab" id="gamepick-tab-players" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-players" data-gamepick-pane="players" onclick="showGamePickPane('players')">👥 Players</button>
     <button class="gamepick-tab active" id="gamepick-tab-game" type="button" role="tab" aria-selected="true" aria-controls="gamepick-pane-game" data-gamepick-pane="game" onclick="showGamePickPane('game')">📊 Games Today</button>
     <button class="gamepick-tab" id="gamepick-tab-hr" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-hr" data-gamepick-pane="hr" onclick="showGamePickPane('hr')">🔥 Home Runs</button>
     <button class="gamepick-tab" id="gamepick-tab-k" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-k" data-gamepick-pane="k" onclick="showGamePickPane('k')">🎯 Strikeouts</button>
@@ -710,6 +713,35 @@
           <div class="dr-skeleton-card"><div class="dr-skeleton-head"><div class="dr-skeleton-photo"></div><div class="dr-skeleton-head-lines"><div class="dr-skeleton-line"></div><div class="dr-skeleton-line"></div></div></div><div class="dr-skeleton-chips"><div class="dr-skeleton-chip"></div><div class="dr-skeleton-chip"></div><div class="dr-skeleton-chip"></div></div></div>
           <div class="dr-skeleton-card"><div class="dr-skeleton-head"><div class="dr-skeleton-photo"></div><div class="dr-skeleton-head-lines"><div class="dr-skeleton-line"></div><div class="dr-skeleton-line"></div></div></div><div class="dr-skeleton-chips"><div class="dr-skeleton-chip"></div><div class="dr-skeleton-chip"></div><div class="dr-skeleton-chip"></div></div></div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Players (all of today's real batters, plain neutral stats table -- no HR-
+     probability scoring/threat signals, just AVG/OBP/SLG/OPS/ISO/HR for every
+     real starter, same underlying pool loadHRPotential() already builds for
+     HR Threats/Hits/RBIs/etc, read directly instead of through the hrProb
+     floor those boards apply). -->
+<div class="gamepick-pane" id="gamepick-pane-players" role="tabpanel" aria-labelledby="gamepick-tab-players" data-gamepick-pane="players" hidden>
+  <div class="dr-filter-row">
+    <div class="dr-board-search-wrap">
+      <svg class="dr-icon dr-board-search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16 16l-3.8-3.8"/></svg>
+      <input type="text" id="players-search-input" class="dr-board-search" placeholder="Search players…" oninput="drSetBoardSearch('players',this.value,renderPlayersBoard)">
+      <button type="button" class="dr-board-search-clear" onclick="document.getElementById('players-search-input').value='';drSetBoardSearch('players','',renderPlayersBoard)" aria-label="Clear search">✕</button>
+    </div>
+  </div>
+  <div class="dr-center-label">👥 Players</div>
+  <div class="dr-dashboard-grid">
+    <div class="dr-panel dr-panel-large dr-panel-fresh">
+      <div class="dr-panel-head">
+        <div>
+          <p class="section-title">Today's <span>Players</span></p>
+          <small>Every real batter in today's starting lineups, with real season stats. Click a column header to sort.</small>
+        </div>
+      </div>
+      <div id="players-content" class="dr-panel-body dr-scroll-tall">
+        <div class="mu-empty"><span class="spin"></span>Loading today's players…</div>
       </div>
     </div>
   </div>
@@ -1168,8 +1200,8 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026081304" defer></script>
-<script src="nfl-wnba-props.min.js?v=2026081304" defer></script>
+<script src="app.min.js?v=2026081305" defer></script>
+<script src="nfl-wnba-props.min.js?v=2026081305" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
