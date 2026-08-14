@@ -12218,7 +12218,7 @@ function initPropsTab() {
   // alone here meant a URL like #gamepick=premium still always warmed Game Center data on
   // first paint. Check the same #gamepick=<pane> hash the tab controller itself reads,
   // before falling back to whatever the DOM currently shows.
-  const GAMEPICK_PANES = ['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','fantasy','nearhr'];
+  const GAMEPICK_PANES = ['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','fantasy','nearhr','players'];
   const hashMatch = /^#?gamepick=([\w-]+)/.exec(window.location.hash || '');
   const fromHash = hashMatch && GAMEPICK_PANES.includes(hashMatch[1]) ? hashMatch[1] : null;
   const activePane = fromHash || document.querySelector('#props .gamepick-pane.active')?.getAttribute('data-gamepick-pane') || 'game';
