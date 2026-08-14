@@ -5013,28 +5013,6 @@ select:focus-visible {
   #hr-compare-bar { left: 10px; right: 10px; transform: none; max-width: none; }
 }
 
-/* Featured Home Run Pick (roadmap 5.1) -- same .dr1027-hr-card base as every other
-   card, distinguished with the gold/amber accent already used for "DUE"/"TOP HR
-   THREAT" chips elsewhere on this board, instead of the default blue side-accent, so
-   it reads as the flagship pick rather than just another list entry. */
-.dr1027-featured-pick {
-  border-color: rgba(245, 158, 11, .55) !important;
-  box-shadow: inset 3px 0 0 rgba(245, 158, 11, .95), 0 0 22px rgba(245, 158, 11, .12) !important;
-  margin-bottom: 16px !important;
-}
-.dr1027-featured-badge {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 950;
-  letter-spacing: .05em;
-  color: #fbbf24;
-  background: rgba(120, 53, 15, .3);
-  border: 1px solid rgba(245, 158, 11, .55);
-  border-radius: 999px;
-  padding: 3px 10px;
-  margin-bottom: 8px;
-}
-
 /* Interactive visualization tap-tooltip (roadmap 5.3) -- reuses each cell/dot's
    existing title text on tap, since native title attributes/SVG <title> only ever
    show on hover, which a touch device has no equivalent of. */
@@ -6241,8 +6219,7 @@ select:focus-visible {
 /* ===================================================================
    Featured Player (roadmap 2 "Featured Player") -- one server-picked
    daily hub focal point. Layout mirrors .dr-hub-headline-card.lead (full-
-   width photo + body); accent gold like .dr1027-featured-pick since it's
-   the same "flagship pick" role, just for the Hub instead of HR Threats.
+   width photo + body); accent gold to read as a flagship/spotlight pick.
    =================================================================== */
 .dr-hub-featured {
   margin-bottom: 28px;
