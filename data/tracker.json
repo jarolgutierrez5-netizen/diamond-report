@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-15T14:32:47.228Z",
+  "generatedAt": "2026-08-15T20:37:36.216Z",
   "market": {
     "drp": [
       {
@@ -7468,6 +7468,30 @@
           "homeML": 111,
           "awayPct": 53,
           "homePct": 47
+        }
+      },
+      {
+        "key": "2026-08-15|DRP|CLE-SD",
+        "date": "2026-08-15",
+        "gamePk": 824400,
+        "awayTeam": "SD",
+        "homeTeam": "CLE",
+        "pick": "SD",
+        "pickPct": 51,
+        "result": "pending",
+        "actualWinner": null,
+        "eraDiff": -1.03,
+        "whipDiff": -0.302,
+        "k9Diff": -6.61,
+        "awayRecordPct": 0.537,
+        "homeRecordPct": 0.48,
+        "isDayGame": false,
+        "marketOdds": {
+          "provider": "DraftKings",
+          "awayML": 108,
+          "homeML": -116,
+          "awayPct": 47,
+          "homePct": 53
         }
       }
     ],
@@ -31892,6 +31916,86 @@
         "projIP": 5.77,
         "oppKpct": 0.22,
         "lineup": []
+      },
+      {
+        "key": "2026-08-15|KPROP|wandy peralta",
+        "date": "2026-08-15",
+        "gamePk": 824400,
+        "pitcherId": 593974,
+        "pitcherName": "Wandy Peralta",
+        "team": "SD",
+        "opp": "CLE",
+        "projK": 3.5,
+        "line": 2.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 5.03,
+        "projIP": 7,
+        "oppKpct": 0.176,
+        "lineup": [
+          {
+            "id": 680757,
+            "name": "Steven Kwan",
+            "battingOrder": 1,
+            "kPct": 0.101
+          },
+          {
+            "id": 800050,
+            "name": "Chase DeLauter",
+            "battingOrder": 2,
+            "kPct": 0.143
+          },
+          {
+            "id": 608070,
+            "name": "José Ramírez",
+            "battingOrder": 3,
+            "kPct": 0.121
+          },
+          {
+            "id": 666176,
+            "name": "Jo Adell",
+            "battingOrder": 4,
+            "kPct": 0.239
+          },
+          {
+            "id": 663993,
+            "name": "Nathaniel Lowe",
+            "battingOrder": 5,
+            "kPct": 0.246
+          },
+          {
+            "id": 694197,
+            "name": "Angel Genao",
+            "battingOrder": 6,
+            "kPct": 0.059
+          },
+          {
+            "id": 683953,
+            "name": "Travis Bazzana",
+            "battingOrder": 7,
+            "kPct": 0.223
+          },
+          {
+            "id": 672275,
+            "name": "Patrick Bailey",
+            "battingOrder": 8,
+            "kPct": 0.25
+          },
+          {
+            "id": 690984,
+            "name": "Petey Halpin",
+            "battingOrder": 9,
+            "kPct": 0.198
+          }
+        ]
       }
     ],
     "premium": [
