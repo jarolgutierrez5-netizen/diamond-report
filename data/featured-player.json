@@ -1,34 +1,34 @@
 {
-  "date": "2026-08-14",
-  "generatedAt": "2026-08-15T01:49:57.309Z",
+  "date": "2026-08-15",
+  "generatedAt": "2026-08-15T14:32:52.903Z",
   "player": {
-    "id": 670541,
-    "name": "Yordan Alvarez",
-    "teamAbbr": "HOU",
-    "oppAbbr": "SEA",
-    "gamePk": 824159,
-    "pitcherId": 669923,
-    "pitcherName": "George Kirby",
+    "id": 656941,
+    "name": "Kyle Schwarber",
+    "teamAbbr": "PHI",
+    "oppAbbr": "MIN",
+    "gamePk": 823671,
+    "pitcherId": 687570,
+    "pitcherName": "Connor Prielipp",
     "liveScore": 44,
-    "spotlightScore": 50,
-    "avg": 0.3228478378378378,
-    "obp": 0.44057565217391303,
-    "slg": 0.5822793243243244,
-    "ops": 1.057,
-    "iso": 0.25943148648648656,
-    "hrSeason": 35,
-    "atBats": 435,
-    "last10HR": 0,
-    "isHot": false,
+    "spotlightScore": 56,
+    "avg": 0.2714878378378378,
+    "obp": 0.39532673913043476,
+    "slg": 0.5828605405405405,
+    "ops": 0.915,
+    "iso": 0.3113727027027027,
+    "hrSeason": 37,
+    "atBats": 432,
+    "last10HR": 8,
+    "isHot": true,
     "isFavorable": true,
-    "isDrought": true,
-    "isDue": true,
-    "hasNearHR": false,
-    "matchupEdge": 88,
+    "isDrought": false,
+    "isDue": false,
+    "hasNearHR": true,
+    "matchupEdge": 76,
     "statcast": {
-      "xslg": 0.6975787401574803,
-      "hardHitPct": 53.73666338582677,
-      "pitches": 2032
+      "xslg": 0.5037718978102189,
+      "hardHitPct": 51.167062043795625,
+      "pitches": 2192
     },
     "reasons": [
       {
@@ -36,18 +36,22 @@
         "text": "Projects at a real 44.0% HR probability today, from the same model behind the HR Threats board."
       },
       {
+        "icon": "🔥",
+        "text": "On a real hot streak — 8 HR over the last 10 games."
+      },
+      {
         "icon": "✅",
-        "text": "Favorable matchup — a real 1.057 OPS bat against a pitcher who's given up real contact this season."
+        "text": "Favorable matchup — a real 0.915 OPS bat against a pitcher who's given up real contact this season."
       },
       {
         "icon": "⚔️",
-        "text": "Real Matchup Edge score of 88 against today's specific starter, George Kirby."
+        "text": "Real Matchup Edge score of 76 against today's specific starter, Connor Prielipp."
       },
       {
-        "icon": "⚡",
-        "text": "In a real power drought the model flags as due to break."
+        "icon": "🚀",
+        "text": "Real warning-track power in the last 10 games — recent long fly outs that haven't left the yard yet."
       }
     ],
-    "confirmedToday": false
+    "confirmedToday": true
   }
 }
