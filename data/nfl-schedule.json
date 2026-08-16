@@ -1,132 +1,6 @@
 {
-  "updatedAt": "2026-08-15T11:41:03.556Z",
+  "updatedAt": "2026-08-16T11:41:16.791Z",
   "events": [
-    {
-      "id": "401873282",
-      "date": "2026-08-15T17:00Z",
-      "name": "Carolina Panthers at Buffalo Bills",
-      "shortName": "CAR @ BUF",
-      "status": "STATUS_SCHEDULED",
-      "completed": false,
-      "home": {
-        "teamId": "2",
-        "abbreviation": "BUF",
-        "score": "0"
-      },
-      "away": {
-        "teamId": "29",
-        "abbreviation": "CAR",
-        "score": "0"
-      }
-    },
-    {
-      "id": "401874393",
-      "date": "2026-08-15T17:00Z",
-      "name": "Cleveland Browns at Chicago Bears",
-      "shortName": "CLE @ CHI",
-      "status": "STATUS_SCHEDULED",
-      "completed": false,
-      "home": {
-        "teamId": "3",
-        "abbreviation": "CHI",
-        "score": "0"
-      },
-      "away": {
-        "teamId": "5",
-        "abbreviation": "CLE",
-        "score": "0"
-      }
-    },
-    {
-      "id": "401873280",
-      "date": "2026-08-15T17:00Z",
-      "name": "Minnesota Vikings at New York Giants",
-      "shortName": "MIN @ NYG",
-      "status": "STATUS_SCHEDULED",
-      "completed": false,
-      "home": {
-        "teamId": "19",
-        "abbreviation": "NYG",
-        "score": "0"
-      },
-      "away": {
-        "teamId": "16",
-        "abbreviation": "MIN",
-        "score": "0"
-      }
-    },
-    {
-      "id": "401873283",
-      "date": "2026-08-15T20:00Z",
-      "name": "Los Angeles Rams at Kansas City Chiefs",
-      "shortName": "LAR @ KC",
-      "status": "STATUS_SCHEDULED",
-      "completed": false,
-      "home": {
-        "teamId": "12",
-        "abbreviation": "KC",
-        "score": "0"
-      },
-      "away": {
-        "teamId": "14",
-        "abbreviation": "LAR",
-        "score": "0"
-      }
-    },
-    {
-      "id": "401873281",
-      "date": "2026-08-15T20:00Z",
-      "name": "Jacksonville Jaguars at New Orleans Saints",
-      "shortName": "JAX @ NO",
-      "status": "STATUS_SCHEDULED",
-      "completed": false,
-      "home": {
-        "teamId": "18",
-        "abbreviation": "NO",
-        "score": "0"
-      },
-      "away": {
-        "teamId": "30",
-        "abbreviation": "JAX",
-        "score": "0"
-      }
-    },
-    {
-      "id": "401873284",
-      "date": "2026-08-15T23:00Z",
-      "name": "Philadelphia Eagles at Baltimore Ravens",
-      "shortName": "PHI @ BAL",
-      "status": "STATUS_SCHEDULED",
-      "completed": false,
-      "home": {
-        "teamId": "33",
-        "abbreviation": "BAL",
-        "score": "0"
-      },
-      "away": {
-        "teamId": "21",
-        "abbreviation": "PHI",
-        "score": "0"
-      }
-    },
-    {
-      "id": "401873279",
-      "date": "2026-08-16T00:00Z",
-      "name": "Dallas Cowboys at Seattle Seahawks",
-      "shortName": "DAL @ SEA",
-      "status": "STATUS_SCHEDULED",
-      "completed": false,
-      "home": {
-        "teamId": "26",
-        "abbreviation": "SEA",
-        "score": "0"
-      },
-      "away": {
-        "teamId": "6",
-        "abbreviation": "DAL",
-        "score": "0"
-      }
-    },
     {
       "id": "401873272",
       "date": "2026-08-13T23:00Z",
@@ -287,6 +161,132 @@
         "teamId": "15",
         "abbreviation": "MIA",
         "score": "7"
+      }
+    },
+    {
+      "id": "401873282",
+      "date": "2026-08-15T17:00Z",
+      "name": "Carolina Panthers at Buffalo Bills",
+      "shortName": "CAR @ BUF",
+      "status": "STATUS_FINAL",
+      "completed": true,
+      "home": {
+        "teamId": "2",
+        "abbreviation": "BUF",
+        "score": "29"
+      },
+      "away": {
+        "teamId": "29",
+        "abbreviation": "CAR",
+        "score": "14"
+      }
+    },
+    {
+      "id": "401874393",
+      "date": "2026-08-15T17:00Z",
+      "name": "Cleveland Browns at Chicago Bears",
+      "shortName": "CLE @ CHI",
+      "status": "STATUS_FINAL",
+      "completed": true,
+      "home": {
+        "teamId": "3",
+        "abbreviation": "CHI",
+        "score": "34"
+      },
+      "away": {
+        "teamId": "5",
+        "abbreviation": "CLE",
+        "score": "10"
+      }
+    },
+    {
+      "id": "401873280",
+      "date": "2026-08-15T17:00Z",
+      "name": "Minnesota Vikings at New York Giants",
+      "shortName": "MIN @ NYG",
+      "status": "STATUS_FINAL",
+      "completed": true,
+      "home": {
+        "teamId": "19",
+        "abbreviation": "NYG",
+        "score": "10"
+      },
+      "away": {
+        "teamId": "16",
+        "abbreviation": "MIN",
+        "score": "13"
+      }
+    },
+    {
+      "id": "401873283",
+      "date": "2026-08-15T20:00Z",
+      "name": "Los Angeles Rams at Kansas City Chiefs",
+      "shortName": "LAR @ KC",
+      "status": "STATUS_FINAL",
+      "completed": true,
+      "home": {
+        "teamId": "12",
+        "abbreviation": "KC",
+        "score": "12"
+      },
+      "away": {
+        "teamId": "14",
+        "abbreviation": "LAR",
+        "score": "20"
+      }
+    },
+    {
+      "id": "401873281",
+      "date": "2026-08-15T20:00Z",
+      "name": "Jacksonville Jaguars at New Orleans Saints",
+      "shortName": "JAX @ NO",
+      "status": "STATUS_FINAL",
+      "completed": true,
+      "home": {
+        "teamId": "18",
+        "abbreviation": "NO",
+        "score": "20"
+      },
+      "away": {
+        "teamId": "30",
+        "abbreviation": "JAX",
+        "score": "24"
+      }
+    },
+    {
+      "id": "401873284",
+      "date": "2026-08-15T23:00Z",
+      "name": "Philadelphia Eagles at Baltimore Ravens",
+      "shortName": "PHI @ BAL",
+      "status": "STATUS_FINAL",
+      "completed": true,
+      "home": {
+        "teamId": "33",
+        "abbreviation": "BAL",
+        "score": "24"
+      },
+      "away": {
+        "teamId": "21",
+        "abbreviation": "PHI",
+        "score": "7"
+      }
+    },
+    {
+      "id": "401873279",
+      "date": "2026-08-16T00:00Z",
+      "name": "Dallas Cowboys at Seattle Seahawks",
+      "shortName": "DAL @ SEA",
+      "status": "STATUS_FINAL",
+      "completed": true,
+      "home": {
+        "teamId": "26",
+        "abbreviation": "SEA",
+        "score": "7"
+      },
+      "away": {
+        "teamId": "6",
+        "abbreviation": "DAL",
+        "score": "17"
       }
     }
   ]
