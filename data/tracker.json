@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-17T14:37:38.040Z",
+  "generatedAt": "2026-08-17T20:43:10.927Z",
   "market": {
     "drp": [
       {
@@ -8073,6 +8073,24 @@
         "k9Diff": 9.6,
         "awayRecordPct": 0.592,
         "homeRecordPct": 0.403,
+        "isDayGame": false,
+        "marketOdds": null
+      },
+      {
+        "key": "2026-08-17|DRP|AZ-BOS",
+        "date": "2026-08-17",
+        "gamePk": 824725,
+        "awayTeam": "AZ",
+        "homeTeam": "BOS",
+        "pick": "BOS",
+        "pickPct": 55,
+        "result": "pending",
+        "actualWinner": null,
+        "eraDiff": 2.35,
+        "whipDiff": 0.32,
+        "k9Diff": 0.8,
+        "awayRecordPct": 0.528,
+        "homeRecordPct": 0.532,
         "isDayGame": false,
         "marketOdds": null
       }
@@ -34406,6 +34424,31 @@
         "finalBF": null,
         "k9": 5.4,
         "projIP": 5.39,
+        "oppKpct": 0.22,
+        "lineup": []
+      },
+      {
+        "key": "2026-08-17|KPROP|alec gamboa",
+        "date": "2026-08-17",
+        "gamePk": 824725,
+        "pitcherId": 687941,
+        "pitcherName": "Alec Gamboa",
+        "team": "BOS",
+        "opp": "AZ",
+        "projK": 4.8,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 6.18,
+        "projIP": 7,
         "oppKpct": 0.22,
         "lineup": []
       }
