@@ -7069,13 +7069,7 @@ table.hrpt-table {
   border-collapse: collapse;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  /* Shared by both boards that use this class -- HR Threats' own colgroup only
-     needs 870px (HRPT_TABLE_MIN_WIDTH-equivalent, see HRPT_COL_WIDTHS in app.js)
-     since its column-trim down to Player/Team/Pitcher/Edge/Zone/Signals, but the
-     Players tab's colgroup (PLAYERS_COL_WIDTHS) needs 1120px -- this has to cover
-     the larger of the two, since a lower shared value would under-protect
-     whichever board needs more room from the #props reset below. */
-  min-width: 1120px;
+  min-width: 1314px;
 }
 /* #props, #props * {min-width:0} (a broad flex/grid-shrink reset elsewhere in
    this file, unscoped by any media query) is an ID selector, so it silently
@@ -7086,7 +7080,7 @@ table.hrpt-table {
    tablets in portrait (iPad Air/Pro 820-1024px) -- desktop containers are
    already wider than 1150px so the defeat was invisible there. Re-asserted
    with matching #props + class specificity to win. */
-#props table.hrpt-table { min-width: 1120px; }
+#props table.hrpt-table { min-width: 1314px; }
 /* Percentage-based fixed layout instead of content-auto sizing -- reflows
    proportionally at any container width above the mobile collapse
    breakpoint, instead of being tuned for one screenshot's width. Column
@@ -7254,11 +7248,7 @@ table.hrpt-table {
   padding: 16px;
   background: rgba(6, 6, 15, .5);
   display: grid;
-  /* Side column widened from 220px -- it now also holds the stats
-     (Bullpen/Pitch Mix/AVG/SLG/OPS/ISO/HR L10) and Overlap chips that used to
-     be their own always-visible table columns before the column-trim for
-     skimmability, so it needs real room for the 2-column stat grid below. */
-  grid-template-columns: minmax(0, 560px) 320px;
+  grid-template-columns: minmax(0, 640px) 220px;
   gap: 16px;
   align-items: start;
 }
@@ -7307,11 +7297,8 @@ table.hrpt-table {
   border-radius: 8px;
   padding: 14px 16px;
 }
-.hrpt-detail-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; }
 .hrpt-detail-stat { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; font-family: var(--font-mono); color: var(--text); }
 .hrpt-detail-stat span { font-family: var(--font-body); color: var(--muted); font-size: 11px; }
-.hrpt-detail-overlap { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding-top: 9px; margin-top: 9px; border-top: 1px solid var(--border); }
-.hrpt-detail-overlap > span { font-family: var(--font-body); color: var(--muted); font-size: 11px; margin-right: 2px; }
 .hrpt-open-full {
   font-family: var(--font-body);
   font-size: 11px;

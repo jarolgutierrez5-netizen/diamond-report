@@ -15924,12 +15924,7 @@ function hrpSignalLegendHTML(seen){
     return '<span class="hrpt-legend-item">'+icon+' '+esc(seen[icon])+'</span>';
   }).join('')+'</div>';
 }
-// Trimmed to the 6 columns that actually drive a skim-read decision (Player, Team,
-// Pitcher, Edge, Zone, Signals) -- Bullpen/Pitch Mix/Overlap/AVG/SLG/OPS/ISO/HR L10
-// moved into the row's own expand-on-click detail panel (see hrpTableRowHTML's
-// hrpt-detail-side) instead of sitting in the always-visible row. Nothing lost, just
-// one click away instead of competing for attention in a 14-column wall of numbers.
-var HRPT_COLS=[['Player',null],['Team',null],['Pitcher',null],['Edge','matchupEdge'],['Zone','zoneFit'],['Signals',null]];
+var HRPT_COLS=[['Player',null],['Team',null],['Pitcher',null],['Bullpen',null,"The OPPOSING team's bullpen fatigue -- Fresh/Normal/Taxed/Gassed, based on real last-2-days reliever pitch counts, not a season average. A taxed/gassed pen means weaker relief behind their starter if he struggles."],['Edge','matchupEdge'],['Zone','zoneFit'],['Pitch Mix',null],['Overlap',null],['AVG','avg'],['SLG','slg'],['OPS','ops'],['ISO','iso'],['HR L10',null],['Signals',null]];
 // table-layout:fixed column widths, in HRPT_COLS order. Explicit pixel widths via
 // <colgroup>/<col> -- NOT min-width on the th/td (verified locally: min-width on a
 // table cell is simply not part of the fixed-layout column-sizing algorithm in real
@@ -15941,7 +15936,7 @@ var HRPT_COLS=[['Player',null],['Team',null],['Pitcher',null],['Edge','matchupEd
 // sum proportionally across columns when the table renders wider than the sum, so a
 // wide desktop viewport still looks proportionally right, just not perfectly pixel-
 // identical to these exact values.
-var HRPT_COL_WIDTHS=[260,90,200,90,90,140];
+var HRPT_COL_WIDTHS=[210,76,150,92,70,70,100,110,68,68,68,68,74,90];
 var HRPT_TABLE_MIN_WIDTH=HRPT_COL_WIDTHS.reduce(function(a,b){return a+b;},0);
 function hrptColgroupHTML(){
   return '<colgroup>'+HRPT_COL_WIDTHS.map(function(w){return '<col style="width:'+w+'px">';}).join('')+'</colgroup>';
@@ -16026,26 +16021,24 @@ function hrpTableRowHTML(r,rIdx,signals){
       +'<div class="hrpt-player-meta"><div class="hrpt-name">'+esc(r.name||'–')+'</div><div class="hrpt-sub">'+esc(r.teamAbbr||'–')+' · '+esc(r.pos||'–')+' · vs '+esc(r.oppAbbr||'–')+'</div></div></div></td>'
     +'<td class="hrpt-team-cell" data-label="Team"><div class="hrpt-team-cell-inner">'+(r.teamAbbr?((teamIds[r.teamAbbr]?'<img class="hrpt-team-logo" src="https://www.mlbstatic.com/team-logos/'+teamIds[r.teamAbbr]+'.svg" alt="" loading="lazy" decoding="async">':'')+'<span class="hrpt-team-abbr">'+esc(r.teamAbbr)+'</span>'):'<span class="hrpt-dash">–</span>')+'</div></td>'
     +'<td class="hrpt-pitcher-cell" data-label="Pitcher"><div class="hrpt-pitcher-cell-inner">'+(r.pitcherName?('<span class="hrpt-pitcher-name">'+esc(r.pitcherName)+'</span>'+(r.pitcherHand?'<span class="hrpt-pitcher-hand">'+(r.pitcherHand==='L'?'LHP':r.pitcherHand==='R'?'RHP':'')+'</span>':'')):'<span class="hrpt-dash">–</span>')+'</div></td>'
+    +'<td class="hrpt-num" data-label="Bullpen" style="color:'+(r.bullpenFatigueTier==='Fresh'?'var(--green)':r.bullpenFatigueTier==='Gassed'?'#f87171':r.bullpenFatigueTier==='Taxed'?'#fbbf24':'inherit')+'">'+(r.bullpenFatigueTier?esc(r.bullpenFatigueTier):'<span class="hrpt-dash">–</span>')+'</td>'
     +'<td class="hrpt-num" data-label="Edge" style="background:'+(r.matchupEdge==null?'transparent':hrptHeatBGInverted(r.matchupEdge,64,45))+'">'+(r.matchupEdge==null?'–':r.matchupEdge)+'</td>'
     +'<td class="hrpt-num" data-label="Zone" style="background:'+(r.zoneFitScore==null?'transparent':hrptHeatBGInverted(r.zoneFitScore,72,58))+'">'+(r.zoneFitScore==null?'–':r.zoneFitScore)+'</td>'
+    +'<td class="hrpt-num" data-label="Pitch Mix"><span class="hrpt-mix-pill'+(r.pitchMixFavorable?' fav':'')+'">'+(r.pitchMixPitches!=null?(r.pitchMixFavorable?'Favorable':'Neutral'):'–')+'</span></td>'
+    +'<td class="hrpt-num hrpt-overlap-cell" data-label="Overlap">'+overlapHTML+'</td>'
+    +'<td class="hrpt-num" data-label="AVG" style="background:'+(r.avg==null?'transparent':hrptHeatBGInverted(n(r.avg),.280,.220))+'">'+fmt3(r.avg)+'</td>'
+    +'<td class="hrpt-num" data-label="SLG" style="background:'+(r.slg==null?'transparent':hrptHeatBGInverted(n(r.slg),.470,.380))+'">'+fmt3(r.slg)+'</td>'
+    +'<td class="hrpt-num" data-label="OPS" style="background:'+(r.ops==null?'transparent':hrptHeatBGInverted(n(r.ops),.850,.700))+'">'+fmt3(r.ops)+'</td>'
+    +'<td class="hrpt-num" data-label="ISO" style="background:'+(r.iso==null?'transparent':hrptHeatBGInverted(n(r.iso),.220,.140))+'">'+fmt3(r.iso)+'</td>'
+    +'<td class="hrpt-num" data-label="HR L10" style="'+(n(l10)>=2?'color:var(--green)':'')+'">'+(l10==null?'–':l10)+'</td>'
     +'<td class="hrpt-num hrpt-signals" data-label="Signals">'+signalsHTML+'</td>'
   +'</tr>';
   var detail='<tr class="hrpt-detail-row" id="'+detailId+'"><td colspan="'+HRPT_COLS.length+'"><div class="hrpt-detail-inner">'
     +'<div class="hrpt-why-box"><div class="hrpt-box-label">⚡ Scouting Report</div><div class="hrpt-why" id="hrp-scout-'+esc(r.id)+'-'+esc(r.pitcherId||0)+'">'+(r.pitcherId?'<span class="spin"></span> Loading scouting report…':'<span style="color:var(--muted)">No opposing pitcher assigned yet — scouting report unavailable.</span>')+'</div></div>'
     +'<div class="hrpt-detail-side"><div class="hrpt-box-label">At a Glance</div>'
-      +'<div class="hrpt-detail-stats-grid">'
-      +'<div class="hrpt-detail-stat"><span>Bullpen</span><strong style="color:'+(r.bullpenFatigueTier==='Fresh'?'var(--green)':r.bullpenFatigueTier==='Gassed'?'#f87171':r.bullpenFatigueTier==='Taxed'?'#fbbf24':'inherit')+'">'+(r.bullpenFatigueTier?esc(r.bullpenFatigueTier):'–')+'</strong></div>'
-      +'<div class="hrpt-detail-stat"><span>Pitch Mix</span><strong>'+(r.pitchMixPitches!=null?(r.pitchMixFavorable?'Favorable':'Neutral'):'–')+'</strong></div>'
-      +'<div class="hrpt-detail-stat"><span>AVG</span><strong>'+fmt3(r.avg)+'</strong></div>'
-      +'<div class="hrpt-detail-stat"><span>SLG</span><strong>'+fmt3(r.slg)+'</strong></div>'
-      +'<div class="hrpt-detail-stat"><span>OPS</span><strong>'+fmt3(r.ops)+'</strong></div>'
-      +'<div class="hrpt-detail-stat"><span>ISO</span><strong>'+fmt3(r.iso)+'</strong></div>'
-      +'<div class="hrpt-detail-stat"><span>HR L10</span><strong style="'+(n(l10)>=2?'color:var(--green)':'')+'">'+(l10==null?'–':l10)+'</strong></div>'
       +'<div class="hrpt-detail-stat"><span>Season HR</span><strong>'+esc(r.hrSeason||'–')+'</strong></div>'
       +'<div class="hrpt-detail-stat"><span>Hot Boost</span><strong>'+(n(r.hotBoostPct)?'+'+n(r.hotBoostPct).toFixed(1)+' pts':'–')+'</strong></div>'
       +'<div class="hrpt-detail-stat"><span>Ballpark Pal</span><strong>'+(function(){var bp=ballparkPalFactorForPlayer(r.gamePk,r.id);return bp==null?'–':((bp>0?'+':'')+bp+'%');})()+'</strong></div>'
-      +'</div>'
-      +'<div class="hrpt-detail-overlap"><span>Overlap</span>'+overlapHTML+'</div>'
       +'<button type="button" class="hrpt-open-full" onclick="event.stopPropagation();var d=document.getElementById(\'hrp-row-'+esc(r.id)+'\').dataset;openMatchup(+d.batterId,d.batterName,+d.pitcherId,d.pitcherName,d.zoneFitScore===\'\'?null:+d.zoneFitScore);">⚔ Full Matchup</button>'
       +'<label class="hrpt-compare" onclick="event.stopPropagation()"><input type="checkbox" '+(window.drHRCompareHas&&window.drHRCompareHas(r.id)?'checked':'')+' onchange="drHRCompareToggle(\''+esc(r.id)+'\',this.checked)"><span>Add to Compare</span></label>'
     +'</div></div></td></tr>';
