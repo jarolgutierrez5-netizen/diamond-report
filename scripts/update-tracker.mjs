@@ -1486,6 +1486,18 @@ async function teamRestFatigueFactor(teamId, todayGameDateIso) {
 // per-game rankings. Same buildBatterPool/scoreForMarket('hr', ...) model as Elite
 // Picks, just applied to every qualifying batter instead of the top 3 per game.
 const HR_THREAT_MIN_SCORE = 18;
+// Mirrors the live client board's own per-team cap (HRP_BOARD_MAX_PER_TEAM in app.js) --
+// the client locks each team (not each game; up to 6 total across both sides) to its top
+// 3 batters by score, once per day. Without the matching cap here, captureHRThreatToday
+// used to record every batter clearing HR_THREAT_MIN_SCORE regardless of team, which
+// diluted the calibration/win-rate numbers with picks real users never actually saw on
+// the capped board. This is the same cap SIZE, not a byte-identical replication of the
+// client's exact locked id set -- the client sorts by its own hrProb (a separate,
+// independently-maintained formula from this file's score, same reason `liveScore` and
+// `score` are recorded as two different fields below) and persists its lock in
+// localStorage per browser: this applies the cap fresh each capture run instead, ranked
+// by this file's own score.
+const HR_THREAT_MAX_PER_TEAM = 3;
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function shrinkToLeague(raw, ab, leagueAvg, minAB = 40) {
@@ -2690,21 +2702,47 @@ async function buildBatterPool(games, season) {
 }
 
 // HR Threats board hit-rate tracker — draws from the same shared batter pool
-// (buildBatterPool) as generate-headlines.mjs's storylines, captures every
-// batter who clears HR_THREAT_MIN_SCORE (see that constant's comment for how this
-// differs from the live client-side gate).
+// (buildBatterPool) as generate-headlines.mjs's storylines, captures batters who
+// clear HR_THREAT_MIN_SCORE AND are within their team's top HR_THREAT_MAX_PER_TEAM
+// by score (see both constants' own comments for how this compares to the live
+// client-side gate/cap).
 // Picks lock in the moment they're first captured, same as everywhere else in this file —
 // a later same-day pass only adds newly-qualifying batters, never recomputes or drops one
-// already captured.
+// already captured. The per-team cap is recomputed fresh each run (not itself locked),
+// but that's harmless in practice: a later pass only ever narrows or holds steady which
+// batters currently rank in their team's top 3, and already-captured rows are never
+// dropped regardless of what a later run's ranking says.
 async function captureHRThreatToday(store, pool) {
   store.market.hrThreat ||= [];
   if (!pool.length) return 0;
   const today = cdtDateString(new Date());
   const already = new Set(store.market.hrThreat.filter(r => r.date === today).map(r => r.playerId));
+
+  // Score every eligible batter once up front (score + its hrScoreSource side effect
+  // captured together, since scoreForMarket sets __hrLastScoreSource as a side effect
+  // read immediately after each call -- computing scores in a separate later pass could
+  // pair a batter with a different batter's hrScoreSource) so both the per-team cap
+  // below and the per-row capture loop share the same values instead of scoring twice.
+  const scored = pool
+    .filter(r => r.atBats >= POOL_MIN_AB)
+    .map(r => ({ row: r, score: scoreForMarket('hr', r), hrScoreSource: __hrLastScoreSource }));
+  const byTeam = new Map();
+  scored.forEach(s => {
+    const teamKey = `${s.row.gamePk ?? s.row.id}|${s.row.teamAbbr ?? s.row.id}`;
+    if (!byTeam.has(teamKey)) byTeam.set(teamKey, []);
+    byTeam.get(teamKey).push(s);
+  });
+  const allowedIds = new Set();
+  byTeam.forEach(list => {
+    list.sort((a, b) => b.score - a.score);
+    list.slice(0, HR_THREAT_MAX_PER_TEAM).forEach(s => allowedIds.add(s.row.id));
+  });
+
   let added = 0;
-  pool.filter(r => r.atBats >= POOL_MIN_AB && !already.has(r.id)).forEach(r => {
-    const score = scoreForMarket('hr', r);
-    const hrScoreSource = __hrLastScoreSource;
+  scored.filter(s => allowedIds.has(s.row.id) && !already.has(s.row.id)).forEach(s => {
+    const r = s.row;
+    const score = s.score;
+    const hrScoreSource = s.hrScoreSource;
     if (score < HR_THREAT_MIN_SCORE) return;
     const key = `${today}|HRTHREAT|${r.id}`;
     if (store.market.hrThreat.some(x => x.key === key)) return;
