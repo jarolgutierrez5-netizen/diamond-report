@@ -671,6 +671,164 @@ async function renderNFLPassBoard() {
 }
 window.renderNFLPassBoard = renderNFLPassBoard;
 
+// ── NFL Receiving Yards + Receptions (two real O/U lines, one card) ────────
+// Same real-empirical-rate method as Rushing/Passing Yards above, but this
+// board covers two distinct real markets on one card rather than fusing
+// them into a single combined number (receiving yards and receptions differ
+// by an order of magnitude, so a raw sum would just be the yards number
+// with receptions barely moving it -- unlike MLB's real H+R+RBI combined
+// stat, where all three components sit on a comparable 0-4ish scale).
+// Receiving Yards is the headline score (the more standard real receiving
+// prop line); Receptions gets its own real probability too, shown as a
+// first-class secondary chip, not just a raw average.
+const NFL_REC_YDS_LINE = 34.5;
+const NFL_RECEPTIONS_LINE = 2.5;
+const NFL_REC_MIN_GAMES = 4;
+
+let nflRecDataPromise = null;
+async function loadNFLRecData(force = false) {
+  if (nflRecDataPromise && !force) return nflRecDataPromise;
+  nflRecDataPromise = (async () => {
+    const [scheduleData, statsData] = await Promise.all([
+      drFetchDailyJSON('data/nfl-schedule.json').catch(() => null),
+      drFetchDailyJSON('data/nfl-player-stats.json').catch(() => null),
+    ]);
+    return { schedule: (scheduleData && scheduleData.events) || [], players: (statsData && statsData.players) || {} };
+  })();
+  return nflRecDataPromise;
+}
+
+let _nflRecSort = null;
+let _nflRecSortDir = 1;
+let _nflRecGameFilter = '';
+const NFL_REC_SORT_FIELDS = [
+  { key: 'prob', label: 'Rec Yds Prob' },
+  { key: 'recYdsPerGame', label: 'Yds/Gm' },
+  { key: 'receptionsPerGame', label: 'Rec/Gm' },
+  { key: 'games', label: 'Games' },
+];
+function nflRecSortBy(key) {
+  if (_nflRecSort === key) { _nflRecSortDir *= -1; }
+  else { _nflRecSort = key; _nflRecSortDir = 1; }
+  if (!key) { _nflRecSort = null; _nflRecSortDir = 1; }
+  renderNFLRecBoard();
+}
+function setNFLRecGameFilter(value) {
+  _nflRecGameFilter = value || '';
+  renderNFLRecBoard();
+}
+
+function nflRecSummaryHTML(rows) {
+  if (!rows.length) return '';
+  const byProb = rows.slice().sort((a, b) => b.prob - a.prob);
+  const top = byProb[0];
+  const sample = byProb.slice(0, Math.min(8, byProb.length));
+  const avg = Math.round(sample.reduce((a, p) => a + p.prob, 0) / sample.length);
+  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">🏈 EXPANDED <span>NFL RECEIVING YARDS + RECEPTIONS DATA</span></div><p class="dr1027-summary-copy">Real empirical rate this season that each player's own actual per-game receiving yards cleared Over ${NFL_REC_YDS_LINE} (plus a real, separate Receptions O/U ${NFL_RECEPTIONS_LINE} rate), not a fitted or simulated distribution. Early model — no opponent pass-defense adjustment yet.</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>${avg}%</b><span>Board Avg Probability</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>Over ${NFL_REC_YDS_LINE} Yds</b><span>Primary Line</span></div></div></div>`;
+}
+
+function nflRecCardHTML(r) {
+  const scoreCls = r.prob >= 55 ? 'good' : '';
+  return `<div class="dr109-card${scoreCls ? ' prop-hit' : ''}">
+    ${window.drWatchStarHTML('nfl-' + r.id, r.name)}
+    <div class="dr109-card-head">
+      <div class="dr109-player">
+        <img loading="lazy" src="${r.headshot || ''}" onerror="this.style.display='none'" alt="">
+        <div style="min-width:0">
+          <div class="dr109-name">${fantasyEsc(r.name || 'Player')}</div>
+          <div class="dr109-meta">${fantasyEsc(r.position || '')} · ${fantasyEsc(r.teamAbbr || '')} vs ${fantasyEsc(r.oppAbbr || '')}</div>
+        </div>
+      </div>
+      <div class="dr109-score">${r.prob}%<small>Over ${NFL_REC_YDS_LINE} Yds</small></div>
+    </div>
+    <div class="dr109-chiprow">
+      <span class="dr109-chip"><span>Season Rec Yds:</span><strong>${r.recYds != null ? r.recYds : '–'}</strong></span>
+      <span class="dr109-chip"><span>Yds/GM:</span><strong>${r.recYdsPerGame != null ? r.recYdsPerGame.toFixed(1) : '–'}</strong></span>
+      <span class="dr109-chip"><span>Rec/GM:</span><strong>${r.receptionsPerGame != null ? r.receptionsPerGame.toFixed(1) : '–'}</strong></span>
+      <span class="dr109-chip"><span>Over ${NFL_RECEPTIONS_LINE} Rec:</span><strong>${r.probReceptionsLine != null ? r.probReceptionsLine + '%' : '–'}</strong></span>
+      <span class="dr109-chip"><span>Games:</span><strong>${r.gamesWithRecYds != null ? r.gamesWithRecYds : '–'}</strong></span>
+    </div>
+  </div>`;
+}
+
+async function renderNFLRecBoard() {
+  const el = document.getElementById('nfl-rec-content');
+  if (!el) return;
+  const __searchFocus = drCaptureSearchFocus('nflrec-search-input');
+  let data;
+  try {
+    data = await loadNFLRecData();
+  } catch (e) {
+    el.innerHTML = '<div class="mu-empty">Couldn\'t load NFL data. Check back shortly.</div>';
+    return;
+  }
+  const upcoming = (data.schedule || []).filter(g => !g.completed && g.date).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  if (!upcoming.length) {
+    el.innerHTML = '<div class="mu-empty">No upcoming NFL games found. Check back closer to kickoff.</div>';
+    return;
+  }
+  // Same "nearest upcoming calendar date" scoping loadNFLTDData/
+  // loadNFLGameData/loadNFLRushData/loadNFLPassData already use.
+  const nextDate = upcoming[0].date.slice(0, 10);
+  const slateGames = upcoming.filter(g => (g.date || '').slice(0, 10) === nextDate);
+  const oppByTeam = {};
+  slateGames.forEach(g => {
+    if (g.home && g.away && g.home.abbreviation && g.away.abbreviation) {
+      oppByTeam[g.home.abbreviation] = g.away.abbreviation;
+      oppByTeam[g.away.abbreviation] = g.home.abbreviation;
+    }
+  });
+  // NFL_REC_MIN_GAMES keeps a single-game small sample off the board
+  // entirely, same rule NFL_RUSH_MIN_GAMES/NFL_PASS_MIN_GAMES enforce above.
+  const allRows = Object.entries(data.players || {})
+    .filter(([id, p]) => p.teamAbbr && oppByTeam[p.teamAbbr] != null && p.recYdsPerGame != null && (p.gamesWithRecYds || 0) >= NFL_REC_MIN_GAMES)
+    .map(([id, p]) => Object.assign({ id }, p, { oppAbbr: oppByTeam[p.teamAbbr], prob: p.probRecYdsLine != null ? p.probRecYdsLine : 0 }));
+  if (!allRows.length) {
+    el.innerHTML = `<div class="mu-empty">No player season stats synced yet for the ${fantasyEsc(nextDate)} slate. Check back once the daily sync has run.</div>`;
+    return;
+  }
+
+  const gameOptsHTML = ['<option value="">All Games</option>'].concat(
+    slateGames.filter(g => g.home && g.away).map(g => {
+      const gid = g.away.abbreviation + '@' + g.home.abbreviation;
+      return `<option value="${gid}"${_nflRecGameFilter === gid ? ' selected' : ''}>${g.away.abbreviation} @ ${g.home.abbreviation}</option>`;
+    })
+  ).join('');
+
+  let rows = allRows.filter(p => drMatchesSearch('nflrec', p.name));
+  if (_nflRecGameFilter) {
+    rows = rows.filter(p => {
+      const opp = oppByTeam[p.teamAbbr];
+      const gid = p.teamAbbr + '@' + opp, gidRev = opp + '@' + p.teamAbbr;
+      return _nflRecGameFilter === gid || _nflRecGameFilter === gidRev;
+    });
+  }
+  const sortKey = _nflRecSort || 'prob';
+  rows = rows.slice().sort((a, b) => (b[sortKey] - a[sortKey]) * _nflRecSortDir);
+
+  const sortBtns = NFL_REC_SORT_FIELDS.map(({ key, label }) => {
+    const active = (_nflRecSort || 'prob') === key;
+    const arrow = active ? (_nflRecSortDir === 1 ? ' ↓' : ' ↑') : '';
+    return `<button onclick="nflRecSortBy('${key}')" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${active ? 'var(--accent2)' : 'var(--border)'};background:${active ? 'rgba(47,107,255,.12)' : 'var(--surface2)'};color:${active ? 'var(--accent2)' : 'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">${label}${arrow}</button>`;
+  }).join('');
+
+  const noMatches = !rows.length && ((window.__drBoardSearch.nflrec || '').trim() || _nflRecGameFilter);
+  el.innerHTML = `<div class="dr109-summary"><div class="dr109-title">🏈 <span>${fantasyEsc(nextDate)} SLATE</span></div>`
+    + `<p class="dr109-copy">Real empirical rate this season that each player's own actual per-game receiving yards (${fantasyEsc(allRows[0].season)} season) cleared Over ${NFL_REC_YDS_LINE}, plus a real, separate Receptions Over ${NFL_RECEPTIONS_LINE} rate. Early model — no opponent pass-defense adjustment yet, values are generated from the active synced roster/stats data.</p></div>`
+    + nflRecSummaryHTML(allRows)
+    + `<div class="dr109-filter-row kprops-sticky-sort" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">
+        <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">GAME:</span>
+        <select onchange="setNFLRecGameFilter(this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;flex-shrink:0">${gameOptsHTML}</select>
+        <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">SORT:</span>
+        ${sortBtns}
+        <button onclick="nflRecSortBy(null)" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:3px 8px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0">RESET</button>
+        ${drSearchInputHTML('nflrec', 'nflrec-search-input', 'Search players…', "drSetBoardSearch('nflrec',this.value,renderNFLRecBoard)")}
+      </div>`
+    + (noMatches ? `<div class="mu-empty" style="padding:24px">No players match the current search/filter.</div>` : rows.map(nflRecCardHTML).join(''));
+  drRestoreSearchFocus(__searchFocus);
+}
+window.renderNFLRecBoard = renderNFLRecBoard;
+
 // ── WNBA prop board family (Points/Rebounds/Assists/3-Pointers Made/PRA) ───
 // Each card's headline is the player's own real season per-game average --
 // a real individual projection, same "the model projects N Ks" framing the

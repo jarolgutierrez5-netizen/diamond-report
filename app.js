@@ -14297,7 +14297,7 @@ if (document.readyState === 'loading') {
 /* ---- from <script id="anonymous"> ---- */
 // PROD v8.44 — Game Picks inner tab controller with persistent state
 (function(){
-  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, fantasy: true, nearhr: true, players: true, nfltd: true, nflgame: true, nflrush: true, nflpass: true, wnbapts: true, wnbareb: true, wnbaast: true, wnba3pm: true, wnbapra: true };
+  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, fantasy: true, nearhr: true, players: true, nfltd: true, nflgame: true, nflrush: true, nflpass: true, nflrec: true, wnbapts: true, wnbareb: true, wnbaast: true, wnba3pm: true, wnbapra: true };
 
   // Only the URL hash decides the pane on load (e.g. a shared #gamepick=premium
   // link). No localStorage fallback — a plain refresh/revisit with no hash
@@ -14395,6 +14395,10 @@ if (document.readyState === 'loading') {
     if (pane === 'nflpass') {
       setTimeout(function(){ if (typeof window.renderNFLPassBoard === 'function') window.renderNFLPassBoard(); }, 30);
       setTimeout(function(){ if (typeof window.renderNFLPassBoard === 'function') window.renderNFLPassBoard(); }, 900);
+    }
+    if (pane === 'nflrec') {
+      setTimeout(function(){ if (typeof window.renderNFLRecBoard === 'function') window.renderNFLRecBoard(); }, 30);
+      setTimeout(function(){ if (typeof window.renderNFLRecBoard === 'function') window.renderNFLRecBoard(); }, 900);
     }
     var WNBA_PANE_RENDER_FN = { wnbapts: 'renderWNBAPointsBoard', wnbareb: 'renderWNBARebBoard', wnbaast: 'renderWNBAAstBoard', wnba3pm: 'renderWNBA3PMBoard', wnbapra: 'renderWNBAPRABoard' };
     if (WNBA_PANE_RENDER_FN[pane]) {
@@ -16326,7 +16330,7 @@ window.renderPlayersBoard=renderPlayersBoard;
   // VALID panes object -- a pre-existing gap for nfltd (its board has no menu
   // entry to expose the bug), a real one for wnbapts now that the drawer has
   // an entry pointing at it (see index.html's #dr-mobile-drawer).
-  var FREE_PANES = new Set(['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','fantasy','nearhr','players','nfltd','nflgame','nflrush','nflpass','wnbapts','wnbareb','wnbaast','wnba3pm','wnbapra']);
+  var FREE_PANES = new Set(['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','fantasy','nearhr','players','nfltd','nflgame','nflrush','nflpass','nflrec','wnbapts','wnbareb','wnbaast','wnba3pm','wnbapra']);
 
   function normalizePane(pane){
     return String(pane || 'game').trim();

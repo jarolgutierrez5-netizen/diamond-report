@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026081807">
+<link rel="stylesheet" href="styles.min.css?v=2026081808">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -158,6 +158,7 @@
   <button type="button" data-gamepick-pane="nflgame" data-sport="NFL" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="15" height="13" rx="2.5"/><path d="M2.5 8h15"/><path d="M6.5 2.5v3M13.5 2.5v3"/></svg><span>Game Projections</span></button>
   <button type="button" data-gamepick-pane="nflrush" data-sport="NFL" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 6l4 4-4 4-4-4z"/><path d="M2.5 8.5h5M2.5 11.5h3.5" stroke-width="1.1"/></svg><span>Rushing Yards</span></button>
   <button type="button" data-gamepick-pane="nflpass" data-sport="NFL" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2.5L4.5 11h4.2L8 17.5l6.5-9h-4.2z"/></svg><span>Passing Yards</span></button>
+  <button type="button" data-gamepick-pane="nflrec" data-sport="NFL" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.5V9M10 16.5V4M16 16.5v-6.5"/><path d="M2.5 16.5h15"/></svg><span>Receiving Yards + Rec</span></button>
 </div>
 <!-- Deliberately a sibling of .dr-top-nav-inner, not nested inside it -- that
      row has overflow-x:auto for the narrow-viewport scroll fallback, and CSS
@@ -214,6 +215,7 @@
     <button type="button" data-tab="nflgame" data-sport="NFL" class="dr-menu-item dr-menu-item-hidden">🏈 NFL Game Projections</button>
     <button type="button" data-tab="nflrush" data-sport="NFL" class="dr-menu-item dr-menu-item-hidden">🏈 NFL Rushing Yards</button>
     <button type="button" data-tab="nflpass" data-sport="NFL" class="dr-menu-item dr-menu-item-hidden">🏈 NFL Passing Yards</button>
+    <button type="button" data-tab="nflrec" data-sport="NFL" class="dr-menu-item dr-menu-item-hidden">🏈 NFL Receiving Yards + Rec</button>
     <button type="button" data-tab="wnbapts" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA Points</button>
     <button type="button" data-tab="wnbareb" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA Rebounds</button>
     <button type="button" data-tab="wnbaast" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA Assists</button>
@@ -605,6 +607,7 @@
     <button class="gamepick-tab" id="gamepick-tab-nflgame" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-nflgame" data-gamepick-pane="nflgame" onclick="showGamePickPane('nflgame')">🏈 NFL Game Projections</button>
     <button class="gamepick-tab" id="gamepick-tab-nflrush" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-nflrush" data-gamepick-pane="nflrush" onclick="showGamePickPane('nflrush')">🏈 NFL Rushing Yards</button>
     <button class="gamepick-tab" id="gamepick-tab-nflpass" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-nflpass" data-gamepick-pane="nflpass" onclick="showGamePickPane('nflpass')">🏈 NFL Passing Yards</button>
+    <button class="gamepick-tab" id="gamepick-tab-nflrec" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-nflrec" data-gamepick-pane="nflrec" onclick="showGamePickPane('nflrec')">🏈 NFL Receiving Yards + Rec</button>
     <button class="gamepick-tab" id="gamepick-tab-wnbapts" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnbapts" data-gamepick-pane="wnbapts" onclick="showGamePickPane('wnbapts')">🏀 WNBA Points</button>
     <button class="gamepick-tab" id="gamepick-tab-wnbareb" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnbareb" data-gamepick-pane="wnbareb" onclick="showGamePickPane('wnbareb')">🏀 WNBA Rebounds</button>
     <button class="gamepick-tab" id="gamepick-tab-wnbaast" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnbaast" data-gamepick-pane="wnbaast" onclick="showGamePickPane('wnbaast')">🏀 WNBA Assists</button>
@@ -838,6 +841,27 @@
       </div>
       <div id="nfl-pass-content" class="dr-panel-body dr-scroll-tall">
         <div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading NFL passing yards…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- NFL Receiving Yards + Receptions -- two real, separately calibrated O/U
+     lines on one card (data/nfl-player-stats.json, scripts/sync-nfl-player-
+     stats.mjs), same real-empirical-rate method as Rushing/Passing Yards.
+     Receiving Yards is the headline score; Receptions gets its own real
+     probability shown as a secondary chip. -->
+<div class="gamepick-pane" id="gamepick-pane-nflrec" role="tabpanel" aria-labelledby="gamepick-tab-nflrec" data-gamepick-pane="nflrec" hidden>
+  <div class="dr-center-label">🏈 NFL Receiving Yards + Receptions</div>
+  <div class="dr-dashboard-grid">
+    <div class="dr-panel dr-panel-large dr-panel-fresh">
+      <div class="dr-panel-head">
+        <div>
+          <p class="section-title">NFL <span>Receiving Yards + Receptions</span></p>
+          <small>Real empirical rate each player's own actual per-game receiving yards (plus a separate real receptions rate) cleared the line this season. Early model -- no opponent pass-defense adjustment yet.</small>
+        </div>
+      </div>
+      <div id="nfl-rec-content" class="dr-panel-body dr-scroll-tall">
+        <div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading NFL receiving yards…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div>
       </div>
     </div>
   </div>
@@ -1273,8 +1297,8 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026081807" defer></script>
-<script src="nfl-wnba-props.min.js?v=2026081807" defer></script>
+<script src="app.min.js?v=2026081808" defer></script>
+<script src="nfl-wnba-props.min.js?v=2026081808" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
