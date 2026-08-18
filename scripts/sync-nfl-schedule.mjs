@@ -1,25 +1,33 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// NFL groundwork sync — pulls team metadata and the current schedule/scoreboard
-// from ESPN's public site API into data/nfl-teams.json and data/nfl-schedule.json.
+// NFL groundwork sync — pulls team metadata and a 14-day schedule window from
+// ESPN's public site API into data/nfl-teams.json and data/nfl-schedule.json.
 //
-// This is infrastructure only: nothing in app.js reads these files yet, so
-// running this script (or its workflow) has zero effect on the live site.
-// It exists so the data pipeline is wired up and testable ahead of the NFL
-// season (kickoff is early September), rather than building it blind once
-// real predictions are wanted.
+// The scoreboard endpoint used to be called with no params at all, on the
+// assumption that NFL scoring is inherently week-based so the parameterless
+// call would just return "the current week's full slate." Confirmed live
+// (2026-08-18) that assumption was wrong: with no params ESPN's scoreboard
+// freezes on the same week's response for the several days between real
+// weeks (e.g. still returning the completed Preseason Week 1 slate days
+// after those games ended, with real Week 2/3 games already scheduled and
+// fetchable). Every NFL board's "nearest upcoming calendar date" scoping
+// (nfl-wnba-props.js) depends on data/nfl-schedule.json actually containing
+// real future games, so a frozen snapshot silently breaks every board.
 //
-// ESPN's site.api.espn.com endpoints are unofficial and undocumented but are
-// free, keyless, and widely relied on. The shapes below reflect their known
-// public structure but haven't been verified against a live response from
-// this environment (network to external APIs is unavailable in the dev
-// sandbox this was written in) — run this via workflow_dispatch once merged
-// so a real GitHub Actions runner (which does have normal internet access)
-// confirms the team list actually populates before anything is built on top
-// of it. The schedule file is expected to come back empty outside the NFL
-// season, which is itself a correct result, not a bug.
+// Fixed the same way sync-wnba-schedule.mjs already does it: an explicit
+// `dates=YYYYMMDD-YYYYMMDD` range query, confirmed live to return real
+// STATUS_SCHEDULED games. 14 days (vs. WNBA's 7) covers the real gap between
+// the end of NFL preseason and Week 1 regular-season kickoff (~10-11 days in
+// most years) -- since the window is anchored to "today" on every daily run,
+// it always reaches far enough ahead to find the next real games even across
+// that gap, not just a fixed lookback.
 //
-// Zero npm dependencies (Node's built-in fetch), matching update-tracker.mjs.
+// ESPN's site.api.espn.com endpoints are unofficial and undocumented but
+// free, keyless, and widely relied on (same class of endpoint this app
+// already uses for MLB/WNBA scoreboards and news).
+//
+// Zero npm dependencies (Node's built-in fetch), matching update-tracker.mjs
+// and the WNBA groundwork scripts.
 // ─────────────────────────────────────────────────────────────────────────
 
 import { writeFile, mkdir } from 'node:fs/promises';
@@ -32,7 +40,15 @@ const TEAMS_PATH = path.join(DATA_DIR, 'nfl-teams.json');
 const SCHEDULE_PATH = path.join(DATA_DIR, 'nfl-schedule.json');
 
 const TEAMS_URL = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams?limit=40';
-const SCOREBOARD_URL = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
+
+function ymd(d) {
+  return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+function scoreboardURL() {
+  const start = new Date();
+  const end = new Date(start.getTime() + 13 * 24 * 60 * 60 * 1000);
+  return `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${ymd(start)}-${ymd(end)}`;
+}
 
 async function fetchJSON(url) {
   const res = await fetch(url, { headers: { accept: 'application/json' } });
@@ -82,7 +98,7 @@ async function main() {
 
   const [teamsRaw, scheduleRaw] = await Promise.all([
     fetchJSON(TEAMS_URL).catch(err => { console.error('Teams fetch failed:', err.message); return null; }),
-    fetchJSON(SCOREBOARD_URL).catch(err => { console.error('Scoreboard fetch failed:', err.message); return null; }),
+    fetchJSON(scoreboardURL()).catch(err => { console.error('Scoreboard fetch failed:', err.message); return null; }),
   ]);
 
   const teams = teamsRaw ? normalizeTeams(teamsRaw) : [];
