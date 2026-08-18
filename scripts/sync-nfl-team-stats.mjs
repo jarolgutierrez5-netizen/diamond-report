@@ -105,9 +105,20 @@ async function main() {
     return;
   }
   const leagueAvgPointDifferential = leagueAverage(teams, 'pointDifferential');
+  // Real opponent-defense signal for the NFL yardage prop boards (Rushing/
+  // Passing/Receiving), same "one real team-level signal, honestly applied
+  // as a general defense-strength proxy" approach sync-wnba-team-defense.mjs
+  // established for the WNBA Points board -- ESPN doesn't expose a real
+  // per-team rushing-yards-allowed/passing-yards-allowed split (confirmed
+  // live: the one place a `yardsAllowed` field exists, on the core API's
+  // per-team `defensive` stats category, is always 0 -- an unpopulated
+  // schema field, not real data), so pointsAgainst is the real, actually-
+  // populated defensive signal used for all three yardage boards rather
+  // than fabricating a stat-specific split that doesn't exist.
+  const leagueAvgPointsAgainst = leagueAverage(teams, 'pointsAgainst');
 
-  console.log(`Team stats: ${Object.keys(teams).length} team(s), league avg point differential ${leagueAvgPointDifferential}.`);
-  await writeFile(TEAM_STATS_PATH, JSON.stringify({ updatedAt: new Date().toISOString(), leagueAvgPointDifferential, teams }, null, 2) + '\n');
+  console.log(`Team stats: ${Object.keys(teams).length} team(s), league avg point differential ${leagueAvgPointDifferential}, league avg points against ${leagueAvgPointsAgainst}.`);
+  await writeFile(TEAM_STATS_PATH, JSON.stringify({ updatedAt: new Date().toISOString(), leagueAvgPointDifferential, leagueAvgPointsAgainst, teams }, null, 2) + '\n');
 }
 
 const isMain = import.meta.url === `file://${process.argv[1]}`;
