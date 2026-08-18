@@ -197,6 +197,161 @@ async function renderNFLTDBoard() {
 }
 window.renderNFLTDBoard = renderNFLTDBoard;
 
+// ── NFL Game Projections (favored team, real record/point differential) ───
+// NFL has no per-game "starting pitcher" the way MLB's DRP board does, so
+// this is entirely team-based: real win% and real point differential (data/
+// nfl-team-stats.json, scripts/sync-nfl-team-stats.mjs -- ESPN's real
+// standings), same shape as computeDRPick in scripts/update-tracker.mjs
+// (start both teams at 50, add clamped points for each real signal, add a
+// fixed home-field edge, normalize) just with football's own signals in
+// place of ERA/WHIP/K9/season record. Early in a season (or in preseason,
+// when this ships) win%/point differential are a tiny sample and genuinely
+// noisy -- that's an honest reflection of a real small sample, not a bug,
+// same "early model" framing the Anytime TD board above already uses.
+const NFL_HOME_FIELD_EDGE = 2.5;
+function nflGameWinProb(awayStats, homeStats) {
+  let awayScore = 50, homeScore = 50;
+  const awayWinPct = awayStats && awayStats.winPercent != null ? awayStats.winPercent : 0.5;
+  const homeWinPct = homeStats && homeStats.winPercent != null ? homeStats.winPercent : 0.5;
+  const winPctDiff = awayWinPct - homeWinPct;
+  const winPctPts = Math.max(-20, Math.min(20, winPctDiff * 40));
+  if (winPctPts >= 0) awayScore += winPctPts; else homeScore += Math.abs(winPctPts);
+
+  const awayPD = awayStats && awayStats.pointDifferential != null ? awayStats.pointDifferential : 0;
+  const homePD = homeStats && homeStats.pointDifferential != null ? homeStats.pointDifferential : 0;
+  const pdDiff = awayPD - homePD;
+  const pdPts = Math.max(-15, Math.min(15, pdDiff * 0.5));
+  if (pdPts >= 0) awayScore += pdPts; else homeScore += Math.abs(pdPts);
+
+  homeScore += NFL_HOME_FIELD_EDGE;
+
+  const total = awayScore + homeScore;
+  const awayPct = Math.max(1, Math.min(99, Math.round((awayScore / total) * 100)));
+  return { awayPct, homePct: 100 - awayPct };
+}
+
+let nflGameDataPromise = null;
+async function loadNFLGameData(force = false) {
+  if (nflGameDataPromise && !force) return nflGameDataPromise;
+  nflGameDataPromise = (async () => {
+    const [scheduleData, teamStatsData, teamsData] = await Promise.all([
+      drFetchDailyJSON('data/nfl-schedule.json').catch(() => null),
+      drFetchDailyJSON('data/nfl-team-stats.json').catch(() => null),
+      drFetchDailyJSON('data/nfl-teams.json').catch(() => null),
+    ]);
+    const teamMeta = {};
+    ((teamsData && teamsData.teams) || []).forEach(t => { if (t.abbreviation) teamMeta[t.abbreviation] = t; });
+    return { schedule: (scheduleData && scheduleData.events) || [], teamStats: (teamStatsData && teamStatsData.teams) || {}, teamMeta };
+  })();
+  return nflGameDataPromise;
+}
+
+let _nflGameSort = null;
+let _nflGameSortDir = 1;
+function nflGameSortBy(key) {
+  if (_nflGameSort === key) { _nflGameSortDir *= -1; }
+  else { _nflGameSort = key; _nflGameSortDir = 1; }
+  if (!key) { _nflGameSort = null; _nflGameSortDir = 1; }
+  renderNFLGameBoard();
+}
+
+function nflGameSummaryHTML(rows) {
+  if (!rows.length) return '';
+  const byConf = rows.slice().sort((a, b) => b.pickPct - a.pickPct);
+  const top = byConf[0];
+  const avg = Math.round(rows.reduce((a, r) => a + r.pickPct, 0) / rows.length);
+  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">🏈 EXPANDED <span>NFL GAME PROJECTIONS DATA</span></div><p class="dr1027-summary-copy">Favored team from each real matchup's win% and point differential, plus a fixed home-field edge. Early model — no injury/QB-status adjustment yet.</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.pick)}</b><span>Top Confidence Pick</span></div><div class="dr1027-summary-metric"><b>${avg}%</b><span>Board Avg Confidence</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Games Scanned</span></div><div class="dr1027-summary-metric warn"><b>Moneyline</b><span>Primary Signal</span></div></div></div>`;
+}
+
+function nflRecordText(stats) {
+  if (!stats) return '–';
+  const ties = stats.ties ? `-${stats.ties}` : '';
+  return `${stats.wins}-${stats.losses}${ties}`;
+}
+
+function nflGameCardHTML(g) {
+  const pickAway = g.pick === g.away;
+  return `<div class="dr109-card${g.pickPct >= 60 ? ' prop-hit' : ''}">
+    <div class="dr109-card-head">
+      <div class="dr109-player">
+        <img loading="lazy" src="${(g.awayMeta && g.awayMeta.logo) || ''}" onerror="this.style.display='none'" alt="" style="width:32px;height:32px;object-fit:contain">
+        <div style="min-width:0">
+          <div class="dr109-name">${fantasyEsc(g.away)} @ ${fantasyEsc(g.home)}</div>
+          <div class="dr109-meta">${fantasyEsc(nflRecordText(g.awayStats))} vs ${fantasyEsc(nflRecordText(g.homeStats))}</div>
+        </div>
+      </div>
+      <div class="dr109-score">${g.pickPct}%<small>${fantasyEsc(g.pick)} to win</small></div>
+    </div>
+    <div class="dr109-chiprow">
+      <span class="dr109-chip"><span>Pick:</span><strong>${fantasyEsc(g.pick)}</strong></span>
+      <span class="dr109-chip"><span>${fantasyEsc(g.away)} Pt Diff:</span><strong>${g.awayStats && g.awayStats.pointDifferential != null ? (g.awayStats.pointDifferential >= 0 ? '+' : '') + g.awayStats.pointDifferential : '–'}</strong></span>
+      <span class="dr109-chip"><span>${fantasyEsc(g.home)} Pt Diff:</span><strong>${g.homeStats && g.homeStats.pointDifferential != null ? (g.homeStats.pointDifferential >= 0 ? '+' : '') + g.homeStats.pointDifferential : '–'}</strong></span>
+      <span class="dr109-chip"><span>Home Field:</span><strong>${fantasyEsc(g.home)}</strong></span>
+    </div>
+  </div>`;
+}
+
+async function renderNFLGameBoard() {
+  const el = document.getElementById('nfl-game-content');
+  if (!el) return;
+  let data;
+  try {
+    data = await loadNFLGameData();
+  } catch (e) {
+    el.innerHTML = '<div class="mu-empty">Couldn\'t load NFL data. Check back shortly.</div>';
+    return;
+  }
+  const upcoming = (data.schedule || []).filter(g => !g.completed && g.date && g.home && g.away).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  if (!upcoming.length) {
+    el.innerHTML = '<div class="mu-empty">No upcoming NFL games found. Check back closer to kickoff.</div>';
+    return;
+  }
+  // Same "nearest upcoming calendar date" slate scoping loadNFLTDData uses --
+  // games are sparse (especially in preseason), so this is whichever real
+  // date has the next kickoff, not a fixed "today" that could legitimately
+  // have zero games on it.
+  const nextDate = upcoming[0].date.slice(0, 10);
+  const slateGames = upcoming.filter(g => (g.date || '').slice(0, 10) === nextDate);
+
+  let rows = slateGames.map(g => {
+    const awayStats = data.teamStats[g.away.abbreviation] || null;
+    const homeStats = data.teamStats[g.home.abbreviation] || null;
+    const { awayPct, homePct } = nflGameWinProb(awayStats, homeStats);
+    const pick = awayPct >= homePct ? g.away.abbreviation : g.home.abbreviation;
+    const pickPct = Math.max(awayPct, homePct);
+    return {
+      away: g.away.abbreviation, home: g.home.abbreviation,
+      awayStats, homeStats, pick, pickPct,
+      awayMeta: data.teamMeta[g.away.abbreviation], homeMeta: data.teamMeta[g.home.abbreviation],
+      timestamp: Date.parse(g.date) || 0,
+    };
+  });
+
+  if (_nflGameSort) {
+    const sortKey = _nflGameSort;
+    rows = rows.slice().sort((a, b) => (b[sortKey] - a[sortKey]) * _nflGameSortDir);
+  } else {
+    rows = rows.slice().sort((a, b) => a.timestamp - b.timestamp);
+  }
+
+  const sortBtns = [{ key: 'pickPct', label: 'Confidence' }].map(({ key, label }) => {
+    const active = _nflGameSort === key;
+    const arrow = active ? (_nflGameSortDir === 1 ? ' ↓' : ' ↑') : '';
+    return `<button onclick="nflGameSortBy('${key}')" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${active ? 'var(--accent2)' : 'var(--border)'};background:${active ? 'rgba(47,107,255,.12)' : 'var(--surface2)'};color:${active ? 'var(--accent2)' : 'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">${label}${arrow}</button>`;
+  }).join('');
+
+  el.innerHTML = `<div class="dr109-summary"><div class="dr109-title">🏈 <span>${fantasyEsc(nextDate)} SLATE</span></div>`
+    + `<p class="dr109-copy">Favored team from each real matchup's win% and point differential, plus a fixed home-field edge. Early model — no injury/QB-status adjustment yet, values are generated from the active synced standings data.</p></div>`
+    + nflGameSummaryHTML(rows)
+    + `<div class="dr109-filter-row kprops-sticky-sort" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">
+        <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">SORT:</span>
+        ${sortBtns}
+        <button onclick="nflGameSortBy(null)" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:3px 8px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0">RESET</button>
+      </div>`
+    + rows.map(nflGameCardHTML).join('');
+}
+window.renderNFLGameBoard = renderNFLGameBoard;
+
 // ── WNBA prop board family (Points/Rebounds/Assists/3-Pointers Made/PRA) ───
 // Each card's headline is the player's own real season per-game average --
 // a real individual projection, same "the model projects N Ks" framing the
