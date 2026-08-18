@@ -15455,7 +15455,11 @@ if (document.readyState === 'loading') {
     if(key==='hr') return n(r.todayHR ?? ts.homeRuns);
     return 0;
   }
-  function hasLive(r){ return !!(r.todayStats || liveVal(r,'hits') || liveVal(r,'rbis') || liveVal(r,'tb') || liveVal(r,'sb') || liveVal(r,'runs') || liveVal(r,'hr') || /LIVE|FINAL/i.test(String(r.timeLabel||''))); }
+  // r.todayStats is {} pregame (same "no data yet" convention as fantasyActualBatterPoints
+  // above) -- checking its bare truthiness treated that empty placeholder as real live data,
+  // so every player card showed a "Live: 0 / 1" chip before first pitch. Object.keys().length
+  // is the correct pregame-vs-live check already used elsewhere for this exact field.
+  function hasLive(r){ return !!((r.todayStats && Object.keys(r.todayStats).length) || liveVal(r,'hits') || liveVal(r,'rbis') || liveVal(r,'tb') || liveVal(r,'sb') || liveVal(r,'runs') || liveVal(r,'hr') || /LIVE|FINAL/i.test(String(r.timeLabel||''))); }
   function actual(type,r){
     if(type==='hits') return liveVal(r,'hits');
     if(type==='rbis') return liveVal(r,'rbis');
