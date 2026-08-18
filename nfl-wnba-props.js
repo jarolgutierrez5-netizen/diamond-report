@@ -293,35 +293,108 @@ function nflRecordText(stats) {
   return `${stats.wins}-${stats.losses}${ties}`;
 }
 
+// Real-signal factor chips for the pick, same {team,label,type} shape and
+// same .gp-factor pos/opp/neu chip language as MLB's Diamond Report Pick
+// card (app.js's factors array) -- "pos" for a real signal favoring the
+// pick, "opp" for one favoring the other side, "neu" for informational
+// context that doesn't favor either team.
+function nflGameFactors(g) {
+  const factors = [];
+  const awayWinPct = g.awayStats && g.awayStats.winPercent != null ? g.awayStats.winPercent : null;
+  const homeWinPct = g.homeStats && g.homeStats.winPercent != null ? g.homeStats.winPercent : null;
+  if (awayWinPct != null && homeWinPct != null && Math.abs(awayWinPct - homeWinPct) >= 0.05) {
+    const better = awayWinPct > homeWinPct ? 'away' : 'home';
+    factors.push({ team: better, label: `${better === 'away' ? g.away : g.home} win% edge (${Math.round(awayWinPct * 100)}% vs ${Math.round(homeWinPct * 100)}%)` });
+  }
+  const awayPD = g.awayStats && g.awayStats.pointDifferential != null ? g.awayStats.pointDifferential : null;
+  const homePD = g.homeStats && g.homeStats.pointDifferential != null ? g.homeStats.pointDifferential : null;
+  if (awayPD != null && homePD != null && Math.abs(awayPD - homePD) >= 3) {
+    const better = awayPD > homePD ? 'away' : 'home';
+    factors.push({ team: better, label: `${better === 'away' ? g.away : g.home} point diff edge (${awayPD >= 0 ? '+' : ''}${awayPD} vs ${homePD >= 0 ? '+' : ''}${homePD})` });
+  }
+  factors.push({ team: 'home', label: `${g.home} home field edge` });
+  const awayGames = g.awayStats && g.awayStats.wins != null && g.awayStats.losses != null ? g.awayStats.wins + g.awayStats.losses : null;
+  const homeGames = g.homeStats && g.homeStats.wins != null && g.homeStats.losses != null ? g.homeStats.wins + g.homeStats.losses : null;
+  if ((awayGames != null && awayGames < 4) || (homeGames != null && homeGames < 4)) {
+    factors.push({ team: 'neutral', label: `Early-season sample (${g.away} ${nflRecordText(g.awayStats)}, ${g.home} ${nflRecordText(g.homeStats)})`, type: 'neu' });
+  }
+  return factors;
+}
+
+// Same .gp-card anatomy as MLB's Diamond Report Pick card (app.js): team
+// logos flanking a "@" divider, a highlighted pick box with the winning
+// team's logo/abbr/win%/confidence tier, a real win% bar for each team, and
+// a row of real-signal factor chips underneath -- built from the exact same
+// win%/point-differential/home-field inputs nflGameWinProb already scores,
+// just surfaced with the richer MLB card language instead of the flat
+// generic prop-card chip row every other NFL board still uses (Game
+// Projections isn't a per-player prop -- it's a game pick, the same shape
+// as MLB's DRP board, so it earns DRP's own card language rather than the
+// prop-card one).
 function nflGameCardHTML(g) {
-  const pickIsHome = g.pick === g.home;
+  const winner = g.pick === g.home ? 'home' : 'away';
+  const diff = Math.abs(g.awayPct - g.homePct);
+  const confidence = diff < 6 ? 'TOSS-UP' : diff < 12 ? 'LEAN' : diff < 20 ? 'LIKELY' : 'STRONG';
+  const confColor = diff < 6 ? 'var(--muted)' : diff < 12 ? 'var(--accent2)' : diff < 20 ? '#2ecc71' : '#00ff88';
+  const winLogo = (winner === 'away' ? (g.awayMeta && g.awayMeta.logo) : (g.homeMeta && g.homeMeta.logo)) || '';
+  const factors = nflGameFactors(g);
+  const factorChips = factors.slice(0, 6).map(f => {
+    const cls = f.team === 'neutral' ? (f.type || 'neu') : (f.team === winner ? 'pos' : 'opp');
+    return `<span class="gp-factor ${cls}">${fantasyEsc(f.label)}</span>`;
+  }).join('');
   const awayWinPct = g.awayStats && g.awayStats.winPercent != null ? Math.round(g.awayStats.winPercent * 100) : null;
   const homeWinPct = g.homeStats && g.homeStats.winPercent != null ? Math.round(g.homeStats.winPercent * 100) : null;
-  const primary = [
-    nflChip('Line', 'Moneyline', 'good'),
-    nflChip('Pick', g.pick, 'good'),
-    nflChip('Home Field', g.home, pickIsHome ? 'good' : ''),
-  ].join('');
-  const secondaryParts = [
-    nflChip(`${g.away} Pt Diff`, g.awayStats && g.awayStats.pointDifferential != null ? (g.awayStats.pointDifferential >= 0 ? '+' : '') + g.awayStats.pointDifferential : '–', ''),
-    nflChip(`${g.home} Pt Diff`, g.homeStats && g.homeStats.pointDifferential != null ? (g.homeStats.pointDifferential >= 0 ? '+' : '') + g.homeStats.pointDifferential : '–', ''),
-    nflChip(`${g.away} Record`, nflRecordText(g.awayStats), ''),
-    nflChip(`${g.home} Record`, nflRecordText(g.homeStats), ''),
-  ].filter(Boolean).join('');
+  const pickIsHome = winner === 'home';
   const reason = ` ${fantasyEsc(g.pick)} grades at ${g.pickPct}% to win because the model combines real win%${awayWinPct != null && homeWinPct != null ? ` (${fantasyEsc(g.away)} ${awayWinPct}% vs. ${fantasyEsc(g.home)} ${homeWinPct}%)` : ''}, real point differential, and a fixed home-field edge${pickIsHome ? ' that favors the home team here' : ' the pick overcame'}.`;
-  return `<div class="dr109-card${g.pickPct >= 60 ? ' prop-hit' : ''}">
-    <div class="dr109-card-head">
-      <div class="dr109-player">
-        <img loading="lazy" src="${(g.awayMeta && g.awayMeta.logo) || ''}" onerror="this.style.display='none'" alt="" style="width:32px;height:32px;object-fit:contain">
-        <div style="min-width:0">
-          <div class="dr109-name">${fantasyEsc(g.away)} @ ${fantasyEsc(g.home)}</div>
-          <div class="dr109-meta">${fantasyEsc(nflRecordText(g.awayStats))} vs ${fantasyEsc(nflRecordText(g.homeStats))}</div>
+  return `<div class="gp-card">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="gp-matchup" style="flex:1;min-width:180px">
+        <div class="gp-team">
+          ${g.awayMeta && g.awayMeta.logo ? `<img class="gp-team-logo" src="${g.awayMeta.logo}" alt="${fantasyEsc(g.away)}" loading="lazy" decoding="async" onerror="this.style.display='none'">` : ''}
+          <span class="gp-team-abbr">${fantasyEsc(g.away)}</span>
+          <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">${fantasyEsc(nflRecordText(g.awayStats))}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+          <span class="gp-vs">@</span>
+        </div>
+        <div class="gp-team">
+          ${g.homeMeta && g.homeMeta.logo ? `<img class="gp-team-logo" src="${g.homeMeta.logo}" alt="${fantasyEsc(g.home)}" loading="lazy" decoding="async" onerror="this.style.display='none'">` : ''}
+          <span class="gp-team-abbr">${fantasyEsc(g.home)}</span>
+          <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">${fantasyEsc(nflRecordText(g.homeStats))}</span>
         </div>
       </div>
-      <div class="dr109-score">${g.pickPct}%<small>${fantasyEsc(g.pick)} to win</small></div>
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+        <span style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Moneyline Pick</span>
+        <div class="gp-pick gp-pick-win" style="display:flex;flex-direction:row;align-items:center;gap:8px;padding:8px 16px">
+          ${winLogo ? `<img src="${winLogo}" style="width:22px;height:22px;object-fit:contain" alt="${fantasyEsc(g.pick)}" loading="lazy" decoding="async" onerror="this.style.display='none'">` : ''}
+          <div style="display:flex;flex-direction:column;align-items:center">
+            <span style="font-family:'Manrope',sans-serif;font-size:22px;letter-spacing:1px;line-height:1;color:#2ecc71">${fantasyEsc(g.pick)}</span>
+            <span style="font-size:9px;color:#2ecc71;opacity:.8;font-family:'JetBrains Mono',monospace">${g.pickPct}% WIN</span>
+          </div>
+        </div>
+        <span style="font-size:10px;font-weight:700;color:${confColor};letter-spacing:.5px">${confidence}</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:120px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-width:28px">${fantasyEsc(g.away)}</span>
+          <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+            <div style="width:${g.awayPct}%;height:100%;background:${winner === 'away' ? '#2ecc71' : 'var(--muted)'};border-radius:4px"></div>
+          </div>
+          <span style="font-size:10px;font-family:'JetBrains Mono',monospace;min-width:30px;text-align:right;color:${winner === 'away' ? '#2ecc71' : 'var(--muted)'}">${g.awayPct}%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-width:28px">${fantasyEsc(g.home)}</span>
+          <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+            <div style="width:${g.homePct}%;height:100%;background:${winner === 'home' ? '#2ecc71' : 'var(--muted)'};border-radius:4px"></div>
+          </div>
+          <span style="font-size:10px;font-family:'JetBrains Mono',monospace;min-width:30px;text-align:right;color:${winner === 'home' ? '#2ecc71' : 'var(--muted)'}">${g.homePct}%</span>
+        </div>
+      </div>
     </div>
-    <div class="dr109-chiprow">${primary}</div>
-    ${nflBreakdownHTML(secondaryParts)}
+
+    <div class="gp-factors">${factorChips}</div>
     ${nflReasonHTML('Why it supports the pick', reason)}
   </div>`;
 }
@@ -356,7 +429,7 @@ async function renderNFLGameBoard() {
     const pickPct = Math.max(awayPct, homePct);
     return {
       away: g.away.abbreviation, home: g.home.abbreviation,
-      awayStats, homeStats, pick, pickPct,
+      awayStats, homeStats, pick, pickPct, awayPct, homePct,
       awayMeta: data.teamMeta[g.away.abbreviation], homeMeta: data.teamMeta[g.home.abbreviation],
       timestamp: Date.parse(g.date) || 0,
     };
