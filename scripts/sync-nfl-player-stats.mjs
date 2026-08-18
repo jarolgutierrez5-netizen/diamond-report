@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// Real season touchdown rate + rushing yards per skill-position player -- the
-// base input the Anytime TD and Rushing Yards props boards score from. Reads
-// data/nfl-rosters.json (written by sync-nfl-rosters.mjs) for the player
-// universe, then pulls each player's own real game log from ESPN once and
-// sums both real rushing+receiving touchdowns (never passing -- a QB
-// throwing a TD isn't "scoring" it himself) and real rushing yards (only the
-// real `rushing` category, never `receiving` yards) across games actually
-// played -- one fetch per player serves both boards, no duplicate requests.
+// Real season touchdown rate + rushing yards + passing yards per skill-
+// position player -- the base input the Anytime TD, Rushing Yards, and
+// Passing Yards props boards score from. Reads data/nfl-rosters.json
+// (written by sync-nfl-rosters.mjs) for the player universe, then pulls each
+// player's own real game log from ESPN once and sums real rushing+receiving
+// touchdowns (never passing -- a QB throwing a TD isn't "scoring" it
+// himself), real rushing yards (only the real `rushing` category, never
+// `receiving`/`passing` yards), and real passing yards (only the real
+// `passing` category) across games actually played -- one fetch per player
+// serves all three boards, no duplicate requests.
 //
 // REWRITTEN against a real, live-verified response (the original version of
 // this script was written blind in a sandbox with no route to ESPN, per its
@@ -82,6 +84,16 @@ const RUSH_YDS_CATEGORY_NAMES = new Set(['rushing']);
 // client-side line.
 const RUSH_YDS_LINE = 39.5;
 
+// Passing Yards board's own real per-game input -- "YDS" scoped to only the
+// real `passing` category (never `rushing`, which also has its own "YDS" at
+// a different offset for a dual-threat QB).
+const PASS_YDS_CATEGORY_NAMES = new Set(['passing']);
+
+// Passing Yards O/U line -- same real-percentile-first method as
+// RUSH_YDS_LINE above, picked once this script's own regenerated data was in
+// hand. See app.js's Passing Yards board for the matching client-side line.
+const PASS_YDS_LINE = 224.5;
+
 const FETCH_TIMEOUT_MS = 15000;
 // A 404 is a stable, immediate answer (this player has no gamelog on record)
 // not a transient failure, so it isn't worth the retry loop -- same
@@ -144,20 +156,23 @@ function tdColumnIndexes(labels, categories) {
 function rushYdsColumnIndexes(labels, categories) {
   return columnIndexesForCategory(labels, categories, RUSH_YDS_CATEGORY_NAMES, 'YDS');
 }
+function passYdsColumnIndexes(labels, categories) {
+  return columnIndexesForCategory(labels, categories, PASS_YDS_CATEGORY_NAMES, 'YDS');
+}
 
-// Pulls every real per-game {td, rushYds} pair (td summed across whichever
-// real rushing/receiving columns this player's data has; rushYds from only
-// the real rushing category) from the current season's real regular-season
-// rows (Preseason seasonTypes explicitly skipped), plus the real season
-// number the response itself reports. Returns null (not an empty/zero
-// result) if the response has no usable rows at all -- distinct from a
-// real, confirmed scoreless/no-rush game, and distinct from a QB with no
-// rushing/receiving category (also legitimately excluded, not an error).
-// A player can have a real td signal but no real rushYds signal (a pure
-// receiver) or vice versa (extremely rare, but not assumed impossible) --
-// each game row keeps both, null'd independently rather than skipping the
-// whole row, so summarize() below can compute td/rushYds rates off however
-// many real games actually carry each signal.
+// Pulls every real per-game {td, rushYds, passYds} triple (td summed across
+// whichever real rushing/receiving columns this player's data has; rushYds/
+// passYds each from only their own real category) from the current season's
+// real regular-season rows (Preseason seasonTypes explicitly skipped), plus
+// the real season number the response itself reports. Returns null (not an
+// empty/zero result) if the response has no usable rows at all -- distinct
+// from a real, confirmed scoreless/no-rush/no-pass game, and distinct from a
+// player with none of the three real categories (also legitimately
+// excluded, not an error). A player can have some signals but not others
+// (e.g. a pure receiver has no real passYds/rushYds signal) -- each game row
+// keeps all three, null'd independently rather than skipping the whole row,
+// so summarize() below can compute each rate off however many real games
+// actually carry that specific signal.
 function extractSeasonRows(raw) {
   const labels = raw?.labels;
   const categories = raw?.categories;
@@ -172,7 +187,8 @@ function extractSeasonRows(raw) {
   }
   const tdIdxs = tdColumnIndexes(labels, categories);
   const rushYdsIdxs = rushYdsColumnIndexes(labels, categories);
-  if (!tdIdxs.length && !rushYdsIdxs.length) return null; // e.g. a QB with only a passing category
+  const passYdsIdxs = passYdsColumnIndexes(labels, categories);
+  if (!tdIdxs.length && !rushYdsIdxs.length && !passYdsIdxs.length) return null;
 
   const seasonValue = raw?.filters?.find(f => f?.name === 'season')?.value;
   const season = Number(seasonValue) || null;
@@ -190,7 +206,8 @@ function extractSeasonRows(raw) {
         if (!Array.isArray(stats)) continue;
         const td = tdIdxs.length ? tdIdxs.reduce((sum, i) => sum + (Number(stats[i]) || 0), 0) : null;
         const rushYds = rushYdsIdxs.length ? rushYdsIdxs.reduce((sum, i) => sum + (Number(stats[i]) || 0), 0) : null;
-        games.push({ td, rushYds });
+        const passYds = passYdsIdxs.length ? passYdsIdxs.reduce((sum, i) => sum + (Number(stats[i]) || 0), 0) : null;
+        games.push({ td, rushYds, passYds });
       }
     }
   }
@@ -224,6 +241,9 @@ function summarize(rows) {
   const rushYdsGames = rows.games.filter(g => g.rushYds != null);
   const rushYds = rushYdsGames.reduce((a, g) => a + g.rushYds, 0);
   const rushLine = lineStats(rushYdsGames.map(g => g.rushYds), RUSH_YDS_LINE);
+  const passYdsGames = rows.games.filter(g => g.passYds != null);
+  const passYds = passYdsGames.reduce((a, g) => a + g.passYds, 0);
+  const passLine = lineStats(passYdsGames.map(g => g.passYds), PASS_YDS_LINE);
   return {
     season: rows.season,
     td, games, tdPerGame: tdGames.length ? +(td / tdGames.length).toFixed(3) : null,
@@ -233,6 +253,12 @@ function summarize(rows) {
     rushStdDev: rushLine.stdDev,
     gamesWithRushLine: rushLine.gamesWithLine,
     probRushLine: rushLine.probLine,
+    passYds: passYdsGames.length ? passYds : null,
+    gamesWithPassYds: passYdsGames.length,
+    passYdsPerGame: passYdsGames.length ? +(passYds / passYdsGames.length).toFixed(2) : null,
+    passStdDev: passLine.stdDev,
+    gamesWithPassLine: passLine.gamesWithLine,
+    probPassLine: passLine.probLine,
   };
 }
 
@@ -290,4 +316,4 @@ if (isMain) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { extractSeasonRows, columnIndexesForCategory, tdColumnIndexes, rushYdsColumnIndexes, lineStats, summarize, gamelogURL, TD_CATEGORY_NAMES, RUSH_YDS_CATEGORY_NAMES, RUSH_YDS_LINE, main };
+export { extractSeasonRows, columnIndexesForCategory, tdColumnIndexes, rushYdsColumnIndexes, passYdsColumnIndexes, lineStats, summarize, gamelogURL, TD_CATEGORY_NAMES, RUSH_YDS_CATEGORY_NAMES, RUSH_YDS_LINE, PASS_YDS_CATEGORY_NAMES, PASS_YDS_LINE, main };

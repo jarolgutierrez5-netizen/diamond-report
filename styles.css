@@ -854,7 +854,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
   #tb-props-content,
   #sb-props-content,
   #hrrbi-props-content,
-  #nfl-td-content, #nfl-game-content, #nfl-rush-content,
+  #nfl-td-content, #nfl-game-content, #nfl-rush-content, #nfl-pass-content,
   #wnba-points-content,
   #wnba-rebounds-content,
   #wnba-assists-content,
@@ -878,7 +878,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
   #tb-props-content.dr-scroll-tall,
   #sb-props-content.dr-scroll-tall,
   #hrrbi-props-content.dr-scroll-tall,
-  #nfl-td-content.dr-scroll-tall, #nfl-game-content.dr-scroll-tall, #nfl-rush-content.dr-scroll-tall,
+  #nfl-td-content.dr-scroll-tall, #nfl-game-content.dr-scroll-tall, #nfl-rush-content.dr-scroll-tall, #nfl-pass-content.dr-scroll-tall,
   #wnba-points-content.dr-scroll-tall,
   #wnba-rebounds-content.dr-scroll-tall,
   #wnba-assists-content.dr-scroll-tall,
@@ -907,7 +907,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
     -webkit-overflow-scrolling: auto !important;
   }
 
-  #gameprops-content .game-card, #hits-props-content .dr109-card, #rbis-props-content .dr109-card, #tb-props-content .dr109-card, #sb-props-content .dr109-card, #hrrbi-props-content .dr109-card, #nfl-td-content .dr109-card, #nfl-game-content .dr109-card, #nfl-rush-content .dr109-card, #wnba-points-content .dr109-card, #wnba-rebounds-content .dr109-card, #wnba-assists-content .dr109-card, #wnba-threes-content .dr109-card, #wnba-pra-content .dr109-card {
+  #gameprops-content .game-card, #hits-props-content .dr109-card, #rbis-props-content .dr109-card, #tb-props-content .dr109-card, #sb-props-content .dr109-card, #hrrbi-props-content .dr109-card, #nfl-td-content .dr109-card, #nfl-game-content .dr109-card, #nfl-rush-content .dr109-card, #nfl-pass-content .dr109-card, #wnba-points-content .dr109-card, #wnba-rebounds-content .dr109-card, #wnba-assists-content .dr109-card, #wnba-threes-content .dr109-card, #wnba-pra-content .dr109-card {
     max-width: 100% !important;
     min-width: 0 !important;
     box-sizing: border-box !important;
@@ -939,7 +939,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #tb-props-content,
 #sb-props-content,
 #hrrbi-props-content,
-#nfl-td-content, #nfl-game-content, #nfl-rush-content,
+#nfl-td-content, #nfl-game-content, #nfl-rush-content, #nfl-pass-content,
 #wnba-points-content,
 #wnba-rebounds-content,
 #wnba-assists-content,
@@ -955,7 +955,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #tb-props-content,
 #sb-props-content,
 #hrrbi-props-content,
-#nfl-td-content, #nfl-game-content, #nfl-rush-content,
+#nfl-td-content, #nfl-game-content, #nfl-rush-content, #nfl-pass-content,
 #wnba-points-content,
 #wnba-rebounds-content,
 #wnba-assists-content,
@@ -981,10 +981,10 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #hrrbi-props-content > .dr109-summary,
 #hrrbi-props-content > .dr109-filter-row,
 #hrrbi-props-content > .mu-empty,
-#nfl-td-content > .dr109-summary, #nfl-game-content > .dr109-summary, #nfl-rush-content > .dr109-summary,
-#nfl-td-content > .dr109-filter-row, #nfl-game-content > .dr109-filter-row, #nfl-rush-content > .dr109-filter-row,
-#nfl-td-content > .mu-empty, #nfl-game-content > .mu-empty, #nfl-rush-content > .mu-empty,
-#nfl-td-content > .dr1027-hr-summary, #nfl-game-content > .dr1027-hr-summary, #nfl-rush-content > .dr1027-hr-summary,
+#nfl-td-content > .dr109-summary, #nfl-game-content > .dr109-summary, #nfl-rush-content > .dr109-summary, #nfl-pass-content > .dr109-summary,
+#nfl-td-content > .dr109-filter-row, #nfl-game-content > .dr109-filter-row, #nfl-rush-content > .dr109-filter-row, #nfl-pass-content > .dr109-filter-row,
+#nfl-td-content > .mu-empty, #nfl-game-content > .mu-empty, #nfl-rush-content > .mu-empty, #nfl-pass-content > .mu-empty,
+#nfl-td-content > .dr1027-hr-summary, #nfl-game-content > .dr1027-hr-summary, #nfl-rush-content > .dr1027-hr-summary, #nfl-pass-content > .dr1027-hr-summary,
 #wnba-points-content > .dr109-summary,
 #wnba-points-content > .dr109-filter-row,
 #wnba-points-content > .mu-empty,
@@ -1027,7 +1027,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #tb-props-content .dr109-card,
 #sb-props-content .dr109-card,
 #hrrbi-props-content .dr109-card,
-#nfl-td-content .dr109-card, #nfl-game-content .dr109-card, #nfl-rush-content .dr109-card,
+#nfl-td-content .dr109-card, #nfl-game-content .dr109-card, #nfl-rush-content .dr109-card, #nfl-pass-content .dr109-card,
 #wnba-points-content .dr109-card,
 #wnba-rebounds-content .dr109-card,
 #wnba-assists-content .dr109-card,
@@ -1058,7 +1058,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #tb-props-content .dr109-card-head,
 #sb-props-content .dr109-card-head,
 #hrrbi-props-content .dr109-card-head,
-#nfl-td-content .dr109-card-head, #nfl-game-content .dr109-card-head, #nfl-rush-content .dr109-card-head,
+#nfl-td-content .dr109-card-head, #nfl-game-content .dr109-card-head, #nfl-rush-content .dr109-card-head, #nfl-pass-content .dr109-card-head,
 #wnba-points-content .dr109-card-head,
 #wnba-rebounds-content .dr109-card-head,
 #wnba-assists-content .dr109-card-head,
@@ -1073,7 +1073,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #tb-props-content .dr109-name,
 #sb-props-content .dr109-name,
 #hrrbi-props-content .dr109-name,
-#nfl-td-content .dr109-name, #nfl-game-content .dr109-name, #nfl-rush-content .dr109-name,
+#nfl-td-content .dr109-name, #nfl-game-content .dr109-name, #nfl-rush-content .dr109-name, #nfl-pass-content .dr109-name,
 #wnba-points-content .dr109-name,
 #wnba-rebounds-content .dr109-name,
 #wnba-assists-content .dr109-name,
@@ -1091,7 +1091,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #tb-props-content .dr109-meta,
 #sb-props-content .dr109-meta,
 #hrrbi-props-content .dr109-meta,
-#nfl-td-content .dr109-meta, #nfl-game-content .dr109-meta, #nfl-rush-content .dr109-meta,
+#nfl-td-content .dr109-meta, #nfl-game-content .dr109-meta, #nfl-rush-content .dr109-meta, #nfl-pass-content .dr109-meta,
 #wnba-points-content .dr109-meta,
 #wnba-rebounds-content .dr109-meta,
 #wnba-assists-content .dr109-meta,
@@ -1118,7 +1118,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #tb-props-content .dr109-chiprow,
 #sb-props-content .dr109-chiprow,
 #hrrbi-props-content .dr109-chiprow,
-#nfl-td-content .dr109-chiprow, #nfl-game-content .dr109-chiprow, #nfl-rush-content .dr109-chiprow,
+#nfl-td-content .dr109-chiprow, #nfl-game-content .dr109-chiprow, #nfl-rush-content .dr109-chiprow, #nfl-pass-content .dr109-chiprow,
 #wnba-points-content .dr109-chiprow,
 #wnba-rebounds-content .dr109-chiprow,
 #wnba-assists-content .dr109-chiprow,
@@ -1133,7 +1133,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #tb-props-content .dr109-chip,
 #sb-props-content .dr109-chip,
 #hrrbi-props-content .dr109-chip,
-#nfl-td-content .dr109-chip, #nfl-game-content .dr109-chip, #nfl-rush-content .dr109-chip,
+#nfl-td-content .dr109-chip, #nfl-game-content .dr109-chip, #nfl-rush-content .dr109-chip, #nfl-pass-content .dr109-chip,
 #wnba-points-content .dr109-chip,
 #wnba-rebounds-content .dr109-chip,
 #wnba-assists-content .dr109-chip,
@@ -1153,8 +1153,8 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #tb-props-content .dr109-chip strong,
 #sb-props-content .dr109-chip strong,
 #hrrbi-props-content .dr109-chip strong,
-#nfl-td-content .dr109-chip span, #nfl-game-content .dr109-chip span, #nfl-rush-content .dr109-chip span,
-#nfl-td-content .dr109-chip strong, #nfl-game-content .dr109-chip strong, #nfl-rush-content .dr109-chip strong,
+#nfl-td-content .dr109-chip span, #nfl-game-content .dr109-chip span, #nfl-rush-content .dr109-chip span, #nfl-pass-content .dr109-chip span,
+#nfl-td-content .dr109-chip strong, #nfl-game-content .dr109-chip strong, #nfl-rush-content .dr109-chip strong, #nfl-pass-content .dr109-chip strong,
 #wnba-points-content .dr109-chip span,
 #wnba-points-content .dr109-chip strong,
 #wnba-rebounds-content .dr109-chip span,
@@ -1177,7 +1177,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
 #tb-props-content .dr109-reason,
 #sb-props-content .dr109-reason,
 #hrrbi-props-content .dr109-reason,
-#nfl-td-content .dr109-reason, #nfl-game-content .dr109-reason, #nfl-rush-content .dr109-reason,
+#nfl-td-content .dr109-reason, #nfl-game-content .dr109-reason, #nfl-rush-content .dr109-reason, #nfl-pass-content .dr109-reason,
 #wnba-points-content .dr109-reason,
 #wnba-rebounds-content .dr109-reason,
 #wnba-assists-content .dr109-reason,
@@ -1199,7 +1199,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
   #tb-props-content,
   #sb-props-content,
   #hrrbi-props-content,
-  #nfl-td-content, #nfl-game-content, #nfl-rush-content,
+  #nfl-td-content, #nfl-game-content, #nfl-rush-content, #nfl-pass-content,
   #wnba-points-content,
   #wnba-rebounds-content,
   #wnba-assists-content,
@@ -1215,7 +1215,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
   #tb-props-content,
   #sb-props-content,
   #hrrbi-props-content,
-  #nfl-td-content, #nfl-game-content, #nfl-rush-content,
+  #nfl-td-content, #nfl-game-content, #nfl-rush-content, #nfl-pass-content,
   #wnba-points-content,
   #wnba-rebounds-content,
   #wnba-assists-content,
@@ -1231,7 +1231,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
   #tb-props-content,
   #sb-props-content,
   #hrrbi-props-content,
-  #nfl-td-content, #nfl-game-content, #nfl-rush-content,
+  #nfl-td-content, #nfl-game-content, #nfl-rush-content, #nfl-pass-content,
   #wnba-points-content,
   #wnba-rebounds-content,
   #wnba-assists-content,
@@ -1246,7 +1246,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
   #tb-props-content .dr109-card,
   #sb-props-content .dr109-card,
   #hrrbi-props-content .dr109-card,
-  #nfl-td-content .dr109-card, #nfl-game-content .dr109-card, #nfl-rush-content .dr109-card,
+  #nfl-td-content .dr109-card, #nfl-game-content .dr109-card, #nfl-rush-content .dr109-card, #nfl-pass-content .dr109-card,
   #wnba-points-content .dr109-card,
   #wnba-rebounds-content .dr109-card,
   #wnba-assists-content .dr109-card,
@@ -1268,7 +1268,7 @@ body{overflow-x:clip !important;overflow-y:visible !important}body{background:ra
   #tb-props-content .dr109-chiprow,
   #sb-props-content .dr109-chiprow,
   #hrrbi-props-content .dr109-chiprow,
-  #nfl-td-content .dr109-chiprow, #nfl-game-content .dr109-chiprow, #nfl-rush-content .dr109-chiprow,
+  #nfl-td-content .dr109-chiprow, #nfl-game-content .dr109-chiprow, #nfl-rush-content .dr109-chiprow, #nfl-pass-content .dr109-chiprow,
   #wnba-points-content .dr109-chiprow,
   #wnba-rebounds-content .dr109-chiprow,
   #wnba-assists-content .dr109-chiprow,
@@ -3916,7 +3916,7 @@ select:focus-visible {
    #hr-potential-content/#kprops-content, so it silently never applied here:
    the summary metrics fell back to plain stacked block rows instead of a
    4-col grid of card boxes. */
-#nfl-td-content .dr1027-hr-summary, #nfl-game-content .dr1027-hr-summary, #nfl-rush-content .dr1027-hr-summary,
+#nfl-td-content .dr1027-hr-summary, #nfl-game-content .dr1027-hr-summary, #nfl-rush-content .dr1027-hr-summary, #nfl-pass-content .dr1027-hr-summary,
 #wnba-points-content .dr1027-hr-summary,
 #wnba-rebounds-content .dr1027-hr-summary,
 #wnba-assists-content .dr1027-hr-summary,
@@ -3928,7 +3928,7 @@ select:focus-visible {
   padding: 12px;
   margin: 0 0 12px;
 }
-#nfl-td-content .dr1027-summary-grid, #nfl-game-content .dr1027-summary-grid, #nfl-rush-content .dr1027-summary-grid,
+#nfl-td-content .dr1027-summary-grid, #nfl-game-content .dr1027-summary-grid, #nfl-rush-content .dr1027-summary-grid, #nfl-pass-content .dr1027-summary-grid,
 #wnba-points-content .dr1027-summary-grid,
 #wnba-rebounds-content .dr1027-summary-grid,
 #wnba-assists-content .dr1027-summary-grid,
@@ -3938,7 +3938,7 @@ select:focus-visible {
   grid-template-columns: repeat(4, minmax(0,1fr));
   gap: 8px;
 }
-#nfl-td-content .dr1027-summary-metric, #nfl-game-content .dr1027-summary-metric, #nfl-rush-content .dr1027-summary-metric,
+#nfl-td-content .dr1027-summary-metric, #nfl-game-content .dr1027-summary-metric, #nfl-rush-content .dr1027-summary-metric, #nfl-pass-content .dr1027-summary-metric,
 #wnba-points-content .dr1027-summary-metric,
 #wnba-rebounds-content .dr1027-summary-metric,
 #wnba-assists-content .dr1027-summary-metric,
@@ -3950,7 +3950,7 @@ select:focus-visible {
   padding: 9px 10px;
   min-width: 0;
 }
-#nfl-td-content .dr1027-summary-metric b, #nfl-game-content .dr1027-summary-metric b, #nfl-rush-content .dr1027-summary-metric b,
+#nfl-td-content .dr1027-summary-metric b, #nfl-game-content .dr1027-summary-metric b, #nfl-rush-content .dr1027-summary-metric b, #nfl-pass-content .dr1027-summary-metric b,
 #wnba-points-content .dr1027-summary-metric b,
 #wnba-rebounds-content .dr1027-summary-metric b,
 #wnba-assists-content .dr1027-summary-metric b,
@@ -3964,7 +3964,7 @@ select:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-#nfl-td-content .dr1027-summary-metric span, #nfl-game-content .dr1027-summary-metric span, #nfl-rush-content .dr1027-summary-metric span,
+#nfl-td-content .dr1027-summary-metric span, #nfl-game-content .dr1027-summary-metric span, #nfl-rush-content .dr1027-summary-metric span, #nfl-pass-content .dr1027-summary-metric span,
 #wnba-points-content .dr1027-summary-metric span,
 #wnba-rebounds-content .dr1027-summary-metric span,
 #wnba-assists-content .dr1027-summary-metric span,
@@ -3978,7 +3978,7 @@ select:focus-visible {
   letter-spacing: .05em;
   margin-top: 4px;
 }
-#nfl-td-content .dr1027-summary-title, #nfl-game-content .dr1027-summary-title, #nfl-rush-content .dr1027-summary-title,
+#nfl-td-content .dr1027-summary-title, #nfl-game-content .dr1027-summary-title, #nfl-rush-content .dr1027-summary-title, #nfl-pass-content .dr1027-summary-title,
 #wnba-points-content .dr1027-summary-title,
 #wnba-rebounds-content .dr1027-summary-title,
 #wnba-assists-content .dr1027-summary-title,
@@ -3989,7 +3989,7 @@ select:focus-visible {
   color: #f5f7ff;
   margin-bottom: 7px;
 }
-#nfl-td-content .dr1027-summary-copy, #nfl-game-content .dr1027-summary-copy, #nfl-rush-content .dr1027-summary-copy,
+#nfl-td-content .dr1027-summary-copy, #nfl-game-content .dr1027-summary-copy, #nfl-rush-content .dr1027-summary-copy, #nfl-pass-content .dr1027-summary-copy,
 #wnba-points-content .dr1027-summary-copy,
 #wnba-rebounds-content .dr1027-summary-copy,
 #wnba-assists-content .dr1027-summary-copy,
@@ -4001,7 +4001,7 @@ select:focus-visible {
   margin: 0 0 10px;
 }
 @media (max-width: 700px) {
-  #nfl-td-content .dr1027-summary-grid, #nfl-game-content .dr1027-summary-grid, #nfl-rush-content .dr1027-summary-grid,
+  #nfl-td-content .dr1027-summary-grid, #nfl-game-content .dr1027-summary-grid, #nfl-rush-content .dr1027-summary-grid, #nfl-pass-content .dr1027-summary-grid,
   #wnba-points-content .dr1027-summary-grid,
   #wnba-rebounds-content .dr1027-summary-grid,
   #wnba-assists-content .dr1027-summary-grid,
