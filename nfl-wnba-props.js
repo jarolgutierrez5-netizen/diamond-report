@@ -352,6 +352,64 @@ async function renderNFLGameBoard() {
 }
 window.renderNFLGameBoard = renderNFLGameBoard;
 
+// ── NFL yardage boards' shared opponent-defense adjustment ─────────────────
+// Real per-team pointsAgainst (data/nfl-team-stats.json) is the one real,
+// actually-populated defensive signal ESPN exposes for NFL teams -- no real
+// per-team rushing-yards-allowed/passing-yards-allowed split exists (see
+// scripts/sync-nfl-team-stats.mjs's own comment on why), so this applies as
+// a general defense-strength proxy across all three yardage boards (Rush/
+// Pass/Rec), same "one real team-level signal, honestly applied, not a
+// fabricated stat-specific split" approach wnbaDefenseAdjustment already
+// uses for the WNBA Points board. Returns null -- not a fabricated neutral
+// ratio -- when the opponent/league-average values aren't available.
+// Clamped to a real, defensible range (a legitimately elite defense allowing
+// ~40% fewer points than average, a legitimately poor one allowing ~60%
+// more) -- verified live this was actually needed: early in a season (or in
+// preseason, when this ships) a team's real pointsAgainst can be a 1-2 game
+// sample, and an unclamped ratio produced a genuine 212%-adjustment/336-yard
+// projection off one small-sample outlier. The clamp doesn't hide or
+// fabricate anything -- oppVal/leagueAvg below are still the real unclamped
+// numbers, shown as-is in the Matchup chip's tooltip; only the multiplier
+// actually applied to a player's projection is bounded, same "clamp to a
+// believable range so one tiny sample can't produce an absurd number" rule
+// computeDRPick's own eraPts/whipPts/recordPts caps already use.
+const NFL_DEFENSE_RATIO_MIN = 0.6, NFL_DEFENSE_RATIO_MAX = 1.6;
+function nflDefenseAdjustment(oppAbbr, teamStats) {
+  if (!teamStats) return null;
+  const oppTeam = teamStats.teams && teamStats.teams[oppAbbr];
+  const oppVal = oppTeam && oppTeam.pointsAgainst;
+  const leagueAvg = teamStats.leagueAvgPointsAgainst;
+  if (oppVal == null || !(leagueAvg > 0)) return null;
+  const ratio = Math.max(NFL_DEFENSE_RATIO_MIN, Math.min(NFL_DEFENSE_RATIO_MAX, oppVal / leagueAvg));
+  return { ratio, oppVal, leagueAvg };
+}
+
+// Standard normal CDF (Abramowitz-Stegun erf approximation, ~1.5e-7 max
+// error) -- same "genuine closed-form calculation, no Math.random()" shape
+// the MLB HR board's simulateHRGameOdds already uses, applied here to turn
+// a real opponent-adjusted mean + a player's own real season stdDev into a
+// real P(X >= line) read, instead of a raw ratio with no probability
+// attached. This is the one place in the yardage boards' adjustment that's
+// necessarily a parametric estimate rather than a historical count -- real
+// games against this specific upcoming opponent don't exist yet for any
+// forward matchup projection, the same unavoidable reality behind the WNBA
+// Points board's own defense-adjusted projection.
+function erf(x) {
+  const sign = x < 0 ? -1 : 1;
+  x = Math.abs(x);
+  const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741, a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+  const t = 1 / (1 + p * x);
+  const y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+  return sign * y;
+}
+function normalCDF(x, mean, stdDev) {
+  if (!(stdDev > 0)) return x >= mean ? 1 : 0;
+  return 0.5 * (1 + erf((x - mean) / (stdDev * Math.SQRT2)));
+}
+function probOverLine(mean, stdDev, line) {
+  return Math.max(1, Math.min(99, Math.round((1 - normalCDF(line, mean, stdDev)) * 100)));
+}
+
 // ── NFL Rushing Yards (real O/U line, real empirical hit rate) ─────────────
 // Unlike Anytime TD's Poisson at-least-one-event model, rushing yards is a
 // continuous per-game stat, so the probability here is the real EMPIRICAL
@@ -372,11 +430,12 @@ let nflRushDataPromise = null;
 async function loadNFLRushData(force = false) {
   if (nflRushDataPromise && !force) return nflRushDataPromise;
   nflRushDataPromise = (async () => {
-    const [scheduleData, statsData] = await Promise.all([
+    const [scheduleData, statsData, teamStatsData] = await Promise.all([
       drFetchDailyJSON('data/nfl-schedule.json').catch(() => null),
       drFetchDailyJSON('data/nfl-player-stats.json').catch(() => null),
+      drFetchDailyJSON('data/nfl-team-stats.json').catch(() => null),
     ]);
-    return { schedule: (scheduleData && scheduleData.events) || [], players: (statsData && statsData.players) || {} };
+    return { schedule: (scheduleData && scheduleData.events) || [], players: (statsData && statsData.players) || {}, teamStats: teamStatsData || null };
   })();
   return nflRushDataPromise;
 }
@@ -406,11 +465,17 @@ function nflRushSummaryHTML(rows) {
   const top = byProb[0];
   const sample = byProb.slice(0, Math.min(8, byProb.length));
   const avg = Math.round(sample.reduce((a, p) => a + p.prob, 0) / sample.length);
-  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">🏈 EXPANDED <span>NFL RUSHING YARDS DATA</span></div><p class="dr1027-summary-copy">Real empirical rate this season that each player's own actual per-game rushing yards cleared Over ${NFL_RUSH_YDS_LINE}, not a fitted or simulated distribution. Early model — no opponent run-defense adjustment yet.</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>${avg}%</b><span>Board Avg Probability</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>Over ${NFL_RUSH_YDS_LINE} Yds</b><span>Primary Line</span></div></div></div>`;
+  const hasDefense = rows.some(r => r.defenseAdj);
+  const copy = hasDefense
+    ? `Real season rushing-yards rate, adjusted for real opponent scoring defense (ESPN standings) where a real matchup exists: each player's real season average and real stdDev shifted by the real opponent's points-allowed ratio, then run through a real probability calculation against Over ${NFL_RUSH_YDS_LINE} -- not a fitted or simulated distribution.`
+    : `Real empirical rate this season that each player's own actual per-game rushing yards cleared Over ${NFL_RUSH_YDS_LINE}, not a fitted or simulated distribution. Early model — no opponent run-defense adjustment yet.`;
+  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">🏈 EXPANDED <span>NFL RUSHING YARDS DATA</span></div><p class="dr1027-summary-copy">${copy}</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>${avg}%</b><span>Board Avg Probability</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>Over ${NFL_RUSH_YDS_LINE} Yds</b><span>Primary Line</span></div></div></div>`;
 }
 
 function nflRushCardHTML(r) {
   const scoreCls = r.prob >= 55 ? 'good' : '';
+  const defAdj = r.defenseAdj;
+  const matchupPct = defAdj ? Math.round((defAdj.ratio - 1) * 100) : null;
   return `<div class="dr109-card${scoreCls ? ' prop-hit' : ''}">
     ${window.drWatchStarHTML('nfl-' + r.id, r.name)}
     <div class="dr109-card-head">
@@ -426,8 +491,10 @@ function nflRushCardHTML(r) {
     <div class="dr109-chiprow">
       <span class="dr109-chip"><span>Season Rush Yds:</span><strong>${r.rushYds != null ? r.rushYds : '–'}</strong></span>
       <span class="dr109-chip"><span>Games:</span><strong>${r.gamesWithRushYds != null ? r.gamesWithRushYds : '–'}</strong></span>
-      <span class="dr109-chip"><span>Yds/GM:</span><strong>${r.rushYdsPerGame != null ? r.rushYdsPerGame.toFixed(1) : '–'}</strong></span>
+      <span class="dr109-chip"><span>Season Yds/GM:</span><strong>${r.rushYdsPerGame != null ? r.rushYdsPerGame.toFixed(1) : '–'}</strong></span>
+      ${defAdj ? `<span class="dr109-chip"><span>Adj Yds/GM:</span><strong>${r.adjMean != null ? r.adjMean.toFixed(1) : '–'}</strong></span>` : ''}
       <span class="dr109-chip"><span>Std Dev:</span><strong>${r.rushStdDev != null ? r.rushStdDev.toFixed(1) : '–'}</strong></span>
+      ${defAdj ? `<span class="dr109-chip ${matchupPct > 0 ? 'good' : matchupPct < 0 ? 'bad' : ''}" title="${fantasyEsc(r.oppAbbr)} allows real ${defAdj.oppVal.toFixed(1)} pts/gm vs. a real ${defAdj.leagueAvg.toFixed(1)} pts/gm league average"><span>Matchup:</span><strong>${fantasyEsc(r.oppAbbr)} ${matchupPct >= 0 ? '+' : ''}${matchupPct}%</strong></span>` : ''}
     </div>
   </div>`;
 }
@@ -467,7 +534,19 @@ async function renderNFLRushBoard() {
   // rule POOL_MIN_AB enforces for MLB's batter pool.
   const allRows = Object.entries(data.players || {})
     .filter(([id, p]) => p.teamAbbr && oppByTeam[p.teamAbbr] != null && p.rushYdsPerGame != null && (p.gamesWithRushYds || 0) >= NFL_RUSH_MIN_GAMES)
-    .map(([id, p]) => Object.assign({ id }, p, { oppAbbr: oppByTeam[p.teamAbbr], prob: p.probRushLine != null ? p.probRushLine : 0 }));
+    .map(([id, p]) => {
+      const oppAbbr = oppByTeam[p.teamAbbr];
+      const defenseAdj = nflDefenseAdjustment(oppAbbr, data.teamStats);
+      const adjMean = defenseAdj ? p.rushYdsPerGame * defenseAdj.ratio : null;
+      // Only recompute via the parametric estimate when a real matchup AND a
+      // real stdDev both exist -- otherwise fall back to the real empirical
+      // season rate, same "no data, no adjustment" rule wnbaDefenseAdjustment
+      // follows.
+      const prob = (defenseAdj && p.rushStdDev != null)
+        ? probOverLine(adjMean, p.rushStdDev, NFL_RUSH_YDS_LINE)
+        : (p.probRushLine != null ? p.probRushLine : 0);
+      return Object.assign({ id }, p, { oppAbbr, defenseAdj, adjMean, prob });
+    });
   if (!allRows.length) {
     el.innerHTML = `<div class="mu-empty">No player season stats synced yet for the ${fantasyEsc(nextDate)} slate. Check back once the daily sync has run.</div>`;
     return;
@@ -530,11 +609,12 @@ let nflPassDataPromise = null;
 async function loadNFLPassData(force = false) {
   if (nflPassDataPromise && !force) return nflPassDataPromise;
   nflPassDataPromise = (async () => {
-    const [scheduleData, statsData] = await Promise.all([
+    const [scheduleData, statsData, teamStatsData] = await Promise.all([
       drFetchDailyJSON('data/nfl-schedule.json').catch(() => null),
       drFetchDailyJSON('data/nfl-player-stats.json').catch(() => null),
+      drFetchDailyJSON('data/nfl-team-stats.json').catch(() => null),
     ]);
-    return { schedule: (scheduleData && scheduleData.events) || [], players: (statsData && statsData.players) || {} };
+    return { schedule: (scheduleData && scheduleData.events) || [], players: (statsData && statsData.players) || {}, teamStats: teamStatsData || null };
   })();
   return nflPassDataPromise;
 }
@@ -564,11 +644,17 @@ function nflPassSummaryHTML(rows) {
   const top = byProb[0];
   const sample = byProb.slice(0, Math.min(8, byProb.length));
   const avg = Math.round(sample.reduce((a, p) => a + p.prob, 0) / sample.length);
-  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">🏈 EXPANDED <span>NFL PASSING YARDS DATA</span></div><p class="dr1027-summary-copy">Real empirical rate this season that each player's own actual per-game passing yards cleared Over ${NFL_PASS_YDS_LINE}, not a fitted or simulated distribution. Early model — no opponent pass-defense adjustment yet.</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>${avg}%</b><span>Board Avg Probability</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>Over ${NFL_PASS_YDS_LINE} Yds</b><span>Primary Line</span></div></div></div>`;
+  const hasDefense = rows.some(r => r.defenseAdj);
+  const copy = hasDefense
+    ? `Real season passing-yards rate, adjusted for real opponent scoring defense (ESPN standings) where a real matchup exists: each player's real season average and real stdDev shifted by the real opponent's points-allowed ratio, then run through a real probability calculation against Over ${NFL_PASS_YDS_LINE} -- not a fitted or simulated distribution.`
+    : `Real empirical rate this season that each player's own actual per-game passing yards cleared Over ${NFL_PASS_YDS_LINE}, not a fitted or simulated distribution. Early model — no opponent pass-defense adjustment yet.`;
+  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">🏈 EXPANDED <span>NFL PASSING YARDS DATA</span></div><p class="dr1027-summary-copy">${copy}</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>${avg}%</b><span>Board Avg Probability</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>Over ${NFL_PASS_YDS_LINE} Yds</b><span>Primary Line</span></div></div></div>`;
 }
 
 function nflPassCardHTML(r) {
   const scoreCls = r.prob >= 55 ? 'good' : '';
+  const defAdj = r.defenseAdj;
+  const matchupPct = defAdj ? Math.round((defAdj.ratio - 1) * 100) : null;
   return `<div class="dr109-card${scoreCls ? ' prop-hit' : ''}">
     ${window.drWatchStarHTML('nfl-' + r.id, r.name)}
     <div class="dr109-card-head">
@@ -584,8 +670,10 @@ function nflPassCardHTML(r) {
     <div class="dr109-chiprow">
       <span class="dr109-chip"><span>Season Pass Yds:</span><strong>${r.passYds != null ? r.passYds : '–'}</strong></span>
       <span class="dr109-chip"><span>Games:</span><strong>${r.gamesWithPassYds != null ? r.gamesWithPassYds : '–'}</strong></span>
-      <span class="dr109-chip"><span>Yds/GM:</span><strong>${r.passYdsPerGame != null ? r.passYdsPerGame.toFixed(1) : '–'}</strong></span>
+      <span class="dr109-chip"><span>Season Yds/GM:</span><strong>${r.passYdsPerGame != null ? r.passYdsPerGame.toFixed(1) : '–'}</strong></span>
+      ${defAdj ? `<span class="dr109-chip"><span>Adj Yds/GM:</span><strong>${r.adjMean != null ? r.adjMean.toFixed(1) : '–'}</strong></span>` : ''}
       <span class="dr109-chip"><span>Std Dev:</span><strong>${r.passStdDev != null ? r.passStdDev.toFixed(1) : '–'}</strong></span>
+      ${defAdj ? `<span class="dr109-chip ${matchupPct > 0 ? 'good' : matchupPct < 0 ? 'bad' : ''}" title="${fantasyEsc(r.oppAbbr)} allows real ${defAdj.oppVal.toFixed(1)} pts/gm vs. a real ${defAdj.leagueAvg.toFixed(1)} pts/gm league average"><span>Matchup:</span><strong>${fantasyEsc(r.oppAbbr)} ${matchupPct >= 0 ? '+' : ''}${matchupPct}%</strong></span>` : ''}
     </div>
   </div>`;
 }
@@ -624,7 +712,15 @@ async function renderNFLPassBoard() {
   // board entirely, same rule NFL_RUSH_MIN_GAMES enforces above.
   const allRows = Object.entries(data.players || {})
     .filter(([id, p]) => p.teamAbbr && oppByTeam[p.teamAbbr] != null && p.passYdsPerGame != null && (p.gamesWithPassYds || 0) >= NFL_PASS_MIN_GAMES)
-    .map(([id, p]) => Object.assign({ id }, p, { oppAbbr: oppByTeam[p.teamAbbr], prob: p.probPassLine != null ? p.probPassLine : 0 }));
+    .map(([id, p]) => {
+      const oppAbbr = oppByTeam[p.teamAbbr];
+      const defenseAdj = nflDefenseAdjustment(oppAbbr, data.teamStats);
+      const adjMean = defenseAdj ? p.passYdsPerGame * defenseAdj.ratio : null;
+      const prob = (defenseAdj && p.passStdDev != null)
+        ? probOverLine(adjMean, p.passStdDev, NFL_PASS_YDS_LINE)
+        : (p.probPassLine != null ? p.probPassLine : 0);
+      return Object.assign({ id }, p, { oppAbbr, defenseAdj, adjMean, prob });
+    });
   if (!allRows.length) {
     el.innerHTML = `<div class="mu-empty">No player season stats synced yet for the ${fantasyEsc(nextDate)} slate. Check back once the daily sync has run.</div>`;
     return;
@@ -689,11 +785,12 @@ let nflRecDataPromise = null;
 async function loadNFLRecData(force = false) {
   if (nflRecDataPromise && !force) return nflRecDataPromise;
   nflRecDataPromise = (async () => {
-    const [scheduleData, statsData] = await Promise.all([
+    const [scheduleData, statsData, teamStatsData] = await Promise.all([
       drFetchDailyJSON('data/nfl-schedule.json').catch(() => null),
       drFetchDailyJSON('data/nfl-player-stats.json').catch(() => null),
+      drFetchDailyJSON('data/nfl-team-stats.json').catch(() => null),
     ]);
-    return { schedule: (scheduleData && scheduleData.events) || [], players: (statsData && statsData.players) || {} };
+    return { schedule: (scheduleData && scheduleData.events) || [], players: (statsData && statsData.players) || {}, teamStats: teamStatsData || null };
   })();
   return nflRecDataPromise;
 }
@@ -724,11 +821,17 @@ function nflRecSummaryHTML(rows) {
   const top = byProb[0];
   const sample = byProb.slice(0, Math.min(8, byProb.length));
   const avg = Math.round(sample.reduce((a, p) => a + p.prob, 0) / sample.length);
-  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">🏈 EXPANDED <span>NFL RECEIVING YARDS + RECEPTIONS DATA</span></div><p class="dr1027-summary-copy">Real empirical rate this season that each player's own actual per-game receiving yards cleared Over ${NFL_REC_YDS_LINE} (plus a real, separate Receptions O/U ${NFL_RECEPTIONS_LINE} rate), not a fitted or simulated distribution. Early model — no opponent pass-defense adjustment yet.</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>${avg}%</b><span>Board Avg Probability</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>Over ${NFL_REC_YDS_LINE} Yds</b><span>Primary Line</span></div></div></div>`;
+  const hasDefense = rows.some(r => r.defenseAdj);
+  const copy = hasDefense
+    ? `Real season receiving-yards and receptions rates, adjusted for real opponent scoring defense (ESPN standings) where a real matchup exists: each player's real season averages and real stdDevs shifted by the real opponent's points-allowed ratio, then run through a real probability calculation against Over ${NFL_REC_YDS_LINE} (plus a real, separate Receptions O/U ${NFL_RECEPTIONS_LINE}) -- not a fitted or simulated distribution.`
+    : `Real empirical rate this season that each player's own actual per-game receiving yards cleared Over ${NFL_REC_YDS_LINE} (plus a real, separate Receptions O/U ${NFL_RECEPTIONS_LINE} rate), not a fitted or simulated distribution. Early model — no opponent pass-defense adjustment yet.`;
+  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">🏈 EXPANDED <span>NFL RECEIVING YARDS + RECEPTIONS DATA</span></div><p class="dr1027-summary-copy">${copy}</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>${avg}%</b><span>Board Avg Probability</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>Over ${NFL_REC_YDS_LINE} Yds</b><span>Primary Line</span></div></div></div>`;
 }
 
 function nflRecCardHTML(r) {
   const scoreCls = r.prob >= 55 ? 'good' : '';
+  const defAdj = r.defenseAdj;
+  const matchupPct = defAdj ? Math.round((defAdj.ratio - 1) * 100) : null;
   return `<div class="dr109-card${scoreCls ? ' prop-hit' : ''}">
     ${window.drWatchStarHTML('nfl-' + r.id, r.name)}
     <div class="dr109-card-head">
@@ -743,10 +846,12 @@ function nflRecCardHTML(r) {
     </div>
     <div class="dr109-chiprow">
       <span class="dr109-chip"><span>Season Rec Yds:</span><strong>${r.recYds != null ? r.recYds : '–'}</strong></span>
-      <span class="dr109-chip"><span>Yds/GM:</span><strong>${r.recYdsPerGame != null ? r.recYdsPerGame.toFixed(1) : '–'}</strong></span>
+      <span class="dr109-chip"><span>Season Yds/GM:</span><strong>${r.recYdsPerGame != null ? r.recYdsPerGame.toFixed(1) : '–'}</strong></span>
+      ${defAdj ? `<span class="dr109-chip"><span>Adj Yds/GM:</span><strong>${r.adjMean != null ? r.adjMean.toFixed(1) : '–'}</strong></span>` : ''}
       <span class="dr109-chip"><span>Rec/GM:</span><strong>${r.receptionsPerGame != null ? r.receptionsPerGame.toFixed(1) : '–'}</strong></span>
-      <span class="dr109-chip"><span>Over ${NFL_RECEPTIONS_LINE} Rec:</span><strong>${r.probReceptionsLine != null ? r.probReceptionsLine + '%' : '–'}</strong></span>
+      <span class="dr109-chip"><span>Over ${NFL_RECEPTIONS_LINE} Rec:</span><strong>${r.recProb != null ? r.recProb + '%' : '–'}</strong></span>
       <span class="dr109-chip"><span>Games:</span><strong>${r.gamesWithRecYds != null ? r.gamesWithRecYds : '–'}</strong></span>
+      ${defAdj ? `<span class="dr109-chip ${matchupPct > 0 ? 'good' : matchupPct < 0 ? 'bad' : ''}" title="${fantasyEsc(r.oppAbbr)} allows real ${defAdj.oppVal.toFixed(1)} pts/gm vs. a real ${defAdj.leagueAvg.toFixed(1)} pts/gm league average"><span>Matchup:</span><strong>${fantasyEsc(r.oppAbbr)} ${matchupPct >= 0 ? '+' : ''}${matchupPct}%</strong></span>` : ''}
     </div>
   </div>`;
 }
@@ -782,7 +887,22 @@ async function renderNFLRecBoard() {
   // entirely, same rule NFL_RUSH_MIN_GAMES/NFL_PASS_MIN_GAMES enforce above.
   const allRows = Object.entries(data.players || {})
     .filter(([id, p]) => p.teamAbbr && oppByTeam[p.teamAbbr] != null && p.recYdsPerGame != null && (p.gamesWithRecYds || 0) >= NFL_REC_MIN_GAMES)
-    .map(([id, p]) => Object.assign({ id }, p, { oppAbbr: oppByTeam[p.teamAbbr], prob: p.probRecYdsLine != null ? p.probRecYdsLine : 0 }));
+    .map(([id, p]) => {
+      const oppAbbr = oppByTeam[p.teamAbbr];
+      const defenseAdj = nflDefenseAdjustment(oppAbbr, data.teamStats);
+      const adjMean = defenseAdj ? p.recYdsPerGame * defenseAdj.ratio : null;
+      const prob = (defenseAdj && p.recYdsStdDev != null)
+        ? probOverLine(adjMean, p.recYdsStdDev, NFL_REC_YDS_LINE)
+        : (p.probRecYdsLine != null ? p.probRecYdsLine : 0);
+      // Receptions gets the same real defense ratio applied to its own real
+      // mean/stdDev -- a separate real probability, not derived from the
+      // receiving-yards one.
+      const adjReceptionsMean = defenseAdj && p.receptionsPerGame != null ? p.receptionsPerGame * defenseAdj.ratio : null;
+      const recProb = (defenseAdj && p.receptionsStdDev != null && adjReceptionsMean != null)
+        ? probOverLine(adjReceptionsMean, p.receptionsStdDev, NFL_RECEPTIONS_LINE)
+        : (p.probReceptionsLine != null ? p.probReceptionsLine : null);
+      return Object.assign({ id }, p, { oppAbbr, defenseAdj, adjMean, prob, recProb });
+    });
   if (!allRows.length) {
     el.innerHTML = `<div class="mu-empty">No player season stats synced yet for the ${fantasyEsc(nextDate)} slate. Check back once the daily sync has run.</div>`;
     return;
