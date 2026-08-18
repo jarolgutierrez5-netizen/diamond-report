@@ -352,6 +352,168 @@ async function renderNFLGameBoard() {
 }
 window.renderNFLGameBoard = renderNFLGameBoard;
 
+// ── NFL Rushing Yards (real O/U line, real empirical hit rate) ─────────────
+// Unlike Anytime TD's Poisson at-least-one-event model, rushing yards is a
+// continuous per-game stat, so the probability here is the real EMPIRICAL
+// rate at which this player's own actual per-game rushing yards this season
+// cleared the line -- computed server-side in scripts/sync-nfl-player-stats.
+// mjs's lineStats (same method sync-wnba-player-stats.mjs's own lineStats
+// uses for the WNBA boards), not a fitted/simulated distribution. The line
+// itself (39.5) was picked by checking the real percentile it falls at
+// across this season's real synced rushers -- roughly the 65th-75th
+// percentile among real RBs specifically (~92nd across every skill-position
+// player, most of whom rarely rush at all) -- a genuine starter-caliber
+// threshold, same relative selectivity the WNBA boards' own calibrated
+// lines use, and close to a typical real sportsbook rushing-yards prop line.
+const NFL_RUSH_YDS_LINE = 39.5;
+const NFL_RUSH_MIN_GAMES = 4;
+
+let nflRushDataPromise = null;
+async function loadNFLRushData(force = false) {
+  if (nflRushDataPromise && !force) return nflRushDataPromise;
+  nflRushDataPromise = (async () => {
+    const [scheduleData, statsData] = await Promise.all([
+      drFetchDailyJSON('data/nfl-schedule.json').catch(() => null),
+      drFetchDailyJSON('data/nfl-player-stats.json').catch(() => null),
+    ]);
+    return { schedule: (scheduleData && scheduleData.events) || [], players: (statsData && statsData.players) || {} };
+  })();
+  return nflRushDataPromise;
+}
+
+let _nflRushSort = null;
+let _nflRushSortDir = 1;
+let _nflRushGameFilter = '';
+const NFL_RUSH_SORT_FIELDS = [
+  { key: 'prob', label: 'Prob' },
+  { key: 'rushYdsPerGame', label: 'Yds/Gm' },
+  { key: 'games', label: 'Games' },
+];
+function nflRushSortBy(key) {
+  if (_nflRushSort === key) { _nflRushSortDir *= -1; }
+  else { _nflRushSort = key; _nflRushSortDir = 1; }
+  if (!key) { _nflRushSort = null; _nflRushSortDir = 1; }
+  renderNFLRushBoard();
+}
+function setNFLRushGameFilter(value) {
+  _nflRushGameFilter = value || '';
+  renderNFLRushBoard();
+}
+
+function nflRushSummaryHTML(rows) {
+  if (!rows.length) return '';
+  const byProb = rows.slice().sort((a, b) => b.prob - a.prob);
+  const top = byProb[0];
+  const sample = byProb.slice(0, Math.min(8, byProb.length));
+  const avg = Math.round(sample.reduce((a, p) => a + p.prob, 0) / sample.length);
+  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">🏈 EXPANDED <span>NFL RUSHING YARDS DATA</span></div><p class="dr1027-summary-copy">Real empirical rate this season that each player's own actual per-game rushing yards cleared Over ${NFL_RUSH_YDS_LINE}, not a fitted or simulated distribution. Early model — no opponent run-defense adjustment yet.</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>${avg}%</b><span>Board Avg Probability</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>Over ${NFL_RUSH_YDS_LINE} Yds</b><span>Primary Line</span></div></div></div>`;
+}
+
+function nflRushCardHTML(r) {
+  const scoreCls = r.prob >= 55 ? 'good' : '';
+  return `<div class="dr109-card${scoreCls ? ' prop-hit' : ''}">
+    ${window.drWatchStarHTML('nfl-' + r.id, r.name)}
+    <div class="dr109-card-head">
+      <div class="dr109-player">
+        <img loading="lazy" src="${r.headshot || ''}" onerror="this.style.display='none'" alt="">
+        <div style="min-width:0">
+          <div class="dr109-name">${fantasyEsc(r.name || 'Player')}</div>
+          <div class="dr109-meta">${fantasyEsc(r.position || '')} · ${fantasyEsc(r.teamAbbr || '')} vs ${fantasyEsc(r.oppAbbr || '')}</div>
+        </div>
+      </div>
+      <div class="dr109-score">${r.prob}%<small>Over ${NFL_RUSH_YDS_LINE} Yds</small></div>
+    </div>
+    <div class="dr109-chiprow">
+      <span class="dr109-chip"><span>Season Rush Yds:</span><strong>${r.rushYds != null ? r.rushYds : '–'}</strong></span>
+      <span class="dr109-chip"><span>Games:</span><strong>${r.gamesWithRushYds != null ? r.gamesWithRushYds : '–'}</strong></span>
+      <span class="dr109-chip"><span>Yds/GM:</span><strong>${r.rushYdsPerGame != null ? r.rushYdsPerGame.toFixed(1) : '–'}</strong></span>
+      <span class="dr109-chip"><span>Std Dev:</span><strong>${r.rushStdDev != null ? r.rushStdDev.toFixed(1) : '–'}</strong></span>
+    </div>
+  </div>`;
+}
+
+async function renderNFLRushBoard() {
+  const el = document.getElementById('nfl-rush-content');
+  if (!el) return;
+  const __searchFocus = drCaptureSearchFocus('nflrush-search-input');
+  let data;
+  try {
+    data = await loadNFLRushData();
+  } catch (e) {
+    el.innerHTML = '<div class="mu-empty">Couldn\'t load NFL data. Check back shortly.</div>';
+    return;
+  }
+  const upcoming = (data.schedule || []).filter(g => !g.completed && g.date).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  if (!upcoming.length) {
+    el.innerHTML = '<div class="mu-empty">No upcoming NFL games found. Check back closer to kickoff.</div>';
+    return;
+  }
+  // Same "nearest upcoming calendar date" scoping loadNFLTDData/
+  // loadNFLGameData already use -- games are sparse (especially in
+  // preseason), so this is whichever real date has the next kickoff, not a
+  // fixed "today" that could legitimately have zero games on it.
+  const nextDate = upcoming[0].date.slice(0, 10);
+  const slateGames = upcoming.filter(g => (g.date || '').slice(0, 10) === nextDate);
+  const oppByTeam = {};
+  slateGames.forEach(g => {
+    if (g.home && g.away && g.home.abbreviation && g.away.abbreviation) {
+      oppByTeam[g.home.abbreviation] = g.away.abbreviation;
+      oppByTeam[g.away.abbreviation] = g.home.abbreviation;
+    }
+  });
+  // NFL_RUSH_MIN_GAMES keeps a single-game small sample (a real hit rate of
+  // either 0% or 100% off one game tells a user nothing reliable) off the
+  // board entirely, same "don't show a number the sample can't support"
+  // rule POOL_MIN_AB enforces for MLB's batter pool.
+  const allRows = Object.entries(data.players || {})
+    .filter(([id, p]) => p.teamAbbr && oppByTeam[p.teamAbbr] != null && p.rushYdsPerGame != null && (p.gamesWithRushYds || 0) >= NFL_RUSH_MIN_GAMES)
+    .map(([id, p]) => Object.assign({ id }, p, { oppAbbr: oppByTeam[p.teamAbbr], prob: p.probRushLine != null ? p.probRushLine : 0 }));
+  if (!allRows.length) {
+    el.innerHTML = `<div class="mu-empty">No player season stats synced yet for the ${fantasyEsc(nextDate)} slate. Check back once the daily sync has run.</div>`;
+    return;
+  }
+
+  const gameOptsHTML = ['<option value="">All Games</option>'].concat(
+    slateGames.filter(g => g.home && g.away).map(g => {
+      const gid = g.away.abbreviation + '@' + g.home.abbreviation;
+      return `<option value="${gid}"${_nflRushGameFilter === gid ? ' selected' : ''}>${g.away.abbreviation} @ ${g.home.abbreviation}</option>`;
+    })
+  ).join('');
+
+  let rows = allRows.filter(p => drMatchesSearch('nflrush', p.name));
+  if (_nflRushGameFilter) {
+    rows = rows.filter(p => {
+      const opp = oppByTeam[p.teamAbbr];
+      const gid = p.teamAbbr + '@' + opp, gidRev = opp + '@' + p.teamAbbr;
+      return _nflRushGameFilter === gid || _nflRushGameFilter === gidRev;
+    });
+  }
+  const sortKey = _nflRushSort || 'prob';
+  rows = rows.slice().sort((a, b) => (b[sortKey] - a[sortKey]) * _nflRushSortDir);
+
+  const sortBtns = NFL_RUSH_SORT_FIELDS.map(({ key, label }) => {
+    const active = (_nflRushSort || 'prob') === key;
+    const arrow = active ? (_nflRushSortDir === 1 ? ' ↓' : ' ↑') : '';
+    return `<button onclick="nflRushSortBy('${key}')" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:4px 10px;border-radius:12px;border:1px solid ${active ? 'var(--accent2)' : 'var(--border)'};background:${active ? 'rgba(47,107,255,.12)' : 'var(--surface2)'};color:${active ? 'var(--accent2)' : 'var(--muted)'};cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">${label}${arrow}</button>`;
+  }).join('');
+
+  const noMatches = !rows.length && ((window.__drBoardSearch.nflrush || '').trim() || _nflRushGameFilter);
+  el.innerHTML = `<div class="dr109-summary"><div class="dr109-title">🏈 <span>${fantasyEsc(nextDate)} SLATE</span></div>`
+    + `<p class="dr109-copy">Real empirical rate this season that each player's own actual per-game rushing yards (${fantasyEsc(allRows[0].season)} season) cleared Over ${NFL_RUSH_YDS_LINE}. Early model — no opponent run-defense adjustment yet, values are generated from the active synced roster/stats data.</p></div>`
+    + nflRushSummaryHTML(allRows)
+    + `<div class="dr109-filter-row kprops-sticky-sort" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap">
+        <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">GAME:</span>
+        <select onchange="setNFLRushGameFilter(this.value)" style="background:#0e1728;color:#fff;border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;flex-shrink:0">${gameOptsHTML}</select>
+        <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap;flex-shrink:0">SORT:</span>
+        ${sortBtns}
+        <button onclick="nflRushSortBy(null)" style="font-size:9px;font-weight:700;font-family:Manrope,sans-serif;padding:3px 8px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0">RESET</button>
+        ${drSearchInputHTML('nflrush', 'nflrush-search-input', 'Search players…', "drSetBoardSearch('nflrush',this.value,renderNFLRushBoard)")}
+      </div>`
+    + (noMatches ? `<div class="mu-empty" style="padding:24px">No players match the current search/filter.</div>` : rows.map(nflRushCardHTML).join(''));
+  drRestoreSearchFocus(__searchFocus);
+}
+window.renderNFLRushBoard = renderNFLRushBoard;
+
 // ── WNBA prop board family (Points/Rebounds/Assists/3-Pointers Made/PRA) ───
 // Each card's headline is the player's own real season per-game average --
 // a real individual projection, same "the model projects N Ks" framing the

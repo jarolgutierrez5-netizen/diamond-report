@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026081806">
+<link rel="stylesheet" href="styles.min.css?v=2026081807">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -156,6 +156,7 @@
 <div class="dr-top-nav-menu" id="dr-top-nav-nfl-menu" aria-hidden="true">
   <button type="button" data-gamepick-pane="nfltd" data-sport="NFL" class="dr-top-nav-tab active"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8c.9 2.7-2.4 3.7-2.4 6.8a2.4 2.4 0 0 0 4.8 0c0-.8-.4-1.5-.8-2 .2 1.2-.8 1.6-1 .8-.4-1.1.8-1.7.6-3.7-.1-1.6-1.2-1.9-1.2-1.9z"/><path d="M7.2 11.5A3.4 3.4 0 0 0 10 17a3.4 3.4 0 0 0 3.3-4.3"/></svg><span>Anytime TD</span></button>
   <button type="button" data-gamepick-pane="nflgame" data-sport="NFL" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="15" height="13" rx="2.5"/><path d="M2.5 8h15"/><path d="M6.5 2.5v3M13.5 2.5v3"/></svg><span>Game Projections</span></button>
+  <button type="button" data-gamepick-pane="nflrush" data-sport="NFL" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 6l4 4-4 4-4-4z"/><path d="M2.5 8.5h5M2.5 11.5h3.5" stroke-width="1.1"/></svg><span>Rushing Yards</span></button>
 </div>
 <!-- Deliberately a sibling of .dr-top-nav-inner, not nested inside it -- that
      row has overflow-x:auto for the narrow-viewport scroll fallback, and CSS
@@ -210,6 +211,7 @@
     <button type="button" data-tab="fantasy" data-sport="MLB" class="dr-menu-item">🏆 Fantasy Points [Beta]</button>
     <button type="button" data-tab="nfltd" data-sport="NFL" class="dr-menu-item dr-menu-item-hidden">🏈 NFL Anytime TD</button>
     <button type="button" data-tab="nflgame" data-sport="NFL" class="dr-menu-item dr-menu-item-hidden">🏈 NFL Game Projections</button>
+    <button type="button" data-tab="nflrush" data-sport="NFL" class="dr-menu-item dr-menu-item-hidden">🏈 NFL Rushing Yards</button>
     <button type="button" data-tab="wnbapts" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA Points</button>
     <button type="button" data-tab="wnbareb" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA Rebounds</button>
     <button type="button" data-tab="wnbaast" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA Assists</button>
@@ -599,6 +601,7 @@
     <button class="gamepick-tab" id="gamepick-tab-fantasy" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-fantasy" data-gamepick-pane="fantasy" onclick="showGamePickPane('fantasy')">🏆 Fantasy Points [Beta]</button>
     <button class="gamepick-tab" id="gamepick-tab-nfltd" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-nfltd" data-gamepick-pane="nfltd" onclick="showGamePickPane('nfltd')">🏈 NFL Anytime TD</button>
     <button class="gamepick-tab" id="gamepick-tab-nflgame" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-nflgame" data-gamepick-pane="nflgame" onclick="showGamePickPane('nflgame')">🏈 NFL Game Projections</button>
+    <button class="gamepick-tab" id="gamepick-tab-nflrush" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-nflrush" data-gamepick-pane="nflrush" onclick="showGamePickPane('nflrush')">🏈 NFL Rushing Yards</button>
     <button class="gamepick-tab" id="gamepick-tab-wnbapts" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnbapts" data-gamepick-pane="wnbapts" onclick="showGamePickPane('wnbapts')">🏀 WNBA Points</button>
     <button class="gamepick-tab" id="gamepick-tab-wnbareb" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnbareb" data-gamepick-pane="wnbareb" onclick="showGamePickPane('wnbareb')">🏀 WNBA Rebounds</button>
     <button class="gamepick-tab" id="gamepick-tab-wnbaast" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnbaast" data-gamepick-pane="wnbaast" onclick="showGamePickPane('wnbaast')">🏀 WNBA Assists</button>
@@ -791,6 +794,27 @@
       </div>
       <div id="nfl-game-content" class="dr-panel-body dr-scroll-tall">
         <div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading NFL game projections…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- NFL Rushing Yards -- real empirical rate each player's own actual
+     per-game rushing yards this season (data/nfl-player-stats.json,
+     scripts/sync-nfl-player-stats.mjs) cleared a real, percentile-calibrated
+     O/U line, not a fitted/simulated distribution. Same method as the WNBA
+     boards' own calibrated lines. -->
+<div class="gamepick-pane" id="gamepick-pane-nflrush" role="tabpanel" aria-labelledby="gamepick-tab-nflrush" data-gamepick-pane="nflrush" hidden>
+  <div class="dr-center-label">🏈 NFL Rushing Yards</div>
+  <div class="dr-dashboard-grid">
+    <div class="dr-panel dr-panel-large dr-panel-fresh">
+      <div class="dr-panel-head">
+        <div>
+          <p class="section-title">NFL <span>Rushing Yards</span></p>
+          <small>Real empirical rate each player's own actual per-game rushing yards cleared the line this season. Early model -- no opponent run-defense adjustment yet.</small>
+        </div>
+      </div>
+      <div id="nfl-rush-content" class="dr-panel-body dr-scroll-tall">
+        <div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading NFL rushing yards…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div>
       </div>
     </div>
   </div>
@@ -1226,8 +1250,8 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026081806" defer></script>
-<script src="nfl-wnba-props.min.js?v=2026081806" defer></script>
+<script src="app.min.js?v=2026081807" defer></script>
+<script src="nfl-wnba-props.min.js?v=2026081807" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->
