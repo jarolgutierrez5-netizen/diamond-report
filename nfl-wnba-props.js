@@ -33,13 +33,15 @@
 // ── NFL Anytime Touchdown Scorer (first real NFL board) ────────────────────
 // Real season TD-per-game rate (data/nfl-player-stats.json, scripts/sync-nfl-
 // player-stats.mjs) run through a simple Poisson at-least-one-event model --
-// P(at least 1 TD) = 1 - e^(-lambda), lambda = real season TD/game rate. No
-// opponent-defense adjustment yet (that's the natural next step, same as how
-// the MLB HR formula itself started as a single real rate before Matchup
-// Edge/Zone Fit/park/weather were layered in over many iterations) -- an
-// honest first cut, not a finished model.
-function nflAnytimeTDProb(tdPerGame) {
-  const lambda = Math.max(0, Number(tdPerGame) || 0);
+// P(at least 1 TD) = 1 - e^(-lambda), lambda = real season TD/game rate,
+// shifted by the same real opponent points-allowed ratio (nflDefenseAdjustment,
+// defined below with the yardage boards) where a real matchup exists -- points
+// allowed is arguably an even more directly relevant signal for touchdowns
+// specifically than for yardage, since a TD is worth points by definition.
+// Same "one real team-level signal, honestly applied" approach and same
+// clamped 0.6-1.6 ratio range as the yardage boards use.
+function nflAnytimeTDProb(tdPerGame, ratio) {
+  const lambda = Math.max(0, Number(tdPerGame) || 0) * (ratio != null ? ratio : 1);
   const p = 1 - Math.exp(-lambda);
   return Math.max(1, Math.min(99, Math.round(p * 100)));
 }
@@ -48,11 +50,12 @@ let nflTDDataPromise = null;
 async function loadNFLTDData(force = false) {
   if (nflTDDataPromise && !force) return nflTDDataPromise;
   nflTDDataPromise = (async () => {
-    const [scheduleData, statsData] = await Promise.all([
+    const [scheduleData, statsData, teamStatsData] = await Promise.all([
       drFetchDailyJSON('data/nfl-schedule.json').catch(() => null),
       drFetchDailyJSON('data/nfl-player-stats.json').catch(() => null),
+      drFetchDailyJSON('data/nfl-team-stats.json').catch(() => null),
     ]);
-    return { schedule: (scheduleData && scheduleData.events) || [], players: (statsData && statsData.players) || {} };
+    return { schedule: (scheduleData && scheduleData.events) || [], players: (statsData && statsData.players) || {}, teamStats: teamStatsData || null };
   })();
   return nflTDDataPromise;
 }
@@ -89,11 +92,17 @@ function nflTDSummaryHTML(rows) {
   const top = byProb[0];
   const sample = byProb.slice(0, Math.min(8, byProb.length));
   const avg = Math.round(sample.reduce((a, p) => a + p.prob, 0) / sample.length);
-  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">🏈 EXPANDED <span>NFL ANYTIME TD DATA</span></div><p class="dr1027-summary-copy">Real season touchdown rate per skill-position player, modeled as at-least-one-TD-this-game probability. Early model — no opponent defense adjustment yet.</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>${avg}%</b><span>Board Avg Probability</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>Anytime TD</b><span>Primary Signal</span></div></div></div>`;
+  const hasDefense = rows.some(r => r.defenseAdj);
+  const copy = hasDefense
+    ? 'Real season touchdown rate per skill-position player, adjusted for real opponent scoring defense (ESPN standings) where a real matchup exists, modeled as at-least-one-TD-this-game probability.'
+    : 'Real season touchdown rate per skill-position player, modeled as at-least-one-TD-this-game probability. Early model — no opponent defense adjustment yet.';
+  return `<div class="dr1027-hr-summary"><div class="dr1027-summary-title">🏈 EXPANDED <span>NFL ANYTIME TD DATA</span></div><p class="dr1027-summary-copy">${copy}</p><div class="dr1027-summary-grid"><div class="dr1027-summary-metric good"><b>${fantasyEsc(top.name || '–')}</b><span>Top Rated</span></div><div class="dr1027-summary-metric"><b>${avg}%</b><span>Board Avg Probability</span></div><div class="dr1027-summary-metric"><b>${rows.length}</b><span>Players Scanned</span></div><div class="dr1027-summary-metric warn"><b>Anytime TD</b><span>Primary Signal</span></div></div></div>`;
 }
 
 function nflTDCardHTML(r) {
   const scoreCls = r.prob >= 55 ? 'good' : '';
+  const defAdj = r.defenseAdj;
+  const matchupPct = defAdj ? Math.round((defAdj.ratio - 1) * 100) : null;
   return `<div class="dr109-card${scoreCls ? ' prop-hit' : ''}">
     ${window.drWatchStarHTML('nfl-' + r.id, r.name)}
     <div class="dr109-card-head">
@@ -111,6 +120,7 @@ function nflTDCardHTML(r) {
       <span class="dr109-chip"><span>Games:</span><strong>${r.games != null ? r.games : '–'}</strong></span>
       <span class="dr109-chip"><span>TD/GM:</span><strong>${r.tdPerGame != null ? r.tdPerGame.toFixed(2) : '–'}</strong></span>
       <span class="dr109-chip"><span>Season:</span><strong>${r.season != null ? r.season : '–'}</strong></span>
+      ${defAdj ? `<span class="dr109-chip ${matchupPct > 0 ? 'good' : matchupPct < 0 ? 'bad' : ''}" title="${fantasyEsc(r.oppAbbr)} allows real ${defAdj.oppVal.toFixed(1)} pts/gm vs. a real ${defAdj.leagueAvg.toFixed(1)} pts/gm league average"><span>Matchup:</span><strong>${fantasyEsc(r.oppAbbr)} ${matchupPct >= 0 ? '+' : ''}${matchupPct}%</strong></span>` : ''}
     </div>
   </div>`;
 }
@@ -146,7 +156,12 @@ async function renderNFLTDBoard() {
   });
   const allRows = Object.entries(data.players || {})
     .filter(([id, p]) => p.teamAbbr && oppByTeam[p.teamAbbr] != null && p.tdPerGame != null)
-    .map(([id, p]) => Object.assign({ id }, p, { oppAbbr: oppByTeam[p.teamAbbr], prob: nflAnytimeTDProb(p.tdPerGame) }));
+    .map(([id, p]) => {
+      const oppAbbr = oppByTeam[p.teamAbbr];
+      const defenseAdj = nflDefenseAdjustment(oppAbbr, data.teamStats);
+      const prob = nflAnytimeTDProb(p.tdPerGame, defenseAdj ? defenseAdj.ratio : 1);
+      return Object.assign({ id }, p, { oppAbbr, defenseAdj, prob });
+    });
   if (!allRows.length) {
     el.innerHTML = `<div class="mu-empty">No player season stats synced yet for the ${fantasyEsc(nextDate)} slate. Check back once the daily sync has run.</div>`;
     return;
