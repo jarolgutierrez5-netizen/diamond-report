@@ -25,7 +25,7 @@
      you're testing locally right after an edit, the .min files won't reflect your
      change until that Action runs (or you regenerate them yourself, see the
      workflow file for the exact commands). -->
-<link rel="stylesheet" href="styles.min.css?v=2026081305">
+<link rel="stylesheet" href="styles.min.css?v=2026081808">
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -138,11 +138,9 @@
      replaced, there's no collapse toggle or Baseball accordion needed. -->
 <div class="dr-top-nav-inner" role="navigation" aria-label="Site navigation">
   <button type="button" class="dr-top-nav-cat-btn" id="dr-top-nav-baseball-btn" aria-expanded="false" aria-controls="dr-top-nav-baseball-menu"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M5.6 4.6c1.4 1.5 1.9 3.4 1.9 5.4s-.5 3.9-1.9 5.4M14.4 4.6c-1.4 1.5-1.9 3.4-1.9 5.4s.5 3.9 1.9 5.4" stroke-width="1.15"/></svg><span>MLB</span><span class="dr-top-nav-cat-current" id="dr-top-nav-baseball-current">Games Today</span><svg class="dr-top-nav-chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5l3 3 3-3"/></svg></button>
-  <!-- NFL has exactly one board, so unlike Baseball/WNBA it's a plain
-       clickable pill (no dropdown) that routes straight into that board --
-       data-gamepick-pane/data-sport drive the click handler in app.js's
-       desktop-top-nav IIFE. -->
-  <button type="button" class="dr-top-nav-cat-btn" id="dr-top-nav-nfl-btn" data-gamepick-pane="nfltd" data-sport="NFL"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 10c2-4.3 5.7-6.5 7.2-6.5s5.2 2.2 7.2 6.5c-2 4.3-5.7 6.5-7.2 6.5s-5.2-2.2-7.2-6.5z"/><path d="M5.2 10h9.6" stroke-width="1.1"/><path d="M8 8.7v2.6M10 8.4v3.2M12 8.7v2.6" stroke-width="1"/></svg><span>NFL</span></button>
+  <!-- NFL now has 2 boards (Anytime TD, Game Projections), so like Baseball/
+       WNBA it's a real dropdown, not a single pill. -->
+  <button type="button" class="dr-top-nav-cat-btn" id="dr-top-nav-nfl-btn" aria-expanded="false" aria-controls="dr-top-nav-nfl-menu"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 10c2-4.3 5.7-6.5 7.2-6.5s5.2 2.2 7.2 6.5c-2 4.3-5.7 6.5-7.2 6.5s-5.2-2.2-7.2-6.5z"/><path d="M5.2 10h9.6" stroke-width="1.1"/><path d="M8 8.7v2.6M10 8.4v3.2M12 8.7v2.6" stroke-width="1"/></svg><span>NFL</span><span class="dr-top-nav-cat-current" id="dr-top-nav-nfl-current">Anytime TD</span><svg class="dr-top-nav-chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5l3 3 3-3"/></svg></button>
   <span class="dr-top-nav-cat-btn dr-top-nav-cat-soon" title="Coming soon"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14" stroke-width="1.15"/><path d="M4.9 5.1c1.9 1.7 3 3 3 4.9s-1.1 3.2-3 4.9M15.1 5.1c-1.9 1.7-3 3-3 4.9s1.1 3.2 3 4.9" stroke-width="1.1"/></svg><span>NBA</span><em>Soon</em></span>
   <!-- WNBA has 5 boards now (Points/Rebounds/Assists/3-Pointers Made/PRA),
        so it's a real dropdown like Baseball's, not a single pill. -->
@@ -154,6 +152,13 @@
   <button type="button" data-gamepick-pane="wnbaast" data-sport="WNBA" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15.5l4.5-9 3 4 2.5-5.5L17 12"/></svg><span>Assists</span></button>
   <button type="button" data-gamepick-pane="wnba3pm" data-sport="WNBA" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8.2L10 3l4.5 5.2L10 17z"/></svg><span>3-Pointers Made</span></button>
   <button type="button" data-gamepick-pane="wnbapra" data-sport="WNBA" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.5V9M10 16.5V4M16 16.5v-6.5"/><path d="M2.5 16.5h15"/></svg><span>PRA</span></button>
+</div>
+<div class="dr-top-nav-menu" id="dr-top-nav-nfl-menu" aria-hidden="true">
+  <button type="button" data-gamepick-pane="nfltd" data-sport="NFL" class="dr-top-nav-tab active"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8c.9 2.7-2.4 3.7-2.4 6.8a2.4 2.4 0 0 0 4.8 0c0-.8-.4-1.5-.8-2 .2 1.2-.8 1.6-1 .8-.4-1.1.8-1.7.6-3.7-.1-1.6-1.2-1.9-1.2-1.9z"/><path d="M7.2 11.5A3.4 3.4 0 0 0 10 17a3.4 3.4 0 0 0 3.3-4.3"/></svg><span>Anytime TD</span></button>
+  <button type="button" data-gamepick-pane="nflgame" data-sport="NFL" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="15" height="13" rx="2.5"/><path d="M2.5 8h15"/><path d="M6.5 2.5v3M13.5 2.5v3"/></svg><span>Game Projections</span></button>
+  <button type="button" data-gamepick-pane="nflrush" data-sport="NFL" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 6l4 4-4 4-4-4z"/><path d="M2.5 8.5h5M2.5 11.5h3.5" stroke-width="1.1"/></svg><span>Rushing Yards</span></button>
+  <button type="button" data-gamepick-pane="nflpass" data-sport="NFL" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2.5L4.5 11h4.2L8 17.5l6.5-9h-4.2z"/></svg><span>Passing Yards</span></button>
+  <button type="button" data-gamepick-pane="nflrec" data-sport="NFL" class="dr-top-nav-tab"><svg class="dr-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.5V9M10 16.5V4M16 16.5v-6.5"/><path d="M2.5 16.5h15"/></svg><span>Receiving Yards + Rec</span></button>
 </div>
 <!-- Deliberately a sibling of .dr-top-nav-inner, not nested inside it -- that
      row has overflow-x:auto for the narrow-viewport scroll fallback, and CSS
@@ -207,6 +212,10 @@
     <button type="button" data-tab="pr" data-sport="MLB" class="dr-menu-item">📋 Pitcher Report</button>
     <button type="button" data-tab="fantasy" data-sport="MLB" class="dr-menu-item">🏆 Fantasy Points [Beta]</button>
     <button type="button" data-tab="nfltd" data-sport="NFL" class="dr-menu-item dr-menu-item-hidden">🏈 NFL Anytime TD</button>
+    <button type="button" data-tab="nflgame" data-sport="NFL" class="dr-menu-item dr-menu-item-hidden">🏈 NFL Game Projections</button>
+    <button type="button" data-tab="nflrush" data-sport="NFL" class="dr-menu-item dr-menu-item-hidden">🏈 NFL Rushing Yards</button>
+    <button type="button" data-tab="nflpass" data-sport="NFL" class="dr-menu-item dr-menu-item-hidden">🏈 NFL Passing Yards</button>
+    <button type="button" data-tab="nflrec" data-sport="NFL" class="dr-menu-item dr-menu-item-hidden">🏈 NFL Receiving Yards + Rec</button>
     <button type="button" data-tab="wnbapts" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA Points</button>
     <button type="button" data-tab="wnbareb" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA Rebounds</button>
     <button type="button" data-tab="wnbaast" data-sport="WNBA" class="dr-menu-item dr-menu-item-hidden">🏀 WNBA Assists</button>
@@ -595,6 +604,10 @@
     <button class="gamepick-tab" id="gamepick-tab-pr" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-pr" data-gamepick-pane="pr" onclick="showGamePickPane('pr')">📋 Pitcher Report</button>
     <button class="gamepick-tab" id="gamepick-tab-fantasy" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-fantasy" data-gamepick-pane="fantasy" onclick="showGamePickPane('fantasy')">🏆 Fantasy Points [Beta]</button>
     <button class="gamepick-tab" id="gamepick-tab-nfltd" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-nfltd" data-gamepick-pane="nfltd" onclick="showGamePickPane('nfltd')">🏈 NFL Anytime TD</button>
+    <button class="gamepick-tab" id="gamepick-tab-nflgame" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-nflgame" data-gamepick-pane="nflgame" onclick="showGamePickPane('nflgame')">🏈 NFL Game Projections</button>
+    <button class="gamepick-tab" id="gamepick-tab-nflrush" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-nflrush" data-gamepick-pane="nflrush" onclick="showGamePickPane('nflrush')">🏈 NFL Rushing Yards</button>
+    <button class="gamepick-tab" id="gamepick-tab-nflpass" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-nflpass" data-gamepick-pane="nflpass" onclick="showGamePickPane('nflpass')">🏈 NFL Passing Yards</button>
+    <button class="gamepick-tab" id="gamepick-tab-nflrec" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-nflrec" data-gamepick-pane="nflrec" onclick="showGamePickPane('nflrec')">🏈 NFL Receiving Yards + Rec</button>
     <button class="gamepick-tab" id="gamepick-tab-wnbapts" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnbapts" data-gamepick-pane="wnbapts" onclick="showGamePickPane('wnbapts')">🏀 WNBA Points</button>
     <button class="gamepick-tab" id="gamepick-tab-wnbareb" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnbareb" data-gamepick-pane="wnbareb" onclick="showGamePickPane('wnbareb')">🏀 WNBA Rebounds</button>
     <button class="gamepick-tab" id="gamepick-tab-wnbaast" type="button" role="tab" aria-selected="false" aria-controls="gamepick-pane-wnbaast" data-gamepick-pane="wnbaast" onclick="showGamePickPane('wnbaast')">🏀 WNBA Assists</button>
@@ -765,6 +778,90 @@
       </div>
       <div id="nfl-td-content" class="dr-panel-body dr-scroll-tall">
         <div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading NFL props…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- NFL Game Projections -- favored team from each real matchup's win% and
+     point differential (data/nfl-team-stats.json, scripts/sync-nfl-team-
+     stats.mjs) plus a fixed home-field edge. No per-game starting-pitcher
+     equivalent exists in football, so this is entirely team-based, same
+     "start simple" precedent the Anytime TD board above and the MLB HR
+     formula itself started from. -->
+<div class="gamepick-pane" id="gamepick-pane-nflgame" role="tabpanel" aria-labelledby="gamepick-tab-nflgame" data-gamepick-pane="nflgame" hidden>
+  <div class="dr-center-label">🏈 NFL Game Projections</div>
+  <div class="dr-dashboard-grid">
+    <div class="dr-panel dr-panel-large dr-panel-fresh">
+      <div class="dr-panel-head">
+        <div>
+          <p class="section-title">NFL <span>Game Projections</span></p>
+          <small>Favored team from each real matchup's win% and point differential, plus a fixed home-field edge. Early model -- no injury/QB-status adjustment yet.</small>
+        </div>
+      </div>
+      <div id="nfl-game-content" class="dr-panel-body dr-scroll-tall">
+        <div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading NFL game projections…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- NFL Rushing Yards -- real empirical rate each player's own actual
+     per-game rushing yards this season (data/nfl-player-stats.json,
+     scripts/sync-nfl-player-stats.mjs) cleared a real, percentile-calibrated
+     O/U line, not a fitted/simulated distribution. Same method as the WNBA
+     boards' own calibrated lines. -->
+<div class="gamepick-pane" id="gamepick-pane-nflrush" role="tabpanel" aria-labelledby="gamepick-tab-nflrush" data-gamepick-pane="nflrush" hidden>
+  <div class="dr-center-label">🏈 NFL Rushing Yards</div>
+  <div class="dr-dashboard-grid">
+    <div class="dr-panel dr-panel-large dr-panel-fresh">
+      <div class="dr-panel-head">
+        <div>
+          <p class="section-title">NFL <span>Rushing Yards</span></p>
+          <small>Real empirical rate each player's own actual per-game rushing yards cleared the line this season. Early model -- no opponent run-defense adjustment yet.</small>
+        </div>
+      </div>
+      <div id="nfl-rush-content" class="dr-panel-body dr-scroll-tall">
+        <div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading NFL rushing yards…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- NFL Passing Yards -- real empirical rate each player's own actual
+     per-game passing yards this season (data/nfl-player-stats.json,
+     scripts/sync-nfl-player-stats.mjs) cleared a real, percentile-calibrated
+     O/U line, same method as Rushing Yards above. -->
+<div class="gamepick-pane" id="gamepick-pane-nflpass" role="tabpanel" aria-labelledby="gamepick-tab-nflpass" data-gamepick-pane="nflpass" hidden>
+  <div class="dr-center-label">🏈 NFL Passing Yards</div>
+  <div class="dr-dashboard-grid">
+    <div class="dr-panel dr-panel-large dr-panel-fresh">
+      <div class="dr-panel-head">
+        <div>
+          <p class="section-title">NFL <span>Passing Yards</span></p>
+          <small>Real empirical rate each player's own actual per-game passing yards cleared the line this season. Early model -- no opponent pass-defense adjustment yet.</small>
+        </div>
+      </div>
+      <div id="nfl-pass-content" class="dr-panel-body dr-scroll-tall">
+        <div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading NFL passing yards…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- NFL Receiving Yards + Receptions -- two real, separately calibrated O/U
+     lines on one card (data/nfl-player-stats.json, scripts/sync-nfl-player-
+     stats.mjs), same real-empirical-rate method as Rushing/Passing Yards.
+     Receiving Yards is the headline score; Receptions gets its own real
+     probability shown as a secondary chip. -->
+<div class="gamepick-pane" id="gamepick-pane-nflrec" role="tabpanel" aria-labelledby="gamepick-tab-nflrec" data-gamepick-pane="nflrec" hidden>
+  <div class="dr-center-label">🏈 NFL Receiving Yards + Receptions</div>
+  <div class="dr-dashboard-grid">
+    <div class="dr-panel dr-panel-large dr-panel-fresh">
+      <div class="dr-panel-head">
+        <div>
+          <p class="section-title">NFL <span>Receiving Yards + Receptions</span></p>
+          <small>Real empirical rate each player's own actual per-game receiving yards (plus a separate real receptions rate) cleared the line this season. Early model -- no opponent pass-defense adjustment yet.</small>
+        </div>
+      </div>
+      <div id="nfl-rec-content" class="dr-panel-body dr-scroll-tall">
+        <div class="dr-skel-rows"><div class="dr-v9-loading-label">Loading NFL receiving yards…</div><div class="dr-skel-row"></div><div class="dr-skel-row"></div><div class="dr-skel-row" style="width:80%"></div></div>
       </div>
     </div>
   </div>
@@ -1200,8 +1297,8 @@
      the header, wired up below. -->
 
 
-<script src="app.min.js?v=2026081305" defer></script>
-<script src="nfl-wnba-props.min.js?v=2026081305" defer></script>
+<script src="app.min.js?v=2026081808" defer></script>
+<script src="nfl-wnba-props.min.js?v=2026081808" defer></script>
 </body>
 </html>
 <!-- Diamond Report V3.9 Mobile/Tablet Tracker Layout Patch -->

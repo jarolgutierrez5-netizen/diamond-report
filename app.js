@@ -14297,7 +14297,7 @@ if (document.readyState === 'loading') {
 /* ---- from <script id="anonymous"> ---- */
 // PROD v8.44 — Game Picks inner tab controller with persistent state
 (function(){
-  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, fantasy: true, nearhr: true, players: true, nfltd: true, wnbapts: true, wnbareb: true, wnbaast: true, wnba3pm: true, wnbapra: true };
+  var VALID = { game: true, pr: true, hr: true, k: true, hits: true, rbis: true, tb: true, sb: true, hrrbi: true, fantasy: true, nearhr: true, players: true, nfltd: true, nflgame: true, nflrush: true, nflpass: true, nflrec: true, wnbapts: true, wnbareb: true, wnbaast: true, wnba3pm: true, wnbapra: true };
 
   // Only the URL hash decides the pane on load (e.g. a shared #gamepick=premium
   // link). No localStorage fallback — a plain refresh/revisit with no hash
@@ -14383,6 +14383,22 @@ if (document.readyState === 'loading') {
     if (pane === 'nfltd') {
       setTimeout(function(){ if (typeof window.renderNFLTDBoard === 'function') window.renderNFLTDBoard(); }, 30);
       setTimeout(function(){ if (typeof window.renderNFLTDBoard === 'function') window.renderNFLTDBoard(); }, 900);
+    }
+    if (pane === 'nflgame') {
+      setTimeout(function(){ if (typeof window.renderNFLGameBoard === 'function') window.renderNFLGameBoard(); }, 30);
+      setTimeout(function(){ if (typeof window.renderNFLGameBoard === 'function') window.renderNFLGameBoard(); }, 900);
+    }
+    if (pane === 'nflrush') {
+      setTimeout(function(){ if (typeof window.renderNFLRushBoard === 'function') window.renderNFLRushBoard(); }, 30);
+      setTimeout(function(){ if (typeof window.renderNFLRushBoard === 'function') window.renderNFLRushBoard(); }, 900);
+    }
+    if (pane === 'nflpass') {
+      setTimeout(function(){ if (typeof window.renderNFLPassBoard === 'function') window.renderNFLPassBoard(); }, 30);
+      setTimeout(function(){ if (typeof window.renderNFLPassBoard === 'function') window.renderNFLPassBoard(); }, 900);
+    }
+    if (pane === 'nflrec') {
+      setTimeout(function(){ if (typeof window.renderNFLRecBoard === 'function') window.renderNFLRecBoard(); }, 30);
+      setTimeout(function(){ if (typeof window.renderNFLRecBoard === 'function') window.renderNFLRecBoard(); }, 900);
     }
     var WNBA_PANE_RENDER_FN = { wnbapts: 'renderWNBAPointsBoard', wnbareb: 'renderWNBARebBoard', wnbaast: 'renderWNBAAstBoard', wnba3pm: 'renderWNBA3PMBoard', wnbapra: 'renderWNBAPRABoard' };
     if (WNBA_PANE_RENDER_FN[pane]) {
@@ -15455,7 +15471,11 @@ if (document.readyState === 'loading') {
     if(key==='hr') return n(r.todayHR ?? ts.homeRuns);
     return 0;
   }
-  function hasLive(r){ return !!(r.todayStats || liveVal(r,'hits') || liveVal(r,'rbis') || liveVal(r,'tb') || liveVal(r,'sb') || liveVal(r,'runs') || liveVal(r,'hr') || /LIVE|FINAL/i.test(String(r.timeLabel||''))); }
+  // r.todayStats is {} pregame (same "no data yet" convention as fantasyActualBatterPoints
+  // above) -- checking its bare truthiness treated that empty placeholder as real live data,
+  // so every player card showed a "Live: 0 / 1" chip before first pitch. Object.keys().length
+  // is the correct pregame-vs-live check already used elsewhere for this exact field.
+  function hasLive(r){ return !!((r.todayStats && Object.keys(r.todayStats).length) || liveVal(r,'hits') || liveVal(r,'rbis') || liveVal(r,'tb') || liveVal(r,'sb') || liveVal(r,'runs') || liveVal(r,'hr') || /LIVE|FINAL/i.test(String(r.timeLabel||''))); }
   function actual(type,r){
     if(type==='hits') return liveVal(r,'hits');
     if(type==='rbis') return liveVal(r,'rbis');
@@ -16310,7 +16330,7 @@ window.renderPlayersBoard=renderPlayersBoard;
   // VALID panes object -- a pre-existing gap for nfltd (its board has no menu
   // entry to expose the bug), a real one for wnbapts now that the drawer has
   // an entry pointing at it (see index.html's #dr-mobile-drawer).
-  var FREE_PANES = new Set(['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','fantasy','nearhr','players','nfltd','wnbapts','wnbareb','wnbaast','wnba3pm','wnbapra']);
+  var FREE_PANES = new Set(['game','pr','hr','k','hits','rbis','tb','sb','hrrbi','fantasy','nearhr','players','nfltd','nflgame','nflrush','nflpass','nflrec','wnbapts','wnbareb','wnbaast','wnba3pm','wnbapra']);
 
   function normalizePane(pane){
     return String(pane || 'game').trim();
@@ -17089,15 +17109,16 @@ window.renderPlayersBoard=renderPlayersBoard;
 // and this nav lives outside #props — so it would never get found by that
 // scoped query.
 (function(){
-  // One descriptor per real dropdown category (Baseball, WNBA -- each has
-  // more than one board). NFL stays a single plain pill (one board, no
-  // dropdown) and isn't in this list -- its click handling lives in the
-  // separate `.dr-top-nav-cat-btn[data-gamepick-pane][data-sport]` query
-  // below, which only matches elements that carry those attributes directly
+  // One descriptor per real dropdown category (Baseball, WNBA, NFL -- each
+  // has more than one board). Any future single-board category would stay a
+  // plain pill (no dropdown) and skip this list -- its click handling would
+  // live in the separate `.dr-top-nav-cat-btn[data-gamepick-pane][data-sport]`
+  // query below, which only matches elements that carry those attributes directly
   // (dropdown trigger buttons don't).
   var DROPDOWN_DEFS = [
     { key: 'baseball', btnId: 'dr-top-nav-baseball-btn', menuId: 'dr-top-nav-baseball-menu', currentId: 'dr-top-nav-baseball-current' },
     { key: 'wnba', btnId: 'dr-top-nav-wnba-btn', menuId: 'dr-top-nav-wnba-menu', currentId: 'dr-top-nav-wnba-current' },
+    { key: 'nfl', btnId: 'dr-top-nav-nfl-btn', menuId: 'dr-top-nav-nfl-menu', currentId: 'dr-top-nav-nfl-current' },
   ];
 
   function closeMenu(dd){
@@ -17150,8 +17171,10 @@ window.renderPlayersBoard=renderPlayersBoard;
       var hasActiveTab = dd.menu && dd.menu.querySelector('.dr-top-nav-tab.active[data-gamepick-pane="' + pane + '"]');
       if (!hasActiveTab) dd.catBtn.classList.remove('active');
     });
-    // NFL's own single-board pill (not part of any dropdown) gets the same
-    // active highlight directly on the pill itself.
+    // Any single-board pill (not part of any dropdown) gets the same active
+    // highlight directly on the pill itself. None currently exist -- NFL
+    // moved into the dropdown list above once it grew a second board -- but
+    // this stays as the general fallback for the next single-board category.
     header.querySelectorAll('.dr-top-nav-cat-btn[data-gamepick-pane]').forEach(function(btn){
       btn.classList.toggle('active', btn.getAttribute('data-gamepick-pane') === pane);
     });
@@ -17194,11 +17217,12 @@ window.renderPlayersBoard=renderPlayersBoard;
         if (typeof window.DiamondNavigateToPane === 'function') window.DiamondNavigateToPane(pane);
       });
     });
-    // NFL: a single-board category, no dropdown -- clicking routes straight
-    // into that sport's one board. Also flips the sport context (body class,
-    // mobile drawer filtering) the same way the hub cards' own click
-    // handlers already do via setActiveSport, since this desktop pill is a
-    // second, independent entry point into the same pane.
+    // Any remaining single-board category pill (no dropdown) -- clicking
+    // routes straight into that sport's one board. Also flips the sport
+    // context (body class, mobile drawer filtering) the same way the hub
+    // cards' own click handlers already do via setActiveSport, since this
+    // desktop pill is a second, independent entry point into the same pane.
+    // None currently exist (NFL moved into the dropdown list above).
     header.querySelectorAll('.dr-top-nav-cat-btn[data-gamepick-pane][data-sport]').forEach(function(btn){
       if (btn.dataset.drTopNavReady) return;
       btn.dataset.drTopNavReady = '1';
