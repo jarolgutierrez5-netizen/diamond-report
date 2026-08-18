@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-18T14:45:41.411Z",
+  "generatedAt": "2026-08-18T20:39:32.365Z",
   "market": {
     "drp": [
       {
@@ -8382,6 +8382,54 @@
           "homeML": 260,
           "awayPct": 73,
           "homePct": 27
+        }
+      },
+      {
+        "key": "2026-08-18|DRP|ATH-KC",
+        "date": "2026-08-18",
+        "gamePk": 824075,
+        "awayTeam": "ATH",
+        "homeTeam": "KC",
+        "pick": "KC",
+        "pickPct": 55,
+        "result": "pending",
+        "actualWinner": null,
+        "eraDiff": 1.99,
+        "whipDiff": 0.22,
+        "k9Diff": 1.36,
+        "awayRecordPct": 0.392,
+        "homeRecordPct": 0.413,
+        "isDayGame": false,
+        "marketOdds": {
+          "provider": "DraftKings",
+          "awayML": 144,
+          "homeML": -155,
+          "awayPct": 40,
+          "homePct": 60
+        }
+      },
+      {
+        "key": "2026-08-18|DRP|CHC-CWS",
+        "date": "2026-08-18",
+        "gamePk": 824639,
+        "awayTeam": "CWS",
+        "homeTeam": "CHC",
+        "pick": "CHC",
+        "pickPct": 51,
+        "result": "pending",
+        "actualWinner": null,
+        "eraDiff": -0.72,
+        "whipDiff": -0.048,
+        "k9Diff": 0.55,
+        "awayRecordPct": 0.524,
+        "homeRecordPct": 0.579,
+        "isDayGame": false,
+        "marketOdds": {
+          "provider": "DraftKings",
+          "awayML": 158,
+          "homeML": -170,
+          "awayPct": 38,
+          "homePct": 62
         }
       }
     ],
@@ -35461,6 +35509,56 @@
         "finalBF": null,
         "k9": 5.87,
         "projIP": 4.83,
+        "oppKpct": 0.22,
+        "lineup": []
+      },
+      {
+        "key": "2026-08-18|KPROP|daniel lynch iv",
+        "date": "2026-08-18",
+        "gamePk": 824075,
+        "pitcherId": 663738,
+        "pitcherName": "Daniel Lynch IV",
+        "team": "KC",
+        "opp": "ATH",
+        "projK": 6.2,
+        "line": 5.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 7.95,
+        "projIP": 7,
+        "oppKpct": 0.22,
+        "lineup": []
+      },
+      {
+        "key": "2026-08-18|KPROP|bryan hudson",
+        "date": "2026-08-18",
+        "gamePk": 824639,
+        "pitcherId": 663542,
+        "pitcherName": "Bryan Hudson",
+        "team": "CWS",
+        "opp": "CHC",
+        "projK": 6.8,
+        "line": 5.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 8.8,
+        "projIP": 7,
         "oppKpct": 0.22,
         "lineup": []
       }
