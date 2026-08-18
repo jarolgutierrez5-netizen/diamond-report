@@ -103,6 +103,19 @@ function nflTDCardHTML(r) {
   const scoreCls = r.prob >= 55 ? 'good' : '';
   const defAdj = r.defenseAdj;
   const matchupPct = defAdj ? Math.round((defAdj.ratio - 1) * 100) : null;
+  const primary = [
+    nflChip('Line', 'Anytime TD', 'good'),
+    nflChip('TD/GM', r.tdPerGame != null ? r.tdPerGame.toFixed(2) : '–', r.tdPerGame != null && r.tdPerGame >= 0.5 ? 'good' : ''),
+    defAdj
+      ? nflChip('Matchup', `${fantasyEsc(r.oppAbbr)} ${matchupPct >= 0 ? '+' : ''}${matchupPct}%`, matchupPct > 0 ? 'good' : matchupPct < 0 ? 'bad' : '', `${r.oppAbbr} allows real ${defAdj.oppVal.toFixed(1)} pts/gm vs. a real ${defAdj.leagueAvg.toFixed(1)} pts/gm league average`)
+      : nflChip('Games', r.games != null ? r.games : '–', ''),
+  ].join('');
+  const secondaryParts = [
+    nflChip('Season TD', r.td != null ? r.td : '–', ''),
+    defAdj ? nflChip('Games', r.games != null ? r.games : '–', '') : '',
+    nflChip('Season', r.season != null ? r.season : '–', ''),
+  ].filter(Boolean).join('');
+  const reason = ` ${fantasyEsc(r.name || 'This player')} grades at ${r.prob}% for Anytime TD because the model runs their real season touchdown rate (${r.tdPerGame != null ? r.tdPerGame.toFixed(2) : '–'} TD/gm over ${r.games != null ? r.games : '–'} games) through a real Poisson at-least-one-event model${defAdj ? ', with the rate shifted by a real opponent-defense matchup' : ''}. Opponent context: ${fantasyEsc(r.oppAbbr || 'opponent')}.`;
   return `<div class="dr109-card${scoreCls ? ' prop-hit' : ''}">
     ${window.drWatchStarHTML('nfl-' + r.id, r.name)}
     <div class="dr109-card-head">
@@ -115,13 +128,9 @@ function nflTDCardHTML(r) {
       </div>
       <div class="dr109-score">${r.prob}%<small>Anytime TD</small></div>
     </div>
-    <div class="dr109-chiprow">
-      <span class="dr109-chip"><span>Season TD:</span><strong>${r.td != null ? r.td : '–'}</strong></span>
-      <span class="dr109-chip"><span>Games:</span><strong>${r.games != null ? r.games : '–'}</strong></span>
-      <span class="dr109-chip"><span>TD/GM:</span><strong>${r.tdPerGame != null ? r.tdPerGame.toFixed(2) : '–'}</strong></span>
-      <span class="dr109-chip"><span>Season:</span><strong>${r.season != null ? r.season : '–'}</strong></span>
-      ${defAdj ? `<span class="dr109-chip ${matchupPct > 0 ? 'good' : matchupPct < 0 ? 'bad' : ''}" title="${fantasyEsc(r.oppAbbr)} allows real ${defAdj.oppVal.toFixed(1)} pts/gm vs. a real ${defAdj.leagueAvg.toFixed(1)} pts/gm league average"><span>Matchup:</span><strong>${fantasyEsc(r.oppAbbr)} ${matchupPct >= 0 ? '+' : ''}${matchupPct}%</strong></span>` : ''}
-    </div>
+    <div class="dr109-chiprow">${primary}</div>
+    ${nflBreakdownHTML(secondaryParts)}
+    ${nflReasonHTML('Why it supports the line', reason)}
   </div>`;
 }
 
@@ -285,7 +294,21 @@ function nflRecordText(stats) {
 }
 
 function nflGameCardHTML(g) {
-  const pickAway = g.pick === g.away;
+  const pickIsHome = g.pick === g.home;
+  const awayWinPct = g.awayStats && g.awayStats.winPercent != null ? Math.round(g.awayStats.winPercent * 100) : null;
+  const homeWinPct = g.homeStats && g.homeStats.winPercent != null ? Math.round(g.homeStats.winPercent * 100) : null;
+  const primary = [
+    nflChip('Line', 'Moneyline', 'good'),
+    nflChip('Pick', g.pick, 'good'),
+    nflChip('Home Field', g.home, pickIsHome ? 'good' : ''),
+  ].join('');
+  const secondaryParts = [
+    nflChip(`${g.away} Pt Diff`, g.awayStats && g.awayStats.pointDifferential != null ? (g.awayStats.pointDifferential >= 0 ? '+' : '') + g.awayStats.pointDifferential : '–', ''),
+    nflChip(`${g.home} Pt Diff`, g.homeStats && g.homeStats.pointDifferential != null ? (g.homeStats.pointDifferential >= 0 ? '+' : '') + g.homeStats.pointDifferential : '–', ''),
+    nflChip(`${g.away} Record`, nflRecordText(g.awayStats), ''),
+    nflChip(`${g.home} Record`, nflRecordText(g.homeStats), ''),
+  ].filter(Boolean).join('');
+  const reason = ` ${fantasyEsc(g.pick)} grades at ${g.pickPct}% to win because the model combines real win%${awayWinPct != null && homeWinPct != null ? ` (${fantasyEsc(g.away)} ${awayWinPct}% vs. ${fantasyEsc(g.home)} ${homeWinPct}%)` : ''}, real point differential, and a fixed home-field edge${pickIsHome ? ' that favors the home team here' : ' the pick overcame'}.`;
   return `<div class="dr109-card${g.pickPct >= 60 ? ' prop-hit' : ''}">
     <div class="dr109-card-head">
       <div class="dr109-player">
@@ -297,12 +320,9 @@ function nflGameCardHTML(g) {
       </div>
       <div class="dr109-score">${g.pickPct}%<small>${fantasyEsc(g.pick)} to win</small></div>
     </div>
-    <div class="dr109-chiprow">
-      <span class="dr109-chip"><span>Pick:</span><strong>${fantasyEsc(g.pick)}</strong></span>
-      <span class="dr109-chip"><span>${fantasyEsc(g.away)} Pt Diff:</span><strong>${g.awayStats && g.awayStats.pointDifferential != null ? (g.awayStats.pointDifferential >= 0 ? '+' : '') + g.awayStats.pointDifferential : '–'}</strong></span>
-      <span class="dr109-chip"><span>${fantasyEsc(g.home)} Pt Diff:</span><strong>${g.homeStats && g.homeStats.pointDifferential != null ? (g.homeStats.pointDifferential >= 0 ? '+' : '') + g.homeStats.pointDifferential : '–'}</strong></span>
-      <span class="dr109-chip"><span>Home Field:</span><strong>${fantasyEsc(g.home)}</strong></span>
-    </div>
+    <div class="dr109-chiprow">${primary}</div>
+    ${nflBreakdownHTML(secondaryParts)}
+    ${nflReasonHTML('Why it supports the pick', reason)}
   </div>`;
 }
 
@@ -425,6 +445,27 @@ function probOverLine(mean, stdDev, line) {
   return Math.max(1, Math.min(99, Math.round((1 - normalCDF(line, mean, stdDev)) * 100)));
 }
 
+// ── Shared NFL card anatomy (primary/secondary chips + reason) ─────────────
+// Same card anatomy the MLB Hits/RBI/TB/SB/HRRBI boards already use (see
+// app.js's chipSetPrimary/chipSetSecondary/reason around the shared prop
+// engine): a few always-visible primary chips, the rest tucked behind a
+// "Full breakdown" disclosure, and a plain-English "Why it supports the
+// line" sentence -- previously every NFL card just dumped all its chips
+// into one flat row with no disclosure and no reasoning text, unlike every
+// MLB board.
+function nflChip(k, v, cls, title) {
+  const c = cls || '';
+  const t = title ? ` title="${fantasyEsc(title)}"` : '';
+  return `<span class="dr109-chip ${c}"${t}><span>${fantasyEsc(k)}:</span><strong>${fantasyEsc(v)}</strong></span>`;
+}
+function nflBreakdownHTML(secondaryChipsHtml) {
+  if (!secondaryChipsHtml) return '';
+  return `<details class="dr-hrp-breakdown"><summary>Full breakdown</summary><div class="dr109-chiprow" style="min-height:0 !important;margin-top:6px">${secondaryChipsHtml}</div></details>`;
+}
+function nflReasonHTML(label, text) {
+  return `<div class="dr109-reason"><strong>${fantasyEsc(label)}:</strong>${text}</div>`;
+}
+
 // ── NFL Rushing Yards (real O/U line, real empirical hit rate) ─────────────
 // Unlike Anytime TD's Poisson at-least-one-event model, rushing yards is a
 // continuous per-game stat, so the probability here is the real EMPIRICAL
@@ -491,6 +532,21 @@ function nflRushCardHTML(r) {
   const scoreCls = r.prob >= 55 ? 'good' : '';
   const defAdj = r.defenseAdj;
   const matchupPct = defAdj ? Math.round((defAdj.ratio - 1) * 100) : null;
+  const effYdsPerGame = defAdj && r.adjMean != null ? r.adjMean : r.rushYdsPerGame;
+  const primary = [
+    nflChip('Line', `Over ${NFL_RUSH_YDS_LINE} Yds`, 'good'),
+    nflChip(defAdj ? 'Adj Yds/GM' : 'Yds/GM', effYdsPerGame != null ? effYdsPerGame.toFixed(1) : '–', effYdsPerGame != null && effYdsPerGame >= NFL_RUSH_YDS_LINE ? 'good' : ''),
+    defAdj
+      ? nflChip('Matchup', `${fantasyEsc(r.oppAbbr)} ${matchupPct >= 0 ? '+' : ''}${matchupPct}%`, matchupPct > 0 ? 'good' : matchupPct < 0 ? 'bad' : '', `${r.oppAbbr} allows real ${defAdj.oppVal.toFixed(1)} pts/gm vs. a real ${defAdj.leagueAvg.toFixed(1)} pts/gm league average`)
+      : nflChip('Games', r.gamesWithRushYds != null ? r.gamesWithRushYds : '–', ''),
+  ].join('');
+  const secondaryParts = [
+    nflChip('Season Rush Yds', r.rushYds != null ? r.rushYds : '–', ''),
+    defAdj ? nflChip('Season Yds/GM', r.rushYdsPerGame != null ? r.rushYdsPerGame.toFixed(1) : '–', '') : '',
+    defAdj ? nflChip('Games', r.gamesWithRushYds != null ? r.gamesWithRushYds : '–', '') : '',
+    nflChip('Std Dev', r.rushStdDev != null ? r.rushStdDev.toFixed(1) : '–', ''),
+  ].filter(Boolean).join('');
+  const reason = ` ${fantasyEsc(r.name || 'This player')} grades at ${r.prob}% for Over ${NFL_RUSH_YDS_LINE} Yds because the model runs their real season rushing profile (${r.rushYdsPerGame != null ? r.rushYdsPerGame.toFixed(1) : '–'} yds/gm over ${r.gamesWithRushYds != null ? r.gamesWithRushYds : '–'} games, std dev ${r.rushStdDev != null ? r.rushStdDev.toFixed(1) : '–'})${defAdj ? ', shifted by a real opponent-defense matchup,' : ''} through a real probability calculation. Opponent context: ${fantasyEsc(r.oppAbbr || 'opponent')}.`;
   return `<div class="dr109-card${scoreCls ? ' prop-hit' : ''}">
     ${window.drWatchStarHTML('nfl-' + r.id, r.name)}
     <div class="dr109-card-head">
@@ -503,14 +559,9 @@ function nflRushCardHTML(r) {
       </div>
       <div class="dr109-score">${r.prob}%<small>Over ${NFL_RUSH_YDS_LINE} Yds</small></div>
     </div>
-    <div class="dr109-chiprow">
-      <span class="dr109-chip"><span>Season Rush Yds:</span><strong>${r.rushYds != null ? r.rushYds : '–'}</strong></span>
-      <span class="dr109-chip"><span>Games:</span><strong>${r.gamesWithRushYds != null ? r.gamesWithRushYds : '–'}</strong></span>
-      <span class="dr109-chip"><span>Season Yds/GM:</span><strong>${r.rushYdsPerGame != null ? r.rushYdsPerGame.toFixed(1) : '–'}</strong></span>
-      ${defAdj ? `<span class="dr109-chip"><span>Adj Yds/GM:</span><strong>${r.adjMean != null ? r.adjMean.toFixed(1) : '–'}</strong></span>` : ''}
-      <span class="dr109-chip"><span>Std Dev:</span><strong>${r.rushStdDev != null ? r.rushStdDev.toFixed(1) : '–'}</strong></span>
-      ${defAdj ? `<span class="dr109-chip ${matchupPct > 0 ? 'good' : matchupPct < 0 ? 'bad' : ''}" title="${fantasyEsc(r.oppAbbr)} allows real ${defAdj.oppVal.toFixed(1)} pts/gm vs. a real ${defAdj.leagueAvg.toFixed(1)} pts/gm league average"><span>Matchup:</span><strong>${fantasyEsc(r.oppAbbr)} ${matchupPct >= 0 ? '+' : ''}${matchupPct}%</strong></span>` : ''}
-    </div>
+    <div class="dr109-chiprow">${primary}</div>
+    ${nflBreakdownHTML(secondaryParts)}
+    ${nflReasonHTML('Why it supports the line', reason)}
   </div>`;
 }
 
@@ -670,6 +721,21 @@ function nflPassCardHTML(r) {
   const scoreCls = r.prob >= 55 ? 'good' : '';
   const defAdj = r.defenseAdj;
   const matchupPct = defAdj ? Math.round((defAdj.ratio - 1) * 100) : null;
+  const effYdsPerGame = defAdj && r.adjMean != null ? r.adjMean : r.passYdsPerGame;
+  const primary = [
+    nflChip('Line', `Over ${NFL_PASS_YDS_LINE} Yds`, 'good'),
+    nflChip(defAdj ? 'Adj Yds/GM' : 'Yds/GM', effYdsPerGame != null ? effYdsPerGame.toFixed(1) : '–', effYdsPerGame != null && effYdsPerGame >= NFL_PASS_YDS_LINE ? 'good' : ''),
+    defAdj
+      ? nflChip('Matchup', `${fantasyEsc(r.oppAbbr)} ${matchupPct >= 0 ? '+' : ''}${matchupPct}%`, matchupPct > 0 ? 'good' : matchupPct < 0 ? 'bad' : '', `${r.oppAbbr} allows real ${defAdj.oppVal.toFixed(1)} pts/gm vs. a real ${defAdj.leagueAvg.toFixed(1)} pts/gm league average`)
+      : nflChip('Games', r.gamesWithPassYds != null ? r.gamesWithPassYds : '–', ''),
+  ].join('');
+  const secondaryParts = [
+    nflChip('Season Pass Yds', r.passYds != null ? r.passYds : '–', ''),
+    defAdj ? nflChip('Season Yds/GM', r.passYdsPerGame != null ? r.passYdsPerGame.toFixed(1) : '–', '') : '',
+    defAdj ? nflChip('Games', r.gamesWithPassYds != null ? r.gamesWithPassYds : '–', '') : '',
+    nflChip('Std Dev', r.passStdDev != null ? r.passStdDev.toFixed(1) : '–', ''),
+  ].filter(Boolean).join('');
+  const reason = ` ${fantasyEsc(r.name || 'This player')} grades at ${r.prob}% for Over ${NFL_PASS_YDS_LINE} Yds because the model runs their real season passing profile (${r.passYdsPerGame != null ? r.passYdsPerGame.toFixed(1) : '–'} yds/gm over ${r.gamesWithPassYds != null ? r.gamesWithPassYds : '–'} games, std dev ${r.passStdDev != null ? r.passStdDev.toFixed(1) : '–'})${defAdj ? ', shifted by a real opponent-defense matchup,' : ''} through a real probability calculation. Opponent context: ${fantasyEsc(r.oppAbbr || 'opponent')}.`;
   return `<div class="dr109-card${scoreCls ? ' prop-hit' : ''}">
     ${window.drWatchStarHTML('nfl-' + r.id, r.name)}
     <div class="dr109-card-head">
@@ -682,14 +748,9 @@ function nflPassCardHTML(r) {
       </div>
       <div class="dr109-score">${r.prob}%<small>Over ${NFL_PASS_YDS_LINE} Yds</small></div>
     </div>
-    <div class="dr109-chiprow">
-      <span class="dr109-chip"><span>Season Pass Yds:</span><strong>${r.passYds != null ? r.passYds : '–'}</strong></span>
-      <span class="dr109-chip"><span>Games:</span><strong>${r.gamesWithPassYds != null ? r.gamesWithPassYds : '–'}</strong></span>
-      <span class="dr109-chip"><span>Season Yds/GM:</span><strong>${r.passYdsPerGame != null ? r.passYdsPerGame.toFixed(1) : '–'}</strong></span>
-      ${defAdj ? `<span class="dr109-chip"><span>Adj Yds/GM:</span><strong>${r.adjMean != null ? r.adjMean.toFixed(1) : '–'}</strong></span>` : ''}
-      <span class="dr109-chip"><span>Std Dev:</span><strong>${r.passStdDev != null ? r.passStdDev.toFixed(1) : '–'}</strong></span>
-      ${defAdj ? `<span class="dr109-chip ${matchupPct > 0 ? 'good' : matchupPct < 0 ? 'bad' : ''}" title="${fantasyEsc(r.oppAbbr)} allows real ${defAdj.oppVal.toFixed(1)} pts/gm vs. a real ${defAdj.leagueAvg.toFixed(1)} pts/gm league average"><span>Matchup:</span><strong>${fantasyEsc(r.oppAbbr)} ${matchupPct >= 0 ? '+' : ''}${matchupPct}%</strong></span>` : ''}
-    </div>
+    <div class="dr109-chiprow">${primary}</div>
+    ${nflBreakdownHTML(secondaryParts)}
+    ${nflReasonHTML('Why it supports the line', reason)}
   </div>`;
 }
 
@@ -847,6 +908,22 @@ function nflRecCardHTML(r) {
   const scoreCls = r.prob >= 55 ? 'good' : '';
   const defAdj = r.defenseAdj;
   const matchupPct = defAdj ? Math.round((defAdj.ratio - 1) * 100) : null;
+  const effYdsPerGame = defAdj && r.adjMean != null ? r.adjMean : r.recYdsPerGame;
+  const primary = [
+    nflChip('Line', `Over ${NFL_REC_YDS_LINE} Yds`, 'good'),
+    nflChip(defAdj ? 'Adj Yds/GM' : 'Yds/GM', effYdsPerGame != null ? effYdsPerGame.toFixed(1) : '–', effYdsPerGame != null && effYdsPerGame >= NFL_REC_YDS_LINE ? 'good' : ''),
+    defAdj
+      ? nflChip('Matchup', `${fantasyEsc(r.oppAbbr)} ${matchupPct >= 0 ? '+' : ''}${matchupPct}%`, matchupPct > 0 ? 'good' : matchupPct < 0 ? 'bad' : '', `${r.oppAbbr} allows real ${defAdj.oppVal.toFixed(1)} pts/gm vs. a real ${defAdj.leagueAvg.toFixed(1)} pts/gm league average`)
+      : nflChip('Games', r.gamesWithRecYds != null ? r.gamesWithRecYds : '–', ''),
+  ].join('');
+  const secondaryParts = [
+    nflChip('Season Rec Yds', r.recYds != null ? r.recYds : '–', ''),
+    defAdj ? nflChip('Season Yds/GM', r.recYdsPerGame != null ? r.recYdsPerGame.toFixed(1) : '–', '') : '',
+    nflChip('Rec/GM', r.receptionsPerGame != null ? r.receptionsPerGame.toFixed(1) : '–', ''),
+    nflChip(`Over ${NFL_RECEPTIONS_LINE} Rec`, r.recProb != null ? r.recProb + '%' : '–', r.recProb != null && r.recProb >= 55 ? 'good' : ''),
+    defAdj ? nflChip('Games', r.gamesWithRecYds != null ? r.gamesWithRecYds : '–', '') : '',
+  ].filter(Boolean).join('');
+  const reason = ` ${fantasyEsc(r.name || 'This player')} grades at ${r.prob}% for Over ${NFL_REC_YDS_LINE} Yds because the model runs their real season receiving profile (${r.recYdsPerGame != null ? r.recYdsPerGame.toFixed(1) : '–'} yds/gm, ${r.receptionsPerGame != null ? r.receptionsPerGame.toFixed(1) : '–'} rec/gm over ${r.gamesWithRecYds != null ? r.gamesWithRecYds : '–'} games)${defAdj ? ', shifted by a real opponent-defense matchup,' : ''} through a real probability calculation -- Receptions gets its own separate real O/U ${NFL_RECEPTIONS_LINE} read in the full breakdown. Opponent context: ${fantasyEsc(r.oppAbbr || 'opponent')}.`;
   return `<div class="dr109-card${scoreCls ? ' prop-hit' : ''}">
     ${window.drWatchStarHTML('nfl-' + r.id, r.name)}
     <div class="dr109-card-head">
@@ -859,15 +936,9 @@ function nflRecCardHTML(r) {
       </div>
       <div class="dr109-score">${r.prob}%<small>Over ${NFL_REC_YDS_LINE} Yds</small></div>
     </div>
-    <div class="dr109-chiprow">
-      <span class="dr109-chip"><span>Season Rec Yds:</span><strong>${r.recYds != null ? r.recYds : '–'}</strong></span>
-      <span class="dr109-chip"><span>Season Yds/GM:</span><strong>${r.recYdsPerGame != null ? r.recYdsPerGame.toFixed(1) : '–'}</strong></span>
-      ${defAdj ? `<span class="dr109-chip"><span>Adj Yds/GM:</span><strong>${r.adjMean != null ? r.adjMean.toFixed(1) : '–'}</strong></span>` : ''}
-      <span class="dr109-chip"><span>Rec/GM:</span><strong>${r.receptionsPerGame != null ? r.receptionsPerGame.toFixed(1) : '–'}</strong></span>
-      <span class="dr109-chip"><span>Over ${NFL_RECEPTIONS_LINE} Rec:</span><strong>${r.recProb != null ? r.recProb + '%' : '–'}</strong></span>
-      <span class="dr109-chip"><span>Games:</span><strong>${r.gamesWithRecYds != null ? r.gamesWithRecYds : '–'}</strong></span>
-      ${defAdj ? `<span class="dr109-chip ${matchupPct > 0 ? 'good' : matchupPct < 0 ? 'bad' : ''}" title="${fantasyEsc(r.oppAbbr)} allows real ${defAdj.oppVal.toFixed(1)} pts/gm vs. a real ${defAdj.leagueAvg.toFixed(1)} pts/gm league average"><span>Matchup:</span><strong>${fantasyEsc(r.oppAbbr)} ${matchupPct >= 0 ? '+' : ''}${matchupPct}%</strong></span>` : ''}
-    </div>
+    <div class="dr109-chiprow">${primary}</div>
+    ${nflBreakdownHTML(secondaryParts)}
+    ${nflReasonHTML('Why it supports the line', reason)}
   </div>`;
 }
 
