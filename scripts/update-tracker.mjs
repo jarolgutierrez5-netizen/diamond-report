@@ -2507,8 +2507,6 @@ async function fetchLiveGameWeather(gamePk, homeAbbr, awayAbbr, gameTimestamp) {
 }
 
 async function buildBatterPool(games, season) {
-  // TEMP DIAGNOSTIC (HR Threats capture investigation) -- remove once root cause found.
-  console.log(`[HR-DEBUG] buildBatterPool called with ${games.length} game(s).`);
   const statcastIndex = await loadStatcastPowerIndex();
   const pitcherStatcastIndex = await loadPitcherStatcastPowerIndex();
   const pitcher2kSuppressionIndex = await loadPitcher2kSuppressionIndex();
@@ -2517,19 +2515,14 @@ async function buildBatterPool(games, season) {
   const statcastHotHittersIndex = await loadStatcastHotHittersIndex();
   const nearHRsIndex = await loadNearHRsIndex();
   const rows = [];
-  let __hrDebugGameIdx = 0;
   for (const g of games) {
-    __hrDebugGameIdx++;
     // Once per game (weather isn't batter- or side-specific) -- see fetchLiveGameWeather's
     // header comment for why this mirrors app.js's own weather fetch/multiplier exactly.
     const gameWeather = await fetchLiveGameWeather(g.gamePk, g.teams.home.team.abbreviation, g.teams.away.team.abbreviation, new Date(g.gameDate).getTime());
     const weatherHRMult = gameWeather ? (liveAirDensityHRMult(gameWeather) * liveWindHRMult(gameWeather, g.teams.home.team.abbreviation)) : 1;
     for (const [side, opp] of [['away', 'home'], ['home', 'away']]) {
       const pitcher = g.teams[opp].probablePitcher;
-      if (!pitcher) {
-        console.log(`[HR-DEBUG] game ${__hrDebugGameIdx}/${games.length} gamePk=${g.gamePk} side=${side}: no probablePitcher for opp, skipping.`);
-        continue;
-      }
+      if (!pitcher) continue;
       const pitcherStat = await seasonPitchingStat(pitcher.id, season);
       const pitcherStatcast = pitcherStatcastIndex.get(String(pitcher.id)) || null;
       const pitcherHand = pitcherHandCache.get(pitcher.id) || 'R';
@@ -2555,7 +2548,6 @@ async function buildBatterPool(games, season) {
       const bullpenEntry = bullpenHrRateIndex.get(oppAbbr) || null;
       const bullpenRate = (bullpenEntry && bullpenEntry.reliable) ? bullpenEntry.shrunkRate : HRP_LEAGUE_AVG_HR_RATE;
       const batters = await battersForSide(g, side);
-      console.log(`[HR-DEBUG] game ${__hrDebugGameIdx}/${games.length} gamePk=${g.gamePk} side=${side} (${teamAbbr}): battersForSide returned ${batters.length} batter(s), fromLineup=${batters.length ? !!batters[0].fromLineup : 'n/a'}.`);
       // Computed once per team here (cached), not once per batter -- every batter on
       // this side shares the same team schedule / doubleheader status.
       const battingTeamFatigue = await teamRestFatigueFactor(g.teams[side].team.id, g.gameDate) * doubleheaderFatigueFactor(g);
@@ -2703,9 +2695,7 @@ async function buildBatterPool(games, season) {
           weatherHRMult,
         };
       });
-      const __validSideRows = sideRows.filter(Boolean);
-      console.log(`[HR-DEBUG] game ${__hrDebugGameIdx}/${games.length} gamePk=${g.gamePk} side=${side}: sideRows produced ${__validSideRows.length}/${sideRows.length} valid row(s). Sample atBats: ${__validSideRows.slice(0, 3).map(r => r.atBats).join(', ')}`);
-      __validSideRows.forEach(r => rows.push(r));
+      sideRows.filter(Boolean).forEach(r => rows.push(r));
     }
   }
   return rows;
@@ -2724,7 +2714,6 @@ async function buildBatterPool(games, season) {
 // dropped regardless of what a later run's ranking says.
 async function captureHRThreatToday(store, pool) {
   store.market.hrThreat ||= [];
-  console.log(`[HR-DEBUG] captureHRThreatToday called with pool.length=${pool.length}.`);
   if (!pool.length) return 0;
   const today = cdtDateString(new Date());
   const already = new Set(store.market.hrThreat.filter(r => r.date === today).map(r => r.playerId));
@@ -2737,7 +2726,6 @@ async function captureHRThreatToday(store, pool) {
   const scored = pool
     .filter(r => r.atBats >= POOL_MIN_AB)
     .map(r => ({ row: r, score: scoreForMarket('hr', r), hrScoreSource: __hrLastScoreSource }));
-  console.log(`[HR-DEBUG] scored.length=${scored.length} (of ${pool.length} pool rows, POOL_MIN_AB=${POOL_MIN_AB}). Score range: min=${scored.length ? Math.min(...scored.map(s => s.score)).toFixed(1) : 'n/a'}, max=${scored.length ? Math.max(...scored.map(s => s.score)).toFixed(1) : 'n/a'}, count>=${HR_THREAT_MIN_SCORE}: ${scored.filter(s => s.score >= HR_THREAT_MIN_SCORE).length}.`);
   const byTeam = new Map();
   scored.forEach(s => {
     const teamKey = `${s.row.gamePk ?? s.row.id}|${s.row.teamAbbr ?? s.row.id}`;
@@ -2749,7 +2737,6 @@ async function captureHRThreatToday(store, pool) {
     list.sort((a, b) => b.score - a.score);
     list.slice(0, HR_THREAT_MAX_PER_TEAM).forEach(s => allowedIds.add(s.row.id));
   });
-  console.log(`[HR-DEBUG] byTeam.size=${byTeam.size}, allowedIds.size=${allowedIds.size}, already.size=${already.size}.`);
 
   let added = 0;
   scored.filter(s => allowedIds.has(s.row.id) && !already.has(s.row.id)).forEach(s => {
