@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-19T14:45:57.290Z",
+  "generatedAt": "2026-08-19T18:24:31.068Z",
   "asOfDate": "2026-08-19",
   "season": "2026",
   "sampleThresholds": {
@@ -16852,11 +16852,11 @@
         "kprop": {
           "hits": 0,
           "nearMisses": 0,
-          "misses": 0,
+          "misses": 1,
           "pushes": 0,
-          "total": 0,
-          "graded": 0,
-          "hitRate": null,
+          "total": 1,
+          "graded": 1,
+          "hitRate": 0,
           "insufficientSample": true
         },
         "hrThreat": {
@@ -16927,11 +16927,11 @@
           "Low": {
             "hits": 0,
             "nearMisses": 0,
-            "misses": 0,
+            "misses": 1,
             "pushes": 0,
-            "total": 0,
-            "graded": 0,
-            "hitRate": null,
+            "total": 1,
+            "graded": 1,
+            "hitRate": 0,
             "insufficientSample": true
           }
         },
@@ -16968,7 +16968,18 @@
           }
         }
       },
-      "byTeam": {},
+      "byTeam": {
+        "SEA": {
+          "hits": 0,
+          "nearMisses": 0,
+          "misses": 1,
+          "pushes": 0,
+          "total": 1,
+          "graded": 1,
+          "hitRate": 0,
+          "insufficientSample": true
+        }
+      },
       "leaderboard": {
         "overall": [],
         "byMarket": {
@@ -20199,11 +20210,11 @@
         "kprop": {
           "hits": 24,
           "nearMisses": 9,
-          "misses": 19,
+          "misses": 20,
           "pushes": 0,
-          "total": 52,
-          "graded": 52,
-          "hitRate": 46.2,
+          "total": 53,
+          "graded": 53,
+          "hitRate": 45.3,
           "insufficientSample": false
         },
         "hrThreat": {
@@ -20274,11 +20285,11 @@
           "Low": {
             "hits": 14,
             "nearMisses": 4,
-            "misses": 11,
+            "misses": 12,
             "pushes": 0,
-            "total": 29,
-            "graded": 29,
-            "hitRate": 48.3,
+            "total": 30,
+            "graded": 30,
+            "hitRate": 46.7,
             "insufficientSample": false
           }
         },
@@ -20589,10 +20600,10 @@
         "SEA": {
           "hits": 0,
           "nearMisses": 0,
-          "misses": 1,
+          "misses": 2,
           "pushes": 0,
-          "total": 1,
-          "graded": 1,
+          "total": 2,
+          "graded": 2,
           "hitRate": 0,
           "insufficientSample": true
         },
@@ -21257,11 +21268,11 @@
         "kprop": {
           "hits": 227,
           "nearMisses": 68,
-          "misses": 134,
+          "misses": 135,
           "pushes": 0,
-          "total": 429,
-          "graded": 429,
-          "hitRate": 52.9,
+          "total": 430,
+          "graded": 430,
+          "hitRate": 52.8,
           "insufficientSample": false
         },
         "hrThreat": {
@@ -21332,11 +21343,11 @@
           "Low": {
             "hits": 122,
             "nearMisses": 32,
-            "misses": 85,
+            "misses": 86,
             "pushes": 0,
-            "total": 239,
-            "graded": 239,
-            "hitRate": 51,
+            "total": 240,
+            "graded": 240,
+            "hitRate": 50.8,
             "insufficientSample": false
           }
         },
@@ -21387,11 +21398,11 @@
         "SEA": {
           "hits": 7,
           "nearMisses": 2,
-          "misses": 6,
+          "misses": 7,
           "pushes": 0,
-          "total": 15,
-          "graded": 15,
-          "hitRate": 46.7,
+          "total": 16,
+          "graded": 16,
+          "hitRate": 43.8,
           "insufficientSample": true
         },
         "TB": {
@@ -21776,11 +21787,11 @@
       "kprop": {
         "hits": 493,
         "nearMisses": 76,
-        "misses": 339,
+        "misses": 340,
         "pushes": 0,
-        "total": 908,
-        "graded": 908,
-        "hitRate": 54.3,
+        "total": 909,
+        "graded": 909,
+        "hitRate": 54.2,
         "insufficientSample": false
       },
       "hrThreat": {
@@ -21851,11 +21862,11 @@
         "Low": {
           "hits": 238,
           "nearMisses": 36,
-          "misses": 200,
+          "misses": 201,
           "pushes": 0,
-          "total": 474,
-          "graded": 474,
-          "hitRate": 50.2,
+          "total": 475,
+          "graded": 475,
+          "hitRate": 50.1,
           "insufficientSample": false
         }
       },
@@ -22156,11 +22167,11 @@
       "SEA": {
         "hits": 15,
         "nearMisses": 2,
-        "misses": 21,
+        "misses": 22,
         "pushes": 0,
-        "total": 38,
-        "graded": 38,
-        "hitRate": 39.5,
+        "total": 39,
+        "graded": 39,
+        "hitRate": 38.5,
         "insufficientSample": false
       },
       "KC": {
