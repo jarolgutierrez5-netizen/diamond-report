@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-20T01:52:14.373Z",
+  "generatedAt": "2026-08-20T14:47:30.692Z",
   "market": {
     "drp": [
       {
@@ -8470,8 +8470,8 @@
         "homeTeam": "PIT",
         "pick": "PIT",
         "pickPct": 57,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "PIT",
         "eraDiff": 1.88,
         "whipDiff": 0.095,
         "k9Diff": -3.21,
@@ -8484,7 +8484,9 @@
           "homeML": -153,
           "awayPct": 41,
           "homePct": 59
-        }
+        },
+        "scoreMargin": 1,
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|DRP|NYM-SD",
@@ -8494,8 +8496,8 @@
         "homeTeam": "NYM",
         "pick": "SD",
         "pickPct": 55,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "loss",
+        "actualWinner": "NYM",
         "eraDiff": -3.07,
         "whipDiff": -0.63,
         "k9Diff": -1.31,
@@ -8508,7 +8510,9 @@
           "homeML": 108,
           "awayPct": 53,
           "homePct": 47
-        }
+        },
+        "scoreMargin": 2,
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|DRP|ATL-MIN",
@@ -8518,8 +8522,8 @@
         "homeTeam": "MIN",
         "pick": "MIN",
         "pickPct": 50,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "MIN",
         "eraDiff": -0.01,
         "whipDiff": 0.048,
         "k9Diff": -0.88,
@@ -8532,7 +8536,9 @@
           "homeML": 137,
           "awayPct": 59,
           "homePct": 41
-        }
+        },
+        "scoreMargin": 2,
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|DRP|CHC-CWS",
@@ -8542,8 +8548,8 @@
         "homeTeam": "CHC",
         "pick": "CWS",
         "pickPct": 51,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "CWS",
         "eraDiff": -1.87,
         "whipDiff": -0.277,
         "k9Diff": 1.79,
@@ -8556,7 +8562,9 @@
           "homeML": -170,
           "awayPct": 38,
           "homePct": 62
-        }
+        },
+        "scoreMargin": 3,
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|DRP|AZ-BOS",
@@ -8566,15 +8574,17 @@
         "homeTeam": "BOS",
         "pick": "BOS",
         "pickPct": 53,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "loss",
+        "actualWinner": "AZ",
         "eraDiff": -0.97,
         "whipDiff": -0.059,
         "k9Diff": -5.7,
         "awayRecordPct": 0.52,
         "homeRecordPct": 0.54,
         "isDayGame": true,
-        "marketOdds": null
+        "marketOdds": null,
+        "scoreMargin": 1,
+        "nearMiss": true
       },
       {
         "key": "2026-08-19|DRP|MIA-PHI",
@@ -8584,8 +8594,8 @@
         "homeTeam": "PHI",
         "pick": "MIA",
         "pickPct": 51,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "loss",
+        "actualWinner": "PHI",
         "eraDiff": -2.16,
         "whipDiff": -0.41,
         "k9Diff": -3.3,
@@ -8598,7 +8608,9 @@
           "homeML": -211,
           "awayPct": 33,
           "homePct": 67
-        }
+        },
+        "scoreMargin": 3,
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|DRP|BAL-NYY",
@@ -8608,8 +8620,8 @@
         "homeTeam": "BAL",
         "pick": "NYY",
         "pickPct": 52,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "NYY",
         "eraDiff": 0.41,
         "whipDiff": -0.004,
         "k9Diff": 3.75,
@@ -8622,7 +8634,9 @@
           "homeML": -101,
           "awayPct": 51,
           "homePct": 49
-        }
+        },
+        "scoreMargin": 2,
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|DRP|CLE-SF",
@@ -8632,8 +8646,8 @@
         "homeTeam": "CLE",
         "pick": "CLE",
         "pickPct": 58,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "loss",
+        "actualWinner": "SF",
         "eraDiff": 2.16,
         "whipDiff": 0.336,
         "k9Diff": -1.27,
@@ -8646,7 +8660,9 @@
           "homeML": -192,
           "awayPct": 35,
           "homePct": 65
-        }
+        },
+        "scoreMargin": 1,
+        "nearMiss": true
       },
       {
         "key": "2026-08-19|DRP|CIN-STL",
@@ -8656,8 +8672,8 @@
         "homeTeam": "CIN",
         "pick": "CIN",
         "pickPct": 56,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "CIN",
         "eraDiff": 2.87,
         "whipDiff": 0.416,
         "k9Diff": -1.06,
@@ -8670,7 +8686,9 @@
           "homeML": 107,
           "awayPct": 53,
           "homePct": 47
-        }
+        },
+        "scoreMargin": 1,
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|DRP|TB-TOR",
@@ -8680,8 +8698,8 @@
         "homeTeam": "TB",
         "pick": "TB",
         "pickPct": 61,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "TB",
         "eraDiff": 3.34,
         "whipDiff": 0.554,
         "k9Diff": -2.2,
@@ -8694,7 +8712,9 @@
           "homeML": -129,
           "awayPct": 45,
           "homePct": 55
-        }
+        },
+        "scoreMargin": 1,
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|DRP|MIL-SEA",
@@ -8704,8 +8724,8 @@
         "homeTeam": "MIL",
         "pick": "MIL",
         "pickPct": 53,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "loss",
+        "actualWinner": "SEA",
         "eraDiff": -0.23,
         "whipDiff": -0.235,
         "k9Diff": 0.82,
@@ -8718,7 +8738,9 @@
           "homeML": -165,
           "awayPct": 39,
           "homePct": 61
-        }
+        },
+        "scoreMargin": 2,
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|DRP|TEX-WSH",
@@ -8728,8 +8750,8 @@
         "homeTeam": "TEX",
         "pick": "WSH",
         "pickPct": 53,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "WSH",
         "eraDiff": -2.01,
         "whipDiff": -0.314,
         "k9Diff": 0.86,
@@ -8742,7 +8764,9 @@
           "homeML": -136,
           "awayPct": 43,
           "homePct": 57
-        }
+        },
+        "scoreMargin": 6,
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|DRP|HOU-LAA",
@@ -8752,8 +8776,8 @@
         "homeTeam": "HOU",
         "pick": "HOU",
         "pickPct": 50,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "HOU",
         "eraDiff": -2.13,
         "whipDiff": -0.139,
         "k9Diff": 0.4,
@@ -8766,7 +8790,9 @@
           "homeML": -163,
           "awayPct": 39,
           "homePct": 61
-        }
+        },
+        "scoreMargin": 1,
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|DRP|COL-LAD",
@@ -8776,8 +8802,8 @@
         "homeTeam": "COL",
         "pick": "LAD",
         "pickPct": 57,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "LAD",
         "eraDiff": -1.53,
         "whipDiff": -0.084,
         "k9Diff": 2.27,
@@ -8790,7 +8816,9 @@
           "homeML": 179,
           "awayPct": 65,
           "homePct": 35
-        }
+        },
+        "scoreMargin": 2,
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|DRP|ATH-KC",
@@ -8800,8 +8828,8 @@
         "homeTeam": "KC",
         "pick": "KC",
         "pickPct": 58,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "KC",
         "eraDiff": 2.58,
         "whipDiff": 0.487,
         "k9Diff": -0.61,
@@ -8814,6 +8842,218 @@
           "homeML": -158,
           "awayPct": 40,
           "homePct": 60
+        },
+        "scoreMargin": 2,
+        "nearMiss": false
+      },
+      {
+        "key": "2026-08-20|DRP|CIN-STL",
+        "date": "2026-08-20",
+        "gamePk": 824474,
+        "awayTeam": "STL",
+        "homeTeam": "CIN",
+        "pick": "CIN",
+        "pickPct": 52,
+        "result": "pending",
+        "actualWinner": null,
+        "eraDiff": -0.07,
+        "whipDiff": -0.011,
+        "k9Diff": -0.29,
+        "awayRecordPct": 0.508,
+        "homeRecordPct": 0.48,
+        "isDayGame": true,
+        "marketOdds": {
+          "provider": "DraftKings",
+          "awayML": 125,
+          "homeML": -134,
+          "awayPct": 44,
+          "homePct": 56
+        }
+      },
+      {
+        "key": "2026-08-20|DRP|CLE-SF",
+        "date": "2026-08-20",
+        "gamePk": 824395,
+        "awayTeam": "SF",
+        "homeTeam": "CLE",
+        "pick": "CLE",
+        "pickPct": 60,
+        "result": "pending",
+        "actualWinner": null,
+        "eraDiff": 1.77,
+        "whipDiff": 0.416,
+        "k9Diff": -4.28,
+        "awayRecordPct": 0.413,
+        "homeRecordPct": 0.48,
+        "isDayGame": true,
+        "marketOdds": {
+          "provider": "DraftKings",
+          "awayML": 206,
+          "homeML": -223,
+          "awayPct": 32,
+          "homePct": 68
+        }
+      },
+      {
+        "key": "2026-08-20|DRP|TB-TOR",
+        "date": "2026-08-20",
+        "gamePk": 822934,
+        "awayTeam": "TOR",
+        "homeTeam": "TB",
+        "pick": "TB",
+        "pickPct": 60,
+        "result": "pending",
+        "actualWinner": null,
+        "eraDiff": 1.32,
+        "whipDiff": 0.383,
+        "k9Diff": -4.45,
+        "awayRecordPct": 0.484,
+        "homeRecordPct": 0.603,
+        "isDayGame": true,
+        "marketOdds": {
+          "provider": "DraftKings",
+          "awayML": 179,
+          "homeML": -193,
+          "awayPct": 35,
+          "homePct": 65
+        }
+      },
+      {
+        "key": "2026-08-20|DRP|ATH-KC",
+        "date": "2026-08-20",
+        "gamePk": 824074,
+        "awayTeam": "ATH",
+        "homeTeam": "KC",
+        "pick": "KC",
+        "pickPct": 56,
+        "result": "pending",
+        "actualWinner": null,
+        "eraDiff": 3.59,
+        "whipDiff": 0.341,
+        "k9Diff": 4.41,
+        "awayRecordPct": 0.386,
+        "homeRecordPct": 0.422,
+        "isDayGame": true,
+        "marketOdds": {
+          "provider": "DraftKings",
+          "awayML": 169,
+          "homeML": -182,
+          "awayPct": 37,
+          "homePct": 63
+        }
+      },
+      {
+        "key": "2026-08-20|DRP|ATL-CWS",
+        "date": "2026-08-20",
+        "gamePk": 824589,
+        "awayTeam": "ATL",
+        "homeTeam": "CWS",
+        "pick": "CWS",
+        "pickPct": 52,
+        "result": "pending",
+        "actualWinner": null,
+        "eraDiff": 0.45,
+        "whipDiff": 0.077,
+        "k9Diff": -0.05,
+        "awayRecordPct": 0.583,
+        "homeRecordPct": 0.524,
+        "isDayGame": true,
+        "marketOdds": null
+      },
+      {
+        "key": "2026-08-20|DRP|MIL-SEA",
+        "date": "2026-08-20",
+        "gamePk": 823747,
+        "awayTeam": "SEA",
+        "homeTeam": "MIL",
+        "pick": "MIL",
+        "pickPct": 57,
+        "result": "pending",
+        "actualWinner": null,
+        "eraDiff": 0.24,
+        "whipDiff": 0.091,
+        "k9Diff": -1.84,
+        "awayRecordPct": 0.472,
+        "homeRecordPct": 0.614,
+        "isDayGame": true,
+        "marketOdds": {
+          "provider": "DraftKings",
+          "awayML": 108,
+          "homeML": -116,
+          "awayPct": 47,
+          "homePct": 53
+        }
+      },
+      {
+        "key": "2026-08-20|DRP|BAL-NYY",
+        "date": "2026-08-20",
+        "gamePk": 824802,
+        "awayTeam": "NYY",
+        "homeTeam": "BAL",
+        "pick": "NYY",
+        "pickPct": 55,
+        "result": "pending",
+        "actualWinner": null,
+        "eraDiff": -1.17,
+        "whipDiff": -0.374,
+        "k9Diff": 2.7,
+        "awayRecordPct": 0.563,
+        "homeRecordPct": 0.48,
+        "isDayGame": false,
+        "marketOdds": {
+          "provider": "DraftKings",
+          "awayML": -105,
+          "homeML": -102,
+          "awayPct": 50,
+          "homePct": 50
+        }
+      },
+      {
+        "key": "2026-08-20|DRP|TEX-WSH",
+        "date": "2026-08-20",
+        "gamePk": 822861,
+        "awayTeam": "WSH",
+        "homeTeam": "TEX",
+        "pick": "TEX",
+        "pickPct": 50,
+        "result": "pending",
+        "actualWinner": null,
+        "eraDiff": -1.71,
+        "whipDiff": -0.337,
+        "k9Diff": -4.2,
+        "awayRecordPct": 0.477,
+        "homeRecordPct": 0.488,
+        "isDayGame": false,
+        "marketOdds": {
+          "provider": "DraftKings",
+          "awayML": 108,
+          "homeML": -116,
+          "awayPct": 47,
+          "homePct": 53
+        }
+      },
+      {
+        "key": "2026-08-20|DRP|HOU-LAA",
+        "date": "2026-08-20",
+        "gamePk": 824153,
+        "awayTeam": "LAA",
+        "homeTeam": "HOU",
+        "pick": "HOU",
+        "pickPct": 58,
+        "result": "pending",
+        "actualWinner": null,
+        "eraDiff": 3.12,
+        "whipDiff": 0.219,
+        "k9Diff": 0.54,
+        "awayRecordPct": 0.394,
+        "homeRecordPct": 0.504,
+        "isDayGame": false,
+        "marketOdds": {
+          "provider": "DraftKings",
+          "awayML": 137,
+          "homeML": -147,
+          "awayPct": 41,
+          "homePct": 59
         }
       }
     ],
@@ -35989,13 +36229,13 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 3,
+        "finalIP": 5.333333333333333,
+        "finalPitches": 86,
+        "finalBB": 3,
+        "finalHits": 4,
+        "finalBF": 22,
         "k9": 8.55,
         "projIP": 4.1,
         "oppKpct": 0.239,
@@ -36054,7 +36294,8 @@
             "battingOrder": 9,
             "kPct": 0.217
           }
-        ]
+        ],
+        "nearMiss": true
       },
       {
         "key": "2026-08-19|KPROP|paul skenes",
@@ -36069,13 +36310,13 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 5,
+        "finalIP": 4.333333333333333,
+        "finalPitches": 81,
+        "finalBB": 4,
+        "finalHits": 4,
+        "finalBF": 20,
         "k9": 11.75,
         "projIP": 5.37,
         "oppKpct": 0.208,
@@ -36134,7 +36375,8 @@
             "battingOrder": 9,
             "kPct": 0.233
           }
-        ]
+        ],
+        "nearMiss": true
       },
       {
         "key": "2026-08-19|KPROP|michael king",
@@ -36149,13 +36391,13 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 4,
+        "finalIP": 6.666666666666667,
+        "finalPitches": 100,
+        "finalBB": 2,
+        "finalHits": 4,
+        "finalBF": 25,
         "k9": 8.26,
         "projIP": 5.68,
         "oppKpct": 0.224,
@@ -36214,7 +36456,8 @@
             "battingOrder": 9,
             "kPct": 0.189
           }
-        ]
+        ],
+        "nearMiss": true
       },
       {
         "key": "2026-08-19|KPROP|robert stock",
@@ -36229,13 +36472,13 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 6,
+        "finalIP": 4.333333333333333,
+        "finalPitches": 83,
+        "finalBB": 3,
+        "finalHits": 2,
+        "finalBF": 19,
         "k9": 9.58,
         "projIP": 4.03,
         "oppKpct": 0.199,
@@ -36294,7 +36537,8 @@
             "battingOrder": 9,
             "kPct": 0.183
           }
-        ]
+        ],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|aj smith-shawver",
@@ -36309,17 +36553,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 3,
+        "finalIP": 4.333333333333333,
+        "finalPitches": 75,
+        "finalBB": 3,
+        "finalHits": 5,
+        "finalBF": 21,
         "k9": 8.46,
         "projIP": 4.1,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|taj bradley",
@@ -36334,17 +36579,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 7,
+        "finalIP": 5,
+        "finalPitches": 88,
+        "finalBB": 3,
+        "finalHits": 2,
+        "finalBF": 20,
         "k9": 9.35,
         "projIP": 5.63,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|sean newcomb",
@@ -36359,17 +36605,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 0,
+        "finalIP": 2,
+        "finalPitches": 34,
+        "finalBB": 2,
+        "finalHits": 0,
+        "finalBF": 7,
         "k9": 9.31,
         "projIP": 7,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|clay holmes",
@@ -36384,13 +36631,13 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 1,
+        "finalIP": 5.333333333333333,
+        "finalPitches": 86,
+        "finalBB": 2,
+        "finalHits": 6,
+        "finalBF": 23,
         "k9": 7.52,
         "projIP": 5.74,
         "oppKpct": 0.24,
@@ -36449,7 +36696,8 @@
             "battingOrder": 9,
             "kPct": 0.286
           }
-        ]
+        ],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|brandon pfaadt",
@@ -36464,17 +36712,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 8,
+        "finalIP": 5.666666666666667,
+        "finalPitches": 94,
+        "finalBB": 0,
+        "finalHits": 7,
+        "finalBF": 24,
         "k9": 5.26,
         "projIP": 7,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|payton tolle",
@@ -36489,17 +36738,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 6,
+        "finalIP": 5,
+        "finalPitches": 98,
+        "finalBB": 2,
+        "finalHits": 6,
+        "finalBF": 22,
         "k9": 10.96,
         "projIP": 5.75,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": true
       },
       {
         "key": "2026-08-19|KPROP|sandy alcantara",
@@ -36514,17 +36764,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 1,
+        "finalIP": 6,
+        "finalPitches": 97,
+        "finalBB": 1,
+        "finalHits": 8,
+        "finalBF": 26,
         "k9": 6.47,
         "projIP": 6.55,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|aaron nola",
@@ -36539,17 +36790,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 8,
+        "finalIP": 7,
+        "finalPitches": 100,
+        "finalBB": 0,
+        "finalHits": 5,
+        "finalBF": 26,
         "k9": 9.78,
         "projIP": 5.2,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|will warren",
@@ -36564,17 +36816,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 5,
+        "finalIP": 4,
+        "finalPitches": 90,
+        "finalBB": 2,
+        "finalHits": 3,
+        "finalBF": 18,
         "k9": 9.38,
         "projIP": 5.13,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|chris bassitt",
@@ -36589,17 +36842,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 6,
+        "finalIP": 5.666666666666667,
+        "finalPitches": 95,
+        "finalBB": 1,
+        "finalHits": 8,
+        "finalBF": 24,
         "k9": 5.64,
         "projIP": 5.56,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|matt wilkinson",
@@ -36614,17 +36868,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 0,
+        "finalIP": 2,
+        "finalPitches": 25,
+        "finalBB": 0,
+        "finalHits": 1,
+        "finalBF": 7,
         "k9": 8,
         "projIP": 5.4,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|parker messick",
@@ -36639,17 +36894,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 10,
+        "finalIP": 6.666666666666667,
+        "finalPitches": 98,
+        "finalBB": 0,
+        "finalHits": 6,
+        "finalBF": 26,
         "k9": 9.27,
         "projIP": 5.92,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|matthew liberatore",
@@ -36664,17 +36920,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 9,
+        "finalIP": 6,
+        "finalPitches": 100,
+        "finalBB": 0,
+        "finalHits": 4,
+        "finalBF": 22,
         "k9": 9.4,
         "projIP": 4.96,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|chase burns",
@@ -36689,17 +36946,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 8,
+        "finalIP": 5,
+        "finalPitches": 104,
+        "finalBB": 2,
+        "finalHits": 6,
+        "finalBF": 22,
         "k9": 10.47,
         "projIP": 5.7,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|max scherzer",
@@ -36714,17 +36972,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 1,
+        "finalIP": 4,
+        "finalPitches": 73,
+        "finalBB": 3,
+        "finalHits": 5,
+        "finalBF": 21,
         "k9": 7.68,
         "projIP": 4.1,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|drew rasmussen",
@@ -36739,17 +36998,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 5,
+        "finalIP": 5,
+        "finalPitches": 86,
+        "finalBB": 2,
+        "finalHits": 7,
+        "finalBF": 23,
         "k9": 9.88,
         "projIP": 5.61,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": true
       },
       {
         "key": "2026-08-19|KPROP|logan gilbert",
@@ -36764,17 +37024,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 5,
+        "finalIP": 5,
+        "finalPitches": 100,
+        "finalBB": 4,
+        "finalHits": 4,
+        "finalBF": 23,
         "k9": 9.48,
         "projIP": 6.05,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": true
       },
       {
         "key": "2026-08-19|KPROP|dustin may",
@@ -36789,17 +37050,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 1,
+        "finalIP": 2,
+        "finalPitches": 66,
+        "finalBB": 2,
+        "finalHits": 7,
+        "finalBF": 16,
         "k9": 8.66,
         "projIP": 5.3,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|cade cavalli",
@@ -36814,17 +37076,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 11,
+        "finalIP": 6,
+        "finalPitches": 84,
+        "finalBB": 1,
+        "finalHits": 3,
+        "finalBF": 22,
         "k9": 9.47,
         "projIP": 5.24,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|kumar rocker",
@@ -36839,17 +37102,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 3,
+        "finalIP": 5,
+        "finalPitches": 92,
+        "finalBB": 1,
+        "finalHits": 6,
+        "finalBF": 22,
         "k9": 8.61,
         "projIP": 5.52,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|walbert ureña",
@@ -36864,17 +37128,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 7,
+        "finalIP": 5,
+        "finalPitches": 94,
+        "finalBB": 2,
+        "finalHits": 3,
+        "finalBF": 20,
         "k9": 8.4,
         "projIP": 5.36,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|ethan pecko",
@@ -36889,17 +37154,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 4,
+        "finalIP": 3.6666666666666665,
+        "finalPitches": 89,
+        "finalBB": 3,
+        "finalHits": 3,
+        "finalBF": 18,
         "k9": 8,
         "projIP": 5.4,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|roki sasaki",
@@ -36914,17 +37180,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 6,
+        "finalIP": 5,
+        "finalPitches": 99,
+        "finalBB": 1,
+        "finalHits": 7,
+        "finalBF": 22,
         "k9": 8.58,
         "projIP": 5.29,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|kyle freeland",
@@ -36939,17 +37206,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 5,
+        "finalIP": 3.6666666666666665,
+        "finalPitches": 66,
+        "finalBB": 1,
+        "finalHits": 6,
+        "finalBF": 18,
         "k9": 6.31,
         "projIP": 5.46,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|jeffrey springs",
@@ -36964,13 +37232,13 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 1,
+        "finalIP": 5.666666666666667,
+        "finalPitches": 85,
+        "finalBB": 3,
+        "finalHits": 5,
+        "finalBF": 25,
         "k9": 5.92,
         "projIP": 4.91,
         "oppKpct": 0.201,
@@ -37029,7 +37297,8 @@
             "battingOrder": 9,
             "kPct": 0.223
           }
-        ]
+        ],
+        "nearMiss": false
       },
       {
         "key": "2026-08-19|KPROP|seth lugo",
@@ -37044,6 +37313,32 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
+        "result": "loss",
+        "finalK": 3,
+        "finalIP": 6,
+        "finalPitches": 96,
+        "finalBB": 0,
+        "finalHits": 9,
+        "finalBF": 26,
+        "k9": 6.52,
+        "projIP": 5.56,
+        "oppKpct": 0.22,
+        "lineup": [],
+        "nearMiss": true
+      },
+      {
+        "key": "2026-08-20|KPROP|michael mcgreevy",
+        "date": "2026-08-20",
+        "gamePk": 824474,
+        "pitcherId": 700241,
+        "pitcherName": "Michael McGreevy",
+        "team": "STL",
+        "opp": "CIN",
+        "projK": 4.6,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
         "result": "pending",
         "finalK": null,
         "finalIP": null,
@@ -37051,8 +37346,818 @@
         "finalBB": null,
         "finalHits": null,
         "finalBF": null,
-        "k9": 6.52,
-        "projIP": 5.56,
+        "k9": 6.85,
+        "projIP": 5.5,
+        "oppKpct": 0.261,
+        "lineup": [
+          {
+            "id": 682829,
+            "name": "Elly De La Cruz",
+            "battingOrder": 1,
+            "kPct": 0.274
+          },
+          {
+            "id": 701398,
+            "name": "Sal Stewart",
+            "battingOrder": 2,
+            "kPct": 0.219
+          },
+          {
+            "id": 668709,
+            "name": "JJ Bleday",
+            "battingOrder": 3,
+            "kPct": 0.217
+          },
+          {
+            "id": 663886,
+            "name": "Tyler Stephenson",
+            "battingOrder": 4,
+            "kPct": 0.265
+          },
+          {
+            "id": 680574,
+            "name": "Matt McLain",
+            "battingOrder": 5,
+            "kPct": 0.274
+          },
+          {
+            "id": 669911,
+            "name": "Michael Toglia",
+            "battingOrder": 6,
+            "kPct": 0.417
+          },
+          {
+            "id": 667472,
+            "name": "Dane Myers",
+            "battingOrder": 7,
+            "kPct": 0.254
+          },
+          {
+            "id": 699302,
+            "name": "Héctor Rodríguez",
+            "battingOrder": 8,
+            "kPct": 0.235
+          },
+          {
+            "id": 663647,
+            "name": "Ke'Bryan Hayes",
+            "battingOrder": 9,
+            "kPct": 0.197
+          }
+        ]
+      },
+      {
+        "key": "2026-08-20|KPROP|brady singer",
+        "date": "2026-08-20",
+        "gamePk": 824474,
+        "pitcherId": 663903,
+        "pitcherName": "Brady Singer",
+        "team": "CIN",
+        "opp": "STL",
+        "projK": 4,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 7.14,
+        "projIP": 5.22,
+        "oppKpct": 0.21,
+        "lineup": [
+          {
+            "id": 802139,
+            "name": "JJ Wetherholt",
+            "battingOrder": 1,
+            "kPct": 0.158
+          },
+          {
+            "id": 671056,
+            "name": "Iván Herrera",
+            "battingOrder": 2,
+            "kPct": 0.176
+          },
+          {
+            "id": 676475,
+            "name": "Alec Burleson",
+            "battingOrder": 3,
+            "kPct": 0.167
+          },
+          {
+            "id": 691023,
+            "name": "Jordan Walker",
+            "battingOrder": 4,
+            "kPct": 0.242
+          },
+          {
+            "id": 695491,
+            "name": "Joshua Báez",
+            "battingOrder": 5,
+            "kPct": 0.28
+          },
+          {
+            "id": 701675,
+            "name": "Nathan Church",
+            "battingOrder": 6,
+            "kPct": 0.19
+          },
+          {
+            "id": 663494,
+            "name": "Bryan Torres",
+            "battingOrder": 7,
+            "kPct": 0.203
+          },
+          {
+            "id": 691458,
+            "name": "Blaze Jordan",
+            "battingOrder": 8,
+            "kPct": 0.153
+          },
+          {
+            "id": 699625,
+            "name": "Jimmy Crooks",
+            "battingOrder": 9,
+            "kPct": 0.326
+          }
+        ]
+      },
+      {
+        "key": "2026-08-20|KPROP|landen roupp",
+        "date": "2026-08-20",
+        "gamePk": 824395,
+        "pitcherId": 694738,
+        "pitcherName": "Landen Roupp",
+        "team": "SF",
+        "opp": "CLE",
+        "projK": 4.6,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 8.4,
+        "projIP": 5.38,
+        "oppKpct": 0.177,
+        "lineup": [
+          {
+            "id": 680757,
+            "name": "Steven Kwan",
+            "battingOrder": 1,
+            "kPct": 0.102
+          },
+          {
+            "id": 683953,
+            "name": "Travis Bazzana",
+            "battingOrder": 2,
+            "kPct": 0.222
+          },
+          {
+            "id": 608070,
+            "name": "José Ramírez",
+            "battingOrder": 3,
+            "kPct": 0.123
+          },
+          {
+            "id": 663993,
+            "name": "Nathaniel Lowe",
+            "battingOrder": 4,
+            "kPct": 0.246
+          },
+          {
+            "id": 694197,
+            "name": "Angel Genao",
+            "battingOrder": 5,
+            "kPct": 0.065
+          },
+          {
+            "id": 682657,
+            "name": "Angel Martínez",
+            "battingOrder": 6,
+            "kPct": 0.226
+          },
+          {
+            "id": 672275,
+            "name": "Patrick Bailey",
+            "battingOrder": 7,
+            "kPct": 0.253
+          },
+          {
+            "id": 690984,
+            "name": "Petey Halpin",
+            "battingOrder": 8,
+            "kPct": 0.207
+          },
+          {
+            "id": 677587,
+            "name": "Brayan Rocchio",
+            "battingOrder": 9,
+            "kPct": 0.146
+          }
+        ]
+      },
+      {
+        "key": "2026-08-20|KPROP|gavin williams",
+        "date": "2026-08-20",
+        "gamePk": 824395,
+        "pitcherId": 668909,
+        "pitcherName": "Gavin Williams",
+        "team": "CLE",
+        "opp": "SF",
+        "projK": 8.3,
+        "line": 7.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 12.67,
+        "projIP": 5.96,
+        "oppKpct": 0.215,
+        "lineup": [
+          {
+            "id": 687551,
+            "name": "Drew Gilbert",
+            "battingOrder": 1,
+            "kPct": 0.168
+          },
+          {
+            "id": 646240,
+            "name": "Rafael Devers",
+            "battingOrder": 2,
+            "kPct": 0.265
+          },
+          {
+            "id": 642715,
+            "name": "Willy Adames",
+            "battingOrder": 3,
+            "kPct": 0.272
+          },
+          {
+            "id": 805811,
+            "name": "Bryce Eldridge",
+            "battingOrder": 4,
+            "kPct": 0.268
+          },
+          {
+            "id": 808982,
+            "name": "Jung Hoo Lee",
+            "battingOrder": 5,
+            "kPct": 0.1
+          },
+          {
+            "id": 678545,
+            "name": "Osleivis Basabe",
+            "battingOrder": 6,
+            "kPct": 0.156
+          },
+          {
+            "id": 806367,
+            "name": "Turner Hill",
+            "battingOrder": 7,
+            "kPct": 0.222
+          },
+          {
+            "id": 701852,
+            "name": "Drew Cavanaugh",
+            "battingOrder": 8,
+            "kPct": 0.223
+          },
+          {
+            "id": 683766,
+            "name": "Christian Koss",
+            "battingOrder": 9,
+            "kPct": 0.256
+          }
+        ]
+      },
+      {
+        "key": "2026-08-20|KPROP|shane bieber",
+        "date": "2026-08-20",
+        "gamePk": 822934,
+        "pitcherId": 669456,
+        "pitcherName": "Shane Bieber",
+        "team": "TOR",
+        "opp": "TB",
+        "projK": 3.2,
+        "line": 2.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 6.66,
+        "projIP": 4.82,
+        "oppKpct": 0.183,
+        "lineup": [
+          {
+            "id": 802415,
+            "name": "Chandler Simpson",
+            "battingOrder": 1,
+            "kPct": 0.086
+          },
+          {
+            "id": 691406,
+            "name": "Junior Caminero",
+            "battingOrder": 2,
+            "kPct": 0.187
+          },
+          {
+            "id": 666018,
+            "name": "Jonathan Aranda",
+            "battingOrder": 3,
+            "kPct": 0.231
+          },
+          {
+            "id": 650490,
+            "name": "Yandy Díaz",
+            "battingOrder": 4,
+            "kPct": 0.141
+          },
+          {
+            "id": 656775,
+            "name": "Cedric Mullins",
+            "battingOrder": 5,
+            "kPct": 0.201
+          },
+          {
+            "id": 676356,
+            "name": "Jonny DeLuca",
+            "battingOrder": 6,
+            "kPct": 0.202
+          },
+          {
+            "id": 680700,
+            "name": "Richie Palacios",
+            "battingOrder": 7,
+            "kPct": 0.183
+          },
+          {
+            "id": 622761,
+            "name": "Jorge Mateo",
+            "battingOrder": 8,
+            "kPct": 0.294
+          },
+          {
+            "id": 663743,
+            "name": "Nick Fortes",
+            "battingOrder": 9,
+            "kPct": 0.12
+          }
+        ]
+      },
+      {
+        "key": "2026-08-20|KPROP|ian seymour",
+        "date": "2026-08-20",
+        "gamePk": 822934,
+        "pitcherId": 693855,
+        "pitcherName": "Ian Seymour",
+        "team": "TB",
+        "opp": "TOR",
+        "projK": 8.2,
+        "line": 7.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 11.11,
+        "projIP": 7,
+        "oppKpct": 0.175,
+        "lineup": [
+          {
+            "id": 807727,
+            "name": "Charles McAdoo",
+            "battingOrder": 1,
+            "kPct": 0.231
+          },
+          {
+            "id": 663662,
+            "name": "Daz Cameron",
+            "battingOrder": 2,
+            "kPct": 0.167
+          },
+          {
+            "id": 672386,
+            "name": "Alejandro Kirk",
+            "battingOrder": 3,
+            "kPct": 0.114
+          },
+          {
+            "id": 543807,
+            "name": "George Springer",
+            "battingOrder": 4,
+            "kPct": 0.183
+          },
+          {
+            "id": 672960,
+            "name": "Kazuma Okamoto",
+            "battingOrder": 5,
+            "kPct": 0.307
+          },
+          {
+            "id": 665926,
+            "name": "Andrés Giménez",
+            "battingOrder": 6,
+            "kPct": 0.193
+          },
+          {
+            "id": 676391,
+            "name": "Ernie Clement",
+            "battingOrder": 7,
+            "kPct": 0.094
+          },
+          {
+            "id": 664702,
+            "name": "Myles Straw",
+            "battingOrder": 8,
+            "kPct": 0.136
+          },
+          {
+            "id": 664770,
+            "name": "Nathan Lukes",
+            "battingOrder": 9,
+            "kPct": 0.15
+          }
+        ]
+      },
+      {
+        "key": "2026-08-20|KPROP|gage jump",
+        "date": "2026-08-20",
+        "gamePk": 824074,
+        "pitcherId": 695611,
+        "pitcherName": "Gage Jump",
+        "team": "ATH",
+        "opp": "KC",
+        "projK": 5.6,
+        "line": 4.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 10.08,
+        "projIP": 5.2,
+        "oppKpct": 0.198,
+        "lineup": [
+          {
+            "id": 679845,
+            "name": "Nick Loftin",
+            "battingOrder": 1,
+            "kPct": 0.156
+          },
+          {
+            "id": 677951,
+            "name": "Bobby Witt Jr.",
+            "battingOrder": 2,
+            "kPct": 0.175
+          },
+          {
+            "id": 672580,
+            "name": "Maikel Garcia",
+            "battingOrder": 3,
+            "kPct": 0.153
+          },
+          {
+            "id": 521692,
+            "name": "Salvador Perez",
+            "battingOrder": 4,
+            "kPct": 0.197
+          },
+          {
+            "id": 686469,
+            "name": "Vinnie Pasquantino",
+            "battingOrder": 5,
+            "kPct": 0.172
+          },
+          {
+            "id": 686555,
+            "name": "Isaac Collins",
+            "battingOrder": 6,
+            "kPct": 0.222
+          },
+          {
+            "id": 686475,
+            "name": "Tyler Tolbert",
+            "battingOrder": 7,
+            "kPct": 0.171
+          },
+          {
+            "id": 686681,
+            "name": "Michael Massey",
+            "battingOrder": 8,
+            "kPct": 0.176
+          },
+          {
+            "id": 571912,
+            "name": "Luke Maile",
+            "battingOrder": 9,
+            "kPct": 0.364
+          }
+        ]
+      },
+      {
+        "key": "2026-08-20|KPROP|randy dobnak",
+        "date": "2026-08-20",
+        "gamePk": 824074,
+        "pitcherId": 677976,
+        "pitcherName": "Randy Dobnak",
+        "team": "KC",
+        "opp": "ATH",
+        "projK": 4.3,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 5.68,
+        "projIP": 6.87,
+        "oppKpct": 0.22,
+        "lineup": []
+      },
+      {
+        "key": "2026-08-20|KPROP|grant holmes",
+        "date": "2026-08-20",
+        "gamePk": 824589,
+        "pitcherId": 656550,
+        "pitcherName": "Grant Holmes",
+        "team": "ATL",
+        "opp": "CWS",
+        "projK": 4,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 7.12,
+        "projIP": 5.1,
+        "oppKpct": 0.22,
+        "lineup": []
+      },
+      {
+        "key": "2026-08-20|KPROP|anthony kay",
+        "date": "2026-08-20",
+        "gamePk": 824589,
+        "pitcherId": 641743,
+        "pitcherName": "Anthony Kay",
+        "team": "CWS",
+        "opp": "ATL",
+        "projK": 4.2,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 7.17,
+        "projIP": 5.27,
+        "oppKpct": 0.22,
+        "lineup": []
+      },
+      {
+        "key": "2026-08-20|KPROP|george kirby",
+        "date": "2026-08-20",
+        "gamePk": 823747,
+        "pitcherId": 669923,
+        "pitcherName": "George Kirby",
+        "team": "SEA",
+        "opp": "MIL",
+        "projK": 4.3,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 6.5,
+        "projIP": 5.92,
+        "oppKpct": 0.22,
+        "lineup": []
+      },
+      {
+        "key": "2026-08-20|KPROP|robert gasser",
+        "date": "2026-08-20",
+        "gamePk": 823747,
+        "pitcherId": 688107,
+        "pitcherName": "Robert Gasser",
+        "team": "MIL",
+        "opp": "SEA",
+        "projK": 4.8,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 8.34,
+        "projIP": 5.22,
+        "oppKpct": 0.22,
+        "lineup": []
+      },
+      {
+        "key": "2026-08-20|KPROP|gerrit cole",
+        "date": "2026-08-20",
+        "gamePk": 824802,
+        "pitcherId": 543037,
+        "pitcherName": "Gerrit Cole",
+        "team": "NYY",
+        "opp": "BAL",
+        "projK": 6.5,
+        "line": 5.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 10.11,
+        "projIP": 5.75,
+        "oppKpct": 0.22,
+        "lineup": []
+      },
+      {
+        "key": "2026-08-20|KPROP|kyle bradish",
+        "date": "2026-08-20",
+        "gamePk": 824802,
+        "pitcherId": 680694,
+        "pitcherName": "Kyle Bradish",
+        "team": "BAL",
+        "opp": "NYY",
+        "projK": 4.6,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 7.41,
+        "projIP": 5.54,
+        "oppKpct": 0.22,
+        "lineup": []
+      },
+      {
+        "key": "2026-08-20|KPROP|andrew alvarez",
+        "date": "2026-08-20",
+        "gamePk": 822861,
+        "pitcherId": 674841,
+        "pitcherName": "Andrew Alvarez",
+        "team": "WSH",
+        "opp": "TEX",
+        "projK": 5.4,
+        "line": 4.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 6.91,
+        "projIP": 7,
+        "oppKpct": 0.22,
+        "lineup": []
+      },
+      {
+        "key": "2026-08-20|KPROP|jacob degrom",
+        "date": "2026-08-20",
+        "gamePk": 822861,
+        "pitcherId": 594798,
+        "pitcherName": "Jacob deGrom",
+        "team": "TEX",
+        "opp": "WSH",
+        "projK": 6.4,
+        "line": 5.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 11.11,
+        "projIP": 5.23,
+        "oppKpct": 0.22,
+        "lineup": []
+      },
+      {
+        "key": "2026-08-20|KPROP|grayson rodriguez",
+        "date": "2026-08-20",
+        "gamePk": 824153,
+        "pitcherId": 680570,
+        "pitcherName": "Grayson Rodriguez",
+        "team": "LAA",
+        "opp": "HOU",
+        "projK": 4.8,
+        "line": 3.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 9.45,
+        "projIP": 4.54,
+        "oppKpct": 0.22,
+        "lineup": []
+      },
+      {
+        "key": "2026-08-20|KPROP|peter lambert",
+        "date": "2026-08-20",
+        "gamePk": 824153,
+        "pitcherId": 663567,
+        "pitcherName": "Peter Lambert",
+        "team": "HOU",
+        "opp": "LAA",
+        "projK": 5.6,
+        "line": 4.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 8.9,
+        "projIP": 5.63,
         "oppKpct": 0.22,
         "lineup": []
       }
@@ -55097,16 +56202,16 @@
   },
   "allTime": {
     "drp": {
-      "wins": 232,
-      "losses": 208,
+      "wins": 242,
+      "losses": 213,
       "pushes": 0,
-      "total": 440
+      "total": 455
     },
     "kprop": {
-      "wins": 493,
-      "losses": 415,
+      "wins": 508,
+      "losses": 430,
       "pushes": 0,
-      "total": 908
+      "total": 938
     },
     "premium": {
       "wins": 116,
@@ -55121,5 +56226,5 @@
       "total": 0
     }
   },
-  "oddsLastFetchedDate": "2026-08-19"
+  "oddsLastFetchedDate": "2026-08-20"
 }
