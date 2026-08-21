@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-21T14:46:52.696Z",
+  "generatedAt": "2026-08-21T20:40:07.167Z",
   "market": {
     "drp": [
       {
@@ -9307,6 +9307,30 @@
         "homeRecordPct": 0.469,
         "isDayGame": false,
         "marketOdds": null
+      },
+      {
+        "key": "2026-08-21|DRP|PHI-STL",
+        "date": "2026-08-21",
+        "gamePk": 823420,
+        "awayTeam": "STL",
+        "homeTeam": "PHI",
+        "pick": "PHI",
+        "pickPct": 55,
+        "result": "pending",
+        "actualWinner": null,
+        "eraDiff": 0.3,
+        "whipDiff": 0.214,
+        "k9Diff": -2.23,
+        "awayRecordPct": 0.512,
+        "homeRecordPct": 0.547,
+        "isDayGame": false,
+        "marketOdds": {
+          "provider": "DraftKings",
+          "awayML": 227,
+          "homeML": -246,
+          "awayPct": 30,
+          "homePct": 70
+        }
       }
     ],
     "kprop": [
@@ -39130,6 +39154,86 @@
         "projIP": 5.57,
         "oppKpct": 0.22,
         "lineup": []
+      },
+      {
+        "key": "2026-08-21|KPROP|hunter dobbins",
+        "date": "2026-08-21",
+        "gamePk": 823420,
+        "pitcherId": 690928,
+        "pitcherName": "Hunter Dobbins",
+        "team": "STL",
+        "opp": "PHI",
+        "projK": 6.5,
+        "line": 5.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 8.71,
+        "projIP": 7,
+        "oppKpct": 0.194,
+        "lineup": [
+          {
+            "id": 656941,
+            "name": "Kyle Schwarber",
+            "battingOrder": 1,
+            "kPct": 0.338
+          },
+          {
+            "id": 607208,
+            "name": "Trea Turner",
+            "battingOrder": 2,
+            "kPct": 0.216
+          },
+          {
+            "id": 547180,
+            "name": "Bryce Harper",
+            "battingOrder": 3,
+            "kPct": 0.205
+          },
+          {
+            "id": 650333,
+            "name": "Luis Arraez",
+            "battingOrder": 4,
+            "kPct": 0.045
+          },
+          {
+            "id": 664761,
+            "name": "Alec Bohm",
+            "battingOrder": 5,
+            "kPct": 0.138
+          },
+          {
+            "id": 681082,
+            "name": "Bryson Stott",
+            "battingOrder": 6,
+            "kPct": 0.164
+          },
+          {
+            "id": 669016,
+            "name": "Brandon Marsh",
+            "battingOrder": 7,
+            "kPct": 0.249
+          },
+          {
+            "id": 592663,
+            "name": "J.T. Realmuto",
+            "battingOrder": 8,
+            "kPct": 0.213
+          },
+          {
+            "id": 702222,
+            "name": "Justin Crawford",
+            "battingOrder": 9,
+            "kPct": 0.182
+          }
+        ]
       }
     ],
     "premium": [
