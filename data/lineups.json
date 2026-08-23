@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-08-22T20:38:37.742Z",
+  "generatedAt": "2026-08-23T02:00:21.591Z",
   "date": "2026-08-22",
   "games": {
     "822858": {
-      "updatedAt": "2026-08-22T20:38:37.742Z",
+      "updatedAt": "2026-08-23T02:00:21.591Z",
       "teams": {
         "home": {
           "abbr": "TEX",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -58,23 +58,70 @@
             }
           ]
         },
-        "away": null
+        "away": {
+          "abbr": "LAA",
+          "confirmed": true,
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
+          "source": "mlb-schedule-lineups",
+          "lineup": [
+            {
+              "id": 687263,
+              "name": "Zach Neto",
+              "pos": "SS"
+            },
+            {
+              "id": 545361,
+              "name": "Mike Trout",
+              "pos": "CF"
+            },
+            {
+              "id": 687093,
+              "name": "Vaughn Grissom",
+              "pos": "1B"
+            },
+            {
+              "id": 694208,
+              "name": "Moisés Ballesteros",
+              "pos": "C"
+            },
+            {
+              "id": 642350,
+              "name": "Jose Siri",
+              "pos": "RF"
+            },
+            {
+              "id": 672569,
+              "name": "Gustavo Campero",
+              "pos": "LF"
+            },
+            {
+              "id": 694203,
+              "name": "Denzer Guzman",
+              "pos": "3B"
+            },
+            {
+              "id": 695681,
+              "name": "Christian Moore",
+              "pos": "2B"
+            },
+            {
+              "id": 518595,
+              "name": "Travis d'Arnaud",
+              "pos": "DH"
+            }
+          ]
+        }
       }
     },
     "823100": {
-      "updatedAt": "2026-08-22T20:38:37.742Z",
+      "updatedAt": "2026-08-23T02:00:21.591Z",
       "teams": {
         "home": {
           "abbr": "SEA",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
-            {
-              "id": 680977,
-              "name": "Brendan Donovan",
-              "pos": "3B"
-            },
             {
               "id": 668227,
               "name": "Randy Arozarena",
@@ -111,6 +158,11 @@
               "pos": "2B"
             },
             {
+              "id": 642215,
+              "name": "Weston Wilson",
+              "pos": "3B"
+            },
+            {
               "id": 660844,
               "name": "Leo Rivas",
               "pos": "SS"
@@ -120,7 +172,7 @@
         "away": {
           "abbr": "CHC",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -172,13 +224,124 @@
         }
       }
     },
+    "823261": {
+      "updatedAt": "2026-08-23T02:00:21.591Z",
+      "teams": {
+        "home": {
+          "abbr": "SD",
+          "confirmed": true,
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
+          "source": "mlb-schedule-lineups",
+          "lineup": [
+            {
+              "id": 665487,
+              "name": "Fernando Tatis Jr.",
+              "pos": "RF"
+            },
+            {
+              "id": 630105,
+              "name": "Jake Cronenworth",
+              "pos": "2B"
+            },
+            {
+              "id": 592518,
+              "name": "Manny Machado",
+              "pos": "3B"
+            },
+            {
+              "id": 664034,
+              "name": "Ty France",
+              "pos": "1B"
+            },
+            {
+              "id": 701538,
+              "name": "Jackson Merrill",
+              "pos": "CF"
+            },
+            {
+              "id": 650859,
+              "name": "Luis Rengifo",
+              "pos": "LF"
+            },
+            {
+              "id": 657757,
+              "name": "Gavin Sheets",
+              "pos": "DH"
+            },
+            {
+              "id": 593428,
+              "name": "Xander Bogaerts",
+              "pos": "SS"
+            },
+            {
+              "id": 666023,
+              "name": "Freddy Fermin",
+              "pos": "C"
+            }
+          ]
+        },
+        "away": {
+          "abbr": "MIN",
+          "confirmed": true,
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
+          "source": "mlb-schedule-lineups",
+          "lineup": [
+            {
+              "id": 807712,
+              "name": "Luke Keaschall",
+              "pos": "RF"
+            },
+            {
+              "id": 621439,
+              "name": "Byron Buxton",
+              "pos": "CF"
+            },
+            {
+              "id": 605137,
+              "name": "Josh Bell",
+              "pos": "DH"
+            },
+            {
+              "id": 680777,
+              "name": "Ryan Jeffers",
+              "pos": "C"
+            },
+            {
+              "id": 665019,
+              "name": "Kody Clemens",
+              "pos": "2B"
+            },
+            {
+              "id": 668904,
+              "name": "Royce Lewis",
+              "pos": "1B"
+            },
+            {
+              "id": 663616,
+              "name": "Trevor Larnach",
+              "pos": "LF"
+            },
+            {
+              "id": 686797,
+              "name": "Brooks Lee",
+              "pos": "3B"
+            },
+            {
+              "id": 701785,
+              "name": "Kaelen Culpepper",
+              "pos": "SS"
+            }
+          ]
+        }
+      }
+    },
     "823422": {
-      "updatedAt": "2026-08-22T20:38:37.742Z",
+      "updatedAt": "2026-08-23T02:00:21.590Z",
       "teams": {
         "home": {
           "abbr": "PHI",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.590Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -231,7 +394,7 @@
         "away": {
           "abbr": "STL",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.590Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -284,12 +447,12 @@
       }
     },
     "823509": {
-      "updatedAt": "2026-08-22T20:38:37.742Z",
+      "updatedAt": "2026-08-23T02:00:21.590Z",
       "teams": {
         "home": {
           "abbr": "NYY",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.741Z",
+          "confirmedAt": "2026-08-23T02:00:21.590Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -342,7 +505,7 @@
         "away": {
           "abbr": "TOR",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.590Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -395,12 +558,12 @@
       }
     },
     "823743": {
-      "updatedAt": "2026-08-22T20:38:37.742Z",
+      "updatedAt": "2026-08-23T02:00:21.590Z",
       "teams": {
         "home": {
           "abbr": "MIL",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.590Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -453,7 +616,7 @@
         "away": {
           "abbr": "ATL",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.590Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -506,12 +669,12 @@
       }
     },
     "823831": {
-      "updatedAt": "2026-08-22T20:38:37.742Z",
+      "updatedAt": "2026-08-23T02:00:21.590Z",
       "teams": {
         "home": {
           "abbr": "MIA",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.590Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -564,7 +727,7 @@
         "away": {
           "abbr": "WSH",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.590Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -617,12 +780,12 @@
       }
     },
     "823910": {
-      "updatedAt": "2026-08-22T20:38:37.742Z",
+      "updatedAt": "2026-08-23T02:00:21.591Z",
       "teams": {
         "home": {
           "abbr": "LAD",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -675,7 +838,7 @@
         "away": {
           "abbr": "PIT",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -728,12 +891,12 @@
       }
     },
     "824073": {
-      "updatedAt": "2026-08-22T20:38:37.742Z",
+      "updatedAt": "2026-08-23T02:00:21.591Z",
       "teams": {
         "home": {
           "abbr": "KC",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -786,7 +949,7 @@
         "away": {
           "abbr": "DET",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -839,12 +1002,12 @@
       }
     },
     "824151": {
-      "updatedAt": "2026-08-22T20:38:37.742Z",
+      "updatedAt": "2026-08-23T02:00:21.591Z",
       "teams": {
         "home": {
           "abbr": "HOU",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -897,7 +1060,7 @@
         "away": {
           "abbr": "ATH",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -950,12 +1113,12 @@
       }
     },
     "824316": {
-      "updatedAt": "2026-08-22T20:38:37.742Z",
+      "updatedAt": "2026-08-23T02:00:21.591Z",
       "teams": {
         "home": {
           "abbr": "COL",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -1005,16 +1168,68 @@
             }
           ]
         },
-        "away": null
+        "away": {
+          "abbr": "CLE",
+          "confirmed": true,
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
+          "source": "mlb-schedule-lineups",
+          "lineup": [
+            {
+              "id": 680757,
+              "name": "Steven Kwan",
+              "pos": "LF"
+            },
+            {
+              "id": 800050,
+              "name": "Chase DeLauter",
+              "pos": "DH"
+            },
+            {
+              "id": 608070,
+              "name": "José Ramírez",
+              "pos": "3B"
+            },
+            {
+              "id": 666176,
+              "name": "Jo Adell",
+              "pos": "RF"
+            },
+            {
+              "id": 663993,
+              "name": "Nathaniel Lowe",
+              "pos": "1B"
+            },
+            {
+              "id": 694197,
+              "name": "Angel Genao",
+              "pos": "SS"
+            },
+            {
+              "id": 683953,
+              "name": "Travis Bazzana",
+              "pos": "2B"
+            },
+            {
+              "id": 672275,
+              "name": "Patrick Bailey",
+              "pos": "C"
+            },
+            {
+              "id": 690984,
+              "name": "Petey Halpin",
+              "pos": "CF"
+            }
+          ]
+        }
       }
     },
     "824560": {
-      "updatedAt": "2026-08-22T20:38:37.742Z",
+      "updatedAt": "2026-08-23T02:00:21.591Z",
       "teams": {
         "home": {
           "abbr": "CWS",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -1067,7 +1282,7 @@
         "away": {
           "abbr": "NYM",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -1120,12 +1335,12 @@
       }
     },
     "824718": {
-      "updatedAt": "2026-08-22T20:38:37.742Z",
+      "updatedAt": "2026-08-23T02:00:21.591Z",
       "teams": {
         "home": {
           "abbr": "BOS",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -1178,7 +1393,7 @@
         "away": {
           "abbr": "SF",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -1231,12 +1446,12 @@
       }
     },
     "824798": {
-      "updatedAt": "2026-08-22T20:38:37.742Z",
+      "updatedAt": "2026-08-23T02:00:21.591Z",
       "teams": {
         "home": {
           "abbr": "BAL",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.590Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -1289,7 +1504,7 @@
         "away": {
           "abbr": "TB",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.590Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -1342,12 +1557,12 @@
       }
     },
     "825044": {
-      "updatedAt": "2026-08-22T20:38:37.742Z",
+      "updatedAt": "2026-08-23T02:00:21.591Z",
       "teams": {
         "home": {
           "abbr": "AZ",
           "confirmed": true,
-          "confirmedAt": "2026-08-22T20:38:37.742Z",
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -1397,7 +1612,59 @@
             }
           ]
         },
-        "away": null
+        "away": {
+          "abbr": "CIN",
+          "confirmed": true,
+          "confirmedAt": "2026-08-23T02:00:21.591Z",
+          "source": "mlb-schedule-lineups",
+          "lineup": [
+            {
+              "id": 682829,
+              "name": "Elly De La Cruz",
+              "pos": "SS"
+            },
+            {
+              "id": 701398,
+              "name": "Sal Stewart",
+              "pos": "1B"
+            },
+            {
+              "id": 668709,
+              "name": "JJ Bleday",
+              "pos": "LF"
+            },
+            {
+              "id": 663886,
+              "name": "Tyler Stephenson",
+              "pos": "C"
+            },
+            {
+              "id": 553993,
+              "name": "Eugenio Suárez",
+              "pos": "DH"
+            },
+            {
+              "id": 680574,
+              "name": "Matt McLain",
+              "pos": "2B"
+            },
+            {
+              "id": 667472,
+              "name": "Dane Myers",
+              "pos": "CF"
+            },
+            {
+              "id": 699302,
+              "name": "Héctor Rodríguez",
+              "pos": "RF"
+            },
+            {
+              "id": 663647,
+              "name": "Ke'Bryan Hayes",
+              "pos": "3B"
+            }
+          ]
+        }
       }
     }
   }
