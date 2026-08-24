@@ -169,6 +169,45 @@
       "decision": "skip",
       "reason": "sample size gate not met",
       "active": true
+    },
+    {
+      "at": "2026-08-24T15:57:56.609Z",
+      "param": "HR_MULT_SHRINKAGE",
+      "effectiveSince": "2026-07-20",
+      "excludedPreEffective": 0,
+      "nLow": 0,
+      "nHigh": 0,
+      "lowHitRate": null,
+      "highHitRate": null,
+      "z": null,
+      "decision": "skip",
+      "reason": "sample size gate not met",
+      "current": 0.6
+    },
+    {
+      "at": "2026-08-24T15:57:56.611Z",
+      "param": "HR_SCORE_CALIBRATION",
+      "effectiveSince": "2026-08-06",
+      "excludedPreEffective": 0,
+      "n": 0,
+      "fittedSlope": null,
+      "fittedIntercept": null,
+      "seSlope": null,
+      "tSlope": null,
+      "decision": "skip",
+      "reason": "sample size gate not met",
+      "current": {
+        "slope": 0.95,
+        "intercept": 3
+      }
+    },
+    {
+      "at": "2026-08-24T15:57:56.668Z",
+      "param": "HR_ISOTONIC_CALIBRATION",
+      "n": 0,
+      "decision": "skip",
+      "reason": "sample size gate not met",
+      "active": true
     }
   ]
 }
