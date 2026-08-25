@@ -1,5 +1,6 @@
 {
   "generatedAt": "2026-08-06T14:44:33.194Z",
+  "active": false,
   "features": [
     "batterISO",
     "pitcherHr9",
@@ -54,5 +55,5 @@
     "brier": 0.12467427440633261,
     "logLoss": 0.4196837127093642
   },
-  "note": "Fitted and reported only -- not wired into live scoring anywhere. See this script's file header."
+  "note": "Deactivated 2026-08-25: real batter-level bug found live -- batterISO (the only batter-specific input) has a coefficient roughly 5x smaller than parkFactor/temperatureFactor, so within any one game/team this model barely differentiates real batters from each other (confirmed live: a real .565 OPS/1-HR-season batter and a real .880 OPS/21-HR-season batter on the same real slate scored within 3 points of each other). It still wins on aggregate calibration metrics (see crossValidated/comparisonToCurrentFormula above), which is what it was cross-validated against, but that metric doesn't capture within-game ranking ability -- and the board's whole point is ranking real batters against each other, especially now that the per-team cap (see HR_THREAT_MAX_TOTAL) no longer hides a team's batters clustering at the same score. predictHRLogistic checks this active flag and falls back to the legacy simulation formula (which does differentiate batters, confirmed live) until this is refit with real batter-level ranking as part of its own validation, not just aggregate Brier/AUC."
 }
