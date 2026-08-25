@@ -15772,18 +15772,28 @@ if (document.readyState === 'loading') {
   // through the day, same incremental-fill behavior the old per-team version had, just
   // against one flat ranking instead of 30 separate per-team ones.
   var HRP_LOCKED_LIST_KEY = 'drHrpLockedList';
-  // Bump this only when a change ships that can change WHICH players score highly (a
-  // scoring-formula fix/tweak), never for routine commits. Real bug (2026-08-25): the
-  // fitted logistic model bug (see predictHRLogistic's own comment) got fixed mid-day,
-  // but every visitor who'd already loaded the page that day had a locked-in top-15 in
-  // their own browser's localStorage baked from the BUGGY scores, and the whole point of
-  // the lock (see its comment above) is that it never recomputes for the rest of the
-  // day -- so the fix silently couldn't reach anyone who'd already loaded the page,
-  // stuck showing a stale, wrong list until their calendar day rolled over. Baking this
-  // epoch into the lock lets a formula-affecting deploy force one real recompute without
-  // weakening the lock's actual job (stopping a still-pending list from reshuffling
-  // minute-to-minute as live inputs update) on every other day nothing scoring-related changed.
-  var HRP_LOCK_EPOCH = 2;
+  // Bump this whenever a change ships that can change WHICH players end up on the list --
+  // either the scoring formula itself, OR the fill/lock mechanics that decide who gets a
+  // slot -- never for routine commits. Real bug (2026-08-25, round 1): the fitted logistic
+  // model bug (see predictHRLogistic's own comment) got fixed mid-day, but every visitor
+  // who'd already loaded the page that day had a locked-in top-15 in their own browser's
+  // localStorage baked from the BUGGY scores, and the whole point of the lock (see its
+  // comment above) is that it never recomputes for the rest of the day -- so the fix
+  // silently couldn't reach anyone who'd already loaded the page.
+  //
+  // Real bug (2026-08-25, round 2): fixing the arrival-order bias below (see
+  // HRP_LOCK_MAX_PER_TEAM's own comment) shipped as a SEPARATE commit that changed this
+  // same fill algorithm WITHOUT bumping this epoch -- so anyone who'd locked in a
+  // pre-fix, one-team-heavy list under epoch 2 kept that exact same stale list even after
+  // the per-team-cap fix went live, because the epoch check only cares whether the stored
+  // value matches the current one, not whether the algorithm itself changed in between.
+  // Same screenshot, same 9-of-15 team concentration, still showing after the real fix
+  // had already deployed -- this epoch bump is the only thing that actually invalidates
+  // it. Both rounds are the same lesson: baking this epoch into the lock lets a fill- or
+  // formula-affecting deploy force one real recompute without weakening the lock's actual
+  // job (stopping a still-pending list from reshuffling minute-to-minute as live inputs
+  // update) on every other day nothing about who-gets-picked changed.
+  var HRP_LOCK_EPOCH = 3;
   // Real bug (2026-08-25), separate from the epoch issue above: this board's fill runs on
   // every render as real data streams in through the day, and early on -- before most
   // games' lineups have posted -- the pool can genuinely contain only ONE team's real
