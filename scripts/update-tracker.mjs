@@ -1906,7 +1906,14 @@ async function loadHRLogisticModel() {
 }
 function predictHRLogistic(features) {
   const model = hrLogisticModel;
-  if (!model || !model.coefficients) return null;
+  // model.active gates this the same way data/hr-isotonic-calibration.json's own active
+  // flag does -- deactivated 2026-08-25 after a real live bug: this model's fitted
+  // coefficients weigh batterISO (the only batter-specific input) roughly 5x less than
+  // parkFactor/temperatureFactor, so it barely differentiates real batters within the
+  // same game/team even though it wins on aggregate calibration metrics -- see the
+  // model file's own "note" field for the full live evidence and what it'll take to
+  // re-activate this. Exact port of app.js's own copy of this gate.
+  if (!model || !model.coefficients || model.active !== true) return null;
   // Reads model.features itself rather than a hardcoded field list, so a future refit
   // that adds/removes a predictor (e.g. matchupEdge, zoneFitScore) works everywhere
   // this is called without another code change -- only the caller supplying the raw
