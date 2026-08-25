@@ -2735,6 +2735,17 @@ async function buildBatterPool(games, season) {
 // starve out every other game's real batters -- exact same fix, same constant name
 // pattern, as the client board's own version.
 const HR_THREAT_LOCK_MAX_PER_TEAM = 6;
+// Real bug (2026-08-25, round 2): the per-team cap above doesn't stop a single GAME's two
+// teams from combining to dominate the board -- confirmed live on the client board's
+// identical fill algorithm (see HRP_LOCK_MAX_PER_GAME in app.js), one game alone supplied
+// 12 of 15 total slots (6 per team, both at the cap) before any other game had posted. A
+// "top 15 HR threats" board built from real batters in just 2-3 of a full slate's games
+// has no real claim to being the day's actual best threats. HR_THREAT_LOCK_MAX_PER_GAME
+// caps how many slots ONE game (both teams combined) can claim within a single fill pass,
+// forcing at least ceil(HR_THREAT_MAX_TOTAL / HR_THREAT_LOCK_MAX_PER_GAME) = 3 distinct
+// real games to contribute before the board can ever fill completely -- exact same fix,
+// same constant name pattern, as the client board's own version.
+const HR_THREAT_LOCK_MAX_PER_GAME = 5;
 async function captureHRThreatToday(store, pool) {
   store.market.hrThreat ||= [];
   if (!pool.length) return 0;
@@ -2742,7 +2753,11 @@ async function captureHRThreatToday(store, pool) {
   const todayRows = store.market.hrThreat.filter(r => r.date === today);
   const already = new Set(todayRows.map(r => r.playerId));
   const teamCounts = {};
-  todayRows.forEach(r => { teamCounts[r.team] = (teamCounts[r.team] || 0) + 1; });
+  const gameCounts = {};
+  todayRows.forEach(r => {
+    teamCounts[r.team] = (teamCounts[r.team] || 0) + 1;
+    gameCounts[r.gamePk] = (gameCounts[r.gamePk] || 0) + 1;
+  });
 
   // Score every eligible batter once up front (score + its hrScoreSource side effect
   // captured together, since scoreForMarket sets __hrLastScoreSource as a side effect
@@ -2761,8 +2776,10 @@ async function captureHRThreatToday(store, pool) {
       if (allowedIds.size >= remainingSlots) return;
       const team = s.row.teamAbbr;
       if ((teamCounts[team] || 0) >= HR_THREAT_LOCK_MAX_PER_TEAM) return;
+      if ((gameCounts[s.row.gamePk] || 0) >= HR_THREAT_LOCK_MAX_PER_GAME) return;
       allowedIds.add(s.row.id);
       teamCounts[team] = (teamCounts[team] || 0) + 1;
+      gameCounts[s.row.gamePk] = (gameCounts[s.row.gamePk] || 0) + 1;
     });
 
   let added = 0;
