@@ -15772,16 +15772,28 @@ if (document.readyState === 'loading') {
   // through the day, same incremental-fill behavior the old per-team version had, just
   // against one flat ranking instead of 30 separate per-team ones.
   var HRP_LOCKED_LIST_KEY = 'drHrpLockedList';
+  // Bump this only when a change ships that can change WHICH players score highly (a
+  // scoring-formula fix/tweak), never for routine commits. Real bug (2026-08-25): the
+  // fitted logistic model bug (see predictHRLogistic's own comment) got fixed mid-day,
+  // but every visitor who'd already loaded the page that day had a locked-in top-15 in
+  // their own browser's localStorage baked from the BUGGY scores, and the whole point of
+  // the lock (see its comment above) is that it never recomputes for the rest of the
+  // day -- so the fix silently couldn't reach anyone who'd already loaded the page,
+  // stuck showing a stale, wrong list until their calendar day rolled over. Baking this
+  // epoch into the lock lets a formula-affecting deploy force one real recompute without
+  // weakening the lock's actual job (stopping a still-pending list from reshuffling
+  // minute-to-minute as live inputs update) on every other day nothing scoring-related changed.
+  var HRP_LOCK_EPOCH = 2;
   function hrpLoadLockedList(){
     try {
       var raw = localStorage.getItem(HRP_LOCKED_LIST_KEY);
       var parsed = raw ? JSON.parse(raw) : null;
-      if (parsed && parsed.date === drStaticDateKey() && Array.isArray(parsed.ids)) return { ids: parsed.ids };
+      if (parsed && parsed.date === drStaticDateKey() && parsed.epoch === HRP_LOCK_EPOCH && Array.isArray(parsed.ids)) return { ids: parsed.ids };
     } catch(e) {}
     return { ids: [] };
   }
   function hrpSaveLockedList(locked){
-    try { drSafeLocalStorageSet(HRP_LOCKED_LIST_KEY, JSON.stringify({ date: drStaticDateKey(), ids: locked.ids })); } catch(e) {}
+    try { drSafeLocalStorageSet(HRP_LOCKED_LIST_KEY, JSON.stringify({ date: drStaticDateKey(), epoch: HRP_LOCK_EPOCH, ids: locked.ids })); } catch(e) {}
   }
   function getFilters(){ if(!window.__hrpFilterSet) window.__hrpFilterSet=new Set(); return window.__hrpFilterSet; }
   // Board default stays HR Probability (the board's whole point); Matchup Edge is an
