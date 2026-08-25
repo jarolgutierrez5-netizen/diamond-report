@@ -1484,20 +1484,22 @@ async function teamRestFatigueFactor(teamId, todayGameDateIso) {
 // pool — a known, deliberate simplification (skips the tiny per-game 14% carve-out) so
 // the daily scanned/hit counts are simple to reason about and don't require re-deriving
 // per-game rankings. Same buildBatterPool/scoreForMarket('hr', ...) model as Elite
-// Picks, just applied to every qualifying batter instead of the top 3 per game.
+// Picks, just applied to every qualifying batter within the board's overall cap (see
+// HR_THREAT_MAX_TOTAL below) instead of every batter on the slate.
 const HR_THREAT_MIN_SCORE = 18;
-// Mirrors the live client board's own per-team cap (HRP_BOARD_MAX_PER_TEAM in app.js) --
-// the client locks each team (not each game; up to 6 total across both sides) to its top
-// 3 batters by score, once per day. Without the matching cap here, captureHRThreatToday
-// used to record every batter clearing HR_THREAT_MIN_SCORE regardless of team, which
-// diluted the calibration/win-rate numbers with picks real users never actually saw on
-// the capped board. This is the same cap SIZE, not a byte-identical replication of the
-// client's exact locked id set -- the client sorts by its own hrProb (a separate,
-// independently-maintained formula from this file's score, same reason `liveScore` and
-// `score` are recorded as two different fields below) and persists its lock in
-// localStorage per browser: this applies the cap fresh each capture run instead, ranked
-// by this file's own score.
-const HR_THREAT_MAX_PER_TEAM = 3;
+// Mirrors the live client board's own cap (HRP_BOARD_MAX_TOTAL in app.js) -- the client
+// used to lock each team to its top 3 batters (up to 6/game), but that shape meant a
+// mediocre matchup on a team with few real candidates could take a locked slot over a
+// genuinely elite one on a team that already had 3 better locked -- the board's whole
+// point is "best real threats," not "some threats from every team." Both sides now cap
+// to the single best HR_THREAT_MAX_TOTAL batters overall, ranked by score, regardless of
+// team. This is the same cap SIZE, not a byte-identical replication of the client's exact
+// locked id set -- the client sorts by its own hrProb (a separate, independently-
+// maintained formula from this file's score, same reason `liveScore` and `score` are
+// recorded as two different fields below) and persists its lock in localStorage per
+// browser: this applies the cap fresh each capture run instead, ranked by this file's
+// own score.
+const HR_THREAT_MAX_TOTAL = 15;
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function shrinkToLeague(raw, ab, leagueAvg, minAB = 40) {
@@ -2703,15 +2705,15 @@ async function buildBatterPool(games, season) {
 
 // HR Threats board hit-rate tracker — draws from the same shared batter pool
 // (buildBatterPool) as generate-headlines.mjs's storylines, captures batters who
-// clear HR_THREAT_MIN_SCORE AND are within their team's top HR_THREAT_MAX_PER_TEAM
-// by score (see both constants' own comments for how this compares to the live
-// client-side gate/cap).
+// clear HR_THREAT_MIN_SCORE AND are within the board's overall top HR_THREAT_MAX_TOTAL
+// by score, regardless of team (see both constants' own comments for how this compares
+// to the live client-side gate/cap).
 // Picks lock in the moment they're first captured, same as everywhere else in this file —
-// a later same-day pass only adds newly-qualifying batters, never recomputes or drops one
-// already captured. The per-team cap is recomputed fresh each run (not itself locked),
-// but that's harmless in practice: a later pass only ever narrows or holds steady which
-// batters currently rank in their team's top 3, and already-captured rows are never
-// dropped regardless of what a later run's ranking says.
+// a later same-day pass only fills genuinely remaining slots (HR_THREAT_MAX_TOTAL minus
+// however many are already captured for today) with the highest-scoring not-yet-captured
+// batters, never recomputes or drops one already captured, and never captures more than
+// HR_THREAT_MAX_TOTAL total for the day even if a later pass's fresh ranking would have
+// picked a different top HR_THREAT_MAX_TOTAL.
 async function captureHRThreatToday(store, pool) {
   store.market.hrThreat ||= [];
   if (!pool.length) return 0;
@@ -2721,25 +2723,22 @@ async function captureHRThreatToday(store, pool) {
   // Score every eligible batter once up front (score + its hrScoreSource side effect
   // captured together, since scoreForMarket sets __hrLastScoreSource as a side effect
   // read immediately after each call -- computing scores in a separate later pass could
-  // pair a batter with a different batter's hrScoreSource) so both the per-team cap
-  // below and the per-row capture loop share the same values instead of scoring twice.
+  // pair a batter with a different batter's hrScoreSource) so both the ranking below and
+  // the per-row capture loop share the same values instead of scoring twice.
   const scored = pool
     .filter(r => r.atBats >= POOL_MIN_AB)
     .map(r => ({ row: r, score: scoreForMarket('hr', r), hrScoreSource: __hrLastScoreSource }));
-  const byTeam = new Map();
-  scored.forEach(s => {
-    const teamKey = `${s.row.gamePk ?? s.row.id}|${s.row.teamAbbr ?? s.row.id}`;
-    if (!byTeam.has(teamKey)) byTeam.set(teamKey, []);
-    byTeam.get(teamKey).push(s);
-  });
-  const allowedIds = new Set();
-  byTeam.forEach(list => {
-    list.sort((a, b) => b.score - a.score);
-    list.slice(0, HR_THREAT_MAX_PER_TEAM).forEach(s => allowedIds.add(s.row.id));
-  });
+  const remainingSlots = Math.max(0, HR_THREAT_MAX_TOTAL - already.size);
+  const allowedIds = new Set(
+    scored
+      .filter(s => s.score >= HR_THREAT_MIN_SCORE && !already.has(s.row.id))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, remainingSlots)
+      .map(s => s.row.id)
+  );
 
   let added = 0;
-  scored.filter(s => allowedIds.has(s.row.id) && !already.has(s.row.id)).forEach(s => {
+  scored.filter(s => allowedIds.has(s.row.id)).forEach(s => {
     const r = s.row;
     const score = s.score;
     const hrScoreSource = s.hrScoreSource;
