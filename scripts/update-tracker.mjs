@@ -2721,11 +2721,28 @@ async function buildBatterPool(games, season) {
 // batters, never recomputes or drops one already captured, and never captures more than
 // HR_THREAT_MAX_TOTAL total for the day even if a later pass's fresh ranking would have
 // picked a different top HR_THREAT_MAX_TOTAL.
+//
+// Real bug (2026-08-25): this file runs on a recurring schedule, and early in the day
+// often only ONE team's real game has a confirmed-enough pool yet (buildBatterPool only
+// includes batters it can actually score). The very first run of the day could fill most
+// or all of HR_THREAT_MAX_TOTAL from that one team's real lineup before any other game's
+// batters were even in the pool to compete for a slot -- confirmed live on the client
+// board's own identical fill algorithm (see HRP_LOCK_MAX_PER_TEAM in app.js): a real MIA
+// vs BOS game's lineup posted first and claimed 9 of 15 total slots, nothing wrong with
+// any individual score (10-33, genuinely differentiated), purely an artifact of which
+// team's real data arrived first. HR_THREAT_LOCK_MAX_PER_TEAM caps how many slots ONE
+// team can claim within a single fill pass so an early-posting team can't structurally
+// starve out every other game's real batters -- exact same fix, same constant name
+// pattern, as the client board's own version.
+const HR_THREAT_LOCK_MAX_PER_TEAM = 6;
 async function captureHRThreatToday(store, pool) {
   store.market.hrThreat ||= [];
   if (!pool.length) return 0;
   const today = cdtDateString(new Date());
-  const already = new Set(store.market.hrThreat.filter(r => r.date === today).map(r => r.playerId));
+  const todayRows = store.market.hrThreat.filter(r => r.date === today);
+  const already = new Set(todayRows.map(r => r.playerId));
+  const teamCounts = {};
+  todayRows.forEach(r => { teamCounts[r.team] = (teamCounts[r.team] || 0) + 1; });
 
   // Score every eligible batter once up front (score + its hrScoreSource side effect
   // captured together, since scoreForMarket sets __hrLastScoreSource as a side effect
@@ -2736,13 +2753,17 @@ async function captureHRThreatToday(store, pool) {
     .filter(r => r.atBats >= POOL_MIN_AB)
     .map(r => ({ row: r, score: scoreForMarket('hr', r), hrScoreSource: __hrLastScoreSource }));
   const remainingSlots = Math.max(0, HR_THREAT_MAX_TOTAL - already.size);
-  const allowedIds = new Set(
-    scored
-      .filter(s => s.score >= HR_THREAT_MIN_SCORE && !already.has(s.row.id))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, remainingSlots)
-      .map(s => s.row.id)
-  );
+  const allowedIds = new Set();
+  scored
+    .filter(s => s.score >= HR_THREAT_MIN_SCORE && !already.has(s.row.id))
+    .sort((a, b) => b.score - a.score)
+    .forEach(s => {
+      if (allowedIds.size >= remainingSlots) return;
+      const team = s.row.teamAbbr;
+      if ((teamCounts[team] || 0) >= HR_THREAT_LOCK_MAX_PER_TEAM) return;
+      allowedIds.add(s.row.id);
+      teamCounts[team] = (teamCounts[team] || 0) + 1;
+    });
 
   let added = 0;
   scored.filter(s => allowedIds.has(s.row.id)).forEach(s => {
