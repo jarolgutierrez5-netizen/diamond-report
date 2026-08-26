@@ -1296,6 +1296,43 @@ function barrelPowerIndex(barrelPct) {
   if (barrelPct == null) return 1;
   return clamp(barrelPct / LEAGUE_AVG_BARREL_PCT, 0.6, 1.6);
 }
+const LEAGUE_AVG_SWEET_SPOT_PCT = 33.5; // MLB league-average sweet-spot rate, Statcast era
+const LEAGUE_AVG_WHIFF_PCT = 11; // MLB league-average swinging-strike rate, Statcast era
+// Server-side port of app.js's hrThreatCompositeScore (see that function's own header
+// comment for the full rationale) -- the HR Threats board's ranking criterion changed at
+// the user's explicit request from raw HR Probability to an equal-weighted blend of
+// Matchup/Pitch Mix/Recent Form/Barrel%/Sweet-Spot%/Whiff%. One real, honest divergence
+// from the client: "Pitch Mix" here uses matchupEdge (this batter's real per-pitch-type
+// advantage grade, weighted by the pitcher's actual usage%, already computed above for
+// this same row) rather than the client's own raw arsenal-stat AVG/ISO/SLG/wOBA blend --
+// this file has no server-side equivalent of app.js's batterVsPitcherArsenalStats (the
+// per-pitch-type batter season data it would need isn't loaded here), and matchupEdge is
+// the same real per-pitch-type-arsenal concept, just graded a different way. Same
+// "conceptual role, not byte-identical mechanics" divergence already established for
+// this file's other client-mirroring signals (see HR_THREAT_MAX_TOTAL's own comment).
+// Each sub-score is 0-100 (50 = neutral/no-data), matching the client exactly.
+function hrThreatCompositeScoreServer(inputs) {
+  const NEUTRAL = 50;
+  const or50 = v => (v == null || !Number.isFinite(v)) ? NEUTRAL : v;
+  const matchupScore = or50(inputs.zoneFitScore);
+  const pitchMixScore = or50(inputs.matchupEdge);
+  let recentFormScore = NEUTRAL;
+  if (inputs.atBats > 0 && inputs.last10HR != null) {
+    const expectedHRPer10 = (inputs.hrSeason / inputs.atBats) * 40;
+    const ratio = inputs.last10HR / Math.max(expectedHRPer10, 0.4);
+    recentFormScore = clamp(ratio * 50, 0, 100);
+  }
+  const barrelScore = inputs.barrelPct != null ? clamp((inputs.barrelPct / LEAGUE_AVG_BARREL_PCT) * 50, 0, 100) : NEUTRAL;
+  const sweetSpotScore = inputs.sweetSpotPct != null ? clamp((inputs.sweetSpotPct / LEAGUE_AVG_SWEET_SPOT_PCT) * 50, 0, 100) : NEUTRAL;
+  const whiffScore = (inputs.whiffPct != null && inputs.whiffPct > 0) ? clamp((LEAGUE_AVG_WHIFF_PCT / inputs.whiffPct) * 50, 0, 100) : NEUTRAL;
+  const composite = (matchupScore + pitchMixScore + recentFormScore + barrelScore + sweetSpotScore + whiffScore) / 6;
+  return {
+    score: Math.round(composite),
+    matchupScore: Math.round(matchupScore), pitchMixScore: Math.round(pitchMixScore),
+    recentFormScore: Math.round(recentFormScore), barrelScore: Math.round(barrelScore),
+    sweetSpotScore: Math.round(sweetSpotScore), whiffScore: Math.round(whiffScore),
+  };
+}
 
 // Zone-matchup correction -- exact port of app.js's own copy of this function (kept as
 // two independent copies, same reasoning as battedBallPowerIndex above: one client, one
@@ -1480,13 +1517,20 @@ async function teamRestFatigueFactor(teamId, todayGameDateIso) {
 
 // HR Threats board hit-rate tracker: the live client-side board (app.js, getHRRows) gates
 // its "scanned" pool at hrProb>=18, except the single top-scoring batter per game which
-// gets a lower 14% bar. This backend job uses one uniform 18% cutoff across the whole
-// pool — a known, deliberate simplification (skips the tiny per-game 14% carve-out) so
-// the daily scanned/hit counts are simple to reason about and don't require re-deriving
-// per-game rankings. Same buildBatterPool/scoreForMarket('hr', ...) model as Elite
-// Picks, just applied to every qualifying batter within the board's overall cap (see
-// HR_THREAT_MAX_TOTAL below) instead of every batter on the slate.
-const HR_THREAT_MIN_SCORE = 18;
+// gets a lower 14% bar. This backend job uses one uniform cutoff across the whole pool —
+// a known, deliberate simplification (skips the tiny per-game carve-out) so the daily
+// scanned/hit counts are simple to reason about and don't require re-deriving per-game
+// rankings.
+//
+// Rescaled 18 -> 55 (2026-08-26) when captureHRThreatToday switched from
+// scoreForMarket('hr', r)'s probability estimate (roughly 0-35 in practice) to
+// r.hrThreatScore, the new 0-100-scaled composite centered on 50 = league-average (see
+// hrThreatCompositeScoreServer's own header comment) -- the old 18 threshold would have
+// admitted nearly every real batter on the new scale, since even a batter with entirely
+// neutral/no-data signals would score a flat 50. 55 keeps a real, modest positive bar
+// (genuinely above the neutral floor across all 6 factors on average) instead of
+// admitting everyone.
+const HR_THREAT_MIN_SCORE = 55;
 // Mirrors the live client board's own cap (HRP_BOARD_MAX_TOTAL in app.js) -- the client
 // used to lock each team to its top 3 batters (up to 6/game), but that shape meant a
 // mediocre matchup on a team with few real candidates could take a locked slot over a
@@ -2680,6 +2724,19 @@ async function buildBatterPool(games, season) {
         const barrelPct = statcastHotHittersIndex.get(String(pid))?.barrelPct
           ?? statcastHotHittersIndex.get(String(person.fullName || '').toLowerCase())?.barrelPct
           ?? null;
+        // Real season sweet-spot/whiff rate, same dual-key lookup as barrelPct above --
+        // consumed only by hrThreatCompositeScoreServer below (see that function's own
+        // header comment), not by scoreForMarket.
+        const statcastHotEntry = statcastHotHittersIndex.get(String(pid))
+          ?? statcastHotHittersIndex.get(String(person.fullName || '').toLowerCase())
+          ?? null;
+        const sweetSpotPct = statcastHotEntry?.sweetSpotPct ?? null;
+        const seasonWhiffPct = statcastHotEntry?.swingStrikePct ?? null;
+        const hrThreat = hrThreatCompositeScoreServer({
+          zoneFitScore: zoneFit?.score ?? null, matchupEdge,
+          last10HR: recent?.hr ?? null, hrSeason, atBats: ab,
+          barrelPct, sweetSpotPct, whiffPct: seasonWhiffPct,
+        });
         return {
           id: pid, name: person.fullName, teamAbbr, oppAbbr, gamePk: g.gamePk,
           pitcherId: pitcher.id, pitcherName: pitcher.fullName,
@@ -2701,6 +2758,11 @@ async function buildBatterPool(games, season) {
           startBFShare, pitcherWorkloadReliable: !!(pitcherWorkloadProfile && pitcherWorkloadProfile.reliable),
           liveScore, platoonAB, platoonOps, platoonFavorable, matchupEdge, zoneMatchupMult,
           zoneFitScore: zoneFit?.score ?? null, zoneFitLabel: zoneFit?.label ?? null,
+          sweetSpotPct, seasonWhiffPct,
+          hrThreatScore: hrThreat.score, hrThreatSub: {
+            matchup: hrThreat.matchupScore, pitchMix: hrThreat.pitchMixScore, recentForm: hrThreat.recentFormScore,
+            barrel: hrThreat.barrelScore, sweetSpot: hrThreat.sweetSpotScore, whiff: hrThreat.whiffScore,
+          },
           // Same per-game weather multiplier computeLiveHRScore above already used —
           // stored on the row too so buildBatterModel's own HR rate (used by
           // simulatePropOdds for hits/tb/rbis/hrrbi grading, not just the 'hr' market)
@@ -2764,14 +2826,19 @@ async function captureHRThreatToday(store, pool) {
     gameCounts[r.gamePk] = (gameCounts[r.gamePk] || 0) + 1;
   });
 
-  // Score every eligible batter once up front (score + its hrScoreSource side effect
-  // captured together, since scoreForMarket sets __hrLastScoreSource as a side effect
-  // read immediately after each call -- computing scores in a separate later pass could
-  // pair a batter with a different batter's hrScoreSource) so both the ranking below and
-  // the per-row capture loop share the same values instead of scoring twice.
+  // Score every eligible batter once up front. Ranking/gating now uses r.hrThreatScore
+  // (the composite computed in buildBatterPool -- see hrThreatCompositeScoreServer's own
+  // header comment) instead of scoreForMarket('hr', r)'s probability estimate, per the
+  // user's explicit request to base this board on real matchup/pitch-mix/recent-form/
+  // barrel/sweet-spot/whiff data instead. scoreForMarket is still called here purely to
+  // keep hrScoreSource accurate (it's set as a side effect read immediately after the
+  // call, same "computed together so nothing pairs with a different batter's value"
+  // discipline as before) -- that field just records which real formula variant
+  // (legacy/logistic) was live when this pick was captured, unrelated to what actually
+  // ranked it now.
   const scored = pool
     .filter(r => r.atBats >= POOL_MIN_AB)
-    .map(r => ({ row: r, score: scoreForMarket('hr', r), hrScoreSource: __hrLastScoreSource }));
+    .map(r => { scoreForMarket('hr', r); return { row: r, score: r.hrThreatScore, hrScoreSource: __hrLastScoreSource }; });
   const remainingSlots = Math.max(0, HR_THREAT_MAX_TOTAL - already.size);
   const allowedIds = new Set();
   scored
@@ -2798,11 +2865,12 @@ async function captureHRThreatToday(store, pool) {
     store.market.hrThreat.push({
       key, date: today, playerId: r.id, playerName: r.name, team: r.teamAbbr, opp: r.oppAbbr,
       gamePk: r.gamePk, score, result: 'pending', actual: null,
-      // Which formula actually produced `score` above -- 'logistic' (see
-      // predictHRLogistic) once its inputs are available for a row, 'legacy'
-      // (the multiplicative simulation + calibrateHRProb) otherwise. Lets a
-      // later calibration pass compare the two paths' real hit rates directly
-      // instead of assuming every row used the same formula.
+      // Which probability-estimate formula was live at capture time -- 'logistic' (see
+      // predictHRLogistic) once its inputs are available for a row, 'legacy' (the
+      // multiplicative simulation + calibrateHRProb) otherwise. No longer what produced
+      // `score` above (see hrThreatCompositeScoreServer's own header comment for that),
+      // but still useful for comparing the two probability paths' real hit rates against
+      // `liveScore` below.
       hrScoreSource,
       // The live client board's own score for this same player/matchup (see
       // computeLiveHRScore) -- captured alongside `score` (this file's separate,
