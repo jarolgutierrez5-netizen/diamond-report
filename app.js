@@ -1442,10 +1442,12 @@ if (document.readyState === 'loading') {
 } else {
   loadAllTimeTrackerRecord();
 }
-// The backend captures Elite Picks in two passes (morning + afternoon lineup re-check —
-// see update-tracker.yml); re-fetching periodically lets a tab left open pick up the
-// afternoon pass without a manual reload. tracker.json only changes a couple times a
-// day server-side, so this stays infrequent — no need for the 120s live-score cadence.
+// The backend still captures real picks into tracker.json throughout the day (HR
+// Threats, K Props, DRP -- see update-tracker.yml and captureHRThreatToday's own
+// comment for the capture-then-grade pattern); re-fetching periodically lets a tab
+// left open pick up a later pass without a manual reload. tracker.json only changes
+// a couple times a day server-side, so this stays infrequent — no need for the 120s
+// live-score cadence.
 setInterval(() => { if (document.visibilityState === 'visible') loadAllTimeTrackerRecord(); }, 300000);
 window.refreshFavoredPills = refreshFavoredPills;
 
@@ -1890,9 +1892,9 @@ const LEAGUE_AVG_WHIFF_PCT = 11; // MLB league-average swinging-strike rate, Sta
 // convention as every other optional input in this file.
 //
 // Deliberately does NOT touch hrProb/hrPerPA/simulateHRGameOdds -- those still drive
-// Elite Picks, the Matchup detail modal, the HR Compare tool, and the Featured Player
-// card exactly as before (all real, separately-calibrated probability estimates this
-// board isn't replacing). This is a new, additional score built specifically for this
+// the Matchup detail modal, the HR Compare tool, and the Featured Player card exactly
+// as before (real, separately-calibrated probability estimates this board isn't
+// replacing). This is a new, additional score built specifically for this
 // board's own ranking/selection/lock-fill, per the user's explicit request to base THIS
 // list on these specific factors instead.
 function hrThreatCompositeScore(inputs) {
@@ -9640,9 +9642,10 @@ function ballparkPalWeatherPctForGame(gameId) {
 // Pal's combined park+weather multiplier for this exact player in today's
 // game (e.g. 1.06 = modeled +6% vs. neutral).
 // statKey: 'homeRuns' | 'doublesTriples' | 'singles' — whichever combined
-// park+weather multiplier is most relevant to the board asking (HR Threats
-// asks for homeRuns; Elite Picks' Total Bases/Hits markets ask for
-// doublesTriples/singles — see sync-ballparkpal.mjs for what's synced).
+// park+weather multiplier is most relevant to the board asking. Only
+// ballparkPalFactorForPlayer below (HR Threats, statKey 'homeRuns') calls this
+// today; doublesTriples/singles stay real, synced data (see sync-ballparkpal.mjs)
+// available to any future per-hitter Total Bases/Hits board that wants them.
 function ballparkPalStatFactorForPlayer(gameId, playerId, statKey) {
   const rows = ballparkPalFactors[gameId];
   if (!rows) return null;
