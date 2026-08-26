@@ -1,0 +1,52 @@
+name: Update WNBA Tracker
+
+# Internal calibration log for the WNBA prop board family -- not a public
+# feature, just a real capture-then-grade record (data/wnba-tracker.json) so
+# projection accuracy can be reviewed and re-tuned with real evidence. See
+# scripts/update-wnba-tracker.mjs's header for the full capture/grade design.
+#
+# Runs once daily, after sync-wnba.yml's own daily run (11:14 UTC) has had
+# time to refresh schedule/player-stats/team-defense -- capture reads those
+# files directly, so a stale run here would either miss today's real slate
+# or capture against yesterday's numbers. Grading yesterday's real games
+# the next morning gives WNBA's evening tip-offs (US time) plenty of time to
+# have real final results in ESPN's gamelogs by the time this runs.
+on:
+  schedule:
+    - cron: '40 11 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-wnba-tracker
+  cancel-in-progress: false
+
+jobs:
+  update-wnba-tracker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Grade prior entries + capture today's projections
+        run: node scripts/update-wnba-tracker.mjs
+        timeout-minutes: 20
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "diamond-report-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/wnba-tracker.json
+          if git diff --cached --quiet; then
+            echo "No changes — nothing to commit."
+            exit 0
+          fi
+          git commit -m "Update WNBA tracker: grade prior entries, capture today's projections"
+          git push
