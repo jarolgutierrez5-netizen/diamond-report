@@ -1499,7 +1499,12 @@ const HR_THREAT_MIN_SCORE = 18;
 // recorded as two different fields below) and persists its lock in localStorage per
 // browser: this applies the cap fresh each capture run instead, ranked by this file's
 // own score.
-const HR_THREAT_MAX_TOTAL = 15;
+//
+// Grew 15 -> 38 (2026-08-25) at the user's request, mirroring the same client-side change
+// (see HRP_BOARD_MAX_TOTAL's own comment in app.js) -- purely to dilute how much any one
+// team/game's fixed absolute cap (HR_THREAT_LOCK_MAX_PER_TEAM/HR_THREAT_LOCK_MAX_PER_GAME,
+// unchanged) can dominate the board in relative terms.
+const HR_THREAT_MAX_TOTAL = 38;
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function shrinkToLeague(raw, ab, leagueAvg, minAB = 40) {
