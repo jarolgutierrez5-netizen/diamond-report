@@ -1,57 +1,49 @@
 {
-  "date": "2026-08-26",
-  "generatedAt": "2026-08-26T23:31:07.584Z",
+  "date": "2026-08-27",
+  "generatedAt": "2026-08-27T09:51:33.697Z",
   "player": {
-    "id": 621566,
-    "name": "Matt Olson",
-    "teamAbbr": "ATL",
-    "oppAbbr": "LAD",
-    "gamePk": 824878,
-    "pitcherId": 808963,
-    "pitcherName": "Roki Sasaki",
-    "liveScore": 38,
-    "spotlightScore": 50,
-    "avg": 0.2543263157894737,
-    "obp": 0.3271773170731707,
-    "slg": 0.5042255263157894,
-    "ops": 0.867,
-    "iso": 0.24989921052631575,
+    "id": 670541,
+    "name": "Yordan Alvarez",
+    "teamAbbr": "HOU",
+    "oppAbbr": "NYY",
+    "gamePk": 823503,
+    "pitcherId": 543037,
+    "pitcherName": "Gerrit Cole",
+    "liveScore": 39,
+    "spotlightScore": 41,
+    "avg": 0.3230524242424242,
+    "obp": 0.44366,
+    "slg": 0.5866336363636363,
+    "ops": 1.051,
+    "iso": 0.2635812121212121,
     "hrSeason": 36,
-    "atBats": 512,
-    "last10HR": 2,
-    "isHot": true,
-    "isFavorable": true,
-    "isDrought": false,
-    "isDue": false,
+    "atBats": 472,
+    "last10HR": 0,
+    "isHot": false,
+    "isFavorable": false,
+    "isDrought": true,
+    "isDue": true,
     "hasNearHR": true,
-    "matchupEdge": 68,
+    "matchupEdge": null,
     "statcast": {
-      "xslg": 0.5132319608642479,
-      "hardHitPct": 50.3136567468406,
-      "pitches": 2453
+      "xslg": 0.6833048723897912,
+      "hardHitPct": 53.91512761020881,
+      "pitches": 2155
     },
     "reasons": [
       {
         "icon": "💣",
-        "text": "Projects at a real 38.0% HR probability today, from the same model behind the HR Threats board."
-      },
-      {
-        "icon": "🔥",
-        "text": "On a real hot streak — 2 HR over the last 10 games."
-      },
-      {
-        "icon": "✅",
-        "text": "Favorable matchup — a real 0.867 OPS bat against a pitcher who's given up real contact this season."
-      },
-      {
-        "icon": "⚔️",
-        "text": "Real Matchup Edge score of 68 against today's specific starter, Roki Sasaki."
+        "text": "Projects at a real 39.0% HR probability today, from the same model behind the HR Threats board."
       },
       {
         "icon": "🚀",
         "text": "Real warning-track power in the last 10 games — recent long fly outs that haven't left the yard yet."
+      },
+      {
+        "icon": "⚡",
+        "text": "In a real power drought the model flags as due to break."
       }
     ],
-    "confirmedToday": false
+    "confirmedToday": true
   }
 }
