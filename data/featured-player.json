@@ -1,49 +1,53 @@
 {
-  "date": "2026-08-27",
-  "generatedAt": "2026-08-27T23:44:42.246Z",
+  "date": "2026-08-28",
+  "generatedAt": "2026-08-28T11:25:24.713Z",
   "player": {
-    "id": 670541,
-    "name": "Yordan Alvarez",
-    "teamAbbr": "HOU",
-    "oppAbbr": "NYY",
-    "gamePk": 823503,
-    "pitcherId": 543037,
-    "pitcherName": "Gerrit Cole",
-    "liveScore": 39,
-    "spotlightScore": 41,
-    "avg": 0.3230524242424242,
-    "obp": 0.44366,
-    "slg": 0.5866336363636363,
-    "ops": 1.051,
-    "iso": 0.2635812121212121,
-    "hrSeason": 36,
-    "atBats": 472,
-    "last10HR": 0,
-    "isHot": false,
-    "isFavorable": false,
-    "isDrought": true,
-    "isDue": true,
+    "id": 621566,
+    "name": "Matt Olson",
+    "teamAbbr": "ATL",
+    "oppAbbr": "COL",
+    "gamePk": 824877,
+    "pitcherId": 608372,
+    "pitcherName": "Tomoyuki Sugano",
+    "liveScore": 40,
+    "spotlightScore": 49,
+    "avg": 0.24159635135135132,
+    "obp": 0.32135670731707316,
+    "slg": 0.4887844594594595,
+    "ops": 0.87,
+    "iso": 0.24718810810810815,
+    "hrSeason": 37,
+    "atBats": 518,
+    "last10HR": 2,
+    "isHot": true,
+    "isFavorable": true,
+    "isDrought": false,
+    "isDue": false,
     "hasNearHR": true,
     "matchupEdge": null,
     "statcast": {
-      "xslg": 0.6833048723897912,
-      "hardHitPct": 53.91512761020881,
-      "pitches": 2155
+      "xslg": 0.5246276337115073,
+      "hardHitPct": 50.812115072933544,
+      "pitches": 2468
     },
     "reasons": [
       {
         "icon": "💣",
-        "text": "Projects at a real 39.0% HR probability today, from the same model behind the HR Threats board."
+        "text": "Projects at a real 40.0% HR probability today, from the same model behind the HR Threats board."
+      },
+      {
+        "icon": "🔥",
+        "text": "On a real hot streak — 2 HR over the last 10 games."
+      },
+      {
+        "icon": "✅",
+        "text": "Favorable matchup — a real 0.870 OPS bat against a pitcher who's given up real contact this season."
       },
       {
         "icon": "🚀",
         "text": "Real warning-track power in the last 10 games — recent long fly outs that haven't left the yard yet."
-      },
-      {
-        "icon": "⚡",
-        "text": "In a real power drought the model flags as due to break."
       }
     ],
-    "confirmedToday": false
+    "confirmedToday": true
   }
 }
