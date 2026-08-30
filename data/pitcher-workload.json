@@ -1,237 +1,202 @@
 {
-  "generatedAt": "2026-08-30T01:14:41.936Z",
+  "generatedAt": "2026-08-30T16:25:49.463Z",
   "season": 2026,
   "rollingStarts": 5,
-  "leagueAvgBFperStart": 21,
+  "leagueAvgBFperStart": 21.7,
   "pitchers": {
-    "518876": {
-      "name": "Merrill Kelly",
+    "453286": {
+      "name": "Max Scherzer",
+      "avgBFperStart": 21.6,
+      "avgIPperStart": 5.1,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "554430": {
+      "name": "Zack Wheeler",
+      "avgBFperStart": 20.6,
+      "avgIPperStart": 4.3,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "579328": {
+      "name": "Yusei Kikuchi",
+      "avgBFperStart": 19,
+      "avgIPperStart": 4.3,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "592662": {
+      "name": "Robbie Ray",
+      "avgBFperStart": 22,
+      "avgIPperStart": 5.3,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "605135": {
+      "name": "Chris Bassitt",
+      "avgBFperStart": 22.6,
+      "avgIPperStart": 5.3,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "605488": {
+      "name": "Jeffrey Springs",
+      "avgBFperStart": 19.4,
+      "avgIPperStart": 4.1,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "607192": {
+      "name": "Tyler Glasnow",
+      "avgBFperStart": 19.6,
+      "avgIPperStart": 5.3,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "607625": {
+      "name": "Seth Lugo",
+      "avgBFperStart": 23.4,
+      "avgIPperStart": 5.3,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "624133": {
+      "name": "Ranger Suarez",
+      "avgBFperStart": 20,
+      "avgIPperStart": 4.6,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "641816": {
+      "name": "Tyler Mahle",
+      "avgBFperStart": 23.6,
+      "avgIPperStart": 5.9,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "656876": {
+      "name": "Drew Rasmussen",
+      "avgBFperStart": 22.2,
+      "avgIPperStart": 5.8,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "663855": {
+      "name": "Jordan Hicks",
+      "avgBFperStart": 3,
+      "avgIPperStart": 1,
+      "startsSampled": 1,
+      "reliable": false
+    },
+    "664285": {
+      "name": "Framber Valdez",
+      "avgBFperStart": 27.2,
+      "avgIPperStart": 6.3,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "669160": {
+      "name": "Dustin May",
+      "avgBFperStart": 16.6,
+      "avgIPperStart": 4.1,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "669302": {
+      "name": "Logan Gilbert",
+      "avgBFperStart": 24,
+      "avgIPperStart": 5.9,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "669461": {
+      "name": "Matthew Liberatore",
+      "avgBFperStart": 21.4,
+      "avgIPperStart": 5.3,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "674841": {
+      "name": "Andrew Alvarez",
+      "avgBFperStart": 17.4,
+      "avgIPperStart": 4.3,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "676083": {
+      "name": "Janson Junk",
+      "avgBFperStart": 19.6,
+      "avgIPperStart": 4.7,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "677952": {
+      "name": "Braxton Ashcraft",
+      "avgBFperStart": 23.2,
+      "avgIPperStart": 6.6,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "677958": {
+      "name": "Kumar Rocker",
+      "avgBFperStart": 23.4,
+      "avgIPperStart": 4.8,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "684007": {
+      "name": "Shota Imanaga",
+      "avgBFperStart": 21,
+      "avgIPperStart": 4.9,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "690279": {
+      "name": "Mason Adams",
+      "avgBFperStart": 18,
+      "avgIPperStart": 4,
+      "startsSampled": 1,
+      "reliable": false
+    },
+    "695505": {
+      "name": "Chase Burns",
+      "avgBFperStart": 22.4,
+      "avgIPperStart": 5.4,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "701542": {
+      "name": "Will Warren",
+      "avgBFperStart": 21.8,
+      "avgIPperStart": 5,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "800048": {
+      "name": "Parker Messick",
+      "avgBFperStart": 23.2,
+      "avgIPperStart": 5.9,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "804267": {
+      "name": "Zac Thornton",
+      "avgBFperStart": 22.6,
+      "avgIPperStart": 5.3,
+      "startsSampled": 5,
+      "reliable": true
+    },
+    "805673": {
+      "name": "Zebby Matthews",
       "avgBFperStart": 23.6,
       "avgIPperStart": 5.5,
       "startsSampled": 5,
       "reliable": true
     },
-    "527048": {
-      "name": "Martín Pérez",
-      "avgBFperStart": 20.2,
-      "avgIPperStart": 4.7,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "592332": {
-      "name": "Kevin Gausman",
-      "avgBFperStart": 23.2,
-      "avgIPperStart": 5.6,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "605483": {
-      "name": "Blake Snell",
-      "avgBFperStart": 21.8,
-      "avgIPperStart": 5.2,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "607074": {
-      "name": "Carlos Rodón",
-      "avgBFperStart": 19.2,
-      "avgIPperStart": 4.6,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "607200": {
-      "name": "Erick Fedde",
-      "avgBFperStart": 19,
-      "avgIPperStart": 4.7,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "607259": {
-      "name": "Nick Martinez",
-      "avgBFperStart": 24.2,
-      "avgIPperStart": 6.1,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "608331": {
-      "name": "Max Fried",
-      "avgBFperStart": 18.2,
-      "avgIPperStart": 4.7,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "615698": {
-      "name": "Cal Quantrill",
-      "avgBFperStart": 23.2,
-      "avgIPperStart": 6,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "621111": {
-      "name": "Walker Buehler",
-      "avgBFperStart": 20.8,
-      "avgIPperStart": 5.4,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "641927": {
-      "name": "Bailey Ober",
-      "avgBFperStart": 22.2,
-      "avgIPperStart": 5.3,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "645261": {
-      "name": "Sandy Alcantara",
-      "avgBFperStart": 27,
-      "avgIPperStart": 6.6,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "650911": {
-      "name": "Cristopher Sánchez",
-      "avgBFperStart": 24.6,
-      "avgIPperStart": 5.9,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "656492": {
-      "name": "Foster Griffin",
-      "avgBFperStart": 21.2,
-      "avgIPperStart": 5,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "656986": {
-      "name": "Bennett Sousa",
-      "avgBFperStart": 5,
-      "avgIPperStart": 0.7,
-      "startsSampled": 1,
-      "reliable": false
-    },
-    "663738": {
-      "name": "Daniel Lynch IV",
-      "avgBFperStart": 13.4,
-      "avgIPperStart": 3.1,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "667755": {
-      "name": "José Soriano",
-      "avgBFperStart": 23.8,
-      "avgIPperStart": 5.7,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "669199": {
-      "name": "Lake Bachar",
-      "avgBFperStart": 9.2,
-      "avgIPperStart": 2.1,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "669358": {
-      "name": "Shane Baz",
-      "avgBFperStart": 23.8,
-      "avgIPperStart": 5.9,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "671096": {
-      "name": "Andrew Abbott",
-      "avgBFperStart": 24.2,
-      "avgIPperStart": 5.3,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "672456": {
-      "name": "Keider Montero",
-      "avgBFperStart": 22.6,
-      "avgIPperStart": 5.7,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "675660": {
-      "name": "Shane Drohan",
-      "avgBFperStart": 23,
-      "avgIPperStart": 5.3,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "676917": {
-      "name": "Cade Cavalli",
-      "avgBFperStart": 22.8,
-      "avgIPperStart": 6,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "678022": {
-      "name": "Jack Perkins",
-      "avgBFperStart": 22.4,
-      "avgIPperStart": 4.8,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "681517": {
-      "name": "Kyle Leahy",
-      "avgBFperStart": 17.8,
-      "avgIPperStart": 4.4,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "683352": {
-      "name": "Mitch Bratt",
-      "avgBFperStart": 19.8,
-      "avgIPperStart": 4.8,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "683363": {
-      "name": "Matt Wilkinson",
-      "avgBFperStart": 15.7,
-      "avgIPperStart": 3.9,
-      "startsSampled": 3,
-      "reliable": true
-    },
-    "687562": {
-      "name": "Jake Bennett",
-      "avgBFperStart": 23.4,
-      "avgIPperStart": 5.6,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "687941": {
-      "name": "Alec Gamboa",
-      "avgBFperStart": 4.5,
-      "avgIPperStart": 1.3,
-      "startsSampled": 2,
-      "reliable": false
-    },
-    "688642": {
-      "name": "Zach Agnos",
-      "avgBFperStart": 14.3,
-      "avgIPperStart": 3.6,
-      "startsSampled": 3,
-      "reliable": true
-    },
-    "690997": {
-      "name": "Nolan McLean",
-      "avgBFperStart": 24.4,
-      "avgIPperStart": 6,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "696270": {
-      "name": "Ryan Johnson",
-      "avgBFperStart": 21.2,
-      "avgIPperStart": 5.1,
-      "startsSampled": 5,
-      "reliable": true
-    },
-    "807739": {
-      "name": "Kade Anderson",
-      "avgBFperStart": 20.5,
-      "avgIPperStart": 5,
+    "814490": {
+      "name": "Ethan Pecko",
+      "avgBFperStart": 19.5,
+      "avgIPperStart": 4,
       "startsSampled": 2,
       "reliable": false
     }
