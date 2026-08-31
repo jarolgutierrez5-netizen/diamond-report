@@ -2855,7 +2855,22 @@ function hrThreatRoundRobinFill(candidates, needed, teamCounts, gameCounts) {
   }
   return picked;
 }
-async function captureHRThreatToday(store, pool) {
+// Server-side port of app.js's hrpMaxFillableNow (see that function's own header
+// comment for the full rationale, confirmed live on a real 12-game slate: the first 8
+// games to post filled 37 of 38 total slots, leaving the other 4 real games -- posted
+// later, real candidates and all -- with exactly 1 combined remaining slot for the rest
+// of the day). Reserves capacity for not-yet-posted real games by scaling how much of
+// HR_THREAT_MAX_TOTAL any single capture pass may consume, proportional to how many of
+// today's real games are actually represented in `pool` right now vs totalGamesToday
+// (the full day's real schedule count, already fetched once in captureToday -- zero
+// extra fetch). Never shrinks below what's already captured; fails open (no artificial
+// restriction) if totalGamesToday is unavailable.
+function hrThreatMaxFillableNow(boardMaxTotal, alreadyCaptured, gamesInPoolNow, totalGamesToday) {
+  if (!totalGamesToday || !gamesInPoolNow) return boardMaxTotal;
+  const scaled = Math.ceil(boardMaxTotal * gamesInPoolNow / totalGamesToday);
+  return Math.max(alreadyCaptured, Math.min(boardMaxTotal, scaled));
+}
+async function captureHRThreatToday(store, pool, totalGamesToday) {
   store.market.hrThreat ||= [];
   if (!pool.length) return 0;
   const today = cdtDateString(new Date());
@@ -2881,7 +2896,9 @@ async function captureHRThreatToday(store, pool) {
   const scored = pool
     .filter(r => r.atBats >= POOL_MIN_AB)
     .map(r => { scoreForMarket('hr', r); return { row: r, score: r.hrThreatScore, hrScoreSource: __hrLastScoreSource }; });
-  const remainingSlots = Math.max(0, HR_THREAT_MAX_TOTAL - already.size);
+  const gamesInPoolNow = new Set(pool.map(r => r.gamePk)).size;
+  const maxFillable = hrThreatMaxFillableNow(HR_THREAT_MAX_TOTAL, already.size, gamesInPoolNow, totalGamesToday);
+  const remainingSlots = Math.max(0, maxFillable - already.size);
   const eligible = scored
     .filter(s => s.score >= HR_THREAT_MIN_SCORE && !already.has(s.row.id))
     .sort((a, b) => b.score - a.score);
@@ -3141,7 +3158,7 @@ async function captureToday(store, compStore, drpSimCompStore) {
   // API calls).
   const pool = previewGames.length ? await buildBatterPool(previewGames, season) : [];
 
-  const hrThreatAdded = await captureHRThreatToday(store, pool);
+  const hrThreatAdded = await captureHRThreatToday(store, pool, games.length);
   console.log(`Captured ${hrThreatAdded} new pending HR Threat pool entry(ies) for ${today}.`);
 }
 
