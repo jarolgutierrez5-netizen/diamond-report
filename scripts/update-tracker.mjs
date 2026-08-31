@@ -2813,6 +2813,48 @@ const HR_THREAT_LOCK_MAX_PER_TEAM = 6;
 // real games to contribute before the board can ever fill completely -- exact same fix,
 // same constant name pattern, as the client board's own version.
 const HR_THREAT_LOCK_MAX_PER_GAME = 5;
+// Real bug (2026-08-31), server-side port of app.js's hrpRoundRobinFill (see that
+// function's own header comment for the full rationale): even with the per-team/per-
+// game ceilings above, a single linear score-sorted fill pass still handed one real
+// team's whole allotment out before any OTHER team got even one slot -- confirmed live
+// on the client board's identical fill algorithm, 7 real teams each locked in at
+// exactly 5. Every qualifying team now gets its own best-remaining candidate before ANY
+// team gets a second (teams take turns in order of their own current best-remaining
+// candidate's score, same snake-draft idea as the client) -- a team only starts
+// accumulating extra slots once every other qualifying team's real candidates are
+// exhausted.
+function hrThreatRoundRobinFill(candidates, needed, teamCounts, gameCounts) {
+  const byTeam = new Map();
+  candidates.forEach(r => {
+    const t = r.teamAbbr;
+    if (!byTeam.has(t)) byTeam.set(t, []);
+    byTeam.get(t).push(r);
+  });
+  const teamKeys = [...byTeam.keys()].sort((a, b) => byTeam.get(b)[0].score - byTeam.get(a)[0].score);
+  const pointer = {};
+  teamKeys.forEach(t => { pointer[t] = 0; });
+  const picked = [];
+  let progress = true;
+  while (progress && picked.length < needed) {
+    progress = false;
+    for (const t of teamKeys) {
+      if (picked.length >= needed) break;
+      const list = byTeam.get(t);
+      let idx = pointer[t];
+      if ((teamCounts[t] || 0) >= HR_THREAT_LOCK_MAX_PER_TEAM) { pointer[t] = list.length; continue; }
+      while (idx < list.length && (gameCounts[list[idx].row.gamePk] || 0) >= HR_THREAT_LOCK_MAX_PER_GAME) idx++;
+      pointer[t] = idx;
+      if (idx >= list.length) continue;
+      const s = list[idx];
+      picked.push(s);
+      teamCounts[t] = (teamCounts[t] || 0) + 1;
+      gameCounts[s.row.gamePk] = (gameCounts[s.row.gamePk] || 0) + 1;
+      pointer[t] = idx + 1;
+      progress = true;
+    }
+  }
+  return picked;
+}
 async function captureHRThreatToday(store, pool) {
   store.market.hrThreat ||= [];
   if (!pool.length) return 0;
@@ -2840,19 +2882,10 @@ async function captureHRThreatToday(store, pool) {
     .filter(r => r.atBats >= POOL_MIN_AB)
     .map(r => { scoreForMarket('hr', r); return { row: r, score: r.hrThreatScore, hrScoreSource: __hrLastScoreSource }; });
   const remainingSlots = Math.max(0, HR_THREAT_MAX_TOTAL - already.size);
-  const allowedIds = new Set();
-  scored
+  const eligible = scored
     .filter(s => s.score >= HR_THREAT_MIN_SCORE && !already.has(s.row.id))
-    .sort((a, b) => b.score - a.score)
-    .forEach(s => {
-      if (allowedIds.size >= remainingSlots) return;
-      const team = s.row.teamAbbr;
-      if ((teamCounts[team] || 0) >= HR_THREAT_LOCK_MAX_PER_TEAM) return;
-      if ((gameCounts[s.row.gamePk] || 0) >= HR_THREAT_LOCK_MAX_PER_GAME) return;
-      allowedIds.add(s.row.id);
-      teamCounts[team] = (teamCounts[team] || 0) + 1;
-      gameCounts[s.row.gamePk] = (gameCounts[s.row.gamePk] || 0) + 1;
-    });
+    .sort((a, b) => b.score - a.score);
+  const allowedIds = new Set(hrThreatRoundRobinFill(eligible, remainingSlots, teamCounts, gameCounts).map(s => s.row.id));
 
   let added = 0;
   scored.filter(s => allowedIds.has(s.row.id)).forEach(s => {
