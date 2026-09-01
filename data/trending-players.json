@@ -1,6 +1,6 @@
 {
   "date": "2026-09-01",
-  "generatedAt": "2026-09-01T05:11:58.975Z",
+  "generatedAt": "2026-09-01T17:47:12.768Z",
   "players": [
     {
       "playerId": 608324,
@@ -14,6 +14,21 @@
         "type": "spray",
         "label": "Bregman Home Runs",
         "dots": [
+          {
+            "xFt": -123.5,
+            "yFt": 377.7,
+            "distance": 395
+          },
+          {
+            "xFt": -230.2,
+            "yFt": 301.3,
+            "distance": 376
+          },
+          {
+            "xFt": -164.6,
+            "yFt": 364,
+            "distance": 397
+          },
           {
             "xFt": 19.1,
             "yFt": 412.9,
@@ -73,21 +88,6 @@
             "xFt": -195.2,
             "yFt": 337.8,
             "distance": 387
-          },
-          {
-            "xFt": -246.8,
-            "yFt": 257.8,
-            "distance": 354
-          },
-          {
-            "xFt": -162,
-            "yFt": 367.3,
-            "distance": 415
-          },
-          {
-            "xFt": -259.4,
-            "yFt": 324,
-            "distance": 410
           }
         ]
       }
@@ -238,6 +238,184 @@
             "xFt": 303,
             "yFt": 281,
             "distance": 405
+          }
+        ]
+      }
+    },
+    {
+      "playerId": 641778,
+      "name": "Eric Lauer",
+      "type": "pitcher",
+      "trendLabel": "Trending Up",
+      "trendMetric": "Whiff rate vs season rate (last 3 starts)",
+      "trendPct": 5,
+      "visual": {
+        "type": "whiff",
+        "label": "Lauer Whiffs",
+        "dots": [
+          {
+            "plateX": 0.15,
+            "plateZ": 2.77,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": -0.75,
+            "plateZ": 3.36,
+            "pitchName": "Cutter"
+          },
+          {
+            "plateX": 0.86,
+            "plateZ": 1.61,
+            "pitchName": "Changeup"
+          },
+          {
+            "plateX": -0.82,
+            "plateZ": 2.92,
+            "pitchName": "Cutter"
+          },
+          {
+            "plateX": 0.62,
+            "plateZ": 3.53,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": -0.74,
+            "plateZ": 2.73,
+            "pitchName": "Cutter"
+          },
+          {
+            "plateX": 0.56,
+            "plateZ": 3.66,
+            "pitchName": "Cutter"
+          },
+          {
+            "plateX": 0.42,
+            "plateZ": 2.58,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": -0.9,
+            "plateZ": 1.7,
+            "pitchName": "Curveball"
+          },
+          {
+            "plateX": -1.15,
+            "plateZ": 3.35,
+            "pitchName": "Cutter"
+          },
+          {
+            "plateX": 0.19,
+            "plateZ": 2.61,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": -0.5,
+            "plateZ": 2.96,
+            "pitchName": "Curveball"
+          },
+          {
+            "plateX": 0.24,
+            "plateZ": 3.06,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": 0.36,
+            "plateZ": 2.82,
+            "pitchName": "Cutter"
+          },
+          {
+            "plateX": 0.19,
+            "plateZ": 3.52,
+            "pitchName": "4-Seam Fastball"
+          }
+        ]
+      }
+    },
+    {
+      "playerId": 677976,
+      "name": "Randy Dobnak",
+      "type": "pitcher",
+      "trendLabel": "Trending Up",
+      "trendMetric": "Whiff rate vs season rate (last 3 starts)",
+      "trendPct": 4,
+      "visual": {
+        "type": "whiff",
+        "label": "Dobnak Whiffs",
+        "dots": [
+          {
+            "plateX": -0.98,
+            "plateZ": 2.36,
+            "pitchName": "Changeup"
+          },
+          {
+            "plateX": 1.59,
+            "plateZ": 0.88,
+            "pitchName": "Sweeper"
+          },
+          {
+            "plateX": -0.6,
+            "plateZ": 1.21,
+            "pitchName": "Changeup"
+          },
+          {
+            "plateX": -0.55,
+            "plateZ": 2.68,
+            "pitchName": "Sinker"
+          },
+          {
+            "plateX": -0.89,
+            "plateZ": 1.9,
+            "pitchName": "Sinker"
+          },
+          {
+            "plateX": -0.01,
+            "plateZ": 2.57,
+            "pitchName": "Sweeper"
+          },
+          {
+            "plateX": 0.33,
+            "plateZ": 1.87,
+            "pitchName": "Changeup"
+          },
+          {
+            "plateX": -0.08,
+            "plateZ": 0.92,
+            "pitchName": "Changeup"
+          },
+          {
+            "plateX": 0.8,
+            "plateZ": 0.43,
+            "pitchName": "Changeup"
+          },
+          {
+            "plateX": -0.33,
+            "plateZ": 1.75,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": -1.18,
+            "plateZ": 2.49,
+            "pitchName": "Sinker"
+          },
+          {
+            "plateX": 0.73,
+            "plateZ": 1.32,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": -0.22,
+            "plateZ": 3.2,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": -0.88,
+            "plateZ": 1.63,
+            "pitchName": "Sinker"
+          },
+          {
+            "plateX": 0.62,
+            "plateZ": 2.34,
+            "pitchName": "Sweeper"
           }
         ]
       }
