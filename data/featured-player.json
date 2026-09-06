@@ -1,53 +1,49 @@
 {
-  "date": "2026-09-05",
-  "generatedAt": "2026-09-05T22:03:23.116Z",
+  "date": "2026-09-06",
+  "generatedAt": "2026-09-06T16:55:41.099Z",
   "player": {
-    "id": 665742,
-    "name": "Juan Soto",
-    "teamAbbr": "NYM",
-    "oppAbbr": "SF",
-    "gamePk": 823577,
-    "pitcherId": 683627,
-    "pitcherName": "Anthony Molina",
-    "liveScore": 39,
-    "spotlightScore": 48,
-    "avg": 0.25638045454545455,
-    "obp": 0.3889699999999999,
-    "slg": 0.5113159090909091,
-    "ops": 0.934,
-    "iso": 0.2549354545454545,
-    "hrSeason": 23,
-    "atBats": 314,
-    "last10HR": 4,
+    "id": 695491,
+    "name": "Joshua Báez",
+    "teamAbbr": "STL",
+    "oppAbbr": "COL",
+    "gamePk": 824309,
+    "pitcherId": 685299,
+    "pitcherName": "Tanner Gordon",
+    "liveScore": 47,
+    "spotlightScore": 54,
+    "avg": 0.24693086666666667,
+    "obp": 0.2991037999999999,
+    "slg": 0.5912681333333334,
+    "ops": 0.872,
+    "iso": 0.34433726666666675,
+    "hrSeason": 7,
+    "atBats": 70,
+    "last10HR": 6,
     "isHot": true,
-    "isFavorable": false,
+    "isFavorable": true,
     "isDrought": false,
     "isDue": false,
-    "hasNearHR": true,
-    "matchupEdge": 82,
+    "hasNearHR": false,
+    "matchupEdge": 54,
     "statcast": {
-      "xslg": 0.5802280817402768,
-      "hardHitPct": 48.77646671061305,
-      "pitches": 1517
+      "xslg": 0.4771764705882353,
+      "hardHitPct": 44.8014705882353,
+      "pitches": 272
     },
     "reasons": [
       {
         "icon": "💣",
-        "text": "Projects at a real 39.0% HR probability today, from the same model behind the HR Threats board."
+        "text": "Projects at a real 47.0% HR probability today, from the same model behind the HR Threats board."
       },
       {
         "icon": "🔥",
-        "text": "On a real hot streak — 4 HR over the last 10 games."
+        "text": "On a real hot streak — 6 HR over the last 10 games."
       },
       {
-        "icon": "⚔️",
-        "text": "Real Matchup Edge score of 82 against today's specific starter, Anthony Molina."
-      },
-      {
-        "icon": "🚀",
-        "text": "Real warning-track power in the last 10 games — recent long fly outs that haven't left the yard yet."
+        "icon": "✅",
+        "text": "Favorable matchup — a real 0.872 OPS bat against a pitcher who's given up real contact this season."
       }
     ],
-    "confirmedToday": false
+    "confirmedToday": true
   }
 }
