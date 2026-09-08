@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-08T04:39:00.624Z",
+  "generatedAt": "2026-09-08T17:52:47.440Z",
   "entries": [
     {
       "key": "2026-07-20|824410",
@@ -8636,9 +8636,9 @@
       "ourPickPct": 53,
       "bpPick": "MIN",
       "bpPickPct": 50,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "DET",
+      "ourResult": "win",
+      "bpResult": "loss"
     },
     {
       "key": "2026-09-07|823254",
@@ -8650,9 +8650,9 @@
       "ourPickPct": 59,
       "bpPick": "SD",
       "bpPickPct": 62,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "SD",
+      "ourResult": "win",
+      "bpResult": "win"
     },
     {
       "key": "2026-09-07|823175",
@@ -8664,9 +8664,9 @@
       "ourPickPct": 51,
       "bpPick": "SF",
       "bpPickPct": 55,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "SF",
+      "ourResult": "loss",
+      "bpResult": "win"
     },
     {
       "key": "2026-09-07|824958",
@@ -8678,9 +8678,9 @@
       "ourPickPct": 55,
       "bpPick": "TOR",
       "bpPickPct": 58,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "ATH",
+      "ourResult": "loss",
+      "bpResult": "loss"
     },
     {
       "key": "2026-09-07|823902",
@@ -8692,6 +8692,202 @@
       "ourPickPct": 51,
       "bpPick": "LAD",
       "bpPickPct": 53,
+      "actualWinner": "LAD",
+      "ourResult": "win",
+      "bpResult": "win"
+    },
+    {
+      "key": "2026-09-08|824792",
+      "date": "2026-09-08",
+      "gamePk": 824792,
+      "awayTeam": "CLE",
+      "homeTeam": "BAL",
+      "ourPick": "BAL",
+      "ourPickPct": 52,
+      "bpPick": "BAL",
+      "bpPickPct": 52,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-09-08|824228",
+      "date": "2026-09-08",
+      "gamePk": 824228,
+      "awayTeam": "MIN",
+      "homeTeam": "DET",
+      "ourPick": "DET",
+      "ourPickPct": 55,
+      "bpPick": "MIN",
+      "bpPickPct": 50,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-09-08|823414",
+      "date": "2026-09-08",
+      "gamePk": 823414,
+      "awayTeam": "HOU",
+      "homeTeam": "PHI",
+      "ourPick": "PHI",
+      "ourPickPct": 51,
+      "bpPick": "PHI",
+      "bpPickPct": 61,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-09-08|823821",
+      "date": "2026-09-08",
+      "gamePk": 823821,
+      "awayTeam": "NYM",
+      "homeTeam": "MIA",
+      "ourPick": "MIA",
+      "ourPickPct": 53,
+      "bpPick": "MIA",
+      "bpPickPct": 55,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-09-08|824714",
+      "date": "2026-09-08",
+      "gamePk": 824714,
+      "awayTeam": "LAA",
+      "homeTeam": "BOS",
+      "ourPick": "BOS",
+      "ourPickPct": 50,
+      "bpPick": "LAA",
+      "bpPickPct": 52,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-09-08|823500",
+      "date": "2026-09-08",
+      "gamePk": 823500,
+      "awayTeam": "COL",
+      "homeTeam": "NYY",
+      "ourPick": "NYY",
+      "ourPickPct": 63,
+      "bpPick": "NYY",
+      "bpPickPct": 66,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-09-08|824875",
+      "date": "2026-09-08",
+      "gamePk": 824875,
+      "awayTeam": "TB",
+      "homeTeam": "ATL",
+      "ourPick": "TB",
+      "ourPickPct": 55,
+      "bpPick": "TB",
+      "bpPickPct": 51,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-09-08|824063",
+      "date": "2026-09-08",
+      "gamePk": 824063,
+      "awayTeam": "AZ",
+      "homeTeam": "KC",
+      "ourPick": "KC",
+      "ourPickPct": 52,
+      "bpPick": "KC",
+      "bpPickPct": 54,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-09-08|824551",
+      "date": "2026-09-08",
+      "gamePk": 824551,
+      "awayTeam": "PIT",
+      "homeTeam": "CWS",
+      "ourPick": "CWS",
+      "ourPickPct": 54,
+      "bpPick": "CWS",
+      "bpPickPct": 56,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-09-08|823738",
+      "date": "2026-09-08",
+      "gamePk": 823738,
+      "awayTeam": "CHC",
+      "homeTeam": "MIL",
+      "ourPick": "MIL",
+      "ourPickPct": 59,
+      "bpPick": "MIL",
+      "bpPickPct": 69,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-09-08|823250",
+      "date": "2026-09-08",
+      "gamePk": 823250,
+      "awayTeam": "WSH",
+      "homeTeam": "SD",
+      "ourPick": "SD",
+      "ourPickPct": 56,
+      "bpPick": "SD",
+      "bpPickPct": 55,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-09-08|824957",
+      "date": "2026-09-08",
+      "gamePk": 824957,
+      "awayTeam": "TOR",
+      "homeTeam": "ATH",
+      "ourPick": "TOR",
+      "ourPickPct": 53,
+      "bpPick": "TOR",
+      "bpPickPct": 56,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-09-08|823174",
+      "date": "2026-09-08",
+      "gamePk": 823174,
+      "awayTeam": "STL",
+      "homeTeam": "SF",
+      "ourPick": "SF",
+      "ourPickPct": 50,
+      "bpPick": "SF",
+      "bpPickPct": 57,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-09-08|823901",
+      "date": "2026-09-08",
+      "gamePk": 823901,
+      "awayTeam": "CIN",
+      "homeTeam": "LAD",
+      "ourPick": "LAD",
+      "ourPickPct": 61,
+      "bpPick": "LAD",
+      "bpPickPct": 68,
       "actualWinner": null,
       "ourResult": "pending",
       "bpResult": "pending"
@@ -8699,16 +8895,16 @@
   ],
   "summary": {
     "ours": {
-      "wins": 340,
-      "losses": 272,
+      "wins": 343,
+      "losses": 274,
       "pushes": 0,
-      "total": 612
+      "total": 617
     },
     "ballparkPal": {
-      "wins": 352,
-      "losses": 260,
+      "wins": 355,
+      "losses": 262,
       "pushes": 0,
-      "total": 612
+      "total": 617
     }
   }
 }
