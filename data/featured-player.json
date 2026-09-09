@@ -1,53 +1,57 @@
 {
-  "date": "2026-09-08",
-  "generatedAt": "2026-09-08T22:38:56.763Z",
+  "date": "2026-09-09",
+  "generatedAt": "2026-09-09T17:46:15.485Z",
   "player": {
-    "id": 670541,
-    "name": "Yordan Alvarez",
-    "teamAbbr": "HOU",
-    "oppAbbr": "PHI",
-    "gamePk": 823414,
-    "pitcherId": 691725,
-    "pitcherName": "Andrew Painter",
-    "liveScore": 43,
-    "spotlightScore": 53,
-    "avg": 0.3021639393939394,
-    "obp": 0.433520465116279,
-    "slg": 0.5747086363636363,
-    "ops": 1.031,
-    "iso": 0.27254469696969696,
-    "hrSeason": 38,
-    "atBats": 509,
-    "last10HR": 4,
+    "id": 665742,
+    "name": "Juan Soto",
+    "teamAbbr": "NYM",
+    "oppAbbr": "MIA",
+    "gamePk": 823818,
+    "pitcherId": 676083,
+    "pitcherName": "Janson Junk",
+    "liveScore": 36,
+    "spotlightScore": 48,
+    "avg": 0.2738395945945946,
+    "obp": 0.3929666666666667,
+    "slg": 0.5514908108108107,
+    "ops": 0.936,
+    "iso": 0.27765121621621613,
+    "hrSeason": 24,
+    "atBats": 330,
+    "last10HR": 6,
     "isHot": true,
     "isFavorable": true,
     "isDrought": false,
     "isDue": false,
-    "hasNearHR": false,
-    "matchupEdge": 80,
+    "hasNearHR": true,
+    "matchupEdge": 81,
     "statcast": {
-      "xslg": 0.658921052631579,
-      "hardHitPct": 53.476528013582346,
-      "pitches": 2356
+      "xslg": 0.5793703233988586,
+      "hardHitPct": 48.201521876981616,
+      "pitches": 1577
     },
     "reasons": [
       {
         "icon": "💣",
-        "text": "Projects at a real 43.0% HR probability today, from the same model behind the HR Threats board."
+        "text": "Projects at a real 36.0% HR probability today, from the same model behind the HR Threats board."
       },
       {
         "icon": "🔥",
-        "text": "On a real hot streak — 4 HR over the last 10 games."
+        "text": "On a real hot streak — 6 HR over the last 10 games."
       },
       {
         "icon": "✅",
-        "text": "Favorable matchup — a real 1.031 OPS bat against a pitcher who's given up real contact this season."
+        "text": "Favorable matchup — a real 0.936 OPS bat against a pitcher who's given up real contact this season."
       },
       {
         "icon": "⚔️",
-        "text": "Real Matchup Edge score of 80 against today's specific starter, Andrew Painter."
+        "text": "Real Matchup Edge score of 81 against today's specific starter, Janson Junk."
+      },
+      {
+        "icon": "🚀",
+        "text": "Real warning-track power in the last 10 games — recent long fly outs that haven't left the yard yet."
       }
     ],
-    "confirmedToday": false
+    "confirmedToday": true
   }
 }
