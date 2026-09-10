@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-09T16:33:07.513Z",
+  "generatedAt": "2026-09-10T16:19:36.201Z",
   "season": 2026,
   "worldSeries": [
     {
@@ -7,83 +7,83 @@
       "name": "Milwaukee Brewers",
       "abbr": "MIL",
       "league": "NL",
-      "pct": 21.5
+      "pct": 22.1
     },
     {
       "teamId": 119,
       "name": "Los Angeles Dodgers",
       "abbr": "LAD",
       "league": "NL",
-      "pct": 18.8
+      "pct": 19.2
     },
     {
       "teamId": 147,
       "name": "New York Yankees",
       "abbr": "NYY",
       "league": "AL",
-      "pct": 16.5
+      "pct": 16.6
     },
     {
       "teamId": 145,
       "name": "Chicago White Sox",
       "abbr": "CWS",
       "league": "AL",
-      "pct": 7.8
-    },
-    {
-      "teamId": 144,
-      "name": "Atlanta Braves",
-      "abbr": "ATL",
-      "league": "NL",
-      "pct": 7.3
+      "pct": 7.6
     },
     {
       "teamId": 139,
       "name": "Tampa Bay Rays",
       "abbr": "TB",
       "league": "AL",
-      "pct": 6.8
+      "pct": 7
+    },
+    {
+      "teamId": 144,
+      "name": "Atlanta Braves",
+      "abbr": "ATL",
+      "league": "NL",
+      "pct": 6.4
     },
     {
       "teamId": 112,
       "name": "Chicago Cubs",
       "abbr": "CHC",
       "league": "NL",
-      "pct": 5.6
+      "pct": 5.3
     },
     {
       "teamId": 111,
       "name": "Boston Red Sox",
       "abbr": "BOS",
       "league": "AL",
-      "pct": 5.2
+      "pct": 5.1
     },
     {
       "teamId": 143,
       "name": "Philadelphia Phillies",
       "abbr": "PHI",
       "league": "NL",
-      "pct": 3.4
+      "pct": 3.5
     },
     {
-      "teamId": 117,
-      "name": "Houston Astros",
-      "abbr": "HOU",
+      "teamId": 116,
+      "name": "Detroit Tigers",
+      "abbr": "DET",
       "league": "AL",
-      "pct": 2.6
-    },
-    {
-      "teamId": 114,
-      "name": "Cleveland Guardians",
-      "abbr": "CLE",
-      "league": "AL",
-      "pct": 2.4
+      "pct": 2.5
     },
     {
       "teamId": 135,
       "name": "San Diego Padres",
       "abbr": "SD",
       "league": "NL",
+      "pct": 2.4
+    },
+    {
+      "teamId": 117,
+      "name": "Houston Astros",
+      "abbr": "HOU",
+      "league": "AL",
       "pct": 2.2
     }
   ],
@@ -93,43 +93,49 @@
         "id": 670541,
         "name": "Yordan Alvarez",
         "teamAbbr": "HOU",
-        "pct": 17.1
+        "pct": 17.2
       },
       {
         "id": 691406,
         "name": "Junior Caminero",
         "teamAbbr": "TB",
-        "pct": 16.2
-      },
-      {
-        "id": 700250,
-        "name": "Ben Rice",
-        "teamAbbr": "NYY",
-        "pct": 13
+        "pct": 16
       },
       {
         "id": 624413,
         "name": "Pete Alonso",
         "teamAbbr": "BAL",
-        "pct": 12.8
+        "pct": 12.7
+      },
+      {
+        "id": 700250,
+        "name": "Ben Rice",
+        "teamAbbr": "NYY",
+        "pct": 12.6
       },
       {
         "id": 671277,
         "name": "Luis García Jr.",
         "teamAbbr": "NYY",
-        "pct": 10.2
+        "pct": 10.6
       },
       {
         "id": 575929,
         "name": "Willson Contreras",
         "teamAbbr": "BOS",
-        "pct": 8.4
+        "pct": 8.3
       },
       {
         "id": 678246,
         "name": "Miguel Vargas",
         "teamAbbr": "CWS",
-        "pct": 7.6
+        "pct": 7.1
+      },
+      {
+        "id": 808959,
+        "name": "Munetaka Murakami",
+        "teamAbbr": "CWS",
+        "pct": 5.8
       },
       {
         "id": 695657,
@@ -138,16 +144,10 @@
         "pct": 5
       },
       {
-        "id": 808959,
-        "name": "Munetaka Murakami",
-        "teamAbbr": "CWS",
-        "pct": 4.9
-      },
-      {
         "id": 672960,
         "name": "Kazuma Okamoto",
         "teamAbbr": "TOR",
-        "pct": 4.8
+        "pct": 4.7
       }
     ],
     "NL": [
@@ -155,25 +155,19 @@
         "id": 691718,
         "name": "Pete Crow-Armstrong",
         "teamAbbr": "CHC",
-        "pct": 19.6
+        "pct": 20.1
       },
       {
         "id": 656941,
         "name": "Kyle Schwarber",
         "teamAbbr": "PHI",
-        "pct": 12.5
+        "pct": 13.5
       },
       {
         "id": 646240,
         "name": "Rafael Devers",
         "teamAbbr": "SF",
-        "pct": 9.9
-      },
-      {
-        "id": 682928,
-        "name": "CJ Abrams",
-        "teamAbbr": "WSH",
-        "pct": 9.9
+        "pct": 10.2
       },
       {
         "id": 660271,
@@ -182,10 +176,16 @@
         "pct": 9.6
       },
       {
+        "id": 682928,
+        "name": "CJ Abrams",
+        "teamAbbr": "WSH",
+        "pct": 9.1
+      },
+      {
         "id": 695578,
         "name": "James Wood",
         "teamAbbr": "WSH",
-        "pct": 8.4
+        "pct": 8.3
       },
       {
         "id": 547180,
@@ -194,22 +194,22 @@
         "pct": 7.9
       },
       {
+        "id": 701398,
+        "name": "Sal Stewart",
+        "teamAbbr": "CIN",
+        "pct": 7.3
+      },
+      {
         "id": 691023,
         "name": "Jordan Walker",
         "teamAbbr": "STL",
-        "pct": 7.8
-      },
-      {
-        "id": 621566,
-        "name": "Matt Olson",
-        "teamAbbr": "ATL",
-        "pct": 7.2
+        "pct": 7.1
       },
       {
         "id": 696100,
         "name": "Hunter Goodman",
         "teamAbbr": "COL",
-        "pct": 7.2
+        "pct": 6.9
       }
     ]
   }
