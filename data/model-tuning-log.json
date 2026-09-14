@@ -290,6 +290,45 @@
       "decision": "skip",
       "reason": "sample size gate not met",
       "active": false
+    },
+    {
+      "at": "2026-09-14T19:51:23.144Z",
+      "param": "HR_MULT_SHRINKAGE",
+      "effectiveSince": "2026-07-20",
+      "excludedPreEffective": 0,
+      "nLow": 6,
+      "nHigh": 363,
+      "lowHitRate": 0,
+      "highHitRate": 0.15977961432506887,
+      "z": -1.0665207220362882,
+      "decision": "skip",
+      "reason": "sample size gate not met",
+      "current": 0.6
+    },
+    {
+      "at": "2026-09-14T19:51:23.145Z",
+      "param": "HR_SCORE_CALIBRATION",
+      "effectiveSince": "2026-08-31",
+      "excludedPreEffective": 183,
+      "n": 186,
+      "fittedSlope": 1.0447704667842408,
+      "fittedIntercept": -52.73833858260454,
+      "seSlope": 0.5367210225307818,
+      "tSlope": 0.08341478143176911,
+      "decision": "skip",
+      "reason": "not statistically significant",
+      "current": {
+        "slope": 0.9,
+        "intercept": 6
+      }
+    },
+    {
+      "at": "2026-09-14T19:51:23.213Z",
+      "param": "HR_ISOTONIC_CALIBRATION",
+      "n": 369,
+      "decision": "skip",
+      "reason": "sample size gate not met",
+      "active": false
     }
   ]
 }
