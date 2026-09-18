@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-18T17:39:48.459Z",
+  "generatedAt": "2026-09-18T19:35:20.451Z",
   "season": 2026,
   "pitchers": {
     "543037": {
@@ -43493,6 +43493,814 @@
           "plateX": -0.68,
           "plateZ": 2.65,
           "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        }
+      ]
+    },
+    "687312": {
+      "totalPitches": 0,
+      "byPitch": [],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.114
+        },
+        "2": {
+          "wobaAgainst": 0.375
+        },
+        "3": {
+          "wobaAgainst": 0.254
+        },
+        "4": {
+          "wobaAgainst": 0.391
+        },
+        "5": {
+          "wobaAgainst": 0.354
+        },
+        "6": {
+          "wobaAgainst": 0.247
+        },
+        "7": {
+          "wobaAgainst": 0.224
+        },
+        "8": {
+          "wobaAgainst": 0.469
+        },
+        "9": {
+          "wobaAgainst": 0.631
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.25
+          },
+          "2": {
+            "woba": 0.675
+          },
+          "3": {
+            "woba": 0.508
+          },
+          "4": {
+            "woba": 0.563
+          },
+          "5": {
+            "woba": 0
+          },
+          "6": {
+            "woba": 0.125
+          },
+          "7": {
+            "woba": 0
+          },
+          "8": {
+            "woba": 0.36
+          },
+          "9": {
+            "woba": 0.3
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0
+          },
+          "2": {
+            "woba": 0.225
+          },
+          "3": {
+            "woba": 0
+          },
+          "4": {
+            "woba": 0.239
+          },
+          "5": {
+            "woba": 0.44
+          },
+          "6": {
+            "woba": 0.302
+          },
+          "7": {
+            "woba": 0.292
+          },
+          "8": {
+            "woba": 0.537
+          },
+          "9": {
+            "woba": 0.708
+          }
+        }
+      },
+      "hr9ByHand": {
+        "R": {
+          "hr": 2,
+          "ip": 22.7,
+          "hr9": 0.79
+        },
+        "L": {
+          "hr": 4,
+          "ip": 39.7,
+          "hr9": 0.91
+        }
+      },
+      "hrByZone": {
+        "2": {
+          "count": 1,
+          "pct": 25
+        },
+        "7": {
+          "count": 1,
+          "pct": 25
+        },
+        "9": {
+          "count": 2,
+          "pct": 50
+        }
+      },
+      "hrLocations": [
+        {
+          "date": "2026-09-13",
+          "plateX": -0.52,
+          "plateZ": 2.17,
+          "exitVelo": 101.7,
+          "matchup": "COL @ DET",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-27",
+          "plateX": 0.49,
+          "plateZ": 2.06,
+          "exitVelo": 104.5,
+          "matchup": "COL @ WSH",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-22",
+          "plateX": -0.31,
+          "plateZ": 1.36,
+          "exitVelo": 108.6,
+          "matchup": "CLE @ COL",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-16",
+          "plateX": 1.15,
+          "plateZ": 0.91,
+          "exitVelo": 105.5,
+          "matchup": "COL @ SF",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-10",
+          "plateX": -0.05,
+          "plateZ": 3.03,
+          "exitVelo": 103.4,
+          "matchup": "COL @ AZ",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-04",
+          "plateX": 0.57,
+          "plateZ": 1.92,
+          "exitVelo": 98.8,
+          "matchup": "TB @ COL",
+          "batterStand": "L"
+        }
+      ],
+      "whiffLocations": [
+        {
+          "date": "2026-09-13",
+          "plateX": -0.17,
+          "plateZ": 3.75,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-13",
+          "plateX": -0.35,
+          "plateZ": 3.22,
+          "pitchName": "Slider",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-13",
+          "plateX": -0.36,
+          "plateZ": 2.92,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-13",
+          "plateX": 1,
+          "plateZ": 0.98,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-13",
+          "plateX": -0.16,
+          "plateZ": 3.36,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-13",
+          "plateX": 0.4,
+          "plateZ": 1.21,
+          "pitchName": "Curveball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-08",
+          "plateX": -0.54,
+          "plateZ": 1.22,
+          "pitchName": "Curveball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-08",
+          "plateX": 1,
+          "plateZ": 2.42,
+          "pitchName": "Sweeper",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-08",
+          "plateX": 1.07,
+          "plateZ": 1.71,
+          "pitchName": "Slider",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-08",
+          "plateX": 0.31,
+          "plateZ": 2.49,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-08",
+          "plateX": 0.76,
+          "plateZ": 2.03,
+          "pitchName": "Slider",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-08",
+          "plateX": -0.03,
+          "plateZ": 3.56,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-08",
+          "plateX": 0.55,
+          "plateZ": 1.18,
+          "pitchName": "Slider",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-08",
+          "plateX": -0.31,
+          "plateZ": 2.77,
+          "pitchName": "Sinker",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-08",
+          "plateX": 0.43,
+          "plateZ": 1.74,
+          "pitchName": "Slider",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-08",
+          "plateX": -0.8,
+          "plateZ": 3.21,
+          "pitchName": "Sinker",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-08",
+          "plateX": 0.08,
+          "plateZ": 1.04,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-08",
+          "plateX": 0.81,
+          "plateZ": 1.13,
+          "pitchName": "Curveball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-08",
+          "plateX": 0.39,
+          "plateZ": 2.95,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-01",
+          "plateX": 0.08,
+          "plateZ": 2.3,
+          "pitchName": "Curveball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-01",
+          "plateX": -0.13,
+          "plateZ": 3.57,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-01",
+          "plateX": -1.26,
+          "plateZ": 1.56,
+          "pitchName": "Curveball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-01",
+          "plateX": -0.53,
+          "plateZ": 3.15,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-01",
+          "plateX": 0.02,
+          "plateZ": 0.75,
+          "pitchName": "Curveball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-01",
+          "plateX": 0.09,
+          "plateZ": 3.06,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-27",
+          "plateX": 0.01,
+          "plateZ": 2.71,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-27",
+          "plateX": 0.45,
+          "plateZ": 1.25,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-27",
+          "plateX": -0.75,
+          "plateZ": 1.98,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-27",
+          "plateX": -0.3,
+          "plateZ": 3.05,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-27",
+          "plateX": -0.02,
+          "plateZ": 4.01,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-27",
+          "plateX": 0.21,
+          "plateZ": 2.98,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-27",
+          "plateX": 0.11,
+          "plateZ": 3.34,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-27",
+          "plateX": -0.4,
+          "plateZ": 3.02,
+          "pitchName": "Sinker",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-22",
+          "plateX": 1,
+          "plateZ": 1.78,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-22",
+          "plateX": -0.38,
+          "plateZ": 3.14,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-22",
+          "plateX": 0.03,
+          "plateZ": 3.24,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-16",
+          "plateX": -0.38,
+          "plateZ": 3.2,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-16",
+          "plateX": -0.38,
+          "plateZ": 3.08,
+          "pitchName": "Sweeper",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-16",
+          "plateX": 1.03,
+          "plateZ": 1.81,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-16",
+          "plateX": 0.37,
+          "plateZ": 3.11,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-10",
+          "plateX": -0.2,
+          "plateZ": 3.16,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-10",
+          "plateX": 0.36,
+          "plateZ": 2.09,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-10",
+          "plateX": -0.84,
+          "plateZ": 3.16,
+          "pitchName": "Sinker",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-10",
+          "plateX": 0,
+          "plateZ": 2.15,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-10",
+          "plateX": 0.8,
+          "plateZ": 1.13,
+          "pitchName": "Curveball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-10",
+          "plateX": -0.03,
+          "plateZ": 1.16,
+          "pitchName": "Sweeper",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-04",
+          "plateX": 0.3,
+          "plateZ": 0.96,
+          "pitchName": "Curveball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-04",
+          "plateX": -0.16,
+          "plateZ": 1.61,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-04",
+          "plateX": 0.36,
+          "plateZ": 0.82,
+          "pitchName": "Curveball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-04",
+          "plateX": 0.91,
+          "plateZ": 0.9,
+          "pitchName": "Curveball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-04",
+          "plateX": -0.34,
+          "plateZ": 3.69,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-04",
+          "plateX": 0.8,
+          "plateZ": 0.87,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-04",
+          "plateX": 1,
+          "plateZ": 0.57,
+          "pitchName": "Curveball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-04",
+          "plateX": 0.41,
+          "plateZ": 0.83,
+          "pitchName": "Curveball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-04",
+          "plateX": 0.15,
+          "plateZ": 3.34,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-29",
+          "plateX": -0.69,
+          "plateZ": 2.03,
+          "pitchName": "Changeup",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-29",
+          "plateX": -0.03,
+          "plateZ": 1.14,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-29",
+          "plateX": 1.33,
+          "plateZ": 1.36,
+          "pitchName": "Sweeper",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-29",
+          "plateX": 0.02,
+          "plateZ": 2.27,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-29",
+          "plateX": 0.4,
+          "plateZ": 1.88,
+          "pitchName": "Sweeper",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-29",
+          "plateX": -0.48,
+          "plateZ": 0.98,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-22",
+          "plateX": 1.17,
+          "plateZ": 2.26,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-22",
+          "plateX": 1.01,
+          "plateZ": 1.35,
+          "pitchName": "Curveball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-22",
+          "plateX": 0.89,
+          "plateZ": -0.51,
+          "pitchName": "Curveball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-22",
+          "plateX": 0.54,
+          "plateZ": 3.76,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-22",
+          "plateX": 0.07,
+          "plateZ": 3.66,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-22",
+          "plateX": 0.93,
+          "plateZ": 1.51,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-17",
+          "plateX": 0.69,
+          "plateZ": 1.1,
+          "pitchName": "Sweeper",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-17",
+          "plateX": -0.19,
+          "plateZ": 2.8,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-17",
+          "plateX": -0.4,
+          "plateZ": 3.3,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-17",
+          "plateX": -0.8,
+          "plateZ": 2.69,
+          "pitchName": "Slider",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-17",
+          "plateX": 0.14,
+          "plateZ": 2.63,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-17",
+          "plateX": -0.73,
+          "plateZ": 2.92,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-08",
+          "plateX": 1.01,
+          "plateZ": 1.78,
+          "pitchName": "Slider",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-08",
+          "plateX": 1.52,
+          "plateZ": 2.28,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-08",
+          "plateX": 1.06,
+          "plateZ": 1.76,
+          "pitchName": "Sweeper",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-08",
+          "plateX": 0.08,
+          "plateZ": 2.46,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-08",
+          "plateX": -0.1,
+          "plateZ": 3.45,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-08",
+          "plateX": 0.26,
+          "plateZ": 3.47,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-08",
+          "plateX": 0.65,
+          "plateZ": 1.46,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-08",
+          "plateX": -0.42,
+          "plateZ": 3.36,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-08",
+          "plateX": 1.12,
+          "plateZ": 1.49,
+          "pitchName": "Slider",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-03",
+          "plateX": 1.06,
+          "plateZ": 2.08,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-03",
+          "plateX": -0.52,
+          "plateZ": 3.09,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-03",
+          "plateX": -0.17,
+          "plateZ": 3.75,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-03",
+          "plateX": -0.31,
+          "plateZ": 3.34,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-03",
+          "plateX": -0.24,
+          "plateZ": 3.46,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-02-26",
+          "plateX": -0.12,
+          "plateZ": 3.15,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-02-26",
+          "plateX": 1.2,
+          "plateZ": 1.8,
+          "pitchName": "Sweeper",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-02-21",
+          "plateX": -0.02,
+          "plateZ": 2.84,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-02-21",
+          "plateX": -0.15,
+          "plateZ": 2.63,
+          "pitchName": "Sinker",
           "batterStand": "L"
         }
       ]
