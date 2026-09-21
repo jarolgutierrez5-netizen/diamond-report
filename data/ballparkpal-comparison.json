@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-21T04:58:00.708Z",
+  "generatedAt": "2026-09-21T19:18:40.048Z",
   "entries": [
     {
       "key": "2026-07-20|824410",
@@ -10736,9 +10736,9 @@
       "ourPickPct": 59,
       "bpPick": "CLE",
       "bpPickPct": 70,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "CLE",
+      "ourResult": "win",
+      "bpResult": "win"
     },
     {
       "key": "2026-09-20|824139",
@@ -10750,9 +10750,9 @@
       "ourPickPct": 52,
       "bpPick": "HOU",
       "bpPickPct": 65,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "ATL",
+      "ourResult": "loss",
+      "bpResult": "loss"
     },
     {
       "key": "2026-09-20|824546",
@@ -10764,9 +10764,9 @@
       "ourPickPct": 54,
       "bpPick": "CWS",
       "bpPickPct": 52,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "CWS",
+      "ourResult": "win",
+      "bpResult": "win"
     },
     {
       "key": "2026-09-20|823001",
@@ -10778,9 +10778,9 @@
       "ourPickPct": 54,
       "bpPick": "STL",
       "bpPickPct": 51,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "STL",
+      "ourResult": "win",
+      "bpResult": "win"
     },
     {
       "key": "2026-09-20|822844",
@@ -10792,9 +10792,9 @@
       "ourPickPct": 51,
       "bpPick": "TEX",
       "bpPickPct": 65,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "TOR",
+      "ourResult": "loss",
+      "bpResult": "loss"
     },
     {
       "key": "2026-09-20|824300",
@@ -10806,9 +10806,9 @@
       "ourPickPct": 54,
       "bpPick": "SEA",
       "bpPickPct": 53,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "SEA",
+      "ourResult": "win",
+      "bpResult": "win"
     },
     {
       "key": "2026-09-20|823975",
@@ -10820,9 +10820,9 @@
       "ourPickPct": 53,
       "bpPick": "MIN",
       "bpPickPct": 55,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "MIN",
+      "ourResult": "loss",
+      "bpResult": "win"
     },
     {
       "key": "2026-09-20|823247",
@@ -10834,9 +10834,9 @@
       "ourPickPct": 57,
       "bpPick": "SD",
       "bpPickPct": 56,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "SD",
+      "ourResult": "win",
+      "bpResult": "win"
     },
     {
       "key": "2026-09-20|825028",
@@ -10848,9 +10848,9 @@
       "ourPickPct": 54,
       "bpPick": "AZ",
       "bpPickPct": 55,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "AZ",
+      "ourResult": "loss",
+      "bpResult": "win"
     },
     {
       "key": "2026-09-20|824789",
@@ -10862,6 +10862,48 @@
       "ourPickPct": 58,
       "bpPick": "MIL",
       "bpPickPct": 64,
+      "actualWinner": "MIL",
+      "ourResult": "win",
+      "bpResult": "win"
+    },
+    {
+      "key": "2026-09-21|824787",
+      "date": "2026-09-21",
+      "gamePk": 824787,
+      "awayTeam": "TOR",
+      "homeTeam": "BAL",
+      "ourPick": "BAL",
+      "ourPickPct": 50,
+      "bpPick": "TOR",
+      "bpPickPct": 54,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-09-21|824221",
+      "date": "2026-09-21",
+      "gamePk": 824221,
+      "awayTeam": "WSH",
+      "homeTeam": "DET",
+      "ourPick": "DET",
+      "ourPickPct": 51,
+      "bpPick": "DET",
+      "bpPickPct": 52,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-09-21|823169",
+      "date": "2026-09-21",
+      "gamePk": 823169,
+      "awayTeam": "MIN",
+      "homeTeam": "SF",
+      "ourPick": "MIN",
+      "ourPickPct": 52,
+      "bpPick": "MIN",
+      "bpPickPct": 56,
       "actualWinner": null,
       "ourResult": "pending",
       "bpResult": "pending"
@@ -10869,16 +10911,16 @@
   ],
   "summary": {
     "ours": {
-      "wins": 432,
-      "losses": 330,
+      "wins": 438,
+      "losses": 334,
       "pushes": 0,
-      "total": 762
+      "total": 772
     },
     "ballparkPal": {
-      "wins": 444,
-      "losses": 318,
+      "wins": 452,
+      "losses": 320,
       "pushes": 0,
-      "total": 762
+      "total": 772
     }
   }
 }

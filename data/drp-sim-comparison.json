@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-21T04:58:00.710Z",
+  "generatedAt": "2026-09-21T19:18:40.050Z",
   "entries": [
     {
       "key": "2026-07-20|824410",
@@ -12270,9 +12270,9 @@
       "simPickPct": 64,
       "simAwayRuns": 4.03,
       "simHomeRuns": 5.99,
-      "actualWinner": null,
-      "formulaResult": "pending",
-      "simResult": "pending"
+      "actualWinner": "CLE",
+      "formulaResult": "win",
+      "simResult": "win"
     },
     {
       "key": "2026-09-20|824139",
@@ -12286,9 +12286,9 @@
       "simPickPct": 59,
       "simAwayRuns": 5.57,
       "simHomeRuns": 4.45,
-      "actualWinner": null,
-      "formulaResult": "pending",
-      "simResult": "pending"
+      "actualWinner": "ATL",
+      "formulaResult": "loss",
+      "simResult": "win"
     },
     {
       "key": "2026-09-20|824546",
@@ -12302,9 +12302,9 @@
       "simPickPct": 63,
       "simAwayRuns": 5.71,
       "simHomeRuns": 4.07,
-      "actualWinner": null,
-      "formulaResult": "pending",
-      "simResult": "pending"
+      "actualWinner": "CWS",
+      "formulaResult": "win",
+      "simResult": "loss"
     },
     {
       "key": "2026-09-20|823001",
@@ -12318,9 +12318,9 @@
       "simPickPct": 55,
       "simAwayRuns": 4.93,
       "simHomeRuns": 5.63,
-      "actualWinner": null,
-      "formulaResult": "pending",
-      "simResult": "pending"
+      "actualWinner": "STL",
+      "formulaResult": "win",
+      "simResult": "win"
     },
     {
       "key": "2026-09-20|822844",
@@ -12334,9 +12334,9 @@
       "simPickPct": 49,
       "simAwayRuns": 3.45,
       "simHomeRuns": 3.4,
-      "actualWinner": null,
-      "formulaResult": "pending",
-      "simResult": "pending"
+      "actualWinner": "TOR",
+      "formulaResult": "loss",
+      "simResult": "win"
     },
     {
       "key": "2026-09-20|824300",
@@ -12350,9 +12350,9 @@
       "simPickPct": 54,
       "simAwayRuns": 6.1,
       "simHomeRuns": 5.46,
-      "actualWinner": null,
-      "formulaResult": "pending",
-      "simResult": "pending"
+      "actualWinner": "SEA",
+      "formulaResult": "win",
+      "simResult": "win"
     },
     {
       "key": "2026-09-20|823975",
@@ -12366,9 +12366,9 @@
       "simPickPct": 66,
       "simAwayRuns": 4.99,
       "simHomeRuns": 3.29,
-      "actualWinner": null,
-      "formulaResult": "pending",
-      "simResult": "pending"
+      "actualWinner": "MIN",
+      "formulaResult": "loss",
+      "simResult": "win"
     },
     {
       "key": "2026-09-20|823247",
@@ -12382,9 +12382,9 @@
       "simPickPct": 50,
       "simAwayRuns": 4.72,
       "simHomeRuns": 4.6,
-      "actualWinner": null,
-      "formulaResult": "pending",
-      "simResult": "pending"
+      "actualWinner": "SD",
+      "formulaResult": "win",
+      "simResult": "loss"
     },
     {
       "key": "2026-09-20|825028",
@@ -12398,9 +12398,9 @@
       "simPickPct": 50,
       "simAwayRuns": 4.6,
       "simHomeRuns": 4.55,
-      "actualWinner": null,
-      "formulaResult": "pending",
-      "simResult": "pending"
+      "actualWinner": "AZ",
+      "formulaResult": "loss",
+      "simResult": "loss"
     },
     {
       "key": "2026-09-20|824789",
@@ -12414,6 +12414,54 @@
       "simPickPct": 79,
       "simAwayRuns": 5.2,
       "simHomeRuns": 2.08,
+      "actualWinner": "MIL",
+      "formulaResult": "win",
+      "simResult": "win"
+    },
+    {
+      "key": "2026-09-21|824787",
+      "date": "2026-09-21",
+      "gamePk": 824787,
+      "awayTeam": "TOR",
+      "homeTeam": "BAL",
+      "formulaPick": "BAL",
+      "formulaPickPct": 50,
+      "simPick": "TOR",
+      "simPickPct": 51,
+      "simAwayRuns": 4.48,
+      "simHomeRuns": 4.12,
+      "actualWinner": null,
+      "formulaResult": "pending",
+      "simResult": "pending"
+    },
+    {
+      "key": "2026-09-21|824221",
+      "date": "2026-09-21",
+      "gamePk": 824221,
+      "awayTeam": "WSH",
+      "homeTeam": "DET",
+      "formulaPick": "DET",
+      "formulaPickPct": 51,
+      "simPick": "DET",
+      "simPickPct": 54,
+      "simAwayRuns": 1.11,
+      "simHomeRuns": 1.53,
+      "actualWinner": null,
+      "formulaResult": "pending",
+      "simResult": "pending"
+    },
+    {
+      "key": "2026-09-21|823169",
+      "date": "2026-09-21",
+      "gamePk": 823169,
+      "awayTeam": "MIN",
+      "homeTeam": "SF",
+      "formulaPick": "MIN",
+      "formulaPickPct": 52,
+      "simPick": "MIN",
+      "simPickPct": 59,
+      "simAwayRuns": 4.55,
+      "simHomeRuns": 3.58,
       "actualWinner": null,
       "formulaResult": "pending",
       "simResult": "pending"
@@ -12421,16 +12469,16 @@
   ],
   "summary": {
     "formula": {
-      "wins": 432,
-      "losses": 330,
+      "wins": 438,
+      "losses": 334,
       "pushes": 0,
-      "total": 762
+      "total": 772
     },
     "simulation": {
-      "wins": 425,
-      "losses": 337,
+      "wins": 432,
+      "losses": 340,
       "pushes": 0,
-      "total": 762
+      "total": 772
     }
   }
 }
