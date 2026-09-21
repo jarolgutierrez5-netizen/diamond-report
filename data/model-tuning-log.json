@@ -329,6 +329,51 @@
       "decision": "skip",
       "reason": "sample size gate not met",
       "active": false
+    },
+    {
+      "at": "2026-09-21T20:00:44.079Z",
+      "param": "HR_MULT_SHRINKAGE",
+      "effectiveSince": "2026-07-20",
+      "excludedPreEffective": 0,
+      "nLow": 6,
+      "nHigh": 441,
+      "lowHitRate": 0,
+      "highHitRate": 0.1655328798185941,
+      "z": -1.0895212897590176,
+      "decision": "skip",
+      "reason": "sample size gate not met",
+      "current": 0.6
+    },
+    {
+      "at": "2026-09-21T20:00:44.081Z",
+      "param": "HR_SCORE_CALIBRATION",
+      "effectiveSince": "2026-08-31",
+      "excludedPreEffective": 183,
+      "n": 264,
+      "fittedSlope": 1.015044772519417,
+      "fittedIntercept": -51.175592695697304,
+      "seSlope": 0.5025838313851528,
+      "tSlope": 0.029934851819551363,
+      "decision": "skip",
+      "reason": "not statistically significant",
+      "current": {
+        "slope": 0.9,
+        "intercept": 6
+      }
+    },
+    {
+      "at": "2026-09-21T20:00:44.153Z",
+      "param": "HR_ISOTONIC_CALIBRATION",
+      "n": 447,
+      "foldsRun": 5,
+      "meanIsoBrier": 0.13592468538945596,
+      "meanBaseBrier": 0.3676027969348659,
+      "improvement": 0.23167811154540996,
+      "foldWinFraction": 1,
+      "decision": "activate",
+      "breakpoints": 3,
+      "effectiveSince": "2026-09-21",
+      "active": true
     }
   ]
 }

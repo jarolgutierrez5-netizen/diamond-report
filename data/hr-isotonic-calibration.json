@@ -1,7 +1,30 @@
 {
-  "generatedAt": "2026-08-19T00:00:00.000Z",
-  "active": false,
-  "n": 0,
-  "effectiveSince": null,
-  "breakpoints": []
+  "generatedAt": "2026-09-21T20:00:44.152Z",
+  "active": true,
+  "n": 447,
+  "effectiveSince": "2026-09-21",
+  "breakpoints": [
+    {
+      "x": 54.95,
+      "y": 0.1211,
+      "n": 223
+    },
+    {
+      "x": 68.69,
+      "y": 0.1875,
+      "n": 112
+    },
+    {
+      "x": 73.01,
+      "y": 0.2232,
+      "n": 112
+    }
+  ],
+  "cv": {
+    "foldsRun": 5,
+    "meanIsoBrier": 0.13592468538945596,
+    "meanBaseBrier": 0.3676027969348659,
+    "improvement": 0.23167811154540996,
+    "foldWinFraction": 1
+  }
 }
