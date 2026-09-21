@@ -1,14 +1,73 @@
 {
-  "generatedAt": "2026-09-21T19:18:40.287Z",
+  "generatedAt": "2026-09-21T23:16:04.209Z",
   "date": "2026-09-21",
   "games": {
+    "823169": {
+      "updatedAt": "2026-09-21T23:16:04.209Z",
+      "teams": {
+        "home": null,
+        "away": {
+          "abbr": "MIN",
+          "confirmed": true,
+          "confirmedAt": "2026-09-21T23:16:04.209Z",
+          "source": "mlb-schedule-lineups",
+          "lineup": [
+            {
+              "id": 805805,
+              "name": "Walker Jenkins",
+              "pos": "CF"
+            },
+            {
+              "id": 807712,
+              "name": "Luke Keaschall",
+              "pos": "RF"
+            },
+            {
+              "id": 686797,
+              "name": "Brooks Lee",
+              "pos": "3B"
+            },
+            {
+              "id": 665019,
+              "name": "Kody Clemens",
+              "pos": "2B"
+            },
+            {
+              "id": 680777,
+              "name": "Ryan Jeffers",
+              "pos": "C"
+            },
+            {
+              "id": 702176,
+              "name": "Alan Roden",
+              "pos": "DH"
+            },
+            {
+              "id": 693306,
+              "name": "Aaron Sabato",
+              "pos": "1B"
+            },
+            {
+              "id": 691181,
+              "name": "Emmanuel Rodriguez",
+              "pos": "LF"
+            },
+            {
+              "id": 668952,
+              "name": "Ryan Kreidler",
+              "pos": "SS"
+            }
+          ]
+        }
+      }
+    },
     "824221": {
-      "updatedAt": "2026-09-21T19:18:40.287Z",
+      "updatedAt": "2026-09-21T23:16:04.209Z",
       "teams": {
         "home": {
           "abbr": "DET",
           "confirmed": true,
-          "confirmedAt": "2026-09-21T19:18:40.287Z",
+          "confirmedAt": "2026-09-21T23:16:04.209Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -61,7 +120,7 @@
         "away": {
           "abbr": "WSH",
           "confirmed": true,
-          "confirmedAt": "2026-09-21T19:18:40.287Z",
+          "confirmedAt": "2026-09-21T23:16:04.209Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -114,12 +173,12 @@
       }
     },
     "824787": {
-      "updatedAt": "2026-09-21T19:18:40.287Z",
+      "updatedAt": "2026-09-21T23:16:04.209Z",
       "teams": {
         "home": {
           "abbr": "BAL",
           "confirmed": true,
-          "confirmedAt": "2026-09-21T19:18:40.286Z",
+          "confirmedAt": "2026-09-21T23:16:04.209Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -169,7 +228,59 @@
             }
           ]
         },
-        "away": null
+        "away": {
+          "abbr": "TOR",
+          "confirmed": true,
+          "confirmedAt": "2026-09-21T23:16:04.209Z",
+          "source": "mlb-schedule-lineups",
+          "lineup": [
+            {
+              "id": 703520,
+              "name": "Brett Bateman",
+              "pos": "CF"
+            },
+            {
+              "id": 672386,
+              "name": "Alejandro Kirk",
+              "pos": "C"
+            },
+            {
+              "id": 664770,
+              "name": "Nathan Lukes",
+              "pos": "RF"
+            },
+            {
+              "id": 543807,
+              "name": "George Springer",
+              "pos": "DH"
+            },
+            {
+              "id": 815873,
+              "name": "Sean Keys",
+              "pos": "1B"
+            },
+            {
+              "id": 672960,
+              "name": "Kazuma Okamoto",
+              "pos": "3B"
+            },
+            {
+              "id": 669701,
+              "name": "Josh Smith",
+              "pos": "LF"
+            },
+            {
+              "id": 665926,
+              "name": "Andrés Giménez",
+              "pos": "SS"
+            },
+            {
+              "id": 676391,
+              "name": "Ernie Clement",
+              "pos": "2B"
+            }
+          ]
+        }
       }
     }
   }
