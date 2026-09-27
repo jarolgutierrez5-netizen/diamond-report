@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-26T22:45:29.999Z",
+  "generatedAt": "2026-09-27T01:20:16.667Z",
   "season": 2026,
   "pitchers": {
     "434378": {
@@ -28076,6 +28076,1056 @@
           "plateZ": 3.02,
           "pitchName": "4-Seam Fastball",
           "batterStand": "R"
+        }
+      ]
+    },
+    "664199": {
+      "totalPitches": 0,
+      "byPitch": [],
+      "byZone": {
+        "1": {
+          "wobaAgainst": 0.164
+        },
+        "2": {
+          "wobaAgainst": 0.472
+        },
+        "3": {
+          "wobaAgainst": 0.464
+        },
+        "4": {
+          "wobaAgainst": 0.362
+        },
+        "5": {
+          "wobaAgainst": 0.346
+        },
+        "6": {
+          "wobaAgainst": 0.181
+        },
+        "7": {
+          "wobaAgainst": 0.334
+        },
+        "8": {
+          "wobaAgainst": 0.275
+        },
+        "9": {
+          "wobaAgainst": 0.282
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0
+          },
+          "2": {
+            "woba": 0.3
+          },
+          "3": {
+            "woba": 0.783
+          },
+          "4": {
+            "woba": 0.725
+          },
+          "5": {
+            "woba": 0.165
+          },
+          "6": {
+            "woba": 0
+          },
+          "7": {
+            "woba": 0.381
+          },
+          "8": {
+            "woba": 0.4
+          },
+          "9": {
+            "woba": 0.113
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.9
+          },
+          "2": {
+            "woba": 0.575
+          },
+          "3": {
+            "woba": 0.225
+          },
+          "4": {
+            "woba": 0.138
+          },
+          "5": {
+            "woba": 0.503
+          },
+          "6": {
+            "woba": 0.295
+          },
+          "7": {
+            "woba": 0.317
+          },
+          "8": {
+            "woba": 0.198
+          },
+          "9": {
+            "woba": 0.508
+          }
+        }
+      },
+      "hr9ByHand": {
+        "R": {
+          "hr": 4,
+          "ip": 36.7,
+          "hr9": 0.98
+        },
+        "L": {
+          "hr": 4,
+          "ip": 42.7,
+          "hr9": 0.84
+        }
+      },
+      "hrByZone": {
+        "2": {
+          "count": 1,
+          "pct": 12.5
+        },
+        "3": {
+          "count": 1,
+          "pct": 12.5
+        },
+        "4": {
+          "count": 2,
+          "pct": 25
+        },
+        "5": {
+          "count": 1,
+          "pct": 12.5
+        },
+        "6": {
+          "count": 1,
+          "pct": 12.5
+        },
+        "7": {
+          "count": 1,
+          "pct": 12.5
+        },
+        "8": {
+          "count": 1,
+          "pct": 12.5
+        }
+      },
+      "hrLocations": [
+        {
+          "date": "2026-09-24",
+          "plateX": 0.34,
+          "plateZ": 2.82,
+          "exitVelo": 97.1,
+          "matchup": "AZ @ COL",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-24",
+          "plateX": -0.28,
+          "plateZ": 2.38,
+          "exitVelo": 105.4,
+          "matchup": "CHC @ AZ",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-24",
+          "plateX": 0.25,
+          "plateZ": 1.78,
+          "exitVelo": 110.9,
+          "matchup": "CHC @ AZ",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-08",
+          "plateX": 0.56,
+          "plateZ": 2.75,
+          "exitVelo": 100.5,
+          "matchup": "AZ @ SD",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-06-30",
+          "plateX": -0.14,
+          "plateZ": 2.44,
+          "exitVelo": 111.3,
+          "matchup": "SF @ AZ",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-06-19",
+          "plateX": 0.16,
+          "plateZ": 2.73,
+          "exitVelo": 106.1,
+          "matchup": "MIN @ AZ",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-03-26",
+          "plateX": -0.46,
+          "plateZ": 2.37,
+          "exitVelo": 104.8,
+          "matchup": "AZ @ LAD",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-03-16",
+          "plateX": -0.38,
+          "plateZ": 1.9,
+          "exitVelo": 107.9,
+          "matchup": "CIN @ AZ",
+          "batterStand": "R"
+        }
+      ],
+      "whiffLocations": [
+        {
+          "date": "2026-09-24",
+          "plateX": 1.08,
+          "plateZ": 1.67,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-24",
+          "plateX": -0.15,
+          "plateZ": 0.41,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-24",
+          "plateX": 0.07,
+          "plateZ": 2.45,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-24",
+          "plateX": 1.32,
+          "plateZ": 2.46,
+          "pitchName": "Cutter",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-24",
+          "plateX": 1.43,
+          "plateZ": 0.96,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-20",
+          "plateX": 1.36,
+          "plateZ": 0.88,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-20",
+          "plateX": 0.68,
+          "plateZ": 1.55,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-20",
+          "plateX": 0.14,
+          "plateZ": 0.97,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-15",
+          "plateX": 0.69,
+          "plateZ": 1.8,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-15",
+          "plateX": -0.59,
+          "plateZ": 1.64,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-15",
+          "plateX": -0.18,
+          "plateZ": 1.71,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-13",
+          "plateX": -0.92,
+          "plateZ": 1.68,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-13",
+          "plateX": -1.02,
+          "plateZ": 1.64,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-13",
+          "plateX": 0.41,
+          "plateZ": 1.54,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-13",
+          "plateX": -0.49,
+          "plateZ": 3.1,
+          "pitchName": "Sinker",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-13",
+          "plateX": 1.17,
+          "plateZ": 1.48,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-13",
+          "plateX": -1.29,
+          "plateZ": 1.87,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-13",
+          "plateX": -1.23,
+          "plateZ": 2.6,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-07",
+          "plateX": -0.7,
+          "plateZ": 0.49,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-07",
+          "plateX": -1,
+          "plateZ": 1.29,
+          "pitchName": "Sinker",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-07",
+          "plateX": 1.38,
+          "plateZ": 1.74,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-07",
+          "plateX": 0.4,
+          "plateZ": 1.85,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-02",
+          "plateX": 0.06,
+          "plateZ": 3.96,
+          "pitchName": "Cutter",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-02",
+          "plateX": 1.65,
+          "plateZ": 1.24,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-09-01",
+          "plateX": -0.56,
+          "plateZ": 0.92,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-01",
+          "plateX": -1.03,
+          "plateZ": 1.29,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-01",
+          "plateX": -1.09,
+          "plateZ": 2.51,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-09-01",
+          "plateX": 1.52,
+          "plateZ": 1.28,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-29",
+          "plateX": -0.02,
+          "plateZ": 2,
+          "pitchName": "Sinker",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-29",
+          "plateX": 1.46,
+          "plateZ": 1.13,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-29",
+          "plateX": 0.35,
+          "plateZ": 1.75,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-27",
+          "plateX": -0.8,
+          "plateZ": 3.9,
+          "pitchName": "Sinker",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-24",
+          "plateX": -1.32,
+          "plateZ": 0.98,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-23",
+          "plateX": -0.82,
+          "plateZ": 1,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-23",
+          "plateX": 0.04,
+          "plateZ": 1.31,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-23",
+          "plateX": -0.11,
+          "plateZ": 1.61,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-21",
+          "plateX": 0.72,
+          "plateZ": 1.11,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-21",
+          "plateX": 0.35,
+          "plateZ": 3.05,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-18",
+          "plateX": 0.77,
+          "plateZ": 2.87,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-18",
+          "plateX": 0.86,
+          "plateZ": 2.6,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-16",
+          "plateX": 0.14,
+          "plateZ": 2.02,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-16",
+          "plateX": -0.07,
+          "plateZ": 1.6,
+          "pitchName": "Sinker",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-08-11",
+          "plateX": 0.6,
+          "plateZ": 1.1,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-09",
+          "plateX": -1.03,
+          "plateZ": 1.77,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-09",
+          "plateX": 0.67,
+          "plateZ": 1.79,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-05",
+          "plateX": 0.38,
+          "plateZ": 0.81,
+          "pitchName": "Changeup",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-05",
+          "plateX": 1.94,
+          "plateZ": 0.76,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-05",
+          "plateX": 0.56,
+          "plateZ": 2.32,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-08-05",
+          "plateX": 0.31,
+          "plateZ": 1.66,
+          "pitchName": "Slider",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-31",
+          "plateX": 0.32,
+          "plateZ": 1.97,
+          "pitchName": "Cutter",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-27",
+          "plateX": 0.01,
+          "plateZ": 2.75,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-25",
+          "plateX": 0.47,
+          "plateZ": 0.8,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-19",
+          "plateX": -0.24,
+          "plateZ": 2.85,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-19",
+          "plateX": -0.85,
+          "plateZ": 1.7,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-12",
+          "plateX": 0.19,
+          "plateZ": 1.36,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-12",
+          "plateX": 0.2,
+          "plateZ": 1.3,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-08",
+          "plateX": 1.49,
+          "plateZ": 1.43,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-08",
+          "plateX": -1.42,
+          "plateZ": 2.19,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-08",
+          "plateX": 0.45,
+          "plateZ": 1.05,
+          "pitchName": "Changeup",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-08",
+          "plateX": 0.05,
+          "plateZ": 2.57,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-07-03",
+          "plateX": 0.95,
+          "plateZ": 1.64,
+          "pitchName": "Cutter",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-07-03",
+          "plateX": 1.16,
+          "plateZ": 1.53,
+          "pitchName": "Slider",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-06-24",
+          "plateX": 0.12,
+          "plateZ": 1.45,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-06-22",
+          "plateX": 0.86,
+          "plateZ": 0.9,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-06-19",
+          "plateX": -0.06,
+          "plateZ": 1.7,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-06-17",
+          "plateX": 1.37,
+          "plateZ": 2.11,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-06-17",
+          "plateX": -0.35,
+          "plateZ": 1.15,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-06-17",
+          "plateX": 0.48,
+          "plateZ": 1.47,
+          "pitchName": "Changeup",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-06-17",
+          "plateX": 0.68,
+          "plateZ": 1.75,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-06-12",
+          "plateX": 1.77,
+          "plateZ": 1.17,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-06-12",
+          "plateX": 1.11,
+          "plateZ": 1.96,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-06-12",
+          "plateX": -0.3,
+          "plateZ": 1.22,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-06-12",
+          "plateX": 0.74,
+          "plateZ": 1.21,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-06-09",
+          "plateX": 0.83,
+          "plateZ": 1.41,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-06-09",
+          "plateX": 1.15,
+          "plateZ": 0.61,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-06-07",
+          "plateX": 1.19,
+          "plateZ": 1.43,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-06-07",
+          "plateX": 0.9,
+          "plateZ": 1.99,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-06-03",
+          "plateX": 0.74,
+          "plateZ": 1.18,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-06-01",
+          "plateX": -0.17,
+          "plateZ": 1.43,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-06-01",
+          "plateX": 0.03,
+          "plateZ": 1.15,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-05-29",
+          "plateX": 0.09,
+          "plateZ": 1.11,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-05-22",
+          "plateX": 0.93,
+          "plateZ": 1.64,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-05-22",
+          "plateX": -0.36,
+          "plateZ": 1.62,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-05-20",
+          "plateX": 0.6,
+          "plateZ": 1.96,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-05-16",
+          "plateX": -0.48,
+          "plateZ": 1.25,
+          "pitchName": "Slider",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-05-16",
+          "plateX": 0.25,
+          "plateZ": 1.46,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-05-16",
+          "plateX": 0.06,
+          "plateZ": 2.51,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-05-09",
+          "plateX": 1.06,
+          "plateZ": 1.32,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-05-09",
+          "plateX": 1.75,
+          "plateZ": 2.01,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-05-02",
+          "plateX": 0.53,
+          "plateZ": 1.12,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-05-02",
+          "plateX": 1.1,
+          "plateZ": 1.44,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-04-29",
+          "plateX": 0.28,
+          "plateZ": 1.6,
+          "pitchName": "Slider",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-04-29",
+          "plateX": -1.1,
+          "plateZ": 0.47,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-04-21",
+          "plateX": -0.27,
+          "plateZ": 1.23,
+          "pitchName": "Slider",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-04-21",
+          "plateX": 0.25,
+          "plateZ": 3.55,
+          "pitchName": "Cutter",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-04-14",
+          "plateX": 1.35,
+          "plateZ": 1.26,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-04-12",
+          "plateX": 0.29,
+          "plateZ": 2.25,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-04-12",
+          "plateX": 0.5,
+          "plateZ": 2.44,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-04-08",
+          "plateX": 0.27,
+          "plateZ": 0.66,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-04-05",
+          "plateX": -0.17,
+          "plateZ": 2.83,
+          "pitchName": "Cutter",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-04-04",
+          "plateX": -0.3,
+          "plateZ": 0.48,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-04-04",
+          "plateX": 0.25,
+          "plateZ": 3.3,
+          "pitchName": "Cutter",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-04-01",
+          "plateX": 0.99,
+          "plateZ": 0.65,
+          "pitchName": "Slider",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-04-01",
+          "plateX": -0.22,
+          "plateZ": 1.13,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-04-01",
+          "plateX": -0.46,
+          "plateZ": 2.02,
+          "pitchName": "Changeup",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-03-30",
+          "plateX": 0.1,
+          "plateZ": 0.79,
+          "pitchName": "Slider",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-03-30",
+          "plateX": 0.07,
+          "plateZ": 2.08,
+          "pitchName": "Slider",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-03-30",
+          "plateX": 0.28,
+          "plateZ": 2.78,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-03-21",
+          "plateX": -0.43,
+          "plateZ": 1.46,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-03-21",
+          "plateX": 0.63,
+          "plateZ": 1.26,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-03-21",
+          "plateX": -0.41,
+          "plateZ": 1.82,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-03-21",
+          "plateX": 1.02,
+          "plateZ": 1.86,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-03-18",
+          "plateX": -1.21,
+          "plateZ": 2.48,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-03-16",
+          "plateX": 0.57,
+          "plateZ": 1.78,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-03-12",
+          "plateX": 1.61,
+          "plateZ": 1.9,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-03-12",
+          "plateX": -0.41,
+          "plateZ": 2.5,
+          "pitchName": "Sinker",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-03-12",
+          "plateX": 0.74,
+          "plateZ": 1.5,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-03-12",
+          "plateX": -0.52,
+          "plateZ": 2.79,
+          "pitchName": "4-Seam Fastball",
+          "batterStand": "L"
+        },
+        {
+          "date": "2026-03-06",
+          "plateX": 1.33,
+          "plateZ": 0.88,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-02-27",
+          "plateX": 0.54,
+          "plateZ": 1.46,
+          "pitchName": "Slider",
+          "batterStand": "R"
+        },
+        {
+          "date": "2026-02-27",
+          "plateX": 0.34,
+          "plateZ": 2.7,
+          "pitchName": "Cutter",
+          "batterStand": "L"
         }
       ]
     },
