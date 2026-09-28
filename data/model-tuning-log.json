@@ -374,6 +374,45 @@
       "breakpoints": 3,
       "effectiveSince": "2026-09-21",
       "active": true
+    },
+    {
+      "at": "2026-09-28T21:15:31.634Z",
+      "param": "HR_MULT_SHRINKAGE",
+      "effectiveSince": "2026-07-20",
+      "excludedPreEffective": 0,
+      "nLow": 6,
+      "nHigh": 522,
+      "lowHitRate": 0,
+      "highHitRate": 0.15708812260536398,
+      "z": -1.0563232328355918,
+      "decision": "skip",
+      "reason": "sample size gate not met",
+      "current": 0.6
+    },
+    {
+      "at": "2026-09-28T21:15:31.636Z",
+      "param": "HR_SCORE_CALIBRATION",
+      "effectiveSince": "2026-08-31",
+      "excludedPreEffective": 183,
+      "n": 345,
+      "fittedSlope": 1.0500106962040328,
+      "fittedIntercept": -55.12102556788897,
+      "seSlope": 0.43780792148024084,
+      "tSlope": 0.11422976549840669,
+      "decision": "skip",
+      "reason": "not statistically significant",
+      "current": {
+        "slope": 0.9,
+        "intercept": 6
+      }
+    },
+    {
+      "at": "2026-09-28T21:15:31.715Z",
+      "param": "HR_ISOTONIC_CALIBRATION",
+      "n": 81,
+      "decision": "skip",
+      "reason": "sample size gate not met",
+      "active": true
     }
   ]
 }
