@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-29T23:42:18.470Z",
+  "generatedAt": "2026-09-30T05:34:45.552Z",
   "entries": [
     {
       "key": "2026-07-20|824410",
@@ -11926,9 +11926,9 @@
       "ourPickPct": 52,
       "bpPick": "ATL",
       "bpPickPct": 63,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "ATL",
+      "ourResult": "win",
+      "bpResult": "win"
     },
     {
       "key": "2026-09-29|849849",
@@ -11940,9 +11940,9 @@
       "ourPickPct": 55,
       "bpPick": "HOU",
       "bpPickPct": 53,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "CWS",
+      "ourResult": "win",
+      "bpResult": "loss"
     },
     {
       "key": "2026-09-29|849851",
@@ -11954,9 +11954,9 @@
       "ourPickPct": 55,
       "bpPick": "NYY",
       "bpPickPct": 57,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "NYY",
+      "ourResult": "win",
+      "bpResult": "win"
     },
     {
       "key": "2026-09-29|849843",
@@ -11968,6 +11968,48 @@
       "ourPickPct": 53,
       "bpPick": "SD",
       "bpPickPct": 54,
+      "actualWinner": "SD",
+      "ourResult": "win",
+      "bpResult": "win"
+    },
+    {
+      "key": "2026-09-30|849841",
+      "date": "2026-09-30",
+      "gamePk": 849841,
+      "awayTeam": "PHI",
+      "homeTeam": "ATL",
+      "ourPick": "ATL",
+      "ourPickPct": 53,
+      "bpPick": "ATL",
+      "bpPickPct": 51,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-09-30|849846",
+      "date": "2026-09-30",
+      "gamePk": 849846,
+      "awayTeam": "CWS",
+      "homeTeam": "HOU",
+      "ourPick": "HOU",
+      "ourPickPct": 55,
+      "bpPick": "HOU",
+      "bpPickPct": 58,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-09-30|849848",
+      "date": "2026-09-30",
+      "gamePk": 849848,
+      "awayTeam": "BOS",
+      "homeTeam": "NYY",
+      "ourPick": "NYY",
+      "ourPickPct": 52,
+      "bpPick": "NYY",
+      "bpPickPct": 59,
       "actualWinner": null,
       "ourResult": "pending",
       "bpResult": "pending"
@@ -11975,16 +12017,16 @@
   ],
   "summary": {
     "ours": {
-      "wins": 481,
+      "wins": 485,
       "losses": 365,
       "pushes": 0,
-      "total": 846
+      "total": 850
     },
     "ballparkPal": {
-      "wins": 493,
-      "losses": 353,
+      "wins": 496,
+      "losses": 354,
       "pushes": 0,
-      "total": 846
+      "total": 850
     }
   }
 }
