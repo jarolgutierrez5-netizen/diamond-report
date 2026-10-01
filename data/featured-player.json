@@ -1,45 +1,57 @@
 {
-  "date": "2026-09-30",
-  "generatedAt": "2026-09-30T23:47:36.884Z",
+  "date": "2026-10-01",
+  "generatedAt": "2026-10-01T19:27:57.127Z",
   "player": {
-    "id": 670541,
-    "name": "Yordan Alvarez",
-    "teamAbbr": "HOU",
-    "oppAbbr": "CWS",
-    "gamePk": 849846,
-    "pitcherId": 680732,
-    "pitcherName": "Sean Burke",
-    "liveScore": 39,
-    "spotlightScore": 43,
-    "avg": 0.34129052631578943,
-    "obp": 0.4564377777777778,
-    "slg": 0.6416339473684209,
-    "ops": 1.033,
-    "iso": 0.3003434210526315,
-    "hrSeason": 42,
-    "atBats": 567,
-    "last10HR": 6,
+    "id": 621566,
+    "name": "Matt Olson",
+    "teamAbbr": "ATL",
+    "oppAbbr": "PHI",
+    "gamePk": 849844,
+    "pitcherId": 605400,
+    "pitcherName": "Aaron Nola",
+    "liveScore": 36,
+    "spotlightScore": 48,
+    "avg": 0.2539212162162162,
+    "obp": 0.31033,
+    "slg": 0.4909775675675676,
+    "ops": 0.823,
+    "iso": 0.2370563513513514,
+    "hrSeason": 41,
+    "atBats": 625,
+    "last10HR": 4,
     "isHot": true,
-    "isFavorable": false,
+    "isFavorable": true,
     "isDrought": false,
     "isDue": false,
-    "hasNearHR": false,
-    "matchupEdge": null,
+    "hasNearHR": true,
+    "matchupEdge": 67,
     "statcast": {
-      "xslg": 0.6493243243243244,
-      "hardHitPct": 54.32748382185002,
-      "pitches": 2627
+      "xslg": 0.502292859606761,
+      "hardHitPct": 52.08485684718869,
+      "pitches": 2903
     },
     "reasons": [
       {
         "icon": "💣",
-        "text": "Projects at a real 39.0% HR probability today, from the same model behind the HR Threats board."
+        "text": "Projects at a real 36.0% HR probability today, from the same model behind the HR Threats board."
       },
       {
         "icon": "🔥",
-        "text": "On a real hot streak — 6 HR over the last 10 games."
+        "text": "On a real hot streak — 4 HR over the last 10 games."
+      },
+      {
+        "icon": "✅",
+        "text": "Favorable matchup — a real 0.823 OPS bat against a pitcher who's given up real contact this season."
+      },
+      {
+        "icon": "⚔️",
+        "text": "Real Matchup Edge score of 67 against today's specific starter, Aaron Nola."
+      },
+      {
+        "icon": "🚀",
+        "text": "Real warning-track power in the last 10 games — recent long fly outs that haven't left the yard yet."
       }
     ],
-    "confirmedToday": false
+    "confirmedToday": true
   }
 }
