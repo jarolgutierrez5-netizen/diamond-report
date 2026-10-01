@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-30T23:47:35.747Z",
+  "generatedAt": "2026-10-01T05:57:19.855Z",
   "market": {
     "drp": [
       {
@@ -20484,8 +20484,8 @@
         "homeTeam": "ATL",
         "pick": "ATL",
         "pickPct": 53,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "loss",
+        "actualWinner": "PHI",
         "eraDiff": 0.86,
         "whipDiff": 0.162,
         "k9Diff": 1.34,
@@ -20498,7 +20498,9 @@
           "homeML": -192,
           "awayPct": 37,
           "homePct": 63
-        }
+        },
+        "scoreMargin": 1,
+        "nearMiss": true
       },
       {
         "key": "2026-09-30|DRP|CWS-HOU",
@@ -20508,8 +20510,8 @@
         "homeTeam": "HOU",
         "pick": "HOU",
         "pickPct": 55,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "loss",
+        "actualWinner": "CWS",
         "eraDiff": 0.45,
         "whipDiff": 0.107,
         "k9Diff": -2.25,
@@ -20522,7 +20524,9 @@
           "homeML": -123,
           "awayPct": 47,
           "homePct": 53
-        }
+        },
+        "scoreMargin": 4,
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|DRP|BOS-NYY",
@@ -20532,8 +20536,8 @@
         "homeTeam": "NYY",
         "pick": "NYY",
         "pickPct": 52,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "NYY",
         "eraDiff": -0.22,
         "whipDiff": 0.13,
         "k9Diff": -0.61,
@@ -20546,7 +20550,9 @@
           "homeML": -131,
           "awayPct": 46,
           "homePct": 54
-        }
+        },
+        "scoreMargin": 7,
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|DRP|CHC-SD",
@@ -20556,8 +20562,8 @@
         "homeTeam": "SD",
         "pick": "SD",
         "pickPct": 56,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "SD",
         "eraDiff": 2.85,
         "whipDiff": 0.393,
         "k9Diff": 0.35,
@@ -20570,7 +20576,9 @@
           "homeML": -149,
           "awayPct": 43,
           "homePct": 57
-        }
+        },
+        "scoreMargin": 3,
+        "nearMiss": false
       }
     ],
     "kprop": [
@@ -82179,17 +82187,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 6,
+        "finalIP": 6.666666666666667,
+        "finalPitches": 116,
+        "finalBB": 5,
+        "finalHits": 6,
+        "finalBF": 31,
         "k9": 9.2,
         "projIP": 6.27,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|KPROP|tyler mahle",
@@ -82204,17 +82213,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 6,
+        "finalIP": 7,
+        "finalPitches": 95,
+        "finalBB": 1,
+        "finalHits": 6,
+        "finalBF": 28,
         "k9": 7.87,
         "projIP": 5.52,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|KPROP|sean burke",
@@ -82229,17 +82239,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 8,
+        "finalIP": 4,
+        "finalPitches": 72,
+        "finalBB": 0,
+        "finalHits": 4,
+        "finalBF": 16,
         "k9": 9.51,
         "projIP": 6.37,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|KPROP|hunter brown",
@@ -82254,17 +82265,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 2,
+        "finalIP": 0.6666666666666666,
+        "finalPitches": 36,
+        "finalBB": 1,
+        "finalHits": 5,
+        "finalBF": 9,
         "k9": 11.75,
         "projIP": 5.36,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|KPROP|sonny gray",
@@ -82279,17 +82291,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 5,
+        "finalIP": 4.666666666666667,
+        "finalPitches": 70,
+        "finalBB": 0,
+        "finalHits": 6,
+        "finalBF": 19,
         "k9": 7.85,
         "projIP": 5.83,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|KPROP|max fried",
@@ -82304,17 +82317,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 6,
+        "finalIP": 6,
+        "finalPitches": 98,
+        "finalBB": 1,
+        "finalHits": 3,
+        "finalBF": 22,
         "k9": 8.47,
         "projIP": 5.61,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|KPROP|nick pivetta",
@@ -82329,17 +82343,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 4,
+        "finalIP": 3.3333333333333335,
+        "finalPitches": 66,
+        "finalBB": 2,
+        "finalHits": 3,
+        "finalBF": 15,
         "k9": 10.12,
         "projIP": 4.28,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|KPROP|kevin gausman",
@@ -82354,17 +82369,18 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 1,
+        "finalIP": 3.3333333333333335,
+        "finalPitches": 54,
+        "finalBB": 0,
+        "finalHits": 5,
+        "finalBF": 15,
         "k9": 10.47,
         "projIP": 5.54,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       }
     ],
     "premium": [
@@ -123385,8 +123401,8 @@
         "opp": "PHI",
         "gamePk": 849841,
         "score": 66,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "hrScoreSource": "legacy",
         "liveScore": 12,
         "isOnFire": true,
@@ -123415,7 +123431,8 @@
         "zoneFitScore": null,
         "zoneFitLabel": null,
         "startBFShare": 1,
-        "pitcherWorkloadReliable": false
+        "pitcherWorkloadReliable": false,
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|HRTHREAT|663586",
@@ -123426,8 +123443,8 @@
         "opp": "PHI",
         "gamePk": 849841,
         "score": 60,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "hrScoreSource": "legacy",
         "liveScore": 12,
         "isOnFire": true,
@@ -123456,7 +123473,8 @@
         "zoneFitScore": null,
         "zoneFitLabel": null,
         "startBFShare": 1,
-        "pitcherWorkloadReliable": false
+        "pitcherWorkloadReliable": false,
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|HRTHREAT|678246",
@@ -123467,8 +123485,8 @@
         "opp": "HOU",
         "gamePk": 849846,
         "score": 61,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "hrScoreSource": "legacy",
         "liveScore": 12,
         "isOnFire": true,
@@ -123497,7 +123515,8 @@
         "zoneFitScore": null,
         "zoneFitLabel": null,
         "startBFShare": 1,
-        "pitcherWorkloadReliable": false
+        "pitcherWorkloadReliable": false,
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|HRTHREAT|665161",
@@ -123508,8 +123527,8 @@
         "opp": "CWS",
         "gamePk": 849846,
         "score": 59,
-        "result": "pending",
-        "actual": null,
+        "result": "win",
+        "actual": 1,
         "hrScoreSource": "legacy",
         "liveScore": 12,
         "isOnFire": true,
@@ -123538,7 +123557,8 @@
         "zoneFitScore": null,
         "zoneFitLabel": null,
         "startBFShare": 1,
-        "pitcherWorkloadReliable": false
+        "pitcherWorkloadReliable": false,
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|HRTHREAT|670541",
@@ -123549,8 +123569,8 @@
         "opp": "CWS",
         "gamePk": 849846,
         "score": 65,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "hrScoreSource": "legacy",
         "liveScore": 12,
         "isOnFire": true,
@@ -123579,7 +123599,8 @@
         "zoneFitScore": null,
         "zoneFitLabel": null,
         "startBFShare": 1,
-        "pitcherWorkloadReliable": false
+        "pitcherWorkloadReliable": false,
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|HRTHREAT|669224",
@@ -123590,8 +123611,8 @@
         "opp": "BOS",
         "gamePk": 849848,
         "score": 59,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "hrScoreSource": "legacy",
         "liveScore": 12,
         "isOnFire": true,
@@ -123620,7 +123641,8 @@
         "zoneFitScore": null,
         "zoneFitLabel": null,
         "startBFShare": 1,
-        "pitcherWorkloadReliable": false
+        "pitcherWorkloadReliable": false,
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|HRTHREAT|808959",
@@ -123631,8 +123653,8 @@
         "opp": "HOU",
         "gamePk": 849846,
         "score": 68,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "hrScoreSource": "legacy",
         "liveScore": 12,
         "isOnFire": true,
@@ -123661,7 +123683,8 @@
         "zoneFitScore": 67,
         "zoneFitLabel": "Playable Zone Fit",
         "startBFShare": 1.009090909090909,
-        "pitcherWorkloadReliable": true
+        "pitcherWorkloadReliable": true,
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|HRTHREAT|592518",
@@ -123672,8 +123695,8 @@
         "opp": "CHC",
         "gamePk": 849842,
         "score": 61,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "hrScoreSource": "legacy",
         "liveScore": 12,
         "isOnFire": true,
@@ -123702,7 +123725,8 @@
         "zoneFitScore": 75,
         "zoneFitLabel": "Strong Zone Fit",
         "startBFShare": 1.0636363636363635,
-        "pitcherWorkloadReliable": true
+        "pitcherWorkloadReliable": true,
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|HRTHREAT|657757",
@@ -123713,8 +123737,8 @@
         "opp": "CHC",
         "gamePk": 849842,
         "score": 64,
-        "result": "pending",
-        "actual": null,
+        "result": "win",
+        "actual": 1,
         "hrScoreSource": "legacy",
         "liveScore": 12,
         "isOnFire": true,
@@ -123743,7 +123767,8 @@
         "zoneFitScore": 84,
         "zoneFitLabel": "Strong Zone Fit",
         "startBFShare": 1.0636363636363635,
-        "pitcherWorkloadReliable": true
+        "pitcherWorkloadReliable": true,
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|HRTHREAT|664034",
@@ -123754,8 +123779,8 @@
         "opp": "CHC",
         "gamePk": 849842,
         "score": 61,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "hrScoreSource": "legacy",
         "liveScore": 12,
         "isOnFire": true,
@@ -123784,7 +123809,8 @@
         "zoneFitScore": 75,
         "zoneFitLabel": "Strong Zone Fit",
         "startBFShare": 1.0636363636363635,
-        "pitcherWorkloadReliable": true
+        "pitcherWorkloadReliable": true,
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|HRTHREAT|665487",
@@ -123795,8 +123821,8 @@
         "opp": "CHC",
         "gamePk": 849842,
         "score": 67,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "hrScoreSource": "legacy",
         "liveScore": 12,
         "isOnFire": true,
@@ -123825,7 +123851,8 @@
         "zoneFitScore": 75,
         "zoneFitLabel": "Strong Zone Fit",
         "startBFShare": 1.0636363636363635,
-        "pitcherWorkloadReliable": true
+        "pitcherWorkloadReliable": true,
+        "nearMiss": false
       },
       {
         "key": "2026-09-30|HRTHREAT|669134",
@@ -123836,8 +123863,8 @@
         "opp": "CHC",
         "gamePk": 849842,
         "score": 61,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "hrScoreSource": "legacy",
         "liveScore": 12,
         "isOnFire": true,
@@ -123866,22 +123893,23 @@
         "zoneFitScore": 74,
         "zoneFitLabel": "Strong Zone Fit",
         "startBFShare": 1.0636363636363635,
-        "pitcherWorkloadReliable": true
+        "pitcherWorkloadReliable": true,
+        "nearMiss": false
       }
     ]
   },
   "allTime": {
     "drp": {
-      "wins": 524,
-      "losses": 397,
+      "wins": 526,
+      "losses": 399,
       "pushes": 0,
-      "total": 921
+      "total": 925
     },
     "kprop": {
-      "wins": 1009,
-      "losses": 878,
+      "wins": 1015,
+      "losses": 880,
       "pushes": 0,
-      "total": 1887
+      "total": 1895
     },
     "premium": {
       "wins": 116,
@@ -123890,11 +123918,11 @@
       "total": 597
     },
     "hrThreat": {
-      "wins": 86,
-      "losses": 459,
+      "wins": 88,
+      "losses": 469,
       "pushes": 0,
-      "total": 545
+      "total": 557
     }
   },
-  "oddsLastFetchedDate": "2026-09-30"
+  "oddsLastFetchedDate": "2026-10-01"
 }
