@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-10-03T17:53:03.761Z",
+  "generatedAt": "2026-10-03T23:02:35.338Z",
   "date": "2026-10-03",
   "games": {
     "849828": {
-      "updatedAt": "2026-10-03T17:53:03.761Z",
+      "updatedAt": "2026-10-03T23:02:35.338Z",
       "teams": {
         "home": {
           "abbr": "LAD",
           "confirmed": true,
-          "confirmedAt": "2026-10-03T17:53:03.761Z",
+          "confirmedAt": "2026-10-03T23:02:35.338Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -58,16 +58,68 @@
             }
           ]
         },
-        "away": null
+        "away": {
+          "abbr": "ATL",
+          "confirmed": true,
+          "confirmedAt": "2026-10-03T23:02:35.338Z",
+          "source": "mlb-schedule-lineups",
+          "lineup": [
+            {
+              "id": 686948,
+              "name": "Drake Baldwin",
+              "pos": "DH"
+            },
+            {
+              "id": 660670,
+              "name": "Ronald Acuña Jr.",
+              "pos": "RF"
+            },
+            {
+              "id": 645277,
+              "name": "Ozzie Albies",
+              "pos": "2B"
+            },
+            {
+              "id": 621566,
+              "name": "Matt Olson",
+              "pos": "1B"
+            },
+            {
+              "id": 671739,
+              "name": "Michael Harris II",
+              "pos": "CF"
+            },
+            {
+              "id": 643289,
+              "name": "Mauricio Dubón",
+              "pos": "LF"
+            },
+            {
+              "id": 663586,
+              "name": "Austin Riley",
+              "pos": "3B"
+            },
+            {
+              "id": 669221,
+              "name": "Sean Murphy",
+              "pos": "C"
+            },
+            {
+              "id": 673490,
+              "name": "Ha-Seong Kim",
+              "pos": "SS"
+            }
+          ]
+        }
       }
     },
     "849829": {
-      "updatedAt": "2026-10-03T17:53:03.761Z",
+      "updatedAt": "2026-10-03T23:02:35.338Z",
       "teams": {
         "home": {
           "abbr": "CLE",
           "confirmed": true,
-          "confirmedAt": "2026-10-03T17:53:03.761Z",
+          "confirmedAt": "2026-10-03T23:02:35.338Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -120,7 +172,7 @@
         "away": {
           "abbr": "CWS",
           "confirmed": true,
-          "confirmedAt": "2026-10-03T17:53:03.761Z",
+          "confirmedAt": "2026-10-03T23:02:35.338Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -167,6 +219,228 @@
               "id": 695657,
               "name": "Colson Montgomery",
               "pos": "SS"
+            }
+          ]
+        }
+      }
+    },
+    "849830": {
+      "updatedAt": "2026-10-03T23:02:35.338Z",
+      "teams": {
+        "home": {
+          "abbr": "MIL",
+          "confirmed": true,
+          "confirmedAt": "2026-10-03T23:02:35.338Z",
+          "source": "mlb-schedule-lineups",
+          "lineup": [
+            {
+              "id": 694192,
+              "name": "Jackson Chourio",
+              "pos": "LF"
+            },
+            {
+              "id": 668930,
+              "name": "Brice Turang",
+              "pos": "2B"
+            },
+            {
+              "id": 661388,
+              "name": "William Contreras",
+              "pos": "C"
+            },
+            {
+              "id": 641343,
+              "name": "Jake Bauers",
+              "pos": "1B"
+            },
+            {
+              "id": 592885,
+              "name": "Christian Yelich",
+              "pos": "DH"
+            },
+            {
+              "id": 806198,
+              "name": "Cooper Pratt",
+              "pos": "SS"
+            },
+            {
+              "id": 800325,
+              "name": "Luis Lara",
+              "pos": "RF"
+            },
+            {
+              "id": 669003,
+              "name": "Garrett Mitchell",
+              "pos": "CF"
+            },
+            {
+              "id": 687401,
+              "name": "Joey Ortiz",
+              "pos": "3B"
+            }
+          ]
+        },
+        "away": {
+          "abbr": "SD",
+          "confirmed": true,
+          "confirmedAt": "2026-10-03T23:02:35.338Z",
+          "source": "mlb-schedule-lineups",
+          "lineup": [
+            {
+              "id": 665487,
+              "name": "Fernando Tatis Jr.",
+              "pos": "RF"
+            },
+            {
+              "id": 687957,
+              "name": "Dustin Harris",
+              "pos": "LF"
+            },
+            {
+              "id": 592518,
+              "name": "Manny Machado",
+              "pos": "3B"
+            },
+            {
+              "id": 664034,
+              "name": "Ty France",
+              "pos": "1B"
+            },
+            {
+              "id": 701538,
+              "name": "Jackson Merrill",
+              "pos": "CF"
+            },
+            {
+              "id": 593428,
+              "name": "Xander Bogaerts",
+              "pos": "SS"
+            },
+            {
+              "id": 806956,
+              "name": "Ethan Salas",
+              "pos": "C"
+            },
+            {
+              "id": 669134,
+              "name": "Luis Campusano",
+              "pos": "DH"
+            },
+            {
+              "id": 630105,
+              "name": "Jake Cronenworth",
+              "pos": "2B"
+            }
+          ]
+        }
+      }
+    },
+    "849835": {
+      "updatedAt": "2026-10-03T23:02:35.338Z",
+      "teams": {
+        "home": {
+          "abbr": "TB",
+          "confirmed": true,
+          "confirmedAt": "2026-10-03T23:02:35.338Z",
+          "source": "mlb-schedule-lineups",
+          "lineup": [
+            {
+              "id": 650490,
+              "name": "Yandy Díaz",
+              "pos": "DH"
+            },
+            {
+              "id": 666018,
+              "name": "Jonathan Aranda",
+              "pos": "1B"
+            },
+            {
+              "id": 691406,
+              "name": "Junior Caminero",
+              "pos": "3B"
+            },
+            {
+              "id": 689414,
+              "name": "Liam Hicks",
+              "pos": "C"
+            },
+            {
+              "id": 802415,
+              "name": "Chandler Simpson",
+              "pos": "LF"
+            },
+            {
+              "id": 683748,
+              "name": "Victor Mesa Jr.",
+              "pos": "RF"
+            },
+            {
+              "id": 676356,
+              "name": "Jonny DeLuca",
+              "pos": "CF"
+            },
+            {
+              "id": 680700,
+              "name": "Richie Palacios",
+              "pos": "2B"
+            },
+            {
+              "id": 670764,
+              "name": "Taylor Walls",
+              "pos": "SS"
+            }
+          ]
+        },
+        "away": {
+          "abbr": "NYY",
+          "confirmed": true,
+          "confirmedAt": "2026-10-03T23:02:35.338Z",
+          "source": "mlb-schedule-lineups",
+          "lineup": [
+            {
+              "id": 700250,
+              "name": "Ben Rice",
+              "pos": "DH"
+            },
+            {
+              "id": 641355,
+              "name": "Cody Bellinger",
+              "pos": "LF"
+            },
+            {
+              "id": 671277,
+              "name": "Luis García Jr.",
+              "pos": "1B"
+            },
+            {
+              "id": 682987,
+              "name": "Spencer Jones",
+              "pos": "RF"
+            },
+            {
+              "id": 806146,
+              "name": "George Lombard Jr.",
+              "pos": "SS"
+            },
+            {
+              "id": 665862,
+              "name": "Jazz Chisholm Jr.",
+              "pos": "2B"
+            },
+            {
+              "id": 663757,
+              "name": "Trent Grisham",
+              "pos": "CF"
+            },
+            {
+              "id": 669224,
+              "name": "Austin Wells",
+              "pos": "C"
+            },
+            {
+              "id": 641857,
+              "name": "Ryan McMahon",
+              "pos": "3B"
             }
           ]
         }
