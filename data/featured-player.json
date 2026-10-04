@@ -1,16 +1,16 @@
 {
-  "date": "2026-10-03",
-  "generatedAt": "2026-10-03T23:02:36.875Z",
+  "date": "2026-10-04",
+  "generatedAt": "2026-10-04T05:55:36.707Z",
   "player": {
     "id": 621566,
     "name": "Matt Olson",
     "teamAbbr": "ATL",
     "oppAbbr": "LAD",
-    "gamePk": 849828,
-    "pitcherId": 669373,
-    "pitcherName": "Tarik Skubal",
-    "liveScore": 26,
-    "spotlightScore": 32,
+    "gamePk": 849823,
+    "pitcherId": 605483,
+    "pitcherName": "Blake Snell",
+    "liveScore": 30,
+    "spotlightScore": 36,
     "avg": 0.25872121621621624,
     "obp": 0.30883,
     "slg": 0.4927775675675676,
@@ -25,11 +25,15 @@
     "isDue": false,
     "hasNearHR": true,
     "matchupEdge": null,
-    "statcast": null,
+    "statcast": {
+      "xslg": 0.502292859606761,
+      "hardHitPct": 52.08485684718869,
+      "pitches": 2903
+    },
     "reasons": [
       {
         "icon": "💣",
-        "text": "Projects at a real 26.0% HR probability today, from the same model behind the HR Threats board."
+        "text": "Projects at a real 30.0% HR probability today, from the same model behind the HR Threats board."
       },
       {
         "icon": "🔥",
@@ -40,6 +44,6 @@
         "text": "Real warning-track power in the last 10 games — recent long fly outs that haven't left the yard yet."
       }
     ],
-    "confirmedToday": false
+    "confirmedToday": true
   }
 }
