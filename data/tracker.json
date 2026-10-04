@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-04T18:05:32.979Z",
+  "generatedAt": "2026-10-04T23:08:23.605Z",
   "market": {
     "drp": [
       {
@@ -20712,6 +20712,30 @@
           "provider": "DraftKings",
           "awayML": 177,
           "homeML": -217,
+          "awayPct": 35,
+          "homePct": 65
+        }
+      },
+      {
+        "key": "2026-10-04|DRP|ATL-LAD",
+        "date": "2026-10-04",
+        "gamePk": 849823,
+        "awayTeam": "ATL",
+        "homeTeam": "LAD",
+        "pick": "LAD",
+        "pickPct": 51,
+        "result": "pending",
+        "actualWinner": null,
+        "eraDiff": -0.45,
+        "whipDiff": -0.527,
+        "k9Diff": -6.84,
+        "awayRecordPct": 0,
+        "homeRecordPct": 1,
+        "isDayGame": false,
+        "marketOdds": {
+          "provider": "DraftKings",
+          "awayML": 173,
+          "homeML": -212,
           "awayPct": 35,
           "homePct": 65
         }
@@ -82907,6 +82931,86 @@
         "projIP": 4.69,
         "oppKpct": 0.22,
         "lineup": []
+      },
+      {
+        "key": "2026-10-04|KPROP|ray kerr",
+        "date": "2026-10-04",
+        "gamePk": 849823,
+        "pitcherId": 678061,
+        "pitcherName": "Ray Kerr",
+        "team": "ATL",
+        "opp": "LAD",
+        "projK": 3.6,
+        "line": 2.5,
+        "lineSource": "model",
+        "book": null,
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 5.11,
+        "projIP": 7,
+        "oppKpct": 0.183,
+        "lineup": [
+          {
+            "id": 605141,
+            "name": "Mookie Betts",
+            "battingOrder": 1,
+            "kPct": 0.11
+          },
+          {
+            "id": 660271,
+            "name": "Shohei Ohtani",
+            "battingOrder": 2,
+            "kPct": 0.246
+          },
+          {
+            "id": 669257,
+            "name": "Will Smith",
+            "battingOrder": 3,
+            "kPct": 0.163
+          },
+          {
+            "id": 518692,
+            "name": "Freddie Freeman",
+            "battingOrder": 4,
+            "kPct": 0.177
+          },
+          {
+            "id": 606192,
+            "name": "Teoscar Hernández",
+            "battingOrder": 5,
+            "kPct": 0.275
+          },
+          {
+            "id": 663656,
+            "name": "Kyle Tucker",
+            "battingOrder": 6,
+            "kPct": 0.167
+          },
+          {
+            "id": 681624,
+            "name": "Andy Pages",
+            "battingOrder": 7,
+            "kPct": 0.197
+          },
+          {
+            "id": 500743,
+            "name": "Miguel Rojas",
+            "battingOrder": 8,
+            "kPct": 0.107
+          },
+          {
+            "id": 669242,
+            "name": "Tommy Edman",
+            "battingOrder": 9,
+            "kPct": 0.202
+          }
+        ]
       }
     ],
     "premium": [
@@ -125501,6 +125605,47 @@
         "platoonFavorable": true,
         "matchupEdge": 76,
         "zoneFitScore": 68,
+        "zoneFitLabel": "Playable Zone Fit",
+        "startBFShare": 0.8229665071770336,
+        "pitcherWorkloadReliable": true
+      },
+      {
+        "key": "2026-10-04|HRTHREAT|686948",
+        "date": "2026-10-04",
+        "playerId": 686948,
+        "playerName": "Drake Baldwin",
+        "team": "ATL",
+        "opp": "LAD",
+        "gamePk": 849823,
+        "score": 67,
+        "result": "pending",
+        "actual": null,
+        "hrScoreSource": "legacy",
+        "liveScore": 12,
+        "isOnFire": true,
+        "isFavorable": false,
+        "isDrought": false,
+        "isDue": false,
+        "hasNearHR": true,
+        "pitcherId": 605483,
+        "pitcherName": "Blake Snell",
+        "pitcherHr9": 0,
+        "pitcherAvgAllowed": 0.203,
+        "pitcherSlgAllowed": 0.248,
+        "pitcherWhip": 1.1,
+        "batterOPS": 0.817,
+        "batterISO": 0.17200406976744181,
+        "batterBarrelPct": 12.9,
+        "batterAtBats": 549,
+        "parkFactor": 101,
+        "windFactor": 1,
+        "temperatureFactor": 1.054,
+        "pitcher2kSuppressionDelta": 0.3,
+        "platoonAB": 204,
+        "platoonOps": 0.695,
+        "platoonFavorable": false,
+        "matchupEdge": 70,
+        "zoneFitScore": 63,
         "zoneFitLabel": "Playable Zone Fit",
         "startBFShare": 0.8229665071770336,
         "pitcherWorkloadReliable": true
