@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-04T23:08:23.622Z",
+  "generatedAt": "2026-10-05T05:43:26.878Z",
   "entries": [
     {
       "key": "2026-07-20|824410",
@@ -13838,9 +13838,9 @@
       "simPickPct": 63,
       "simAwayRuns": 3.28,
       "simHomeRuns": 4.9,
-      "actualWinner": null,
-      "formulaResult": "pending",
-      "simResult": "pending"
+      "actualWinner": "MIL",
+      "formulaResult": "win",
+      "simResult": "win"
     },
     {
       "key": "2026-10-04|849823",
@@ -13854,6 +13854,38 @@
       "simPickPct": 59,
       "simAwayRuns": 2.73,
       "simHomeRuns": 3.42,
+      "actualWinner": "ATL",
+      "formulaResult": "loss",
+      "simResult": "loss"
+    },
+    {
+      "key": "2026-10-05|849834",
+      "date": "2026-10-05",
+      "gamePk": 849834,
+      "awayTeam": "CWS",
+      "homeTeam": "CLE",
+      "formulaPick": "CLE",
+      "formulaPickPct": 58,
+      "simPick": "CLE",
+      "simPickPct": 56,
+      "simAwayRuns": 3.95,
+      "simHomeRuns": 4.66,
+      "actualWinner": null,
+      "formulaResult": "pending",
+      "simResult": "pending"
+    },
+    {
+      "key": "2026-10-05|849839",
+      "date": "2026-10-05",
+      "gamePk": 849839,
+      "awayTeam": "NYY",
+      "homeTeam": "TB",
+      "formulaPick": "NYY",
+      "formulaPickPct": 53,
+      "simPick": "NYY",
+      "simPickPct": 61,
+      "simAwayRuns": 3.94,
+      "simHomeRuns": 2.78,
       "actualWinner": null,
       "formulaResult": "pending",
       "simResult": "pending"
@@ -13861,16 +13893,16 @@
   ],
   "summary": {
     "formula": {
-      "wins": 491,
-      "losses": 368,
+      "wins": 492,
+      "losses": 369,
       "pushes": 0,
-      "total": 859
+      "total": 861
     },
     "simulation": {
-      "wins": 483,
-      "losses": 376,
+      "wins": 484,
+      "losses": 377,
       "pushes": 0,
-      "total": 859
+      "total": 861
     }
   }
 }
