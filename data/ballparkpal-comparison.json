@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-06T01:17:41.673Z",
+  "generatedAt": "2026-10-06T06:23:17.766Z",
   "entries": [
     {
       "key": "2026-07-20|824410",
@@ -12136,9 +12136,9 @@
       "ourPickPct": 58,
       "bpPick": "CLE",
       "bpPickPct": 62,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "CWS",
+      "ourResult": "loss",
+      "bpResult": "loss"
     },
     {
       "key": "2026-10-05|849839",
@@ -12150,6 +12150,34 @@
       "ourPickPct": 53,
       "bpPick": "NYY",
       "bpPickPct": 55,
+      "actualWinner": "TB",
+      "ourResult": "loss",
+      "bpResult": "loss"
+    },
+    {
+      "key": "2026-10-06|849819",
+      "date": "2026-10-06",
+      "gamePk": 849819,
+      "awayTeam": "LAD",
+      "homeTeam": "ATL",
+      "ourPick": "ATL",
+      "ourPickPct": 52,
+      "bpPick": "LAD",
+      "bpPickPct": 51,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-10-06|849826",
+      "date": "2026-10-06",
+      "gamePk": 849826,
+      "awayTeam": "MIL",
+      "homeTeam": "SD",
+      "ourPick": "SD",
+      "ourPickPct": 56,
+      "bpPick": "SD",
+      "bpPickPct": 59,
       "actualWinner": null,
       "ourResult": "pending",
       "bpResult": "pending"
@@ -12158,15 +12186,15 @@
   "summary": {
     "ours": {
       "wins": 492,
-      "losses": 369,
+      "losses": 371,
       "pushes": 0,
-      "total": 861
+      "total": 863
     },
     "ballparkPal": {
       "wins": 502,
-      "losses": 359,
+      "losses": 361,
       "pushes": 0,
-      "total": 861
+      "total": 863
     }
   }
 }
