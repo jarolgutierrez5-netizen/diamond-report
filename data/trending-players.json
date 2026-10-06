@@ -1,6 +1,6 @@
 {
   "date": "2026-10-06",
-  "generatedAt": "2026-10-06T06:23:19.761Z",
+  "generatedAt": "2026-10-06T19:27:02.231Z",
   "players": [
     {
       "playerId": 630105,
@@ -148,8 +148,8 @@
       }
     },
     {
-      "playerId": 669242,
-      "name": "Tommy Edman",
+      "playerId": 669257,
+      "name": "Will Smith",
       "type": "batter",
       "trendLabel": "Hot Streak",
       "trendMetric": "HR pace vs season rate (last 10 games)",
@@ -157,47 +157,240 @@
       "trendPctCapped": true,
       "visual": {
         "type": "spray",
-        "label": "Edman Home Runs",
+        "label": "Smith Home Runs",
         "dots": [
           {
-            "xFt": -136.4,
-            "yFt": 367.1,
+            "xFt": -234.5,
+            "yFt": 324.2,
+            "distance": 396
+          },
+          {
+            "xFt": -236.2,
+            "yFt": 356.1,
+            "distance": 422
+          },
+          {
+            "xFt": -40.4,
+            "yFt": 397.5,
+            "distance": 398
+          },
+          {
+            "xFt": -219.1,
+            "yFt": 329.7,
+            "distance": 392
+          },
+          {
+            "xFt": 163.5,
+            "yFt": 356.1,
+            "distance": 388
+          },
+          {
+            "xFt": 57.9,
+            "yFt": 397,
+            "distance": 399
+          },
+          {
+            "xFt": 125,
+            "yFt": 372.3,
             "distance": 390
           },
           {
-            "xFt": 265,
-            "yFt": 310.9,
-            "distance": 400
+            "xFt": 168.2,
+            "yFt": 351.1,
+            "distance": 386
           },
           {
-            "xFt": 197.9,
-            "yFt": 339.5,
-            "distance": 389
+            "xFt": -17.1,
+            "yFt": 416.8,
+            "distance": 414
           },
           {
-            "xFt": 207.3,
-            "yFt": 312.3,
-            "distance": 371
+            "xFt": -99.1,
+            "yFt": 407.9,
+            "distance": 418
           },
           {
-            "xFt": -97,
-            "yFt": 399.3,
-            "distance": 408
+            "xFt": -164.4,
+            "yFt": 448.3,
+            "distance": 370
+          }
+        ]
+      }
+    },
+    {
+      "playerId": 519242,
+      "name": "Chris Sale",
+      "type": "pitcher",
+      "trendLabel": "Trending Up",
+      "trendMetric": "Whiff rate vs season rate (last 3 starts)",
+      "trendPct": 12,
+      "visual": {
+        "type": "whiff",
+        "label": "Sale Whiffs",
+        "dots": [
+          {
+            "plateX": -1.65,
+            "plateZ": 1.81,
+            "pitchName": "Slider"
           },
           {
-            "xFt": -220.3,
-            "yFt": 331.5,
-            "distance": 394
+            "plateX": -0.13,
+            "plateZ": 3.72,
+            "pitchName": "4-Seam Fastball"
           },
           {
-            "xFt": 131.2,
-            "yFt": 366.9,
-            "distance": 387
+            "plateX": -1.93,
+            "plateZ": 0.04,
+            "pitchName": "Slider"
           },
           {
-            "xFt": 13.2,
-            "yFt": 430.9,
-            "distance": 428
+            "plateX": -0.91,
+            "plateZ": 2.12,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": -0.77,
+            "plateZ": 1.1,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": -1.09,
+            "plateZ": 0.04,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": 0.62,
+            "plateZ": 0.71,
+            "pitchName": "Changeup"
+          },
+          {
+            "plateX": -1.34,
+            "plateZ": 0.84,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": 0.51,
+            "plateZ": 2.84,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": -0.04,
+            "plateZ": 1.65,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": -1.76,
+            "plateZ": 1.84,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": -0.46,
+            "plateZ": 1.21,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": -1.13,
+            "plateZ": 1.92,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": -0.37,
+            "plateZ": 3.26,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": -0.15,
+            "plateZ": 3.47,
+            "pitchName": "4-Seam Fastball"
+          }
+        ]
+      }
+    },
+    {
+      "playerId": 808967,
+      "name": "Yoshinobu Yamamoto",
+      "type": "pitcher",
+      "trendLabel": "Trending Up",
+      "trendMetric": "Whiff rate vs season rate (last 3 starts)",
+      "trendPct": 6,
+      "visual": {
+        "type": "whiff",
+        "label": "Yamamoto Whiffs",
+        "dots": [
+          {
+            "plateX": 0.64,
+            "plateZ": 3.23,
+            "pitchName": "Sinker"
+          },
+          {
+            "plateX": 0.47,
+            "plateZ": 0.17,
+            "pitchName": "Curveball"
+          },
+          {
+            "plateX": 0.78,
+            "plateZ": 1.48,
+            "pitchName": "Split-Finger"
+          },
+          {
+            "plateX": 1.05,
+            "plateZ": 2.82,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": -1.11,
+            "plateZ": 1.72,
+            "pitchName": "Split-Finger"
+          },
+          {
+            "plateX": 0.46,
+            "plateZ": 1.63,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": -0.59,
+            "plateZ": 0.88,
+            "pitchName": "Split-Finger"
+          },
+          {
+            "plateX": 0.55,
+            "plateZ": 1.34,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": -0.4,
+            "plateZ": 1.93,
+            "pitchName": "Sinker"
+          },
+          {
+            "plateX": 0.03,
+            "plateZ": 2.02,
+            "pitchName": "Sinker"
+          },
+          {
+            "plateX": -0.02,
+            "plateZ": 3.23,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": 0.74,
+            "plateZ": 0.69,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": 0.58,
+            "plateZ": 1.41,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": -0.05,
+            "plateZ": 1.73,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": 0.53,
+            "plateZ": 0.93,
+            "pitchName": "Curveball"
           }
         ]
       }
