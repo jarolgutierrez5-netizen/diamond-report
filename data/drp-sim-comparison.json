@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-06T23:47:57.163Z",
+  "generatedAt": "2026-10-07T06:02:40.329Z",
   "entries": [
     {
       "key": "2026-07-20|824410",
@@ -13902,9 +13902,9 @@
       "simPickPct": 56,
       "simAwayRuns": 3.89,
       "simHomeRuns": 3.13,
-      "actualWinner": null,
-      "formulaResult": "pending",
-      "simResult": "pending"
+      "actualWinner": "LAD",
+      "formulaResult": "loss",
+      "simResult": "win"
     },
     {
       "key": "2026-10-06|849826",
@@ -13918,6 +13918,54 @@
       "simPickPct": 52,
       "simAwayRuns": 3.9,
       "simHomeRuns": 4.25,
+      "actualWinner": "SD",
+      "formulaResult": "win",
+      "simResult": "win"
+    },
+    {
+      "key": "2026-10-07|849833",
+      "date": "2026-10-07",
+      "gamePk": 849833,
+      "awayTeam": "CLE",
+      "homeTeam": "CWS",
+      "formulaPick": "CLE",
+      "formulaPickPct": 51,
+      "simPick": "CWS",
+      "simPickPct": 58,
+      "simAwayRuns": 3.55,
+      "simHomeRuns": 4.2,
+      "actualWinner": null,
+      "formulaResult": "pending",
+      "simResult": "pending"
+    },
+    {
+      "key": "2026-10-07|849822",
+      "date": "2026-10-07",
+      "gamePk": 849822,
+      "awayTeam": "LAD",
+      "homeTeam": "ATL",
+      "formulaPick": "ATL",
+      "formulaPickPct": 50,
+      "simPick": "LAD",
+      "simPickPct": 64,
+      "simAwayRuns": 4.82,
+      "simHomeRuns": 3.27,
+      "actualWinner": null,
+      "formulaResult": "pending",
+      "simResult": "pending"
+    },
+    {
+      "key": "2026-10-07|849838",
+      "date": "2026-10-07",
+      "gamePk": 849838,
+      "awayTeam": "TB",
+      "homeTeam": "NYY",
+      "formulaPick": "NYY",
+      "formulaPickPct": 54,
+      "simPick": "NYY",
+      "simPickPct": 60,
+      "simAwayRuns": 2.65,
+      "simHomeRuns": 3.61,
       "actualWinner": null,
       "formulaResult": "pending",
       "simResult": "pending"
@@ -13925,16 +13973,16 @@
   ],
   "summary": {
     "formula": {
-      "wins": 492,
-      "losses": 371,
+      "wins": 493,
+      "losses": 372,
       "pushes": 0,
-      "total": 863
+      "total": 865
     },
     "simulation": {
-      "wins": 484,
+      "wins": 486,
       "losses": 379,
       "pushes": 0,
-      "total": 863
+      "total": 865
     }
   }
 }

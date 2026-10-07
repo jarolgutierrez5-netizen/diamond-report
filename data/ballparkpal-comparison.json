@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-06T23:47:57.161Z",
+  "generatedAt": "2026-10-07T06:02:40.327Z",
   "entries": [
     {
       "key": "2026-07-20|824410",
@@ -12164,9 +12164,9 @@
       "ourPickPct": 52,
       "bpPick": "LAD",
       "bpPickPct": 51,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "LAD",
+      "ourResult": "loss",
+      "bpResult": "win"
     },
     {
       "key": "2026-10-06|849826",
@@ -12178,6 +12178,48 @@
       "ourPickPct": 56,
       "bpPick": "SD",
       "bpPickPct": 59,
+      "actualWinner": "SD",
+      "ourResult": "win",
+      "bpResult": "win"
+    },
+    {
+      "key": "2026-10-07|849833",
+      "date": "2026-10-07",
+      "gamePk": 849833,
+      "awayTeam": "CLE",
+      "homeTeam": "CWS",
+      "ourPick": "CLE",
+      "ourPickPct": 51,
+      "bpPick": "CLE",
+      "bpPickPct": 51,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-10-07|849822",
+      "date": "2026-10-07",
+      "gamePk": 849822,
+      "awayTeam": "LAD",
+      "homeTeam": "ATL",
+      "ourPick": "ATL",
+      "ourPickPct": 50,
+      "bpPick": "LAD",
+      "bpPickPct": 56,
+      "actualWinner": null,
+      "ourResult": "pending",
+      "bpResult": "pending"
+    },
+    {
+      "key": "2026-10-07|849838",
+      "date": "2026-10-07",
+      "gamePk": 849838,
+      "awayTeam": "TB",
+      "homeTeam": "NYY",
+      "ourPick": "NYY",
+      "ourPickPct": 54,
+      "bpPick": "NYY",
+      "bpPickPct": 59,
       "actualWinner": null,
       "ourResult": "pending",
       "bpResult": "pending"
@@ -12185,16 +12227,16 @@
   ],
   "summary": {
     "ours": {
-      "wins": 492,
-      "losses": 371,
+      "wins": 493,
+      "losses": 372,
       "pushes": 0,
-      "total": 863
+      "total": 865
     },
     "ballparkPal": {
-      "wins": 502,
+      "wins": 504,
       "losses": 361,
       "pushes": 0,
-      "total": 863
+      "total": 865
     }
   }
 }
