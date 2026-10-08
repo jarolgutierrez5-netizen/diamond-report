@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-08T00:11:41.580Z",
+  "generatedAt": "2026-10-08T06:07:23.715Z",
   "entries": [
     {
       "key": "2026-07-20|824410",
@@ -12192,9 +12192,9 @@
       "ourPickPct": 51,
       "bpPick": "CLE",
       "bpPickPct": 51,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "CLE",
+      "ourResult": "win",
+      "bpResult": "win"
     },
     {
       "key": "2026-10-07|849822",
@@ -12206,9 +12206,9 @@
       "ourPickPct": 50,
       "bpPick": "LAD",
       "bpPickPct": 56,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "LAD",
+      "ourResult": "loss",
+      "bpResult": "win"
     },
     {
       "key": "2026-10-07|849838",
@@ -12220,9 +12220,9 @@
       "ourPickPct": 54,
       "bpPick": "NYY",
       "bpPickPct": 59,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "TB",
+      "ourResult": "loss",
+      "bpResult": "loss"
     },
     {
       "key": "2026-10-07|849827",
@@ -12234,6 +12234,20 @@
       "ourPickPct": 53,
       "bpPick": "SD",
       "bpPickPct": 61,
+      "actualWinner": "MIL",
+      "ourResult": "win",
+      "bpResult": "loss"
+    },
+    {
+      "key": "2026-10-08|849832",
+      "date": "2026-10-08",
+      "gamePk": 849832,
+      "awayTeam": "CLE",
+      "homeTeam": "CWS",
+      "ourPick": "CWS",
+      "ourPickPct": 53,
+      "bpPick": "CLE",
+      "bpPickPct": 51,
       "actualWinner": null,
       "ourResult": "pending",
       "bpResult": "pending"
@@ -12241,16 +12255,16 @@
   ],
   "summary": {
     "ours": {
-      "wins": 493,
-      "losses": 372,
+      "wins": 495,
+      "losses": 374,
       "pushes": 0,
-      "total": 865
+      "total": 869
     },
     "ballparkPal": {
-      "wins": 504,
-      "losses": 361,
+      "wins": 506,
+      "losses": 363,
       "pushes": 0,
-      "total": 865
+      "total": 869
     }
   }
 }

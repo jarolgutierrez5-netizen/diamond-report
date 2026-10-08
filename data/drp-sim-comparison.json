@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-08T00:11:41.661Z",
+  "generatedAt": "2026-10-08T06:07:23.716Z",
   "entries": [
     {
       "key": "2026-07-20|824410",
@@ -13934,9 +13934,9 @@
       "simPickPct": 58,
       "simAwayRuns": 3.55,
       "simHomeRuns": 4.2,
-      "actualWinner": null,
-      "formulaResult": "pending",
-      "simResult": "pending"
+      "actualWinner": "CLE",
+      "formulaResult": "win",
+      "simResult": "loss"
     },
     {
       "key": "2026-10-07|849822",
@@ -13950,9 +13950,9 @@
       "simPickPct": 64,
       "simAwayRuns": 4.82,
       "simHomeRuns": 3.27,
-      "actualWinner": null,
-      "formulaResult": "pending",
-      "simResult": "pending"
+      "actualWinner": "LAD",
+      "formulaResult": "loss",
+      "simResult": "win"
     },
     {
       "key": "2026-10-07|849838",
@@ -13966,9 +13966,9 @@
       "simPickPct": 60,
       "simAwayRuns": 2.65,
       "simHomeRuns": 3.61,
-      "actualWinner": null,
-      "formulaResult": "pending",
-      "simResult": "pending"
+      "actualWinner": "TB",
+      "formulaResult": "loss",
+      "simResult": "loss"
     },
     {
       "key": "2026-10-07|849827",
@@ -13982,6 +13982,22 @@
       "simPickPct": 60,
       "simAwayRuns": 5.52,
       "simHomeRuns": 4.41,
+      "actualWinner": "MIL",
+      "formulaResult": "win",
+      "simResult": "win"
+    },
+    {
+      "key": "2026-10-08|849832",
+      "date": "2026-10-08",
+      "gamePk": 849832,
+      "awayTeam": "CLE",
+      "homeTeam": "CWS",
+      "formulaPick": "CWS",
+      "formulaPickPct": 53,
+      "simPick": "CWS",
+      "simPickPct": 56,
+      "simAwayRuns": 2.76,
+      "simHomeRuns": 3.44,
       "actualWinner": null,
       "formulaResult": "pending",
       "simResult": "pending"
@@ -13989,16 +14005,16 @@
   ],
   "summary": {
     "formula": {
-      "wins": 493,
-      "losses": 372,
+      "wins": 495,
+      "losses": 374,
       "pushes": 0,
-      "total": 865
+      "total": 869
     },
     "simulation": {
-      "wins": 486,
-      "losses": 379,
+      "wins": 488,
+      "losses": 381,
       "pushes": 0,
-      "total": 865
+      "total": 869
     }
   }
 }
