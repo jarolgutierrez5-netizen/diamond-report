@@ -1,5 +1,7105 @@
 {
-  "generatedAt": "2026-10-09T17:24:03.988Z",
+  "generatedAt": "2026-10-10T16:12:59.378Z",
   "season": 2026,
-  "players": {}
+  "players": {
+    "502054": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 34.5,
+          "pitches": 48,
+          "avg": 0.083,
+          "slg": 0.083,
+          "xslg": 0.274,
+          "xba": 0.23,
+          "woba": 0.123,
+          "xwoba": 0.258,
+          "whiffPct": 30.4,
+          "hardHitPct": 62.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 17.3,
+          "pitches": 24,
+          "avg": 0,
+          "slg": 0,
+          "xslg": 0.202,
+          "xba": 0.177,
+          "woba": 0.233,
+          "xwoba": 0.342,
+          "whiffPct": 40,
+          "hardHitPct": 0,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Slider",
+          "usagePct": 14.4,
+          "pitches": 20,
+          "avg": 0,
+          "slg": 0,
+          "xslg": 0.19,
+          "xba": 0.166,
+          "woba": 0.088,
+          "xwoba": 0.224,
+          "whiffPct": 33.3,
+          "hardHitPct": 50,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 12.9,
+          "pitches": 18,
+          "avg": 0.333,
+          "slg": 0.333,
+          "xslg": 0.635,
+          "xba": 0.505,
+          "woba": 0.4,
+          "xwoba": 0.544,
+          "whiffPct": 0,
+          "hardHitPct": 66.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 12.9,
+          "pitches": 18,
+          "avg": 0.25,
+          "slg": 1,
+          "xslg": 0.823,
+          "xba": 0.23,
+          "woba": 0.5,
+          "xwoba": 0.432,
+          "whiffPct": 57.1,
+          "hardHitPct": 100,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0
+        },
+        "2": {
+          "woba": 0
+        },
+        "3": {
+          "woba": 0.7
+        },
+        "4": {
+          "woba": 0.3
+        },
+        "5": {
+          "woba": 0
+        },
+        "7": {
+          "woba": 0
+        },
+        "8": {
+          "woba": 0.29
+        },
+        "9": {
+          "woba": 0
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0
+          },
+          "2": {
+            "woba": 0
+          },
+          "4": {
+            "woba": 0.9
+          },
+          "5": {
+            "woba": 0
+          },
+          "9": {
+            "woba": 0
+          }
+        },
+        "L": {
+          "2": {
+            "woba": 0
+          },
+          "3": {
+            "woba": 0.7
+          },
+          "4": {
+            "woba": 0
+          },
+          "5": {
+            "woba": 0
+          },
+          "7": {
+            "woba": 0
+          },
+          "8": {
+            "woba": 0.29
+          },
+          "9": {
+            "woba": 0
+          }
+        }
+      },
+      "hrByZone": {
+        "8": {
+          "count": 1,
+          "pct": 100
+        }
+      }
+    },
+    "545341": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 33.1,
+          "pitches": 334,
+          "avg": 0.338,
+          "slg": 0.571,
+          "xslg": 0.52,
+          "xba": 0.331,
+          "woba": 0.39,
+          "xwoba": 0.368,
+          "whiffPct": 16.9,
+          "hardHitPct": 51.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 15.8,
+          "pitches": 159,
+          "avg": 0.31,
+          "slg": 0.548,
+          "xslg": 0.394,
+          "xba": 0.283,
+          "woba": 0.388,
+          "xwoba": 0.319,
+          "whiffPct": 9.7,
+          "hardHitPct": 46.2,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 3
+        },
+        {
+          "name": "Slider",
+          "usagePct": 14.6,
+          "pitches": 147,
+          "avg": 0.2,
+          "slg": 0.375,
+          "xslg": 0.206,
+          "xba": 0.149,
+          "woba": 0.279,
+          "xwoba": 0.2,
+          "whiffPct": 34.9,
+          "hardHitPct": 38.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 13,
+          "pitches": 131,
+          "avg": 0.302,
+          "slg": 0.605,
+          "xslg": 0.478,
+          "xba": 0.274,
+          "woba": 0.401,
+          "xwoba": 0.32,
+          "whiffPct": 34.1,
+          "hardHitPct": 65.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 8.5,
+          "pitches": 86,
+          "avg": 0.182,
+          "slg": 0.273,
+          "xslg": 0.473,
+          "xba": 0.277,
+          "woba": 0.208,
+          "xwoba": 0.335,
+          "whiffPct": 20,
+          "hardHitPct": 50,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 6.9,
+          "pitches": 70,
+          "avg": 0.381,
+          "slg": 1.095,
+          "xslg": 0.927,
+          "xba": 0.407,
+          "woba": 0.607,
+          "xwoba": 0.565,
+          "whiffPct": 35.3,
+          "hardHitPct": 40,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 4
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 6.5,
+          "pitches": 66,
+          "avg": 0.143,
+          "slg": 0.571,
+          "xslg": 0.585,
+          "xba": 0.169,
+          "woba": 0.286,
+          "xwoba": 0.309,
+          "whiffPct": 33.3,
+          "hardHitPct": 57.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 1.5,
+          "pitches": 15,
+          "avg": 0.333,
+          "slg": 0.833,
+          "xslg": 0.544,
+          "xba": 0.262,
+          "woba": 0.483,
+          "xwoba": 0.339,
+          "whiffPct": 30,
+          "hardHitPct": 33.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.256
+        },
+        "2": {
+          "woba": 0.096
+        },
+        "3": {
+          "woba": 0.278
+        },
+        "4": {
+          "woba": 0.394
+        },
+        "5": {
+          "woba": 0.329
+        },
+        "6": {
+          "woba": 0.346
+        },
+        "7": {
+          "woba": 0.397
+        },
+        "8": {
+          "woba": 0.712
+        },
+        "9": {
+          "woba": 0.688
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.229
+          },
+          "2": {
+            "woba": 0
+          },
+          "3": {
+            "woba": 0.417
+          },
+          "4": {
+            "woba": 0.362
+          },
+          "5": {
+            "woba": 0.346
+          },
+          "6": {
+            "woba": 0.313
+          },
+          "7": {
+            "woba": 0
+          },
+          "8": {
+            "woba": 0.519
+          },
+          "9": {
+            "woba": 0.555
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.278
+          },
+          "2": {
+            "woba": 0.114
+          },
+          "3": {
+            "woba": 0.208
+          },
+          "4": {
+            "woba": 0.425
+          },
+          "5": {
+            "woba": 0.32
+          },
+          "6": {
+            "woba": 0.391
+          },
+          "7": {
+            "woba": 0.541
+          },
+          "8": {
+            "woba": 0.782
+          },
+          "9": {
+            "woba": 0.755
+          }
+        }
+      },
+      "hrByZone": {
+        "4": {
+          "count": 2,
+          "pct": 13.3
+        },
+        "5": {
+          "count": 2,
+          "pct": 13.3
+        },
+        "6": {
+          "count": 1,
+          "pct": 6.7
+        },
+        "7": {
+          "count": 1,
+          "pct": 6.7
+        },
+        "8": {
+          "count": 7,
+          "pct": 46.7
+        },
+        "9": {
+          "count": 2,
+          "pct": 13.3
+        }
+      }
+    },
+    "595978": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 33.2,
+          "pitches": 310,
+          "avg": 0.27,
+          "slg": 0.351,
+          "xslg": 0.351,
+          "xba": 0.243,
+          "woba": 0.31,
+          "xwoba": 0.295,
+          "whiffPct": 18.4,
+          "hardHitPct": 31.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 18.6,
+          "pitches": 174,
+          "avg": 0.233,
+          "slg": 0.395,
+          "xslg": 0.29,
+          "xba": 0.224,
+          "woba": 0.39,
+          "xwoba": 0.32,
+          "whiffPct": 9.9,
+          "hardHitPct": 30.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Slider",
+          "usagePct": 14.7,
+          "pitches": 137,
+          "avg": 0.226,
+          "slg": 0.419,
+          "xslg": 0.316,
+          "xba": 0.223,
+          "woba": 0.298,
+          "xwoba": 0.262,
+          "whiffPct": 33.3,
+          "hardHitPct": 34.8,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 10.6,
+          "pitches": 99,
+          "avg": 0.368,
+          "slg": 0.579,
+          "xslg": 0.294,
+          "xba": 0.24,
+          "woba": 0.448,
+          "xwoba": 0.296,
+          "whiffPct": 28.6,
+          "hardHitPct": 40,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 7.8,
+          "pitches": 73,
+          "avg": 0.105,
+          "slg": 0.105,
+          "xslg": 0.159,
+          "xba": 0.139,
+          "woba": 0.09,
+          "xwoba": 0.125,
+          "whiffPct": 37.8,
+          "hardHitPct": 12.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 7.6,
+          "pitches": 71,
+          "avg": 0.278,
+          "slg": 0.333,
+          "xslg": 0.39,
+          "xba": 0.255,
+          "woba": 0.458,
+          "xwoba": 0.316,
+          "whiffPct": 36.8,
+          "hardHitPct": 50,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 6.5,
+          "pitches": 61,
+          "avg": 0.1,
+          "slg": 0.4,
+          "xslg": 0.266,
+          "xba": 0.141,
+          "woba": 0.283,
+          "xwoba": 0.262,
+          "whiffPct": 28.6,
+          "hardHitPct": 28.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 0.5,
+          "pitches": 5,
+          "avg": 1,
+          "slg": 2,
+          "xslg": 1.053,
+          "xba": 0.531,
+          "woba": 1.25,
+          "xwoba": 0.66,
+          "whiffPct": 0,
+          "hardHitPct": 100,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.29
+        },
+        "2": {
+          "woba": 0.586
+        },
+        "3": {
+          "woba": 0.262
+        },
+        "4": {
+          "woba": 0.571
+        },
+        "5": {
+          "woba": 0.212
+        },
+        "6": {
+          "woba": 0.257
+        },
+        "7": {
+          "woba": 0.459
+        },
+        "8": {
+          "woba": 0.328
+        },
+        "9": {
+          "woba": 0.129
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.3
+          },
+          "2": {
+            "woba": 0.717
+          },
+          "3": {
+            "woba": 0
+          },
+          "4": {
+            "woba": 0.553
+          },
+          "5": {
+            "woba": 0.231
+          },
+          "6": {
+            "woba": 0.15
+          },
+          "7": {
+            "woba": 0.58
+          },
+          "8": {
+            "woba": 0.338
+          },
+          "9": {
+            "woba": 0
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.275
+          },
+          "2": {
+            "woba": 0.537
+          },
+          "3": {
+            "woba": 0.34
+          },
+          "4": {
+            "woba": 0.6
+          },
+          "5": {
+            "woba": 0.191
+          },
+          "6": {
+            "woba": 0.4
+          },
+          "7": {
+            "woba": 0.358
+          },
+          "8": {
+            "woba": 0.324
+          },
+          "9": {
+            "woba": 0.338
+          }
+        }
+      },
+      "hrByZone": {
+        "3": {
+          "count": 1,
+          "pct": 16.7
+        },
+        "4": {
+          "count": 2,
+          "pct": 33.3
+        },
+        "5": {
+          "count": 1,
+          "pct": 16.7
+        },
+        "7": {
+          "count": 1,
+          "pct": 16.7
+        },
+        "8": {
+          "count": 1,
+          "pct": 16.7
+        }
+      }
+    },
+    "608070": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 26.5,
+          "pitches": 582,
+          "avg": 0.269,
+          "slg": 0.479,
+          "xslg": 0.48,
+          "xba": 0.297,
+          "woba": 0.36,
+          "xwoba": 0.369,
+          "whiffPct": 13.9,
+          "hardHitPct": 42.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 10
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 16.8,
+          "pitches": 368,
+          "avg": 0.211,
+          "slg": 0.326,
+          "xslg": 0.344,
+          "xba": 0.242,
+          "woba": 0.254,
+          "xwoba": 0.272,
+          "whiffPct": 19.5,
+          "hardHitPct": 38.8,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Slider",
+          "usagePct": 14.5,
+          "pitches": 318,
+          "avg": 0.164,
+          "slg": 0.274,
+          "xslg": 0.351,
+          "xba": 0.214,
+          "woba": 0.279,
+          "xwoba": 0.294,
+          "whiffPct": 20,
+          "hardHitPct": 31.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 3
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 12.6,
+          "pitches": 277,
+          "avg": 0.277,
+          "slg": 0.319,
+          "xslg": 0.411,
+          "xba": 0.296,
+          "woba": 0.323,
+          "xwoba": 0.344,
+          "whiffPct": 9.9,
+          "hardHitPct": 54.8,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 11.5,
+          "pitches": 252,
+          "avg": 0.25,
+          "slg": 0.393,
+          "xslg": 0.38,
+          "xba": 0.267,
+          "woba": 0.34,
+          "xwoba": 0.313,
+          "whiffPct": 16.2,
+          "hardHitPct": 37,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 8,
+          "pitches": 176,
+          "avg": 0.2,
+          "slg": 0.367,
+          "xslg": 0.294,
+          "xba": 0.224,
+          "woba": 0.338,
+          "xwoba": 0.339,
+          "whiffPct": 14.9,
+          "hardHitPct": 25.9,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 5.1,
+          "pitches": 111,
+          "avg": 0.25,
+          "slg": 0.292,
+          "xslg": 0.342,
+          "xba": 0.26,
+          "woba": 0.305,
+          "xwoba": 0.325,
+          "whiffPct": 7.3,
+          "hardHitPct": 40.9,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 4.3,
+          "pitches": 94,
+          "avg": 0.25,
+          "slg": 0.292,
+          "xslg": 0.431,
+          "xba": 0.361,
+          "woba": 0.291,
+          "xwoba": 0.385,
+          "whiffPct": 14,
+          "hardHitPct": 22.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Slurve",
+          "usagePct": 0.5,
+          "pitches": 11,
+          "avg": 0.5,
+          "slg": 1,
+          "xslg": 0.46,
+          "xba": 0.374,
+          "woba": 0.65,
+          "xwoba": 0.478,
+          "whiffPct": 0,
+          "hardHitPct": 50,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Forkball",
+          "usagePct": 0.2,
+          "pitches": 4,
+          "avg": 0,
+          "slg": 0,
+          "xslg": null,
+          "xba": null,
+          "woba": 0,
+          "xwoba": 0,
+          "whiffPct": 50,
+          "hardHitPct": null,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.263
+        },
+        "2": {
+          "woba": 0.301
+        },
+        "3": {
+          "woba": 0.225
+        },
+        "4": {
+          "woba": 0.184
+        },
+        "5": {
+          "woba": 0.416
+        },
+        "6": {
+          "woba": 0.287
+        },
+        "7": {
+          "woba": 0.234
+        },
+        "8": {
+          "woba": 0.345
+        },
+        "9": {
+          "woba": 0.352
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.167
+          },
+          "2": {
+            "woba": 0.238
+          },
+          "3": {
+            "woba": 0.15
+          },
+          "4": {
+            "woba": 0.173
+          },
+          "5": {
+            "woba": 0.316
+          },
+          "6": {
+            "woba": 0.266
+          },
+          "7": {
+            "woba": 0.22
+          },
+          "8": {
+            "woba": 0.282
+          },
+          "9": {
+            "woba": 0.583
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.406
+          },
+          "2": {
+            "woba": 0.45
+          },
+          "3": {
+            "woba": 0.338
+          },
+          "4": {
+            "woba": 0.225
+          },
+          "5": {
+            "woba": 0.573
+          },
+          "6": {
+            "woba": 0.313
+          },
+          "7": {
+            "woba": 0.277
+          },
+          "8": {
+            "woba": 0.529
+          },
+          "9": {
+            "woba": 0.138
+          }
+        }
+      },
+      "hrByZone": {
+        "1": {
+          "count": 3,
+          "pct": 20
+        },
+        "2": {
+          "count": 1,
+          "pct": 6.7
+        },
+        "3": {
+          "count": 1,
+          "pct": 6.7
+        },
+        "4": {
+          "count": 1,
+          "pct": 6.7
+        },
+        "5": {
+          "count": 4,
+          "pct": 26.7
+        },
+        "6": {
+          "count": 2,
+          "pct": 13.3
+        },
+        "8": {
+          "count": 3,
+          "pct": 20
+        }
+      }
+    },
+    "643217": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 25.2,
+          "pitches": 444,
+          "avg": 0.236,
+          "slg": 0.473,
+          "xslg": 0.474,
+          "xba": 0.235,
+          "woba": 0.337,
+          "xwoba": 0.33,
+          "whiffPct": 25.6,
+          "hardHitPct": 54.2,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 7
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 16.8,
+          "pitches": 296,
+          "avg": 0.234,
+          "slg": 0.375,
+          "xslg": 0.426,
+          "xba": 0.257,
+          "woba": 0.336,
+          "xwoba": 0.345,
+          "whiffPct": 20.8,
+          "hardHitPct": 48.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 15.3,
+          "pitches": 270,
+          "avg": 0.185,
+          "slg": 0.262,
+          "xslg": 0.386,
+          "xba": 0.252,
+          "woba": 0.253,
+          "xwoba": 0.299,
+          "whiffPct": 27.9,
+          "hardHitPct": 30.8,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Slider",
+          "usagePct": 13.8,
+          "pitches": 243,
+          "avg": 0.192,
+          "slg": 0.342,
+          "xslg": 0.303,
+          "xba": 0.186,
+          "woba": 0.256,
+          "xwoba": 0.241,
+          "whiffPct": 40.2,
+          "hardHitPct": 34.9,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 8.7,
+          "pitches": 154,
+          "avg": 0.323,
+          "slg": 0.613,
+          "xslg": 0.443,
+          "xba": 0.256,
+          "woba": 0.43,
+          "xwoba": 0.343,
+          "whiffPct": 31.3,
+          "hardHitPct": 45.8,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 7.6,
+          "pitches": 135,
+          "avg": 0.36,
+          "slg": 0.56,
+          "xslg": 0.411,
+          "xba": 0.316,
+          "woba": 0.433,
+          "xwoba": 0.345,
+          "whiffPct": 29.5,
+          "hardHitPct": 55.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 5.9,
+          "pitches": 105,
+          "avg": 0.409,
+          "slg": 0.591,
+          "xslg": 0.388,
+          "xba": 0.301,
+          "woba": 0.466,
+          "xwoba": 0.346,
+          "whiffPct": 21.1,
+          "hardHitPct": 47.4,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 5.4,
+          "pitches": 96,
+          "avg": 0.125,
+          "slg": 0.167,
+          "xslg": 0.203,
+          "xba": 0.166,
+          "woba": 0.122,
+          "xwoba": 0.157,
+          "whiffPct": 42.9,
+          "hardHitPct": 37.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Slurve",
+          "usagePct": 0.9,
+          "pitches": 16,
+          "avg": 0.333,
+          "slg": 0.333,
+          "xslg": 0.618,
+          "xba": 0.434,
+          "woba": 0.3,
+          "xwoba": 0.45,
+          "whiffPct": 11.1,
+          "hardHitPct": 66.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Forkball",
+          "usagePct": 0.1,
+          "pitches": 1,
+          "avg": 1,
+          "slg": 1,
+          "xslg": 0.782,
+          "xba": 0.486,
+          "woba": 0.9,
+          "xwoba": 0.535,
+          "whiffPct": 0,
+          "hardHitPct": 100,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.202
+        },
+        "2": {
+          "woba": 0.277
+        },
+        "3": {
+          "woba": 0.419
+        },
+        "4": {
+          "woba": 0.201
+        },
+        "5": {
+          "woba": 0.445
+        },
+        "6": {
+          "woba": 0.509
+        },
+        "7": {
+          "woba": 0.205
+        },
+        "8": {
+          "woba": 0.312
+        },
+        "9": {
+          "woba": 0.281
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.229
+          },
+          "2": {
+            "woba": 0.263
+          },
+          "3": {
+            "woba": 0.49
+          },
+          "4": {
+            "woba": 0.216
+          },
+          "5": {
+            "woba": 0.401
+          },
+          "6": {
+            "woba": 0.494
+          },
+          "7": {
+            "woba": 0.213
+          },
+          "8": {
+            "woba": 0.29
+          },
+          "9": {
+            "woba": 0.297
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0
+          },
+          "2": {
+            "woba": 0.36
+          },
+          "3": {
+            "woba": 0.067
+          },
+          "4": {
+            "woba": 0
+          },
+          "5": {
+            "woba": 0.693
+          },
+          "6": {
+            "woba": 0.9
+          },
+          "7": {
+            "woba": 0
+          },
+          "8": {
+            "woba": 0.6
+          },
+          "9": {
+            "woba": 0
+          }
+        }
+      },
+      "hrByZone": {
+        "1": {
+          "count": 1,
+          "pct": 8.3
+        },
+        "2": {
+          "count": 1,
+          "pct": 8.3
+        },
+        "3": {
+          "count": 1,
+          "pct": 8.3
+        },
+        "4": {
+          "count": 1,
+          "pct": 8.3
+        },
+        "5": {
+          "count": 3,
+          "pct": 25
+        },
+        "6": {
+          "count": 4,
+          "pct": 33.3
+        },
+        "9": {
+          "count": 1,
+          "pct": 8.3
+        }
+      }
+    },
+    "663993": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 44.9,
+          "pitches": 793,
+          "avg": 0.267,
+          "slg": 0.388,
+          "xslg": 0.442,
+          "xba": 0.29,
+          "woba": 0.331,
+          "xwoba": 0.35,
+          "whiffPct": 19.9,
+          "hardHitPct": 40.9,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 5
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 11.8,
+          "pitches": 209,
+          "avg": 0.231,
+          "slg": 0.365,
+          "xslg": 0.468,
+          "xba": 0.339,
+          "woba": 0.36,
+          "xwoba": 0.412,
+          "whiffPct": 14.8,
+          "hardHitPct": 55.8,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 9.5,
+          "pitches": 167,
+          "avg": 0.233,
+          "slg": 0.442,
+          "xslg": 0.432,
+          "xba": 0.235,
+          "woba": 0.284,
+          "xwoba": 0.296,
+          "whiffPct": 22.8,
+          "hardHitPct": 31.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 8.7,
+          "pitches": 153,
+          "avg": 0.222,
+          "slg": 0.519,
+          "xslg": 0.451,
+          "xba": 0.237,
+          "woba": 0.347,
+          "xwoba": 0.323,
+          "whiffPct": 25.9,
+          "hardHitPct": 42.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 7.1,
+          "pitches": 125,
+          "avg": 0.367,
+          "slg": 0.8,
+          "xslg": 0.587,
+          "xba": 0.282,
+          "woba": 0.523,
+          "xwoba": 0.376,
+          "whiffPct": 19.4,
+          "hardHitPct": 41.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 4
+        },
+        {
+          "name": "Slider",
+          "usagePct": 6.9,
+          "pitches": 122,
+          "avg": 0.233,
+          "slg": 0.567,
+          "xslg": 0.348,
+          "xba": 0.189,
+          "woba": 0.344,
+          "xwoba": 0.243,
+          "whiffPct": 30,
+          "hardHitPct": 33.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 4
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 6.7,
+          "pitches": 119,
+          "avg": 0.167,
+          "slg": 0.278,
+          "xslg": 0.133,
+          "xba": 0.107,
+          "woba": 0.24,
+          "xwoba": 0.164,
+          "whiffPct": 41.3,
+          "hardHitPct": 37.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 3.5,
+          "pitches": 62,
+          "avg": 0.214,
+          "slg": 0.5,
+          "xslg": 0.574,
+          "xba": 0.302,
+          "woba": 0.296,
+          "xwoba": 0.367,
+          "whiffPct": 21.4,
+          "hardHitPct": 44.4,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Slurve",
+          "usagePct": 0.3,
+          "pitches": 6,
+          "avg": 0,
+          "slg": 0,
+          "xslg": null,
+          "xba": null,
+          "woba": 0,
+          "xwoba": 0,
+          "whiffPct": 100,
+          "hardHitPct": null,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.379
+        },
+        "2": {
+          "woba": 0.35
+        },
+        "3": {
+          "woba": 0.237
+        },
+        "4": {
+          "woba": 0.548
+        },
+        "5": {
+          "woba": 0.457
+        },
+        "6": {
+          "woba": 0.388
+        },
+        "7": {
+          "woba": 0.152
+        },
+        "8": {
+          "woba": 0.363
+        },
+        "9": {
+          "woba": 0.292
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.373
+          },
+          "2": {
+            "woba": 0.369
+          },
+          "3": {
+            "woba": 0.271
+          },
+          "4": {
+            "woba": 0.592
+          },
+          "5": {
+            "woba": 0.512
+          },
+          "6": {
+            "woba": 0.396
+          },
+          "7": {
+            "woba": 0.113
+          },
+          "8": {
+            "woba": 0.409
+          },
+          "9": {
+            "woba": 0.352
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.45
+          },
+          "2": {
+            "woba": 0
+          },
+          "3": {
+            "woba": 0
+          },
+          "4": {
+            "woba": 0
+          },
+          "5": {
+            "woba": 0
+          },
+          "6": {
+            "woba": 0.3
+          },
+          "7": {
+            "woba": 0.313
+          },
+          "8": {
+            "woba": 0
+          },
+          "9": {
+            "woba": 0.113
+          }
+        }
+      },
+      "hrByZone": {
+        "1": {
+          "count": 1,
+          "pct": 5.6
+        },
+        "2": {
+          "count": 1,
+          "pct": 5.6
+        },
+        "3": {
+          "count": 1,
+          "pct": 5.6
+        },
+        "4": {
+          "count": 3,
+          "pct": 16.7
+        },
+        "5": {
+          "count": 6,
+          "pct": 33.3
+        },
+        "6": {
+          "count": 2,
+          "pct": 11.1
+        },
+        "8": {
+          "count": 2,
+          "pct": 11.1
+        },
+        "9": {
+          "count": 2,
+          "pct": 11.1
+        }
+      }
+    },
+    "666176": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 27.4,
+          "pitches": 704,
+          "avg": 0.246,
+          "slg": 0.444,
+          "xslg": 0.481,
+          "xba": 0.267,
+          "woba": 0.334,
+          "xwoba": 0.35,
+          "whiffPct": 23.7,
+          "hardHitPct": 45,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 10
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 20,
+          "pitches": 514,
+          "avg": 0.217,
+          "slg": 0.326,
+          "xslg": 0.414,
+          "xba": 0.279,
+          "woba": 0.295,
+          "xwoba": 0.338,
+          "whiffPct": 18.4,
+          "hardHitPct": 43.4,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 3
+        },
+        {
+          "name": "Slider",
+          "usagePct": 16,
+          "pitches": 412,
+          "avg": 0.221,
+          "slg": 0.302,
+          "xslg": 0.286,
+          "xba": 0.204,
+          "woba": 0.241,
+          "xwoba": 0.221,
+          "whiffPct": 37.6,
+          "hardHitPct": 37.9,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 10.1,
+          "pitches": 260,
+          "avg": 0.25,
+          "slg": 0.429,
+          "xslg": 0.371,
+          "xba": 0.222,
+          "woba": 0.328,
+          "xwoba": 0.296,
+          "whiffPct": 34.8,
+          "hardHitPct": 48.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 10,
+          "pitches": 256,
+          "avg": 0.232,
+          "slg": 0.449,
+          "xslg": 0.533,
+          "xba": 0.245,
+          "woba": 0.31,
+          "xwoba": 0.339,
+          "whiffPct": 40.7,
+          "hardHitPct": 46.8,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 6
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 7.7,
+          "pitches": 199,
+          "avg": 0.27,
+          "slg": 0.27,
+          "xslg": 0.529,
+          "xba": 0.312,
+          "woba": 0.3,
+          "xwoba": 0.398,
+          "whiffPct": 25,
+          "hardHitPct": 45.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 6,
+          "pitches": 155,
+          "avg": 0.378,
+          "slg": 0.838,
+          "xslg": 0.646,
+          "xba": 0.302,
+          "woba": 0.512,
+          "xwoba": 0.405,
+          "whiffPct": 27.8,
+          "hardHitPct": 53.8,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 4
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 2.3,
+          "pitches": 58,
+          "avg": 0.125,
+          "slg": 0.125,
+          "xslg": 0.341,
+          "xba": 0.196,
+          "woba": 0.147,
+          "xwoba": 0.256,
+          "whiffPct": 22.9,
+          "hardHitPct": 50,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.21
+        },
+        "2": {
+          "woba": 0.319
+        },
+        "3": {
+          "woba": 0.331
+        },
+        "4": {
+          "woba": 0.301
+        },
+        "5": {
+          "woba": 0.28
+        },
+        "6": {
+          "woba": 0.401
+        },
+        "7": {
+          "woba": 0.277
+        },
+        "8": {
+          "woba": 0.592
+        },
+        "9": {
+          "woba": 0.182
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.188
+          },
+          "2": {
+            "woba": 0.36
+          },
+          "3": {
+            "woba": 0.172
+          },
+          "4": {
+            "woba": 0.186
+          },
+          "5": {
+            "woba": 0.22
+          },
+          "6": {
+            "woba": 0.324
+          },
+          "7": {
+            "woba": 0.281
+          },
+          "8": {
+            "woba": 0.597
+          },
+          "9": {
+            "woba": 0.156
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.3
+          },
+          "2": {
+            "woba": 0.2
+          },
+          "3": {
+            "woba": 0.593
+          },
+          "4": {
+            "woba": 0.605
+          },
+          "5": {
+            "woba": 0.419
+          },
+          "6": {
+            "woba": 0.646
+          },
+          "7": {
+            "woba": 0.267
+          },
+          "8": {
+            "woba": 0.585
+          },
+          "9": {
+            "woba": 0.242
+          }
+        }
+      },
+      "hrByZone": {
+        "1": {
+          "count": 1,
+          "pct": 4.3
+        },
+        "2": {
+          "count": 1,
+          "pct": 4.3
+        },
+        "3": {
+          "count": 2,
+          "pct": 8.7
+        },
+        "5": {
+          "count": 3,
+          "pct": 13
+        },
+        "6": {
+          "count": 6,
+          "pct": 26.1
+        },
+        "7": {
+          "count": 1,
+          "pct": 4.3
+        },
+        "8": {
+          "count": 7,
+          "pct": 30.4
+        },
+        "9": {
+          "count": 2,
+          "pct": 8.7
+        }
+      }
+    },
+    "668670": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 32.6,
+          "pitches": 224,
+          "avg": 0.196,
+          "slg": 0.412,
+          "xslg": 0.294,
+          "xba": 0.149,
+          "woba": 0.31,
+          "xwoba": 0.253,
+          "whiffPct": 23,
+          "hardHitPct": 55.9,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 3
+        },
+        {
+          "name": "Slider",
+          "usagePct": 16.1,
+          "pitches": 111,
+          "avg": 0.043,
+          "slg": 0.087,
+          "xslg": 0.094,
+          "xba": 0.071,
+          "woba": 0.15,
+          "xwoba": 0.165,
+          "whiffPct": 44.2,
+          "hardHitPct": 14.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 15.1,
+          "pitches": 104,
+          "avg": 0.208,
+          "slg": 0.333,
+          "xslg": 0.637,
+          "xba": 0.319,
+          "woba": 0.28,
+          "xwoba": 0.421,
+          "whiffPct": 11.5,
+          "hardHitPct": 39.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 11.3,
+          "pitches": 78,
+          "avg": 0.182,
+          "slg": 0.182,
+          "xslg": 0.224,
+          "xba": 0.206,
+          "woba": 0.307,
+          "xwoba": 0.326,
+          "whiffPct": 30.4,
+          "hardHitPct": 12.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 8.1,
+          "pitches": 56,
+          "avg": 0.167,
+          "slg": 0.167,
+          "xslg": 0.212,
+          "xba": 0.166,
+          "woba": 0.192,
+          "xwoba": 0.203,
+          "whiffPct": 45,
+          "hardHitPct": 33.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 7.7,
+          "pitches": 53,
+          "avg": 0.222,
+          "slg": 0.333,
+          "xslg": 0.354,
+          "xba": 0.217,
+          "woba": 0.285,
+          "xwoba": 0.29,
+          "whiffPct": 17.6,
+          "hardHitPct": 28.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 6,
+          "pitches": 41,
+          "avg": 0.125,
+          "slg": 0.375,
+          "xslg": 0.12,
+          "xba": 0.105,
+          "woba": 0.256,
+          "xwoba": 0.162,
+          "whiffPct": 20,
+          "hardHitPct": 0,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 2.3,
+          "pitches": 16,
+          "avg": 0,
+          "slg": 0,
+          "xslg": 0.073,
+          "xba": 0.066,
+          "woba": 0,
+          "xwoba": 0.059,
+          "whiffPct": 71.4,
+          "hardHitPct": 0,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.208
+        },
+        "2": {
+          "woba": 0.286
+        },
+        "3": {
+          "woba": 0.27
+        },
+        "4": {
+          "woba": 0.31
+        },
+        "5": {
+          "woba": 0.293
+        },
+        "6": {
+          "woba": 0.18
+        },
+        "7": {
+          "woba": 0.18
+        },
+        "8": {
+          "woba": 0.143
+        },
+        "9": {
+          "woba": 0.232
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0
+          },
+          "2": {
+            "woba": 0.222
+          },
+          "3": {
+            "woba": 0.3
+          },
+          "4": {
+            "woba": 0.344
+          },
+          "5": {
+            "woba": 0.208
+          },
+          "6": {
+            "woba": 0.164
+          },
+          "7": {
+            "woba": 0.3
+          },
+          "8": {
+            "woba": 0.195
+          },
+          "9": {
+            "woba": 0.114
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.625
+          },
+          "2": {
+            "woba": 0.4
+          },
+          "3": {
+            "woba": 0
+          },
+          "4": {
+            "woba": 0
+          },
+          "5": {
+            "woba": 0.675
+          },
+          "6": {
+            "woba": 0.225
+          },
+          "7": {
+            "woba": 0
+          },
+          "8": {
+            "woba": 0
+          },
+          "9": {
+            "woba": 0.667
+          }
+        }
+      },
+      "hrByZone": {
+        "2": {
+          "count": 2,
+          "pct": 50
+        },
+        "4": {
+          "count": 1,
+          "pct": 25
+        },
+        "9": {
+          "count": 1,
+          "pct": 25
+        }
+      }
+    },
+    "671976": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 31.2,
+          "pitches": 551,
+          "avg": 0.267,
+          "slg": 0.504,
+          "xslg": 0.465,
+          "xba": 0.25,
+          "woba": 0.382,
+          "xwoba": 0.36,
+          "whiffPct": 23.1,
+          "hardHitPct": 38,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 5
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 15.1,
+          "pitches": 267,
+          "avg": 0.237,
+          "slg": 0.316,
+          "xslg": 0.34,
+          "xba": 0.265,
+          "woba": 0.296,
+          "xwoba": 0.302,
+          "whiffPct": 14.7,
+          "hardHitPct": 26.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 11.7,
+          "pitches": 206,
+          "avg": 0.273,
+          "slg": 0.345,
+          "xslg": 0.393,
+          "xba": 0.259,
+          "woba": 0.296,
+          "xwoba": 0.288,
+          "whiffPct": 24.2,
+          "hardHitPct": 44.2,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Slider",
+          "usagePct": 11.4,
+          "pitches": 201,
+          "avg": 0.236,
+          "slg": 0.455,
+          "xslg": 0.268,
+          "xba": 0.197,
+          "woba": 0.307,
+          "xwoba": 0.229,
+          "whiffPct": 31.4,
+          "hardHitPct": 29.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 3
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 11.2,
+          "pitches": 198,
+          "avg": 0.14,
+          "slg": 0.209,
+          "xslg": 0.286,
+          "xba": 0.208,
+          "woba": 0.217,
+          "xwoba": 0.273,
+          "whiffPct": 25,
+          "hardHitPct": 30,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 9.5,
+          "pitches": 167,
+          "avg": 0.361,
+          "slg": 0.611,
+          "xslg": 0.447,
+          "xba": 0.269,
+          "woba": 0.46,
+          "xwoba": 0.37,
+          "whiffPct": 14.9,
+          "hardHitPct": 33.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 5,
+          "pitches": 89,
+          "avg": 0.429,
+          "slg": 1,
+          "xslg": 0.402,
+          "xba": 0.241,
+          "woba": 0.606,
+          "xwoba": 0.326,
+          "whiffPct": 17.9,
+          "hardHitPct": 36.4,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 4.1,
+          "pitches": 73,
+          "avg": 0.381,
+          "slg": 0.476,
+          "xslg": 0.422,
+          "xba": 0.351,
+          "woba": 0.376,
+          "xwoba": 0.338,
+          "whiffPct": 40.5,
+          "hardHitPct": 29.4,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.223
+        },
+        "2": {
+          "woba": 0.198
+        },
+        "3": {
+          "woba": 0.295
+        },
+        "4": {
+          "woba": 0.338
+        },
+        "5": {
+          "woba": 0.542
+        },
+        "6": {
+          "woba": 0.271
+        },
+        "7": {
+          "woba": 0.303
+        },
+        "8": {
+          "woba": 0.45
+        },
+        "9": {
+          "woba": 0.425
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.223
+          },
+          "2": {
+            "woba": 0.185
+          },
+          "3": {
+            "woba": 0.313
+          },
+          "4": {
+            "woba": 0.38
+          },
+          "5": {
+            "woba": 0.546
+          },
+          "6": {
+            "woba": 0.28
+          },
+          "7": {
+            "woba": 0.329
+          },
+          "8": {
+            "woba": 0.456
+          },
+          "9": {
+            "woba": 0.424
+          }
+        },
+        "L": {
+          "2": {
+            "woba": 0.257
+          },
+          "3": {
+            "woba": 0.225
+          },
+          "4": {
+            "woba": 0.113
+          },
+          "5": {
+            "woba": 0.483
+          },
+          "6": {
+            "woba": 0.22
+          },
+          "7": {
+            "woba": 0.2
+          },
+          "8": {
+            "woba": 0.4
+          },
+          "9": {
+            "woba": 0.43
+          }
+        }
+      },
+      "hrByZone": {
+        "3": {
+          "count": 1,
+          "pct": 7.7
+        },
+        "4": {
+          "count": 1,
+          "pct": 7.7
+        },
+        "5": {
+          "count": 7,
+          "pct": 53.8
+        },
+        "8": {
+          "count": 3,
+          "pct": 23.1
+        },
+        "9": {
+          "count": 1,
+          "pct": 7.7
+        }
+      }
+    },
+    "672275": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 32.3,
+          "pitches": 440,
+          "avg": 0.211,
+          "slg": 0.378,
+          "xslg": 0.461,
+          "xba": 0.235,
+          "woba": 0.324,
+          "xwoba": 0.354,
+          "whiffPct": 25.5,
+          "hardHitPct": 54.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 4
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 14.6,
+          "pitches": 199,
+          "avg": 0.2,
+          "slg": 0.311,
+          "xslg": 0.397,
+          "xba": 0.279,
+          "woba": 0.263,
+          "xwoba": 0.31,
+          "whiffPct": 12.2,
+          "hardHitPct": 47.4,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 13.6,
+          "pitches": 185,
+          "avg": 0.151,
+          "slg": 0.283,
+          "xslg": 0.308,
+          "xba": 0.201,
+          "woba": 0.206,
+          "xwoba": 0.236,
+          "whiffPct": 27.6,
+          "hardHitPct": 32.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Slider",
+          "usagePct": 10.8,
+          "pitches": 147,
+          "avg": 0.316,
+          "slg": 0.474,
+          "xslg": 0.397,
+          "xba": 0.24,
+          "woba": 0.342,
+          "xwoba": 0.272,
+          "whiffPct": 34.5,
+          "hardHitPct": 40.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 9.9,
+          "pitches": 135,
+          "avg": 0.194,
+          "slg": 0.29,
+          "xslg": 0.305,
+          "xba": 0.246,
+          "woba": 0.278,
+          "xwoba": 0.302,
+          "whiffPct": 35.1,
+          "hardHitPct": 28.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 7.6,
+          "pitches": 104,
+          "avg": 0.19,
+          "slg": 0.286,
+          "xslg": 0.44,
+          "xba": 0.264,
+          "woba": 0.238,
+          "xwoba": 0.319,
+          "whiffPct": 24.1,
+          "hardHitPct": 47.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 5.6,
+          "pitches": 76,
+          "avg": 0.125,
+          "slg": 0.188,
+          "xslg": 0.318,
+          "xba": 0.232,
+          "woba": 0.168,
+          "xwoba": 0.265,
+          "whiffPct": 40,
+          "hardHitPct": 50,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 4.6,
+          "pitches": 62,
+          "avg": 0.154,
+          "slg": 0.154,
+          "xslg": 0.417,
+          "xba": 0.213,
+          "woba": 0.138,
+          "xwoba": 0.266,
+          "whiffPct": 37.5,
+          "hardHitPct": 20,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Knuckleball",
+          "usagePct": 0.2,
+          "pitches": 3,
+          "avg": 0,
+          "slg": 0,
+          "xslg": 0.124,
+          "xba": 0.124,
+          "woba": 0,
+          "xwoba": 0.112,
+          "whiffPct": 0,
+          "hardHitPct": 0,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.411
+        },
+        "2": {
+          "woba": 0.388
+        },
+        "3": {
+          "woba": 0.113
+        },
+        "4": {
+          "woba": 0.271
+        },
+        "5": {
+          "woba": 0.346
+        },
+        "6": {
+          "woba": 0.361
+        },
+        "7": {
+          "woba": 0.143
+        },
+        "8": {
+          "woba": 0.25
+        },
+        "9": {
+          "woba": 0.181
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.411
+          },
+          "2": {
+            "woba": 0.426
+          },
+          "3": {
+            "woba": 0.129
+          },
+          "4": {
+            "woba": 0.258
+          },
+          "5": {
+            "woba": 0.392
+          },
+          "6": {
+            "woba": 0.433
+          },
+          "7": {
+            "woba": 0.146
+          },
+          "8": {
+            "woba": 0.238
+          },
+          "9": {
+            "woba": 0.154
+          }
+        },
+        "L": {
+          "2": {
+            "woba": 0.067
+          },
+          "3": {
+            "woba": 0
+          },
+          "4": {
+            "woba": 0.333
+          },
+          "5": {
+            "woba": 0.129
+          },
+          "6": {
+            "woba": 0
+          },
+          "7": {
+            "woba": 0.129
+          },
+          "8": {
+            "woba": 0.307
+          },
+          "9": {
+            "woba": 0.3
+          }
+        }
+      },
+      "hrByZone": {
+        "2": {
+          "count": 3,
+          "pct": 33.3
+        },
+        "4": {
+          "count": 2,
+          "pct": 22.2
+        },
+        "5": {
+          "count": 1,
+          "pct": 11.1
+        },
+        "6": {
+          "count": 2,
+          "pct": 22.2
+        },
+        "8": {
+          "count": 1,
+          "pct": 11.1
+        }
+      }
+    },
+    "677587": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 29.7,
+          "pitches": 667,
+          "avg": 0.299,
+          "slg": 0.494,
+          "xslg": 0.406,
+          "xba": 0.261,
+          "woba": 0.378,
+          "xwoba": 0.334,
+          "whiffPct": 15.7,
+          "hardHitPct": 33.8,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 8
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 16.4,
+          "pitches": 369,
+          "avg": 0.241,
+          "slg": 0.343,
+          "xslg": 0.318,
+          "xba": 0.252,
+          "woba": 0.259,
+          "xwoba": 0.255,
+          "whiffPct": 33,
+          "hardHitPct": 23.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 15.1,
+          "pitches": 340,
+          "avg": 0.297,
+          "slg": 0.418,
+          "xslg": 0.37,
+          "xba": 0.26,
+          "woba": 0.346,
+          "xwoba": 0.311,
+          "whiffPct": 10.4,
+          "hardHitPct": 36,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Slider",
+          "usagePct": 12,
+          "pitches": 269,
+          "avg": 0.204,
+          "slg": 0.296,
+          "xslg": 0.328,
+          "xba": 0.246,
+          "woba": 0.284,
+          "xwoba": 0.294,
+          "whiffPct": 28.8,
+          "hardHitPct": 32.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 9.3,
+          "pitches": 208,
+          "avg": 0.171,
+          "slg": 0.314,
+          "xslg": 0.211,
+          "xba": 0.155,
+          "woba": 0.257,
+          "xwoba": 0.187,
+          "whiffPct": 34.1,
+          "hardHitPct": 22.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 8,
+          "pitches": 179,
+          "avg": 0.211,
+          "slg": 0.316,
+          "xslg": 0.421,
+          "xba": 0.277,
+          "woba": 0.284,
+          "xwoba": 0.325,
+          "whiffPct": 18.9,
+          "hardHitPct": 23.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 5.9,
+          "pitches": 133,
+          "avg": 0.19,
+          "slg": 0.381,
+          "xslg": 0.264,
+          "xba": 0.185,
+          "woba": 0.363,
+          "xwoba": 0.29,
+          "whiffPct": 28.6,
+          "hardHitPct": 11.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 3.4,
+          "pitches": 76,
+          "avg": 0.095,
+          "slg": 0.19,
+          "xslg": 0.244,
+          "xba": 0.2,
+          "woba": 0.119,
+          "xwoba": 0.192,
+          "whiffPct": 28.2,
+          "hardHitPct": 42.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.479
+        },
+        "2": {
+          "woba": 0.234
+        },
+        "3": {
+          "woba": 0.481
+        },
+        "4": {
+          "woba": 0.329
+        },
+        "5": {
+          "woba": 0.19
+        },
+        "6": {
+          "woba": 0.297
+        },
+        "7": {
+          "woba": 0.275
+        },
+        "8": {
+          "woba": 0.415
+        },
+        "9": {
+          "woba": 0.231
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.541
+          },
+          "2": {
+            "woba": 0.274
+          },
+          "3": {
+            "woba": 0.462
+          },
+          "4": {
+            "woba": 0.254
+          },
+          "5": {
+            "woba": 0.223
+          },
+          "6": {
+            "woba": 0.289
+          },
+          "7": {
+            "woba": 0.266
+          },
+          "8": {
+            "woba": 0.446
+          },
+          "9": {
+            "woba": 0.431
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.286
+          },
+          "2": {
+            "woba": 0.138
+          },
+          "3": {
+            "woba": 0.5
+          },
+          "4": {
+            "woba": 0.529
+          },
+          "5": {
+            "woba": 0.113
+          },
+          "6": {
+            "woba": 0.304
+          },
+          "7": {
+            "woba": 0.307
+          },
+          "8": {
+            "woba": 0.353
+          },
+          "9": {
+            "woba": 0.117
+          }
+        }
+      },
+      "hrByZone": {
+        "1": {
+          "count": 3,
+          "pct": 17.6
+        },
+        "2": {
+          "count": 2,
+          "pct": 11.8
+        },
+        "3": {
+          "count": 3,
+          "pct": 17.6
+        },
+        "4": {
+          "count": 1,
+          "pct": 5.9
+        },
+        "8": {
+          "count": 6,
+          "pct": 35.3
+        },
+        "9": {
+          "count": 2,
+          "pct": 11.8
+        }
+      }
+    },
+    "678246": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 34.2,
+          "pitches": 952,
+          "avg": 0.206,
+          "slg": 0.428,
+          "xslg": 0.45,
+          "xba": 0.226,
+          "woba": 0.35,
+          "xwoba": 0.365,
+          "whiffPct": 24.1,
+          "hardHitPct": 47.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 12
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 17.8,
+          "pitches": 494,
+          "avg": 0.254,
+          "slg": 0.532,
+          "xslg": 0.562,
+          "xba": 0.289,
+          "woba": 0.386,
+          "xwoba": 0.405,
+          "whiffPct": 10.4,
+          "hardHitPct": 44.2,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 9
+        },
+        {
+          "name": "Slider",
+          "usagePct": 14.8,
+          "pitches": 412,
+          "avg": 0.27,
+          "slg": 0.371,
+          "xslg": 0.424,
+          "xba": 0.25,
+          "woba": 0.321,
+          "xwoba": 0.334,
+          "whiffPct": 26.6,
+          "hardHitPct": 38.9,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 9.4,
+          "pitches": 261,
+          "avg": 0.326,
+          "slg": 0.651,
+          "xslg": 0.491,
+          "xba": 0.262,
+          "woba": 0.479,
+          "xwoba": 0.409,
+          "whiffPct": 32.1,
+          "hardHitPct": 34.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 4
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 7.8,
+          "pitches": 218,
+          "avg": 0.195,
+          "slg": 0.317,
+          "xslg": 0.35,
+          "xba": 0.245,
+          "woba": 0.3,
+          "xwoba": 0.33,
+          "whiffPct": 16.3,
+          "hardHitPct": 38.9,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 7.4,
+          "pitches": 205,
+          "avg": 0.316,
+          "slg": 0.632,
+          "xslg": 0.691,
+          "xba": 0.307,
+          "woba": 0.411,
+          "xwoba": 0.444,
+          "whiffPct": 19.2,
+          "hardHitPct": 40,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 3
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 6.5,
+          "pitches": 182,
+          "avg": 0.298,
+          "slg": 0.532,
+          "xslg": 0.608,
+          "xba": 0.341,
+          "woba": 0.38,
+          "xwoba": 0.426,
+          "whiffPct": 12.9,
+          "hardHitPct": 55,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 3
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 1.5,
+          "pitches": 41,
+          "avg": 0,
+          "slg": 0,
+          "xslg": 0.149,
+          "xba": 0.122,
+          "woba": 0,
+          "xwoba": 0.118,
+          "whiffPct": 50,
+          "hardHitPct": 0,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Slurve",
+          "usagePct": 0.5,
+          "pitches": 14,
+          "avg": 0.667,
+          "slg": 0.667,
+          "xslg": 0.824,
+          "xba": 0.695,
+          "woba": 0.6,
+          "xwoba": 0.665,
+          "whiffPct": 0,
+          "hardHitPct": 33.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.247
+        },
+        "2": {
+          "woba": 0.35
+        },
+        "3": {
+          "woba": 0.166
+        },
+        "4": {
+          "woba": 0.517
+        },
+        "5": {
+          "woba": 0.428
+        },
+        "6": {
+          "woba": 0.253
+        },
+        "7": {
+          "woba": 0.285
+        },
+        "8": {
+          "woba": 0.307
+        },
+        "9": {
+          "woba": 0.332
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.261
+          },
+          "2": {
+            "woba": 0.415
+          },
+          "3": {
+            "woba": 0.138
+          },
+          "4": {
+            "woba": 0.46
+          },
+          "5": {
+            "woba": 0.361
+          },
+          "6": {
+            "woba": 0.266
+          },
+          "7": {
+            "woba": 0.345
+          },
+          "8": {
+            "woba": 0.286
+          },
+          "9": {
+            "woba": 0.246
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.223
+          },
+          "2": {
+            "woba": 0.167
+          },
+          "3": {
+            "woba": 0.25
+          },
+          "4": {
+            "woba": 0.653
+          },
+          "5": {
+            "woba": 0.629
+          },
+          "6": {
+            "woba": 0.208
+          },
+          "7": {
+            "woba": 0.235
+          },
+          "8": {
+            "woba": 0.359
+          },
+          "9": {
+            "woba": 0.553
+          }
+        }
+      },
+      "hrByZone": {
+        "1": {
+          "count": 2,
+          "pct": 6.5
+        },
+        "2": {
+          "count": 5,
+          "pct": 16.1
+        },
+        "3": {
+          "count": 1,
+          "pct": 3.2
+        },
+        "4": {
+          "count": 8,
+          "pct": 25.8
+        },
+        "5": {
+          "count": 9,
+          "pct": 29
+        },
+        "6": {
+          "count": 1,
+          "pct": 3.2
+        },
+        "7": {
+          "count": 1,
+          "pct": 3.2
+        },
+        "8": {
+          "count": 1,
+          "pct": 3.2
+        },
+        "9": {
+          "count": 3,
+          "pct": 9.7
+        }
+      }
+    },
+    "680757": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 41.1,
+          "pitches": 1074,
+          "avg": 0.287,
+          "slg": 0.367,
+          "xslg": 0.327,
+          "xba": 0.261,
+          "woba": 0.373,
+          "xwoba": 0.34,
+          "whiffPct": 4.8,
+          "hardHitPct": 9.2,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 3
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 18.2,
+          "pitches": 475,
+          "avg": 0.304,
+          "slg": 0.326,
+          "xslg": 0.377,
+          "xba": 0.317,
+          "woba": 0.41,
+          "xwoba": 0.393,
+          "whiffPct": 3.1,
+          "hardHitPct": 7.9,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Slider",
+          "usagePct": 11.5,
+          "pitches": 301,
+          "avg": 0.22,
+          "slg": 0.293,
+          "xslg": 0.319,
+          "xba": 0.244,
+          "woba": 0.276,
+          "xwoba": 0.284,
+          "whiffPct": 12.6,
+          "hardHitPct": 11.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 8.6,
+          "pitches": 224,
+          "avg": 0.38,
+          "slg": 0.48,
+          "xslg": 0.447,
+          "xba": 0.368,
+          "woba": 0.382,
+          "xwoba": 0.366,
+          "whiffPct": 12.6,
+          "hardHitPct": 13,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 7.1,
+          "pitches": 186,
+          "avg": 0.236,
+          "slg": 0.273,
+          "xslg": 0.34,
+          "xba": 0.291,
+          "woba": 0.242,
+          "xwoba": 0.289,
+          "whiffPct": 10.7,
+          "hardHitPct": 7.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 5.1,
+          "pitches": 133,
+          "avg": 0.375,
+          "slg": 0.5,
+          "xslg": 0.371,
+          "xba": 0.309,
+          "woba": 0.393,
+          "xwoba": 0.314,
+          "whiffPct": 13.2,
+          "hardHitPct": 21.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 4.8,
+          "pitches": 125,
+          "avg": 0.231,
+          "slg": 0.269,
+          "xslg": 0.282,
+          "xba": 0.203,
+          "woba": 0.23,
+          "xwoba": 0.219,
+          "whiffPct": 18.4,
+          "hardHitPct": 15.8,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 3,
+          "pitches": 79,
+          "avg": 0.167,
+          "slg": 0.222,
+          "xslg": 0.195,
+          "xba": 0.167,
+          "woba": 0.223,
+          "xwoba": 0.213,
+          "whiffPct": 14.7,
+          "hardHitPct": 7.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Slurve",
+          "usagePct": 0.5,
+          "pitches": 13,
+          "avg": 1,
+          "slg": 1.5,
+          "xslg": 0.366,
+          "xba": 0.223,
+          "woba": 1.075,
+          "xwoba": 0.247,
+          "whiffPct": 25,
+          "hardHitPct": 0,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.302
+        },
+        "2": {
+          "woba": 0.313
+        },
+        "3": {
+          "woba": 0.199
+        },
+        "4": {
+          "woba": 0.343
+        },
+        "5": {
+          "woba": 0.396
+        },
+        "6": {
+          "woba": 0.299
+        },
+        "7": {
+          "woba": 0.196
+        },
+        "8": {
+          "woba": 0.294
+        },
+        "9": {
+          "woba": 0.404
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.318
+          },
+          "2": {
+            "woba": 0.334
+          },
+          "3": {
+            "woba": 0.208
+          },
+          "4": {
+            "woba": 0.381
+          },
+          "5": {
+            "woba": 0.37
+          },
+          "6": {
+            "woba": 0.296
+          },
+          "7": {
+            "woba": 0.206
+          },
+          "8": {
+            "woba": 0.331
+          },
+          "9": {
+            "woba": 0.436
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.242
+          },
+          "2": {
+            "woba": 0.245
+          },
+          "3": {
+            "woba": 0.189
+          },
+          "4": {
+            "woba": 0.257
+          },
+          "5": {
+            "woba": 0.461
+          },
+          "6": {
+            "woba": 0.303
+          },
+          "7": {
+            "woba": 0.179
+          },
+          "8": {
+            "woba": 0.145
+          },
+          "9": {
+            "woba": 0.36
+          }
+        }
+      },
+      "hrByZone": {
+        "3": {
+          "count": 1,
+          "pct": 20
+        },
+        "5": {
+          "count": 2,
+          "pct": 40
+        },
+        "6": {
+          "count": 2,
+          "pct": 40
+        }
+      }
+    },
+    "681807": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 27.8,
+          "pitches": 252,
+          "avg": 0.197,
+          "slg": 0.426,
+          "xslg": 0.296,
+          "xba": 0.151,
+          "woba": 0.338,
+          "xwoba": 0.278,
+          "whiffPct": 27.6,
+          "hardHitPct": 45.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 5
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 17.8,
+          "pitches": 162,
+          "avg": 0.306,
+          "slg": 0.444,
+          "xslg": 0.417,
+          "xba": 0.278,
+          "woba": 0.354,
+          "xwoba": 0.33,
+          "whiffPct": 19.7,
+          "hardHitPct": 40.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Slider",
+          "usagePct": 15.9,
+          "pitches": 144,
+          "avg": 0.24,
+          "slg": 0.48,
+          "xslg": 0.294,
+          "xba": 0.173,
+          "woba": 0.304,
+          "xwoba": 0.2,
+          "whiffPct": 40,
+          "hardHitPct": 28.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 12.8,
+          "pitches": 116,
+          "avg": 0.2,
+          "slg": 0.28,
+          "xslg": 0.249,
+          "xba": 0.216,
+          "woba": 0.261,
+          "xwoba": 0.256,
+          "whiffPct": 35.6,
+          "hardHitPct": 33.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 9,
+          "pitches": 82,
+          "avg": 0,
+          "slg": 0,
+          "xslg": 0.039,
+          "xba": 0.035,
+          "woba": 0.187,
+          "xwoba": 0.211,
+          "whiffPct": 23.8,
+          "hardHitPct": 20,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 8.6,
+          "pitches": 78,
+          "avg": 0.143,
+          "slg": 0.357,
+          "xslg": 0.255,
+          "xba": 0.129,
+          "woba": 0.356,
+          "xwoba": 0.311,
+          "whiffPct": 29.4,
+          "hardHitPct": 9.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 5.5,
+          "pitches": 50,
+          "avg": 0.111,
+          "slg": 0.111,
+          "xslg": 0.36,
+          "xba": 0.226,
+          "woba": 0.2,
+          "xwoba": 0.255,
+          "whiffPct": 15,
+          "hardHitPct": 14.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 1.7,
+          "pitches": 15,
+          "avg": 0,
+          "slg": 0,
+          "xslg": null,
+          "xba": null,
+          "woba": 0.35,
+          "xwoba": 0.35,
+          "whiffPct": 75,
+          "hardHitPct": null,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Slurve",
+          "usagePct": 0.6,
+          "pitches": 5,
+          "avg": 0,
+          "slg": 0,
+          "xslg": 0.034,
+          "xba": 0.034,
+          "woba": 0,
+          "xwoba": 0.031,
+          "whiffPct": 0,
+          "hardHitPct": 0,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.277
+        },
+        "2": {
+          "woba": 0.296
+        },
+        "3": {
+          "woba": 0.444
+        },
+        "4": {
+          "woba": 0.221
+        },
+        "5": {
+          "woba": 0.266
+        },
+        "6": {
+          "woba": 0.263
+        },
+        "7": {
+          "woba": 0.167
+        },
+        "8": {
+          "woba": 0.6
+        },
+        "9": {
+          "woba": 0.104
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.537
+          },
+          "2": {
+            "woba": 0
+          },
+          "3": {
+            "woba": 0
+          },
+          "4": {
+            "woba": 0.43
+          },
+          "5": {
+            "woba": 0.692
+          },
+          "6": {
+            "woba": 0.15
+          },
+          "7": {
+            "woba": 0
+          },
+          "8": {
+            "woba": 1.45
+          },
+          "9": {
+            "woba": 0
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.129
+          },
+          "2": {
+            "woba": 0.461
+          },
+          "3": {
+            "woba": 0.571
+          },
+          "4": {
+            "woba": 0.133
+          },
+          "5": {
+            "woba": 0.069
+          },
+          "6": {
+            "woba": 0.339
+          },
+          "7": {
+            "woba": 0.333
+          },
+          "8": {
+            "woba": 0.317
+          },
+          "9": {
+            "woba": 0.125
+          }
+        }
+      },
+      "hrByZone": {
+        "2": {
+          "count": 1,
+          "pct": 11.1
+        },
+        "3": {
+          "count": 2,
+          "pct": 22.2
+        },
+        "5": {
+          "count": 1,
+          "pct": 11.1
+        },
+        "7": {
+          "count": 1,
+          "pct": 11.1
+        },
+        "8": {
+          "count": 4,
+          "pct": 44.4
+        }
+      }
+    },
+    "682177": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 27.5,
+          "pitches": 311,
+          "avg": 0.206,
+          "slg": 0.426,
+          "xslg": 0.477,
+          "xba": 0.229,
+          "woba": 0.311,
+          "xwoba": 0.34,
+          "whiffPct": 27.2,
+          "hardHitPct": 46.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 4
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 14.1,
+          "pitches": 160,
+          "avg": 0.222,
+          "slg": 0.333,
+          "xslg": 0.457,
+          "xba": 0.3,
+          "woba": 0.314,
+          "xwoba": 0.386,
+          "whiffPct": 21.6,
+          "hardHitPct": 46.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Slider",
+          "usagePct": 14.1,
+          "pitches": 159,
+          "avg": 0.143,
+          "slg": 0.286,
+          "xslg": 0.291,
+          "xba": 0.155,
+          "woba": 0.221,
+          "xwoba": 0.229,
+          "whiffPct": 44.7,
+          "hardHitPct": 45.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 12.2,
+          "pitches": 138,
+          "avg": 0.161,
+          "slg": 0.194,
+          "xslg": 0.265,
+          "xba": 0.196,
+          "woba": 0.189,
+          "xwoba": 0.229,
+          "whiffPct": 39.1,
+          "hardHitPct": 35,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 10.7,
+          "pitches": 121,
+          "avg": 0.233,
+          "slg": 0.233,
+          "xslg": 0.215,
+          "xba": 0.163,
+          "woba": 0.226,
+          "xwoba": 0.18,
+          "whiffPct": 36.8,
+          "hardHitPct": 35.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 10.2,
+          "pitches": 115,
+          "avg": 0.16,
+          "slg": 0.16,
+          "xslg": 0.324,
+          "xba": 0.216,
+          "woba": 0.204,
+          "xwoba": 0.284,
+          "whiffPct": 29.6,
+          "hardHitPct": 29.4,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 6.5,
+          "pitches": 74,
+          "avg": 0.35,
+          "slg": 0.65,
+          "xslg": 0.504,
+          "xba": 0.306,
+          "woba": 0.47,
+          "xwoba": 0.345,
+          "whiffPct": 14.7,
+          "hardHitPct": 31.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 4.4,
+          "pitches": 50,
+          "avg": 0.357,
+          "slg": 0.429,
+          "xslg": 0.345,
+          "xba": 0.301,
+          "woba": 0.346,
+          "xwoba": 0.284,
+          "whiffPct": 40,
+          "hardHitPct": 10,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Forkball",
+          "usagePct": 0.2,
+          "pitches": 2,
+          "avg": 0,
+          "slg": 0,
+          "xslg": 0.053,
+          "xba": 0.052,
+          "woba": 0,
+          "xwoba": 0.047,
+          "whiffPct": 0,
+          "hardHitPct": 0,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.178
+        },
+        "2": {
+          "woba": 0.292
+        },
+        "3": {
+          "woba": 0.361
+        },
+        "4": {
+          "woba": 0.408
+        },
+        "5": {
+          "woba": 0.492
+        },
+        "6": {
+          "woba": 0.235
+        },
+        "7": {
+          "woba": 0.161
+        },
+        "8": {
+          "woba": 0.152
+        },
+        "9": {
+          "woba": 0.304
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.163
+          },
+          "2": {
+            "woba": 0.319
+          },
+          "3": {
+            "woba": 0.18
+          },
+          "4": {
+            "woba": 0.346
+          },
+          "5": {
+            "woba": 0.602
+          },
+          "6": {
+            "woba": 0.159
+          },
+          "7": {
+            "woba": 0.171
+          },
+          "8": {
+            "woba": 0.056
+          },
+          "9": {
+            "woba": 0.2
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.225
+          },
+          "2": {
+            "woba": 0.18
+          },
+          "3": {
+            "woba": 0.813
+          },
+          "4": {
+            "woba": 0.58
+          },
+          "5": {
+            "woba": 0.129
+          },
+          "6": {
+            "woba": 0.667
+          },
+          "7": {
+            "woba": 0.129
+          },
+          "8": {
+            "woba": 0.537
+          },
+          "9": {
+            "woba": 0.537
+          }
+        }
+      },
+      "hrByZone": {
+        "2": {
+          "count": 2,
+          "pct": 25
+        },
+        "3": {
+          "count": 1,
+          "pct": 12.5
+        },
+        "4": {
+          "count": 1,
+          "pct": 12.5
+        },
+        "5": {
+          "count": 2,
+          "pct": 25
+        },
+        "6": {
+          "count": 1,
+          "pct": 12.5
+        },
+        "9": {
+          "count": 1,
+          "pct": 12.5
+        }
+      }
+    },
+    "682657": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 29.4,
+          "pitches": 438,
+          "avg": 0.212,
+          "slg": 0.434,
+          "xslg": 0.453,
+          "xba": 0.265,
+          "woba": 0.334,
+          "xwoba": 0.349,
+          "whiffPct": 14.8,
+          "hardHitPct": 35,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 6
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 16,
+          "pitches": 239,
+          "avg": 0.274,
+          "slg": 0.329,
+          "xslg": 0.32,
+          "xba": 0.252,
+          "woba": 0.266,
+          "xwoba": 0.248,
+          "whiffPct": 16.8,
+          "hardHitPct": 42.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 15,
+          "pitches": 223,
+          "avg": 0.203,
+          "slg": 0.392,
+          "xslg": 0.326,
+          "xba": 0.23,
+          "woba": 0.251,
+          "xwoba": 0.24,
+          "whiffPct": 21.1,
+          "hardHitPct": 30.8,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 3
+        },
+        {
+          "name": "Slider",
+          "usagePct": 10.9,
+          "pitches": 163,
+          "avg": 0.302,
+          "slg": 0.674,
+          "xslg": 0.489,
+          "xba": 0.24,
+          "woba": 0.436,
+          "xwoba": 0.34,
+          "whiffPct": 24.3,
+          "hardHitPct": 31,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 5
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 9,
+          "pitches": 134,
+          "avg": 0.364,
+          "slg": 0.955,
+          "xslg": 0.628,
+          "xba": 0.28,
+          "woba": 0.55,
+          "xwoba": 0.394,
+          "whiffPct": 25.4,
+          "hardHitPct": 52.9,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 5
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 7.7,
+          "pitches": 115,
+          "avg": 0.464,
+          "slg": 0.857,
+          "xslg": 0.648,
+          "xba": 0.371,
+          "woba": 0.577,
+          "xwoba": 0.466,
+          "whiffPct": 16.7,
+          "hardHitPct": 41.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 3
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 6.1,
+          "pitches": 91,
+          "avg": 0.15,
+          "slg": 0.15,
+          "xslg": 0.122,
+          "xba": 0.106,
+          "woba": 0.135,
+          "xwoba": 0.099,
+          "whiffPct": 37,
+          "hardHitPct": 36.4,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 5.4,
+          "pitches": 80,
+          "avg": 0.214,
+          "slg": 0.286,
+          "xslg": 0.272,
+          "xba": 0.238,
+          "woba": 0.218,
+          "xwoba": 0.224,
+          "whiffPct": 28.3,
+          "hardHitPct": 14.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Forkball",
+          "usagePct": 0.3,
+          "pitches": 4,
+          "avg": 0,
+          "slg": 0,
+          "xslg": null,
+          "xba": null,
+          "woba": 0,
+          "xwoba": 0,
+          "whiffPct": 100,
+          "hardHitPct": null,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.25
+        },
+        "2": {
+          "woba": 0.638
+        },
+        "3": {
+          "woba": 0.095
+        },
+        "4": {
+          "woba": 0.315
+        },
+        "5": {
+          "woba": 0.249
+        },
+        "6": {
+          "woba": 0.378
+        },
+        "7": {
+          "woba": 0.315
+        },
+        "8": {
+          "woba": 0.483
+        },
+        "9": {
+          "woba": 0.421
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.313
+          },
+          "2": {
+            "woba": 0.831
+          },
+          "3": {
+            "woba": 0
+          },
+          "4": {
+            "woba": 0.157
+          },
+          "5": {
+            "woba": 0.317
+          },
+          "6": {
+            "woba": 0.439
+          },
+          "7": {
+            "woba": 0.277
+          },
+          "8": {
+            "woba": 0.404
+          },
+          "9": {
+            "woba": 0.641
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0
+          },
+          "2": {
+            "woba": 0.409
+          },
+          "3": {
+            "woba": 0.225
+          },
+          "4": {
+            "woba": 0.68
+          },
+          "5": {
+            "woba": 0
+          },
+          "6": {
+            "woba": 0.325
+          },
+          "7": {
+            "woba": 0.363
+          },
+          "8": {
+            "woba": 0.565
+          },
+          "9": {
+            "woba": 0.235
+          }
+        }
+      },
+      "hrByZone": {
+        "2": {
+          "count": 2,
+          "pct": 11.1
+        },
+        "4": {
+          "count": 1,
+          "pct": 5.6
+        },
+        "5": {
+          "count": 4,
+          "pct": 22.2
+        },
+        "6": {
+          "count": 2,
+          "pct": 11.1
+        },
+        "7": {
+          "count": 2,
+          "pct": 11.1
+        },
+        "8": {
+          "count": 5,
+          "pct": 27.8
+        },
+        "9": {
+          "count": 2,
+          "pct": 11.1
+        }
+      }
+    },
+    "682668": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 24.8,
+          "pitches": 193,
+          "avg": 0.271,
+          "slg": 0.313,
+          "xslg": 0.376,
+          "xba": 0.284,
+          "woba": 0.294,
+          "xwoba": 0.331,
+          "whiffPct": 19.2,
+          "hardHitPct": 46.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Slider",
+          "usagePct": 20.4,
+          "pitches": 159,
+          "avg": 0.213,
+          "slg": 0.213,
+          "xslg": 0.184,
+          "xba": 0.165,
+          "woba": 0.211,
+          "xwoba": 0.153,
+          "whiffPct": 37.8,
+          "hardHitPct": 32.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 19.9,
+          "pitches": 155,
+          "avg": 0.233,
+          "slg": 0.302,
+          "xslg": 0.438,
+          "xba": 0.326,
+          "woba": 0.269,
+          "xwoba": 0.354,
+          "whiffPct": 10.7,
+          "hardHitPct": 38.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 15.7,
+          "pitches": 122,
+          "avg": 0.132,
+          "slg": 0.158,
+          "xslg": 0.193,
+          "xba": 0.166,
+          "woba": 0.151,
+          "xwoba": 0.156,
+          "whiffPct": 38.9,
+          "hardHitPct": 25,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 6.9,
+          "pitches": 54,
+          "avg": 0.167,
+          "slg": 0.25,
+          "xslg": 0.395,
+          "xba": 0.227,
+          "woba": 0.219,
+          "xwoba": 0.299,
+          "whiffPct": 30.8,
+          "hardHitPct": 36.4,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 6,
+          "pitches": 47,
+          "avg": 0.364,
+          "slg": 0.636,
+          "xslg": 0.43,
+          "xba": 0.278,
+          "woba": 0.427,
+          "xwoba": 0.304,
+          "whiffPct": 11.8,
+          "hardHitPct": 30,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 5,
+          "pitches": 39,
+          "avg": 0.375,
+          "slg": 0.375,
+          "xslg": 0.381,
+          "xba": 0.326,
+          "woba": 0.338,
+          "xwoba": 0.309,
+          "whiffPct": 31.3,
+          "hardHitPct": 28.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Slurve",
+          "usagePct": 0.1,
+          "pitches": 1,
+          "avg": 0,
+          "slg": 0,
+          "xslg": 1.076,
+          "xba": 0.537,
+          "woba": 0,
+          "xwoba": 0.673,
+          "whiffPct": 0,
+          "hardHitPct": 100,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.272
+        },
+        "2": {
+          "woba": 0.467
+        },
+        "3": {
+          "woba": 0.198
+        },
+        "4": {
+          "woba": 0.36
+        },
+        "5": {
+          "woba": 0.165
+        },
+        "6": {
+          "woba": 0.237
+        },
+        "7": {
+          "woba": 0.269
+        },
+        "8": {
+          "woba": 0.27
+        },
+        "9": {
+          "woba": 0
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.22
+          },
+          "2": {
+            "woba": 0.3
+          },
+          "3": {
+            "woba": 0.214
+          },
+          "4": {
+            "woba": 0.3
+          },
+          "5": {
+            "woba": 0.2
+          },
+          "6": {
+            "woba": 0.36
+          },
+          "7": {
+            "woba": 0.3
+          },
+          "8": {
+            "woba": 0.164
+          },
+          "9": {
+            "woba": 0
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.338
+          },
+          "2": {
+            "woba": 0.633
+          },
+          "3": {
+            "woba": 0.18
+          },
+          "4": {
+            "woba": 0.45
+          },
+          "5": {
+            "woba": 0.143
+          },
+          "6": {
+            "woba": 0.1
+          },
+          "7": {
+            "woba": 0.25
+          },
+          "8": {
+            "woba": 0.4
+          },
+          "9": {
+            "woba": 0
+          }
+        }
+      },
+      "hrByZone": {
+        "1": {
+          "count": 1,
+          "pct": 33.3
+        },
+        "2": {
+          "count": 1,
+          "pct": 33.3
+        },
+        "7": {
+          "count": 1,
+          "pct": 33.3
+        }
+      }
+    },
+    "683953": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 30.1,
+          "pitches": 626,
+          "avg": 0.272,
+          "slg": 0.503,
+          "xslg": 0.448,
+          "xba": 0.261,
+          "woba": 0.374,
+          "xwoba": 0.346,
+          "whiffPct": 18.3,
+          "hardHitPct": 47.9,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 9
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 16.1,
+          "pitches": 335,
+          "avg": 0.272,
+          "slg": 0.383,
+          "xslg": 0.334,
+          "xba": 0.227,
+          "woba": 0.364,
+          "xwoba": 0.328,
+          "whiffPct": 11,
+          "hardHitPct": 39.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 3
+        },
+        {
+          "name": "Slider",
+          "usagePct": 14.8,
+          "pitches": 308,
+          "avg": 0.221,
+          "slg": 0.397,
+          "xslg": 0.229,
+          "xba": 0.144,
+          "woba": 0.298,
+          "xwoba": 0.204,
+          "whiffPct": 34.1,
+          "hardHitPct": 26.2,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 3
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 11.8,
+          "pitches": 245,
+          "avg": 0.233,
+          "slg": 0.442,
+          "xslg": 0.309,
+          "xba": 0.193,
+          "woba": 0.328,
+          "xwoba": 0.265,
+          "whiffPct": 38.1,
+          "hardHitPct": 16.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 8.5,
+          "pitches": 178,
+          "avg": 0.188,
+          "slg": 0.281,
+          "xslg": 0.416,
+          "xba": 0.3,
+          "woba": 0.273,
+          "xwoba": 0.369,
+          "whiffPct": 24.7,
+          "hardHitPct": 42.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 8.1,
+          "pitches": 169,
+          "avg": 0.167,
+          "slg": 0.25,
+          "xslg": 0.262,
+          "xba": 0.19,
+          "woba": 0.215,
+          "xwoba": 0.24,
+          "whiffPct": 30.2,
+          "hardHitPct": 15.4,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 6.5,
+          "pitches": 135,
+          "avg": 0.35,
+          "slg": 0.5,
+          "xslg": 0.254,
+          "xba": 0.206,
+          "woba": 0.411,
+          "xwoba": 0.263,
+          "whiffPct": 32.4,
+          "hardHitPct": 25,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 3.5,
+          "pitches": 73,
+          "avg": 0.222,
+          "slg": 0.222,
+          "xslg": 0.308,
+          "xba": 0.262,
+          "woba": 0.226,
+          "xwoba": 0.273,
+          "whiffPct": 29.4,
+          "hardHitPct": 26.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Slurve",
+          "usagePct": 0.6,
+          "pitches": 13,
+          "avg": 0,
+          "slg": 0,
+          "xslg": 0.051,
+          "xba": 0.048,
+          "woba": 0,
+          "xwoba": 0.044,
+          "whiffPct": 0,
+          "hardHitPct": 0,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.2
+        },
+        "2": {
+          "woba": 0.218
+        },
+        "3": {
+          "woba": 0.289
+        },
+        "4": {
+          "woba": 0.248
+        },
+        "5": {
+          "woba": 0.466
+        },
+        "6": {
+          "woba": 0.403
+        },
+        "7": {
+          "woba": 0.15
+        },
+        "8": {
+          "woba": 0.36
+        },
+        "9": {
+          "woba": 0.294
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.215
+          },
+          "2": {
+            "woba": 0.283
+          },
+          "3": {
+            "woba": 0.339
+          },
+          "4": {
+            "woba": 0.338
+          },
+          "5": {
+            "woba": 0.482
+          },
+          "6": {
+            "woba": 0.647
+          },
+          "7": {
+            "woba": 0.167
+          },
+          "8": {
+            "woba": 0.355
+          },
+          "9": {
+            "woba": 0.338
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.179
+          },
+          "2": {
+            "woba": 0
+          },
+          "3": {
+            "woba": 0.239
+          },
+          "4": {
+            "woba": 0
+          },
+          "5": {
+            "woba": 0.404
+          },
+          "6": {
+            "woba": 0.205
+          },
+          "7": {
+            "woba": 0.12
+          },
+          "8": {
+            "woba": 0.372
+          },
+          "9": {
+            "woba": 0.129
+          }
+        }
+      },
+      "hrByZone": {
+        "2": {
+          "count": 2,
+          "pct": 11.8
+        },
+        "4": {
+          "count": 1,
+          "pct": 5.9
+        },
+        "5": {
+          "count": 5,
+          "pct": 29.4
+        },
+        "6": {
+          "count": 4,
+          "pct": 23.5
+        },
+        "8": {
+          "count": 3,
+          "pct": 17.6
+        },
+        "9": {
+          "count": 2,
+          "pct": 11.8
+        }
+      }
+    },
+    "686668": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 35.7,
+          "pitches": 277,
+          "avg": 0.2,
+          "slg": 0.255,
+          "xslg": 0.244,
+          "xba": 0.179,
+          "woba": 0.257,
+          "xwoba": 0.25,
+          "whiffPct": 22.1,
+          "hardHitPct": 34.2,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Slider",
+          "usagePct": 17.4,
+          "pitches": 135,
+          "avg": 0.179,
+          "slg": 0.205,
+          "xslg": 0.288,
+          "xba": 0.182,
+          "woba": 0.206,
+          "xwoba": 0.213,
+          "whiffPct": 44.7,
+          "hardHitPct": 47.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 11.9,
+          "pitches": 92,
+          "avg": 0.29,
+          "slg": 0.548,
+          "xslg": 0.327,
+          "xba": 0.173,
+          "woba": 0.366,
+          "xwoba": 0.227,
+          "whiffPct": 48.1,
+          "hardHitPct": 27.8,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 11.2,
+          "pitches": 87,
+          "avg": 0.231,
+          "slg": 0.5,
+          "xslg": 0.448,
+          "xba": 0.263,
+          "woba": 0.398,
+          "xwoba": 0.331,
+          "whiffPct": 19.6,
+          "hardHitPct": 43.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 8.4,
+          "pitches": 65,
+          "avg": 0.118,
+          "slg": 0.118,
+          "xslg": 0.176,
+          "xba": 0.135,
+          "woba": 0.106,
+          "xwoba": 0.134,
+          "whiffPct": 45.5,
+          "hardHitPct": 10,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 7.2,
+          "pitches": 56,
+          "avg": 0.391,
+          "slg": 0.565,
+          "xslg": 0.412,
+          "xba": 0.337,
+          "woba": 0.415,
+          "xwoba": 0.325,
+          "whiffPct": 27.8,
+          "hardHitPct": 35.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 5,
+          "pitches": 39,
+          "avg": 0.286,
+          "slg": 0.286,
+          "xslg": 0.163,
+          "xba": 0.143,
+          "woba": 0.3,
+          "xwoba": 0.135,
+          "whiffPct": 36.8,
+          "hardHitPct": 33.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 1.8,
+          "pitches": 14,
+          "avg": 0,
+          "slg": 0,
+          "xslg": 0.131,
+          "xba": 0.117,
+          "woba": 0,
+          "xwoba": 0.109,
+          "whiffPct": 50,
+          "hardHitPct": 33.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Slurve",
+          "usagePct": 0.5,
+          "pitches": 4,
+          "avg": 1,
+          "slg": 4,
+          "xslg": 1.136,
+          "xba": 0.294,
+          "woba": 2,
+          "xwoba": 0.591,
+          "whiffPct": 0,
+          "hardHitPct": 100,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Forkball",
+          "usagePct": 0.3,
+          "pitches": 2,
+          "avg": 0,
+          "slg": 0,
+          "xslg": 0.121,
+          "xba": 0.069,
+          "woba": 0,
+          "xwoba": 0.077,
+          "whiffPct": 0,
+          "hardHitPct": 0,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.227
+        },
+        "2": {
+          "woba": 0.242
+        },
+        "3": {
+          "woba": 0.305
+        },
+        "4": {
+          "woba": 0.324
+        },
+        "5": {
+          "woba": 0.445
+        },
+        "6": {
+          "woba": 0.332
+        },
+        "7": {
+          "woba": 0.271
+        },
+        "8": {
+          "woba": 0.488
+        },
+        "9": {
+          "woba": 0.411
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.129
+          },
+          "2": {
+            "woba": 0.25
+          },
+          "3": {
+            "woba": 0.36
+          },
+          "4": {
+            "woba": 0.263
+          },
+          "5": {
+            "woba": 0.327
+          },
+          "6": {
+            "woba": 0.281
+          },
+          "7": {
+            "woba": 0.113
+          },
+          "8": {
+            "woba": 0.421
+          },
+          "9": {
+            "woba": 0.36
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.4
+          },
+          "2": {
+            "woba": 0.2
+          },
+          "3": {
+            "woba": 0.25
+          },
+          "4": {
+            "woba": 0.415
+          },
+          "5": {
+            "woba": 0.606
+          },
+          "6": {
+            "woba": 0.422
+          },
+          "7": {
+            "woba": 0.483
+          },
+          "8": {
+            "woba": 0.554
+          },
+          "9": {
+            "woba": 0.475
+          }
+        }
+      },
+      "hrByZone": {
+        "4": {
+          "count": 1,
+          "pct": 16.7
+        },
+        "6": {
+          "count": 1,
+          "pct": 16.7
+        },
+        "7": {
+          "count": 1,
+          "pct": 16.7
+        },
+        "8": {
+          "count": 2,
+          "pct": 33.3
+        },
+        "9": {
+          "count": 1,
+          "pct": 16.7
+        }
+      }
+    },
+    "690984": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 33,
+          "pitches": 219,
+          "avg": 0.28,
+          "slg": 0.44,
+          "xslg": 0.388,
+          "xba": 0.249,
+          "woba": 0.352,
+          "xwoba": 0.319,
+          "whiffPct": 31.1,
+          "hardHitPct": 34.2,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 3
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 15.8,
+          "pitches": 105,
+          "avg": 0.281,
+          "slg": 0.406,
+          "xslg": 0.469,
+          "xba": 0.342,
+          "woba": 0.338,
+          "xwoba": 0.363,
+          "whiffPct": 22.7,
+          "hardHitPct": 13.8,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Slider",
+          "usagePct": 12.2,
+          "pitches": 81,
+          "avg": 0.263,
+          "slg": 0.316,
+          "xslg": 0.364,
+          "xba": 0.238,
+          "woba": 0.255,
+          "xwoba": 0.259,
+          "whiffPct": 36.2,
+          "hardHitPct": 25,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 10.4,
+          "pitches": 69,
+          "avg": 0.16,
+          "slg": 0.2,
+          "xslg": 0.382,
+          "xba": 0.294,
+          "woba": 0.158,
+          "xwoba": 0.295,
+          "whiffPct": 13.3,
+          "hardHitPct": 16.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 10.1,
+          "pitches": 67,
+          "avg": 0,
+          "slg": 0,
+          "xslg": 0.148,
+          "xba": 0.113,
+          "woba": 0.082,
+          "xwoba": 0.175,
+          "whiffPct": 21.2,
+          "hardHitPct": 20,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 10,
+          "pitches": 66,
+          "avg": 0.118,
+          "slg": 0.118,
+          "xslg": 0.233,
+          "xba": 0.162,
+          "woba": 0.168,
+          "xwoba": 0.226,
+          "whiffPct": 27.5,
+          "hardHitPct": 23.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 4.8,
+          "pitches": 32,
+          "avg": 0.357,
+          "slg": 0.429,
+          "xslg": 0.424,
+          "xba": 0.246,
+          "woba": 0.346,
+          "xwoba": 0.284,
+          "whiffPct": 15.4,
+          "hardHitPct": 33.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 2.3,
+          "pitches": 15,
+          "avg": 0.2,
+          "slg": 0.8,
+          "xslg": 0.668,
+          "xba": 0.211,
+          "woba": 0.4,
+          "xwoba": 0.365,
+          "whiffPct": 0,
+          "hardHitPct": 40,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0
+        },
+        "2": {
+          "woba": 0.16
+        },
+        "3": {
+          "woba": 0.15
+        },
+        "4": {
+          "woba": 0.165
+        },
+        "5": {
+          "woba": 0.271
+        },
+        "6": {
+          "woba": 0.531
+        },
+        "7": {
+          "woba": 0.369
+        },
+        "8": {
+          "woba": 0.225
+        },
+        "9": {
+          "woba": 0.36
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0
+          },
+          "2": {
+            "woba": 0.267
+          },
+          "3": {
+            "woba": 0.1
+          },
+          "4": {
+            "woba": 0.239
+          },
+          "5": {
+            "woba": 0.336
+          },
+          "6": {
+            "woba": 0.56
+          },
+          "7": {
+            "woba": 0.411
+          },
+          "8": {
+            "woba": 0.18
+          },
+          "9": {
+            "woba": 0.36
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0
+          },
+          "2": {
+            "woba": 0
+          },
+          "3": {
+            "woba": 0.2
+          },
+          "4": {
+            "woba": 0
+          },
+          "5": {
+            "woba": 0
+          },
+          "6": {
+            "woba": 0.483
+          },
+          "7": {
+            "woba": 0.225
+          },
+          "8": {
+            "woba": 0.45
+          }
+        }
+      },
+      "hrByZone": {
+        "5": {
+          "count": 1,
+          "pct": 25
+        },
+        "6": {
+          "count": 2,
+          "pct": 50
+        },
+        "9": {
+          "count": 1,
+          "pct": 25
+        }
+      }
+    },
+    "691019": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 28.4,
+          "pitches": 174,
+          "avg": 0.27,
+          "slg": 0.459,
+          "xslg": 0.398,
+          "xba": 0.213,
+          "woba": 0.38,
+          "xwoba": 0.34,
+          "whiffPct": 36.2,
+          "hardHitPct": 45.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 18.8,
+          "pitches": 115,
+          "avg": 0.208,
+          "slg": 0.458,
+          "xslg": 0.55,
+          "xba": 0.278,
+          "woba": 0.339,
+          "xwoba": 0.4,
+          "whiffPct": 14.8,
+          "hardHitPct": 57.9,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Slider",
+          "usagePct": 14.4,
+          "pitches": 88,
+          "avg": 0.095,
+          "slg": 0.095,
+          "xslg": 0.219,
+          "xba": 0.14,
+          "woba": 0.195,
+          "xwoba": 0.177,
+          "whiffPct": 44.2,
+          "hardHitPct": 60,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 10.9,
+          "pitches": 67,
+          "avg": 0.182,
+          "slg": 0.273,
+          "xslg": 0.164,
+          "xba": 0.124,
+          "woba": 0.273,
+          "xwoba": 0.214,
+          "whiffPct": 37.5,
+          "hardHitPct": 16.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 10.3,
+          "pitches": 63,
+          "avg": 0.125,
+          "slg": 0.125,
+          "xslg": 0.177,
+          "xba": 0.161,
+          "woba": 0.23,
+          "xwoba": 0.259,
+          "whiffPct": 40.6,
+          "hardHitPct": 25,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 7.7,
+          "pitches": 47,
+          "avg": 0.375,
+          "slg": 0.875,
+          "xslg": 0.849,
+          "xba": 0.383,
+          "woba": 0.555,
+          "xwoba": 0.553,
+          "whiffPct": 50,
+          "hardHitPct": 50,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 7.5,
+          "pitches": 46,
+          "avg": 0.286,
+          "slg": 0.286,
+          "xslg": 0.293,
+          "xba": 0.255,
+          "woba": 0.39,
+          "xwoba": 0.377,
+          "whiffPct": 33.3,
+          "hardHitPct": 50,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 1.5,
+          "pitches": 9,
+          "avg": 0,
+          "slg": 0,
+          "xslg": 0.03,
+          "xba": 0.03,
+          "woba": 0,
+          "xwoba": 0.028,
+          "whiffPct": 66.7,
+          "hardHitPct": 0,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Slurve",
+          "usagePct": 0.5,
+          "pitches": 3,
+          "avg": 0,
+          "slg": 0,
+          "xslg": null,
+          "xba": null,
+          "woba": 0,
+          "xwoba": 0,
+          "whiffPct": 100,
+          "hardHitPct": null,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.4
+        },
+        "2": {
+          "woba": 0.156
+        },
+        "3": {
+          "woba": 0
+        },
+        "4": {
+          "woba": 0.406
+        },
+        "5": {
+          "woba": 0.612
+        },
+        "6": {
+          "woba": 0.457
+        },
+        "7": {
+          "woba": 0.2
+        },
+        "8": {
+          "woba": 0.106
+        },
+        "9": {
+          "woba": 0.54
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.4
+          },
+          "2": {
+            "woba": 0.179
+          },
+          "3": {
+            "woba": 0
+          },
+          "4": {
+            "woba": 0.427
+          },
+          "5": {
+            "woba": 0.723
+          },
+          "6": {
+            "woba": 0.561
+          },
+          "7": {
+            "woba": 0.18
+          },
+          "8": {
+            "woba": 0.069
+          },
+          "9": {
+            "woba": 0.6
+          }
+        },
+        "L": {
+          "2": {
+            "woba": 0
+          },
+          "3": {
+            "woba": 0
+          },
+          "4": {
+            "woba": 0.36
+          },
+          "5": {
+            "woba": 0
+          },
+          "6": {
+            "woba": 0.3
+          },
+          "7": {
+            "woba": 0.225
+          },
+          "8": {
+            "woba": 0.225
+          },
+          "9": {
+            "woba": 0.45
+          }
+        }
+      },
+      "hrByZone": {
+        "1": {
+          "count": 1,
+          "pct": 20
+        },
+        "4": {
+          "count": 1,
+          "pct": 20
+        },
+        "5": {
+          "count": 2,
+          "pct": 40
+        },
+        "6": {
+          "count": 1,
+          "pct": 20
+        }
+      }
+    },
+    "694197": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 25.6,
+          "pitches": 133,
+          "avg": 0.278,
+          "slg": 0.333,
+          "xslg": 0.448,
+          "xba": 0.311,
+          "woba": 0.326,
+          "xwoba": 0.356,
+          "whiffPct": 15.4,
+          "hardHitPct": 51.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 18.1,
+          "pitches": 94,
+          "avg": 0.214,
+          "slg": 0.321,
+          "xslg": 0.377,
+          "xba": 0.238,
+          "woba": 0.319,
+          "xwoba": 0.318,
+          "whiffPct": 7,
+          "hardHitPct": 57.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 14.3,
+          "pitches": 74,
+          "avg": 0.176,
+          "slg": 0.176,
+          "xslg": 0.263,
+          "xba": 0.224,
+          "woba": 0.239,
+          "xwoba": 0.237,
+          "whiffPct": 17.9,
+          "hardHitPct": 43.8,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 11.9,
+          "pitches": 62,
+          "avg": 0.133,
+          "slg": 0.133,
+          "xslg": 0.234,
+          "xba": 0.205,
+          "woba": 0.188,
+          "xwoba": 0.251,
+          "whiffPct": 32.3,
+          "hardHitPct": 38.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 11,
+          "pitches": 57,
+          "avg": 0.111,
+          "slg": 0.222,
+          "xslg": 0.196,
+          "xba": 0.172,
+          "woba": 0.195,
+          "xwoba": 0.216,
+          "whiffPct": 38.1,
+          "hardHitPct": 57.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Slider",
+          "usagePct": 9.8,
+          "pitches": 51,
+          "avg": 0.182,
+          "slg": 0.273,
+          "xslg": 0.302,
+          "xba": 0.198,
+          "woba": 0.195,
+          "xwoba": 0.216,
+          "whiffPct": 34.8,
+          "hardHitPct": 57.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 5.8,
+          "pitches": 30,
+          "avg": 0.25,
+          "slg": 0.625,
+          "xslg": 0.245,
+          "xba": 0.181,
+          "woba": 0.4,
+          "xwoba": 0.241,
+          "whiffPct": 46.2,
+          "hardHitPct": 60,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 3.3,
+          "pitches": 17,
+          "avg": 0.333,
+          "slg": 0.333,
+          "xslg": 0.183,
+          "xba": 0.161,
+          "woba": 0.3,
+          "xwoba": 0.151,
+          "whiffPct": 50,
+          "hardHitPct": 100,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.494
+        },
+        "2": {
+          "woba": 0.305
+        },
+        "3": {
+          "woba": 0.14
+        },
+        "4": {
+          "woba": 0.322
+        },
+        "5": {
+          "woba": 0.18
+        },
+        "6": {
+          "woba": 0.8
+        },
+        "7": {
+          "woba": 0.15
+        },
+        "8": {
+          "woba": 0.106
+        },
+        "9": {
+          "woba": 0.517
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.54
+          },
+          "2": {
+            "woba": 0.307
+          },
+          "3": {
+            "woba": 0.35
+          },
+          "4": {
+            "woba": 0.129
+          },
+          "5": {
+            "woba": 0.169
+          },
+          "6": {
+            "woba": 0.95
+          },
+          "7": {
+            "woba": 0.18
+          },
+          "8": {
+            "woba": 0.138
+          },
+          "9": {
+            "woba": 0.625
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.417
+          },
+          "2": {
+            "woba": 0.3
+          },
+          "3": {
+            "woba": 0
+          },
+          "4": {
+            "woba": 1
+          },
+          "5": {
+            "woba": 0.2
+          },
+          "6": {
+            "woba": 0.6
+          },
+          "7": {
+            "woba": 0
+          },
+          "8": {
+            "woba": 0
+          },
+          "9": {
+            "woba": 0.3
+          }
+        }
+      },
+      "hrByZone": {
+        "4": {
+          "count": 1,
+          "pct": 50
+        },
+        "6": {
+          "count": 1,
+          "pct": 50
+        }
+      }
+    },
+    "695657": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 36.4,
+          "pitches": 890,
+          "avg": 0.152,
+          "slg": 0.314,
+          "xslg": 0.304,
+          "xba": 0.157,
+          "woba": 0.255,
+          "xwoba": 0.251,
+          "whiffPct": 34,
+          "hardHitPct": 33.9,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 12
+        },
+        {
+          "name": "Slider",
+          "usagePct": 14.6,
+          "pitches": 356,
+          "avg": 0.169,
+          "slg": 0.38,
+          "xslg": 0.356,
+          "xba": 0.165,
+          "woba": 0.288,
+          "xwoba": 0.267,
+          "whiffPct": 47.8,
+          "hardHitPct": 42.9,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 4
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 14.5,
+          "pitches": 355,
+          "avg": 0.273,
+          "slg": 0.5,
+          "xslg": 0.477,
+          "xba": 0.28,
+          "woba": 0.369,
+          "xwoba": 0.366,
+          "whiffPct": 29.8,
+          "hardHitPct": 51.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 5
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 9.5,
+          "pitches": 232,
+          "avg": 0.211,
+          "slg": 0.456,
+          "xslg": 0.386,
+          "xba": 0.197,
+          "woba": 0.313,
+          "xwoba": 0.278,
+          "whiffPct": 41.7,
+          "hardHitPct": 27.8,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 4
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 8.5,
+          "pitches": 208,
+          "avg": 0.067,
+          "slg": 0.067,
+          "xslg": 0.182,
+          "xba": 0.112,
+          "woba": 0.167,
+          "xwoba": 0.221,
+          "whiffPct": 44.2,
+          "hardHitPct": 43.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 7.9,
+          "pitches": 193,
+          "avg": 0.235,
+          "slg": 0.382,
+          "xslg": 0.323,
+          "xba": 0.204,
+          "woba": 0.314,
+          "xwoba": 0.252,
+          "whiffPct": 43.2,
+          "hardHitPct": 35,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 5.4,
+          "pitches": 133,
+          "avg": 0.389,
+          "slg": 1,
+          "xslg": 0.969,
+          "xba": 0.364,
+          "woba": 0.604,
+          "xwoba": 0.562,
+          "whiffPct": 30.3,
+          "hardHitPct": 53.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 7
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 2.7,
+          "pitches": 66,
+          "avg": 0.273,
+          "slg": 0.591,
+          "xslg": 0.51,
+          "xba": 0.292,
+          "woba": 0.39,
+          "xwoba": 0.371,
+          "whiffPct": 34.2,
+          "hardHitPct": 53.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Forkball",
+          "usagePct": 0.2,
+          "pitches": 5,
+          "avg": 0,
+          "slg": 0,
+          "xslg": null,
+          "xba": null,
+          "woba": 0,
+          "xwoba": 0,
+          "whiffPct": 100,
+          "hardHitPct": null,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Slurve",
+          "usagePct": 0.2,
+          "pitches": 4,
+          "avg": 0,
+          "slg": 0,
+          "xslg": null,
+          "xba": null,
+          "woba": 0,
+          "xwoba": 0,
+          "whiffPct": 33.3,
+          "hardHitPct": null,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.297
+        },
+        "2": {
+          "woba": 0.343
+        },
+        "3": {
+          "woba": 0.252
+        },
+        "4": {
+          "woba": 0.391
+        },
+        "5": {
+          "woba": 0.466
+        },
+        "6": {
+          "woba": 0.267
+        },
+        "7": {
+          "woba": 0.309
+        },
+        "8": {
+          "woba": 0.302
+        },
+        "9": {
+          "woba": 0.212
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.392
+          },
+          "2": {
+            "woba": 0.279
+          },
+          "3": {
+            "woba": 0.346
+          },
+          "4": {
+            "woba": 0.35
+          },
+          "5": {
+            "woba": 0.417
+          },
+          "6": {
+            "woba": 0.304
+          },
+          "7": {
+            "woba": 0.325
+          },
+          "8": {
+            "woba": 0.3
+          },
+          "9": {
+            "woba": 0.227
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0
+          },
+          "2": {
+            "woba": 0.459
+          },
+          "3": {
+            "woba": 0
+          },
+          "4": {
+            "woba": 0.454
+          },
+          "5": {
+            "woba": 0.575
+          },
+          "6": {
+            "woba": 0.165
+          },
+          "7": {
+            "woba": 0.29
+          },
+          "8": {
+            "woba": 0.306
+          },
+          "9": {
+            "woba": 0.18
+          }
+        }
+      },
+      "hrByZone": {
+        "1": {
+          "count": 4,
+          "pct": 11.8
+        },
+        "2": {
+          "count": 5,
+          "pct": 14.7
+        },
+        "3": {
+          "count": 2,
+          "pct": 5.9
+        },
+        "4": {
+          "count": 3,
+          "pct": 8.8
+        },
+        "5": {
+          "count": 9,
+          "pct": 26.5
+        },
+        "6": {
+          "count": 3,
+          "pct": 8.8
+        },
+        "7": {
+          "count": 3,
+          "pct": 8.8
+        },
+        "8": {
+          "count": 5,
+          "pct": 14.7
+        }
+      }
+    },
+    "695731": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 24.9,
+          "pitches": 349,
+          "avg": 0.337,
+          "slg": 0.523,
+          "xslg": 0.52,
+          "xba": 0.319,
+          "woba": 0.429,
+          "xwoba": 0.413,
+          "whiffPct": 23.1,
+          "hardHitPct": 56.2,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 17.5,
+          "pitches": 246,
+          "avg": 0.167,
+          "slg": 0.25,
+          "xslg": 0.275,
+          "xba": 0.216,
+          "woba": 0.205,
+          "xwoba": 0.236,
+          "whiffPct": 33.3,
+          "hardHitPct": 28.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 15.3,
+          "pitches": 215,
+          "avg": 0.278,
+          "slg": 0.417,
+          "xslg": 0.254,
+          "xba": 0.203,
+          "woba": 0.365,
+          "xwoba": 0.281,
+          "whiffPct": 29.2,
+          "hardHitPct": 20,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Slider",
+          "usagePct": 11.3,
+          "pitches": 159,
+          "avg": 0.205,
+          "slg": 0.308,
+          "xslg": 0.316,
+          "xba": 0.253,
+          "woba": 0.244,
+          "xwoba": 0.27,
+          "whiffPct": 37.9,
+          "hardHitPct": 33.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 9.7,
+          "pitches": 136,
+          "avg": 0.231,
+          "slg": 0.308,
+          "xslg": 0.323,
+          "xba": 0.216,
+          "woba": 0.297,
+          "xwoba": 0.295,
+          "whiffPct": 32.7,
+          "hardHitPct": 30,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 8.8,
+          "pitches": 123,
+          "avg": 0.176,
+          "slg": 0.382,
+          "xslg": 0.556,
+          "xba": 0.292,
+          "woba": 0.291,
+          "xwoba": 0.397,
+          "whiffPct": 27.1,
+          "hardHitPct": 63.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 6.3,
+          "pitches": 88,
+          "avg": 0.12,
+          "slg": 0.12,
+          "xslg": 0.323,
+          "xba": 0.21,
+          "woba": 0.108,
+          "xwoba": 0.23,
+          "whiffPct": 43.8,
+          "hardHitPct": 31.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 5.8,
+          "pitches": 82,
+          "avg": 0.071,
+          "slg": 0.143,
+          "xslg": 0.548,
+          "xba": 0.238,
+          "woba": 0.225,
+          "xwoba": 0.41,
+          "whiffPct": 22.6,
+          "hardHitPct": 30.8,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.268
+        },
+        "2": {
+          "woba": 0.289
+        },
+        "3": {
+          "woba": 0.263
+        },
+        "4": {
+          "woba": 0.232
+        },
+        "5": {
+          "woba": 0.379
+        },
+        "6": {
+          "woba": 0.369
+        },
+        "7": {
+          "woba": 0.133
+        },
+        "8": {
+          "woba": 0.281
+        },
+        "9": {
+          "woba": 0.236
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.328
+          },
+          "2": {
+            "woba": 0.31
+          },
+          "3": {
+            "woba": 0.3
+          },
+          "4": {
+            "woba": 0.24
+          },
+          "5": {
+            "woba": 0.456
+          },
+          "6": {
+            "woba": 0.402
+          },
+          "7": {
+            "woba": 0.152
+          },
+          "8": {
+            "woba": 0.287
+          },
+          "9": {
+            "woba": 0.218
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0
+          },
+          "2": {
+            "woba": 0.25
+          },
+          "3": {
+            "woba": 0.208
+          },
+          "4": {
+            "woba": 0.2
+          },
+          "5": {
+            "woba": 0.203
+          },
+          "6": {
+            "woba": 0.18
+          },
+          "7": {
+            "woba": 0
+          },
+          "8": {
+            "woba": 0.257
+          },
+          "9": {
+            "woba": 0.262
+          }
+        }
+      },
+      "hrByZone": {
+        "2": {
+          "count": 1,
+          "pct": 14.3
+        },
+        "5": {
+          "count": 2,
+          "pct": 28.6
+        },
+        "6": {
+          "count": 1,
+          "pct": 14.3
+        },
+        "7": {
+          "count": 1,
+          "pct": 14.3
+        },
+        "8": {
+          "count": 1,
+          "pct": 14.3
+        },
+        "9": {
+          "count": 1,
+          "pct": 14.3
+        }
+      }
+    },
+    "800050": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 30.2,
+          "pitches": 645,
+          "avg": 0.338,
+          "slg": 0.61,
+          "xslg": 0.505,
+          "xba": 0.275,
+          "woba": 0.44,
+          "xwoba": 0.376,
+          "whiffPct": 14.7,
+          "hardHitPct": 50,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 11
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 15.3,
+          "pitches": 327,
+          "avg": 0.345,
+          "slg": 0.464,
+          "xslg": 0.387,
+          "xba": 0.306,
+          "woba": 0.411,
+          "xwoba": 0.367,
+          "whiffPct": 4.3,
+          "hardHitPct": 48.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 12.6,
+          "pitches": 269,
+          "avg": 0.19,
+          "slg": 0.207,
+          "xslg": 0.304,
+          "xba": 0.255,
+          "woba": 0.194,
+          "xwoba": 0.258,
+          "whiffPct": 18.4,
+          "hardHitPct": 42.9,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Slider",
+          "usagePct": 11.9,
+          "pitches": 254,
+          "avg": 0.375,
+          "slg": 0.643,
+          "xslg": 0.482,
+          "xba": 0.278,
+          "woba": 0.456,
+          "xwoba": 0.365,
+          "whiffPct": 23.8,
+          "hardHitPct": 41.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 3
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 8.7,
+          "pitches": 187,
+          "avg": 0.229,
+          "slg": 0.343,
+          "xslg": 0.329,
+          "xba": 0.245,
+          "woba": 0.321,
+          "xwoba": 0.316,
+          "whiffPct": 15.8,
+          "hardHitPct": 34.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 8.3,
+          "pitches": 177,
+          "avg": 0.171,
+          "slg": 0.286,
+          "xslg": 0.444,
+          "xba": 0.28,
+          "woba": 0.247,
+          "xwoba": 0.349,
+          "whiffPct": 17.1,
+          "hardHitPct": 41.4,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 7.7,
+          "pitches": 165,
+          "avg": 0.256,
+          "slg": 0.41,
+          "xslg": 0.403,
+          "xba": 0.269,
+          "woba": 0.328,
+          "xwoba": 0.307,
+          "whiffPct": 16.7,
+          "hardHitPct": 51.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 4.1,
+          "pitches": 88,
+          "avg": 0.208,
+          "slg": 0.292,
+          "xslg": 0.428,
+          "xba": 0.32,
+          "woba": 0.281,
+          "xwoba": 0.365,
+          "whiffPct": 14.6,
+          "hardHitPct": 47.8,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Slurve",
+          "usagePct": 0.9,
+          "pitches": 19,
+          "avg": 0,
+          "slg": 0,
+          "xslg": 0.294,
+          "xba": 0.246,
+          "woba": 0,
+          "xwoba": 0.233,
+          "whiffPct": 28.6,
+          "hardHitPct": 66.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.343
+        },
+        "2": {
+          "woba": 0.377
+        },
+        "3": {
+          "woba": 0.327
+        },
+        "4": {
+          "woba": 0.359
+        },
+        "5": {
+          "woba": 0.429
+        },
+        "6": {
+          "woba": 0.318
+        },
+        "7": {
+          "woba": 0.165
+        },
+        "8": {
+          "woba": 0.38
+        },
+        "9": {
+          "woba": 0.379
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.391
+          },
+          "2": {
+            "woba": 0.346
+          },
+          "3": {
+            "woba": 0.271
+          },
+          "4": {
+            "woba": 0.37
+          },
+          "5": {
+            "woba": 0.319
+          },
+          "6": {
+            "woba": 0.388
+          },
+          "7": {
+            "woba": 0.12
+          },
+          "8": {
+            "woba": 0.4
+          },
+          "9": {
+            "woba": 0.505
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.18
+          },
+          "2": {
+            "woba": 0.486
+          },
+          "3": {
+            "woba": 0.392
+          },
+          "4": {
+            "woba": 0.338
+          },
+          "5": {
+            "woba": 0.585
+          },
+          "6": {
+            "woba": 0.1
+          },
+          "7": {
+            "woba": 0.253
+          },
+          "8": {
+            "woba": 0.347
+          },
+          "9": {
+            "woba": 0
+          }
+        }
+      },
+      "hrByZone": {
+        "1": {
+          "count": 1,
+          "pct": 6.3
+        },
+        "2": {
+          "count": 2,
+          "pct": 12.5
+        },
+        "3": {
+          "count": 2,
+          "pct": 12.5
+        },
+        "5": {
+          "count": 2,
+          "pct": 12.5
+        },
+        "6": {
+          "count": 3,
+          "pct": 18.8
+        },
+        "8": {
+          "count": 2,
+          "pct": 12.5
+        },
+        "9": {
+          "count": 4,
+          "pct": 25
+        }
+      }
+    },
+    "803011": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 33.4,
+          "pitches": 727,
+          "avg": 0.315,
+          "slg": 0.523,
+          "xslg": 0.473,
+          "xba": 0.303,
+          "woba": 0.424,
+          "xwoba": 0.39,
+          "whiffPct": 13.4,
+          "hardHitPct": 39,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 7
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 18.4,
+          "pitches": 400,
+          "avg": 0.351,
+          "slg": 0.468,
+          "xslg": 0.466,
+          "xba": 0.346,
+          "woba": 0.41,
+          "xwoba": 0.404,
+          "whiffPct": 11.3,
+          "hardHitPct": 45.2,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Slider",
+          "usagePct": 11.5,
+          "pitches": 251,
+          "avg": 0.161,
+          "slg": 0.226,
+          "xslg": 0.331,
+          "xba": 0.227,
+          "woba": 0.189,
+          "xwoba": 0.26,
+          "whiffPct": 14.2,
+          "hardHitPct": 30.2,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 11.1,
+          "pitches": 241,
+          "avg": 0.214,
+          "slg": 0.214,
+          "xslg": 0.322,
+          "xba": 0.258,
+          "woba": 0.257,
+          "xwoba": 0.267,
+          "whiffPct": 18.1,
+          "hardHitPct": 32.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 9,
+          "pitches": 196,
+          "avg": 0.25,
+          "slg": 0.346,
+          "xslg": 0.351,
+          "xba": 0.265,
+          "woba": 0.342,
+          "xwoba": 0.319,
+          "whiffPct": 14.8,
+          "hardHitPct": 21.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 7,
+          "pitches": 152,
+          "avg": 0.32,
+          "slg": 0.44,
+          "xslg": 0.379,
+          "xba": 0.313,
+          "woba": 0.392,
+          "xwoba": 0.367,
+          "whiffPct": 16.7,
+          "hardHitPct": 21.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 6.1,
+          "pitches": 133,
+          "avg": 0.2,
+          "slg": 0.28,
+          "xslg": 0.2,
+          "xba": 0.151,
+          "woba": 0.316,
+          "xwoba": 0.273,
+          "whiffPct": 20.9,
+          "hardHitPct": 16.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 3.1,
+          "pitches": 67,
+          "avg": 0.313,
+          "slg": 0.375,
+          "xslg": 0.356,
+          "xba": 0.289,
+          "woba": 0.326,
+          "xwoba": 0.304,
+          "whiffPct": 27.6,
+          "hardHitPct": 8.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.29
+        },
+        "2": {
+          "woba": 0.411
+        },
+        "3": {
+          "woba": 0.35
+        },
+        "4": {
+          "woba": 0.339
+        },
+        "5": {
+          "woba": 0.376
+        },
+        "6": {
+          "woba": 0.442
+        },
+        "7": {
+          "woba": 0.248
+        },
+        "8": {
+          "woba": 0.268
+        },
+        "9": {
+          "woba": 0.391
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.36
+          },
+          "2": {
+            "woba": 0.469
+          },
+          "3": {
+            "woba": 0.393
+          },
+          "4": {
+            "woba": 0.293
+          },
+          "5": {
+            "woba": 0.379
+          },
+          "6": {
+            "woba": 0.454
+          },
+          "7": {
+            "woba": 0.257
+          },
+          "8": {
+            "woba": 0.288
+          },
+          "9": {
+            "woba": 0.352
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0
+          },
+          "2": {
+            "woba": 0.18
+          },
+          "3": {
+            "woba": 0.225
+          },
+          "4": {
+            "woba": 0.494
+          },
+          "5": {
+            "woba": 0.361
+          },
+          "6": {
+            "woba": 0.3
+          },
+          "7": {
+            "woba": 0.18
+          },
+          "8": {
+            "woba": 0.18
+          },
+          "9": {
+            "woba": 0.717
+          }
+        }
+      },
+      "hrByZone": {
+        "2": {
+          "count": 3,
+          "pct": 30
+        },
+        "3": {
+          "count": 3,
+          "pct": 30
+        },
+        "5": {
+          "count": 1,
+          "pct": 10
+        },
+        "6": {
+          "count": 2,
+          "pct": 20
+        },
+        "8": {
+          "count": 1,
+          "pct": 10
+        }
+      }
+    },
+    "805367": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 30.7,
+          "pitches": 813,
+          "avg": 0.241,
+          "slg": 0.42,
+          "xslg": 0.385,
+          "xba": 0.236,
+          "woba": 0.346,
+          "xwoba": 0.339,
+          "whiffPct": 18,
+          "hardHitPct": 46.2,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 7
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 22,
+          "pitches": 581,
+          "avg": 0.348,
+          "slg": 0.429,
+          "xslg": 0.349,
+          "xba": 0.286,
+          "woba": 0.39,
+          "xwoba": 0.33,
+          "whiffPct": 10.7,
+          "hardHitPct": 36.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Slider",
+          "usagePct": 13.9,
+          "pitches": 368,
+          "avg": 0.28,
+          "slg": 0.427,
+          "xslg": 0.341,
+          "xba": 0.218,
+          "woba": 0.341,
+          "xwoba": 0.255,
+          "whiffPct": 23.8,
+          "hardHitPct": 34.5,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 4
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 9,
+          "pitches": 237,
+          "avg": 0.286,
+          "slg": 0.39,
+          "xslg": 0.365,
+          "xba": 0.262,
+          "woba": 0.33,
+          "xwoba": 0.292,
+          "whiffPct": 30.2,
+          "hardHitPct": 28.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 8.2,
+          "pitches": 218,
+          "avg": 0.303,
+          "slg": 0.455,
+          "xslg": 0.42,
+          "xba": 0.303,
+          "woba": 0.388,
+          "xwoba": 0.368,
+          "whiffPct": 18.9,
+          "hardHitPct": 30,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 7.5,
+          "pitches": 198,
+          "avg": 0.184,
+          "slg": 0.306,
+          "xslg": 0.209,
+          "xba": 0.133,
+          "woba": 0.233,
+          "xwoba": 0.178,
+          "whiffPct": 27.3,
+          "hardHitPct": 15.2,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 5.7,
+          "pitches": 151,
+          "avg": 0.231,
+          "slg": 0.346,
+          "xslg": 0.25,
+          "xba": 0.204,
+          "woba": 0.28,
+          "xwoba": 0.234,
+          "whiffPct": 16.9,
+          "hardHitPct": 21.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 2.5,
+          "pitches": 66,
+          "avg": 0.3,
+          "slg": 0.65,
+          "xslg": 0.375,
+          "xba": 0.207,
+          "woba": 0.412,
+          "xwoba": 0.27,
+          "whiffPct": 26.3,
+          "hardHitPct": 35.7,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Slurve",
+          "usagePct": 0.1,
+          "pitches": 3,
+          "avg": 0.5,
+          "slg": 0.5,
+          "xslg": 0.164,
+          "xba": 0.144,
+          "woba": 0.45,
+          "xwoba": 0.13,
+          "whiffPct": 50,
+          "hardHitPct": 0,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.409
+        },
+        "2": {
+          "woba": 0.279
+        },
+        "3": {
+          "woba": 0.361
+        },
+        "4": {
+          "woba": 0.464
+        },
+        "5": {
+          "woba": 0.46
+        },
+        "6": {
+          "woba": 0.343
+        },
+        "7": {
+          "woba": 0.32
+        },
+        "8": {
+          "woba": 0.316
+        },
+        "9": {
+          "woba": 0.212
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.428
+          },
+          "2": {
+            "woba": 0.131
+          },
+          "3": {
+            "woba": 0.274
+          },
+          "4": {
+            "woba": 0.438
+          },
+          "5": {
+            "woba": 0.416
+          },
+          "6": {
+            "woba": 0.37
+          },
+          "7": {
+            "woba": 0.18
+          },
+          "8": {
+            "woba": 0.194
+          },
+          "9": {
+            "woba": 0.184
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.29
+          },
+          "2": {
+            "woba": 0.725
+          },
+          "3": {
+            "woba": 0.671
+          },
+          "4": {
+            "woba": 0.519
+          },
+          "5": {
+            "woba": 0.569
+          },
+          "6": {
+            "woba": 0.29
+          },
+          "7": {
+            "woba": 0.481
+          },
+          "8": {
+            "woba": 0.482
+          },
+          "9": {
+            "woba": 0.291
+          }
+        }
+      },
+      "hrByZone": {
+        "1": {
+          "count": 1,
+          "pct": 6.3
+        },
+        "2": {
+          "count": 3,
+          "pct": 18.8
+        },
+        "3": {
+          "count": 2,
+          "pct": 12.5
+        },
+        "4": {
+          "count": 5,
+          "pct": 31.3
+        },
+        "5": {
+          "count": 3,
+          "pct": 18.8
+        },
+        "6": {
+          "count": 2,
+          "pct": 12.5
+        }
+      }
+    },
+    "808959": {
+      "seasonPitchTypeStats": [
+        {
+          "name": "4-Seam Fastball",
+          "usagePct": 27.3,
+          "pitches": 660,
+          "avg": 0.214,
+          "slg": 0.543,
+          "xslg": 0.541,
+          "xba": 0.212,
+          "woba": 0.395,
+          "xwoba": 0.391,
+          "whiffPct": 41.3,
+          "hardHitPct": 64.9,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 14
+        },
+        {
+          "name": "Slider",
+          "usagePct": 18.7,
+          "pitches": 454,
+          "avg": 0.153,
+          "slg": 0.318,
+          "xslg": 0.343,
+          "xba": 0.169,
+          "woba": 0.281,
+          "xwoba": 0.297,
+          "whiffPct": 51.3,
+          "hardHitPct": 62.2,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 3
+        },
+        {
+          "name": "Sinker",
+          "usagePct": 13.7,
+          "pitches": 333,
+          "avg": 0.21,
+          "slg": 0.516,
+          "xslg": 0.577,
+          "xba": 0.232,
+          "woba": 0.37,
+          "xwoba": 0.401,
+          "whiffPct": 33.3,
+          "hardHitPct": 57.9,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 7
+        },
+        {
+          "name": "Changeup",
+          "usagePct": 11.4,
+          "pitches": 277,
+          "avg": 0.244,
+          "slg": 0.578,
+          "xslg": 0.442,
+          "xba": 0.187,
+          "woba": 0.396,
+          "xwoba": 0.329,
+          "whiffPct": 47.4,
+          "hardHitPct": 46.4,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 5
+        },
+        {
+          "name": "Sweeper",
+          "usagePct": 10.4,
+          "pitches": 252,
+          "avg": 0.182,
+          "slg": 0.318,
+          "xslg": 0.268,
+          "xba": 0.142,
+          "woba": 0.274,
+          "xwoba": 0.242,
+          "whiffPct": 44.7,
+          "hardHitPct": 26.1,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Curveball",
+          "usagePct": 8.1,
+          "pitches": 195,
+          "avg": 0.343,
+          "slg": 0.743,
+          "xslg": 0.821,
+          "xba": 0.327,
+          "woba": 0.49,
+          "xwoba": 0.511,
+          "whiffPct": 29.3,
+          "hardHitPct": 82.6,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 3
+        },
+        {
+          "name": "Cutter",
+          "usagePct": 6.6,
+          "pitches": 159,
+          "avg": 0.25,
+          "slg": 0.5,
+          "xslg": 0.444,
+          "xba": 0.277,
+          "woba": 0.359,
+          "xwoba": 0.353,
+          "whiffPct": 29.5,
+          "hardHitPct": 38.9,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 2
+        },
+        {
+          "name": "Split-Finger",
+          "usagePct": 2.9,
+          "pitches": 70,
+          "avg": 0.067,
+          "slg": 0.267,
+          "xslg": 0.086,
+          "xba": 0.075,
+          "woba": 0.169,
+          "xwoba": 0.11,
+          "whiffPct": 57.1,
+          "hardHitPct": 33.3,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 1
+        },
+        {
+          "name": "Slurve",
+          "usagePct": 0.5,
+          "pitches": 13,
+          "avg": 0,
+          "slg": 0,
+          "xslg": 0.063,
+          "xba": 0.031,
+          "woba": 0,
+          "xwoba": 0.038,
+          "whiffPct": 75,
+          "hardHitPct": 0,
+          "barrelPct": null,
+          "avgEV": null,
+          "homeRuns": 0
+        }
+      ],
+      "byZone": {
+        "1": {
+          "woba": 0.264
+        },
+        "2": {
+          "woba": 0.172
+        },
+        "3": {
+          "woba": 0.29
+        },
+        "4": {
+          "woba": 0.334
+        },
+        "5": {
+          "woba": 0.5
+        },
+        "6": {
+          "woba": 0.282
+        },
+        "7": {
+          "woba": 0.34
+        },
+        "8": {
+          "woba": 0.372
+        },
+        "9": {
+          "woba": 0.621
+        }
+      },
+      "byZoneByHand": {
+        "R": {
+          "1": {
+            "woba": 0.315
+          },
+          "2": {
+            "woba": 0.269
+          },
+          "3": {
+            "woba": 0.224
+          },
+          "4": {
+            "woba": 0.259
+          },
+          "5": {
+            "woba": 0.48
+          },
+          "6": {
+            "woba": 0.306
+          },
+          "7": {
+            "woba": 0.389
+          },
+          "8": {
+            "woba": 0.338
+          },
+          "9": {
+            "woba": 0.787
+          }
+        },
+        "L": {
+          "1": {
+            "woba": 0.113
+          },
+          "2": {
+            "woba": 0
+          },
+          "3": {
+            "woba": 0.667
+          },
+          "4": {
+            "woba": 0.421
+          },
+          "5": {
+            "woba": 0.556
+          },
+          "6": {
+            "woba": 0.235
+          },
+          "7": {
+            "woba": 0.237
+          },
+          "8": {
+            "woba": 0.45
+          },
+          "9": {
+            "woba": 0
+          }
+        }
+      },
+      "hrByZone": {
+        "1": {
+          "count": 2,
+          "pct": 5.6
+        },
+        "3": {
+          "count": 2,
+          "pct": 5.6
+        },
+        "4": {
+          "count": 6,
+          "pct": 16.7
+        },
+        "5": {
+          "count": 12,
+          "pct": 33.3
+        },
+        "6": {
+          "count": 2,
+          "pct": 5.6
+        },
+        "7": {
+          "count": 5,
+          "pct": 13.9
+        },
+        "8": {
+          "count": 2,
+          "pct": 5.6
+        },
+        "9": {
+          "count": 5,
+          "pct": 13.9
+        }
+      }
+    }
+  }
 }
