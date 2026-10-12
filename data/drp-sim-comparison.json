@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-11T23:38:33.889Z",
+  "generatedAt": "2026-10-12T06:00:43.152Z",
   "entries": [
     {
       "key": "2026-07-20|824410",
@@ -14030,6 +14030,38 @@
       "simPickPct": 55,
       "simAwayRuns": 3.09,
       "simHomeRuns": 3.5,
+      "actualWinner": "MIL",
+      "formulaResult": "win",
+      "simResult": "win"
+    },
+    {
+      "key": "2026-10-12|849812",
+      "date": "2026-10-12",
+      "gamePk": 849812,
+      "awayTeam": "LAD",
+      "homeTeam": "MIL",
+      "formulaPick": "MIL",
+      "formulaPickPct": 53,
+      "simPick": "LAD",
+      "simPickPct": 50,
+      "simAwayRuns": 3.56,
+      "simHomeRuns": 3.38,
+      "actualWinner": null,
+      "formulaResult": "pending",
+      "simResult": "pending"
+    },
+    {
+      "key": "2026-10-12|849820",
+      "date": "2026-10-12",
+      "gamePk": 849820,
+      "awayTeam": "CLE",
+      "homeTeam": "TB",
+      "formulaPick": "TB",
+      "formulaPickPct": 58,
+      "simPick": "TB",
+      "simPickPct": 60,
+      "simAwayRuns": 2.68,
+      "simHomeRuns": 3.89,
       "actualWinner": null,
       "formulaResult": "pending",
       "simResult": "pending"
@@ -14037,16 +14069,16 @@
   ],
   "summary": {
     "formula": {
-      "wins": 496,
+      "wins": 497,
       "losses": 375,
       "pushes": 0,
-      "total": 871
+      "total": 872
     },
     "simulation": {
-      "wins": 488,
+      "wins": 489,
       "losses": 383,
       "pushes": 0,
-      "total": 871
+      "total": 872
     }
   }
 }
