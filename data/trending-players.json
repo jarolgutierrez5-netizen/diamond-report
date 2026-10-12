@@ -1,10 +1,10 @@
 {
   "date": "2026-10-12",
-  "generatedAt": "2026-10-12T06:00:44.899Z",
+  "generatedAt": "2026-10-12T22:04:43.186Z",
   "players": [
     {
-      "playerId": 669242,
-      "name": "Tommy Edman",
+      "playerId": 810938,
+      "name": "Ben Williamson",
       "type": "batter",
       "trendLabel": "Hot Streak",
       "trendMetric": "HR pace vs season rate (last 10 games)",
@@ -12,47 +12,37 @@
       "trendPctCapped": true,
       "visual": {
         "type": "spray",
-        "label": "Edman Home Runs",
+        "label": "Williamson Home Runs",
         "dots": [
           {
-            "xFt": -136.4,
-            "yFt": 367.1,
-            "distance": 390
+            "xFt": -220.9,
+            "yFt": 313.2,
+            "distance": 380
           },
           {
-            "xFt": 265,
-            "yFt": 310.9,
-            "distance": 400
+            "xFt": -171.1,
+            "yFt": 367,
+            "distance": 402
           },
           {
-            "xFt": 197.9,
-            "yFt": 339.5,
-            "distance": 389
-          },
-          {
-            "xFt": 207.3,
-            "yFt": 312.3,
-            "distance": 371
-          },
-          {
-            "xFt": -97,
-            "yFt": 399.3,
-            "distance": 408
-          },
-          {
-            "xFt": -220.3,
-            "yFt": 331.5,
+            "xFt": -90.5,
+            "yFt": 385.2,
             "distance": 394
           },
           {
-            "xFt": 131.2,
-            "yFt": 366.9,
-            "distance": 387
+            "xFt": 179.7,
+            "yFt": 340,
+            "distance": 349
           },
           {
-            "xFt": 13.2,
-            "yFt": 430.9,
-            "distance": 428
+            "xFt": -56.8,
+            "yFt": 424.3,
+            "distance": 425
+          },
+          {
+            "xFt": -236.2,
+            "yFt": 376.6,
+            "distance": 439
           }
         ]
       }
@@ -218,6 +208,184 @@
             "xFt": -101.4,
             "yFt": 379,
             "distance": 391
+          }
+        ]
+      }
+    },
+    {
+      "playerId": 656876,
+      "name": "Drew Rasmussen",
+      "type": "pitcher",
+      "trendLabel": "Trending Up",
+      "trendMetric": "Whiff rate vs season rate (last 3 starts)",
+      "trendPct": 10,
+      "visual": {
+        "type": "whiff",
+        "label": "Rasmussen Whiffs",
+        "dots": [
+          {
+            "plateX": 0.6,
+            "plateZ": 1.38,
+            "pitchName": "Changeup"
+          },
+          {
+            "plateX": -0.23,
+            "plateZ": 1.12,
+            "pitchName": "Changeup"
+          },
+          {
+            "plateX": -0.15,
+            "plateZ": 1.88,
+            "pitchName": "Changeup"
+          },
+          {
+            "plateX": -0.22,
+            "plateZ": 2.89,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": 0.35,
+            "plateZ": 1.66,
+            "pitchName": "Changeup"
+          },
+          {
+            "plateX": 0.58,
+            "plateZ": 1.07,
+            "pitchName": "Cutter"
+          },
+          {
+            "plateX": 0.65,
+            "plateZ": 1.46,
+            "pitchName": "Cutter"
+          },
+          {
+            "plateX": 0.41,
+            "plateZ": 0.95,
+            "pitchName": "Changeup"
+          },
+          {
+            "plateX": -0.53,
+            "plateZ": 3.15,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": 0.67,
+            "plateZ": 1.38,
+            "pitchName": "Changeup"
+          },
+          {
+            "plateX": 0.55,
+            "plateZ": 3.55,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": -0.01,
+            "plateZ": 3.18,
+            "pitchName": "Cutter"
+          },
+          {
+            "plateX": 0.06,
+            "plateZ": 4.02,
+            "pitchName": "Cutter"
+          },
+          {
+            "plateX": 0.37,
+            "plateZ": 4.32,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": -0.15,
+            "plateZ": 3.57,
+            "pitchName": "Cutter"
+          }
+        ]
+      }
+    },
+    {
+      "playerId": 808967,
+      "name": "Yoshinobu Yamamoto",
+      "type": "pitcher",
+      "trendLabel": "Trending Up",
+      "trendMetric": "Whiff rate vs season rate (last 3 starts)",
+      "trendPct": 4,
+      "visual": {
+        "type": "whiff",
+        "label": "Yamamoto Whiffs",
+        "dots": [
+          {
+            "plateX": 0.06,
+            "plateZ": 1.83,
+            "pitchName": "Split-Finger"
+          },
+          {
+            "plateX": 1.23,
+            "plateZ": 1.65,
+            "pitchName": "Slider"
+          },
+          {
+            "plateX": -0.41,
+            "plateZ": 1.72,
+            "pitchName": "Curveball"
+          },
+          {
+            "plateX": -0.16,
+            "plateZ": 1.27,
+            "pitchName": "Curveball"
+          },
+          {
+            "plateX": -0.42,
+            "plateZ": 2.56,
+            "pitchName": "Cutter"
+          },
+          {
+            "plateX": 0.11,
+            "plateZ": 1.2,
+            "pitchName": "Split-Finger"
+          },
+          {
+            "plateX": -0.77,
+            "plateZ": 3.06,
+            "pitchName": "4-Seam Fastball"
+          },
+          {
+            "plateX": 0.25,
+            "plateZ": 1.68,
+            "pitchName": "Curveball"
+          },
+          {
+            "plateX": -0.73,
+            "plateZ": 0.93,
+            "pitchName": "Split-Finger"
+          },
+          {
+            "plateX": -1.51,
+            "plateZ": 1.65,
+            "pitchName": "Split-Finger"
+          },
+          {
+            "plateX": -0.08,
+            "plateZ": 0.15,
+            "pitchName": "Split-Finger"
+          },
+          {
+            "plateX": -0.18,
+            "plateZ": 1.56,
+            "pitchName": "Sinker"
+          },
+          {
+            "plateX": 0.24,
+            "plateZ": 0.99,
+            "pitchName": "Split-Finger"
+          },
+          {
+            "plateX": 1.03,
+            "plateZ": 1.39,
+            "pitchName": "Cutter"
+          },
+          {
+            "plateX": -0.14,
+            "plateZ": 1.04,
+            "pitchName": "Curveball"
           }
         ]
       }
