@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-13T02:00:18.867Z",
+  "generatedAt": "2026-10-13T06:48:20.134Z",
   "entries": [
     {
       "key": "2026-07-20|824410",
@@ -12290,9 +12290,9 @@
       "ourPickPct": 53,
       "bpPick": "LAD",
       "bpPickPct": 66,
-      "actualWinner": null,
-      "ourResult": "pending",
-      "bpResult": "pending"
+      "actualWinner": "MIL",
+      "ourResult": "win",
+      "bpResult": "loss"
     },
     {
       "key": "2026-10-12|849820",
@@ -12304,6 +12304,20 @@
       "ourPickPct": 58,
       "bpPick": "TB",
       "bpPickPct": 60,
+      "actualWinner": "CLE",
+      "ourResult": "loss",
+      "bpResult": "loss"
+    },
+    {
+      "key": "2026-10-13|849813",
+      "date": "2026-10-13",
+      "gamePk": 849813,
+      "awayTeam": "CLE",
+      "homeTeam": "TB",
+      "ourPick": "TB",
+      "ourPickPct": 51,
+      "bpPick": "TB",
+      "bpPickPct": 58,
       "actualWinner": null,
       "ourResult": "pending",
       "bpResult": "pending"
@@ -12311,16 +12325,16 @@
   ],
   "summary": {
     "ours": {
-      "wins": 497,
-      "losses": 375,
+      "wins": 498,
+      "losses": 376,
       "pushes": 0,
-      "total": 872
+      "total": 874
     },
     "ballparkPal": {
       "wins": 508,
-      "losses": 364,
+      "losses": 366,
       "pushes": 0,
-      "total": 872
+      "total": 874
     }
   }
 }
