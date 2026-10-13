@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-10-13T20:11:29.326Z",
+  "generatedAt": "2026-10-13T23:43:18.977Z",
   "date": "2026-10-13",
   "games": {
     "849813": {
-      "updatedAt": "2026-10-13T20:11:29.326Z",
+      "updatedAt": "2026-10-13T23:43:18.977Z",
       "teams": {
         "home": {
           "abbr": "TB",
           "confirmed": true,
-          "confirmedAt": "2026-10-13T20:11:29.326Z",
+          "confirmedAt": "2026-10-13T23:43:18.977Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -58,7 +58,59 @@
             }
           ]
         },
-        "away": null
+        "away": {
+          "abbr": "CLE",
+          "confirmed": true,
+          "confirmedAt": "2026-10-13T23:43:18.977Z",
+          "source": "mlb-schedule-lineups",
+          "lineup": [
+            {
+              "id": 680757,
+              "name": "Steven Kwan",
+              "pos": "LF"
+            },
+            {
+              "id": 608070,
+              "name": "José Ramírez",
+              "pos": "3B"
+            },
+            {
+              "id": 800050,
+              "name": "Chase DeLauter",
+              "pos": "DH"
+            },
+            {
+              "id": 666176,
+              "name": "Jo Adell",
+              "pos": "RF"
+            },
+            {
+              "id": 663993,
+              "name": "Nathaniel Lowe",
+              "pos": "1B"
+            },
+            {
+              "id": 683953,
+              "name": "Travis Bazzana",
+              "pos": "2B"
+            },
+            {
+              "id": 690984,
+              "name": "Petey Halpin",
+              "pos": "CF"
+            },
+            {
+              "id": 595978,
+              "name": "Austin Hedges",
+              "pos": "C"
+            },
+            {
+              "id": 677587,
+              "name": "Brayan Rocchio",
+              "pos": "SS"
+            }
+          ]
+        }
       }
     }
   }
