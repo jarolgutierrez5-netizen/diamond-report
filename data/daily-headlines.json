@@ -1,48 +1,48 @@
 {
-  "date": "2026-10-14",
-  "generatedAt": "2026-10-15T04:41:44.804Z",
+  "date": "2026-10-15",
+  "generatedAt": "2026-10-15T18:12:15.977Z",
   "headlines": [
     {
       "id": "recap",
       "category": "recap",
-      "title": "Diamond Report went 2-6 on October 13",
-      "blurb": "25% across Game Picks, Strikeout Props, and HR Threats combined (8 graded picks).",
+      "title": "Diamond Report went 1-7 on October 14",
+      "blurb": "12.5% across Game Picks, Strikeout Props, and HR Threats combined (8 graded picks).",
       "link": {
         "hash": "#gamepick=results"
       }
     },
     {
-      "id": "notable-661388-2026-10-12",
+      "id": "notable-669003-2026-10-14",
       "category": "notable",
-      "title": "Longest home run of the day: 436 ft",
-      "blurb": "William Contreras homers (3) on a fly ball to center field. (106.3 mph off the bat).",
+      "title": "Longest home run of the day: 428 ft",
+      "blurb": "Garrett Mitchell homers (1) on a fly ball to right center field. (111.5 mph off the bat).",
       "link": {
         "hash": "#gamepick=hr",
-        "playerId": 661388,
+        "playerId": 669003,
         "playerName": null
       },
       "clip": {
-        "videoUrl": "https://sporty-clips.mlb.com/ek15ZzdfV0ZRVkV3dEdEUT09X0JnSUVVMTBBVXdjQURRWlRWUUFIQkFNSEFGa0hVbFFBQWdBTkNGVUhDVkFEQUFwVg&#x3D;&#x3D;.mp4"
+        "videoUrl": "https://sporty-clips.mlb.com/TUFxTGJfV0ZRVkV3dEdEUT09X1VBaFJYRk1NVndNQURsZFdWZ0FIQmxWUUFGaFJVZ0FBQ2dCWFZnVUNBUUlEQWdGVQ&#x3D;&#x3D;.mp4"
       }
     },
     {
-      "id": "weather-849811",
+      "id": "weather-849810",
       "category": "weather",
       "title": "Best home run weather today: MIL @ LAD",
-      "blurb": "Ballpark Pal projects a +18% home run environment for this game and a +3% scoring boost overall — conditions and park factors both favor the long ball.",
+      "blurb": "Ballpark Pal projects a +22% home run environment for this game and a +7% scoring boost overall — conditions and park factors both favor the long ball.",
       "link": {
         "hash": "#gamepick=games"
       }
     },
     {
-      "id": "model-606192",
+      "id": "model-605141",
       "category": "model",
-      "title": "Diamond Report's model is moving up on Teoscar Hernández",
-      "blurb": "His HR Threat score has gone up from 57 to 62 since his last outing (2026-10-11) — a real shift in the underlying matchup inputs, not just noise.",
+      "title": "Diamond Report's model is moving down on Mookie Betts",
+      "blurb": "His HR Threat score has gone down from 65 to 60 since his last outing (2026-10-14) — a real shift in the underlying matchup inputs, not just noise.",
       "link": {
         "hash": "#gamepick=hr",
-        "playerId": 606192,
-        "playerName": "Teoscar Hernández"
+        "playerId": 605141,
+        "playerName": "Mookie Betts"
       }
     },
     {
@@ -54,6 +54,582 @@
         "hash": "#gamepick=hr",
         "playerId": 691718,
         "playerName": "Pete Crow-Armstrong"
+      }
+    },
+    {
+      "id": "trend-660271",
+      "category": "trend",
+      "title": "Due for a breakout: Shohei Ohtani",
+      "blurb": "A real home run drought — none in his last 10 games — but a .191 ISO and 0.889 OPS this season say the power is still there, it just hasn't landed yet. MIL sends out Shane Drohan today.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 24
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 660271,
+        "playerName": "Shohei Ohtani",
+        "pitcherId": 675660,
+        "pitcherName": "Shane Drohan"
+      }
+    },
+    {
+      "id": "trend-571970",
+      "category": "trend",
+      "title": "Max Muncy is running hot",
+      "blurb": "Hitting well above his 0.260 season average over his last games, with at least one home run in that stretch. He faces MIL sends out Shane Drohan today, a pitcher who's allowed a 0.255 average against this season.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 23
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 571970,
+        "playerName": "Max Muncy",
+        "pitcherId": 675660,
+        "pitcherName": "Shane Drohan"
+      }
+    },
+    {
+      "id": "trend-641343",
+      "category": "trend",
+      "title": "Due for a breakout: Jake Bauers",
+      "blurb": "A real home run drought — none in his last 10 games — but a .181 ISO and 0.873 OPS this season say the power is still there, it just hasn't landed yet. LAD sends out Tyler Glasnow today.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 21
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 641343,
+        "playerName": "Jake Bauers",
+        "pitcherId": 607192,
+        "pitcherName": "Tyler Glasnow"
+      }
+    },
+    {
+      "id": "trend-605141",
+      "category": "trend",
+      "title": "Mookie Betts is running hot",
+      "blurb": "Hitting well above his 0.289 season average over his last games, with at least one home run in that stretch. He faces MIL sends out Shane Drohan today, a pitcher who's allowed a 0.255 average against this season.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 16
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 605141,
+        "playerName": "Mookie Betts",
+        "pitcherId": 675660,
+        "pitcherName": "Shane Drohan"
+      }
+    },
+    {
+      "id": "trend-606192",
+      "category": "trend",
+      "title": "Teoscar Hernández is running hot",
+      "blurb": "Hitting well above his 0.288 season average over his last games, with at least one home run in that stretch. He faces MIL sends out Shane Drohan today, a pitcher who's allowed a 0.255 average against this season.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 15
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 606192,
+        "playerName": "Teoscar Hernández",
+        "pitcherId": 675660,
+        "pitcherName": "Shane Drohan"
+      }
+    },
+    {
+      "id": "trend-571771",
+      "category": "trend",
+      "title": "Enrique Hernández is running hot",
+      "blurb": "Hitting well above his 0.218 season average over his last games, with at least one home run in that stretch. He faces MIL sends out Shane Drohan today, a pitcher who's allowed a 0.255 average against this season.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 14
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 571771,
+        "playerName": "Enrique Hernández",
+        "pitcherId": 675660,
+        "pitcherName": "Shane Drohan"
+      }
+    },
+    {
+      "id": "trend-596142",
+      "category": "trend",
+      "title": "Gary Sánchez is running hot",
+      "blurb": "Hitting well above his 0.207 season average over his last games, with at least one home run in that stretch. He faces LAD sends out Tyler Glasnow today, a pitcher who's allowed a 0.175 average against this season.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 12
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 596142,
+        "playerName": "Gary Sánchez",
+        "pitcherId": 607192,
+        "pitcherName": "Tyler Glasnow"
+      }
+    },
+    {
+      "id": "trend-668930",
+      "category": "trend",
+      "title": "Brice Turang is running hot",
+      "blurb": "Hitting well above his 0.287 season average over his last games, with at least one home run in that stretch. He faces LAD sends out Tyler Glasnow today, a pitcher who's allowed a 0.175 average against this season.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 12
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 668930,
+        "playerName": "Brice Turang",
+        "pitcherId": 607192,
+        "pitcherName": "Tyler Glasnow"
+      }
+    },
+    {
+      "id": "trend-661388",
+      "category": "trend",
+      "title": "William Contreras is running hot",
+      "blurb": "Hitting well above his 0.262 season average over his last games, with at least one home run in that stretch. He faces LAD sends out Tyler Glasnow today, a pitcher who's allowed a 0.175 average against this season.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 11
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 661388,
+        "playerName": "William Contreras",
+        "pitcherId": 607192,
+        "pitcherName": "Tyler Glasnow"
+      }
+    },
+    {
+      "id": "trend-669003",
+      "category": "trend",
+      "title": "Due for a breakout: Garrett Mitchell",
+      "blurb": "A real home run drought — none in his last 10 games — but a .129 ISO and 0.770 OPS this season say the power is still there, it just hasn't landed yet. LAD sends out Tyler Glasnow today.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 11
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 669003,
+        "playerName": "Garrett Mitchell",
+        "pitcherId": 607192,
+        "pitcherName": "Tyler Glasnow"
+      }
+    },
+    {
+      "id": "trend-518692",
+      "category": "trend",
+      "title": "Due for a breakout: Freddie Freeman",
+      "blurb": "A real home run drought — none in his last 10 games — but a .98 ISO and 0.792 OPS this season say the power is still there, it just hasn't landed yet. MIL sends out Shane Drohan today.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 11
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 518692,
+        "playerName": "Freddie Freeman",
+        "pitcherId": 675660,
+        "pitcherName": "Shane Drohan"
+      }
+    },
+    {
+      "id": "trend-592885",
+      "category": "trend",
+      "title": "Christian Yelich is running hot",
+      "blurb": "Hitting well above his 0.222 season average over his last games, with at least one home run in that stretch. He faces LAD sends out Tyler Glasnow today, a pitcher who's allowed a 0.175 average against this season.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 10
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 592885,
+        "playerName": "Christian Yelich",
+        "pitcherId": 607192,
+        "pitcherName": "Tyler Glasnow"
+      }
+    },
+    {
+      "id": "trend-663656",
+      "category": "trend",
+      "title": "Kyle Tucker is running hot",
+      "blurb": "Hitting well above his 0.262 season average over his last games, with at least one home run in that stretch. He faces MIL sends out Shane Drohan today, a pitcher who's allowed a 0.255 average against this season.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 10
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 663656,
+        "playerName": "Kyle Tucker",
+        "pitcherId": 675660,
+        "pitcherName": "Shane Drohan"
+      }
+    },
+    {
+      "id": "trend-669242",
+      "category": "trend",
+      "title": "Tommy Edman is running hot",
+      "blurb": "Hitting well above his 0.232 season average over his last games, with at least one home run in that stretch. He faces MIL sends out Shane Drohan today, a pitcher who's allowed a 0.255 average against this season.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 10
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 669242,
+        "playerName": "Tommy Edman",
+        "pitcherId": 675660,
+        "pitcherName": "Shane Drohan"
+      }
+    },
+    {
+      "id": "trend-683734",
+      "category": "trend",
+      "title": "Andrew Vaughn's power profile stays live",
+      "blurb": "A .105 ISO and 6 home runs this season heading into today's matchup with LAD sends out Tyler Glasnow, who's allowed a 0.8 HR/9 this year.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 8
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 683734,
+        "playerName": "Andrew Vaughn",
+        "pitcherId": 607192,
+        "pitcherName": "Tyler Glasnow"
+      }
+    },
+    {
+      "id": "trend-500743",
+      "category": "trend",
+      "title": "Miguel Rojas is running hot",
+      "blurb": "Hitting well above his 0.263 season average over his last games, with at least one home run in that stretch. He faces MIL sends out Shane Drohan today, a pitcher who's allowed a 0.255 average against this season.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 8
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 500743,
+        "playerName": "Miguel Rojas",
+        "pitcherId": 675660,
+        "pitcherName": "Shane Drohan"
+      }
+    },
+    {
+      "id": "trend-666152",
+      "category": "trend",
+      "title": "David Hamilton's power profile stays live",
+      "blurb": "A .91 ISO and 4 home runs this season heading into today's matchup with LAD sends out Tyler Glasnow, who's allowed a 0.8 HR/9 this year.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 6
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 666152,
+        "playerName": "David Hamilton",
+        "pitcherId": 607192,
+        "pitcherName": "Tyler Glasnow"
+      }
+    },
+    {
+      "id": "trend-686217",
+      "category": "trend",
+      "title": "Sal Frelick's power profile stays live",
+      "blurb": "A .79 ISO and 4 home runs this season heading into today's matchup with LAD sends out Tyler Glasnow, who's allowed a 0.8 HR/9 this year.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 6
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 686217,
+        "playerName": "Sal Frelick",
+        "pitcherId": 607192,
+        "pitcherName": "Tyler Glasnow"
+      }
+    },
+    {
+      "id": "streak-669242",
+      "category": "streak",
+      "title": "Tommy Edman is on a hot streak",
+      "blurb": "4 home runs in his last 10 games against an expected pace of 1.1 — real recent power, not just a hot box score.",
+      "stat": {
+        "kind": "last10HR",
+        "value": 4,
+        "favorable": true
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 669242,
+        "playerName": "Tommy Edman",
+        "pitcherId": 675660,
+        "pitcherName": "Shane Drohan"
+      }
+    },
+    {
+      "id": "streak-663656",
+      "category": "streak",
+      "title": "Kyle Tucker is on a hot streak",
+      "blurb": "4 home runs in his last 10 games against an expected pace of 1.3 — real recent power, not just a hot box score.",
+      "stat": {
+        "kind": "last10HR",
+        "value": 4,
+        "favorable": true
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 663656,
+        "playerName": "Kyle Tucker",
+        "pitcherId": 675660,
+        "pitcherName": "Shane Drohan"
+      }
+    },
+    {
+      "id": "streak-605141",
+      "category": "streak",
+      "title": "Mookie Betts is on a hot streak",
+      "blurb": "6 home runs in his last 10 games against an expected pace of 1.9 — real recent power, not just a hot box score.",
+      "stat": {
+        "kind": "last10HR",
+        "value": 6,
+        "favorable": true
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 605141,
+        "playerName": "Mookie Betts",
+        "pitcherId": 675660,
+        "pitcherName": "Shane Drohan"
+      }
+    },
+    {
+      "id": "streak-500743",
+      "category": "streak",
+      "title": "Miguel Rojas is on a hot streak",
+      "blurb": "2 home runs in his last 10 games against an expected pace of 0.7 — real recent power, not just a hot box score.",
+      "stat": {
+        "kind": "last10HR",
+        "value": 2,
+        "favorable": true
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 500743,
+        "playerName": "Miguel Rojas",
+        "pitcherId": 675660,
+        "pitcherName": "Shane Drohan"
+      }
+    },
+    {
+      "id": "streak-668930",
+      "category": "streak",
+      "title": "Brice Turang is on a hot streak",
+      "blurb": "4 home runs in his last 10 games against an expected pace of 1.4 — real recent power, not just a hot box score.",
+      "stat": {
+        "kind": "last10HR",
+        "value": 4,
+        "favorable": true
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 668930,
+        "playerName": "Brice Turang",
+        "pitcherId": 607192,
+        "pitcherName": "Tyler Glasnow"
+      }
+    },
+    {
+      "id": "streak-641343",
+      "category": "streak",
+      "title": "Jake Bauers is ice cold",
+      "blurb": "No home runs in his last 10 games despite an expected pace of 2.2 based on his season rate — a genuine cold stretch, not just normal variance.",
+      "stat": {
+        "kind": "last10HR",
+        "value": 0,
+        "favorable": false
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 641343,
+        "playerName": "Jake Bauers",
+        "pitcherId": 607192,
+        "pitcherName": "Tyler Glasnow"
+      }
+    },
+    {
+      "id": "streak-666152",
+      "category": "streak",
+      "title": "David Hamilton is cooling off",
+      "blurb": "Just 0 home runs in his last 10 games against an expected pace of 0.5 — a real dip, worth knowing before starting him.",
+      "stat": {
+        "kind": "last10HR",
+        "value": 0,
+        "favorable": false
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 666152,
+        "playerName": "David Hamilton",
+        "pitcherId": 607192,
+        "pitcherName": "Tyler Glasnow"
+      }
+    },
+    {
+      "id": "streak-669003",
+      "category": "streak",
+      "title": "Garrett Mitchell is cooling off",
+      "blurb": "Just 0 home runs in his last 10 games against an expected pace of 1.0 — a real dip, worth knowing before starting him.",
+      "stat": {
+        "kind": "last10HR",
+        "value": 0,
+        "favorable": false
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 669003,
+        "playerName": "Garrett Mitchell",
+        "pitcherId": 607192,
+        "pitcherName": "Tyler Glasnow"
+      }
+    },
+    {
+      "id": "streak-683734",
+      "category": "streak",
+      "title": "Andrew Vaughn is cooling off",
+      "blurb": "Just 0 home runs in his last 10 games against an expected pace of 0.8 — a real dip, worth knowing before starting him.",
+      "stat": {
+        "kind": "last10HR",
+        "value": 0,
+        "favorable": false
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 683734,
+        "playerName": "Andrew Vaughn",
+        "pitcherId": 607192,
+        "pitcherName": "Tyler Glasnow"
+      }
+    },
+    {
+      "id": "streak-686217",
+      "category": "streak",
+      "title": "Sal Frelick is cooling off",
+      "blurb": "Just 0 home runs in his last 10 games against an expected pace of 0.5 — a real dip, worth knowing before starting him.",
+      "stat": {
+        "kind": "last10HR",
+        "value": 0,
+        "favorable": false
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 686217,
+        "playerName": "Sal Frelick",
+        "pitcherId": 607192,
+        "pitcherName": "Tyler Glasnow"
+      }
+    },
+    {
+      "id": "streak-518692",
+      "category": "streak",
+      "title": "Freddie Freeman is ice cold",
+      "blurb": "No home runs in his last 10 games despite an expected pace of 1.1 based on his season rate — a genuine cold stretch, not just normal variance.",
+      "stat": {
+        "kind": "last10HR",
+        "value": 0,
+        "favorable": false
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 518692,
+        "playerName": "Freddie Freeman",
+        "pitcherId": 675660,
+        "pitcherName": "Shane Drohan"
+      }
+    },
+    {
+      "id": "streak-660271",
+      "category": "streak",
+      "title": "Shohei Ohtani is ice cold",
+      "blurb": "No home runs in his last 10 games despite an expected pace of 2.3 based on his season rate — a genuine cold stretch, not just normal variance.",
+      "stat": {
+        "kind": "last10HR",
+        "value": 0,
+        "favorable": false
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 660271,
+        "playerName": "Shohei Ohtani",
+        "pitcherId": 675660,
+        "pitcherName": "Shane Drohan"
+      }
+    },
+    {
+      "id": "streak-592885",
+      "category": "streak",
+      "title": "Christian Yelich is on a hot streak",
+      "blurb": "2 home runs in his last 10 games against an expected pace of 1.1 — real recent power, not just a hot box score.",
+      "stat": {
+        "kind": "last10HR",
+        "value": 2,
+        "favorable": true
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 592885,
+        "playerName": "Christian Yelich",
+        "pitcherId": 607192,
+        "pitcherName": "Tyler Glasnow"
+      }
+    },
+    {
+      "id": "streak-661388",
+      "category": "streak",
+      "title": "William Contreras is trending up",
+      "blurb": "2 home runs in his last 10 games, running ahead of his 1.3-per-10-games season pace.",
+      "stat": {
+        "kind": "last10HR",
+        "value": 2,
+        "favorable": true
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 661388,
+        "playerName": "William Contreras",
+        "pitcherId": 607192,
+        "pitcherName": "Tyler Glasnow"
+      }
+    },
+    {
+      "id": "streak-606192",
+      "category": "streak",
+      "title": "Teoscar Hernández is trending up",
+      "blurb": "2 home runs in his last 10 games, running ahead of his 1.4-per-10-games season pace.",
+      "stat": {
+        "kind": "last10HR",
+        "value": 2,
+        "favorable": true
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 606192,
+        "playerName": "Teoscar Hernández",
+        "pitcherId": 675660,
+        "pitcherName": "Shane Drohan"
       }
     }
   ]

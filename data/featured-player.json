@@ -1,16 +1,16 @@
 {
-  "date": "2026-10-14",
-  "generatedAt": "2026-10-14T23:12:46.707Z",
+  "date": "2026-10-15",
+  "generatedAt": "2026-10-15T18:12:15.989Z",
   "player": {
     "id": 571970,
     "name": "Max Muncy",
     "teamAbbr": "LAD",
     "oppAbbr": "MIL",
-    "gamePk": 849811,
-    "pitcherId": 688107,
-    "pitcherName": "Robert Gasser",
-    "liveScore": 30,
-    "spotlightScore": 36,
+    "gamePk": 849810,
+    "pitcherId": 675660,
+    "pitcherName": "Shane Drohan",
+    "liveScore": 26,
+    "spotlightScore": 35,
     "avg": 0.2597781818181818,
     "obp": 0.34290666666666664,
     "slg": 0.49293787878787876,
@@ -20,11 +20,11 @@
     "atBats": 488,
     "last10HR": 2,
     "isHot": true,
-    "isFavorable": false,
+    "isFavorable": true,
     "isDrought": false,
     "isDue": false,
     "hasNearHR": true,
-    "matchupEdge": 62,
+    "matchupEdge": null,
     "statcast": {
       "xslg": 0.46201671799384075,
       "hardHitPct": 45.594192696876384,
@@ -33,17 +33,21 @@
     "reasons": [
       {
         "icon": "💣",
-        "text": "Projects at a real 30.0% HR probability today, from the same model behind the HR Threats board."
+        "text": "Projects at a real 26.0% HR probability today, from the same model behind the HR Threats board."
       },
       {
         "icon": "🔥",
         "text": "On a real hot streak — 2 HR over the last 10 games."
       },
       {
+        "icon": "✅",
+        "text": "Favorable matchup — a real 0.838 OPS bat against a pitcher who's given up real contact this season."
+      },
+      {
         "icon": "🚀",
         "text": "Real warning-track power in the last 10 games — recent long fly outs that haven't left the yard yet."
       }
     ],
-    "confirmedToday": false
+    "confirmedToday": true
   }
 }

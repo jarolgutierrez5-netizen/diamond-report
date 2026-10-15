@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-15T04:41:44.372Z",
+  "generatedAt": "2026-10-15T18:12:14.483Z",
   "entries": [
     {
       "key": "2026-07-20|824410",
@@ -14094,6 +14094,22 @@
       "simPickPct": 60,
       "simAwayRuns": 3.43,
       "simHomeRuns": 4.53,
+      "actualWinner": "MIL",
+      "formulaResult": "loss",
+      "simResult": "loss"
+    },
+    {
+      "key": "2026-10-15|849810",
+      "date": "2026-10-15",
+      "gamePk": 849810,
+      "awayTeam": "MIL",
+      "homeTeam": "LAD",
+      "formulaPick": "LAD",
+      "formulaPickPct": 56,
+      "simPick": "LAD",
+      "simPickPct": 62,
+      "simAwayRuns": 3.24,
+      "simHomeRuns": 4.59,
       "actualWinner": null,
       "formulaResult": "pending",
       "simResult": "pending"
@@ -14102,15 +14118,15 @@
   "summary": {
     "formula": {
       "wins": 499,
-      "losses": 376,
+      "losses": 377,
       "pushes": 0,
-      "total": 875
+      "total": 876
     },
     "simulation": {
       "wins": 489,
-      "losses": 386,
+      "losses": 387,
       "pushes": 0,
-      "total": 875
+      "total": 876
     }
   }
 }
