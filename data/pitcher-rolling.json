@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-15T15:46:46.903Z",
+  "generatedAt": "2026-10-15T18:11:52.315Z",
   "rollingStarts": 3,
   "pitchers": {
     "607192": {
@@ -235,6 +235,79 @@
       "rollingChasePct": 31.2,
       "chaseDelta": -2.1,
       "lastOutingPitches": 94
+    },
+    "675660": {
+      "lastStartDates": [
+        "2026-09-27",
+        "2026-09-24",
+        "2026-09-18"
+      ],
+      "byPitch": [
+        {
+          "name": "Sinker",
+          "seasonVelo": 94.8,
+          "rollingVelo": 95.5,
+          "veloDelta": 0.6,
+          "seasonUsagePct": 20,
+          "rollingUsagePct": 42.9,
+          "usageDelta": 22.9,
+          "seasonWhiffPct": 11.9,
+          "rollingWhiffPct": 16.7,
+          "whiffDelta": 4.7,
+          "seasonSpin": 2338,
+          "rollingSpin": 2485,
+          "spinDelta": 146
+        },
+        {
+          "name": "Slider",
+          "seasonVelo": 86.3,
+          "rollingVelo": 88.1,
+          "veloDelta": 1.8,
+          "seasonUsagePct": 21.4,
+          "rollingUsagePct": 23.1,
+          "usageDelta": 1.7,
+          "seasonWhiffPct": 36.3,
+          "rollingWhiffPct": 41.7,
+          "whiffDelta": 5.4,
+          "seasonSpin": 2823,
+          "rollingSpin": 2923,
+          "spinDelta": 100
+        },
+        {
+          "name": "4-Seam Fastball",
+          "seasonVelo": 94.9,
+          "rollingVelo": 94.9,
+          "veloDelta": 0,
+          "seasonUsagePct": 27.9,
+          "rollingUsagePct": 15.4,
+          "usageDelta": -12.6,
+          "seasonWhiffPct": 22.9,
+          "rollingWhiffPct": 0,
+          "whiffDelta": -22.9,
+          "seasonSpin": 2397,
+          "rollingSpin": 2444,
+          "spinDelta": 46
+        },
+        {
+          "name": "Curveball",
+          "seasonVelo": 80.6,
+          "rollingVelo": 82.1,
+          "veloDelta": 1.6,
+          "seasonUsagePct": 12.5,
+          "rollingUsagePct": 12.1,
+          "usageDelta": -0.4,
+          "seasonWhiffPct": 27.8,
+          "rollingWhiffPct": 33.3,
+          "whiffDelta": 5.5,
+          "seasonSpin": 2834,
+          "rollingSpin": 2962,
+          "spinDelta": 128
+        }
+      ],
+      "seasonChasePct": 32.5,
+      "rollingChasePct": 20,
+      "chaseDelta": -12.5,
+      "lastOutingPitches": 21
     }
   }
 }
