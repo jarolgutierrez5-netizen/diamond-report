@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-16T04:34:06.635Z",
+  "generatedAt": "2026-10-16T17:57:07.032Z",
   "entries": [
     {
       "key": "2026-07-20|824410",
@@ -14110,6 +14110,22 @@
       "simPickPct": 62,
       "simAwayRuns": 3.24,
       "simHomeRuns": 4.59,
+      "actualWinner": "MIL",
+      "formulaResult": "loss",
+      "simResult": "loss"
+    },
+    {
+      "key": "2026-10-16|849817",
+      "date": "2026-10-16",
+      "gamePk": 849817,
+      "awayTeam": "TB",
+      "homeTeam": "CLE",
+      "formulaPick": "TB",
+      "formulaPickPct": 52,
+      "simPick": "TB",
+      "simPickPct": 54,
+      "simAwayRuns": 3.93,
+      "simHomeRuns": 3.41,
       "actualWinner": null,
       "formulaResult": "pending",
       "simResult": "pending"
@@ -14118,15 +14134,15 @@
   "summary": {
     "formula": {
       "wins": 499,
-      "losses": 377,
+      "losses": 378,
       "pushes": 0,
-      "total": 876
+      "total": 877
     },
     "simulation": {
       "wins": 489,
-      "losses": 387,
+      "losses": 388,
       "pushes": 0,
-      "total": 876
+      "total": 877
     }
   }
 }
