@@ -1,12 +1,12 @@
 {
   "date": "2026-10-17",
-  "generatedAt": "2026-10-17T17:01:36.293Z",
+  "generatedAt": "2026-10-17T22:16:36.557Z",
   "headlines": [
     {
       "id": "recap",
       "category": "recap",
-      "title": "Diamond Report went 0-5 on October 16",
-      "blurb": "0% across Game Picks, Strikeout Props, and HR Threats combined (5 graded picks).",
+      "title": "Diamond Report went 0-7 on October 16",
+      "blurb": "0% across Game Picks, Strikeout Props, and HR Threats combined (7 graded picks).",
       "link": {
         "hash": "#gamepick=results"
       }
@@ -37,13 +37,30 @@
       }
     },
     {
+      "id": "trend-691406",
+      "category": "trend",
+      "title": "Junior Caminero is running hot",
+      "blurb": "Hitting well above his 0.270 season average over his last games, with at least one home run in that stretch. He faces CLE sends out Shawn Armstrong today, in a pitcher-friendly park, a pitcher who's allowed a 0.229 average against this season.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 26
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 691406,
+        "playerName": "Junior Caminero",
+        "pitcherId": 542888,
+        "pitcherName": "Shawn Armstrong"
+      }
+    },
+    {
       "id": "trend-663993",
       "category": "trend",
       "title": "Due for a breakout: Nathaniel Lowe",
       "blurb": "A real home run drought — none in his last 10 games — but a .158 ISO and 0.761 OPS this season say the power is still there, it just hasn't landed yet. TB sends out Nick Martinez today, in a pitcher-friendly park.",
       "stat": {
         "kind": "hrProb",
-        "value": 18
+        "value": 17
       },
       "link": {
         "hash": "#gamepick=hr",
@@ -54,20 +71,37 @@
       }
     },
     {
-      "id": "trend-682657",
+      "id": "trend-683748",
       "category": "trend",
-      "title": "Angel Martínez is running hot",
-      "blurb": "Hitting well above his 0.262 season average over his last games, with at least one home run in that stretch. He faces TB sends out Nick Martinez today, in a pitcher-friendly park, a pitcher who's allowed a 0.249 average against this season.",
+      "title": "Victor Mesa Jr. is running hot",
+      "blurb": "Hitting well above his 0.255 season average over his last games, with at least one home run in that stretch. He faces CLE sends out Shawn Armstrong today, in a pitcher-friendly park, a pitcher who's allowed a 0.229 average against this season.",
       "stat": {
         "kind": "hrProb",
         "value": 16
       },
       "link": {
         "hash": "#gamepick=hr",
-        "playerId": 682657,
-        "playerName": "Angel Martínez",
-        "pitcherId": 607259,
-        "pitcherName": "Nick Martinez"
+        "playerId": 683748,
+        "playerName": "Victor Mesa Jr.",
+        "pitcherId": 542888,
+        "pitcherName": "Shawn Armstrong"
+      }
+    },
+    {
+      "id": "trend-666018",
+      "category": "trend",
+      "title": "Jonathan Aranda is running hot",
+      "blurb": "Hitting well above his 0.260 season average over his last games, with at least one home run in that stretch. He faces CLE sends out Shawn Armstrong today, in a pitcher-friendly park, a pitcher who's allowed a 0.229 average against this season.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 14
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 666018,
+        "playerName": "Jonathan Aranda",
+        "pitcherId": 542888,
+        "pitcherName": "Shawn Armstrong"
       }
     },
     {
@@ -88,64 +122,13 @@
       }
     },
     {
-      "id": "trend-666018",
-      "category": "trend",
-      "title": "Jonathan Aranda is running hot",
-      "blurb": "Hitting well above his 0.260 season average over his last games, with at least one home run in that stretch. He faces CLE sends out Shawn Armstrong today, in a pitcher-friendly park, a pitcher who's allowed a 0.229 average against this season.",
-      "stat": {
-        "kind": "hrProb",
-        "value": 13
-      },
-      "link": {
-        "hash": "#gamepick=hr",
-        "playerId": 666018,
-        "playerName": "Jonathan Aranda",
-        "pitcherId": 542888,
-        "pitcherName": "Shawn Armstrong"
-      }
-    },
-    {
-      "id": "trend-672275",
-      "category": "trend",
-      "title": "Patrick Bailey is running hot",
-      "blurb": "Hitting well above his 0.214 season average over his last games, with at least one home run in that stretch. He faces TB sends out Nick Martinez today, in a pitcher-friendly park, a pitcher who's allowed a 0.249 average against this season.",
-      "stat": {
-        "kind": "hrProb",
-        "value": 13
-      },
-      "link": {
-        "hash": "#gamepick=hr",
-        "playerId": 672275,
-        "playerName": "Patrick Bailey",
-        "pitcherId": 607259,
-        "pitcherName": "Nick Martinez"
-      }
-    },
-    {
-      "id": "trend-681807",
-      "category": "trend",
-      "title": "David Fry is running hot",
-      "blurb": "Hitting well above his 0.229 season average over his last games, with at least one home run in that stretch. He faces TB sends out Nick Martinez today, in a pitcher-friendly park, a pitcher who's allowed a 0.249 average against this season.",
-      "stat": {
-        "kind": "hrProb",
-        "value": 13
-      },
-      "link": {
-        "hash": "#gamepick=hr",
-        "playerId": 681807,
-        "playerName": "David Fry",
-        "pitcherId": 607259,
-        "pitcherName": "Nick Martinez"
-      }
-    },
-    {
       "id": "trend-650490",
       "category": "trend",
       "title": "Due for a breakout: Yandy Díaz",
       "blurb": "A real home run drought — none in his last 10 games — but a .119 ISO and 0.805 OPS this season say the power is still there, it just hasn't landed yet. CLE sends out Shawn Armstrong today, in a pitcher-friendly park.",
       "stat": {
         "kind": "hrProb",
-        "value": 12
+        "value": 13
       },
       "link": {
         "hash": "#gamepick=hr",
@@ -156,54 +139,71 @@
       }
     },
     {
-      "id": "trend-668723",
+      "id": "trend-800050",
       "category": "trend",
-      "title": "Due for a breakout: Ryan Vilade",
-      "blurb": "A real home run drought — none in his last 10 games — but a .128 ISO and 0.750 OPS this season say the power is still there, it just hasn't landed yet. CLE sends out Shawn Armstrong today, in a pitcher-friendly park.",
+      "title": "Chase DeLauter is running hot",
+      "blurb": "Hitting well above his 0.269 season average over his last games, with at least one home run in that stretch. He faces TB sends out Nick Martinez today, in a pitcher-friendly park, a pitcher who's allowed a 0.249 average against this season.",
       "stat": {
         "kind": "hrProb",
         "value": 12
       },
       "link": {
         "hash": "#gamepick=hr",
-        "playerId": 668723,
-        "playerName": "Ryan Vilade",
-        "pitcherId": 542888,
-        "pitcherName": "Shawn Armstrong"
+        "playerId": 800050,
+        "playerName": "Chase DeLauter",
+        "pitcherId": 607259,
+        "pitcherName": "Nick Martinez"
       }
     },
     {
-      "id": "trend-595978",
+      "id": "trend-672275",
       "category": "trend",
-      "title": "Austin Hedges is running hot",
-      "blurb": "Hitting well above his 0.228 season average over his last games, with at least one home run in that stretch. He faces TB sends out Nick Martinez today, in a pitcher-friendly park, a pitcher who's allowed a 0.249 average against this season.",
+      "title": "Patrick Bailey is running hot",
+      "blurb": "Hitting well above his 0.214 season average over his last games, with at least one home run in that stretch. He faces TB sends out Nick Martinez today, in a pitcher-friendly park, a pitcher who's allowed a 0.249 average against this season.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 12
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 672275,
+        "playerName": "Patrick Bailey",
+        "pitcherId": 607259,
+        "pitcherName": "Nick Martinez"
+      }
+    },
+    {
+      "id": "trend-689414",
+      "category": "trend",
+      "title": "Due for a breakout: Liam Hicks",
+      "blurb": "A real home run drought — none in his last 10 games — but a .137 ISO and 0.801 OPS this season say the power is still there, it just hasn't landed yet. CLE sends out Shawn Armstrong today, in a pitcher-friendly park.",
       "stat": {
         "kind": "hrProb",
         "value": 10
       },
       "link": {
         "hash": "#gamepick=hr",
-        "playerId": 595978,
-        "playerName": "Austin Hedges",
-        "pitcherId": 607259,
-        "pitcherName": "Nick Martinez"
+        "playerId": 689414,
+        "playerName": "Liam Hicks",
+        "pitcherId": 542888,
+        "pitcherName": "Shawn Armstrong"
       }
     },
     {
-      "id": "trend-622761",
+      "id": "trend-683953",
       "category": "trend",
-      "title": "Jorge Mateo's power profile stays live",
-      "blurb": "A .104 ISO and 5 home runs this season heading into today's matchup with CLE sends out Shawn Armstrong, who's allowed a 1.0 HR/9 this year, in a pitcher-friendly park.",
+      "title": "Travis Bazzana is running hot",
+      "blurb": "Hitting well above his 0.235 season average over his last games, with at least one home run in that stretch. He faces TB sends out Nick Martinez today, in a pitcher-friendly park, a pitcher who's allowed a 0.249 average against this season.",
       "stat": {
         "kind": "hrProb",
-        "value": 9
+        "value": 10
       },
       "link": {
         "hash": "#gamepick=hr",
-        "playerId": 622761,
-        "playerName": "Jorge Mateo",
-        "pitcherId": 542888,
-        "pitcherName": "Shawn Armstrong"
+        "playerId": 683953,
+        "playerName": "Travis Bazzana",
+        "pitcherId": 607259,
+        "pitcherName": "Nick Martinez"
       }
     },
     {
@@ -241,13 +241,30 @@
       }
     },
     {
+      "id": "trend-690984",
+      "category": "trend",
+      "title": "Petey Halpin is running hot",
+      "blurb": "Hitting well above his 0.272 season average over his last games, with at least one home run in that stretch. He faces TB sends out Nick Martinez today, in a pitcher-friendly park, a pitcher who's allowed a 0.249 average against this season.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 8
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 690984,
+        "playerName": "Petey Halpin",
+        "pitcherId": 607259,
+        "pitcherName": "Nick Martinez"
+      }
+    },
+    {
       "id": "trend-677587",
       "category": "trend",
       "title": "Brayan Rocchio is running hot",
       "blurb": "Hitting well above his 0.283 season average over his last games, with at least one home run in that stretch. He faces TB sends out Nick Martinez today, in a pitcher-friendly park, a pitcher who's allowed a 0.249 average against this season.",
       "stat": {
         "kind": "hrProb",
-        "value": 9
+        "value": 8
       },
       "link": {
         "hash": "#gamepick=hr",
@@ -258,47 +275,13 @@
       }
     },
     {
-      "id": "trend-656775",
-      "category": "trend",
-      "title": "Cedric Mullins is running hot",
-      "blurb": "Hitting well above his 0.214 season average over his last games, with at least one home run in that stretch. He faces CLE sends out Shawn Armstrong today, in a pitcher-friendly park, a pitcher who's allowed a 0.229 average against this season.",
-      "stat": {
-        "kind": "hrProb",
-        "value": 8
-      },
-      "link": {
-        "hash": "#gamepick=hr",
-        "playerId": 656775,
-        "playerName": "Cedric Mullins",
-        "pitcherId": 542888,
-        "pitcherName": "Shawn Armstrong"
-      }
-    },
-    {
-      "id": "trend-663743",
-      "category": "trend",
-      "title": "Nick Fortes is running hot",
-      "blurb": "Hitting well above his 0.244 season average over his last games, with at least one home run in that stretch. He faces CLE sends out Shawn Armstrong today, in a pitcher-friendly park, a pitcher who's allowed a 0.229 average against this season.",
-      "stat": {
-        "kind": "hrProb",
-        "value": 8
-      },
-      "link": {
-        "hash": "#gamepick=hr",
-        "playerId": 663743,
-        "playerName": "Nick Fortes",
-        "pitcherId": 542888,
-        "pitcherName": "Shawn Armstrong"
-      }
-    },
-    {
       "id": "trend-680700",
       "category": "trend",
       "title": "Richie Palacios's power profile stays live",
       "blurb": "A .128 ISO and 10 home runs this season heading into today's matchup with CLE sends out Shawn Armstrong, who's allowed a 1.0 HR/9 this year, in a pitcher-friendly park.",
       "stat": {
         "kind": "hrProb",
-        "value": 8
+        "value": 7
       },
       "link": {
         "hash": "#gamepick=hr",
@@ -323,6 +306,23 @@
         "playerName": "Steven Kwan",
         "pitcherId": 607259,
         "pitcherName": "Nick Martinez"
+      }
+    },
+    {
+      "id": "trend-802415",
+      "category": "trend",
+      "title": "Chandler Simpson's power profile stays live",
+      "blurb": "A .49 ISO and 0 home runs this season heading into today's matchup with CLE sends out Shawn Armstrong, who's allowed a 1.0 HR/9 this year, in a pitcher-friendly park.",
+      "stat": {
+        "kind": "hrProb",
+        "value": 4
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 802415,
+        "playerName": "Chandler Simpson",
+        "pitcherId": 542888,
+        "pitcherName": "Shawn Armstrong"
       }
     },
     {
@@ -356,24 +356,6 @@
         "hash": "#gamepick=hr",
         "playerId": 677587,
         "playerName": "Brayan Rocchio",
-        "pitcherId": 607259,
-        "pitcherName": "Nick Martinez"
-      }
-    },
-    {
-      "id": "streak-682657",
-      "category": "streak",
-      "title": "Angel Martínez is on a hot streak",
-      "blurb": "6 home runs in his last 10 games against an expected pace of 1.9 — real recent power, not just a hot box score.",
-      "stat": {
-        "kind": "last10HR",
-        "value": 6,
-        "favorable": true
-      },
-      "link": {
-        "hash": "#gamepick=hr",
-        "playerId": 682657,
-        "playerName": "Angel Martínez",
         "pitcherId": 607259,
         "pitcherName": "Nick Martinez"
       }
@@ -415,28 +397,10 @@
       }
     },
     {
-      "id": "streak-663743",
+      "id": "streak-800050",
       "category": "streak",
-      "title": "Nick Fortes is on a hot streak",
-      "blurb": "2 home runs in his last 10 games against an expected pace of 0.8 — real recent power, not just a hot box score.",
-      "stat": {
-        "kind": "last10HR",
-        "value": 2,
-        "favorable": true
-      },
-      "link": {
-        "hash": "#gamepick=hr",
-        "playerId": 663743,
-        "playerName": "Nick Fortes",
-        "pitcherId": 542888,
-        "pitcherName": "Shawn Armstrong"
-      }
-    },
-    {
-      "id": "streak-681807",
-      "category": "streak",
-      "title": "David Fry is on a hot streak",
-      "blurb": "4 home runs in his last 10 games against an expected pace of 1.7 — real recent power, not just a hot box score.",
+      "title": "Chase DeLauter is on a hot streak",
+      "blurb": "4 home runs in his last 10 games against an expected pace of 1.3 — real recent power, not just a hot box score.",
       "stat": {
         "kind": "last10HR",
         "value": 4,
@@ -444,28 +408,28 @@
       },
       "link": {
         "hash": "#gamepick=hr",
-        "playerId": 681807,
-        "playerName": "David Fry",
+        "playerId": 800050,
+        "playerName": "Chase DeLauter",
         "pitcherId": 607259,
         "pitcherName": "Nick Martinez"
       }
     },
     {
-      "id": "streak-622761",
+      "id": "streak-690984",
       "category": "streak",
-      "title": "Jorge Mateo is cooling off",
-      "blurb": "Just 0 home runs in his last 10 games against an expected pace of 1.0 — a real dip, worth knowing before starting him.",
+      "title": "Petey Halpin is on a hot streak",
+      "blurb": "2 home runs in his last 10 games against an expected pace of 0.9 — real recent power, not just a hot box score.",
       "stat": {
         "kind": "last10HR",
-        "value": 0,
-        "favorable": false
+        "value": 2,
+        "favorable": true
       },
       "link": {
         "hash": "#gamepick=hr",
-        "playerId": 622761,
-        "playerName": "Jorge Mateo",
-        "pitcherId": 542888,
-        "pitcherName": "Shawn Armstrong"
+        "playerId": 690984,
+        "playerName": "Petey Halpin",
+        "pitcherId": 607259,
+        "pitcherName": "Nick Martinez"
       }
     },
     {
@@ -487,10 +451,10 @@
       }
     },
     {
-      "id": "streak-668723",
+      "id": "streak-802415",
       "category": "streak",
-      "title": "Ryan Vilade is ice cold",
-      "blurb": "No home runs in his last 10 games despite an expected pace of 1.8 based on his season rate — a genuine cold stretch, not just normal variance.",
+      "title": "Chandler Simpson is cooling off",
+      "blurb": "Just 0 home runs in his last 10 games against an expected pace of 0.0 — a real dip, worth knowing before starting him.",
       "stat": {
         "kind": "last10HR",
         "value": 0,
@@ -498,17 +462,17 @@
       },
       "link": {
         "hash": "#gamepick=hr",
-        "playerId": 668723,
-        "playerName": "Ryan Vilade",
+        "playerId": 802415,
+        "playerName": "Chandler Simpson",
         "pitcherId": 542888,
         "pitcherName": "Shawn Armstrong"
       }
     },
     {
-      "id": "streak-670764",
+      "id": "streak-689414",
       "category": "streak",
-      "title": "Taylor Walls is cooling off",
-      "blurb": "Just 0 home runs in his last 10 games against an expected pace of 0.2 — a real dip, worth knowing before starting him.",
+      "title": "Liam Hicks is ice cold",
+      "blurb": "No home runs in his last 10 games despite an expected pace of 1.5 based on his season rate — a genuine cold stretch, not just normal variance.",
       "stat": {
         "kind": "last10HR",
         "value": 0,
@@ -516,8 +480,8 @@
       },
       "link": {
         "hash": "#gamepick=hr",
-        "playerId": 670764,
-        "playerName": "Taylor Walls",
+        "playerId": 689414,
+        "playerName": "Liam Hicks",
         "pitcherId": 542888,
         "pitcherName": "Shawn Armstrong"
       }
@@ -541,10 +505,10 @@
       }
     },
     {
-      "id": "streak-663993",
+      "id": "streak-670764",
       "category": "streak",
-      "title": "Nathaniel Lowe is ice cold",
-      "blurb": "No home runs in his last 10 games despite an expected pace of 1.8 based on his season rate — a genuine cold stretch, not just normal variance.",
+      "title": "Taylor Walls is cooling off",
+      "blurb": "Just 0 home runs in his last 10 games against an expected pace of 0.2 — a real dip, worth knowing before starting him.",
       "stat": {
         "kind": "last10HR",
         "value": 0,
@@ -552,10 +516,10 @@
       },
       "link": {
         "hash": "#gamepick=hr",
-        "playerId": 663993,
-        "playerName": "Nathaniel Lowe",
-        "pitcherId": 607259,
-        "pitcherName": "Nick Martinez"
+        "playerId": 670764,
+        "playerName": "Taylor Walls",
+        "pitcherId": 542888,
+        "pitcherName": "Shawn Armstrong"
       }
     },
     {
@@ -572,6 +536,24 @@
         "hash": "#gamepick=hr",
         "playerId": 680757,
         "playerName": "Steven Kwan",
+        "pitcherId": 607259,
+        "pitcherName": "Nick Martinez"
+      }
+    },
+    {
+      "id": "streak-663993",
+      "category": "streak",
+      "title": "Nathaniel Lowe is ice cold",
+      "blurb": "No home runs in his last 10 games despite an expected pace of 1.8 based on his season rate — a genuine cold stretch, not just normal variance.",
+      "stat": {
+        "kind": "last10HR",
+        "value": 0,
+        "favorable": false
+      },
+      "link": {
+        "hash": "#gamepick=hr",
+        "playerId": 663993,
+        "playerName": "Nathaniel Lowe",
         "pitcherId": 607259,
         "pitcherName": "Nick Martinez"
       }
@@ -595,10 +577,10 @@
       }
     },
     {
-      "id": "streak-595978",
+      "id": "streak-683953",
       "category": "streak",
-      "title": "Austin Hedges is on a hot streak",
-      "blurb": "2 home runs in his last 10 games against an expected pace of 1.1 — real recent power, not just a hot box score.",
+      "title": "Travis Bazzana is trending up",
+      "blurb": "2 home runs in his last 10 games, running ahead of his 1.3-per-10-games season pace.",
       "stat": {
         "kind": "last10HR",
         "value": 2,
@@ -606,28 +588,10 @@
       },
       "link": {
         "hash": "#gamepick=hr",
-        "playerId": 595978,
-        "playerName": "Austin Hedges",
+        "playerId": 683953,
+        "playerName": "Travis Bazzana",
         "pitcherId": 607259,
         "pitcherName": "Nick Martinez"
-      }
-    },
-    {
-      "id": "streak-656775",
-      "category": "streak",
-      "title": "Cedric Mullins is trending up",
-      "blurb": "2 home runs in his last 10 games, running ahead of his 1.4-per-10-games season pace.",
-      "stat": {
-        "kind": "last10HR",
-        "value": 2,
-        "favorable": true
-      },
-      "link": {
-        "hash": "#gamepick=hr",
-        "playerId": 656775,
-        "playerName": "Cedric Mullins",
-        "pitcherId": 542888,
-        "pitcherName": "Shawn Armstrong"
       }
     },
     {
