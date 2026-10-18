@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-10-18T17:15:36.611Z",
+  "generatedAt": "2026-10-18T22:24:50.627Z",
   "date": "2026-10-18",
   "games": {
     "849817": {
-      "updatedAt": "2026-10-18T17:15:36.610Z",
+      "updatedAt": "2026-10-18T22:24:50.627Z",
       "teams": {
         "home": {
           "abbr": "CLE",
           "confirmed": true,
-          "confirmedAt": "2026-10-18T17:15:36.610Z",
+          "confirmedAt": "2026-10-18T22:24:50.627Z",
           "source": "mlb-schedule-lineups",
           "lineup": [
             {
@@ -58,7 +58,59 @@
             }
           ]
         },
-        "away": null
+        "away": {
+          "abbr": "TB",
+          "confirmed": true,
+          "confirmedAt": "2026-10-18T22:24:50.627Z",
+          "source": "mlb-schedule-lineups",
+          "lineup": [
+            {
+              "id": 650490,
+              "name": "Yandy Díaz",
+              "pos": "DH"
+            },
+            {
+              "id": 666018,
+              "name": "Jonathan Aranda",
+              "pos": "1B"
+            },
+            {
+              "id": 668723,
+              "name": "Ryan Vilade",
+              "pos": "RF"
+            },
+            {
+              "id": 691406,
+              "name": "Junior Caminero",
+              "pos": "3B"
+            },
+            {
+              "id": 802415,
+              "name": "Chandler Simpson",
+              "pos": "LF"
+            },
+            {
+              "id": 676356,
+              "name": "Jonny DeLuca",
+              "pos": "CF"
+            },
+            {
+              "id": 689414,
+              "name": "Liam Hicks",
+              "pos": "C"
+            },
+            {
+              "id": 810938,
+              "name": "Ben Williamson",
+              "pos": "2B"
+            },
+            {
+              "id": 670764,
+              "name": "Taylor Walls",
+              "pos": "SS"
+            }
+          ]
+        }
       }
     }
   }
