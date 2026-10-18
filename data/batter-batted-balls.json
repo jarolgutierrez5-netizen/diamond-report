@@ -12320,23 +12320,23 @@
           },
           {
             "date": "2026-08-23",
-            "pitchName": "4-Seam Fastball",
-            "exitVelo": 93.9,
-            "launchAngle": 7,
-            "distance": 155,
-            "trajectory": "line_drive",
-            "result": "single",
-            "barrel": false,
-            "matchup": "CLE @ COL"
-          },
-          {
-            "date": "2026-08-23",
             "pitchName": "Cutter",
             "exitVelo": 81.2,
             "launchAngle": -9,
             "distance": 12,
             "trajectory": "ground_ball",
             "result": "grounded_into_double_play",
+            "barrel": false,
+            "matchup": "CLE @ COL"
+          },
+          {
+            "date": "2026-08-23",
+            "pitchName": "4-Seam Fastball",
+            "exitVelo": 93.9,
+            "launchAngle": 7,
+            "distance": 155,
+            "trajectory": "line_drive",
+            "result": "single",
             "barrel": false,
             "matchup": "CLE @ COL"
           },
@@ -17261,6 +17261,39 @@
       "R": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "Changeup",
+            "exitVelo": 66.4,
+            "launchAngle": -12,
+            "distance": 8,
+            "trajectory": "ground_ball",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "Changeup",
+            "exitVelo": 83.1,
+            "launchAngle": 59,
+            "distance": 181,
+            "trajectory": "popup",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "Sinker",
+            "exitVelo": 94.6,
+            "launchAngle": 35,
+            "distance": 323,
+            "trajectory": "fly_ball",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-15",
             "pitchName": "4-Seam Fastball",
             "exitVelo": 71.4,
@@ -17391,45 +17424,12 @@
             "result": "field_out",
             "barrel": false,
             "matchup": "CWS @ CLE"
-          },
-          {
-            "date": "2026-10-08",
-            "pitchName": "Sinker",
-            "exitVelo": 97.5,
-            "launchAngle": 7,
-            "distance": 162,
-            "trajectory": "line_drive",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "CLE @ CWS"
-          },
-          {
-            "date": "2026-10-08",
-            "pitchName": "Curveball",
-            "exitVelo": 96.6,
-            "launchAngle": -11,
-            "distance": 9,
-            "trajectory": "ground_ball",
-            "result": "single",
-            "barrel": false,
-            "matchup": "CLE @ CWS"
-          },
-          {
-            "date": "2026-10-08",
-            "pitchName": "Split-Finger",
-            "exitVelo": 89.8,
-            "launchAngle": 32,
-            "distance": 337,
-            "trajectory": "fly_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "CLE @ CWS"
           }
         ],
         "season": {
-          "avgEv": 86.9,
+          "avgEv": 86.8,
           "barrelPct": 4.3,
-          "n": 322
+          "n": 325
         }
       },
       "L": {
@@ -35175,6 +35175,17 @@
       "R": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "4-Seam Fastball",
+            "exitVelo": 101,
+            "launchAngle": 36,
+            "distance": 349,
+            "trajectory": "fly_ball",
+            "result": "home_run",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-15",
             "pitchName": "Knuckle Curve",
             "exitVelo": 106.4,
@@ -35327,27 +35338,27 @@
             "result": "single",
             "barrel": false,
             "matchup": "TB @ PHI"
-          },
-          {
-            "date": "2026-09-26",
-            "pitchName": "Sinker",
-            "exitVelo": 77.2,
-            "launchAngle": 16,
-            "distance": 183,
-            "trajectory": "line_drive",
-            "result": "single",
-            "barrel": false,
-            "matchup": "TB @ PHI"
           }
         ],
         "season": {
           "avgEv": 90.4,
           "barrelPct": 7.3,
-          "n": 398
+          "n": 399
         }
       },
       "L": {
         "recent": [
+          {
+            "date": "2026-10-17",
+            "pitchName": "Sinker",
+            "exitVelo": 107.6,
+            "launchAngle": 10,
+            "distance": 260,
+            "trajectory": "line_drive",
+            "result": "double",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
           {
             "date": "2026-10-13",
             "pitchName": "Sinker",
@@ -35501,23 +35512,12 @@
             "result": "field_out",
             "barrel": false,
             "matchup": "TB @ NYY"
-          },
-          {
-            "date": "2026-09-20",
-            "pitchName": "4-Seam Fastball",
-            "exitVelo": 81.8,
-            "launchAngle": -36,
-            "distance": 3,
-            "trajectory": "ground_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "BOS @ TB"
           }
         ],
         "season": {
-          "avgEv": 91.8,
-          "barrelPct": 7.1,
-          "n": 170
+          "avgEv": 91.9,
+          "barrelPct": 7,
+          "n": 171
         }
       }
     },
@@ -48735,6 +48735,17 @@
       "R": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "Sinker",
+            "exitVelo": 58.9,
+            "launchAngle": 11,
+            "distance": 94,
+            "trajectory": "ground_ball",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-09-27",
             "pitchName": "Sinker",
             "exitVelo": 57.9,
@@ -48887,23 +48898,12 @@
             "result": "field_out",
             "barrel": false,
             "matchup": "TB @ SEA"
-          },
-          {
-            "date": "2026-08-08",
-            "pitchName": "Sweeper",
-            "exitVelo": 66.8,
-            "launchAngle": -45,
-            "distance": 2,
-            "trajectory": "ground_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "TB @ SEA"
           }
         ],
         "season": {
-          "avgEv": 84.3,
-          "barrelPct": 3.4,
-          "n": 149
+          "avgEv": 84.2,
+          "barrelPct": 3.3,
+          "n": 150
         }
       },
       "L": {
@@ -50386,6 +50386,28 @@
       "R": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "Cutter",
+            "exitVelo": 93.5,
+            "launchAngle": 36,
+            "distance": 324,
+            "trajectory": "fly_ball",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "Changeup",
+            "exitVelo": 42.2,
+            "launchAngle": -61,
+            "distance": 1,
+            "trajectory": "ground_ball",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-15",
             "pitchName": "4-Seam Fastball",
             "exitVelo": 111.4,
@@ -50527,38 +50549,27 @@
             "result": "double",
             "barrel": false,
             "matchup": "CWS @ CLE"
-          },
-          {
-            "date": "2026-09-27",
-            "pitchName": "4-Seam Fastball",
-            "exitVelo": 93.1,
-            "launchAngle": 34,
-            "distance": 340,
-            "trajectory": "fly_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "CLE @ KC"
-          },
-          {
-            "date": "2026-09-26",
-            "pitchName": "Changeup",
-            "exitVelo": 90.5,
-            "launchAngle": 45,
-            "distance": 284,
-            "trajectory": "fly_ball",
-            "result": "sac_fly",
-            "barrel": false,
-            "matchup": "CLE @ KC"
           }
         ],
         "season": {
-          "avgEv": 89.9,
+          "avgEv": 89.8,
           "barrelPct": 10.1,
-          "n": 286
+          "n": 288
         }
       },
       "L": {
         "recent": [
+          {
+            "date": "2026-10-17",
+            "pitchName": "Sinker",
+            "exitVelo": 102.8,
+            "launchAngle": -11,
+            "distance": 9,
+            "trajectory": "ground_ball",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
           {
             "date": "2026-10-13",
             "pitchName": "Sinker",
@@ -50712,23 +50723,12 @@
             "result": "field_out",
             "barrel": false,
             "matchup": "CLE @ MIN"
-          },
-          {
-            "date": "2026-09-08",
-            "pitchName": "Sinker",
-            "exitVelo": 88.9,
-            "launchAngle": 11,
-            "distance": 190,
-            "trajectory": "line_drive",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "CLE @ BAL"
           }
         ],
         "season": {
-          "avgEv": 79.9,
-          "barrelPct": 3.5,
-          "n": 57
+          "avgEv": 80.3,
+          "barrelPct": 3.4,
+          "n": 58
         }
       }
     },
@@ -60349,6 +60349,28 @@
       "R": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "Cutter",
+            "exitVelo": 103.3,
+            "launchAngle": 6,
+            "distance": 101,
+            "trajectory": "line_drive",
+            "result": "single",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "Sweeper",
+            "exitVelo": 97.1,
+            "launchAngle": -10,
+            "distance": 10,
+            "trajectory": "ground_ball",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-15",
             "pitchName": "4-Seam Fastball",
             "exitVelo": 85.2,
@@ -60417,22 +60439,22 @@
           {
             "date": "2026-10-05",
             "pitchName": "4-Seam Fastball",
-            "exitVelo": 104.3,
-            "launchAngle": 41,
-            "distance": 378,
-            "trajectory": "fly_ball",
-            "result": "field_out",
+            "exitVelo": 103.1,
+            "launchAngle": 0,
+            "distance": 44,
+            "trajectory": "ground_ball",
+            "result": "single",
             "barrel": false,
             "matchup": "NYY @ TB"
           },
           {
             "date": "2026-10-05",
             "pitchName": "4-Seam Fastball",
-            "exitVelo": 103.1,
-            "launchAngle": 0,
-            "distance": 44,
-            "trajectory": "ground_ball",
-            "result": "single",
+            "exitVelo": 104.3,
+            "launchAngle": 41,
+            "distance": 378,
+            "trajectory": "fly_ball",
+            "result": "field_out",
             "barrel": false,
             "matchup": "NYY @ TB"
           },
@@ -60490,38 +60512,38 @@
             "result": "double",
             "barrel": false,
             "matchup": "TB @ PHI"
-          },
-          {
-            "date": "2026-09-26",
-            "pitchName": "Sinker",
-            "exitVelo": 97.6,
-            "launchAngle": 55,
-            "distance": 236,
-            "trajectory": "fly_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "TB @ PHI"
-          },
-          {
-            "date": "2026-09-26",
-            "pitchName": "Knuckle Curve",
-            "exitVelo": 94.3,
-            "launchAngle": 46,
-            "distance": 281,
-            "trajectory": "fly_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "TB @ PHI"
           }
         ],
         "season": {
-          "avgEv": 91.2,
-          "barrelPct": 10,
-          "n": 340
+          "avgEv": 91.3,
+          "barrelPct": 9.9,
+          "n": 342
         }
       },
       "L": {
         "recent": [
+          {
+            "date": "2026-10-17",
+            "pitchName": "Sweeper",
+            "exitVelo": 75.6,
+            "launchAngle": 18,
+            "distance": 166,
+            "trajectory": "line_drive",
+            "result": "single",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "Cutter",
+            "exitVelo": 92.8,
+            "launchAngle": 16,
+            "distance": 247,
+            "trajectory": "line_drive",
+            "result": "single",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
           {
             "date": "2026-10-13",
             "pitchName": "Sinker",
@@ -60664,34 +60686,12 @@
             "result": "field_out",
             "barrel": false,
             "matchup": "BOS @ TB"
-          },
-          {
-            "date": "2026-09-18",
-            "pitchName": "Curveball",
-            "exitVelo": 94.3,
-            "launchAngle": 48,
-            "distance": 283,
-            "trajectory": "fly_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "BOS @ TB"
-          },
-          {
-            "date": "2026-09-18",
-            "pitchName": "Slider",
-            "exitVelo": 57.5,
-            "launchAngle": -13,
-            "distance": 4,
-            "trajectory": "ground_ball",
-            "result": "force_out",
-            "barrel": false,
-            "matchup": "BOS @ TB"
           }
         ],
         "season": {
-          "avgEv": 89.3,
-          "barrelPct": 7.6,
-          "n": 132
+          "avgEv": 89.2,
+          "barrelPct": 7.5,
+          "n": 134
         }
       }
     },
@@ -62799,6 +62799,28 @@
       "R": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "Sinker",
+            "exitVelo": 106.8,
+            "launchAngle": 43,
+            "distance": 356,
+            "trajectory": "fly_ball",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "Sinker",
+            "exitVelo": 95.2,
+            "launchAngle": 2,
+            "distance": 49,
+            "trajectory": "ground_ball",
+            "result": "single",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-15",
             "pitchName": "Sinker",
             "exitVelo": 101.4,
@@ -62932,32 +62954,10 @@
           },
           {
             "date": "2026-10-08",
-            "pitchName": "Sinker",
-            "exitVelo": 82.5,
-            "launchAngle": 12,
-            "distance": 176,
-            "trajectory": "line_drive",
-            "result": "single",
-            "barrel": false,
-            "matchup": "CLE @ CWS"
-          },
-          {
-            "date": "2026-10-08",
             "pitchName": "4-Seam Fastball",
             "exitVelo": 80,
             "launchAngle": 34,
             "distance": 269,
-            "trajectory": "fly_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "CLE @ CWS"
-          },
-          {
-            "date": "2026-10-07",
-            "pitchName": "Slider",
-            "exitVelo": 99.7,
-            "launchAngle": 37,
-            "distance": 337,
             "trajectory": "fly_ball",
             "result": "field_out",
             "barrel": false,
@@ -62967,7 +62967,7 @@
         "season": {
           "avgEv": 88.6,
           "barrelPct": 8,
-          "n": 350
+          "n": 352
         }
       },
       "L": {
@@ -80328,6 +80328,28 @@
       "R": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "Sinker",
+            "exitVelo": 24.7,
+            "launchAngle": -13,
+            "distance": 9,
+            "trajectory": "ground_ball",
+            "result": "sac_bunt",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "Curveball",
+            "exitVelo": 72.1,
+            "launchAngle": 31,
+            "distance": 248,
+            "trajectory": "fly_ball",
+            "result": "single",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-15",
             "pitchName": "Slider",
             "exitVelo": 81.2,
@@ -80469,38 +80491,27 @@
             "result": "force_out",
             "barrel": false,
             "matchup": "ATH @ TB"
-          },
-          {
-            "date": "2026-09-05",
-            "pitchName": "Sweeper",
-            "exitVelo": 56.8,
-            "launchAngle": -17,
-            "distance": 8,
-            "trajectory": "ground_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "TB @ TEX"
-          },
-          {
-            "date": "2026-09-04",
-            "pitchName": "4-Seam Fastball",
-            "exitVelo": 92.6,
-            "launchAngle": 32,
-            "distance": 347,
-            "trajectory": "fly_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "TB @ TEX"
           }
         ],
         "season": {
-          "avgEv": 81.5,
-          "barrelPct": 4.3,
-          "n": 188
+          "avgEv": 81.2,
+          "barrelPct": 4.2,
+          "n": 190
         }
       },
       "L": {
         "recent": [
+          {
+            "date": "2026-10-17",
+            "pitchName": "Changeup",
+            "exitVelo": 79.8,
+            "launchAngle": -17,
+            "distance": 8,
+            "trajectory": "ground_ball",
+            "result": "grounded_into_double_play",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
           {
             "date": "2026-10-13",
             "pitchName": "Changeup",
@@ -80654,23 +80665,12 @@
             "result": "single",
             "barrel": false,
             "matchup": "ATH @ TB"
-          },
-          {
-            "date": "2026-09-05",
-            "pitchName": "4-Seam Fastball",
-            "exitVelo": 22.7,
-            "launchAngle": -13,
-            "distance": 8,
-            "trajectory": "ground_ball",
-            "result": "sac_bunt",
-            "barrel": false,
-            "matchup": "TB @ TEX"
           }
         ],
         "season": {
           "avgEv": 76.7,
           "barrelPct": 0.8,
-          "n": 119
+          "n": 120
         }
       }
     },
@@ -84843,6 +84843,39 @@
       "R": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "Cutter",
+            "exitVelo": 102.1,
+            "launchAngle": 5,
+            "distance": 97,
+            "trajectory": "ground_ball",
+            "result": "grounded_into_double_play",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "Cutter",
+            "exitVelo": 50.8,
+            "launchAngle": -22,
+            "distance": 7,
+            "trajectory": "ground_ball",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "Changeup",
+            "exitVelo": 91.5,
+            "launchAngle": 2,
+            "distance": 54,
+            "trajectory": "ground_ball",
+            "result": "grounded_into_double_play",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-15",
             "pitchName": "Changeup",
             "exitVelo": 79.1,
@@ -84973,49 +85006,27 @@
             "result": "field_out",
             "barrel": true,
             "matchup": "CWS @ CLE"
-          },
-          {
-            "date": "2026-10-03",
-            "pitchName": "Curveball",
-            "exitVelo": 95,
-            "launchAngle": 7,
-            "distance": 170,
-            "trajectory": "line_drive",
-            "result": "single",
-            "barrel": false,
-            "matchup": "CWS @ CLE"
-          },
-          {
-            "date": "2026-09-26",
-            "pitchName": "Curveball",
-            "exitVelo": 94.5,
-            "launchAngle": 29,
-            "distance": 342,
-            "trajectory": "fly_ball",
-            "result": "home_run",
-            "barrel": false,
-            "matchup": "CLE @ KC"
-          },
-          {
-            "date": "2026-09-26",
-            "pitchName": "4-Seam Fastball",
-            "exitVelo": 101.1,
-            "launchAngle": 29,
-            "distance": 394,
-            "trajectory": "fly_ball",
-            "result": "field_out",
-            "barrel": true,
-            "matchup": "CLE @ KC"
           }
         ],
         "season": {
-          "avgEv": 87.2,
-          "barrelPct": 8.7,
-          "n": 229
+          "avgEv": 87.1,
+          "barrelPct": 8.6,
+          "n": 232
         }
       },
       "L": {
         "recent": [
+          {
+            "date": "2026-10-17",
+            "pitchName": "Slider",
+            "exitVelo": 107.9,
+            "launchAngle": 20,
+            "distance": 374,
+            "trajectory": "line_drive",
+            "result": "single",
+            "barrel": true,
+            "matchup": "TB @ CLE"
+          },
           {
             "date": "2026-10-15",
             "pitchName": "Curveball",
@@ -85169,23 +85180,12 @@
             "result": "field_out",
             "barrel": false,
             "matchup": "SF @ CLE"
-          },
-          {
-            "date": "2026-08-18",
-            "pitchName": "Sinker",
-            "exitVelo": 104.3,
-            "launchAngle": -8,
-            "distance": 12,
-            "trajectory": "ground_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "SF @ CLE"
           }
         ],
         "season": {
-          "avgEv": 92.2,
-          "barrelPct": 6.5,
-          "n": 46
+          "avgEv": 92.6,
+          "barrelPct": 8.5,
+          "n": 47
         }
       }
     },
@@ -91152,6 +91152,28 @@
       "L": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "Changeup",
+            "exitVelo": 72,
+            "launchAngle": -19,
+            "distance": 6,
+            "trajectory": "ground_ball",
+            "result": "force_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "Slider",
+            "exitVelo": 80.2,
+            "launchAngle": 58,
+            "distance": 170,
+            "trajectory": "popup",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-13",
             "pitchName": "Changeup",
             "exitVelo": 100,
@@ -91293,34 +91315,12 @@
             "result": "single",
             "barrel": false,
             "matchup": "TB @ NYY"
-          },
-          {
-            "date": "2026-09-22",
-            "pitchName": "4-Seam Fastball",
-            "exitVelo": 89.3,
-            "launchAngle": -11,
-            "distance": 11,
-            "trajectory": "ground_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "TB @ NYY"
-          },
-          {
-            "date": "2026-09-22",
-            "pitchName": "Changeup",
-            "exitVelo": 94.7,
-            "launchAngle": 0,
-            "distance": 37,
-            "trajectory": "ground_ball",
-            "result": "grounded_into_double_play",
-            "barrel": false,
-            "matchup": "TB @ NYY"
           }
         ],
         "season": {
-          "avgEv": 83.9,
+          "avgEv": 83.8,
           "barrelPct": 1.5,
-          "n": 132
+          "n": 134
         }
       }
     },
@@ -95744,6 +95744,17 @@
       "R": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "4-Seam Fastball",
+            "exitVelo": 72.9,
+            "launchAngle": 36,
+            "distance": 232,
+            "trajectory": "fly_ball",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-15",
             "pitchName": "Sinker",
             "exitVelo": 89.2,
@@ -95896,27 +95907,27 @@
             "result": "double",
             "barrel": false,
             "matchup": "CLE @ KC"
-          },
-          {
-            "date": "2026-09-26",
-            "pitchName": "Sinker",
-            "exitVelo": 99.1,
-            "launchAngle": 34,
-            "distance": 373,
-            "trajectory": "fly_ball",
-            "result": "home_run",
-            "barrel": false,
-            "matchup": "CLE @ KC"
           }
         ],
         "season": {
           "avgEv": 86.8,
           "barrelPct": 1.7,
-          "n": 344
+          "n": 345
         }
       },
       "L": {
         "recent": [
+          {
+            "date": "2026-10-17",
+            "pitchName": "Sinker",
+            "exitVelo": 87.3,
+            "launchAngle": 16,
+            "distance": 216,
+            "trajectory": "line_drive",
+            "result": "single",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
           {
             "date": "2026-10-15",
             "pitchName": "Sinker",
@@ -96070,23 +96081,12 @@
             "result": "field_out",
             "barrel": false,
             "matchup": "CLE @ BOS"
-          },
-          {
-            "date": "2026-09-22",
-            "pitchName": "Sinker",
-            "exitVelo": 91.6,
-            "launchAngle": -1,
-            "distance": 42,
-            "trajectory": "ground_ball",
-            "result": "grounded_into_double_play",
-            "barrel": false,
-            "matchup": "CLE @ BOS"
           }
         ],
         "season": {
           "avgEv": 84.4,
           "barrelPct": 4.2,
-          "n": 167
+          "n": 168
         }
       }
     },
@@ -105716,6 +105716,17 @@
       "R": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "Sweeper",
+            "exitVelo": 99.7,
+            "launchAngle": 14,
+            "distance": 246,
+            "trajectory": "line_drive",
+            "result": "single",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-15",
             "pitchName": "Sweeper",
             "exitVelo": 59.8,
@@ -105868,27 +105879,38 @@
             "result": "double",
             "barrel": false,
             "matchup": "TB @ PHI"
-          },
-          {
-            "date": "2026-09-24",
-            "pitchName": "Curveball",
-            "exitVelo": 77.3,
-            "launchAngle": 1,
-            "distance": 36,
-            "trajectory": "ground_ball",
-            "result": "single",
-            "barrel": false,
-            "matchup": "TB @ NYY"
           }
         ],
         "season": {
-          "avgEv": 84.6,
+          "avgEv": 84.7,
           "barrelPct": 3.9,
-          "n": 258
+          "n": 259
         }
       },
       "L": {
         "recent": [
+          {
+            "date": "2026-10-17",
+            "pitchName": "Sinker",
+            "exitVelo": 69,
+            "launchAngle": -2,
+            "distance": 32,
+            "trajectory": "ground_ball",
+            "result": "single",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "Sinker",
+            "exitVelo": 45.6,
+            "launchAngle": 24,
+            "distance": 108,
+            "trajectory": "ground_ball",
+            "result": "single",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
           {
             "date": "2026-10-05",
             "pitchName": "4-Seam Fastball",
@@ -106031,34 +106053,12 @@
             "result": "field_out",
             "barrel": false,
             "matchup": "TB @ TEX"
-          },
-          {
-            "date": "2026-09-02",
-            "pitchName": "4-Seam Fastball",
-            "exitVelo": 95.9,
-            "launchAngle": -1,
-            "distance": 38,
-            "trajectory": "ground_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "NYM @ TB"
-          },
-          {
-            "date": "2026-08-29",
-            "pitchName": "Sinker",
-            "exitVelo": 88.4,
-            "launchAngle": 30,
-            "distance": 343,
-            "trajectory": "fly_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "SD @ TB"
           }
         ],
         "season": {
-          "avgEv": 81.1,
+          "avgEv": 80.1,
           "barrelPct": 0,
-          "n": 50
+          "n": 52
         }
       }
     },
@@ -107061,6 +107061,39 @@
       "R": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "Cutter",
+            "exitVelo": 91.6,
+            "launchAngle": 32,
+            "distance": 347,
+            "trajectory": "fly_ball",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "Sinker",
+            "exitVelo": 81.3,
+            "launchAngle": 18,
+            "distance": 216,
+            "trajectory": "line_drive",
+            "result": "single",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "Changeup",
+            "exitVelo": 90.4,
+            "launchAngle": 23,
+            "distance": 304,
+            "trajectory": "line_drive",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-15",
             "pitchName": "Curveball",
             "exitVelo": 91.2,
@@ -107191,49 +107224,27 @@
             "result": "field_out",
             "barrel": false,
             "matchup": "CWS @ CLE"
-          },
-          {
-            "date": "2026-10-08",
-            "pitchName": "Sinker",
-            "exitVelo": 97.1,
-            "launchAngle": 7,
-            "distance": 147,
-            "trajectory": "ground_ball",
-            "result": "single",
-            "barrel": false,
-            "matchup": "CLE @ CWS"
-          },
-          {
-            "date": "2026-10-08",
-            "pitchName": "Sweeper",
-            "exitVelo": 29.4,
-            "launchAngle": -37,
-            "distance": 2,
-            "trajectory": "ground_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "CLE @ CWS"
-          },
-          {
-            "date": "2026-10-08",
-            "pitchName": "4-Seam Fastball",
-            "exitVelo": 78.6,
-            "launchAngle": 66,
-            "distance": 146,
-            "trajectory": "popup",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "CLE @ CWS"
           }
         ],
         "season": {
           "avgEv": 83,
           "barrelPct": 0.8,
-          "n": 382
+          "n": 385
         }
       },
       "L": {
         "recent": [
+          {
+            "date": "2026-10-17",
+            "pitchName": "Sinker",
+            "exitVelo": 72,
+            "launchAngle": -53,
+            "distance": 2,
+            "trajectory": "ground_ball",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
           {
             "date": "2026-10-15",
             "pitchName": "Sinker",
@@ -107387,23 +107398,12 @@
             "result": "field_out",
             "barrel": false,
             "matchup": "CLE @ BOS"
-          },
-          {
-            "date": "2026-09-24",
-            "pitchName": "Sweeper",
-            "exitVelo": 95.5,
-            "launchAngle": 7,
-            "distance": 112,
-            "trajectory": "ground_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "CLE @ BOS"
           }
         ],
         "season": {
           "avgEv": 81.3,
           "barrelPct": 0,
-          "n": 167
+          "n": 168
         }
       }
     },
@@ -113765,23 +113765,23 @@
           },
           {
             "date": "2026-09-24",
-            "pitchName": "Sinker",
-            "exitVelo": 102.1,
-            "launchAngle": 2,
-            "distance": 68,
-            "trajectory": "ground_ball",
-            "result": "force_out",
-            "barrel": false,
-            "matchup": "CLE @ BOS"
-          },
-          {
-            "date": "2026-09-24",
             "pitchName": "4-Seam Fastball",
             "exitVelo": 100.4,
             "launchAngle": 15,
             "distance": 241,
             "trajectory": "line_drive",
             "result": "single",
+            "barrel": false,
+            "matchup": "CLE @ BOS"
+          },
+          {
+            "date": "2026-09-24",
+            "pitchName": "Sinker",
+            "exitVelo": 102.1,
+            "launchAngle": 2,
+            "distance": 68,
+            "trajectory": "ground_ball",
+            "result": "force_out",
             "barrel": false,
             "matchup": "CLE @ BOS"
           },
@@ -116016,6 +116016,17 @@
       "L": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "4-Seam Fastball",
+            "exitVelo": 81.6,
+            "launchAngle": 16,
+            "distance": 230,
+            "trajectory": "line_drive",
+            "result": "single",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-08",
             "pitchName": "4-Seam Fastball",
             "exitVelo": 65.6,
@@ -116168,23 +116179,12 @@
             "result": "field_out",
             "barrel": false,
             "matchup": "CLE @ BOS"
-          },
-          {
-            "date": "2026-09-22",
-            "pitchName": "Sinker",
-            "exitVelo": 95.4,
-            "launchAngle": 2,
-            "distance": 60,
-            "trajectory": "ground_ball",
-            "result": "single",
-            "barrel": false,
-            "matchup": "CLE @ BOS"
           }
         ],
         "season": {
           "avgEv": 87.8,
-          "barrelPct": 9,
-          "n": 134
+          "barrelPct": 8.9,
+          "n": 135
         }
       }
     },
@@ -123639,6 +123639,17 @@
       "R": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "Sweeper",
+            "exitVelo": 92.6,
+            "launchAngle": 60,
+            "distance": 195,
+            "trajectory": "popup",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-15",
             "pitchName": "4-Seam Fastball",
             "exitVelo": 94,
@@ -123791,27 +123802,27 @@
             "result": "field_out",
             "barrel": false,
             "matchup": "TB @ NYY"
-          },
-          {
-            "date": "2026-09-19",
-            "pitchName": "Changeup",
-            "exitVelo": 67.9,
-            "launchAngle": -8,
-            "distance": 8,
-            "trajectory": "ground_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "BOS @ TB"
           }
         ],
         "season": {
           "avgEv": 88.8,
-          "barrelPct": 12.8,
-          "n": 141
+          "barrelPct": 12.7,
+          "n": 142
         }
       },
       "L": {
         "recent": [
+          {
+            "date": "2026-10-17",
+            "pitchName": "Sinker",
+            "exitVelo": 55.1,
+            "launchAngle": 34,
+            "distance": 164,
+            "trajectory": "line_drive",
+            "result": "single",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
           {
             "date": "2026-10-13",
             "pitchName": "Sinker",
@@ -123965,23 +123976,12 @@
             "result": "field_out",
             "barrel": false,
             "matchup": "TB @ NYY"
-          },
-          {
-            "date": "2026-09-20",
-            "pitchName": "Slider",
-            "exitVelo": 83,
-            "launchAngle": 67,
-            "distance": 130,
-            "trajectory": "popup",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "BOS @ TB"
           }
         ],
         "season": {
-          "avgEv": 83.1,
-          "barrelPct": 4.9,
-          "n": 61
+          "avgEv": 82.6,
+          "barrelPct": 4.8,
+          "n": 62
         }
       }
     },
@@ -124339,6 +124339,17 @@
       "R": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "Changeup",
+            "exitVelo": 98.9,
+            "launchAngle": 18,
+            "distance": 279,
+            "trajectory": "line_drive",
+            "result": "single",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-15",
             "pitchName": "Sinker",
             "exitVelo": 87,
@@ -124491,27 +124502,27 @@
             "result": "triple",
             "barrel": true,
             "matchup": "CLE @ KC"
-          },
-          {
-            "date": "2026-09-26",
-            "pitchName": "4-Seam Fastball",
-            "exitVelo": 103.1,
-            "launchAngle": 20,
-            "distance": 332,
-            "trajectory": "line_drive",
-            "result": "double",
-            "barrel": false,
-            "matchup": "CLE @ KC"
           }
         ],
         "season": {
-          "avgEv": 89.2,
-          "barrelPct": 6.5,
-          "n": 263
+          "avgEv": 89.3,
+          "barrelPct": 6.4,
+          "n": 264
         }
       },
       "L": {
         "recent": [
+          {
+            "date": "2026-10-17",
+            "pitchName": "Sinker",
+            "exitVelo": 107.8,
+            "launchAngle": 21,
+            "distance": 374,
+            "trajectory": "line_drive",
+            "result": "home_run",
+            "barrel": true,
+            "matchup": "TB @ CLE"
+          },
           {
             "date": "2026-10-13",
             "pitchName": "Sinker",
@@ -124665,23 +124676,12 @@
             "result": "double",
             "barrel": false,
             "matchup": "CLE @ KC"
-          },
-          {
-            "date": "2026-09-25",
-            "pitchName": "4-Seam Fastball",
-            "exitVelo": 80.6,
-            "launchAngle": 29,
-            "distance": 275,
-            "trajectory": "line_drive",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "CLE @ KC"
           }
         ],
         "season": {
-          "avgEv": 83.8,
-          "barrelPct": 5,
-          "n": 120
+          "avgEv": 84,
+          "barrelPct": 5.8,
+          "n": 121
         }
       }
     },
@@ -135264,6 +135264,17 @@
       "L": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "Sinker",
+            "exitVelo": 58.3,
+            "launchAngle": 3,
+            "distance": 45,
+            "trajectory": "ground_ball",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-15",
             "pitchName": "4-Seam Fastball",
             "exitVelo": 93.6,
@@ -135416,23 +135427,12 @@
             "result": "field_out",
             "barrel": false,
             "matchup": "HOU @ TB"
-          },
-          {
-            "date": "2026-09-08",
-            "pitchName": "Sinker",
-            "exitVelo": 92.7,
-            "launchAngle": -27,
-            "distance": 6,
-            "trajectory": "ground_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "TB @ ATL"
           }
         ],
         "season": {
-          "avgEv": 79.3,
+          "avgEv": 79.1,
           "barrelPct": 1,
-          "n": 101
+          "n": 102
         }
       }
     },
@@ -136719,6 +136719,17 @@
       "R": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "4-Seam Fastball",
+            "exitVelo": 94.5,
+            "launchAngle": -3,
+            "distance": 27,
+            "trajectory": "ground_ball",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-15",
             "pitchName": "Sinker",
             "exitVelo": 105,
@@ -136871,23 +136882,12 @@
             "result": "field_out",
             "barrel": false,
             "matchup": "CWS @ CLE"
-          },
-          {
-            "date": "2026-09-15",
-            "pitchName": "Cutter",
-            "exitVelo": 102.2,
-            "launchAngle": 17,
-            "distance": 284,
-            "trajectory": "line_drive",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "CWS @ CLE"
           }
         ],
         "season": {
-          "avgEv": 85.8,
+          "avgEv": 85.9,
           "barrelPct": 7.2,
-          "n": 138
+          "n": 139
         }
       },
       "L": {
@@ -141269,6 +141269,28 @@
       "R": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "4-Seam Fastball",
+            "exitVelo": 110.2,
+            "launchAngle": 8,
+            "distance": 180,
+            "trajectory": "line_drive",
+            "result": "double",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "Cutter",
+            "exitVelo": 73.7,
+            "launchAngle": -17,
+            "distance": 8,
+            "trajectory": "ground_ball",
+            "result": "force_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-07",
             "pitchName": "Split-Finger",
             "exitVelo": 89.7,
@@ -141410,38 +141432,27 @@
             "result": "field_out",
             "barrel": false,
             "matchup": "TB @ NYY"
-          },
-          {
-            "date": "2026-09-24",
-            "pitchName": "Sweeper",
-            "exitVelo": 59.3,
-            "launchAngle": 65,
-            "distance": 97,
-            "trajectory": "popup",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "TB @ NYY"
-          },
-          {
-            "date": "2026-09-24",
-            "pitchName": "4-Seam Fastball",
-            "exitVelo": 97.7,
-            "launchAngle": 22,
-            "distance": 325,
-            "trajectory": "line_drive",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "TB @ NYY"
           }
         ],
         "season": {
           "avgEv": 92.8,
-          "barrelPct": 13.4,
-          "n": 382
+          "barrelPct": 13.3,
+          "n": 384
         }
       },
       "L": {
         "recent": [
+          {
+            "date": "2026-10-17",
+            "pitchName": "4-Seam Fastball",
+            "exitVelo": 110.7,
+            "launchAngle": 29,
+            "distance": 408,
+            "trajectory": "fly_ball",
+            "result": "field_out",
+            "barrel": true,
+            "matchup": "TB @ CLE"
+          },
           {
             "date": "2026-10-13",
             "pitchName": "4-Seam Fastball",
@@ -141595,23 +141606,12 @@
             "result": "field_out",
             "barrel": false,
             "matchup": "BOS @ TB"
-          },
-          {
-            "date": "2026-09-20",
-            "pitchName": "Changeup",
-            "exitVelo": 95.2,
-            "launchAngle": 1,
-            "distance": 61,
-            "trajectory": "ground_ball",
-            "result": "single",
-            "barrel": false,
-            "matchup": "BOS @ TB"
           }
         ],
         "season": {
-          "avgEv": 93.8,
-          "barrelPct": 12,
-          "n": 142
+          "avgEv": 93.9,
+          "barrelPct": 12.6,
+          "n": 143
         }
       }
     },
@@ -170782,6 +170782,50 @@
       "R": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "Changeup",
+            "exitVelo": 70.9,
+            "launchAngle": 65,
+            "distance": 128,
+            "trajectory": "popup",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "Sinker",
+            "exitVelo": 109.1,
+            "launchAngle": 5,
+            "distance": 153,
+            "trajectory": "line_drive",
+            "result": "single",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "Sinker",
+            "exitVelo": 86,
+            "launchAngle": -56,
+            "distance": 1,
+            "trajectory": "ground_ball",
+            "result": "field_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "4-Seam Fastball",
+            "exitVelo": 102.8,
+            "launchAngle": 23,
+            "distance": 373,
+            "trajectory": "fly_ball",
+            "result": "field_out",
+            "barrel": true,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-15",
             "pitchName": "Changeup",
             "exitVelo": 79.8,
@@ -170901,56 +170945,12 @@
             "result": "single",
             "barrel": false,
             "matchup": "CLE @ CWS"
-          },
-          {
-            "date": "2026-10-08",
-            "pitchName": "4-Seam Fastball",
-            "exitVelo": 91.6,
-            "launchAngle": 32,
-            "distance": 319,
-            "trajectory": "fly_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "CLE @ CWS"
-          },
-          {
-            "date": "2026-10-07",
-            "pitchName": "Slider",
-            "exitVelo": 99.8,
-            "launchAngle": -3,
-            "distance": 35,
-            "trajectory": "ground_ball",
-            "result": "single",
-            "barrel": false,
-            "matchup": "CLE @ CWS"
-          },
-          {
-            "date": "2026-10-05",
-            "pitchName": "4-Seam Fastball",
-            "exitVelo": 84.9,
-            "launchAngle": 19,
-            "distance": 257,
-            "trajectory": "line_drive",
-            "result": "single",
-            "barrel": false,
-            "matchup": "CWS @ CLE"
-          },
-          {
-            "date": "2026-10-05",
-            "pitchName": "4-Seam Fastball",
-            "exitVelo": 99.1,
-            "launchAngle": -3,
-            "distance": 27,
-            "trajectory": "ground_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "CWS @ CLE"
           }
         ],
         "season": {
           "avgEv": 92.2,
-          "barrelPct": 7.4,
-          "n": 326
+          "barrelPct": 7.6,
+          "n": 330
         }
       },
       "L": {
@@ -172728,6 +172728,28 @@
       "R": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "Cutter",
+            "exitVelo": 89.7,
+            "launchAngle": 19,
+            "distance": 308,
+            "trajectory": "line_drive",
+            "result": "sac_fly",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "4-Seam Fastball",
+            "exitVelo": 96.2,
+            "launchAngle": -12,
+            "distance": 10,
+            "trajectory": "ground_ball",
+            "result": "field_error",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-15",
             "pitchName": "Sweeper",
             "exitVelo": 102.1,
@@ -172869,38 +172891,38 @@
             "result": "single",
             "barrel": false,
             "matchup": "BOS @ TB"
-          },
-          {
-            "date": "2026-09-19",
-            "pitchName": "Changeup",
-            "exitVelo": 98.4,
-            "launchAngle": 4,
-            "distance": 108,
-            "trajectory": "ground_ball",
-            "result": "field_error",
-            "barrel": false,
-            "matchup": "BOS @ TB"
-          },
-          {
-            "date": "2026-09-19",
-            "pitchName": "Sinker",
-            "exitVelo": 81.7,
-            "launchAngle": 31,
-            "distance": 284,
-            "trajectory": "fly_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "BOS @ TB"
           }
         ],
         "season": {
           "avgEv": 80.9,
           "barrelPct": 0,
-          "n": 383
+          "n": 385
         }
       },
       "L": {
         "recent": [
+          {
+            "date": "2026-10-17",
+            "pitchName": "Sweeper",
+            "exitVelo": 81,
+            "launchAngle": -41,
+            "distance": 3,
+            "trajectory": "ground_ball",
+            "result": "force_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
+            "date": "2026-10-17",
+            "pitchName": "Curveball",
+            "exitVelo": 80.2,
+            "launchAngle": -21,
+            "distance": 4,
+            "trajectory": "ground_ball",
+            "result": "force_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
           {
             "date": "2026-10-15",
             "pitchName": "4-Seam Fastball",
@@ -173043,34 +173065,12 @@
             "result": "field_out",
             "barrel": false,
             "matchup": "TB @ NYY"
-          },
-          {
-            "date": "2026-09-22",
-            "pitchName": "4-Seam Fastball",
-            "exitVelo": 73.4,
-            "launchAngle": 15,
-            "distance": 193,
-            "trajectory": "line_drive",
-            "result": "single",
-            "barrel": false,
-            "matchup": "TB @ NYY"
-          },
-          {
-            "date": "2026-09-22",
-            "pitchName": "Sweeper",
-            "exitVelo": 82.8,
-            "launchAngle": -6,
-            "distance": 23,
-            "trajectory": "ground_ball",
-            "result": "field_out",
-            "barrel": false,
-            "matchup": "TB @ NYY"
           }
         ],
         "season": {
           "avgEv": 78.5,
           "barrelPct": 0,
-          "n": 199
+          "n": 201
         }
       }
     },
@@ -182306,6 +182306,17 @@
       "L": {
         "recent": [
           {
+            "date": "2026-10-17",
+            "pitchName": "Curveball",
+            "exitVelo": 79.8,
+            "launchAngle": 2,
+            "distance": 65,
+            "trajectory": "ground_ball",
+            "result": "fielders_choice_out",
+            "barrel": false,
+            "matchup": "TB @ CLE"
+          },
+          {
             "date": "2026-10-13",
             "pitchName": "Changeup",
             "exitVelo": 84.9,
@@ -182458,23 +182469,12 @@
             "result": "single",
             "barrel": false,
             "matchup": "TB @ COL"
-          },
-          {
-            "date": "2026-08-02",
-            "pitchName": "Changeup",
-            "exitVelo": 98.4,
-            "launchAngle": -17,
-            "distance": 6,
-            "trajectory": "ground_ball",
-            "result": "force_out",
-            "barrel": false,
-            "matchup": "CWS @ TB"
           }
         ],
         "season": {
           "avgEv": 86.2,
-          "barrelPct": 2.7,
-          "n": 113
+          "barrelPct": 2.6,
+          "n": 114
         }
       }
     },
@@ -185015,5 +185015,5 @@
       }
     }
   },
-  "generatedAt": "2026-10-17T14:11:45.202Z"
+  "generatedAt": "2026-10-18T14:29:37.258Z"
 }
