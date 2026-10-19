@@ -1,6 +1,6 @@
 # Model Calibration Report
 
-Generated 2026-10-12 22:30 UTC by the weekly calibration-report workflow.
+Generated 2026-10-19 20:36 UTC by the weekly calibration-report workflow.
 Re-run any of these locally any time: `node scripts/analyze-<name>-matchups.mjs`.
 
 ## HR Threats
@@ -9,8 +9,8 @@ Re-run any of these locally any time: `node scripts/analyze-<name>-matchups.mjs`
 ══════════════════════════════════════════════════════════════════════
 HR THREATS CALIBRATION REPORT
 ══════════════════════════════════════════════════════════════════════
-Total captured: 641  |  Graded (win/loss): 630  |  Pending: 11
-Overall actual hit rate: 92/630 = 14.6%
+Total captured: 675  |  Graded (win/loss): 668  |  Pending: 7
+Overall actual hit rate: 94/668 = 14.1%
 
 Score calibration (predicted HR% bucket vs actual hit rate):
   Bucket                           N   Actual hit%   Avg predicted%
@@ -18,96 +18,96 @@ Score calibration (predicted HR% bucket vs actual hit rate):
   19%                              4          0.0%            19.0%
   20-21%                           1          0.0%            20.0%
   25-29%                          16         37.5%            27.4%
-  30%+                           608         14.1%            64.8%
+  30%+                           646         13.6%            64.4%
 
-  Score < 22%: 0.0% actual (n=6)  vs  Score >= 22%: 14.7% actual (n=624)
-  z = -1.02 (not conventionally significant at this sample size)
+  Score < 22%: 0.0% actual (n=6)  vs  Score >= 22%: 14.2% actual (n=662)
+  z = -1.00 (not conventionally significant at this sample size)
 
-Picks with live client score snapshot: 630/630
+Picks with live client score snapshot: 668/668
 
 Live client score calibration (what users actually see):
   Bucket                           N   Actual hit%   Avg predicted%
-  18%                            274          9.1%            12.8%
+  18%                            312          8.7%            12.7%
   19%                              9          0.0%            19.0%
   20-21%                          19         10.5%            20.5%
   22-24%                          32         21.9%            23.2%
   25-29%                          97         19.6%            27.2%
   30%+                           199         19.6%            34.9%
 
-  Live score < 22%: 8.9% actual (n=302)  vs  Live score >= 22%: 19.8% actual (n=328)
-  z = -3.86 (statistically significant difference, p<0.05)
+  Live score < 22%: 8.5% actual (n=340)  vs  Live score >= 22%: 19.8% actual (n=328)
+  z = -4.19 (statistically significant difference, p<0.05)
 
-Score source breakdown: 630/630 picks have hrScoreSource recorded
+Score source breakdown: 668/668 picks have hrScoreSource recorded
   logistic   n=    6   actual hit rate: 0.0%
-  legacy     n=  624   actual hit rate: 14.7%
+  legacy     n=  662   actual hit rate: 14.2%
 
-isOnFire: TRUE 14.5% (n=626)  vs  FALSE 25.0% (n=4)
+isOnFire: TRUE 14.0% (n=664)  vs  FALSE 25.0% (n=4)
   (below the 20-per-side sample floor — too thin to read as signal yet, treat as noise-risk)
 
-isFavorable: TRUE 17.4% (n=161)  vs  FALSE 13.6% (n=469)
-  z = 1.16 (not conventionally significant at this sample size)
+isFavorable: TRUE 17.4% (n=161)  vs  FALSE 13.0% (n=507)
+  z = 1.39 (not conventionally significant at this sample size)
 
-isDrought: TRUE 20.0% (n=5)  vs  FALSE 14.6% (n=625)
+isDrought: TRUE 20.0% (n=5)  vs  FALSE 14.0% (n=663)
   (below the 20-per-side sample floor — too thin to read as signal yet, treat as noise-risk)
 
-isDue: TRUE 25.0% (n=4)  vs  FALSE 14.5% (n=626)
+isDue: TRUE 25.0% (n=4)  vs  FALSE 14.0% (n=664)
   (below the 20-per-side sample floor — too thin to read as signal yet, treat as noise-risk)
 
-hasNearHR: TRUE 18.7% (n=262)  vs  FALSE 11.7% (n=368)
-  z = 2.46 (statistically significant difference, p<0.05)
+hasNearHR: TRUE 18.1% (n=276)  vs  FALSE 11.2% (n=392)
+  z = 2.52 (statistically significant difference, p<0.05)
 
-Picks with platoon-split data: 627/630
-  platoonFavorable: TRUE 16.7% (n=312)  vs  FALSE 12.7% (n=315)
-  z = 1.40 (not conventionally significant at this sample size)
+Picks with platoon-split data: 665/668
+  platoonFavorable: TRUE 16.6% (n=320)  vs  FALSE 11.9% (n=345)
+  z = 1.73 (not conventionally significant at this sample size)
 
-Picks with Matchup Edge data: 359/630
+Picks with Matchup Edge data: 383/668
 
 Matchup Edge calibration (predicted grade vs actual hit rate):
   Bucket                           N   Actual hit%   Avg predicted%
-  Weak (<45)                       5          0.0%            40.8%
-  Neutral (45-63)                103         16.5%            57.6%
-  Strong (64-77)                 167         17.4%            71.0%
+  Weak (<45)                      10          0.0%            40.6%
+  Neutral (45-63)                117         15.4%            56.9%
+  Strong (64-77)                 172         16.9%            71.0%
   Excellent (78+)                 84         23.8%            82.3%
 
-  Matchup Edge < 64: 15.7% actual (n=108)  vs  Matchup Edge >= 64: 19.5% actual (n=251)
-  z = -0.85 (not conventionally significant at this sample size)
+  Matchup Edge < 64: 14.2% actual (n=127)  vs  Matchup Edge >= 64: 19.1% actual (n=256)
+  z = -1.20 (not conventionally significant at this sample size)
 
-Picks with pitcher-matchup data: 630/630
+Picks with pitcher-matchup data: 668/668
 
 By opposing pitcher HR/9 allowed:
   Bucket                           N   Actual hit%
-  <0.9 HR/9                      166         13.3%
-  0.9-1.2 HR/9                   161         14.9%
-  1.2+ HR/9                      303         15.2%
+  <0.9 HR/9                      177         13.6%
+  0.9-1.2 HR/9                   175         13.7%
+  1.2+ HR/9                      316         14.6%
 
 By opposing pitcher WHIP:
   Bucket                           N   Actual hit%
-  <1.15 WHIP                     189         14.3%
-  1.15-1.35 WHIP                 245         13.5%
-  1.35+ WHIP                     196         16.3%
+  <1.15 WHIP                     210         13.8%
+  1.15-1.35 WHIP                 258         12.8%
+  1.35+ WHIP                     200         16.0%
 
 By park factor:
   Bucket                           N   Actual hit%
-  Pitcher park (<97)             176         16.5%
-  Neutral park (97-103)          311         15.4%
-  Hitter park (104-119)          119         11.8%
+  Pitcher park (<97)             200         15.5%
+  Neutral park (97-103)          321         15.0%
+  Hitter park (104-119)          123         11.4%
   Extreme hitter park (120+)      24          4.2%
 
-Picks with 2-strike suppression data: 389/630
+Picks with 2-strike suppression data: 413/668
 
 By opposing pitcher 2-strike hard-hit suppression:
   Bucket                           N   Actual hit%
-  Suppresses hard (<=-5pp)        84         17.9%
-  Neutral (-5 to +5pp)           304         17.1%
+  Suppresses hard (<=-5pp)        89         16.9%
+  Neutral (-5 to +5pp)           323         16.4%
   Gets hit harder (5pp+)           1          0.0%
 
-Picks with batter AB-total data: 630/630
+Picks with batter AB-total data: 668/668
 
 By batter season AB total:
   Bucket                           N   Actual hit%
   <150 AB (part-time)             30          6.7%
-  150-350 AB (platoon/bench)     182         10.4%
-  350+ AB (everyday)             418         17.0%
+  150-350 AB (platoon/bench)     205          9.8%
+  350+ AB (everyday)             433         16.6%
 
 ══════════════════════════════════════════════════════════════════════
 ```
@@ -118,52 +118,52 @@ By batter season AB total:
 ══════════════════════════════════════════════════════════════════════
 K PROPS CALIBRATION REPORT
 ══════════════════════════════════════════════════════════════════════
-Total captured: 1953  |  Graded: 1931  |  Pending: 22
-Overall OVER hit rate: 1027/1931 = 53.2%  (0 pushes)
+Total captured: 1967  |  Graded: 1947  |  Pending: 20
+Overall OVER hit rate: 1032/1947 = 53.0%  (0 pushes)
 
 Edge calibration (projK - line bucket vs actual OVER hit rate):
   Bucket                 N    OVER hit%
-  <0.5                 270        47.0%
-  0.5-1.0              752        49.9%
-  1.0-1.5              748        58.7%
-  1.5-2.0              123        55.3%
-  2.0+                  38        47.4%
+  <0.5                 274        47.4%
+  0.5-1.0              755        49.7%
+  1.0-1.5              753        58.6%
+  1.5-2.0              125        54.4%
+  2.0+                  40        45.0%
 
-  Edge < 1.0: 49.1% actual (n=1022)  vs  Edge >= 1.0: 57.8% actual (n=909)
-  z = -3.80 (statistically significant difference, p<0.05)
+  Edge < 1.0: 49.1% actual (n=1029)  vs  Edge >= 1.0: 57.4% actual (n=918)
+  z = -3.68 (statistically significant difference, p<0.05)
 
 By line source:
   Bucket                 N    OVER hit%
-  model               1467        54.6%
-  sportsbook           464        48.7%
+  model               1470        54.5%
+  sportsbook           477        48.4%
 
-Miss diagnosis (848/904 losses with performance data):
-  Short outing (pulled early, never got the look): 457 (53.9%)
-  Full outing, just didn't miss enough bats: 391 (46.1%)
+Miss diagnosis (859/915 losses with performance data):
+  Short outing (pulled early, never got the look): 466 (54.2%)
+  Full outing, just didn't miss enough bats: 393 (45.8%)
 
-Picks with matchup snapshot data: 1747/1931
+Picks with matchup snapshot data: 1763/1947
 
 By pitcher K/9:
   Bucket                 N    OVER hit%
-  <7 K/9               412        58.0%
-  7-9 K/9              719        53.7%
-  9+ K/9               616        46.3%
+  <7 K/9               414        58.0%
+  7-9 K/9              725        53.4%
+  9+ K/9               624        46.2%
 
 By opponent lineup K-rate:
   Bucket                 N    OVER hit%
-  Low-K lineup (<20%)    60        51.7%
-  Avg lineup (20-25%)  1649        52.1%
+  Low-K lineup (<20%)    61        52.5%
+  Avg lineup (20-25%)  1664        51.9%
   High-K lineup (25%+)    38        52.6%
 
-Avg season K% by batting-order spot (n=257 lineups):
+Avg season K% by batting-order spot (n=258 lineups):
   Spot 1: 20.7%
-  Spot 2: 21.0%
-  Spot 3: 20.8%
-  Spot 4: 21.9%
+  Spot 2: 20.9%
+  Spot 3: 20.7%
+  Spot 4: 22.0%
   Spot 5: 21.9%
-  Spot 6: 22.2%
-  Spot 7: 23.6%
-  Spot 8: 23.1%
+  Spot 6: 22.1%
+  Spot 7: 23.5%
+  Spot 8: 23.2%
   Spot 9: 23.7%
 
 ══════════════════════════════════════════════════════════════════════
@@ -175,36 +175,36 @@ Avg season K% by batting-order spot (n=257 lineups):
 ══════════════════════════════════════════════════════════════════════
 DIAMOND REPORT PICK (GAME WINNER) CALIBRATION REPORT
 ══════════════════════════════════════════════════════════════════════
-Total captured: 952  |  Graded: 943  |  Pending: 9
-Overall pick hit rate: 536/943 = 56.8%  (0 pushes)
+Total captured: 959  |  Graded: 950  |  Pending: 9
+Overall pick hit rate: 539/950 = 56.7%  (0 pushes)
 
 Confidence calibration (pickPct bucket vs actual hit rate):
   Bucket                 N   Actual hit%
-  50-54%               548         54.7%
-  55-59%               353         59.2%
+  50-54%               553         54.8%
+  55-59%               355         58.9%
   60-64%                42         64.3%
 
-  pickPct < 60%: 56.5% actual (n=901)  vs  pickPct >= 60%: 64.3% actual (n=42)
-  z = -1.00 (not conventionally significant at this sample size)
+  pickPct < 60%: 56.4% actual (n=908)  vs  pickPct >= 60%: 64.3% actual (n=42)
+  z = -1.01 (not conventionally significant at this sample size)
 
-Picks with matchup snapshot data: 855/943
+Picks with matchup snapshot data: 862/950
 
 By starting-pitcher ERA gap:
   Bucket                 N   Actual hit%
-  ERA gap <0.3         124         58.1%
-  ERA gap 0.3-1.0      232         51.7%
-  ERA gap 1.0+         499         58.9%
+  ERA gap <0.3         126         58.7%
+  ERA gap 0.3-1.0      234         51.3%
+  ERA gap 1.0+         502         58.8%
 
 By team record gap:
   Bucket                 N   Actual hit%
-  Record gap <5pt      323         52.0%
+  Record gap <5pt      324         51.9%
   Record gap 5-15pt    432         58.6%
-  Record gap 15pt+      91         62.6%
+  Record gap 15pt+      96         62.5%
 
 By day/night:
   Bucket                 N   Actual hit%
-  Day game             265         57.7%
-  Night game           590         56.4%
+  Day game             267         57.7%
+  Night game           595         56.3%
 
 ══════════════════════════════════════════════════════════════════════
 ```
