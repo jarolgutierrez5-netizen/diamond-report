@@ -1,122 +1,167 @@
 {
-  "generatedAt": "2026-10-20T01:42:02.783Z",
+  "generatedAt": "2026-10-23T15:48:32.181Z",
   "rollingStarts": 3,
   "pitchers": {
-    "542888": {
+    "607259": {
       "lastStartDates": [
-        "2026-10-18",
         "2026-10-17",
-        "2026-10-13"
+        "2026-10-07",
+        "2026-09-27"
       ],
       "byPitch": [
         {
-          "name": "Sweeper",
-          "seasonVelo": 84.4,
-          "rollingVelo": 84.5,
-          "veloDelta": 0.2,
-          "seasonUsagePct": 30.7,
-          "rollingUsagePct": 37,
-          "usageDelta": 6.3,
-          "seasonWhiffPct": 25.2,
-          "rollingWhiffPct": 15.4,
-          "whiffDelta": -9.8,
-          "seasonSpin": 2581,
-          "rollingSpin": 2516,
-          "spinDelta": -65
-        },
-        {
-          "name": "4-Seam Fastball",
-          "seasonVelo": 93.3,
-          "rollingVelo": 92.1,
-          "veloDelta": -1.2,
-          "seasonUsagePct": 30,
-          "rollingUsagePct": 30.4,
-          "usageDelta": 0.5,
-          "seasonWhiffPct": 20.4,
-          "rollingWhiffPct": 28.6,
-          "whiffDelta": 8.1,
-          "seasonSpin": 2232,
-          "rollingSpin": 2226,
-          "spinDelta": -6
-        },
-        {
-          "name": "Sinker",
-          "seasonVelo": 93.6,
-          "rollingVelo": 92.5,
-          "veloDelta": -1.2,
-          "seasonUsagePct": 17.7,
-          "rollingUsagePct": 17.4,
-          "usageDelta": -0.3,
-          "seasonWhiffPct": 15,
-          "rollingWhiffPct": 0,
-          "whiffDelta": -15,
-          "seasonSpin": 2058,
-          "rollingSpin": 2034,
-          "spinDelta": -24
-        }
-      ],
-      "seasonChasePct": 26.7,
-      "rollingChasePct": 35.3,
-      "chaseDelta": 8.6,
-      "lastOutingPitches": 13
-    },
-    "642547": {
-      "lastStartDates": [
-        "2026-10-17",
-        "2026-10-13",
-        "2026-10-05"
-      ],
-      "byPitch": [
-        {
-          "name": "4-Seam Fastball",
-          "seasonVelo": 94.5,
-          "rollingVelo": 96.9,
-          "veloDelta": 2.4,
-          "seasonUsagePct": 53.6,
-          "rollingUsagePct": 69,
-          "usageDelta": 15.4,
-          "seasonWhiffPct": 18.8,
-          "rollingWhiffPct": 18.1,
-          "whiffDelta": -0.7,
-          "seasonSpin": 2432,
-          "rollingSpin": 2493,
-          "spinDelta": 61
+          "name": "Cutter",
+          "seasonVelo": 89.2,
+          "rollingVelo": 90,
+          "veloDelta": 0.8,
+          "seasonUsagePct": 22.2,
+          "rollingUsagePct": 29.2,
+          "usageDelta": 7,
+          "seasonWhiffPct": 11.4,
+          "rollingWhiffPct": 10.7,
+          "whiffDelta": -0.6,
+          "seasonSpin": 2316,
+          "rollingSpin": 2305,
+          "spinDelta": -11
         },
         {
           "name": "Changeup",
-          "seasonVelo": 87.4,
-          "rollingVelo": 88.6,
-          "veloDelta": 1.2,
-          "seasonUsagePct": 23.2,
-          "rollingUsagePct": 23.6,
-          "usageDelta": 0.3,
-          "seasonWhiffPct": 26.2,
-          "rollingWhiffPct": 26.3,
-          "whiffDelta": 0.1,
-          "seasonSpin": 1961,
-          "rollingSpin": 1926,
-          "spinDelta": -35
+          "seasonVelo": 78.2,
+          "rollingVelo": 77.9,
+          "veloDelta": -0.3,
+          "seasonUsagePct": 26,
+          "rollingUsagePct": 27.1,
+          "usageDelta": 1.1,
+          "seasonWhiffPct": 28.8,
+          "rollingWhiffPct": 31,
+          "whiffDelta": 2.2,
+          "seasonSpin": 1840,
+          "rollingSpin": 1861,
+          "spinDelta": 21
+        },
+        {
+          "name": "Sinker",
+          "seasonVelo": 92.4,
+          "rollingVelo": 93.1,
+          "veloDelta": 0.7,
+          "seasonUsagePct": 30,
+          "rollingUsagePct": 18.8,
+          "usageDelta": -11.2,
+          "seasonWhiffPct": 8.1,
+          "rollingWhiffPct": 9.1,
+          "whiffDelta": 1,
+          "seasonSpin": 2288,
+          "rollingSpin": 2308,
+          "spinDelta": 20
+        },
+        {
+          "name": "4-Seam Fastball",
+          "seasonVelo": 92.7,
+          "rollingVelo": 93.3,
+          "veloDelta": 0.6,
+          "seasonUsagePct": 13.2,
+          "rollingUsagePct": 15.6,
+          "usageDelta": 2.4,
+          "seasonWhiffPct": 13.5,
+          "rollingWhiffPct": 21.4,
+          "whiffDelta": 7.9,
+          "seasonSpin": 2261,
+          "rollingSpin": 2274,
+          "spinDelta": 13
+        },
+        {
+          "name": "Slider",
+          "seasonVelo": 85.2,
+          "rollingVelo": 85.1,
+          "veloDelta": 0,
+          "seasonUsagePct": 4.6,
+          "rollingUsagePct": 9.4,
+          "usageDelta": 4.8,
+          "seasonWhiffPct": 20.3,
+          "rollingWhiffPct": 16.7,
+          "whiffDelta": -3.7,
+          "seasonSpin": 2378,
+          "rollingSpin": 2385,
+          "spinDelta": 6
+        }
+      ],
+      "seasonChasePct": 31.9,
+      "rollingChasePct": 35.2,
+      "chaseDelta": 3.3,
+      "lastOutingPitches": 79
+    },
+    "694819": {
+      "lastStartDates": [
+        "2026-10-11",
+        "2026-10-03",
+        "2026-09-27"
+      ],
+      "byPitch": [
+        {
+          "name": "4-Seam Fastball",
+          "seasonVelo": 100.5,
+          "rollingVelo": 100.9,
+          "veloDelta": 0.4,
+          "seasonUsagePct": 62.6,
+          "rollingUsagePct": 66.4,
+          "usageDelta": 3.8,
+          "seasonWhiffPct": 34.8,
+          "rollingWhiffPct": 21.8,
+          "whiffDelta": -13,
+          "seasonSpin": 2624,
+          "rollingSpin": 2579,
+          "spinDelta": -46
         },
         {
           "name": "Curveball",
-          "seasonVelo": 79.5,
-          "rollingVelo": 82.3,
-          "veloDelta": 2.7,
-          "seasonUsagePct": 12.8,
-          "rollingUsagePct": 7.5,
-          "usageDelta": -5.4,
-          "seasonWhiffPct": 30.2,
-          "rollingWhiffPct": 50,
-          "whiffDelta": 19.8,
-          "seasonSpin": 2282,
-          "rollingSpin": 2251,
-          "spinDelta": -31
+          "seasonVelo": 87.7,
+          "rollingVelo": 87.7,
+          "veloDelta": 0.1,
+          "seasonUsagePct": 11.6,
+          "rollingUsagePct": 14.4,
+          "usageDelta": 2.8,
+          "seasonWhiffPct": 43,
+          "rollingWhiffPct": 43.5,
+          "whiffDelta": 0.5,
+          "seasonSpin": 2215,
+          "rollingSpin": 2084,
+          "spinDelta": -131
+        },
+        {
+          "name": "Slider",
+          "seasonVelo": 91.9,
+          "rollingVelo": 90.9,
+          "veloDelta": -1,
+          "seasonUsagePct": 11.4,
+          "rollingUsagePct": 11.6,
+          "usageDelta": 0.2,
+          "seasonWhiffPct": 31.4,
+          "rollingWhiffPct": 26.3,
+          "whiffDelta": -5.1,
+          "seasonSpin": 2540,
+          "rollingSpin": 2498,
+          "spinDelta": -42
+        },
+        {
+          "name": "Cutter",
+          "seasonVelo": 95.8,
+          "rollingVelo": 95,
+          "veloDelta": -0.8,
+          "seasonUsagePct": 12.7,
+          "rollingUsagePct": 7.6,
+          "usageDelta": -5.1,
+          "seasonWhiffPct": 20.4,
+          "rollingWhiffPct": 22.2,
+          "whiffDelta": 1.8,
+          "seasonSpin": 2575,
+          "rollingSpin": 2458,
+          "spinDelta": -117
         }
       ],
-      "seasonChasePct": 31.6,
-      "rollingChasePct": 34.1,
-      "chaseDelta": 2.5,
-      "lastOutingPitches": 9
+      "seasonChasePct": 34.4,
+      "rollingChasePct": 32.2,
+      "chaseDelta": -2.2,
+      "lastOutingPitches": 94
     }
   }
 }
