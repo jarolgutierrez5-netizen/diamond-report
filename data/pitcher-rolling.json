@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-27T19:22:03.836Z",
+  "generatedAt": "2026-10-27T21:15:59.668Z",
   "rollingStarts": 3,
   "pitchers": {
     "643377": {
@@ -89,6 +89,64 @@
       "rollingChasePct": 28.9,
       "chaseDelta": -5.9,
       "lastOutingPitches": 67
+    },
+    "669160": {
+      "lastStartDates": [
+        "2026-10-24",
+        "2026-10-15",
+        "2026-10-12"
+      ],
+      "byPitch": [
+        {
+          "name": "Sinker",
+          "seasonVelo": 96.7,
+          "rollingVelo": 97.6,
+          "veloDelta": 0.9,
+          "seasonUsagePct": 20.7,
+          "rollingUsagePct": 35.7,
+          "usageDelta": 15,
+          "seasonWhiffPct": 14.4,
+          "rollingWhiffPct": 6.7,
+          "whiffDelta": -7.8,
+          "seasonSpin": 2358,
+          "rollingSpin": 2362,
+          "spinDelta": 4
+        },
+        {
+          "name": "Cutter",
+          "seasonVelo": 93.4,
+          "rollingVelo": 94.7,
+          "veloDelta": 1.3,
+          "seasonUsagePct": 23.6,
+          "rollingUsagePct": 32.9,
+          "usageDelta": 9.2,
+          "seasonWhiffPct": 21.7,
+          "rollingWhiffPct": 16.7,
+          "whiffDelta": -5,
+          "seasonSpin": 2460,
+          "rollingSpin": 2463,
+          "spinDelta": 3
+        },
+        {
+          "name": "Sweeper",
+          "seasonVelo": 86.1,
+          "rollingVelo": 88.4,
+          "veloDelta": 2.3,
+          "seasonUsagePct": 17.9,
+          "rollingUsagePct": 22.9,
+          "usageDelta": 4.9,
+          "seasonWhiffPct": 27.2,
+          "rollingWhiffPct": 50,
+          "whiffDelta": 22.8,
+          "seasonSpin": 3157,
+          "rollingSpin": 3330,
+          "spinDelta": 174
+        }
+      ],
+      "seasonChasePct": 30.5,
+      "rollingChasePct": 41,
+      "chaseDelta": 10.5,
+      "lastOutingPitches": 12
     }
   }
 }
