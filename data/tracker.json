@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-27T23:45:46.281Z",
+  "generatedAt": "2026-10-28T05:44:28.637Z",
   "market": {
     "drp": [
       {
@@ -21294,8 +21294,8 @@
         "homeTeam": "TB",
         "pick": "TB",
         "pickPct": 53,
-        "result": "pending",
-        "actualWinner": null,
+        "result": "win",
+        "actualWinner": "TB",
         "eraDiff": 1.41,
         "whipDiff": 0.197,
         "k9Diff": 2.06,
@@ -21308,7 +21308,9 @@
           "homeML": 106,
           "awayPct": 53,
           "homePct": 47
-        }
+        },
+        "scoreMargin": 1,
+        "nearMiss": false
       }
     ],
     "kprop": [
@@ -84905,17 +84907,18 @@
         "lineSource": "sportsbook",
         "book": "fanduel",
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "win",
+        "finalK": 6,
+        "finalIP": 4,
+        "finalPitches": 74,
+        "finalBB": 2,
+        "finalHits": 4,
+        "finalBF": 18,
         "k9": 8.21,
         "projIP": 4.87,
         "oppKpct": 0.22,
-        "lineup": []
+        "lineup": [],
+        "nearMiss": false
       },
       {
         "key": "2026-10-27|KPROP|dustin may",
@@ -84930,13 +84933,13 @@
         "lineSource": "model",
         "book": null,
         "pick": "OVER",
-        "result": "pending",
-        "finalK": null,
-        "finalIP": null,
-        "finalPitches": null,
-        "finalBB": null,
-        "finalHits": null,
-        "finalBF": null,
+        "result": "loss",
+        "finalK": 3,
+        "finalIP": 3,
+        "finalPitches": 39,
+        "finalBB": 0,
+        "finalHits": 3,
+        "finalBF": 12,
         "k9": 10.27,
         "projIP": 4.68,
         "oppKpct": 0.218,
@@ -84995,7 +84998,33 @@
             "battingOrder": 9,
             "kPct": 0.316
           }
-        ]
+        ],
+        "nearMiss": false
+      },
+      {
+        "key": "2026-10-28|KPROP|jacob misiorowski",
+        "date": "2026-10-28",
+        "gamePk": 849799,
+        "pitcherId": 694819,
+        "pitcherName": "Jacob Misiorowski",
+        "team": "MIL",
+        "opp": "TB",
+        "projK": 7.9,
+        "line": 5.5,
+        "lineSource": "sportsbook",
+        "book": "fanduel",
+        "pick": "OVER",
+        "result": "pending",
+        "finalK": null,
+        "finalIP": null,
+        "finalPitches": null,
+        "finalBB": null,
+        "finalHits": null,
+        "finalBF": null,
+        "k9": 12.31,
+        "projIP": 5.81,
+        "oppKpct": 0.22,
+        "lineup": []
       }
     ],
     "premium": [
@@ -132022,8 +132051,8 @@
         "opp": "TB",
         "gamePk": 849803,
         "score": 59,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "hrScoreSource": "legacy",
         "liveScore": 12,
         "isOnFire": true,
@@ -132052,7 +132081,8 @@
         "zoneFitScore": null,
         "zoneFitLabel": null,
         "startBFShare": 1,
-        "pitcherWorkloadReliable": false
+        "pitcherWorkloadReliable": false,
+        "nearMiss": false
       },
       {
         "key": "2026-10-27|HRTHREAT|668930",
@@ -132063,8 +132093,8 @@
         "opp": "TB",
         "gamePk": 849803,
         "score": 56,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "hrScoreSource": "legacy",
         "liveScore": 12,
         "isOnFire": true,
@@ -132093,7 +132123,8 @@
         "zoneFitScore": null,
         "zoneFitLabel": null,
         "startBFShare": 1,
-        "pitcherWorkloadReliable": false
+        "pitcherWorkloadReliable": false,
+        "nearMiss": false
       },
       {
         "key": "2026-10-27|HRTHREAT|661388",
@@ -132104,8 +132135,8 @@
         "opp": "TB",
         "gamePk": 849803,
         "score": 57,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "hrScoreSource": "legacy",
         "liveScore": 12,
         "isOnFire": true,
@@ -132134,7 +132165,8 @@
         "zoneFitScore": 68,
         "zoneFitLabel": "Playable Zone Fit",
         "startBFShare": 1,
-        "pitcherWorkloadReliable": true
+        "pitcherWorkloadReliable": true,
+        "nearMiss": false
       },
       {
         "key": "2026-10-27|HRTHREAT|694192",
@@ -132145,8 +132177,8 @@
         "opp": "TB",
         "gamePk": 849803,
         "score": 65,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "hrScoreSource": "legacy",
         "liveScore": 12,
         "isOnFire": true,
@@ -132175,7 +132207,8 @@
         "zoneFitScore": 69,
         "zoneFitLabel": "Playable Zone Fit",
         "startBFShare": 1.0389610389610389,
-        "pitcherWorkloadReliable": true
+        "pitcherWorkloadReliable": true,
+        "nearMiss": false
       },
       {
         "key": "2026-10-27|HRTHREAT|676356",
@@ -132186,8 +132219,8 @@
         "opp": "MIL",
         "gamePk": 849803,
         "score": 55,
-        "result": "pending",
-        "actual": null,
+        "result": "loss",
+        "actual": 0,
         "hrScoreSource": "legacy",
         "liveScore": 12,
         "isOnFire": true,
@@ -132216,22 +132249,64 @@
         "zoneFitScore": 61,
         "zoneFitLabel": "Playable Zone Fit",
         "startBFShare": 0.961038961038961,
-        "pitcherWorkloadReliable": true
+        "pitcherWorkloadReliable": true,
+        "nearMiss": false
+      },
+      {
+        "key": "2026-10-28|HRTHREAT|663743",
+        "date": "2026-10-28",
+        "playerId": 663743,
+        "playerName": "Nick Fortes",
+        "team": "TB",
+        "opp": "MIL",
+        "gamePk": 849799,
+        "score": 58,
+        "result": "pending",
+        "actual": null,
+        "hrScoreSource": "legacy",
+        "liveScore": 12,
+        "isOnFire": true,
+        "isFavorable": false,
+        "isDrought": false,
+        "isDue": false,
+        "hasNearHR": false,
+        "pitcherId": 694819,
+        "pitcherName": "Jacob Misiorowski",
+        "pitcherHr9": 0.72,
+        "pitcherAvgAllowed": 0.157,
+        "pitcherSlgAllowed": 0.246,
+        "pitcherWhip": 0.8,
+        "batterOPS": 0.68,
+        "batterISO": 0.1498233333333333,
+        "batterBarrelPct": null,
+        "batterAtBats": 298,
+        "parkFactor": 91,
+        "windFactor": 1,
+        "temperatureFactor": 1,
+        "pitcher2kSuppressionDelta": null,
+        "platoonAB": 151,
+        "platoonOps": 0.684,
+        "platoonFavorable": false,
+        "matchupEdge": null,
+        "zoneFitScore": null,
+        "zoneFitLabel": null,
+        "startBFShare": 1,
+        "pitcherWorkloadReliable": false
       }
     ]
   },
   "allTime": {
     "drp": {
-      "wins": 542,
+      "wins": 543,
       "losses": 412,
       "pushes": 0,
-      "total": 954
+      "total": 955
     },
     "kprop": {
-      "wins": 1033,
-      "losses": 922,
+      "wins": 1034,
+      "losses": 923,
       "pushes": 0,
-      "total": 1955
+      "total": 1957
     },
     "premium": {
       "wins": 116,
@@ -132241,10 +132316,10 @@
     },
     "hrThreat": {
       "wins": 94,
-      "losses": 594,
+      "losses": 599,
       "pushes": 0,
-      "total": 688
+      "total": 693
     }
   },
-  "oddsLastFetchedDate": "2026-10-27"
+  "oddsLastFetchedDate": "2026-10-28"
 }

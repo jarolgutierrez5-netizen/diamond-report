@@ -1,43 +1,47 @@
 {
-  "date": "2026-10-27",
-  "generatedAt": "2026-10-27T23:45:47.508Z",
+  "date": "2026-10-28",
+  "generatedAt": "2026-10-28T05:44:29.480Z",
   "player": {
-    "id": 641343,
-    "name": "Jake Bauers",
-    "teamAbbr": "MIL",
-    "oppAbbr": "TB",
-    "gamePk": 849803,
-    "pitcherId": 643377,
-    "pitcherName": "Griffin Jax",
-    "liveScore": 25,
-    "spotlightScore": 25,
-    "avg": 0.25683,
-    "obp": 0.3771616666666666,
-    "slg": 0.43762,
-    "ops": 0.873,
-    "iso": 0.18079,
-    "hrSeason": 26,
-    "atBats": 477,
-    "last10HR": 0,
-    "isHot": false,
+    "id": 666018,
+    "name": "Jonathan Aranda",
+    "teamAbbr": "TB",
+    "oppAbbr": "MIL",
+    "gamePk": 849799,
+    "pitcherId": 694819,
+    "pitcherName": "Jacob Misiorowski",
+    "liveScore": 15,
+    "spotlightScore": 21,
+    "avg": 0.2603111764705882,
+    "obp": 0.34361105263157893,
+    "slg": 0.43244647058823527,
+    "ops": 0.792,
+    "iso": 0.17213529411764705,
+    "hrSeason": 22,
+    "atBats": 580,
+    "last10HR": 2,
+    "isHot": true,
     "isFavorable": false,
-    "isDrought": true,
-    "isDue": true,
-    "hasNearHR": false,
+    "isDrought": false,
+    "isDue": false,
+    "hasNearHR": true,
     "matchupEdge": null,
     "statcast": {
-      "xslg": 0.46831404612159333,
-      "hardHitPct": 52.304486373165616,
-      "pitches": 2389
+      "xslg": 0.4390181200453001,
+      "hardHitPct": 47.77716119290299,
+      "pitches": 2656
     },
     "reasons": [
       {
         "icon": "💣",
-        "text": "Projects at a real 25.0% HR probability today, from the same model behind the HR Threats board."
+        "text": "Projects at a real 15.0% HR probability today, from the same model behind the HR Threats board."
       },
       {
-        "icon": "⚡",
-        "text": "In a real power drought the model flags as due to break."
+        "icon": "🔥",
+        "text": "On a real hot streak — 2 HR over the last 10 games."
+      },
+      {
+        "icon": "🚀",
+        "text": "Real warning-track power in the last 10 games — recent long fly outs that haven't left the yard yet."
       }
     ],
     "confirmedToday": true
