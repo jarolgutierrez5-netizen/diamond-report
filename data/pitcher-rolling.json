@@ -1,7 +1,80 @@
 {
-  "generatedAt": "2026-10-28T17:13:11.696Z",
+  "generatedAt": "2026-10-28T19:27:28.020Z",
   "rollingStarts": 3,
   "pitchers": {
+    "656876": {
+      "lastStartDates": [
+        "2026-10-24",
+        "2026-10-18",
+        "2026-10-12"
+      ],
+      "byPitch": [
+        {
+          "name": "4-Seam Fastball",
+          "seasonVelo": 95.8,
+          "rollingVelo": 96,
+          "veloDelta": 0.2,
+          "seasonUsagePct": 28.5,
+          "rollingUsagePct": 32,
+          "usageDelta": 3.5,
+          "seasonWhiffPct": 23.3,
+          "rollingWhiffPct": 24.5,
+          "whiffDelta": 1.2,
+          "seasonSpin": 2467,
+          "rollingSpin": 2420,
+          "spinDelta": -47
+        },
+        {
+          "name": "Cutter",
+          "seasonVelo": 89.9,
+          "rollingVelo": 89.7,
+          "veloDelta": -0.2,
+          "seasonUsagePct": 29.1,
+          "rollingUsagePct": 27.3,
+          "usageDelta": -1.8,
+          "seasonWhiffPct": 23.1,
+          "rollingWhiffPct": 17.4,
+          "whiffDelta": -5.7,
+          "seasonSpin": 2596,
+          "rollingSpin": 2573,
+          "spinDelta": -24
+        },
+        {
+          "name": "Sinker",
+          "seasonVelo": 95.2,
+          "rollingVelo": 95.1,
+          "veloDelta": -0.1,
+          "seasonUsagePct": 23.1,
+          "rollingUsagePct": 19.6,
+          "usageDelta": -3.4,
+          "seasonWhiffPct": 12.6,
+          "rollingWhiffPct": 4.3,
+          "whiffDelta": -8.3,
+          "seasonSpin": 2382,
+          "rollingSpin": 2325,
+          "spinDelta": -57
+        },
+        {
+          "name": "Changeup",
+          "seasonVelo": 89.5,
+          "rollingVelo": 89,
+          "veloDelta": -0.5,
+          "seasonUsagePct": 13.8,
+          "rollingUsagePct": 19.6,
+          "usageDelta": 5.8,
+          "seasonWhiffPct": 33.2,
+          "rollingWhiffPct": 20.6,
+          "whiffDelta": -12.6,
+          "seasonSpin": 1179,
+          "rollingSpin": 1039,
+          "spinDelta": -140
+        }
+      ],
+      "seasonChasePct": 33.8,
+      "rollingChasePct": 37.7,
+      "chaseDelta": 3.9,
+      "lastOutingPitches": 89
+    },
     "694819": {
       "lastStartDates": [
         "2026-10-23",
