@@ -1,6 +1,6 @@
 # Model Calibration Report
 
-Generated 2026-11-02 23:07 UTC by the weekly calibration-report workflow.
+Generated 2026-11-09 23:47 UTC by the weekly calibration-report workflow.
 Re-run any of these locally any time: `node scripts/analyze-<name>-matchups.mjs`.
 
 ## HR Threats
